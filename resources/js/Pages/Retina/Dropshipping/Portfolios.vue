@@ -102,6 +102,7 @@ const props = defineProps<{
 
     // inactive: {}
     product_count: number
+    download_portfolio_customer_sales_channel_url: string
 }>();
 
 const step = ref(props.step);
@@ -366,6 +367,8 @@ const initSocketListener = () => {
             type: "success",
         })
 
+        sessionStorage.removeItem('download_code')
+        codeString.value = null
         // stop listening after this event
         channel.stopListening(socketAction)
         isSocketActive.value = false
@@ -374,13 +377,20 @@ const initSocketListener = () => {
 
 // === STORAGE & SOCKET SYNC ===
 onMounted(() => {
+    //  if download_portfolio_customer_sales_channel_url exist remove the sessionStorage
+    if (props.download_portfolio_customer_sales_channel_url) {
+        sessionStorage.removeItem('download_code')
+    }
 
-    if (codeString.value) {
+    const storedCode = sessionStorage.getItem('download_code')
+    if (storedCode) {
+        codeString.value = storedCode
         initSocketListener()
     }
 
     watch(codeString, (newCode) => {
         if (newCode) {
+            sessionStorage.setItem('download_code', newCode)
             initSocketListener()
         }
     })
@@ -707,7 +717,7 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                         <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' /> -->
                         <FontAwesomeIcon icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
                     </div>
-                    
+
                     <div class="mt-3 text-center sm:mt-5">
                         <div as="h3" class="font-semibold text-2xl">
                             Your download images request is being processed.
@@ -719,7 +729,7 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
 
                     </div>
                 </div>
-                
+
 
                 <a v-if="linkDownloadImages" :href="linkDownloadImages" class="mt-5 sm:mt-6">
                     <Button
@@ -742,7 +752,7 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                     >
                         <FontAwesomeIcon icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
                     </div>
-                    
+
                     <div class="mt-3 text-center sm:mt-5">
                         <div as="h3" class="font-semibold text-2xl">
                             Your download images is ready.
@@ -754,7 +764,7 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
 
                     </div>
                 </div>
-                
+
 
                 <a v-if="linkDownloadImages" :href="linkDownloadImages" target="_blank" download class="mt-5 sm:mt-6 block">
                     <Button

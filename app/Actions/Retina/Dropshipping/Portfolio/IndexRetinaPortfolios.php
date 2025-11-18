@@ -242,6 +242,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'ids' => $group->pluck('id')->implode(',')
             ];
         })->sortKeys();
+        // $download_portfolio_customer_sales_channel_url = $this->customerSalesChannel->download_portfolio_customer_sales_channel_url;
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -408,7 +409,8 @@ class IndexRetinaPortfolios extends RetinaAction
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
                 'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
-                'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels)//  Do now use the resource. Use an array of necessary data
+                'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels), //  Do now use the resource. Use an array of necessary data
+                // 'download_portfolio_customer_sales_channel_url' => 'test'
             ]
         )->table($this->tableStructure(prefix: 'products'))
             ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));

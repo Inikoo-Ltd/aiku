@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\RetinaAction;
 use App\Events\UploadPortfolioToR2Event;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Facades\Log;
 
 class ProcessPortfolioZipImages extends RetinaAction
 {
@@ -36,30 +37,32 @@ class ProcessPortfolioZipImages extends RetinaAction
 
     private function createAndUploadZip(CustomerSalesChannel $customerSalesChannel, string $filename, string $fullPath): string
     {
-        $tempZipPath = null;
+        $tempZipArr = [];
 
         try {
-            $tempZipPath = CreteCustomerSalesChannelPortfolioImagesZip::run(
+            $tempZipArr = CreateCustomerSalesChannelPortfolioImagesZip::run(
                 $customerSalesChannel,
                 $filename
             );
 
-            if (!UploadFileToCatalogueIrisR2::run($tempZipPath, $fullPath)) {
+            if (!UploadFileToCatalogueIrisR2::run($tempZipArr['file_path'], $fullPath)) {
                 throw new \Exception('Failed to upload zip file to R2');
             }
 
-            return $this->generateDownloadResponse($fullPath);
+            $downloadUrl = $this->generateDownloadResponse($fullPath);
+
+            UpdatePortfolioZipImagesProcess::run([
+                'id' => $tempZipArr['process_id'],
+                'download_url' => $downloadUrl,
+            ]);
+
+            return $downloadUrl;
         } catch (\Exception $e) {
             return $e->getMessage();
         } finally {
-            $this->cleanupTempFile($tempZipPath);
-        }
-    }
-
-    private function cleanupTempFile(?string $filePath): void
-    {
-        if ($filePath && file_exists($filePath)) {
-            unlink($filePath);
+            if (isset($tempZipArr['file_path']) && $tempZipArr['file_path'] && file_exists($tempZipArr['file_path'])) {
+                unlink($tempZipArr['file_path']);
+            }
         }
     }
 

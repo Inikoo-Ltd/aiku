@@ -20,6 +20,7 @@ use App\Actions\Helpers\Intervals\ResetYearIntervals;
 use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
+use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -170,6 +171,10 @@ class Kernel extends ConsoleKernel
 
         (new Schedule())->command('hydrate:customers-tag')->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'HydrateCustomersTag',
+        );
+
+        $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyFiveMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
         );
     }
 

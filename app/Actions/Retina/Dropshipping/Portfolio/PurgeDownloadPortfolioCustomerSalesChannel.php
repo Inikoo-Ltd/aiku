@@ -1,0 +1,45 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 14 Nov 2025 17:06:15 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Retina\Dropshipping\Portfolio;
+
+use Exception;
+use Lorisleiva\Actions\Concerns\AsAction;
+use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\Portfolio\RemoveFilesFromCatalogueIrisR2;
+use Illuminate\Support\Facades\Log;
+
+class PurgeDownloadPortfolioCustomerSalesChannel
+{
+    use AsAction;
+
+    public function handle()
+    {
+        try {
+            // get from env
+            $days = env('PURGE_DOWNLOAD_PORTFOLIO_CUSTOMER_SALES_CHANNEL_DAYS', 1);
+            // $downloadPortfolioCustomerSalesChannels = DownloadPortfolioCustomerSalesChannel::where('created_at', '<', now()->subDays($days))->get();
+            $downloadPortfolioCustomerSalesChannels = DownloadPortfolioCustomerSalesChannel::where('created_at', '<', now()->addDays($days))->get();
+            Log::info($downloadPortfolioCustomerSalesChannels);
+            // get the download_url if not null from  downloadPortfolioCustomerSalesChannels make it to be array
+            $download_urls = $downloadPortfolioCustomerSalesChannels->pluck('download_url')->filter()->values()->toArray();
+            Log::info($download_urls);
+
+            $ids = $downloadPortfolioCustomerSalesChannels->pluck('id')->toArray();
+            Log::info($ids);
+
+            // remove from
+            RemoveFilesFromCatalogueIrisR2::run($download_urls);
+
+            // remove from database
+            DownloadPortfolioCustomerSalesChannel::whereIn('id', $ids)->delete();
+        } catch (Exception $e) {
+            Log::error($e);
+        }
+    }
+}

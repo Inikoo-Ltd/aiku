@@ -10,12 +10,13 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
 use ZipArchive;
 use Sentry\Laravel\Facade as Sentry;
 
-class CreteCustomerSalesChannelPortfolioImagesZip
+class CreateCustomerSalesChannelPortfolioImagesZip
 {
     use AsAction;
 
@@ -23,7 +24,7 @@ class CreteCustomerSalesChannelPortfolioImagesZip
     /**
      * @throws \Exception
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, string $filename): string
+    public function handle(CustomerSalesChannel $customerSalesChannel, string $filename): array
     {
 
         $tempDir = sys_get_temp_dir() . '/' . uniqid('portfolios_zip_export_');
@@ -31,8 +32,13 @@ class CreteCustomerSalesChannelPortfolioImagesZip
             mkdir($tempDir, 0755, true);
         }
 
-        $zipFilename = $filename;
-        $tempZipPath = sys_get_temp_dir() . '/' . $zipFilename;
+        $tempZipPath = sys_get_temp_dir() . '/' . $filename;
+
+        $processId = StorePortfolioZipImagesProcess::run([
+            'customer_sales_channel_id' => $customerSalesChannel->id,
+            'file_name' => $filename,
+            'file_start_create_at' => now(),
+        ]);
 
         $zip = new ZipArchive();
         if ($zip->open($tempZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
@@ -79,7 +85,18 @@ class CreteCustomerSalesChannelPortfolioImagesZip
             }
             $zip->close();
 
-            return $tempZipPath;
+            $fileSize = filesize($tempZipPath);
+
+            UpdatePortfolioZipImagesProcess::run([
+                'id' => $processId,
+                'file_size' => $fileSize,
+                'file_completed_create_at' => now(),
+            ]);
+
+            return [
+                'file_path' => $tempZipPath,
+                'process_id' => $processId,
+            ];
 
         } catch (\Exception $e) {
             // Clean up in case of error
