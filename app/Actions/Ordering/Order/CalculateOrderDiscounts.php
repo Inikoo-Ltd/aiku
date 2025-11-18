@@ -48,12 +48,14 @@ class CalculateOrderDiscounts
                     [
                         'net_amount'  => $transaction->net_amount,
                         'offers_data' => [
-                            'version' => 1,
-                            'offers'  => [
-                                'offer_id'              => $transaction->offer_id,
-                                'offer_type'            => $transaction->allowance_type,
-                                'discounted_percentage' => $transaction->discounted_percentage,
-                                'label'                 => $transaction->offer_label
+                            'v' => 1,
+                            'o' => [
+                                'oc' => $transaction->offer_campaign_id,
+                                'o'  => $transaction->offer_id,
+                                'oa' => $transaction->offer_allowance_id,
+                                't'  => $transaction->allowance_type,
+                                'p'  => percentage($transaction->discounted_percentage, 1),
+                                'l'  => $transaction->offer_label
 
                             ]
                         ]
@@ -91,14 +93,12 @@ class CalculateOrderDiscounts
 
         $offersData = DB::table('offers')->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])->where('shop_id', $order->shop_id)->where('status', true)->where('trigger_type', 'Customer')->get();
         foreach ($offersData as $offerData) {
-            if ($offerData->type == 'Amount AND Order Number') {
-                if ($this->checkAmountAndOrderNumber($order, $offerData)) {
-                    $enabledOffers[$offerData->allowance_signature] = [
-                        'offer_id'    => $offerData->id,
-                        'offer_label' => $offerData->name
+            if ($offerData->type == 'Amount AND Order Number' && $this->checkAmountAndOrderNumber($order, $offerData)) {
+                $enabledOffers[$offerData->allowance_signature] = [
+                    'offer_id'    => $offerData->id,
+                    'offer_label' => $offerData->name
 
-                    ];
-                }
+                ];
             }
         }
 
@@ -136,10 +136,8 @@ class CalculateOrderDiscounts
     public function processAllowance(array $offerData): void
     {
         $allowanceData = DB::table('offer_allowances')->select(['target_type', 'data', 'offer_id', 'id', 'offer_campaign_id'])->where('offer_id', $offerData['offer_id'])->first();
-        if ($allowanceData) {
-            if ($allowanceData->target_type == 'all_products_in_order') {
-                $this->processAllowanceAllProductsInOrder($offerData, $allowanceData);
-            }
+        if ($allowanceData && $allowanceData->target_type == 'all_products_in_order') {
+            $this->processAllowanceAllProductsInOrder($offerData, $allowanceData);
         }
     }
 
