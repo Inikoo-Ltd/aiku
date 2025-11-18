@@ -21,7 +21,7 @@ import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { routeType } from "@/types/route"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { faImage } from "@far"
-import ProductSummary from "@/Components/Goods/TradeUnitSummary.vue"
+import TradeUnitSummary from "@/Components/Goods/TradeUnitSummary.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
 
 library.add(
@@ -115,7 +115,7 @@ console.log(props.data)
 			</div>
 		</div>
 		<!-- tradeUnit Summary -->
-		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr"  :properties="data.properties" :type="'trade_unit'" :video="videoSetup.url" />
+		<TradeUnitSummary :data="data.tradeUnit" :gpsr="data.gpsr"  :properties="data.properties" :type="'trade_unit'" :video="videoSetup.url" />
 
 		<div>
 			<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
