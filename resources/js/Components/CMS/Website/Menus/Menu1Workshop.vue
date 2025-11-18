@@ -242,6 +242,7 @@ const compIndexStyling1 = computed(() => {
                         :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)"
                         :type="navigation?.link?.type"
+                        :id="navigation?.link?.id"
                         :style="compIndexStyling1?.includes(idxNavigation + 1) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href"
                         :canonical_url="navigation?.link?.canonical_url"
@@ -267,6 +268,7 @@ const compIndexStyling1 = computed(() => {
                         xstyle="getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href"
+                        :id="navigation?.link?.id"
                         :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full py-2 px-6 flex items-center justify-center transition duration-200"
                         :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
@@ -288,6 +290,7 @@ const compIndexStyling1 = computed(() => {
                         :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)"
                         :type="navigation?.link?.type"
+                        :id="navigation?.link?.id"
                         xstyle="getStyles(fieldValue?.custom_navigation_styling?.custom_bottom?.properties, screenType)"
                         :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0) + (selectedMenu?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href"
@@ -318,6 +321,7 @@ const compIndexStyling1 = computed(() => {
                             :href="internalHref(subnav?.link?.href)"
                             :type="subnav?.link?.type" :target="subnav?.link?.target"
                             :canonical_url="subnav?.link?.canonical_url"
+                            :id="subnav?.link?.id"
                             :style="{
                                 ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
                                 margin: 0,
@@ -352,7 +356,7 @@ const compIndexStyling1 = computed(() => {
                                 ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
                             }"
                         >
-                            <LinkIris v-if="linkData.link?.href" class="" :href="internalHref(linkData.link.href)"
+                            <LinkIris v-if="linkData.link?.href" class=""   :id="linkData.id" :href="internalHref(linkData.link.href)"
                                 :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
                                 <template #default>
                                     <div class="py-1">{{ linkData.label }}</div>
@@ -379,6 +383,7 @@ const compIndexStyling1 = computed(() => {
                                     class=""
                                     :href="internalHref(linkData.url)"
                                     type="internal"
+                                    :id="linkData.id"
                                 >
                                     <template #default>
                                         <div class="py-1">
@@ -429,6 +434,7 @@ const compIndexStyling1 = computed(() => {
                         >
                             <LinkIris
                                 class=""
+                                :id="linkData.id"
                                 :href="internalHref(linkData.url)"
                                 type="internal">
                                 <template #default>

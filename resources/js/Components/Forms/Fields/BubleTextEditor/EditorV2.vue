@@ -373,7 +373,7 @@ function updateLinkCustom(value) {
         const attrs = {
             type: value.type,
             workshop: value.workshop,
-            id: value.type === 'internal' ? value.id?.id : null,
+            id: value.type === 'internal' ? value.id : null,
             href: value.href,
             target: value.target ? value.target : '_self'
         };
@@ -495,6 +495,7 @@ onMounted(async () => {
   setTimeout(() => {
     contentResult.value = editorInstance.value?.getHTML()
   }, 250)
+
 
   /* tippyOptions.value = {
     boundary: 'viewport',
