@@ -310,7 +310,7 @@ defineExpose({
             Stock: {{ locale.number(item.available_quantity || 0) }} available
           </div>
           
-            <Discount v-if="item.offers_data" :offers_data="item.offers_data" />
+            <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
         </div>
       </template>
 
