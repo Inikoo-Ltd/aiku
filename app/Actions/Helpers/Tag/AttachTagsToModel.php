@@ -128,7 +128,7 @@ class AttachTagsToModel extends OrgAction
             $tag = Tag::find($tagId);
 
             if ($tag) {
-                TagHydrateModels::dispatch($tag);
+                //TagHydrateModels::dispatch($tag);
             }
         }
     }

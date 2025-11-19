@@ -126,7 +126,7 @@ class CustomerHydrateRfm implements ShouldBeUnique
         foreach ($newTagIds as $tagId) {
             try {
                 $tag = Tag::find($tagId);
-                TagHydrateModels::dispatch($tag);
+                //TagHydrateModels::dispatch($tag);
             } catch (\Throwable $e) {
                 // Skip errors
             }
