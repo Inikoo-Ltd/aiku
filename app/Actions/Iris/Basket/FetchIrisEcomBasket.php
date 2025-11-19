@@ -92,6 +92,7 @@ class FetchIrisEcomBasket extends IrisAction
         ];
         
         $orderArr['offers_data']   = [
+            'offer_meters'=>$order->offer_meters,
             'first_order_bonus' => [
                 'minimum'   => 0,
                 'label'     => 'First order bonus',

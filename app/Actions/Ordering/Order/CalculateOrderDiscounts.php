@@ -20,7 +20,7 @@ class CalculateOrderDiscounts
     private \Illuminate\Support\Collection $transactions;
 
     private array $enabledOffers = [];
-    private array $almostEnabledOffers = [];
+    private array $offerMeters = [];
 
     private Order $order;
 
@@ -85,9 +85,11 @@ class CalculateOrderDiscounts
 
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
-        if (count($this->almostEnabledOffers) > 0) {
-         //   dd($this->almostEnabledOffers);
-        }
+        $order->update(
+            [
+                'offer_meters' => $this->offerMeters
+            ]
+        );
 
 
         return $order;
@@ -109,7 +111,7 @@ class CalculateOrderDiscounts
                     ];
                 }
                 if ($passOrderNumber) {
-                    $this->almostEnabledOffers[$offerData->allowance_signature] = [
+                    $this->offerMeters[$offerData->allowance_signature] = [
                         'offer_id' => $offerData->id,
                         'label'    => $offerData->name,
                         'metadata' => $metadata,
