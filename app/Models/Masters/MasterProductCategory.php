@@ -65,7 +65,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
- * @property string|null $offers_data
+ * @property array<array-key, mixed>|null $offers_data
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group

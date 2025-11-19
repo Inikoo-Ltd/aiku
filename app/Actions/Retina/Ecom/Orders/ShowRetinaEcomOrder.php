@@ -213,7 +213,7 @@ class ShowRetinaEcomOrder extends RetinaAction
         }
 
 
-        
+
         $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
             ->whereNotIn('state', [
                 OrderStateEnum::CANCELLED->value,

@@ -10,9 +10,7 @@ namespace App\Http\Resources\Catalogue;
 
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Http\Resources\HasSelfCall;
-use App\Http\Resources\Helpers\ImageResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
-use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**

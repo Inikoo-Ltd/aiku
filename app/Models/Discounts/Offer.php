@@ -59,6 +59,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property OfferDurationEnum|null $duration
  * @property string|null $allowance_signature
  * @property string|null $trigger_sub_type
+ * @property string|null $bracket
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions

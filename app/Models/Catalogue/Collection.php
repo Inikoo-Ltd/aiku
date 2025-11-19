@@ -54,7 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $description_title
  * @property string|null $description_extra
  * @property CollectionProductsStatusEnum $products_status
- * @property string|null $offers_data
+ * @property array<array-key, mixed>|null $offers_data
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families

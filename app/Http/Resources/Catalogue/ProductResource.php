@@ -48,7 +48,7 @@ class ProductResource extends JsonResource
             'image_id'                      => $product->image_id,
             'code'                          => $product->code,
             'name'                          => $product->name,
-            'units'                         => trim_decimal_zeros($product->units),
+            'units'                         => trimDecimalZeros($product->units),
             'unit'                          => $product->unit,
             'rrp'                           => $product->rrp,
             'barcode'                       => $product->barcode,

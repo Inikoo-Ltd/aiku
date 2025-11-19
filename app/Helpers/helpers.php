@@ -70,11 +70,11 @@ if (!function_exists('percentage')) {
             }
 
             $per = $sign.number_format(
-                    ($quantity / $total) * 100,
-                    $fixed,
-                    $locale_info['decimal_point'],
-                    $locale_info['thousands_sep']
-                ).$percentageSign;
+                ($quantity / $total) * 100,
+                $fixed,
+                $locale_info['decimal_point'],
+                $locale_info['thousands_sep']
+            ).$percentageSign;
         } else {
             $per = $errorMessage === null ? percentage(0, 1) : $errorMessage;
         }
@@ -157,45 +157,45 @@ if (!function_exists('ordinal')) {
 
         switch ($primaryLocale) {
             case 'id':
-            {
-                // Indonesian: prefix with "ke-" (e.g., ke-1, ke-2). Preserve negative sign.
-                $sign = $number < 0 ? '-' : '';
+                {
+                    // Indonesian: prefix with "ke-" (e.g., ke-1, ke-2). Preserve negative sign.
+                    $sign = $number < 0 ? '-' : '';
 
-                return $sign.'ke-'.abs($number);
-            }
-            case 'bg':
-            {
-                // Bulgarian (masculine short form):
-                // 1-ви, 2-ри, 3-ти, 4-ти, 5-ти, 6-ти, 7-ми, 8-ми, 9-ти, 10-ти
-                // 11–19 use -ти; in general apply last-digit rule with 11–19 exception.
-                $abs    = abs($number);
-                $mod100 = $abs % 100;
-                if ($mod100 >= 11 && $mod100 <= 19) {
-                    $suffix = 'ти';
-                } else {
-                    $last   = $abs % 10;
-                    $suffix = match ($last) {
-                        1 => 'ви',
-                        2 => 'ри',
-                        7, 8 => 'ми',
-                        default => 'ти',
-                    };
+                    return $sign.'ke-'.abs($number);
                 }
+            case 'bg':
+                {
+                    // Bulgarian (masculine short form):
+                    // 1-ви, 2-ри, 3-ти, 4-ти, 5-ти, 6-ти, 7-ми, 8-ми, 9-ти, 10-ти
+                    // 11–19 use -ти; in general apply last-digit rule with 11–19 exception.
+                    $abs    = abs($number);
+                    $mod100 = $abs % 100;
+                    if ($mod100 >= 11 && $mod100 <= 19) {
+                        $suffix = 'ти';
+                    } else {
+                        $last   = $abs % 10;
+                        $suffix = match ($last) {
+                            1 => 'ви',
+                            2 => 'ри',
+                            7, 8 => 'ми',
+                            default => 'ти',
+                        };
+                    }
 
-                return (string)$number.'-'.$suffix;
-            }
+                    return (string)$number.'-'.$suffix;
+                }
             case 'fr':
-            {
-                // French (masculine default): 1 -> 1er, others -> e (e.g., 2e, 3e)
-                // Note: feminine 1re not handled here.
-                return $number === 1 ? '1er' : ((string)$number.'e');
-            }
+                {
+                    // French (masculine default): 1 -> 1er, others -> e (e.g., 2e, 3e)
+                    // Note: feminine 1re not handled here.
+                    return $number === 1 ? '1er' : ((string)$number.'e');
+                }
             case 'de':
             case 'sk':
-            {
-                // German and Slovak commonly use a trailing dot
-                return (string)$number.'.';
-            }
+                {
+                    // German and Slovak commonly use a trailing dot
+                    return (string)$number.'.';
+                }
             case 'es':
                 // Spanish ordinal indicator defaults to masculine "º" when gender is unknown
                 // e.g., 1º, 2º, 3º, ... Negative numbers preserve the sign: -3º
@@ -221,7 +221,7 @@ if (!function_exists('ordinal')) {
     }
 }
 
-if (!function_exists('trim_decimal_zeros')) {
+if (!function_exists('trimDecimalZeros')) {
     /**
      * Trim trailing zeros from the decimal part of a numeric value.
      *
@@ -237,7 +237,7 @@ if (!function_exists('trim_decimal_zeros')) {
      * in the fractional part. Scientific notation inputs will be expanded to a fixed
      * decimal form before trimming.
      */
-    function trim_decimal_zeros(int|float|string $value): string
+    function trimDecimalZeros(int|float|string $value): string
     {
         // Fast paths
         if (is_int($value)) {
