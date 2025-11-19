@@ -14,7 +14,6 @@ use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
-use App\Models\Helpers\Tag;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -125,11 +124,7 @@ class AttachTagsToModel extends OrgAction
         $model->refresh();
 
         foreach ($modelData['tags_id'] as $tagId) {
-            $tag = Tag::find($tagId);
-
-            if ($tag) {
-                //TagHydrateModels::dispatch($tag);
-            }
+            TagHydrateModels::dispatch($tagId)->delay(300);
         }
     }
 
