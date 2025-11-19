@@ -29,17 +29,17 @@ if (!function_exists('cleanUtf8')) {
 
         // If it’s already valid UTF-8, strip stray invalid sequences (rare edge cases)
         if (mb_detect_encoding($text, 'UTF-8', true) === 'UTF-8') {
-
             //  $text = iconv('UTF-8', 'UTF-8//IGNORE', $text);
 
             if (class_exists(\Normalizer::class)) {
                 $text = \Normalizer::normalize($text, \Normalizer::FORM_C);
             }
+
             return $text;
         }
 
         // Try common legacy encodings that show up in email templates/copy-paste
-        $fromEnc = mb_detect_encoding($text, ['Windows-1251', 'Windows-1252', 'ISO-8859-1', 'ISO-8859-2', 'UTF-8'], true) ?: 'Windows-1251';
+        $fromEnc   = mb_detect_encoding($text, ['Windows-1251', 'Windows-1252', 'ISO-8859-1', 'ISO-8859-2', 'UTF-8'], true) ?: 'Windows-1251';
         $converted = @iconv($fromEnc, 'UTF-8//IGNORE', $text);
 
         if ($converted === false) {
@@ -70,11 +70,11 @@ if (!function_exists('percentage')) {
             }
 
             $per = $sign.number_format(
-                ($quantity / $total) * 100,
-                $fixed,
-                $locale_info['decimal_point'],
-                $locale_info['thousands_sep']
-            ).$percentageSign;
+                    ($quantity / $total) * 100,
+                    $fixed,
+                    $locale_info['decimal_point'],
+                    $locale_info['thousands_sep']
+                ).$percentageSign;
         } else {
             $per = $errorMessage === null ? percentage(0, 1) : $errorMessage;
         }
@@ -84,11 +84,10 @@ if (!function_exists('percentage')) {
 }
 
 if (!function_exists('findSmallestFactorsForSmallNumbers')) {
-
     function findSmallestFactorsForSmallNumbers(float $number): array
     {
         $absNumber = abs($number);
-        $sign = $number < 0 ? -1 : 1;
+        $sign      = $number < 0 ? -1 : 1;
 
         // Special case for very small numbers
         if ($absNumber < 0.0001) {
@@ -127,7 +126,6 @@ if (!function_exists('findSmallestFactorsForSmallNumbers')) {
 
         return [$sign * 1, 1]; // Fallback
     }
-
 }
 
 if (!function_exists('ordinal')) {
@@ -158,21 +156,24 @@ if (!function_exists('ordinal')) {
         $primaryLocale = strtolower(strtok($locale, '_-')) ?: 'en';
 
         switch ($primaryLocale) {
-            case 'id': {
+            case 'id':
+            {
                 // Indonesian: prefix with "ke-" (e.g., ke-1, ke-2). Preserve negative sign.
                 $sign = $number < 0 ? '-' : '';
+
                 return $sign.'ke-'.abs($number);
             }
-            case 'bg': {
+            case 'bg':
+            {
                 // Bulgarian (masculine short form):
                 // 1-ви, 2-ри, 3-ти, 4-ти, 5-ти, 6-ти, 7-ми, 8-ми, 9-ти, 10-ти
                 // 11–19 use -ти; in general apply last-digit rule with 11–19 exception.
-                $abs = abs($number);
+                $abs    = abs($number);
                 $mod100 = $abs % 100;
                 if ($mod100 >= 11 && $mod100 <= 19) {
                     $suffix = 'ти';
                 } else {
-                    $last = $abs % 10;
+                    $last   = $abs % 10;
                     $suffix = match ($last) {
                         1 => 'ви',
                         2 => 'ри',
@@ -180,15 +181,18 @@ if (!function_exists('ordinal')) {
                         default => 'ти',
                     };
                 }
+
                 return (string)$number.'-'.$suffix;
             }
-            case 'fr': {
+            case 'fr':
+            {
                 // French (masculine default): 1 -> 1er, others -> e (e.g., 2e, 3e)
                 // Note: feminine 1re not handled here.
                 return $number === 1 ? '1er' : ((string)$number.'e');
             }
             case 'de':
-            case 'sk': {
+            case 'sk':
+            {
                 // German and Slovak commonly use a trailing dot
                 return (string)$number.'.';
             }
@@ -198,12 +202,12 @@ if (!function_exists('ordinal')) {
                 return (string)$number."º";
             case 'en':
             default:
-                $abs = abs($number);
+                $abs    = abs($number);
                 $mod100 = $abs % 100;
                 if ($mod100 >= 11 && $mod100 <= 13) {
                     $suffix = 'th';
                 } else {
-                    $last = $abs % 10;
+                    $last   = $abs % 10;
                     $suffix = match ($last) {
                         1 => 'st',
                         2 => 'nd',
@@ -211,13 +215,13 @@ if (!function_exists('ordinal')) {
                         default => 'th',
                     };
                 }
+
                 return (string)$number.$suffix;
         }
     }
 }
 
 if (!function_exists('trim_decimal_zeros')) {
-
     /**
      * Trim trailing zeros from the decimal part of a numeric value.
      *
@@ -277,6 +281,7 @@ if (!function_exists('trim_decimal_zeros')) {
             if ($int === '') {
                 $int = '0';
             }
+
             return $frac !== '' ? ($sign.$int.'.'.$frac) : ($sign.$int);
         }
 
@@ -288,9 +293,10 @@ if (!function_exists('findSmallestFactors')) {
     /**
      * Find the smallest factors (dividend and divisor) that can represent a number as a fraction.
      *
-     * @param float $number The number to find factors for
-     * @param float $epsilon The maximum allowed difference between the original number and the fraction
-     * @param int $retryCount Internal parameter to prevent infinite recursion
+     * @param  float  $number  The number to find factors for
+     * @param  float  $epsilon  The maximum allowed difference between the original number and the fraction
+     * @param  int  $retryCount  Internal parameter to prevent infinite recursion
+     *
      * @return array An array containing [dividend, divisor]
      */
     function findSmallestFactors(float $number, float $epsilon = 0.00001, int $retryCount = 0): array
@@ -313,7 +319,7 @@ if (!function_exists('findSmallestFactors')) {
         $absNumber = abs($number);
 
         if ($absNumber < 0.01) {
-            return   findSmallestFactorsForSmallNumbers($number);
+            return findSmallestFactorsForSmallNumbers($number);
         }
 
 
@@ -326,13 +332,12 @@ if (!function_exists('findSmallestFactors')) {
         }
 
 
-
         // For numbers less than 1, find the simplest fraction
         if ($absNumber < 1) {
             // Try denominators up to 100 to find the closest fraction
-            $bestNumerator = 1;
+            $bestNumerator   = 1;
             $bestDenominator = 1;
-            $bestDiff = PHP_FLOAT_MAX;
+            $bestDiff        = PHP_FLOAT_MAX;
 
             for ($denominator = 1; $denominator <= 100; $denominator++) {
                 // Use round to get the closest numerator
@@ -340,8 +345,8 @@ if (!function_exists('findSmallestFactors')) {
                 while ($numerator / $denominator <= $absNumber + $epsilon) {
                     $diff = abs(($numerator / $denominator) - $absNumber);
                     if ($diff < $bestDiff) {
-                        $bestDiff = $diff;
-                        $bestNumerator = $numerator;
+                        $bestDiff        = $diff;
+                        $bestNumerator   = $numerator;
                         $bestDenominator = $denominator;
                     }
                     $numerator++;
@@ -359,14 +364,14 @@ if (!function_exists('findSmallestFactors')) {
             }
 
             // For mixed numbers, calculate the fraction
-            $wholePart = floor($absNumber);
+            $wholePart      = floor($absNumber);
             $fractionalPart = $absNumber - $wholePart;
 
             // Find the smallest factors for the fractional part
             $factors = findSmallestFactors($fractionalPart, $epsilon);
 
             // Calculate the numerator and denominator
-            $numerator = $factors[0] + $wholePart * $factors[1];
+            $numerator   = $factors[0] + $wholePart * $factors[1];
             $denominator = $factors[1];
 
             return [$sign * $numerator, $denominator];
@@ -375,6 +380,7 @@ if (!function_exists('findSmallestFactors')) {
         // Fallback for cases where no exact factors are found
         if ($retryCount < 3) {
             $newEpsilon = $epsilon * 10; // Increase epsilon by an order of magnitude
+
             return findSmallestFactors($number, $newEpsilon, $retryCount + 1);
         }
 
@@ -386,13 +392,14 @@ if (!function_exists('divideWithRemainder')) {
     /**
      * Divides a dividend by a divisor and returns the quotient and the remaining dividend and divisor.
      *
-     * @param array $input An array containing [dividend, divisor]
+     * @param  array  $input  An array containing [dividend, divisor]
+     *
      * @return array An array containing [quotient, [remaining_dividend, remaining_divisor]]
      */
     function divideWithRemainder(array $input): array
     {
         $dividend = $input[0];
-        $divisor = $input[1];
+        $divisor  = $input[1];
 
         if ($divisor == 0) {
             return [0, [$dividend, $divisor]];
@@ -410,25 +417,24 @@ if (!function_exists('divideWithRemainder')) {
 }
 
 if (!function_exists('riseDivisor')) {
-
     function riseDivisor(array $input, $raiser): array
     {
-
         if ($raiser === null) {
             return $input;
         }
 
         $divisor = $input[1][1];
         if ($divisor != 0) {
-            $factor = $raiser / $divisor;
-            $dividend = $input[1][0] * $factor;
-            $divisor = $input[1][1] * $factor;
+            $factor                        = $raiser / $divisor;
+            $dividend                      = $input[1][0] * $factor;
+            $divisor                       = $input[1][1] * $factor;
             $factoredRequiredFactionalData = [
                 $input[0],
-                [$dividend,$divisor]
+                [$dividend, $divisor]
             ];
-            $input = $factoredRequiredFactionalData;
+            $input                         = $factoredRequiredFactionalData;
         }
+
         return $input;
     }
 }
@@ -437,7 +443,7 @@ if (!function_exists('number')) {
     function number($number, $fixed = 1, $force_fix = false, $locale = false): false|string
     {
         if (!$locale) {
-            global $locale;
+            $locale = app()->getLocale() ?? 'en';
         }
 
         if ($number == '') {
@@ -460,9 +466,9 @@ if (!function_exists('convertUnits')) {
     /**
      * Convert a value from one unit to another
      *
-     * @param  float  $value The value to convert
-     * @param  string  $from The source unit
-     * @param  string  $to The target unit
+     * @param  float  $value  The value to convert
+     * @param  string  $from  The source unit
+     * @param  string  $to  The target unit
      *
      * @return float The converted value
      */
@@ -594,7 +600,7 @@ if (!function_exists('replaceUrlDomain')) {
             return $url ?? '';
         }
 
-        $url = trim($url);
+        $url       = trim($url);
         $newDomain = rtrim(trim($newDomain), '/');
 
         // If new domain includes a scheme, replace the full scheme+host segment
@@ -629,7 +635,7 @@ if (!function_exists('replaceUrlSubdomain')) {
             return $original;
         }
 
-        $working = $original;
+        $working   = $original;
         $hadScheme = (bool)preg_match('#^[a-z][a-z0-9+.-]*://#i', $working);
         if (!$hadScheme) {
             // Add a dummy scheme so parse_url can extract host properly
@@ -641,7 +647,7 @@ if (!function_exists('replaceUrlSubdomain')) {
             return $original; // can't find host; return as-is
         }
 
-        $host = $parts['host'];
+        $host   = $parts['host'];
         $labels = explode('.', $host);
 
         // Replace/remove/add subdomain
