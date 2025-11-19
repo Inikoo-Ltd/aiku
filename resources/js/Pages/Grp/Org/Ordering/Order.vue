@@ -1078,14 +1078,14 @@ const copyToClipboard = async (text: string, label: string) => {
                     </dl>
                     
                     <!-- Field: number of order -->
-                    <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+                    <!-- <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
                         <dt zv-tooltip="trans('Weight')" class="flex-none pl-1">
                             <FontAwesomeIcon icon="fal fa-sort-numeric-down" fixed-width aria-hidden="true" class="text-gray-500" />
                         </dt>
-                        <dd class="text-gray-500 sep" v-tooltip="trans('Customer order number')">
-                            {{ box_stats?.order_properties?.customer_order_number || 0 }}
+                        <dd class="text-gray-500" v-tooltip="box_stats?.order_properties?.customer_order_ordinal_tooltip ?? trans('Customer order number')">
+                            {{ box_stats?.order_properties?.customer_order_ordinal || 0 }}
                         </dd>
-                    </dl>
+                    </dl> -->
 
 
                     <!-- Field: Invoices -->

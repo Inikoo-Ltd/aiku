@@ -242,7 +242,7 @@ const convertToFloat2 = (val: any) => {
                 
                 <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3">
                     <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
-                        class="flex items-center"
+                        class="flex items-center whitespace-nowrap"
                     >
                         <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" class="text-base">
                             {{ offer.label}}
@@ -256,7 +256,9 @@ const convertToFloat2 = (val: any) => {
                     </div>
                     
                     <!-- Section: meter -->
-                    <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? `${locale.currencyFormat(layout.iris?.currency?.code, offer.metadata?.current)} of ${locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target))}` : trans('Bonus secured')" class="w-full flex items-center">
+                    <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
+                        ? trans(`:current of :target products gross amount`, { current: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), target: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
+                        : trans('Bonus secured')" class="w-full flex items-center">
                         <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
                                 :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
@@ -301,16 +303,14 @@ const convertToFloat2 = (val: any) => {
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <!-- <pre>{{ product }}</pre> -->
-                                </div>
+                                
                                 <div class="ml-4 flex justify-between gap-x-4 w-full">
                                     <div class="flex flex-1 flex-col">
                                         <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" />
                             
                                         <div class="flex justify-between font-medium">
-                                            <h4>
-                                                <LinkIris :href="product.canonical_url" class=" hover:underline">{{ product.name }}</LinkIris>
+                                            <h4 v-tooltip="product.name">
+                                                <LinkIris :href="product.canonical_url" class="font-medium hover:underline">{{ product.code }}</LinkIris>
                                             </h4>
                                         </div>
                                         <div class="flex flex-1 items-end justify-between">

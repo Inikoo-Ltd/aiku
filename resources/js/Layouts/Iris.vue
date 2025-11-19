@@ -195,7 +195,7 @@ console.log('handle', usePage().props)
                 <div
                     v-if="layout?.iris?.is_logged_in"
                     class="sticky border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
-                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-xl' : 'border-transparent max-w-0'"
+                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-lg' : 'border-transparent max-w-0'"
                 >
                     <IrisRightsideBasket
                         v-if="layout.iris_variables?.cart_count > 0"
