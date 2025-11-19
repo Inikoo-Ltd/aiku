@@ -26,6 +26,13 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 library.add(faMinus, faArrowRight, faPlus, faChevronRight, faTrashAlt)
 // import { XMarkIcon } from '@heroicons/vue/24/outline'
 
+interface DataSideBasket {
+    order_summary: any
+    order_data: {
+        reference: string
+    }
+}
+
 const props = defineProps<{
     isOpen: boolean
 }>()
@@ -48,7 +55,7 @@ const handleToggleLeftBar = () => {
 // const dummyOrderSummary = { "0": [ { "label": "Елементи", "quantity": 1, "price_base": "Multiple", "price_total": "55.20" } ], "1": [ { "label": "Такси", "information": "", "price_total": "0.00" }, { "label": "Доставяне", "information": "", "price_total": "9.95" } ], "2": [ { "label": "Нетно", "information": "", "price_total": "65.15" }, { "label": "Данък (ДДС 20%)", "information": "", "price_total": "13.03" } ], "3": [ { "label": "Общо", "price_total": "78.18" } ], "currency": { "data": { "id": 49, "code": "EUR", "name": "Euro", "symbol": "€" } } } 
 
 
-const dataSideBasket = ref(null)
+const dataSideBasket = ref<DataSideBasket | null>(null)
 const isLoadingFetch = ref(false)
 const isLoadingProducts = ref(false)
 const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
@@ -316,7 +323,7 @@ const convertToFloat2 = (val: any) => {
                                         <div class="flex flex-1 items-end justify-between">
                                             <p class=" text-lg">
                                                 <!-- <span class="text-gray-500 line-through">{{ product.price }}</span> -->
-                                                {{ product?.price ? locale.currencyFormat(dataSideBasket?.order_data?.currency_code || '', product.price) : '' }}
+                                                {{ product?.price ? locale.currencyFormat(layout.iris?.currency?.code || '', product.price) : '' }}
                                             </p>
                                         </div>
                                     </div>
@@ -410,10 +417,10 @@ const convertToFloat2 = (val: any) => {
                 <p>
                     or{{ ' ' }}
                     <LinkIris
-                        href="/app/basket" type="button"
+                        href="/app/basket"
                         class="font-medium text-indigo-600 hover:text-indigo-500"
                         @click="open = false">
-                        Open basket
+                        {{ trans("Open basket") }}
                         <span aria-hidden="true"> &rarr;</span>
                     </LinkIris>
                 </p>
