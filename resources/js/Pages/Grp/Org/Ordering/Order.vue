@@ -64,7 +64,7 @@ import {
     faMapMarkerAlt,
     faPlus,
     faEllipsisH,
-    faCopy,faParachuteBox
+    faCopy,faParachuteBox, faSortNumericDown
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -83,7 +83,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 
-library.add(faParachuteBox,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
+library.add(faParachuteBox, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
 interface UploadSection {
     title: {
@@ -1074,6 +1074,16 @@ const copyToClipboard = async (text: string, label: string) => {
                         </dt>
                         <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
                             {{ box_stats?.products.estimated_weight || 0 }} kilograms
+                        </dd>
+                    </dl>
+                    
+                    <!-- Field: number of order -->
+                    <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+                        <dt zv-tooltip="trans('Weight')" class="flex-none pl-1">
+                            <FontAwesomeIcon icon="fal fa-sort-numeric-down" fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500 sep" v-tooltip="trans('Customer order number')">
+                            {{ box_stats?.order_properties?.customer_order_number || 0 }}
                         </dd>
                     </dl>
 
