@@ -63,7 +63,9 @@ const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
         if (response.status !== 200) {
             
         }
+        
         console.log('Response axios:', response.data)
+
         if (isWithoutSetProduct) {
             set(dataSideBasket.value, 'order_summary', response.data.order_summary)
             set(dataSideBasket.value, 'order_data', response.data.order_data)
@@ -174,13 +176,6 @@ const onRemoveFromBasket = (product) => {
     )
 }
 
-const compSpendMore = computed(() => {
-    const amount = parseFloat(layout.iris_variables?.cart_amount || 0)
-    if (amount >= 150) {
-        return 0
-    }
-    return locale.currencyFormat(layout.iris?.currency?.code, (150 - amount).toFixed(2))
-})
 
 // Method: convert "15.26" to 15.26
 const convertToFloat2 = (val: any) => {
@@ -249,19 +244,20 @@ const convertToFloat2 = (val: any) => {
                     <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
                         class="flex items-center"
                     >
-                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" class="text-sm">
+                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" class="text-base">
                             {{ offer.label}}
                         </div>
-                        <div v-else class="text-sm text-green-600">
+                        <div v-else class="text-base text-green-600">
                             {{ offer.label_got ?? offer.label}}
                         </div>
+
                         <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
                         <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" />
                     </div>
                     
                     <!-- Section: meter -->
                     <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? `${locale.currencyFormat(layout.iris?.currency?.code, offer.metadata?.current)} of ${locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target))}` : trans('Bonus secured')" class="w-full flex items-center">
-                        <div class="w-full rounded-full h-1.5 bg-gray-200 relative overflow-hidden">
+                        <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
                                 :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
                                 :style="{
@@ -304,14 +300,13 @@ const convertToFloat2 = (val: any) => {
                                             :src="product?.web_images?.main?.original"
                                         />
                                     </div>
-                                    <div class="ribbon">{{ "Discount" ?? product.offers_data?.o?.l }}</div>
                                 </div>
                                 <div>
                                     <!-- <pre>{{ product }}</pre> -->
                                 </div>
                                 <div class="ml-4 flex justify-between gap-x-4 w-full">
                                     <div class="flex flex-1 flex-col">
-                                        <Discount v-if="product.offers_data" :offers_data="product.offers_data" />
+                                        <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" />
                             
                                         <div class="flex justify-between font-medium">
                                             <h4>
@@ -340,9 +335,9 @@ const convertToFloat2 = (val: any) => {
                                                 <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
                                             </div>
                                         </div>
-                                        <div class="text-xs underline">
+                                        <!-- <div class="text-xs underline">
                                             Save for later
-                                        </div>
+                                        </div> -->
                                     </div>
                                 </div>
                             </li>
