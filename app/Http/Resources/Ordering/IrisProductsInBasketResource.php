@@ -47,38 +47,36 @@ class IrisProductsInBasketResource extends JsonResource
 
     public function toArray($request): array
     {
-        
-        $imageData = is_string($this->web_images) ? json_decode($this->web_images, true) : $this->web_images;
+        $imageData         = is_string($this->web_images) ? json_decode($this->web_images, true) : $this->web_images;
         $webImageThumbnail = Arr::get($imageData, 'main.thumbnail');
-        
+
         return [
-            'transaction_id'        => $this->transaction_id,
-            'quantity_ordered'      => (int) $this->quantity_ordered ?? 0,
-            'quantity_ordered_new'  => (int) $this->quantity_ordered ?? 0,
-            'product_id'            => $this->product_id,
+            'transaction_id'       => $this->transaction_id,
+            'quantity_ordered'     => (int)$this->quantity_ordered ?? 0,
+            'quantity_ordered_new' => (int)$this->quantity_ordered ?? 0,
+            'product_id'           => $this->product_id,
             'web_image_thumbnail'  => $webImageThumbnail,
-            
-            'code'                  => $this->code,
-            'group_id'              => $this->group_id,
-            'organisation_id'       => $this->organisation_id,
-            'shop_id'               => $this->shop_id,
-            'name'                  => $this->name,
-            'available_quantity'    => $this->available_quantity,
-            'price'                 => $this->price,
-            'rrp'                   => $this->rrp,
-            'product_state'         => $this->product_state,
-            'product_status'        => $this->product_status,
-            'created_at'            => $this->created_at,
-            'updated_at'            => $this->updated_at,
-            'units'                 => $this->units,
-            'unit'                  => $this->unit,
-            'top_seller'            => $this->top_seller,
-            'url'                   => $this->url,
-            'canonical_url'         => $this->canonical_url,
-            'website_id'            => $this->website_id,
-            'webpage_id'            => $this->webpage_id,
-            'currency_code'         => $this->currency_code,
-            'offers_data'           => $this->offers_data,
+            'code'                 => $this->code,
+            'group_id'             => $this->group_id,
+            'organisation_id'      => $this->organisation_id,
+            'shop_id'              => $this->shop_id,
+            'name'                 => $this->name,
+            'available_quantity'   => $this->available_quantity,
+            'price'                => $this->price,
+            'rrp'                  => $this->rrp,
+            'product_state'        => $this->product_state,
+            'product_status'       => $this->product_status,
+            'created_at'           => $this->created_at,
+            'updated_at'           => $this->updated_at,
+            'units'                => $this->units,
+            'unit'                 => $this->unit,
+            'top_seller'           => $this->top_seller,
+            'url'                  => $this->url,
+            'canonical_url'        => $this->canonical_url,
+            'website_id'           => $this->website_id,
+            'webpage_id'           => $this->webpage_id,
+            'currency_code'        => $this->currency_code,
+            'offers_data'          => $this->offers_data,
         ];
     }
 }

@@ -42,7 +42,9 @@ class FetchIrisEcomBasket extends IrisAction
             return null;
         }
 
-        $orderArr['order_data'] = OrderResource::make($order);
+        $orderArr['order_data'] =  [
+            'reference'           => $order->reference,
+        ];
 
         $orderArr['order_summary'] = [
             [
@@ -84,7 +86,9 @@ class FetchIrisEcomBasket extends IrisAction
                 ],
             ],
 
-            'currency' => CurrencyResource::make($order->currency),
+            'currency' => [
+                'code' => $order->currency->code,
+            ]
         ];
 
 

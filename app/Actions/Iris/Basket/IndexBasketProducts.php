@@ -24,7 +24,6 @@ class IndexBasketProducts extends OrgAction
                         ->where('transactions.model_type', 'Product')
                         ->leftjoin('assets', 'transactions.asset_id', '=', 'assets.id')
                         ->leftjoin('products', 'assets.model_id', '=', 'products.id')
-                        // ->where('products.status', ProductStatusEnum::FOR_SALE) // Do we need to filter out based on product status ?
                         ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
         return $query->select([
