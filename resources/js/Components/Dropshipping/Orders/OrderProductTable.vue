@@ -10,7 +10,7 @@ import { faPencil, faTimes, faTrashAlt } from '@far'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
-import { debounce, includes } from 'lodash-es'
+import { debounce } from 'lodash-es'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import { ulid } from 'ulid'
@@ -265,23 +265,7 @@ defineExpose({
       return ''
     }">
 
-      <!-- Save All Button -->
-      <!-- <template #add-on-button-in-before>
-        <div v-if="layout?.app?.environment === 'local'" class="flex items-center gap-2">
-          <Button type="create" label="Product" size="sm" @click="openModal" :injectStyle="{ borderRadius: '3px' }" />
 
-          <div v-if="
-            Object.keys(createNewQty).length > 0 ||
-            rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
-          " class="h-5 border-r"></div>
-
-          <Button v-if="
-            Object.keys(createNewQty).length > 0 ||
-            rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
-          " type="save" label="Save all changes" size="sm" :injectStyle="{ borderRadius: '3px' }"
-            :loading="loadingsaveModify" @click="onSave" />
-        </div>
-      </template> -->
 
       <template #cell(image)="{ item }">
          <!-- <pre>{{ item }}</pre> -->
