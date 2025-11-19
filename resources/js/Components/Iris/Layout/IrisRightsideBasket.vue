@@ -297,7 +297,7 @@ const convertToFloat2 = (val: any) => {
                                         <!-- <img :src="product.image" :alt="product.imageAlt"
                                             class="size-full object-cover" /> -->
                                         <Image
-                                            :src="product?.web_images?.main?.original"
+                                            :src="product?.web_image_thumbnail"
                                         />
                                     </div>
                                 </div>
@@ -320,7 +320,6 @@ const convertToFloat2 = (val: any) => {
                                             </p>
                                         </div>
                                     </div>
-
                                     
                                     <!-- Section: input quantity -->
                                     <div class="flex flex-col justify-between items-end pt-7">
