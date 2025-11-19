@@ -87,25 +87,6 @@ class FetchIrisEcomBasket extends IrisAction
             'currency' => CurrencyResource::make($order->currency),
         ];
 
-        $orderArr['offers_data']   = [
-            'offer_meters' => $order->offer_meters,
-            'first_order_bonus' => [
-                'minimum'   => 0,
-                'label'     => 'First order bonus',
-                'label_got' => 'You got 10$ discount',
-                'information'   => 'You got discount 5% on your first order',
-            ],
-            'minimum_buy_bonus' => [
-                'minimum'   => 150,
-                'label'     => 'Minimum buy bonus',
-                'information'   => 'Spend $150 to get 10$ discount on your first order',
-            ],
-            'gold_reward' => [
-                'minimum'   => 250,
-                'label'     => 'Gold reward',
-                'information'   => 'Spend 250$ to get discount 15%',
-            ],
-        ];
 
         $orderArr['products'] = IrisProductsInBasketResource::collection(IndexBasketProducts::run($order));
         return $orderArr;

@@ -42,7 +42,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
                     localStorage.setItem('iris', JSON.stringify({
                         ...storageIris,
                         is_logged_in: false,
-                        iris_variables : null
+                        iris_variables : null,
+                        offer_meters: null
                     }))
                     layout.iris.is_logged_in = false
                 }
@@ -63,6 +64,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
                 ...storageIris,
                 is_logged_in: false,
                 iris_variables: varnish?.variables ?? null,
+                offer_meters: varnish?.offer_meters ?? null,
             }))
 
             layout.user = varnish.auth?.user || null
@@ -76,13 +78,21 @@ export const initialiseIrisVarnish = async (layoutStore) => {
         }
 
         // --- Handle Logged In ---
-        if (varnish.is_logged_in && varnish.variables) {
-            layout.iris_variables = varnish.variables
+        if (varnish.is_logged_in) {
+            
+            if (varnish?.variables) {
+                layout.iris_variables = varnish.variables
+            }
+
+            if (varnish?.offer_meters) {
+                layout.offer_meters = varnish.offer_meters
+            }
 
             localStorage.setItem('iris', JSON.stringify({
                 ...storageIris,
                 is_logged_in: true,
                 iris_variables: varnish.variables,
+                offer_meters: varnish.offer_meters ?? null,
             }))
 
             layout.user = varnish.auth?.user || null
@@ -135,6 +145,10 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
     
         if (!varnish) {
             return
+        }
+
+        if (varnish?.offer_meters) {
+            layout.offer_meters = varnish.offer_meters
         }
     
         if (varnish?.variables) {

@@ -140,6 +140,7 @@ class Transaction extends Model
         'org_net_amount'            => 'decimal:2',
         'grp_exchange'              => 'decimal:4',
         'org_exchange'              => 'decimal:4',
+        'offers_data'               => 'array',
 
 
     ];

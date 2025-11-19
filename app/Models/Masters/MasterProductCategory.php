@@ -118,10 +118,12 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         'type'            => MasterProductCategoryTypeEnum::class,
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
+        'offers_data'     => 'array',
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'          => '{}',
+        'offers_data'   => '{}',
     ];
 
     public function generateTags(): array

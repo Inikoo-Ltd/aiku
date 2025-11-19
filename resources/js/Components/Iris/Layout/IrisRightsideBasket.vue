@@ -181,6 +181,13 @@ const compSpendMore = computed(() => {
     }
     return locale.currencyFormat(layout.iris?.currency?.code, (150 - amount).toFixed(2))
 })
+
+// Method: convert "15.26" to 15.26
+const convertToFloat2 = (val: any) => {
+    const num = parseFloat(val)
+    if (isNaN(num)) return 0.00
+    return parseFloat(num.toFixed(2))
+}
 </script>
 
 <template>
@@ -238,30 +245,27 @@ const compSpendMore = computed(() => {
                     {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
                 </div>
                 
-                <div v-for="offer in dataSideBasket?.offers_data" class="grid grid-cols-2 mb-3">
-                    <div :class="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) >= offer.minimum ? 'text-green-700' : ''"
+                <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3">
+                    <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
                         class="flex items-center"
                     >
-                        <!-- FREE Click + Collect from Our Warehouse -->
-                        <!-- <div v-if="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < 150">
-                            Spend <span class="text-orange-600 text-sm">{{ compSpendMore }}</span> more for FREE delivery
-                        </div> -->
-                        <div v-if="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < offer.minimum" class="text-sm">
+                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" class="text-sm">
                             {{ offer.label}}
                         </div>
                         <div v-else class="text-sm text-green-600">
                             {{ offer.label_got ?? offer.label}}
                         </div>
                         <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
+                        <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" />
                     </div>
                     
                     <!-- Section: meter -->
-                    <div v-tooltip="offer.minimum && parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < offer.minimum ? `${layout.iris_variables?.cart_amount} of ${offer.minimum}` : ''" class="w-full flex items-center">
+                    <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? `${locale.currencyFormat(layout.iris?.currency?.code, offer.metadata?.current)} of ${locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target))}` : trans('Bonus secured')" class="w-full flex items-center">
                         <div class="w-full rounded-full h-1.5 bg-gray-200 relative overflow-hidden">
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
-                                :class="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < offer.minimum ? 'shimmer bg-green-400' : 'bg-green-500'"
+                                :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
                                 :style="{
-                                    width: offer.minimum ? parseFloat(layout.iris_variables?.cart_amount).toFixed(2)/offer.minimum * 100 + '%' : '100%'
+                                    width: convertToFloat2(offer.metadata?.target) ? convertToFloat2(offer.metadata?.current)/convertToFloat2(offer.metadata?.target) * 100 + '%' : '100%'
                                 }"
                             />
                         </div>
@@ -279,9 +283,9 @@ const compSpendMore = computed(() => {
                     </div>
                 </div> -->
 
-                <div class="">
+                <!-- <div class="">
                     <div>Order within <span class="bg-gray-100">7 hours 42 minutes</span> for next day delivery</div>
-                </div>
+                </div> -->
             </div>
 
             <!-- Section: Products List -->

@@ -82,6 +82,7 @@ trait HasIrisUserData
                 'cart_products_amount' => $cardItemsAmountAfterDiscount,  // order total items amount after discount
             ],
             'traffic_source_cookies' => CaptureTrafficSource::run(),
+            'offer_meters'              => $this->customer->orderInBasket ? $this->customer->orderInBasket->offer_meters : null,
 
         ];
     }

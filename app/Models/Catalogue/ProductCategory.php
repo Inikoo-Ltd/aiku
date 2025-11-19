@@ -148,11 +148,13 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'discontinued_at'  => 'datetime',
         'fetched_at'       => 'datetime',
         'last_fetched_at'  => 'datetime',
+        'offers_data'      => 'array',
     ];
 
     protected $attributes = [
         'data'       => '{}',
         'web_images' => '{}',
+        'offers_data' => '{}',
     ];
 
     public function generateTags(): array
