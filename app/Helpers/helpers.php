@@ -130,6 +130,92 @@ if (!function_exists('findSmallestFactorsForSmallNumbers')) {
 
 }
 
+if (!function_exists('ordinal')) {
+    /**
+     * Return an integer in its ordinal form for a given locale.
+     *
+     * Examples:
+     * - ordinal(1, 'en')  => "1st"
+     * - ordinal(2, 'en')  => "2nd"
+     * - ordinal(3, 'en')  => "3rd"
+     * - ordinal(11, 'en') => "11th"
+     * - ordinal(-21,'en') => "-21st"
+     * - ordinal(3, 'es')  => "3º"
+     * - ordinal(1, 'fr')  => "1er"   (masculine default)
+     * - ordinal(2, 'fr')  => "2e"
+     * - ordinal(7, 'de')  => "7."
+     * - ordinal(7, 'sk')  => "7."
+     * - ordinal(1, 'bg')  => "1-ви"
+     * - ordinal(2, 'bg')  => "2-ри"
+     * - ordinal(7, 'bg')  => "7-ми"
+     * - ordinal(3, 'id')  => "ke-3"
+     *
+     * Supported locales: en, es, fr, de, sk, bg, id. Other locales fall back to English.
+     */
+    function ordinal(int $number, string $locale = 'en'): string
+    {
+        // Normalize locale to primary subtag (e.g., en_GB -> en)
+        $primaryLocale = strtolower(strtok($locale, '_-')) ?: 'en';
+
+        switch ($primaryLocale) {
+            case 'id': {
+                // Indonesian: prefix with "ke-" (e.g., ke-1, ke-2). Preserve negative sign.
+                $sign = $number < 0 ? '-' : '';
+                return $sign.'ke-'.abs($number);
+            }
+            case 'bg': {
+                // Bulgarian (masculine short form):
+                // 1-ви, 2-ри, 3-ти, 4-ти, 5-ти, 6-ти, 7-ми, 8-ми, 9-ти, 10-ти
+                // 11–19 use -ти; in general apply last-digit rule with 11–19 exception.
+                $abs = abs($number);
+                $mod100 = $abs % 100;
+                if ($mod100 >= 11 && $mod100 <= 19) {
+                    $suffix = 'ти';
+                } else {
+                    $last = $abs % 10;
+                    $suffix = match ($last) {
+                        1 => 'ви',
+                        2 => 'ри',
+                        7, 8 => 'ми',
+                        default => 'ти',
+                    };
+                }
+                return (string)$number.'-'.$suffix;
+            }
+            case 'fr': {
+                // French (masculine default): 1 -> 1er, others -> e (e.g., 2e, 3e)
+                // Note: feminine 1re not handled here.
+                return $number === 1 ? '1er' : ((string)$number.'e');
+            }
+            case 'de':
+            case 'sk': {
+                // German and Slovak commonly use a trailing dot
+                return (string)$number.'.';
+            }
+            case 'es':
+                // Spanish ordinal indicator defaults to masculine "º" when gender is unknown
+                // e.g., 1º, 2º, 3º, ... Negative numbers preserve the sign: -3º
+                return (string)$number."º";
+            case 'en':
+            default:
+                $abs = abs($number);
+                $mod100 = $abs % 100;
+                if ($mod100 >= 11 && $mod100 <= 13) {
+                    $suffix = 'th';
+                } else {
+                    $last = $abs % 10;
+                    $suffix = match ($last) {
+                        1 => 'st',
+                        2 => 'nd',
+                        3 => 'rd',
+                        default => 'th',
+                    };
+                }
+                return (string)$number.$suffix;
+        }
+    }
+}
+
 if (!function_exists('trim_decimal_zeros')) {
 
     /**

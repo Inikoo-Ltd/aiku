@@ -240,6 +240,7 @@ trait IsOrder
                 OrderStateEnum::CANCELLED->value,
                 OrderStateEnum::CREATING->value,
             ])->count();
+        $numberOrders = $numberOrders + 1;
 
         return [
             'customer_client'  => $customerClientData,
@@ -265,8 +266,10 @@ trait IsOrder
 
 
             'order_properties' => [
-                'weight'                => NaturalLanguage::make()->weight($order->estimated_weight),
-                'customer_order_number' => $numberOrders + 1
+                'weight'                 => NaturalLanguage::make()->weight($order->estimated_weight),
+                'customer_order_number'  => $numberOrders,
+                'customer_order_ordinal' => ordinal($numberOrders)
+
             ],
             'delivery_notes'   => $deliveryNotesData,
             'shipping_notes'   => $order->shipping_notes,
