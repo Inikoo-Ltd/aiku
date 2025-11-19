@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -18,6 +19,7 @@ use App\Models\Ordering\Order;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
+use Illuminate\Support\Facades\DB;
 
 trait IsOrder
 {
@@ -169,10 +171,10 @@ trait IsOrder
                         'price_total' => $order->gross_amount
                     ],
                     [
-                        'label'       => __('Discounts'),
-                        'label_class' => 'text-green-600',
-                        'information' => '',
-                        'price_total' => $order->gross_amount - $order->goods_amount,
+                        'label'             => __('Discounts'),
+                        'label_class'       => 'text-green-600',
+                        'information'       => '',
+                        'price_total'       => $order->gross_amount - $order->goods_amount,
                         'price_total_class' => 'text-green-600 font-medium'
                     ],
                     [
@@ -233,6 +235,12 @@ trait IsOrder
         ];
 
 
+        $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
+            ->whereNotIn('state', [
+                OrderStateEnum::CANCELLED->value,
+                OrderStateEnum::CREATING->value,
+            ])->count();
+
         return [
             'customer_client'  => $customerClientData,
             'customer'         => array_merge(
@@ -253,12 +261,12 @@ trait IsOrder
                 ]
             ),
             'customer_channel' => $customerChannel,
-            // 'invoice'          => $invoiceData,   //todo vika delete this
             'invoices'         => $invoicesData,
 
 
             'order_properties' => [
-                'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
+                'weight'                => NaturalLanguage::make()->weight($order->estimated_weight),
+                'customer_order_number' => $numberOrders
             ],
             'delivery_notes'   => $deliveryNotesData,
             'shipping_notes'   => $order->shipping_notes,
