@@ -57,7 +57,7 @@ class UpdateCollection extends OrgAction
         if (Arr::hasAny($changes, ['code', 'nane'])) {
             CollectionRecordSearch::dispatch($collection);
             if ($collection->webpage) {
-                ClearCacheByWildcard::run("iris:nav:product_categories:website:{$collection->webpage->website_id}:*");
+                ClearCacheByWildcard::run("irisData:website:{$collection->webpage->website_id}:*");
             }
 
         }
