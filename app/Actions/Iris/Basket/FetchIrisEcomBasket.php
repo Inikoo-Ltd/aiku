@@ -146,12 +146,12 @@ class FetchIrisEcomBasket extends IrisAction
                 'products.web_images',
                 'webpages.url as canonical_url'
             )
+            ->where('transactions.model_type', 'Product')
             ->leftjoin('assets', 'transactions.asset_id', '=', 'assets.id')
             ->leftjoin('products', 'assets.model_id', '=', 'products.id')
             ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id')
-            ->whereNotNull('transactions.deleted_at')
-            ->where('transactions.model_type', 'Product')
-            ->where('order_id', $order->id)->get();
+            ->whereNull('transactions.deleted_at')
+            ->where('transactions.order_id', $order->id)->get();
 
 
         $transactions = [];
@@ -160,20 +160,20 @@ class FetchIrisEcomBasket extends IrisAction
             $webImageThumbnail = Arr::get($imageData, 'main.thumbnail');
 
             $transactions[] = [
-                'id'                  => $productData->id,
-                'net_amount'          => $productData->net_amount,
-                'gross_amount'        => $productData->gross_amount,
-                'quantity_ordered'    => $productData->quantity_ordered,
-                'available_quantity'  => $productData->available_quantity,
-                'canonical_url'       => $productData->canonical_url,
-                'offers_data'         => json_decode($productData->offers_data, 1),
-                'name'                => $productData->name,
-                'code'                => $productData->code,
-                'web_image_thumbnail' => $webImageThumbnail,
+                'id'                   => $productData->id,
+                'net_amount'           => $productData->net_amount,
+                'gross_amount'         => $productData->gross_amount,
+                'quantity_ordered'     => $productData->quantity_ordered,
+                'quantity_ordered_new' => $productData->quantity_ordered,
+                'available_quantity'   => $productData->available_quantity,
+                'canonical_url'        => $productData->canonical_url,
+                'offers_data'          => json_decode($productData->offers_data, 1),
+                'name'                 => $productData->name,
+                'code'                 => $productData->code,
+                'web_image_thumbnail'  => $webImageThumbnail,
 
             ];
         }
-
 
 
         $orderArr['products'] = $transactions;
