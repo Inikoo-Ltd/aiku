@@ -18,6 +18,7 @@ class TagHydrateModels
 
     public function handle(Tag $tag): void
     {
+        return;
         $stats = [];
 
         if (!empty($tag->tradeUnits())) {
