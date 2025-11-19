@@ -119,6 +119,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'back_in_stock_id'     => $back_in_stock_id,
             'profit_per_unit'      => $profitPerUnit,
             'price_per_unit'       => $pricePerUnit,
+            'available_quantity'      => $this->available_quantity,
         ];
     }
 

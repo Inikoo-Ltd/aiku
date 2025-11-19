@@ -6,7 +6,6 @@ import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
 import { routeType } from '@/types/route'
 import { Table as TableTS } from '@/types/Table'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPencil, faTimes, faTrashAlt } from '@far'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -16,6 +15,12 @@ import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import { ulid } from 'ulid'
 import Image from "@/Components/Image.vue"
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faBadgePercent } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import Discount from '@/Components/Utils/Label/Discount.vue'
+library.add(faBadgePercent)
 
 type ProductRow = {
   id: number
@@ -297,13 +302,15 @@ defineExpose({
       <!-- Column: Name / Stock -->
       <template #cell(asset_name)="{ item }">
         <div>
-          <div>{{ item.asset_name }}</div>
+          <div xclass="item.offers_data ? 'text-pink-600' : ''">{{ item.asset_name }}</div>
           <div v-if="item.available_quantity !== undefined && item.available_quantity < 1">
             <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
           </div>
           <div v-else class="text-gray-500 italic text-xs">
             Stock: {{ locale.number(item.available_quantity || 0) }} available
           </div>
+          
+            <Discount v-if="item.offers_data" :offers_data="item.offers_data" />
         </div>
       </template>
 

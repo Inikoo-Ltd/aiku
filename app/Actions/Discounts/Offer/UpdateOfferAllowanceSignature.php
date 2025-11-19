@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\Offer;
 use App\Actions\OrgAction;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferAllowance;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 
@@ -23,7 +24,7 @@ class UpdateOfferAllowanceSignature extends OrgAction
     {
         $allowanceSignature = '';
 
-        /** @var \App\Models\Discounts\OfferAllowance $offerAllowance */
+        /** @var OfferAllowance $offerAllowance */
         foreach ($offer->offerAllowances()->where('status', true)->get() as $offerAllowance) {
             if ($allowanceSignature != '') {
                 $allowanceSignature .= '|';
@@ -64,7 +65,7 @@ class UpdateOfferAllowanceSignature extends OrgAction
             return 0;
         }
 
-        foreach (Offer::all() as $offer) {
+        foreach (Offer::orderBy('id', 'desc')->get() as $offer) {
             $this->handle($offer);
         }
 

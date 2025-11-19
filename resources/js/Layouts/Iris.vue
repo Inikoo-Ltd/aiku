@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import Notification from '@/Components/Utils/Notification.vue'
 import IrisHeader from '@/Layouts/Iris/Header.vue'
-import { isArray } from 'lodash-es'
+import { isArray, set } from 'lodash-es'
 import "@/../css/iris_styling.css"
 import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -24,6 +24,7 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
+import IrisRightsideBasket from '@/Components/Iris/Layout/IrisRightsideBasket.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
@@ -102,6 +103,13 @@ onBeforeMount(()=>{
 initialiseIrisVarnish(useIrisLayoutStore)
 })
 
+// Watch: open Side Basket if cart have any changes
+watch(() => layout.iris_variables?.cart_amount, (newVal) => {
+    if (typeof layout.rightbasket?.show === 'undefined') {
+        set(layout, 'rightbasket.show', true)
+    }
+})
+
 console.log('handle', usePage().props)
 
 </script>
@@ -177,9 +185,22 @@ console.log('handle', usePage().props)
                 </div>
             </div>
 
-            <main>
-                <div>
+            <main class="relative flex">
+                <!-- Layout: main page -->
+                <div class="flex-1 min-w-0">
                     <slot />
+                </div>
+
+                <!-- Layout: SideBasket (right) -->
+                <div
+                    v-if="layout?.iris?.is_logged_in"
+                    class="sticky border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
+                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-xl' : 'border-transparent max-w-0'"
+                >
+                    <IrisRightsideBasket
+                        v-if="layout.iris_variables?.cart_count > 0"
+                        :isOpen="layout.rightbasket?.show"
+                    />
                 </div>
             </main>
 

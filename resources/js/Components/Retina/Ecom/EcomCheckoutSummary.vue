@@ -22,6 +22,7 @@ const props = defineProps<{
     address_management?: AddressManagement
     is_unable_dispatch?: boolean
     contact_address?: Address | null
+    currency_code?: string
 }>()
 
 const locale = inject('locale', {})
@@ -82,7 +83,7 @@ const isModalShippingAddress = ref(false)
             <div class="border border-gray-200 p-2 rounded">
                 <OrderSummary
                     :order_summary="summary.order_summary"
-                    :currency_code="summary.order_summary?.currency?.data?.code"
+                    :currency_code="currency_code"
                 />
             </div>
         </div>

@@ -15,6 +15,7 @@ import { debounce, get, set } from "lodash-es"
 import { inject, ref } from "vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
+import Discount from "@/Components/Utils/Label/Discount.vue"
 
 const props = defineProps<{
     data: any[] | TableTS
@@ -96,7 +97,7 @@ const debounceUpdateQuantity = debounce(
             </span>
         </template>
 
-        <!-- Column: Net -->
+        <!-- Column: Name -->
         <template #cell(asset_name)="{ item }">
             <div>
                 <div>{{ item.asset_name }}</div>
@@ -106,7 +107,8 @@ const debounceUpdateQuantity = debounce(
                 <div v-else class="text-gray-500 italic text-xs">
                     Stock: {{ locale.number(item.available_quantity || 0) }} available
                 </div>
-
+                
+                <Discount v-if="item.offers_data" :offers_data="item.offers_data" />
             </div>
         </template>
 

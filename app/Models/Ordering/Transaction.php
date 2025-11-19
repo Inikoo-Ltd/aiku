@@ -82,7 +82,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $platform_transaction_id
  * @property string|null $quantity_picked quantity picked for delivery
  * @property string $submitted_quantity_ordered
- * @property string|null $offers_data
+ * @property array<array-key, mixed>|null $offers_data
  * @property-read Asset|null $asset
  * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE
@@ -118,6 +118,7 @@ class Transaction extends Model
     protected $casts = [
         'quantity'                  => 'decimal:3',
         'data'                      => 'array',
+        'offers_data'               => 'array',
         'state'                     => TransactionStateEnum::class,
         'status'                    => TransactionStatusEnum::class,
         'out_of_stock_in_basket'    => 'boolean',
