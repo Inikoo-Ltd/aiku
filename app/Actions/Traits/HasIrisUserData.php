@@ -77,6 +77,7 @@ trait HasIrisUserData
                 'back_in_stock_count' => $this->customer->backInStockReminder->count(),
                 'cart_count'          => $cartCount,
                 'cart_amount'         => $cartAmount,
+                'cart_products_amount' => 999999,  // TODO: cartAmount but without shipping, tax, etc
             ],
             'traffic_source_cookies' => CaptureTrafficSource::run(),
 
