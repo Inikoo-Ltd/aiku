@@ -268,7 +268,7 @@ trait IsOrder
             'order_properties' => [
                 'weight'                 => NaturalLanguage::make()->weight($order->estimated_weight),
                 'customer_order_number'  => $numberOrders,
-                'customer_order_ordinal' => ordinal($numberOrders)
+                'customer_order_ordinal' => ordinal($numberOrders)." ".__('order'),
 
             ],
             'delivery_notes'   => $deliveryNotesData,
