@@ -2,15 +2,12 @@
 
 namespace App\Http\Resources\Dashboards;
 
-use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardHeaderPlatformSalesResource extends JsonResource
 {
-    use WithDashboardIntervalValues;
-
     public function toArray($request): array
     {
         /** @var Shop|Platform $model */
