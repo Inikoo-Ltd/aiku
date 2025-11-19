@@ -269,6 +269,7 @@ trait IsOrder
                 'weight'                 => NaturalLanguage::make()->weight($order->estimated_weight),
                 'customer_order_number'  => $numberOrders,
                 'customer_order_ordinal' => ordinal($numberOrders)." ".__('order'),
+                'customer_order_ordinal_tooltip' => __('This is the nth order this customer has placed with this shop.')
 
             ],
             'delivery_notes'   => $deliveryNotesData,
