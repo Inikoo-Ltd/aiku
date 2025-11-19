@@ -135,11 +135,11 @@ class FetchIrisEcomBasket extends IrisAction
         $productsData = DB::table('transactions')
             ->select(
                 'transactions.id',
+                'transactions.offers_data',
                 'net_amount',
                 'quantity_ordered',
                 'gross_amount',
                 'products.url',
-                'products.offers_data',
                 'products.name',
                 'products.code',
                 'products.available_quantity',
@@ -160,7 +160,7 @@ class FetchIrisEcomBasket extends IrisAction
             $webImageThumbnail = Arr::get($imageData, 'main.thumbnail');
 
             $transactions[] = [
-                'id'                   => $productData->id,
+                'transaction_id'       => $productData->id,
                 'net_amount'           => $productData->net_amount,
                 'gross_amount'         => $productData->gross_amount,
                 'quantity_ordered'     => $productData->quantity_ordered,

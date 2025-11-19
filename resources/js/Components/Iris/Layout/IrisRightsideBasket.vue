@@ -33,6 +33,14 @@ interface DataSideBasket {
     }
 }
 
+interface Product {
+    transaction_id: number
+    quantity_ordered: number
+    offers_data: {
+        
+    }
+}
+
 const props = defineProps<{
     isOpen: boolean
 }>()
@@ -312,6 +320,7 @@ const convertToFloat2 = (val: any) => {
                                 </div>
                                 
                                 <div class="ml-4 flex justify-between gap-x-4 w-full">
+                                    <!-- Section: label Discount, product name, product price -->
                                     <div class="flex flex-1 flex-col">
                                         <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" />
                             
@@ -320,21 +329,26 @@ const convertToFloat2 = (val: any) => {
                                                 <LinkIris :href="product.canonical_url" class="font-medium hover:underline">{{ product.code }}</LinkIris>
                                             </h4>
                                         </div>
-                                        <div class="flex flex-1 items-end justify-between">
-                                            <p class=" text-lg">
-                                                <!-- <span class="text-gray-500 line-through">{{ product.price }}</span> -->
-                                                {{ product?.price ? locale.currencyFormat(layout.iris?.currency?.code || '', product.price) : '' }}
+
+                                        <!-- <div class="flex flex-1 items-end justify-between">
+                                            <p class=" text-lg" :class="product.gross_amount != product?.net_amount ? 'text-green-500' : ''">
+                                                <span v-if="product.gross_amount != product?.net_amount" class="text-gray-500 line-through">{{ product.gross_amount }}</span>
+                                                {{ product?.net_amount ? locale.currencyFormat(layout.iris?.currency?.code || '', product.net_amount) : '' }}
                                             </p>
-                                        </div>
+                                        </div> -->
                                     </div>
                                     
                                     <!-- Section: input quantity -->
                                     <div class="flex flex-col justify-between items-end pt-7">
                                         <div class="max-w-32 flex gap-x-2 h-fit items-center">
-                                            <InputQuantitySideBasket
+                                            <div>
+                                                {{ Number(product.quantity_ordered) }}
+                                            </div>
+                                            
+                                            <!-- <InputQuantitySideBasket
                                                 :product
                                                 @productRemoved="() => onRemoveProductWhenQuantityZero(product)"
-                                            />
+                                            /> -->
                             
                                             <div @click="() => onRemoveFromBasket(product)">
                                                 <LoadingIcon v-if="product?.isLoadingRemove" />
