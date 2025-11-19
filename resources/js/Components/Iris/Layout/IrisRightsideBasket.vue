@@ -22,6 +22,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Image from '@/Components/Image.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
 import { computed } from 'vue'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 library.add(faMinus, faArrowRight, faPlus, faChevronRight, faTrashAlt)
 // import { XMarkIcon } from '@heroicons/vue/24/outline'
 
@@ -223,27 +224,35 @@ const compSpendMore = computed(() => {
                 </div> -->
             </div>
             
-            <!-- Section: Order Number & 3 points -->
+            <!-- Section: Bonus list -->
             <div class="text-xs">
                 <div v-if="dataSideBasket?.order_data?.reference" class="-ml-2 bg-gray-200 px-2 mb-3">
                     {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
                 </div>
-
-                <div class="grid grid-cols-2 mb-3">
-                    <div :class="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) >= 150 ? 'text-green-700' : ''">
+                
+                <div v-for="offer in dataSideBasket?.offers_data" class="grid grid-cols-2 mb-3">
+                    <div :class="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) >= offer.minimum ? 'text-green-700' : ''"
+                        class="flex items-center"
+                    >
                         <!-- FREE Click + Collect from Our Warehouse -->
-                        <div v-if="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < 150">Spend <span class="text-orange-600 text-sm">{{ compSpendMore }}</span> more for FREE delivery</div>
-                        <div v-else class="text-sm">
-                            You got Discount 10%!
+                        <!-- <div v-if="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < 150">
+                            Spend <span class="text-orange-600 text-sm">{{ compSpendMore }}</span> more for FREE delivery
+                        </div> -->
+                        <div v-if="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < offer.minimum" class="text-sm">
+                            {{ offer.label}}
                         </div>
+                        <div v-else class="text-sm text-green-600">
+                            {{ offer.label_got ?? offer.label}}
+                        </div>
+                        <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
                     </div>
                     
                     <div class="w-full flex items-center">
                         <div class="w-full rounded-full h-1.5 bg-gray-200 relative overflow-hidden">
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
-                                :class="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < 150 ? 'shimmer bg-green-400' : 'bg-green-500'"
+                                :class="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < offer.minimum ? 'shimmer bg-green-400' : 'bg-green-500'"
                                 :style="{
-                                    width: parseFloat(layout.iris_variables?.cart_amount).toFixed(2)/150 * 100 + '%'
+                                    width: offer.minimum ? parseFloat(layout.iris_variables?.cart_amount).toFixed(2)/offer.minimum * 100 + '%' : '100%'
                                 }"
                             />
                         </div>
