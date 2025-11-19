@@ -382,10 +382,9 @@ const convertToFloat2 = (val: any) => {
         <!-- Section: Order Summary -->
         <div class="border-t border-gray-200 px-4 py-6 sm:px-6">
             <div class="relative isolate">
-
                 <OrderSummary
                     :order_summary="dataSideBasket?.order_summary"
-                    :currency_code="dataSideBasket?.order_summary?.currency?.code"
+                    :currency_code="layout.iris?.currency?.code"
                 />
 
                 <div v-if="isLoadingFetch" class="absolute inset-0">
