@@ -146,8 +146,8 @@ class Transaction extends Model
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'offers_data' => '{}',
+        'data'             => '{}',
+        'offers_data'      => '{}',
     ];
 
     protected $guarded = [];
