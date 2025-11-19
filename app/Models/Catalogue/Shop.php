@@ -143,6 +143,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property string $price_rrp_ratio
  * @property bool $is_migrating_to_aiku
+ * @property string|null $offers_data
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses

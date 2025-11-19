@@ -42,6 +42,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
+use App\Actions\Retina\Dropshipping\Orders\UpdateCustomerOrderVatStatus;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
@@ -88,6 +89,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');
         Route::get('{order}', ShowRetinaDropshippingBasket::class)->name('show');
+        Route::patch('{order}/vatCheck', UpdateCustomerOrderVatStatus::class)->name('vatCheck');
     });
 
     Route::prefix('client')->as('client.')->group(function () {

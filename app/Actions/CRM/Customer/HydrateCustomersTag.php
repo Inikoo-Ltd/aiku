@@ -53,7 +53,7 @@ class HydrateCustomersTag
 
                     try {
                         CustomerHydrateRfm::run($instance);
-                    } catch (Exception $e) {            
+                    } catch (Exception $e) {
                         Log::info("Failed to Hydrate Customer Tags: " . $e->getMessage());
                         Sentry::captureMessage("Failed to Hydrate Customer Tags to: " . $e->getMessage());
                     }

@@ -100,7 +100,6 @@ const props = withDefaults(defineProps<{
 }>(), {
     editable: true,
     type: 'Bubble',
-    placeholder: '',
     toogle: () => [
         'heading', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'query', "fontFamily",
         'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
@@ -1169,5 +1168,13 @@ onMounted(async () => {
 
 :deep(.ProseMirror-focused .ProseMirror-gapcursor) {
     @apply block;
+}
+
+:deep(p.is-editor-empty:first-child::before){
+    color: gray;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
 }
 </style>
