@@ -12,11 +12,9 @@ namespace App\Actions\Iris\Basket;
 
 use App\Actions\IrisAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\IrisProductsInBasketResource;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Sales\OrderResource;
 
 class FetchIrisEcomBasket extends IrisAction
 {
@@ -46,27 +44,61 @@ class FetchIrisEcomBasket extends IrisAction
             'reference'           => $order->reference,
         ];
 
-        $orderArr['order_summary'] = [
-            [
+
+        $hasDiscounts = $order->goods_amount != $order->gross_amount;
+
+        if ($hasDiscounts) {
+            $itemsData = [
                 [
-                    'label'       => __('Items'),
-                    'quantity'    => $order->stats->number_item_transactions,
-                    'price_base'  => 'Multiple',
-                    'price_total' => $order->goods_amount
+                    [
+                        'label'       => __('Gross'),
+                        'price_base'  => 'Multiple',
+                        'price_total' => $order->gross_amount
+                    ],
+                    [
+                        'label'             => __('Discounts'),
+                        'label_class'       => 'text-green-600',
+                        'information'       => '',
+                        'price_total'       => -($order->gross_amount - $order->goods_amount),
+                        'price_total_class' => 'text-green-600 font-medium'
+                    ],
+                    [
+                        'label'       => __('Items net'),
+                        'information' => '',
+                        'price_total' => $order->goods_amount
+                    ],
                 ],
-            ],
-            [
+            ];
+        } else {
+            $itemsData = [
                 [
-                    'label'       => __('Charges'),
-                    'information' => '',
-                    'price_total' => $order->charges_amount
-                ],
-                [
-                    'label'       => __('Shipping'),
-                    'information' => '',
-                    'price_total' => $order->shipping_amount
+                    [
+                        'label'       => __('Items'),
+                        'quantity'    => $order->stats->number_item_transactions,
+                        'price_base'  => 'Multiple',
+                        'price_total' => $order->goods_amount
+                    ],
                 ]
+            ];
+        }
+
+        $taxCategory = $order->taxCategory;
+        $orderSummary = $itemsData;
+
+        $orderSummary[] = [
+            [
+                'label'       => __('Charges'),
+                'information' => '',
+                'price_total' => $order->charges_amount
             ],
+            [
+                'label'       => __('Shipping'),
+                'information' => '',
+                'price_total' => $order->shipping_amount
+            ]
+        ];
+
+        $orderSummary[] =
             [
                 [
                     'label'       => __('Net'),
@@ -74,23 +106,20 @@ class FetchIrisEcomBasket extends IrisAction
                     'price_total' => $order->net_amount
                 ],
                 [
-                    'label'       => __('Tax').' ('.$order->taxCategory?->name.')',
+                    'label'       => __('Tax').' ('.$taxCategory->name.')',
                     'information' => '',
                     'price_total' => $order->tax_amount
                 ]
-            ],
-            [
-                [
-                    'label'       => __('Total'),
-                    'price_total' => $order->total_amount
-                ],
-            ],
+            ];
 
-            'currency' => [
-                'code' => $order->currency->code,
-            ]
+        $orderSummary[] = [
+            [
+                'label'       => __('Total'),
+                'price_total' => $order->total_amount
+            ],
         ];
 
+        $orderArr['order_summary'] = $orderSummary;
 
         $orderArr['products'] = IrisProductsInBasketResource::collection(IndexBasketProducts::run($order));
         return $orderArr;
