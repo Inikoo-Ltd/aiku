@@ -65,7 +65,7 @@ class UpdateOfferAllowanceSignature extends OrgAction
             return 0;
         }
 
-        foreach (Offer::orderBy('id','desc')->get() as $offer) {
+        foreach (Offer::orderBy('id', 'desc')->get() as $offer) {
             $this->handle($offer);
         }
 

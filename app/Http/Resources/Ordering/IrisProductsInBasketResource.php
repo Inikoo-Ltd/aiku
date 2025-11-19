@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Louis Perez
  * created on 11-11-2025-08h-46m
@@ -8,12 +9,9 @@
 
 namespace App\Http\Resources\Ordering;
 
-use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
-use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
-
 
 /**
  * Properties expected on the underlying IrisProductInBasketResource

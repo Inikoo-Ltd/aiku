@@ -11,11 +11,13 @@ namespace App\Enums\Discounts\OfferAllowance;
 enum OfferAllowanceTargetTypeEnum: string
 {
     case ALL_PRODUCTS_IN_ORDER = 'all_products_in_order';
+    case ALL_PRODUCTS_IN_PRODUCT_CATEGORY = 'all_products_in_product_category';
 
     public function label(): string
     {
         return match ($this) {
             OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER => __('All products in order'),
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY => __('All products in product category'),
         };
     }
 
@@ -23,6 +25,7 @@ enum OfferAllowanceTargetTypeEnum: string
     {
         return match ($this) {
             OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER => 'all',
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY => 'category',
         };
     }
 
