@@ -70,10 +70,12 @@ class MasterShop extends Model implements Auditable
         'data'            => 'array',
         'type'            => ShopTypeEnum::class,
         'status'           => 'boolean',
+        'offers_data'      => 'array',
     ];
 
     protected $attributes = [
         'data'     => '{}',
+        'offers_data'   => '{}',
     ];
 
     protected $guarded = [];

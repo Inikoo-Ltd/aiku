@@ -169,11 +169,13 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'fetched_at'           => 'datetime',
         'last_fetched_at'      => 'datetime',
         'stocks_status'        => MasterAssetStocksStatusEnum::class,
-        'products_status'      => MasterAssetProductsStatusEnum::class
+        'products_status'      => MasterAssetProductsStatusEnum::class,
+        'offers_data'          => 'array',
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'          => '{}',
+        'offers_data'   => '{}',
     ];
 
     public function generateTags(): array

@@ -109,11 +109,13 @@ class Asset extends Model implements HasMedia
         'status'                 => 'boolean',
         'type'                   => AssetTypeEnum::class,
         'state'                  => AssetStateEnum::class,
-        'unit_relationship_type' => ProductUnitRelationshipType::class
+        'unit_relationship_type' => ProductUnitRelationshipType::class,
+        'offers_data'            => 'array',
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'          => '{}',
+        'offers_data'   => '{}',
     ];
 
     protected $guarded = [];

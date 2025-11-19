@@ -110,10 +110,12 @@ class InvoiceTransaction extends Model
         'org_exchange'   => 'decimal:4',
         'grp_net_amount' => 'decimal:2',
         'org_net_amount' => 'decimal:2',
+        'offers_data'    => 'array',
     ];
 
     protected $attributes = [
         'data' => '{}',
+        'offers_data' => '{}',
     ];
 
     protected $guarded = [];
