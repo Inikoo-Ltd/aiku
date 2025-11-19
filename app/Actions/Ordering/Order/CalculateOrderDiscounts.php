@@ -20,6 +20,8 @@ class CalculateOrderDiscounts
     private \Illuminate\Support\Collection $transactions;
 
     private array $enabledOffers = [];
+    private array $almostEnabledOffers = [];
+
     private Order $order;
 
     public function handle(Order $order): Order
@@ -83,6 +85,10 @@ class CalculateOrderDiscounts
 
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
+        if (count($this->almostEnabledOffers) > 0) {
+         //   dd($this->almostEnabledOffers);
+        }
+
 
         return $order;
     }
@@ -93,24 +99,38 @@ class CalculateOrderDiscounts
 
         $offersData = DB::table('offers')->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])->where('shop_id', $order->shop_id)->where('status', true)->where('trigger_type', 'Customer')->get();
         foreach ($offersData as $offerData) {
-            if ($offerData->type == 'Amount AND Order Number' && $this->checkAmountAndOrderNumber($order, $offerData)) {
-                $enabledOffers[$offerData->allowance_signature] = [
-                    'offer_id'    => $offerData->id,
-                    'offer_label' => $offerData->name
+            if ($offerData->type == 'Amount AND Order Number') {
+                list ($passAmount, $passOrderNumber, $metadata) = $this->checkAmountAndOrderNumber($order, $offerData);
+                if ($passAmount && $passOrderNumber) {
+                    $enabledOffers[$offerData->allowance_signature] = [
+                        'offer_id'    => $offerData->id,
+                        'offer_label' => $offerData->name
 
-                ];
+                    ];
+                }
+                if ($passOrderNumber) {
+                    $this->almostEnabledOffers[$offerData->allowance_signature] = [
+                        'offer_id' => $offerData->id,
+                        'label'    => $offerData->name,
+                        'metadata' => $metadata,
+                    ];
+                }
             }
         }
 
         $this->enabledOffers = $enabledOffers;
     }
 
-    public function checkAmountAndOrderNumber($order, $offerData): bool
+    public function checkAmountAndOrderNumber($order, $offerData): array
     {
+        $passAmount      = false;
+        $passOrderNumber = false;
+        $metadata        = [];
+
         $triggerData = json_decode($offerData->trigger_data, true);
 
-        if ($order->gross_amount < $triggerData['min_amount']) {
-            return false;
+        if ($order->gross_amount >= $triggerData['min_amount']) {
+            $passAmount = true;
         }
 
         $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
@@ -119,11 +139,20 @@ class CalculateOrderDiscounts
                 OrderStateEnum::CREATING->value,
             ])->count();
 
-        if ($numberOrders > $triggerData['order_number']) {
-            return false;
+        if ($numberOrders == ($triggerData['order_number'] - 1)) {
+            $passOrderNumber = true;
+
+            $metadata = [
+                'current' => $order->gross_amount,
+                'target'  => $triggerData['min_amount'],
+            ];
         }
 
-        return true;
+        return [
+            $passAmount,
+            $passOrderNumber,
+            $metadata
+        ];
     }
 
     public function processAllowances(): void
