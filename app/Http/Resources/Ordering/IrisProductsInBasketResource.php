@@ -12,7 +12,7 @@ namespace App\Http\Resources\Ordering;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
-
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $transaction_id
@@ -47,19 +47,17 @@ class IrisProductsInBasketResource extends JsonResource
 
     public function toArray($request): array
     {
-
-        $media = null;
-        if ($this->image_id) {
-            $media = Media::find($this->image_id);
-        }
-
+        
+        $imageData = is_string($this->web_images) ? json_decode($this->web_images, true) : $this->web_images;
+        $webImageThumbnail = Arr::get($imageData, 'main.thumbnail');
+        
         return [
             'transaction_id'        => $this->transaction_id,
             'quantity_ordered'      => (int) $this->quantity_ordered ?? 0,
             'quantity_ordered_new'  => (int) $this->quantity_ordered ?? 0,
             'product_id'            => $this->product_id,
-            'image'                 => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'web_images'            => is_string($this->web_images) ? json_decode($this->web_images, true) : $this->web_images,
+            'web_image_thumbnail'  => $webImageThumbnail,
+            
             'code'                  => $this->code,
             'group_id'              => $this->group_id,
             'organisation_id'       => $this->organisation_id,

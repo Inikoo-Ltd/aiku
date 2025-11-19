@@ -148,7 +148,6 @@ class EditProduct extends OrgAction
                             'parameters' => [
                                 'product' => $product->id
                             ]
-
                         ],
                     ]
                 ]
