@@ -19,6 +19,10 @@ const props = defineProps<{
     }
 }>()
 
+const emits = defineEmits<{
+    (e: 'productRemoved'): void
+}>()
+
 const layout = inject('layout', retinaLayoutStructure)
 
 // Section: status for loading, success, error
@@ -57,6 +61,10 @@ const onUpdateQuantity = (newVal?: number) => {
                 setStatus('success')
                 layout.reload_handle()
                 props.product.quantity_ordered = props.product.quantity_ordered_new
+
+                if (selectedQuantity < 1) {
+                    emits('productRemoved')
+                }
                 
                 if (layout.temp?.fetchIrisProductCustomerData) {
                     layout.temp.fetchIrisProductCustomerData()
@@ -94,8 +102,8 @@ const debUpdateQuantity = debounce((newVal?: number) => {
         <div class="max-w-full">
             <InputNumber
                 :modelValue="product.quantity_ordered_new"
-                @input="(e) => set(product, 'quantity_ordered_new', e?.value)"
-                @update:modelValue="e => set(product, 'quantity_ordered_new', e)"
+                @input="(e) => (set(product, 'quantity_ordered_new', e?.value), debUpdateQuantity())"
+                @update:modelValue="e => (set(product, 'quantity_ordered_new', e), debUpdateQuantity())"
                 size="small"
                 inputId="minmax-buttons"
                 mode="decimal"

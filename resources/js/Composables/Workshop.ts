@@ -92,6 +92,7 @@ export const textReplaceVariables = (text?: string, piniaVariables?: PiniaVariab
     .replace(/\{\{\s*favourites_count\s*\}\}/g, piniaVariables?.favourites_count || '0')
     .replace(/\{\{\s*cart_count\s*\}\}/g, piniaVariables?.cart_count || '0')
     .replace(/\{\{\s*cart_amount\s*\}\}/g, formatCurrency(piniaVariables?.cart_amount) || '0')
+    .replace(/\{\{\s*cart_products_amount\s*\}\}/g, formatCurrency(piniaVariables?.cart_products_amount) || '0')
     .replace(/\{\{\s*reference\s*\}\}/g, piniaVariables?.reference || '')
 }
 

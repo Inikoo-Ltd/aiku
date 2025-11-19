@@ -107,6 +107,14 @@ watch(() => props.isOpen, (newValue) => {
     immediate: true
 })
 
+const onRemoveProductWhenQuantityZero = (product: ProductResource) => {
+    // console.log('productRemoved', product)
+    // console.log('layout.rightbasket.products', layout.rightbasket.products)
+    if (layout?.rightbasket?.products) {
+        layout.rightbasket.products = layout.rightbasket.products.filter(p => p.transaction_id !== product.transaction_id)
+    }
+}
+
 const onRemoveFromBasket = (product) => {
     if (!product.transaction_id) {
         if (layout?.rightbasket?.products) {
@@ -247,7 +255,8 @@ const compSpendMore = computed(() => {
                         <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
                     </div>
                     
-                    <div class="w-full flex items-center">
+                    <!-- Section: meter -->
+                    <div v-tooltip="offer.minimum && parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < offer.minimum ? `${layout.iris_variables?.cart_amount} of ${offer.minimum}` : ''" class="w-full flex items-center">
                         <div class="w-full rounded-full h-1.5 bg-gray-200 relative overflow-hidden">
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
                                 :class="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < offer.minimum ? 'shimmer bg-green-400' : 'bg-green-500'"
@@ -319,6 +328,7 @@ const compSpendMore = computed(() => {
                                         <div class="max-w-32 flex gap-x-2 h-fit items-center">
                                             <InputQuantitySideBasket
                                                 :product
+                                                @productRemoved="() => onRemoveProductWhenQuantityZero(product)"
                                             />
                             
                                             <div @click="() => onRemoveFromBasket(product)">
