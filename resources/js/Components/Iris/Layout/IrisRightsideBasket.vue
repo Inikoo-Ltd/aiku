@@ -242,7 +242,7 @@ const convertToFloat2 = (val: any) => {
                 
                 <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3">
                     <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
-                        class="flex items-center"
+                        class="flex items-center whitespace-nowrap"
                     >
                         <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" class="text-base">
                             {{ offer.label}}
