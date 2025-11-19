@@ -265,6 +265,7 @@ class Product extends Model implements Auditable, HasMedia
         'cpnp_number'                   => 'string',
         'ufi_number'                    => 'string',
         'scpn_number'                   => 'string',
+        'offers_data'                   => 'array',
     ];
 
     protected $attributes = [
@@ -272,6 +273,7 @@ class Product extends Model implements Auditable, HasMedia
         'settings'             => '{}',
         'web_images'           => '{}',
         'marketing_dimensions' => '{}',
+        'offers_data'          => '{}',
     ];
 
     public function generateTags(): array

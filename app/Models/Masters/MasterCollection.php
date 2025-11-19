@@ -97,10 +97,12 @@ class MasterCollection extends Model implements Auditable, HasMedia
         'status'          => 'boolean',
         'state'           => MasterCollectionStateEnum::class,
         'products_status' => MasterCollectionProductStatusEnum::class,
+        'offers_data'     => 'array',
     ];
 
     protected $attributes = [
         'data' => '{}',
+        'offers_data'   => '{}',
     ];
 
     protected $guarded = [];

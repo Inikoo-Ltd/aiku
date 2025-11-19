@@ -95,15 +95,17 @@ class Collection extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'data'           => 'array',
-        'web_images'     => 'array',
-        'state'          => CollectionStateEnum::class,
-        'products_status' => CollectionProductsStatusEnum::class,
+        'data'              => 'array',
+        'web_images'        => 'array',
+        'state'             => CollectionStateEnum::class,
+        'products_status'   => CollectionProductsStatusEnum::class,
+        'offers_data'       => 'array',
     ];
 
     protected $attributes = [
-        'data'       => '{}',
-        'web_images' => '{}',
+        'data'          => '{}',
+        'web_images'    => '{}',
+        'offers_data'   => '{}',
     ];
 
     public function getRouteKeyName(): string
