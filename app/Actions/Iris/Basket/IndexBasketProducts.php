@@ -15,9 +15,6 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Services\QueryBuilder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
-
 
 class IndexBasketProducts extends OrgAction
 {

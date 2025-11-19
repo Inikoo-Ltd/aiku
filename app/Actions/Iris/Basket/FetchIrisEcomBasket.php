@@ -11,21 +11,15 @@
 namespace App\Actions\Iris\Basket;
 
 use App\Actions\IrisAction;
-use App\Actions\Iris\Basket\IndexBasketProducts;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\IrisProductsInBasketResource;
-use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
-use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Sales\OrderResource;
 
 class FetchIrisEcomBasket extends IrisAction
 {
-
     public function handle(ActionRequest $request): Order|null
     {
         $customer = $request->user()?->customer;
@@ -42,10 +36,12 @@ class FetchIrisEcomBasket extends IrisAction
         return $this->handle($request);
     }
 
-    public function jsonResponse(?Order $order): Array|null
+    public function jsonResponse(?Order $order): array|null
     {
-        if(!$order) return null;
-        
+        if (!$order) {
+            return null;
+        }
+
         $orderArr['order_data'] = OrderResource::make($order);
 
         $orderArr['order_summary'] = [
@@ -90,9 +86,9 @@ class FetchIrisEcomBasket extends IrisAction
 
             'currency' => CurrencyResource::make($order->currency),
         ];
-        
+
         $orderArr['offers_data']   = [
-            'offer_meters'=>$order->offer_meters,
+            'offer_meters' => $order->offer_meters,
             'first_order_bonus' => [
                 'minimum'   => 0,
                 'label'     => 'First order bonus',

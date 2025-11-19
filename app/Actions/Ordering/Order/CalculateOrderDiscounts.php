@@ -102,7 +102,7 @@ class CalculateOrderDiscounts
         $offersData = DB::table('offers')->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])->where('shop_id', $order->shop_id)->where('status', true)->where('trigger_type', 'Customer')->get();
         foreach ($offersData as $offerData) {
             if ($offerData->type == 'Amount AND Order Number') {
-                list ($passAmount, $passOrderNumber, $metadata) = $this->checkAmountAndOrderNumber($order, $offerData);
+                list($passAmount, $passOrderNumber, $metadata) = $this->checkAmountAndOrderNumber($order, $offerData);
                 if ($passAmount && $passOrderNumber) {
                     $enabledOffers[$offerData->allowance_signature] = [
                         'offer_id'    => $offerData->id,

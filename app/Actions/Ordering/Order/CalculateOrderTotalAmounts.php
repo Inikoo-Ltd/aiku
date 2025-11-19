@@ -20,7 +20,7 @@ class CalculateOrderTotalAmounts extends OrgAction
 {
     use WithOrganisationsArgument;
 
-    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts= true,bool $collectionChanged = false): void
+    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false): void
     {
 
 
