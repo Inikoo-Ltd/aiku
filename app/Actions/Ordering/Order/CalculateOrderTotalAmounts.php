@@ -20,7 +20,7 @@ class CalculateOrderTotalAmounts extends OrgAction
 {
     use WithOrganisationsArgument;
 
-    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false): void
+    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate=false): void
     {
 
 
@@ -93,12 +93,12 @@ class CalculateOrderTotalAmounts extends OrgAction
         ])) {
 
             $calculateCharges = false;
-            if (Arr::hasAny($changes, ['goods_amount', 'number_item_transactions']) && $calculateDiscounts) { //todo remove true when all orders are updated with number_item_transactions
+            if ((Arr::hasAny($changes, ['goods_amount', 'number_item_transactions']) && $calculateDiscounts) || $forceRecalculate) { //todo remove true when all orders are updated with number_item_transactions
                 CalculateOrderDiscounts::run($order);
                 $calculateCharges = true;
             }
 
-            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight']) || $collectionChanged) {
+            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight']) || $collectionChanged || $forceRecalculate) {
                 CalculateOrderShipping::run($order);
                 $calculateCharges = true;
             }

@@ -13,36 +13,38 @@ use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
 
+
 /**
- * Properties expected on the underlying IrisProductInBasketResource
- * @property itn transaction_id
- * @property numeric|nullquantity_ordered
- * @property intid
- * @property int|nullimage_id
- * @property string
- * @property intgroup_id
- * @property intorganisation_id
- * @property int|nullshop_id
- * @property string|nullname
- * @property int|null available_quantity
- * @property numeric|null price
- * @property numeric|null RRP
- * @property ProductStatusEnumstatus
- * @property ProductStateEnumstate
- * @property \Illuminate\Support\Carbon|null created_at
- * @property \Illuminate\Support\Carbon|null updated_at
- * @property string units
- * @property string unit
- * @property int|null top_seller
- * @property array<array-key, mixed> web_images
- * @property string|null url
- * @property string|null canonical_url
- * @property string|null website_id
- * @property string|null webpage_id
- * @property string|null currency_code
+ * @property mixed $transaction_id
+ * @property mixed $quantity_ordered
+ * @property mixed $product_id
+ * @property mixed $image_id
+ * @property mixed $web_images
+ * @property mixed $code
+ * @property mixed $group_id
+ * @property mixed $organisation_id
+ * @property mixed $shop_id
+ * @property mixed $name
+ * @property mixed $available_quantity
+ * @property mixed $price
+ * @property mixed $rrp
+ * @property mixed $product_state
+ * @property mixed $product_status
+ * @property mixed $created_at
+ * @property mixed $updated_at
+ * @property mixed $units
+ * @property mixed $unit
+ * @property mixed $top_seller
+ * @property mixed $url
+ * @property mixed $canonical_url
+ * @property mixed $website_id
+ * @property mixed $webpage_id
+ * @property mixed $currency_code
+ * @property mixed $offers_data
  */
 class IrisProductsInBasketResource extends JsonResource
 {
+
     public function toArray($request): array
     {
 
