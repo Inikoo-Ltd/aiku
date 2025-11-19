@@ -51,10 +51,8 @@ class IrisProductsInWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
-        $media = null;
-        if ($this->image_id) {
-            $media = Media::find($this->image_id);
-        }
+
+
 
         $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
 
@@ -68,8 +66,6 @@ class IrisProductsInWebpageResource extends JsonResource
 
         return [
             'id'              => $this->id,
-            'image_id'        => $this->image_id,
-            'image'           => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'code'            => $this->code,
             'luigi_identity'  => $oldLuigiIdentity,
             'name'            => $this->name,
