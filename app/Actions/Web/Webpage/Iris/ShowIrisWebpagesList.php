@@ -71,10 +71,10 @@ class ShowIrisWebpagesList
             // Iterate using a cursor (no chunkById)
             foreach ($query->get() as $row) {
                 print "$row->canonical_url\n";
-                $url = $domain . $row->url;
-                if ($url != $row->canonical_url) {
-                    print $url . "\n";
-                }
+//                $url = $domain . $row->url;
+//                if ($url != $row->canonical_url) {
+//                    print $url . "\n";
+//                }
                 // Flush output buffers periodically to stream to the client
                 if (function_exists('flush')) {
                     @flush();
