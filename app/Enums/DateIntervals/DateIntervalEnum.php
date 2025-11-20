@@ -35,7 +35,7 @@ enum DateIntervalEnum: string
         return [
             'all' => __('All'),
             '1y'  => __('1 Year'),
-            '1q'  => __('1 Quarter'),
+            '1q'  => __('Last 30 Days'),
             '1m'  => __('1 Month'),
             '1w'  => __('1 Week'),
             '3d'  => __('3 Days'),

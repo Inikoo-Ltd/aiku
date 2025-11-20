@@ -12,6 +12,7 @@ namespace App\Models\Dropshipping;
 use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
+use App\Enums\Dropshipping\EbayUserStepEnum;
 use App\Models\CRM\Customer;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
@@ -61,6 +62,7 @@ class EbayUser extends Model
         'data'      => 'array',
         'settings'  => 'array',
         'state'     => WebUserTypeEnum::class,
+        'step'      => EbayUserStepEnum::class,
         'auth_type' => WebUserAuthTypeEnum::class,
     ];
 
