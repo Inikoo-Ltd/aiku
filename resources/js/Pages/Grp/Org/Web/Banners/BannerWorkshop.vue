@@ -174,7 +174,6 @@ const saveBanner = () => {
 
 const autoSave = debounce(() => {
     const form = useForm(data);
-    console.log('ssss',data)
     form.patch(
         route(props.autoSaveRoute.name, props.autoSaveRoute.parameters), {
             preserveScroll: true,

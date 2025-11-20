@@ -46,26 +46,27 @@ class ShowTradeUnit extends GrpAction
         return Inertia::render(
             'Goods/TradeUnit',
             [
-                'title'            => __('Trade Unit'),
-                'breadcrumbs'      => $this->getBreadcrumbs(
+                'title'       => __('Trade Unit'),
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $tradeUnit,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'       => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($tradeUnit, $request),
                     'next'     => $this->getNext($tradeUnit, $request),
                 ],
-                'pageHead'         => [
-                    'icon'    => [
+                'pageHead'    => [
+                    'icon'       => [
                         'title' => __('Trade unit'),
                         'icon'  => 'fal fa-atom'
                     ],
-                    'title'   => $tradeUnit->code,
+                    'model'      => __('Trade unit'),
+                    'title'      => $tradeUnit->code,
                     'afterTitle' => [
-                      'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
+                        'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
                     ],
-                    'actions' => [
+                    'actions'    => [
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -76,7 +77,7 @@ class ShowTradeUnit extends GrpAction
                         ] : false,
                     ]
                 ],
-                'tabs' => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => TradeUnitTabsEnum::navigation()
                 ],
@@ -86,11 +87,11 @@ class ShowTradeUnit extends GrpAction
                     : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
 
                 TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
-                    fn () =>  GetTradeUnitAttachment::run($tradeUnit)
+                    fn () => GetTradeUnitAttachment::run($tradeUnit)
                     : Inertia::lazy(fn () => GetTradeUnitAttachment::run($tradeUnit)),
 
                 TradeUnitTabsEnum::IMAGES->value => $this->tab == TradeUnitTabsEnum::IMAGES->value ?
-                    fn () =>  GetTradeUnitImages::run($tradeUnit)
+                    fn () => GetTradeUnitImages::run($tradeUnit)
                     : Inertia::lazy(fn () => GetTradeUnitImages::run($tradeUnit)),
 
                 TradeUnitTabsEnum::PRODUCTS->value => $this->tab == TradeUnitTabsEnum::PRODUCTS->value ?
@@ -181,7 +182,6 @@ class ShowTradeUnit extends GrpAction
         }
 
         return match ($routeName) {
-
             'grp.trade_units.units.show' => [
                 'label' => $tradeUnit->name,
                 'route' => [

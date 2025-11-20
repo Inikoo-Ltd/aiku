@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 
 class UploadPortfolioZipImages extends RetinaAction

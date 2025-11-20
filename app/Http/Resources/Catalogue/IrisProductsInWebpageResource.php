@@ -33,7 +33,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $currency_code
  * @property mixed $web_images
  * @property mixed $top_seller
- * @property mixed $parent_url
  * @property mixed $group_id
  * @property mixed $organisation_id
  * @property mixed $webpage_id

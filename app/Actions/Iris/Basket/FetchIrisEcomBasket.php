@@ -141,6 +141,7 @@ class FetchIrisEcomBasket extends IrisAction
                 'gross_amount',
                 'products.url',
                 'products.name',
+                'products.units',
                 'products.code',
                 'products.available_quantity',
                 'products.web_images',
@@ -151,7 +152,9 @@ class FetchIrisEcomBasket extends IrisAction
             ->leftjoin('products', 'assets.model_id', '=', 'products.id')
             ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id')
             ->whereNull('transactions.deleted_at')
-            ->where('transactions.order_id', $order->id)->get();
+            ->where('transactions.order_id', $order->id)
+            ->orderBy('transactions.created_at', 'desc')
+            ->get();
 
 
         $transactions = [];
@@ -170,6 +173,7 @@ class FetchIrisEcomBasket extends IrisAction
                 'offers_data'          => json_decode($productData->offers_data, 1),
                 'name'                 => $productData->name,
                 'code'                 => $productData->code,
+                'units'                => (int) $productData->units,
                 'web_image_thumbnail'  => $webImageThumbnail,
 
             ];

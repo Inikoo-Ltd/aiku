@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<{
     routeToAllPortfolios?: routeType
     routeToSpecificChannel?: routeType
     buttonStyle?: object
+    buttonStyleLogin?:object | undefined
 
 }>(), {
     productHasPortfolio: () => [],
@@ -276,6 +277,6 @@ watch(() => props.productHasPortfolio, (newVal) => {
     </a> -->
 
     <a  v-else  :href="urlLoginWithRedirect()" class="w-full">
-        <Button label="Login / Register to Start" full :injectStyle="buttonStyle"/>
+        <Button label="Login / Register to Start" full :injectStyle="buttonStyleLogin"/>
     </a>
 </template>

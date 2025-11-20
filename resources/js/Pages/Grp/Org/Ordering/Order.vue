@@ -1268,7 +1268,7 @@ const copyToClipboard = async (text: string, label: string) => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to pay")
                             }}: {{
-                            locale.currencyFormat(box_stats.order_summary.currency.code,
+                            locale.currencyFormat(box_stats.currency.code,
                             box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
@@ -1329,7 +1329,7 @@ const copyToClipboard = async (text: string, label: string) => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to refund")
                             }}: {{
-                            locale.currencyFormat(box_stats.order_summary.currency.code,
+                            locale.currencyFormat(box_stats.currency.code,
                             box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"

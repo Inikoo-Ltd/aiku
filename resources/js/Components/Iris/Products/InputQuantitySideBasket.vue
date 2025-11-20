@@ -9,6 +9,8 @@ import { trans } from 'laravel-vue-i18n'
 import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductResource } from '@/types/Iris/Products'
+import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
+import axios from 'axios'
 
 const props = defineProps<{
     product: {
@@ -39,50 +41,86 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
 }
 
 // Update quantity function - exact copy dari ButtonAddToBasketInFamily
-const onUpdateQuantity = (newVal?: number) => {
+const onUpdateQuantity = async (newVal?: number) => {
     const selectedQuantity = newVal ?? props.product.quantity_ordered_new
 
-    router.post(
-        route('iris.models.transaction.update', {
-            transaction: props.product.transaction_id
-        }),
-        {
-            quantity_ordered: selectedQuantity
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ['zzzziris'],
-            onStart: () => {
-                setStatus('loading')
-                // isLoadingSubmitQuantityProduct.value = true
-            },
-            onSuccess: () => {
-                setStatus('success')
-                layout.reload_handle()
-                props.product.quantity_ordered = props.product.quantity_ordered_new
-
-                if (selectedQuantity < 1) {
-                    emits('productRemoved')
-                }
-                
-                if (layout.temp?.fetchIrisProductCustomerData) {
-                    layout.temp.fetchIrisProductCustomerData()
-                }
-            },
-            onError: errors => {
-                setStatus('error')
-                notify({
-                    title: trans("Something went wrong"),
-                    text: errors.message || trans("Failed to update product quantity in basket"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                // isLoadingSubmitQuantityProduct.value = false
-            },
+    try {
+        setStatus('loading')
+        const response = await axios.post(
+            route('iris.models.transaction.update', {
+                transaction: props.product.transaction_id
+            }),
+            {
+                quantity_ordered: selectedQuantity
+            }
+        )
+        
+        if (response.status !== 200) {
+            
         }
-    )
+        console.log('Response axios:', response.data)
+
+        setStatus('success')
+        layout.reload_handle()
+        props.product.quantity_ordered = props.product.quantity_ordered_new
+
+        if (selectedQuantity < 1) {
+            emits('productRemoved')
+        }
+        
+        if (layout.temp?.fetchIrisProductCustomerData) {
+            layout.temp.fetchIrisProductCustomerData()
+        }
+    } catch (error: any) {
+        setStatus('error')
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Failed to update product quantity in basket"),
+            type: "error"
+        })
+    }
+
+    // router.post(
+    //     route('iris.models.transaction.update', {
+    //         transaction: props.product.transaction_id
+    //     }),
+    //     {
+    //         quantity_ordered: selectedQuantity
+    //     },
+    //     {
+    //         preserveScroll: true,
+    //         preserveState: true,
+    //         only: ['zzzziris'],
+    //         onStart: () => {
+    //             setStatus('loading')
+    //             // isLoadingSubmitQuantityProduct.value = true
+    //         },
+    //         onSuccess: () => {
+    //             setStatus('success')
+    //             layout.reload_handle()
+    //             props.product.quantity_ordered = props.product.quantity_ordered_new
+
+    //             if (selectedQuantity < 1) {
+    //                 emits('productRemoved')
+    //             }
+                
+    //             if (layout.temp?.fetchIrisProductCustomerData) {
+    //                 layout.temp.fetchIrisProductCustomerData()
+    //             }
+    //         },
+    //         onError: errors => {
+    //             setStatus('error')
+    //             notify({
+    //                 title: trans("Something went wrong"),
+    //                 text: errors.message || trans("Failed to update product quantity in basket"),
+    //                 type: "error"
+    //             })
+    //         },
+    //         onFinish: () => {
+    //             // isLoadingSubmitQuantityProduct.value = false
+    //         },
+    //     }
+    // )
 }
 
 const debUpdateQuantity = debounce((newVal?: number) => {
@@ -99,7 +137,7 @@ const debUpdateQuantity = debounce((newVal?: number) => {
             <FontAwesomeIcon icon="far fa-minus" class="" fixed-width aria-hidden="true" />
         </div>
 
-        <div class="max-w-full">
+        <div class="max-w-full relative">
             <InputNumber
                 :modelValue="product.quantity_ordered_new"
                 @input="(e) => (set(product, 'quantity_ordered_new', e?.value), debUpdateQuantity())"
@@ -107,11 +145,18 @@ const debUpdateQuantity = debounce((newVal?: number) => {
                 size="small"
                 inputId="minmax-buttons"
                 mode="decimal"
-                inputClass="text-center"
+                :inputClass="
+                    status === 'success' ? 'text-center !border-green-500' : 
+                    status === 'error' ? 'text-center !border-red-500' : 'text-center'
+                "
                 :min="0"
                 :max="product.available_quantity"
                 fluid
             />
+            
+            <div v-if="status === 'loading'" class="inset-0 absolute flex items-center justify-center rounded bg-black/50 text-white text-lg">
+                <ConditionIcon :state="'loading'" />
+            </div>
         </div>
 
         <div @click="() => product.quantity_ordered_new < product.available_quantity ? (product.quantity_ordered_new++, debUpdateQuantity()) : null"
