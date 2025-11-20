@@ -134,8 +134,8 @@ const updateDataDisplayType = (value: string) => {
 					]"
 					v-tooltip="interval.label"
 					class="relative flex-1 rounded py-1 md:py-1.5 px-2 md:px-4 text-center w-fit text-sm cursor-pointer select-none">
-					<span :class="isLoadingInterval === interval.value ? 'opacity-0' : ''">
-						{{ interval.labelShort }}
+					<span :class="isLoadingInterval === interval.value ? 'opacity-0 truncate' : ''">
+						{{ interval.label }}
 					</span>
 					<span
 						class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
