@@ -152,7 +152,9 @@ class FetchIrisEcomBasket extends IrisAction
             ->leftjoin('products', 'assets.model_id', '=', 'products.id')
             ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id')
             ->whereNull('transactions.deleted_at')
-            ->where('transactions.order_id', $order->id)->get();
+            ->where('transactions.order_id', $order->id)
+            ->orderBy('transactions.created_at', 'desc')
+            ->get();
 
 
         $transactions = [];

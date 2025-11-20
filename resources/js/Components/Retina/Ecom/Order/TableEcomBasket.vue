@@ -100,7 +100,7 @@ const debounceUpdateQuantity = debounce(
         <!-- Column: Name -->
         <template #cell(asset_name)="{ item }">
             <div>
-                <div>{{ item.asset_name }}</div>
+                <div><span v-if="Number(item.units) > 1" class="mr-1">{{ Number(item.units) }}x</span>{{ item.asset_name }}</div>
                 <div v-if="!item.available_quantity">
                     <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                 </div>

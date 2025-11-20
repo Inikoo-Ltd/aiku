@@ -67,12 +67,12 @@ const handleToggleLeftBar = () => {
 const dataSideBasket = ref<DataSideBasket | null>(null)
 const isLoadingFetch = ref(false)
 const isLoadingProducts = ref(false)
-const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
-    if (!isWithoutSetProduct) {
+const fetchDataSideBasket = async (isWithoutSkeleton?: boolean) => {
+    if (!isWithoutSkeleton) {
         isLoadingProducts.value = true
+        isLoadingFetch.value = true
     }
     try {
-        isLoadingFetch.value = true
         const response = await axios.get(
             route('iris.json.fetch_basket')
         )
@@ -82,7 +82,7 @@ const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
         
         console.log('fetchDataSideBasket:', response.data)
 
-        // if (isWithoutSetProduct) {
+        // if (isWithoutSkeleton) {
             // } else {
                 //     set(dataSideBasket.value, 'order_summary', response.data.order_summary)
                 //     set(dataSideBasket.value, 'order_data', response.data.order_data)
@@ -97,16 +97,16 @@ const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
         //     type: 'error'
         // })
     } finally {
-        isLoadingFetch.value = false
+        if (!isWithoutSkeleton) {
+            isLoadingFetch.value = false
+            isLoadingProducts.value = false
+        }
     }
 
-    if (!isWithoutSetProduct) {
-        isLoadingProducts.value = false
-    }
 }
 
-const debFetchDataSideBasket = debounce((isWithoutSetProduct?: boolean) => {
-    fetchDataSideBasket(isWithoutSetProduct)
+const debFetchDataSideBasket = debounce((isWithoutSkeleton?: boolean) => {
+    fetchDataSideBasket(isWithoutSkeleton)
 }, 250)
 
 watch(() => [layout.iris_variables?.cart_amount, layout.iris_variables?.cart_count], (newValue) => {
@@ -325,7 +325,7 @@ const convertToFloat2 = (val: any) => {
                                     <div class="flex justify-between font-medium">
                                         <div v-tooltip="product.code" class="text-sm">
                                             <LinkIris :href="product.canonical_url" class="font-medium hover:underline truncate block w-52">
-                                                <span v-if="product.units > 1">{{ product.units }}x </span>{{ product.name }}
+                                                <span v-if="product.units > 1" class="mr-1">{{ product.units }}x</span>{{ product.name }}
                                             </LinkIris>
                                         </div>
                                     </div>
