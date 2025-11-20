@@ -49,7 +49,7 @@ const isModalShippingAddress = ref(false)
                         <FontAwesomeIcon :icon="faWeight" fixed-width aria-hidden="true" class="text-gray-500" />
                     </dt>
                     <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
-                        {{ summary?.order_properties.weight || 0 }}
+                        {{ summary?.order_properties?.weight || 0 }}
                     </dd>
                 </dl>
 
