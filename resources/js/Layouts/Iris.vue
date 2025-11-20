@@ -193,7 +193,7 @@ console.log('handle', usePage().props)
 
                 <!-- Layout: SideBasket (right) -->
                 <div
-                    v-if="layout?.iris?.is_logged_in"
+                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile'"
                     class="sticky border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
                     :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-lg' : 'border-transparent max-w-0'"
                 >

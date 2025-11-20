@@ -18,7 +18,7 @@ import {
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { faImage } from "@far"
 import ImagePrime from "primevue/image"
-import { toInteger } from "lodash"
+import { toInteger } from "lodash-es"
 import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
