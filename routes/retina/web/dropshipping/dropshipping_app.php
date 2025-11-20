@@ -48,6 +48,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
 use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
+use App\Actions\Retina\Ebay\StoreRetinaEbayUser;
 use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
@@ -59,6 +60,8 @@ Route::get('select-products-for-basket/{order:id}', IndexRetinaDropshippingProdu
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
     Route::get('/', IndexRetinaDropshippingCustomerSalesChannels::class)->name('index');
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
+
+    Route::post('ebay-user', StoreRetinaEbayUser::class)->name('ebay.store');
 });
 
 Route::prefix('platform')->as('platform.')->group(function () {

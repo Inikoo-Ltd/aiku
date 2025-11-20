@@ -274,12 +274,19 @@ const isModalEbayDuplicate = ref(false)
     })
 
 const isModalCreateEbay = ref(false);
+const ebayId = ref<int|null>(null);
+
+watch(ebayId, (value) => {
+    console.log("ebayId", value)
+}, { immediate: true });
 
 const closeCreateEbayModal = () => {
     isModalCreateEbay.value = false;
+    ebayId.value = null;
 }
 
 provide("closeCreateEbayModal", closeCreateEbayModal);
+provide("ebayId", ebayId);
 
 const steps = ref([
     { name: "Ebay Account Name", status: "current" },
