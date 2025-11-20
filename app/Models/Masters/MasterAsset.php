@@ -14,11 +14,14 @@ use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Brand;
 use App\Models\Helpers\Media;
+use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
+use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -366,5 +369,26 @@ class MasterAsset extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(Media::class, 'id', 'art5_image_id');
     }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
+    }
+
+
+    public function tradeUnitTagsViaTradeUnits(): LaravelCollection
+    {
+        return Tag::whereHas('tradeUnits', function ($query) {
+            $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
+        })->get();
+    }
+
+    public function getBrand(): ?Brand
+    {
+        return Brand::whereHas('tradeUnits', function ($query) {
+            $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
+        })->first();
+    }
+
 
 }

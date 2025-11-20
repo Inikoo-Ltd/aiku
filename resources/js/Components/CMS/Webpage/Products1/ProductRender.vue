@@ -56,6 +56,7 @@ const props = defineProps<{
         code: string
         name: string
     }
+    buttonStyleLogin?:object | undefined
 }>()
 
 
@@ -277,6 +278,7 @@ const profitMargin = computed(() => {
             :product="product" 
             :productHasPortfolio="productHasPortfolio" 
             :buttonStyle="buttonStyle"
+            :buttonStyleLogin
         />
     </div>
 </template>

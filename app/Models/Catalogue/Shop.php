@@ -734,4 +734,9 @@ class Shop extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(PlatformShopSalesIntervals::class);
     }
+
+    public function productsInStock(): HasMany
+    {
+        return $this->products()->where('available_quantity', '>', 0);
+    }
 }

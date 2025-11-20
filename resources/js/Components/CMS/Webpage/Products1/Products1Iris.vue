@@ -10,7 +10,7 @@ import ProductRender from "./ProductRender.vue";
 import FilterProducts from "./FilterProduct.vue";
 import Drawer from "primevue/drawer";
 import Skeleton from "primevue/skeleton";
-import { debounce } from "lodash-es";
+import { debounce, get } from "lodash-es";
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import PureInput from "@/Components/Pure/PureInput.vue";
@@ -63,7 +63,6 @@ const products = ref<any[]>(
         ]
         : [...(props.fieldValue?.products?.data ?? [])]
 );
-
 const loadingInitial = ref(false);
 const loadingMore = ref(false);
 const q = ref("");
@@ -73,7 +72,11 @@ const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page));
 const filter = ref({ data: {} });
 const showFilters = ref(false);
 const showAside = ref(false);
-const totalProducts = ref(props.fieldValue?.products?.meta?.last_page == 1 ? props.fieldValue.products.meta.total + props.fieldValue?.products_out_of_stock?.meta?.total : props.fieldValue.products.meta.total)
+const totalProducts = ref(
+    props.fieldValue?.products?.meta?.last_page == 1 ? 
+    props.fieldValue.products.meta.total + get(props.fieldValue,['products_out_of_stock','meta','total'],0) : 
+    props.fieldValue.products.meta.total
+)
 const settingPortfolio = ref(false);
 const isFetchingOutOfStock = ref(true);
 // const confirm = useConfirm();
@@ -552,7 +555,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border p-3 relative rounded bg-white">
-                            <ProductRender :product="product" :key="index" :bestSeller="fieldValue.bestseller"
+                            <ProductRender :product="product" :key="index" :bestSeller="fieldValue.bestseller" :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                                 :productHasPortfolio="productHasPortfolio.list[product.id]" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
                         </div>
                     </template>

@@ -48,15 +48,18 @@ class Tag extends Model implements HasMedia
 {
     use HasSlug;
     use HasImage;
+
     protected $guarded = [];
 
     protected $casts = [
-        'data'     => 'array',
-        'scope'    => TagScopeEnum::class,
+        'data'      => 'array',
+        'web_image' => 'array',
+        'scope'     => TagScopeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data'      => '{}',
+        'web_image' => '[]',
     ];
 
     public function getRouteKeyName(): string

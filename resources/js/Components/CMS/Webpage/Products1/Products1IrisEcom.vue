@@ -10,7 +10,7 @@ import { routeType } from "@/types/route"
 import FilterProducts from "./FilterProduct.vue"
 import Drawer from "primevue/drawer"
 import Skeleton from "primevue/skeleton"
-import { debounce } from "lodash-es"
+import { debounce, get } from "lodash-es"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -64,8 +64,11 @@ const orderBy = ref(layout.params?.order_by)
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
-const totalProducts = ref(props.fieldValue?.products?.meta?.last_page == 1 ? props.fieldValue.products.meta.total + props.fieldValue?.products_out_of_stock?.meta?.total : props.fieldValue.products.meta.total)
-
+const totalProducts = ref(
+    props.fieldValue?.products?.meta?.last_page == 1 ? 
+    props.fieldValue.products.meta.total + get(props.fieldValue,['products_out_of_stock','meta','total'],0) : 
+    props.fieldValue.products.meta.total
+)
 const isShowFilters = ref(false)
 const isShowAside = ref(false)
 const isFetchingOutOfStock = ref(false)
@@ -397,10 +400,10 @@ watch(
     },
     { deep: true }
 )
-
 </script>
 
 <template>
+    
     <div id="products-1-ecom">
         <ConfirmDialog>
             <template #icon>
@@ -515,7 +518,7 @@ watch(
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border relative rounded" :class="product.stock ? '' : 'bg-red-100'">
                             <ProductRenderEcom 
-                                :product="product" :key="index" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)"
+                                :product="product" :key="index" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)" :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                                 :hasInBasket="productInBasket.list[product.id]" :bestSeller="fieldValue.bestseller" :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"/>
                         </div>
                     </template>

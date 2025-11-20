@@ -110,7 +110,6 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'FetchEmailTrackingEvents',
             );
 
-
         $schedule->command('fetch:ebay-orders')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchEbayOrders',
         );
@@ -184,37 +183,163 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
         );
 
-        $schedule->command('hydrate:ping')->dailyAt('12:59')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'HydratePing',
+        $schedule->command('hydrate:scheduled-task-logs --name=test_a')->everyMinute()->withoutOverlapping()->timezone('UTC');
+
+        (new Schedule())->command('hydrate:scheduled-task-logs --name=test_b')->everyMinute()->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_0')->dailyAt('00:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
         );
 
-        $schedule->command('hydrate:ping')->dailyAt('11:58')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'HydratePing',
-        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_1')->dailyAt('01:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
 
-        $schedule->command('hydrate:ping')->dailyAt('13:57')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'HydratePing',
-        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_2')->dailyAt('02:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
 
-        $this->logSchedule(
-            $schedule
-                ->command('hydrate:ping')
-                ->everyMinute()
-                ->timezone('UTC'),
-            name: 'test every minutes with $schedule->command()',
-            type: 'command',
-            scheduledAt: 'every minutes'
-        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_3')->dailyAt('03:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
 
-        $this->logSchedule(
-            (new Schedule())
-                ->command('hydrate:ping')
-                ->everyMinute()
-                ->timezone('UTC'),
-            name: 'test every minutes with Schedule()',
-            type: 'command',
-            scheduledAt: 'every minutes'
-        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_4')->dailyAt('04:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_5')->dailyAt('05:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_6')->dailyAt('06:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_7')->dailyAt('07:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_8')->dailyAt('08:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_9')->dailyAt('09:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_10')->dailyAt('10:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_11')->dailyAt('11:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_12')->dailyAt('12:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_13')->dailyAt('13:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_14')->dailyAt('14:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_15')->dailyAt('15:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_16')->dailyAt('16:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_17')->dailyAt('17:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_18')->dailyAt('18:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_19')->dailyAt('19:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_20')->dailyAt('20:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_21')->dailyAt('21:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_22')->dailyAt('22:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_23')->dailyAt('23:25')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
+        );;
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_0')->dailyAt('00:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_1')->dailyAt('01:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_2')->dailyAt('02:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_3')->dailyAt('03:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_4')->dailyAt('04:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_5')->dailyAt('05:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_6')->dailyAt('06:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_7')->dailyAt('07:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_8')->dailyAt('08:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_9')->dailyAt('09:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_10')->dailyAt('10:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_11')->dailyAt('11:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_12')->dailyAt('12:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_13')->dailyAt('13:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_14')->dailyAt('14:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_15')->dailyAt('15:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_16')->dailyAt('16:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_17')->dailyAt('17:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_18')->dailyAt('18:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_19')->dailyAt('19:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_20')->dailyAt('20:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_21')->dailyAt('21:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_22')->dailyAt('22:25')->timezone('UTC');
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_23')->dailyAt('23:25')->timezone('UTC');
+
+//        $this->logSchedule(
+//            $schedule
+//                ->command('hydrate:ping')
+//                ->everyMinute()
+//                ->timezone('UTC'),
+//            name: 'ok',
+//            type: 'command',
+//            scheduledAt: '00:00'
+//        );
     }
 
     protected function commands(): void
