@@ -95,6 +95,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $marketing_dimensions
  * @property MasterAssetStocksStatusEnum|null $stocks_status
  * @property MasterAssetProductsStatusEnum|null $products_status
+ * @property array<array-key, mixed>|null $offers_data
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -168,11 +169,13 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'fetched_at'           => 'datetime',
         'last_fetched_at'      => 'datetime',
         'stocks_status'        => MasterAssetStocksStatusEnum::class,
-        'products_status'      => MasterAssetProductsStatusEnum::class
+        'products_status'      => MasterAssetProductsStatusEnum::class,
+        'offers_data'          => 'array',
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'          => '{}',
+        'offers_data'   => '{}',
     ];
 
     public function generateTags(): array

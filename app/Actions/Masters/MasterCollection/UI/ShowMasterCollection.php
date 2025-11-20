@@ -121,7 +121,20 @@ class ShowMasterCollection extends GrpAction
                         'icon'    => 'fas fa-times-circle',
                         'class'   => 'text-red-400'
                     ],
-                    'actions' => [],
+                    'actions' => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'edit',
+                            'tooltip' => __('Edit'),
+                            'route'   => [
+                                'name'       => 'grp.masters.master_shops.show.master_collections.edit',
+                                'parameters' => [
+                                    'masterShop' => $masterCollection->masterShop->slug,
+                                    'masterCollection' => $masterCollection->slug
+                                ]
+                            ]
+                        ]
+                    ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

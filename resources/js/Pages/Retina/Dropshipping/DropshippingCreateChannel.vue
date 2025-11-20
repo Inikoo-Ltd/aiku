@@ -2,7 +2,7 @@
 import {Head, router,usePage} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {inject, ref, watch, onMounted } from "vue";
+import { inject, ref, watch, onMounted, provide } from "vue";
 
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
@@ -11,6 +11,7 @@ import {routeType} from "@/types/route";
 
 import {trans} from "laravel-vue-i18n";
 import Modal from "@/Components/Utils/Modal.vue";
+import Dialog from 'primevue/dialog';
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import {notify} from "@kyvg/vue3-notification";
@@ -22,6 +23,12 @@ import PurePassword from "@/Components/Pure/PurePassword.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core"
+import EbayProgressBar from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayProgressBar.vue";
+import EbayAccountNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAccountNameForm.vue";
+import EbaySiteForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbaySiteForm.vue";
+import EbayAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAuthKeyForm.vue";
+import EbayListingProfileNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileNameForm.vue";
+import EbayListingProfileConfirmationForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileConfirmationForm.vue";
 library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers);
@@ -265,6 +272,46 @@ const isModalEbayDuplicate = ref(false)
             // router.get(window.location.origin + window.location.pathname)
         }
     })
+
+const isModalCreateEbay = ref(false);
+
+const closeCreateEbayModal = () => {
+    isModalCreateEbay.value = false;
+}
+
+provide("closeCreateEbayModal", closeCreateEbayModal);
+
+const steps = ref([
+    { name: "Ebay Account Name", status: "current" },
+    { name: "Ebay Site", status: "upcoming" },
+    { name: "Ebay Auth Key", status: "upcoming" },
+    { name: "Ebay Listing Profile Name", status: "upcoming" },
+    { name: "Ebay Listing Profile Confirmation", status: "upcoming" }
+]);
+
+provide("steps", steps);
+
+const stepComponents = [
+    EbayAccountNameForm,
+    EbaySiteForm,
+    EbayAuthKeyForm,
+    EbayListingProfileNameForm,
+    EbayListingProfileConfirmationForm
+];
+
+const currentStep = ref(0);
+
+provide("currentStep", currentStep);
+
+const goNext = () => {
+    if (currentStep.value < steps.value.length - 1) {
+        steps.value[currentStep.value].status = "complete";
+        currentStep.value++;
+        steps.value[currentStep.value].status = "current";
+    }
+};
+
+provide("goNext", goNext);
 </script>
 
 <template>
@@ -394,17 +441,27 @@ const isModalEbayDuplicate = ref(false)
 
                 <div class="w-full flex justify-end">
 
+<!--                    <Button-->
+<!--                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"-->
+<!--                        :label="trans('Connect')"-->
+<!--                        xtype="primary"-->
+<!--                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"-->
+<!--                        full-->
+<!--                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"-->
+<!--                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"-->
+<!--                    />-->
+
                     <Button
                         v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         xtype="primary"
-                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"
+                        type="primary"
                         full
-                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
-                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
+                        iconRight="fal fa-external-link-alt"
+                        @click="() => isModalCreateEbay = true"
                     />
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
 
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
 
@@ -593,6 +650,13 @@ const isModalEbayDuplicate = ref(false)
             </div>
         </div>
     </Modal>
+
+    <Dialog v-model:visible="isModalCreateEbay" modal header="eBay" class="max-w-[90%] w-full">
+        <div class="flex flex-col gap-6">
+            <EbayProgressBar />
+            <component :is="stepComponents[currentStep]" />
+        </div>
+    </Dialog>
 
     <!-- Modal: Magento -->
     <Modal :isOpen="isModalMagento" @onClose="isModalMagento = false" width="w-full max-w-lg">

@@ -103,7 +103,7 @@ const submitForm = async (redirect = true) => {
         }
     }
     let params = route().params;
-    params['masterFamily'] = String(props.masterAsset.master_sub_department.id);
+    params['masterFamily'] = String(props.masterAsset.master_family.id);
 
     // Build payload manual
     const payload: any = {
@@ -163,7 +163,7 @@ onMounted(() => {
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
-                    <component :is="item.to ? Link : 'span'"
+                    <component :is="item.to ? Link : 'span'"  :handleTabUpdate="handleTabUpdate"
                         :href="item.to ? route(item.to.name, item.to.parameters) : undefined" :title="item.title"
                         class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to ? 'text-gray-500' : 'text-gray-500 cursor-default'">
@@ -175,7 +175,7 @@ onMounted(() => {
         </Breadcrumb>
     </div>
 
-    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" />
+    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :handleTabUpdate />
 
     <!-- ✅ PrimeVue Dialog -->
     <Dialog v-model:visible="showDialog" modal header="Add Item to Other Shop" :style="{ width: '60vw' }">

@@ -1,3 +1,10 @@
+/*
+ * author Louis Perez
+ * created on 17-11-2025-10h-56m
+ * github: https://github.com/louis-perez
+ * copyright 2025
+*/
+
 <html>
 <head>
     <title>{{ $reference }}</title>
@@ -13,8 +20,8 @@
             margin-header: 1mm; /* <any of the usual CSS values for margins> */
             margin-footer: 5mm; /* <any of the usual CSS values for margins> */
             marks: 'cross'; /*crop | cross | none*/
-            header: myheader;
-            footer: myfooter;
+            header: myHeader;
+            footer: myFooter;
             /* background: ...
             background-image: ...
             background-position ...
@@ -29,7 +36,7 @@
         }
 
         p {
-            margin: 0pt;
+            margin: 0;
         }
 
         h1 {
@@ -79,9 +86,9 @@
             border: 0.1mm solid #000000;
         }
 
-        .items td.blanktotal {
+        .items td.blank_total {
             background-color: #FFFFFF;
-            border: 0mm none #000000;
+            border: 0 none #000000;
             border-top: 0.1mm solid #000000;
             border-right: 0.1mm solid #000000;
         }
@@ -101,7 +108,7 @@
     </style>
 </head>
 <body>
-<htmlpageheader name="myheader">
+<htmlpageheader name="myHeader">
     <br><br>
     <table width="100%" style="font-size: 9pt;">
         <tr>
@@ -132,27 +139,26 @@
     </table>
 </htmlpageheader>
 
-<sethtmlpageheader name="myheader" value="on" show-this-page="1"/>
-<sethtmlpagefooter name="myfooter" value="on"/>
+<sethtmlpageheader name="myHeader" value="on" show-this-page="1"/>
+<sethtmlpagefooter name="myFooter" value="on"/>
 
 <table width="100%" style="margin-top: 40px">
     <tr>
         <td>
             <h1>
-                {{__('Topup')}}
+                {{__('Credit Account Top-Up Confirmation')}}
             </h1>
         </td>
     </tr>
 </table>
 <table width="100%" style="font-family: sans-serif; margin-top: 20px" cellpadding="0">
     <tr>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;">
+        <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;">
             <div>
                 <div>
                     {{ __('Customer') }}: <b>{{ $customer->name }}</b>
                     ({{ $customer->reference }})
                 </div>
-
                 <div>
                     <span class="address_label">{{ __('Email') }}:</span> <span
                         class="address_value">{{ $customer->email }}</span>
@@ -162,41 +168,83 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                         class="address_value">{{ $customer->phone }}</span>
                 </div>
-                @if($customer->tax_number  && $customer->tax_number_valid)
+                @if($customer->identity_document_number)
+                    {{__('Registration Number')}}: {{$customer->identity_document_number}}
+                @endif
+                @if($customer->taxNumber && $customer->taxNumber->valid)
                     <div>
-                        <span class="address_label">{{ __('Tax Number') }}:</span> <span
-                            class="address_value">{{ $customer->tax_number }}</span>
+                        <span class="address_label">{{ __('VAT Number') }}:</span> <span
+                            class="address_value">{{ $customer->taxNumber->number }}</span>
                     </div>
                 @endif
             </div>
         </td>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
+        {{-- <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
 
-        </td>
+        </td> --}}
+    </tr>
+</table>
+@php
+    $deliveryAddress = $customer->deliveryAddress()->first();
+@endphp
+<table width="100%" style="font-family: sans-serif;" cellpadding="10">
+    <tr>
+        @if($deliveryAddress)
+            <td width="45%" style="border: 0.1mm solid #888888;"><span
+                    style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
+                <div>
+                    {{ $deliveryAddress->address_line_1 }}
+                </div>
+                <div>
+                    {{ $deliveryAddress->address_line_2 }}
+                </div>
+                <div>
+                    {{ $deliveryAddress->administrative_area }}
+                </div>
+                <div>
+                    {{ $deliveryAddress->locality }}
+                </div>
+                <div>
+                    {{ $deliveryAddress->postal_code }}
+                </div>
+                <div>
+                    {{ $deliveryAddress->country->name }}
+                </div>
+            </td>
+            <td width="10%">&nbsp;</td>
+        @endif
     </tr>
 </table>
 
 <br>
 
+{{ __('Here is your receipt on the Account Balance Top-up') }}
+
+<br><br>
+
 <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
     <thead>
-    <tr>
-        <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
-        <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
-    </tr>
+        <tr>
+            <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Payment Method') }}</td>
+            <td style="text-align:left">{{ __('Date of Transaction') }}</td>
+        </tr>
     </thead>
     <tbody>
-    @foreach($topups as $topup)
         <tr>
             <td style="text-align:right">{{ $topup->currency->symbol . $topup->amount }}</td>
-            <td style="text-align:left" colspan="2">{{ __('Topup to balance') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Credit Account Balance Top-Up') }}</td>
+            <td style="text-align:left" colspan="2">{{ $payment->paymentAccount->name }}</td>
+            <td style="text-align:left">{{ $topup->created_at }}</td>
         </tr>
-    @endforeach
     </tbody>
 </table>
 
 <br>
 <br>
+
+*<span style="font-style:italic">&nbsp;{{ __('This is a prepayment for future purchases. A VAT invoice will be issued upon delivery of goods.') }}</span>
 
 <br>
 <br>
@@ -207,7 +255,7 @@
     </div>
 @endif
 
-<htmlpagefooter name="myfooter">
+<htmlpagefooter name="myFooter">
     <div
         style="border-top: 1px solid #000000; font-size: 9pt; text-align: center; padding-top: 5mm; margin-top: 5mm;"></div>
     <table width="100%">

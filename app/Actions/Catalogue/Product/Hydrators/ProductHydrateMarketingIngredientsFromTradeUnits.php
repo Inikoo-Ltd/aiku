@@ -34,6 +34,7 @@ class ProductHydrateMarketingIngredientsFromTradeUnits implements ShouldBeUnique
 
     private function updateFromSingleTradeUnit($tradeUnit, Product $product): void
     {
+
         if ($tradeUnit->marketing_ingredients) {
             $product->updateQuietly([
                 'marketing_ingredients' => $tradeUnit->marketing_ingredients,

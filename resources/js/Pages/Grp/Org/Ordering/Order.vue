@@ -64,7 +64,7 @@ import {
     faMapMarkerAlt,
     faPlus,
     faEllipsisH,
-    faCopy,faParachuteBox
+    faCopy,faParachuteBox, faSortNumericDown
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -83,7 +83,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 
-library.add(faParachuteBox,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
+library.add(faParachuteBox, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
 interface UploadSection {
     title: {
@@ -676,79 +676,6 @@ const copyToClipboard = async (text: string, label: string) => {
             <div v-if="!props.readonly || isShowProforma" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
-
-                <div>
-                    <!-- Button: icon ellipsis -->
-                    <button @click="toggleElipsis" class="cursor-pointer "
-                        :class="'text-gray-400 hover:text-indigo-500'">
-                        <FontAwesomeIcon :icon="faEllipsisH" class="text-4xl" fixed-width aria-hidden="true" />
-                    </button>
-
-                    <!-- Popover: on click ellipsis -->
-                    <PopoverPrimevue ref="ellipsis">
-                        <div class="flex flex-col gap-2">
-                            <!-- Button: Undispatched -->
-                            <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
-                                :routeDelete="routes.rollback_dispatch"
-                                :title="trans('Are you sure you want to rollback the Order??')"
-                                :description="trans('The state of the Order will go back to finalised state.')"
-                                isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
-                                <template #default="{ changeModel }">
-                                    <Button @click="changeModel" type="negative" :label="trans('Undispatch')"
-                                        icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
-                                </template>
-                            </ModalConfirmationDelete>
-
-                            <!-- Button: Add Notes -->
-                            <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
-                                <template #button="{ open }">
-                                    <Button icon="fal fa-sticky-note" type="tertiary" full
-                                        :label="trans('Add notes')" />
-                                </template>
-                                <template #content="{ close: closed }">
-                                    <div class="w-[350px]">
-                                        <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
-                                        <div class="">
-                                            <PureMultiselect v-model="noteToSubmit.selectedNote"
-                                                @update:modelValue="() => errorNote = ''"
-                                                :placeholder="trans('Select type note')" required
-                                                :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
-                                                valueProp="value" />
-                                        </div>
-
-                                        <div class="mt-3">
-                                            <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
-                                            <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
-                                                @keydown.enter="() => onSubmitNote(closed)" />
-                                        </div>
-
-                                        <p v-if="errorNote" class="mt-2 text-sm text-red-600">
-                                            *{{ errorNote }}
-                                        </p>
-
-                                        <div class="flex justify-end mt-3">
-                                            <Button @click="() => onSubmitNote(closed)" :style="'save'"
-                                                :loading="isLoadingButton === 'submitNote'"
-                                                :disabled="!noteToSubmit.value" label="Save" full />
-                                        </div>
-
-                                        <div v-if="isLoadingButton === 'submitNote'"
-                                            class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl"
-                                                fixed-width aria-hidden="true" />
-                                        </div>
-                                    </div>
-                                </template>
-                            </Popover>
-
-                            <Button
-                                v-if="proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)"
-                                @click="() => isOpenModalProforma = true" type="tertiary"
-                                :label="trans('Proforma Invoice')" icon="fal fa-download" />
-
-                        </div>
-                    </PopoverPrimevue>
-                </div>
             </div>
 
 
@@ -758,6 +685,73 @@ const copyToClipboard = async (text: string, label: string) => {
             <Button @click="() => onCreateReplacement(action)" :label="trans('Replacement')" xsize="xs" type="secondary"
                 icon="fal fa-plus" key="1" :disabled="replacementLoading" :loading="replacementLoading"
                 v-tooltip="trans('Create replacement')" />
+        </template>
+
+        <template #wrapped-add-note="{ action }">
+            <!-- Button: Add Notes -->
+            <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
+                <template #button="{ open }">
+                    <Button icon="fal fa-sticky-note" type="tertiary" full
+                            :label="trans('Add notes')" />
+                </template>
+                <template #content="{ close: closed }">
+                    <div class="w-[350px]">
+                        <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
+                        <div class="">
+                            <PureMultiselect v-model="noteToSubmit.selectedNote"
+                                             @update:modelValue="() => errorNote = ''"
+                                             :placeholder="trans('Select type note')" required
+                                             :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
+                                             valueProp="value" />
+                        </div>
+
+                        <div class="mt-3">
+                            <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
+                            <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
+                                          @keydown.enter="() => onSubmitNote(closed)" />
+                        </div>
+
+                        <p v-if="errorNote" class="mt-2 text-sm text-red-600">
+                            *{{ errorNote }}
+                        </p>
+
+                        <div class="flex justify-end mt-3">
+                            <Button @click="() => onSubmitNote(closed)" :style="'save'"
+                                    :loading="isLoadingButton === 'submitNote'"
+                                    :disabled="!noteToSubmit.value" label="Save" full />
+                        </div>
+
+                        <div v-if="isLoadingButton === 'submitNote'"
+                             class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl"
+                                             fixed-width aria-hidden="true" />
+                        </div>
+                    </div>
+                </template>
+            </Popover>
+
+            <!-- Popover: on click ellipsis -->
+            <PopoverPrimevue ref="ellipsis">
+                <div class="flex flex-col gap-2">
+                    <!-- Button: Undispatched -->
+                    <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
+                                             :routeDelete="routes.rollback_dispatch"
+                                             :title="trans('Are you sure you want to rollback the Order??')"
+                                             :description="trans('The state of the Order will go back to finalised state.')"
+                                             isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
+                        <template #default="{ changeModel }">
+                            <Button @click="changeModel" type="negative" :label="trans('Undispatch')"
+                                    icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
+                        </template>
+                    </ModalConfirmationDelete>
+
+                    <Button
+                        v-if="proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)"
+                        @click="() => isOpenModalProforma = true" type="tertiary"
+                        :label="trans('Proforma Invoice')" icon="fal fa-download" />
+
+                </div>
+            </PopoverPrimevue>
         </template>
 
         <template #afterTitle2>
@@ -1082,6 +1076,16 @@ const copyToClipboard = async (text: string, label: string) => {
                             {{ box_stats?.products.estimated_weight || 0 }} kilograms
                         </dd>
                     </dl>
+                    
+                    <!-- Field: number of order -->
+                    <!-- <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+                        <dt zv-tooltip="trans('Weight')" class="flex-none pl-1">
+                            <FontAwesomeIcon icon="fal fa-sort-numeric-down" fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500" v-tooltip="box_stats?.order_properties?.customer_order_ordinal_tooltip ?? trans('Customer order number')">
+                            {{ box_stats?.order_properties?.customer_order_ordinal || 0 }}
+                        </dd>
+                    </dl> -->
 
 
                     <!-- Field: Invoices -->

@@ -73,12 +73,17 @@ const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page));
 const filter = ref({ data: {} });
 const showFilters = ref(false);
 const showAside = ref(false);
-const totalProducts = ref(props.fieldValue.products.meta.total);
+const totalProducts = ref(props.fieldValue?.products?.meta?.last_page == 1 ? props.fieldValue.products.meta.total + props.fieldValue?.products_out_of_stock?.meta?.total : props.fieldValue.products.meta.total)
 const settingPortfolio = ref(false);
-const isFetchingOutOfStock = ref(false);
+const isFetchingOutOfStock = ref(true);
 // const confirm = useConfirm();
 const isNewArrivals = ref(false);
 
+// Add page initiation check whether products_out_of_stock is fetched or not
+isFetchingOutOfStock.value = props.fieldValue.products_out_of_stock?.length > 0;
+if(isFetchingOutOfStock){
+    totalProducts.value = props.fieldValue.products.meta.total + (props.fieldValue.products_out_of_stock?.meta.total ?? 0);
+}
 
 const getRoutes = () => {
     if (props.fieldValue.model_type === "ProductCategory") {
@@ -185,7 +190,14 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         const data = response.data;
 
         lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1;
-        totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+
+         if (useOutOfStock) {
+            totalProducts.value =
+                totalProducts.value +
+                (data?.meta?.total ?? data?.total ?? 0)
+        } else {
+            totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+        }
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])];
@@ -279,7 +291,7 @@ onMounted(() => {
 
     if (layout?.iris?.is_logged_in) {
         fetchProductHasPortfolio();
-        // fetchProducts()
+        /* fetchProducts() */
     }
 
 
@@ -519,8 +531,8 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                         </span>
                     </div>
 
-                    <div>
-                        <ButtonAddCategoryToPortfolio :products :categoryId />
+                    <div v-if="layout?.iris?.customer?.id">
+                        <ButtonAddCategoryToPortfolio :products :categoryId  />
                     </div>
                 </div>
 

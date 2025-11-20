@@ -24,6 +24,7 @@ const LBInitSearchResult = async () => {
                 prefixed: true,
                 symbol: locale.currencySymbol(layout.iris?.currency?.code),
             },
+            TopItems: ['category:4', 'department:4', 'sub_department:4', 'collection:4', 'brand:4', 'tag:4'],
             Theme: "boo",
             Size: 12,
             Facets: [
@@ -35,9 +36,10 @@ const LBInitSearchResult = async () => {
                 'brand',
                 'collection',
                 'tag',
+                'price_amount',
             ],
             QuicksearchTypes: [
-                'category',
+                'category:12',
                 'color',
                 'news',
                 'department',

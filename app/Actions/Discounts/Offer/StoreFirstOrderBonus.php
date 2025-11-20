@@ -109,7 +109,6 @@ class StoreFirstOrderBonus extends OrgAction
             'allowances'   => [
                 [
                     'class'         => OfferAllowanceClass::DISCOUNT,
-                    'target_filter' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
                     'type'          => OfferAllowanceType::PERCENTAGE_OFF,
                     'target_type'   => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
                     'data'          => [

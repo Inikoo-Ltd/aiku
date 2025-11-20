@@ -64,6 +64,7 @@ class IndexBasketTransactions extends OrgAction
                 'products.slug as product_slug',
                 'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',
+                'transactions.offers_data',
             ])
             ->selectRaw("'{$order->currency->code}'  as currency_code")
             ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered', 'price'])

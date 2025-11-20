@@ -61,11 +61,6 @@ export const initialiseIrisApp = () => {
             layout.user = usePage().props?.auth
         }
 
-        // if (irisData?.variables) {✅
-        //     // Will deprecate, use variables via props.iris instead
-        //     layout.iris_variables = irisData?.variables
-        // }
-
         if (usePage().props.iris) {
             layout.iris = {
                 ...layout.iris,

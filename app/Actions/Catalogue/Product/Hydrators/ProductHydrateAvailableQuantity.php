@@ -29,7 +29,6 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
-
         if ($product->state == ProductStateEnum::DISCONTINUED) {
             UpdateProduct::run($product, [
                 'available_quantity' => null,
@@ -39,12 +38,12 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
             return;
         }
-        $currentQuantity = $product->available_quantity;
+        $currentQuantity   = $product->available_quantity;
         $availableQuantity = 0;
 
         $numberOrgStocksChecked = 0;
         foreach ($product->orgStocks as $orgStock) {
-            $quantityInStock = $orgStock->quantity_in_locations;
+            $quantityInStock = $orgStock->quantity_available;
 
             $productToOrgStockRatio = $orgStock->pivot->quantity;
             if (!$productToOrgStockRatio || $productToOrgStockRatio == 0) {
@@ -67,7 +66,6 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         }
 
 
-
         $dataToUpdate = [
             'available_quantity' => $availableQuantity,
         ];
@@ -78,14 +76,13 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
         if (in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK])) {
             if ($availableQuantity == 0) {
-                $status = ProductStatusEnum::OUT_OF_STOCK;
+                $status                             = ProductStatusEnum::OUT_OF_STOCK;
                 $dataToUpdate['out_of_stock_since'] = now();
             } else {
                 $status = ProductStatusEnum::FOR_SALE;
             }
             $dataToUpdate['status'] = $status;
         }
-
 
 
         UpdateProduct::run($product, $dataToUpdate);
@@ -95,10 +92,10 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
     public function asCommand(Command $command): void
     {
-
         if ($command->argument('id')) {
             $product = Product::findOrFail($command->argument('id'));
             $this->handle($product);
+
             return;
         }
 

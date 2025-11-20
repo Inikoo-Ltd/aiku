@@ -233,29 +233,6 @@ onMounted(() => {
             <div class="flex gap-2  w-full">
                 <div class="w-full flex flex-nowrap relative">
 
-                    <!-- <Button v-if="isCategoryExistInSomeChannel"
-                        :label="isExistInAllChannel ? trans('Exist on all channels') : trans('Exist on some channels')"
-                        type="tertiary"
-                        disabled
-                        :icon="'fal fa-check-double'"
-                        class="border-none border-transparent"
-                        :class="!isExistInAllChannel ? 'rounded-r-none' : ''"
-                        full
-                    />
-                    <Button v-else
-                        aclick="() => onAddToAllPortfolios(product)"
-                        @click="(e) => _popover?.toggle(e)"
-                        :label="trans('Add category to channel')"
-                        :loading="isLoadingAllPortfolios"
-                        :icon="faPlus"
-                        :class="!isExistInAllChannel ? 'rounded-r-none' : ''"
-                        class="border-none border-transparent"
-                        full
-                        xsize="l"
-                        xdisabled
-                        xstyle="border: 0px"
-                    /> -->
-
                     <!-- Popup: list of channels -->
                     <Button v-if="!isExistInAllChannel"
                         @click="(e) => (_popover?.toggle(e), Object.keys(layoutChannelList).length ? null : emits('refreshChannels'))"

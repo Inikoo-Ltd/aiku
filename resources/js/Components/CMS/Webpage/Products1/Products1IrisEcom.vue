@@ -14,13 +14,11 @@ import { debounce } from "lodash-es"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import { useConfirm } from "primevue/useconfirm"
 import { faSearch } from "@fal"
-import { faExclamationTriangle, faLayerGroup } from "@far"
+import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
 import ProductRenderEcom from "./ProductRenderEcom.vue"
-import * as Sentry from "@sentry/vue"
 
 
 const props = defineProps<{
@@ -66,7 +64,7 @@ const orderBy = ref(layout.params?.order_by)
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
-const totalProducts = ref(props.fieldValue.products.meta.total)
+const totalProducts = ref(props.fieldValue?.products?.meta?.last_page == 1 ? props.fieldValue.products.meta.total + props.fieldValue?.products_out_of_stock?.meta?.total : props.fieldValue.products.meta.total)
 
 const isShowFilters = ref(false)
 const isShowAside = ref(false)
@@ -181,7 +179,15 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         const data = response.data;
 
         lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1;
-        // totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+    
+
+        if (useOutOfStock) {
+            totalProducts.value =
+                totalProducts.value +
+                (data?.meta?.total ?? data?.total ?? 0)
+        } else {
+            totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+        }
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])];
@@ -274,7 +280,7 @@ onMounted(() => {
     }
 
     if (layout?.iris?.is_logged_in) {
-        // fetchProducts();  // No need fetch on mount, product data already comes from props
+      /*   fetchProducts(); */
         fetchHasInBasket();
     }
 })
@@ -392,7 +398,6 @@ watch(
     { deep: true }
 )
 
-
 </script>
 
 <template>
@@ -509,8 +514,9 @@ watch(
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border relative rounded" :class="product.stock ? '' : 'bg-red-100'">
-                            <ProductRenderEcom :product="product" :key="index" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
-                                :hasInBasket="productInBasket.list[product.id]" :bestSeller="fieldValue.bestseller"/>
+                            <ProductRenderEcom 
+                                :product="product" :key="index" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)"
+                                :hasInBasket="productInBasket.list[product.id]" :bestSeller="fieldValue.bestseller" :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"/>
                         </div>
                     </template>
 
