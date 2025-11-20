@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFr
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Models\Helpers\Country;
@@ -108,6 +109,12 @@ class UpdateTradeUnit extends GrpAction
 
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
         $tradeUnit->refresh();
+
+        if($tradeUnit->wasChanged('marketing_dimensions')){
+            foreach($tradeUnit->products as $product){
+                ProductHydrateMarketingDimensionFromTradeUnits::dispatch($product);
+            }
+        }
 
         if ($tradeUnit->wasChanged('gross_weight')) {
             foreach ($tradeUnit->stocks as $stock) {
