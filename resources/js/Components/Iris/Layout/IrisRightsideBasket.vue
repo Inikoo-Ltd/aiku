@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { debounce, get, set } from 'lodash-es'
 import { faChevronRight, faTrashAlt } from "@fal"
+import { faCheckCircle } from "@fas"
 import { faMinus, faArrowRight, faPlus } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LinkIris from '../LinkIris.vue'
@@ -23,7 +24,7 @@ import Image from '@/Components/Image.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
 import { computed } from 'vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
-library.add(faMinus, faArrowRight, faPlus, faChevronRight, faTrashAlt)
+library.add(faMinus, faArrowRight, faPlus, faChevronRight, faTrashAlt, faCheckCircle)
 // import { XMarkIcon } from '@heroicons/vue/24/outline'
 
 interface DataSideBasket {
@@ -309,12 +310,8 @@ const convertToFloat2 = (val: any) => {
                             <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
                             <div class="relative">
                                 <LinkIris :href="product.canonical_url" class="block group font-medium hover:underline size-20 shrink-0 overflow-hidden rounded-md border"
-                                    :class="
-                                        Object.keys(product.offers_data || {})?.length ? 'border-pink-300' : 'border-gray-200'
-                                    "
+                                    :class="Object.keys(product.offers_data || {})?.length ? 'border-pink-300' : 'border-gray-200'"
                                 >
-                                    <!-- <img :src="product.image" :alt="product.imageAlt"
-                                        class="size-full object-cover" /> -->
                                     <Image
                                         :src="product?.web_image_thumbnail"
                                         class="w-full h-full flex justify-center items-center group-hover:scale-110 transition-all"
@@ -335,9 +332,8 @@ const convertToFloat2 = (val: any) => {
 
                                     <div class="flex flex-1 items-end justify-between">
                                         <p class=" text-lg" :class="product.gross_amount != product?.net_amount ? 'text-green-500' : ''">
-                                                <span v-if="product.gross_amount != product?.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(layout.iris?.currency?.code, product.gross_amount) }}</span>
-                                            
-                                                <span :key="product?.net_amount">{{ locale.currencyFormat(layout.iris?.currency?.code || '', product.net_amount) }}</span>
+                                            <span v-if="product.gross_amount != product?.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(layout.iris?.currency?.code, product.gross_amount) }}</span>
+                                            <span>{{ locale.currencyFormat(layout.iris?.currency?.code || '', product.net_amount) }}</span>
                                         </p>
                                     </div>
                                 </div>
