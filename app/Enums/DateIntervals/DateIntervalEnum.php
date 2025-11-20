@@ -123,13 +123,10 @@ enum DateIntervalEnum: string
 
     public static function allExceptHistorical(): array
     {
-        return array_map(
-            fn ($case) => $case->value,
-            array_values(array_filter(
-                self::cases(),
-                fn ($case) => !in_array($case, [self::YESTERDAY, self::LAST_WEEK, self::LAST_MONTH])
-            ))
-        );
+        return array_values(array_filter(
+            self::cases(),
+            fn ($case) => !in_array($case, [self::YESTERDAY, self::LAST_WEEK, self::LAST_MONTH])
+        ));
     }
 
 
