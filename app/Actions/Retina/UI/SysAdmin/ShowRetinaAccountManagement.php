@@ -17,6 +17,7 @@ use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaAccountManagement extends RetinaAction
@@ -40,8 +41,11 @@ class ShowRetinaAccountManagement extends RetinaAction
 
         $customer = $request->user()->customer;
         $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
-
-
+        $isEu = false;
+        // To ensure VAT info only shows on EU shop
+        if ($this->organisation->country) {
+            $isEu = $this->organisation->country->continent == 'EU';
+        }
 
         return Inertia::render(
             'EditModel',
@@ -110,6 +114,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'label'   => __('Tax number'),
                                         'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                         'country' => $customer->address->country_code,
+                                        'europeanUnion' => $isEu ? implode(', ', IsEuropeanUnion::getEUCountryCodes()) : '',
                                     ],
                                     'is_re'           => [
                                         'type'   => 'toggle',
