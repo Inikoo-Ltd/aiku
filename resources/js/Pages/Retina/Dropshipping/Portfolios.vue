@@ -531,13 +531,17 @@ onBeforeUnmount(() => {
                     </Button>
                 </a>
 
-                <a v-else :href="linkDownloadImages" target="_blank" rel="noopener" download>
-                    <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive" v-tooltip="timeCountdown" >
-                    </Button>
-                </a>
-                  <!-- <span v-if="timeCountdown" class="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">
-                        {{ timeCountdown }}
-                    </span> -->
+                <VTooltip v-else class="w-fit inline">
+                    <a :href="linkDownloadImages" target="_blank" rel="noopener" download>
+                        <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive" >
+                        </Button>
+                    </a>
+                    <template #popper>
+                        <div class="text-xs tabular-nums">
+                            {{ trans(":timeCountdown left before link expires", { timeCountdown: timeCountdown}) }}.
+                        </div>
+                    </template>
+                </VTooltip>
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
