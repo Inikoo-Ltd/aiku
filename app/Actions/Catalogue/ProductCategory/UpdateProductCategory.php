@@ -77,7 +77,7 @@ class UpdateProductCategory extends OrgAction
         $originalMasterProductCategory = null;
         if (Arr::has($modelData, 'master_product_category_id')) {
             $originalMasterProductCategory = $productCategory->masterProductCategory;
-        }
+        } 
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);
         $productCategory->refresh();
@@ -220,7 +220,7 @@ class UpdateProductCategory extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
-
+            'offers_data'                => ['sometimes', 'array'],
             'follow_master'              => ['sometimes', 'boolean'],
             'image'                      => [
                 'sometimes',

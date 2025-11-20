@@ -23,12 +23,14 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterProductCategory extends OrgAction
 {
     use WithMasterProductCategoryAction;
     use WithImageCatalogue;
 
+    private $offersData;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
@@ -96,11 +98,15 @@ class UpdateMasterProductCategory extends OrgAction
             ]);
         }
 
+        $modelData['offers_data'] = $masterProductCategory->offers_data;
+        if(Arr::has($modelData, 'gr_vol')) {
+            $modelData['offers_data']['gr_vol'] = Arr::pull($modelData, 'gr_vol');
+        }
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if (Arr::hasAny($changed, ['code', 'name', 'description', 'description_title', 'description_extra', 'rrp'])) {
+        if (Arr::hasAny($changed, ['code', 'name', 'description', 'description_title', 'description_extra', 'rrp', 'offers_data'])) {
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 UpdateProductCategory::make()->action($productCategory, [
                     'code'              => $masterProductCategory->code,
@@ -108,7 +114,8 @@ class UpdateMasterProductCategory extends OrgAction
                     'description'       => $masterProductCategory->description,
                     'description_title' => $masterProductCategory->description_title,
                     'description_extra' => $masterProductCategory->description_extra,
-                    'rrp'               => $masterProductCategory->rrp
+                    'rrp'               => $masterProductCategory->rrp,
+                    'offers_data'       => $masterProductCategory->offers_data
                 ]);
             }
         }
@@ -136,8 +143,13 @@ class UpdateMasterProductCategory extends OrgAction
     }
 
 
-    public function rules(): array
+    public function rules(ActionRequest $request): array
     {
+        $this->offersData['gr_vol'] = [
+            'volume'    => $request->input('volume') ?? $this->masterProductCategory->offers_data['gr_vol']['volume'] ?? null,
+            'discount'  => $request->input('discount') ?? $this->masterProductCategory->offers_data['gr_vol']['discount'] ?? null,
+        ];
+
         $rules = [
             'code'                     => [
                 'sometimes',

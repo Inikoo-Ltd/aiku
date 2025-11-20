@@ -263,6 +263,37 @@ class EditMasterFamily extends OrgAction
                             ],
 
                         ],
+                        [
+                            'label'  => __('Discounts'),
+                            'icon'   => 'fa-light fa-badge-percent',
+                            'fields' => [
+                                // Need rework later. For now just use two different input
+                                // Need to combine GR/VOL under one input
+                                'vol_gr'  =>  [
+                                    'label'         => 'Vol / GR',
+                                    'type'          => 'input_twin',
+                                    'twin'          => [
+                                        'volume' => [
+                                            'label'         => __('Volume'),
+                                            'placeholder'   => __('Minimal Volume'),
+                                            'value'         => $masterProductCategory->offers_data['gr_vol']['volume'] ?? 0,
+                                            'required'      => true,
+                                            'minValue'      => 0,
+                                            'type'          => 'number',
+                                        ],
+                                        'discount' => [
+                                            'label'         => __('Discount'),
+                                            'placeholder'   => __('Discount %'),
+                                            'value'         => $masterProductCategory->offers_data['gr_vol']['discount'] ?? 0,
+                                            'required'      => true,
+                                            'minValue'      => 0,
+                                            'type'          => 'number',
+                                        ]
+                                    ]
+                                ],
+                            ],
+
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [
