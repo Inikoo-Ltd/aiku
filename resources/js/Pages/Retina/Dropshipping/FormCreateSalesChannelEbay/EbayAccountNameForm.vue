@@ -34,7 +34,7 @@ const submitForm = async () => {
         isLoadingStep.value = false;
         notify({
             title: trans("Something went wrong"),
-            text: "",
+            text: err.message,
             type: "error"
         });
     }
@@ -56,7 +56,7 @@ const submitForm = async () => {
 
         <div class="flex md:justify-end gap-4">
             <Button type="secondary" size="sm" @click="closeCreateEbayModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
         </div>
     </form>
 </template>

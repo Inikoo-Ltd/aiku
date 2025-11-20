@@ -182,14 +182,6 @@ const onSubmitManual = async () => {
     isLoading.value = false;
 }
 
-// Section: ebay
-const onSubmitEbay = async () => {
-    const response = await axios.post(
-        route(props.type_ebay.connectRoute.name, props.type_ebay.connectRoute.parameters));
-
-    window.location.href = response.data;
-};
-
 // Section: amazon
 const onSubmitAmazon = async () => {
     const response = await axios.post(
@@ -661,7 +653,7 @@ provide("goNext", goNext);
     <Dialog v-model:visible="isModalCreateEbay" modal header="eBay" class="max-w-[90%] w-full">
         <div class="flex flex-col gap-6">
             <EbayProgressBar />
-            <component :is="stepComponents[currentStep]" />
+            <component :is="stepComponents[currentStep]" :props="props" />
         </div>
     </Dialog>
 
