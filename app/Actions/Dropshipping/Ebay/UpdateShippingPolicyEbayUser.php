@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\Ebay;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\EbayUser;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -23,6 +24,11 @@ class UpdateShippingPolicyEbayUser extends OrgAction
 
     public function handle(EbayUser $ebayUser, array $modelData): EbayUser
     {
+        $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+        data_set($modelData, 'settings.shipping.price', Arr::get($customerSalesChannel->settings, 'shipping.price'));
+        data_set($modelData, 'settings.shipping.max_dispatch_time', Arr::get($customerSalesChannel->settings, 'shipping.max_dispatch_time'));
+
         $fulfillmentPolicyId = $ebayUser->fulfilment_policy_id;
         $fulfillmentPolicy = $ebayUser->updateFulfilmentPolicy($fulfillmentPolicyId, $modelData);
 

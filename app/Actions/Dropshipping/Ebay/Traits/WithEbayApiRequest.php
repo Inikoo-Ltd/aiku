@@ -251,6 +251,182 @@ trait WithEbayApiRequest
     }
 
     /**
+     * Alternative format: Get services with carrier info embedded
+     */
+    public function getServicesWithCarrierInfo(): array
+    {
+        $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        $services = [
+            'EBAY_UK' => [
+                'UK_OtherCourier' => [
+                    'service_code' => 'UK_OtherCourier',
+                    'service_name' => 'Yodel',
+                    'carrier_code' => 'Yodel',
+                    'carrier_name' => 'Yodel',
+                ],
+                'UK_RoyalMailNextDay' => [
+                    'service_code' => 'UK_RoyalMailNextDay',
+                    'service_name' => 'Royal Mail',
+                    'carrier_code' => 'RoyalMail',
+                    'carrier_name' => 'Royal Mail',
+                ]
+            ],
+            'EBAY_DE' => [
+                'DE_DHLPaket' => [
+                    'service_code' => 'DE_DHLPaket',
+                    'service_name' => 'DHL Paket',
+                    'carrier_code' => 'DHL',
+                    'carrier_name' => 'DHL',
+                ],
+                'DE_DHLPaketTracked' => [
+                    'service_code' => 'DE_DHLPaketTracked',
+                    'service_name' => 'DHL Paket mit Sendungsverfolgung',
+                    'carrier_code' => 'DHL',
+                    'carrier_name' => 'DHL',
+                ],
+                'DE_DHLPaketInsured' => [
+                    'service_code' => 'DE_DHLPaketInsured',
+                    'service_name' => 'DHL Paket versichert',
+                    'carrier_code' => 'DHL',
+                    'carrier_name' => 'DHL',
+                ],
+                'DE_DHLPackchen' => [
+                    'service_code' => 'DE_DHLPackchen',
+                    'service_name' => 'DHL Päckchen',
+                    'carrier_code' => 'DHL',
+                    'carrier_name' => 'DHL',
+                ],
+                'DE_HermesPackchen' => [
+                    'service_code' => 'DE_HermesPackchen',
+                    'service_name' => 'Hermes Päckchen',
+                    'carrier_code' => 'HERMES',
+                    'carrier_name' => 'Hermes',
+                ],
+                'DE_HermesPaket' => [
+                    'service_code' => 'DE_HermesPaket',
+                    'service_name' => 'Hermes Paket',
+                    'carrier_code' => 'HERMES',
+                    'carrier_name' => 'Hermes',
+                ],
+                'DE_HermesPaketVersichert' => [
+                    'service_code' => 'DE_HermesPaketVersichert',
+                    'service_name' => 'Hermes Paket versichert',
+                    'carrier_code' => 'HERMES',
+                    'carrier_name' => 'Hermes',
+                ],
+                'DE_HermesSperrgut' => [
+                    'service_code' => 'DE_HermesSperrgut',
+                    'service_name' => 'Hermes Sperrgut',
+                    'carrier_code' => 'HERMES',
+                    'carrier_name' => 'Hermes',
+                ],
+                'DE_DPD' => [
+                    'service_code' => 'DE_DPD',
+                    'service_name' => 'DPD',
+                    'carrier_code' => 'DPD',
+                    'carrier_name' => 'DPD',
+                ],
+                'DE_DPDExpress' => [
+                    'service_code' => 'DE_DPDExpress',
+                    'service_name' => 'DPD Express',
+                    'carrier_code' => 'DPD',
+                    'carrier_name' => 'DPD',
+                ],
+                'DE_GLS' => [
+                    'service_code' => 'DE_GLS',
+                    'service_name' => 'GLS',
+                    'carrier_code' => 'GLS',
+                    'carrier_name' => 'GLS',
+                ],
+                'DE_GLSExpress' => [
+                    'service_code' => 'DE_GLSExpress',
+                    'service_name' => 'GLS Express',
+                    'carrier_code' => 'GLS',
+                    'carrier_name' => 'GLS',
+                ],
+                'DE_UPS' => [
+                    'service_code' => 'DE_UPS',
+                    'service_name' => 'UPS',
+                    'carrier_code' => 'UPS',
+                    'carrier_name' => 'UPS',
+                ],
+                'DE_FedEx' => [
+                    'service_code' => 'DE_FedEx',
+                    'service_name' => 'FedEx',
+                    'carrier_code' => 'FEDEX',
+                    'carrier_name' => 'FedEx',
+                ],
+                'DE_DeutschePost' => [
+                    'service_code' => 'DE_DeutschePost',
+                    'service_name' => 'Deutsche Post',
+                    'carrier_code' => 'DEUTSCHEPOST',
+                    'carrier_name' => 'Deutsche Post',
+                ],
+                'DE_DeutschePostBrief' => [
+                    'service_code' => 'DE_DeutschePostBrief',
+                    'service_name' => 'Deutsche Post Brief',
+                    'carrier_code' => 'DEUTSCHEPOST',
+                    'carrier_name' => 'Deutsche Post',
+                ],
+                'DE_Abholung' => [
+                    'service_code' => 'DE_Abholung',
+                    'service_name' => 'Abholung (Collection)',
+                    'carrier_code' => 'OTHER',
+                    'carrier_name' => 'Sonstige (Other)',
+                ],
+                'DE_Sonstige' => [
+                    'service_code' => 'DE_Sonstige',
+                    'service_name' => 'Sonstige (Other)',
+                    'carrier_code' => 'OTHER',
+                    'carrier_name' => 'Sonstige (Other)',
+                ],
+            ],
+            'EBAY_ES' => [
+                'ES_Correos' => [
+                    'service_code' => 'ES_Correos',
+                    'service_name' => 'Correos',
+                    'carrier_code' => 'CORREOS',
+                    'carrier_name' => 'Correos',
+                ],
+                'ES_CorreosPaqueteAzul' => [
+                    'service_code' => 'ES_CorreosPaqueteAzul',
+                    'service_name' => 'Correos Paquete Azul',
+                    'carrier_code' => 'CORREOS',
+                    'carrier_name' => 'Correos',
+                ],
+                'ES_CorreosExpress' => [
+                    'service_code' => 'ES_CorreosExpress',
+                    'service_name' => 'Correos Express',
+                    'carrier_code' => 'CORREOSEXPRESS',
+                    'carrier_name' => 'Correos Express',
+                ],
+                'ES_SEUR' => [
+                    'service_code' => 'ES_SEUR',
+                    'service_name' => 'SEUR',
+                    'carrier_code' => 'SEUR',
+                    'carrier_name' => 'SEUR',
+                ],
+                'ES_Other' => [
+                    'service_code' => 'ES_Other',
+                    'service_name' => 'Otro (Other)',
+                    'carrier_code' => 'OTHER',
+                    'carrier_name' => 'Otro (Other)',
+                ],
+            ],
+        ];
+
+        return $services[$marketplace] ?? $services['EBAY_UK'];
+    }
+
+    public function getServicesForOptions(): array
+    {
+        return array_map(function ($service) {
+            return $service['service_name'];
+        }, $this->getServicesWithCarrierInfo());
+    }
+
+    /**
      * eBay API configuration
      */
     protected function getEbayConfig(): array
@@ -1011,6 +1187,7 @@ trait WithEbayApiRequest
         $currency = Arr::get($this->getEbayConfig(), 'currency');
 
         $defaults = Arr::get($this->settings, 'shipping');
+        $attributes = Arr::get($attributes, 'settings.shipping');
 
         $data = [
             "categoryTypes" => [
@@ -1019,7 +1196,7 @@ trait WithEbayApiRequest
                 ]
             ],
             "marketplaceId" => $marketplaceId,
-            "name" => "Shipping",
+            "name" => "Shipping UK",
             "handlingTime" => [
                 "unit"  => "DAY",
                 "value"  => Arr::get($attributes, 'max_dispatch_time', Arr::get($defaults, 'max_dispatch_time'))
@@ -1046,7 +1223,7 @@ trait WithEbayApiRequest
 
         try {
             $endpoint = "/sell/account/v1/fulfillment_policy/$fulfillmentPolicyId";
-            return $this->makeEbayRequest('post', $endpoint, $data);
+            return $this->makeEbayRequest('put', $endpoint, $data);
         } catch (Exception $e) {
             Log::error('Edit Fulfilment Policy Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
