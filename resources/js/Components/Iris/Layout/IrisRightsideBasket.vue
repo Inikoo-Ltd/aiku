@@ -308,6 +308,8 @@ const convertToFloat2 = (val: any) => {
                     <template v-if="!isLoadingProducts">
                         <li v-for="product in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-2 relative">
                             <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
+
+                            <!-- Product: Image -->
                             <div class="relative">
                                 <LinkIris :href="product.canonical_url" class="block group font-medium hover:underline size-20 shrink-0 overflow-hidden rounded-md border border-gray-200">
                                     <Image
