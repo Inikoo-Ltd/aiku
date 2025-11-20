@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
@@ -49,6 +50,12 @@ class UpdateOrgStock extends OrgAction
             OrgStockRecordSearch::dispatch($orgStock);
         }
 
+        if (Arr::hasAny($changes, ['is_on_demand'])) {
+            foreach ($orgStock->products as $product) {
+                ProductHydrateAvailableQuantity::run($product);
+            }
+        }
+
 
         return $orgStock;
     }
@@ -66,6 +73,7 @@ class UpdateOrgStock extends OrgAction
     {
         $rules = [
             'unit_cost'           => ['sometimes','numeric','min:0'],
+            'is_on_demand'        => ['sometimes','boolean'],
         ];
         if (!$this->strict) {
             $rules['discontinued_in_organisation_at'] = ['sometimes', 'nullable', 'date'];
