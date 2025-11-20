@@ -21,59 +21,59 @@ class DimensionsFormatter
             return match ($data['type']) {
                 'rectangular' => number(
                     convertUnits(
-                        $data['l'],
+                        $data['l'] ?? 0,
                         'm',
                         $data['units']
                     )
                 ).'x'.number(
                     convertUnits(
-                        $data['w'],
+                        $data['w'] ?? 0,
                         'm',
                         $data['units']
                     )
                 ).'x'.number(
                     convertUnits(
-                        $data['h'],
+                        $data['h'] ?? 0,
                         'm',
                         $data['units']
                     )
                 ).' ('.$data['units'].')',
                 'sheet' => number(
                     convertUnits(
-                        $data['l'],
+                        $data['l'] ?? 0,
                         'm',
                         $data['units']
                     )
                 ).'x'.number(
                     convertUnits(
-                        $data['w'],
+                        $data['w'] ?? 0,
                         'm',
                         $data['units']
                     )
                 ).' ('.$data['units'].')',
                 'cilinder' => number(
                     convertUnits(
-                        $data['h'],
+                        $data['h'] ?? 0,
                         'm',
                         $data['units']
                     )
                 ).'x'.number(
                     convertUnits(
-                        $data['w'],
+                        $data['w'] ?? 0,
                         'm',
                         $data['units']
                     )
                 ).' ('.$data['units'].')',
                 'sphere' => 'D:'.number(
                     convertUnits(
-                        $data['h'],
+                        $data['h'] ?? 0,
                         'm',
                         $data['units']
                     )
                 ).' ('.$data['units'].')',
                 'string' => 'L.'.number(
                     convertUnits(
-                        $data['l'],
+                        $data['l'] ?? 0,
                         'm',
                         $data['units']
                     )
