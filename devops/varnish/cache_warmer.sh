@@ -37,15 +37,18 @@ warm_varnish() {
         echo "  -> $trimmed"
         # For each URL, request both logged-in and logged-out variants
         for STATUS in "${STATUSES[@]}"; do
+            
             local HEADER="X-Warm-Logged-Status: ${STATUS}"
             #echo "  -> [$STATUS] $trimmed  $HEADER "
             # First request: only X-Warm-Logged-Status
-            curl -sS --retry 2 --retry-delay 1 \
+            # Delay 100ms before the first request to avoid bursting
+            sleep 0.1
+            curl -sS --retry 1 --retry-delay 1 \
                  -A "$USER_AGENT" -H "$HEADER" \
                  "$trimmed" -o /dev/null 2>&1
 
             # Second request: add X-Inertia: true header
-            curl -sS --retry 2 --retry-delay 1 \
+            curl -sS --retry 1 --retry-delay 1 \
                  -A "$USER_AGENT" -H "$HEADER" -H "X-Inertia: true" \
                  "$trimmed" -o /dev/null 2>&1
 
