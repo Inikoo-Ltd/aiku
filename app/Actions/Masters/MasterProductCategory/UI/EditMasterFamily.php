@@ -272,27 +272,32 @@ class EditMasterFamily extends OrgAction
                                 'vol_gr'  =>  [
                                     'label'         => 'Vol / GR',
                                     'type'          => 'input_twin',
-                                    'twin'          => [
+                                    'value' => [
+                                        [
+                                            'volume'   => $masterProductCategory->offers_data['gr_vol']['volume'] ?? 0,
+                                            'discount' => $masterProductCategory->offers_data['gr_vol']['discount'] ?? 0,
+                                        ]
+                                    ],
+                                    'fields' => [
                                         'volume' => [
-                                            'label'         => __('Volume'),
-                                            'placeholder'   => __('Minimal Volume'),
-                                            'value'         => $masterProductCategory->offers_data['gr_vol']['volume'] ?? 0,
-                                            'required'      => true,
-                                            'minValue'      => 0,
-                                            'type'          => 'number',
+                                            'label'       => __('Volume'),
+                                            'key'         => 'volume', //need same with key value of object
+                                            'placeholder' => __('Minimal Volume'),
+                                            'required'    => true,
+                                            'minValue'    => 0,
+                                            'type'        => 'number',
                                         ],
                                         'discount' => [
-                                            'label'         => __('Discount'),
-                                            'placeholder'   => __('Discount %'),
-                                            'value'         => $masterProductCategory->offers_data['gr_vol']['discount'] ?? 0,
-                                            'required'      => true,
-                                            'minValue'      => 0,
-                                            'type'          => 'number',
+                                            'label'       => __('Discount'),
+                                            'key'         => 'discount', //need same with key value of object
+                                            'placeholder' => __('Discount %'),
+                                            'required'    => true,
+                                            'minValue'    => 0,
+                                            'type'        => 'number',
                                         ]
                                     ]
                                 ],
                             ],
-
                         ],
                     ],
                     'args'      => [
