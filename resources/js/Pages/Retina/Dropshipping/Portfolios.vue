@@ -18,7 +18,7 @@ import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faSyncAlt, faHandPointer, faBan} from "@fas";
-import { useFormatTime } from "@/Composables/useFormatTime";
+import { useFormatTime, useTimeCountdown} from "@/Composables/useFormatTime";
 import Icon from '@/Components/Icon.vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { differenceInHours, differenceInMinutes, differenceInSeconds, addDays } from 'date-fns';
@@ -444,48 +444,61 @@ const handleDownloadClick = async (type: string, event: Event) => {
     }
 }
 
-// Add these new refs and computed properties
-const now = ref(new Date());
-const timeLeft = ref('');
+// Time countdown for download link expiration
+const timeCountdown = ref('');
+const countdownInterval = ref<number | null>(null);
 
-// Update the current time every second
-onMounted(() => {
-  const timer = setInterval(() => {
-    now.value = new Date();
-    updateTimeLeft();
-  }, 1000);
+// Set countdown for download link expiration
+const setCountdown = (expiryDate: Date) => {
+    clearInterval(countdownInterval.value!);
+    console.log('Setting countdown for:', expiryDate, 'Current time:', new Date());
 
-  onBeforeUnmount(() => {
-    clearInterval(timer);
-  });
-});
+    // Initial update
+    timeCountdown.value = useTimeCountdown(expiryDate.toISOString(), { human: true });
 
-// Update the time left until the link expires
+    // Update every second
+    countdownInterval.value = window.setInterval(() => {
+        const countdown = useTimeCountdown(expiryDate.toISOString(), { human: true });
+        timeCountdown.value = countdown;
+
+        // Clear interval when countdown is done
+        if (!countdown) {
+            if (countdownInterval.value !== null) {
+                clearInterval(countdownInterval.value);
+            }
+            timeCountdown.value = 'Expired';
+        }
+    }, 1000);
+};
+
+// Update the time left
 const updateTimeLeft = () => {
-  if (!props.last_created_at_download_portfolio_customer_sales_channel) {
-    timeLeft.value = 'Download link is ready';
-    return;
-  }
+    if (!props.last_created_at_download_portfolio_customer_sales_channel) {
+        timeCountdown.value = 'Download link is ready';
+        return;
+    }
 
-  const expiryDate = addDays(new Date(props.last_created_at_download_portfolio_customer_sales_channel), 1);
-  const nowDate = now.value;
+    const expiryDate = addDays(new Date(props.last_created_at_download_portfolio_customer_sales_channel), 1);
+    const now = new Date();
+    console.log('Now:', now, 'Expiry:', expiryDate)
 
-  if (nowDate > expiryDate) {
-    timeLeft.value = 'Download link has expired';
-    return;
-  }
+    if (now > expiryDate) {
+        timeCountdown.value = 'Expired';
+        return;
+    }
 
-  const hours = differenceInHours(expiryDate, nowDate);
-  const minutes = differenceInMinutes(expiryDate, nowDate) % 60;
-  const seconds = differenceInSeconds(expiryDate, nowDate) % 60;
-
-  timeLeft.value = `Link expires in ${hours}h ${minutes}m ${seconds}s`;
+    setCountdown(expiryDate);
 };
 
 // Watch for changes to the creation date
-watch(() => props.last_created_at_download_portfolio_customer_sales_channel, () => {
-  updateTimeLeft();
-}, { immediate: true });
+watch(() => props.last_created_at_download_portfolio_customer_sales_channel, updateTimeLeft, { immediate: true });
+
+// Clean up interval when component is unmounted
+onBeforeUnmount(() => {
+    if (countdownInterval.value) {
+        clearInterval(countdownInterval.value);
+    }
+});
 
 
 
@@ -519,9 +532,12 @@ watch(() => props.last_created_at_download_portfolio_customer_sales_channel, () 
                 </a>
 
                 <a v-else :href="linkDownloadImages" target="_blank" rel="noopener" download>
-                    <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive" v-tooltip="timeLeft">
+                    <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive" v-tooltip="timeCountdown" >
                     </Button>
                 </a>
+                  <!-- <span v-if="timeCountdown" class="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">
+                        {{ timeCountdown }}
+                    </span> -->
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
