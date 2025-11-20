@@ -44,9 +44,9 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         $numberOrgStocksChecked = 0;
         foreach ($product->orgStocks as $orgStock) {
 
-            if($orgStock->is_on_demand){
-                $quantityInStock=10000;
-            }else{
+            if ($orgStock->is_on_demand) {
+                $quantityInStock = 10000;
+            } else {
                 $quantityInStock = $orgStock->quantity_available;
             }
 

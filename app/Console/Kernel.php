@@ -225,8 +225,13 @@ class Kernel extends ConsoleKernel
             scheduledAt: ''
         );
 
-        $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'ProcessFetchStacks',
+        $this->logSchedule(
+            $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ProcessFetchStacks',
+            ),
+            name: 'ProcessFetchStacks',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
         );
 
         $this->logSchedule(
@@ -273,15 +278,15 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'HydrateScheduledTaskLogs',
         );
 
-//        $this->logSchedule(
-//            $schedule
-//                ->command('hydrate:ping')
-//                ->everyMinute()
-//                ->timezone('UTC'),
-//            name: 'ping',
-//            type: 'command',
-//            scheduledAt: '00:00'
-//        );
+        //        $this->logSchedule(
+        //            $schedule
+        //                ->command('hydrate:ping')
+        //                ->everyMinute()
+        //                ->timezone('UTC'),
+        //            name: 'ping',
+        //            type: 'command',
+        //            scheduledAt: '00:00'
+        //        );
     }
 
     protected function commands(): void
