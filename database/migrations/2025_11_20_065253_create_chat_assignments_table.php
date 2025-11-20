@@ -16,8 +16,8 @@ return new class extends Migration
             $table->unsignedInteger('agent_id')->nullable(); // Foreign key to agents (bisa null)
             $table->enum('status', ['pending', 'active', 'resolved', 'rejected'])->default('pending');
             $table->enum('assigned_by', ['system', 'user', 'agent'])->default('system');
-            $table->timestampsTz('assigned_at')->useCurrent();
-            $table->timestampsTz('resolved_at')->nullable();
+            $table->timestamp('assigned_at')->useCurrent();
+            $table->timestamp('resolved_at')->nullable();
             $table->string('note', 500)->nullable();
 
             // Foreign key constraints

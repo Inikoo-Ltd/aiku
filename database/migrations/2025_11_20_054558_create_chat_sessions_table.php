@@ -13,7 +13,6 @@ return new class extends Migration
            $table->increments('id');
            // Foreign Keys
             $table->unsignedInteger('web_user_id')->nullable();
-            $table->unsignedInteger('customer_id')->nullable();
 
             // Session Details
             $table->char('session_uuid', 36)->unique();
@@ -33,7 +32,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             // Foreign Keys
-            $table->foreign('customer_id')->references('id')->on('customers')->nullOnDelete();
+            $table->foreign('web_user_id')->references('id')->on('web_users')->onDelete('cascade');
 
         });
     }
