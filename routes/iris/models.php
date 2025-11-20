@@ -39,7 +39,8 @@ Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::
 Route::post('remind-back-in-stock/{product:id}', StoreIrisBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
 Route::delete('remind-back-in-stock/{product:id}', DeleteIrisBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
 
-
-Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
-Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
-Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
+Route::name('order.')->prefix('order/{order:id}')->group(function () {
+    Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
+    Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
+    Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
+});
