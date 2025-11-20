@@ -153,7 +153,7 @@ const updateTab = (value: string) => {
 						:key="tabSlug"
 						:value="tabSlug"
 					>
-						<FontAwesomeIcon :icon="tab.icon" class="" fixed-width aria-hidden="true" />
+						<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="" fixed-width aria-hidden="true" />
 						{{ tab.title }}
 					</Tab>
 				</TabList>

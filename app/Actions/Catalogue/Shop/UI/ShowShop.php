@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -34,6 +35,7 @@ class ShowShop extends OrgAction
     use WithDashboard;
     use WithDashboardSettings;
     use WithDashboardIntervalOption;
+    use WithDashboardCurrencyTypeSettings;
 
     public function handle(Shop $shop, ActionRequest $request): Response
     {
@@ -195,11 +197,15 @@ class ShowShop extends OrgAction
                     'settings'  => [
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'   => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                     ],
-                    'shop_blocks' => array_merge([
+                    'shop_blocks' => array_merge(
+                        [
                         'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
                         'currency_code' => $shop->currency->code,
-                    ], $this->getAverageClv($shop)),
+                    ],
+                        $this->getAverageClv($shop)
+                    ),
                     'tabs_box' => [
                         'current'    => $this->tab,
                         'navigation' => $tabsBox
@@ -223,12 +229,8 @@ class ShowShop extends OrgAction
                     'tables'      => [
                         'dropship' => [
                             'header' => json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true),
-                            'body'   => json_decode(DashboardPlatformSalesResource::collection(
-                                $shop->platformSalesIntervals()->get()
-                            )->toJson(), true),
-                            'totals' => json_decode(DashboardTotalPlatformSalesResource::make(
-                                $shop->platformSalesIntervals()->get()
-                            )->toJson(), true),
+                            'body'   => json_decode(DashboardPlatformSalesResource::collection($shop->platformSalesIntervals()->get())->toJson(), true),
+                            'totals' => json_decode(DashboardTotalPlatformSalesResource::make($shop->platformSalesIntervals()->get())->toJson(), true),
                         ],
                     ],
                 ],

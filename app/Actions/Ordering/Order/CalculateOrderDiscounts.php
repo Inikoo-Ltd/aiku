@@ -48,8 +48,9 @@ class CalculateOrderDiscounts
             DB::table('transactions')->where('id', $transaction->id)
                 ->update(
                     [
-                        'net_amount'  => $transaction->net_amount,
-                        'offers_data' => [
+                        'gross_amount' => $transaction->gross_amount,
+                        'net_amount'   => $transaction->net_amount,
+                        'offers_data'  => [
                             'v' => 1,
                             'o' => [
                                 'oc' => $transaction->offer_campaign_id,

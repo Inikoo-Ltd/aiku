@@ -26,6 +26,21 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 library.add(faMinus, faArrowRight, faPlus, faChevronRight, faTrashAlt)
 // import { XMarkIcon } from '@heroicons/vue/24/outline'
 
+interface DataSideBasket {
+    order_summary: any
+    order_data: {
+        reference: string
+    }
+}
+
+interface Product {
+    transaction_id: number
+    quantity_ordered: number
+    offers_data: {
+        
+    }
+}
+
 const props = defineProps<{
     isOpen: boolean
 }>()
@@ -48,7 +63,7 @@ const handleToggleLeftBar = () => {
 // const dummyOrderSummary = { "0": [ { "label": "Елементи", "quantity": 1, "price_base": "Multiple", "price_total": "55.20" } ], "1": [ { "label": "Такси", "information": "", "price_total": "0.00" }, { "label": "Доставяне", "information": "", "price_total": "9.95" } ], "2": [ { "label": "Нетно", "information": "", "price_total": "65.15" }, { "label": "Данък (ДДС 20%)", "information": "", "price_total": "13.03" } ], "3": [ { "label": "Общо", "price_total": "78.18" } ], "currency": { "data": { "id": 49, "code": "EUR", "name": "Euro", "symbol": "€" } } } 
 
 
-const dataSideBasket = ref(null)
+const dataSideBasket = ref<DataSideBasket | null>(null)
 const isLoadingFetch = ref(false)
 const isLoadingProducts = ref(false)
 const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
@@ -242,7 +257,7 @@ const convertToFloat2 = (val: any) => {
                 
                 <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3">
                     <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
-                        class="flex items-center"
+                        class="flex items-center whitespace-nowrap"
                     >
                         <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" class="text-base">
                             {{ offer.label}}
@@ -256,7 +271,9 @@ const convertToFloat2 = (val: any) => {
                     </div>
                     
                     <!-- Section: meter -->
-                    <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? `${locale.currencyFormat(layout.iris?.currency?.code, offer.metadata?.current)} of ${locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target))}` : trans('Bonus secured')" class="w-full flex items-center">
+                    <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
+                        ? trans(`:current of :target products gross amount`, { current: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), target: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
+                        : trans('Bonus secured')" class="w-full flex items-center">
                         <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
                                 :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
@@ -297,38 +314,41 @@ const convertToFloat2 = (val: any) => {
                                         <!-- <img :src="product.image" :alt="product.imageAlt"
                                             class="size-full object-cover" /> -->
                                         <Image
-                                            :src="product?.web_images?.main?.original"
+                                            :src="product?.web_image_thumbnail"
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <!-- <pre>{{ product }}</pre> -->
-                                </div>
+                                
                                 <div class="ml-4 flex justify-between gap-x-4 w-full">
+                                    <!-- Section: label Discount, product name, product price -->
                                     <div class="flex flex-1 flex-col">
                                         <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" />
                             
                                         <div class="flex justify-between font-medium">
-                                            <h4>
-                                                <LinkIris :href="product.canonical_url" class=" hover:underline">{{ product.name }}</LinkIris>
+                                            <h4 v-tooltip="product.name">
+                                                <LinkIris :href="product.canonical_url" class="font-medium hover:underline">{{ product.code }}</LinkIris>
                                             </h4>
                                         </div>
-                                        <div class="flex flex-1 items-end justify-between">
-                                            <p class=" text-lg">
-                                                <!-- <span class="text-gray-500 line-through">{{ product.price }}</span> -->
-                                                {{ product?.price ? locale.currencyFormat(dataSideBasket?.order_data?.currency_code || '', product.price) : '' }}
-                                            </p>
-                                        </div>
-                                    </div>
 
+                                        <!-- <div class="flex flex-1 items-end justify-between">
+                                            <p class=" text-lg" :class="product.gross_amount != product?.net_amount ? 'text-green-500' : ''">
+                                                <span v-if="product.gross_amount != product?.net_amount" class="text-gray-500 line-through">{{ product.gross_amount }}</span>
+                                                {{ product?.net_amount ? locale.currencyFormat(layout.iris?.currency?.code || '', product.net_amount) : '' }}
+                                            </p>
+                                        </div> -->
+                                    </div>
                                     
                                     <!-- Section: input quantity -->
                                     <div class="flex flex-col justify-between items-end pt-7">
                                         <div class="max-w-32 flex gap-x-2 h-fit items-center">
-                                            <InputQuantitySideBasket
+                                            <div>
+                                                {{ Number(product.quantity_ordered) }}
+                                            </div>
+                                            
+                                            <!-- <InputQuantitySideBasket
                                                 :product
                                                 @productRemoved="() => onRemoveProductWhenQuantityZero(product)"
-                                            />
+                                            /> -->
                             
                                             <div @click="() => onRemoveFromBasket(product)">
                                                 <LoadingIcon v-if="product?.isLoadingRemove" />
@@ -376,10 +396,9 @@ const convertToFloat2 = (val: any) => {
         <!-- Section: Order Summary -->
         <div class="border-t border-gray-200 px-4 py-6 sm:px-6">
             <div class="relative isolate">
-
                 <OrderSummary
                     :order_summary="dataSideBasket?.order_summary"
-                    :currency_code="dataSideBasket?.order_summary?.currency?.code"
+                    :currency_code="layout.iris?.currency?.code"
                 />
 
                 <div v-if="isLoadingFetch" class="absolute inset-0">
@@ -411,10 +430,10 @@ const convertToFloat2 = (val: any) => {
                 <p>
                     or{{ ' ' }}
                     <LinkIris
-                        href="/app/basket" type="button"
+                        href="/app/basket"
                         class="font-medium text-indigo-600 hover:text-indigo-500"
                         @click="open = false">
-                        Open basket
+                        {{ trans("Open basket") }}
                         <span aria-hidden="true"> &rarr;</span>
                     </LinkIris>
                 </p>

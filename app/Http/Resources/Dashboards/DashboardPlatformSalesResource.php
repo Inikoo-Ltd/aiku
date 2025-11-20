@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\UI\CRM\PlatformTabsEnum;
 use App\Models\Dropshipping\PlatformShopSalesIntervals;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -83,11 +84,6 @@ class DashboardPlatformSalesResource extends JsonResource
         if ($this->resource instanceof PlatformShopSalesIntervals) {
             $columns = array_merge($columns, $this->getDashboardTableColumn($this, 'sales'));
 
-            $models = PlatformShopSalesIntervals::where('shop_id', $this->resource->shop_id)->get();
-            $totalSales = collect($this->sumIntervalValues($models, 'sales'))->sum();
-
-            $sales = collect($this->sumIntervalValues([$this->resource], 'sales'))->sum();
-
             $columns['sales_percentage'] = $this->getSalesPercentageIntervals(
                 $this->resource->shop_id,
                 $this->resource
@@ -121,6 +117,7 @@ class DashboardPlatformSalesResource extends JsonResource
 
         return true;
     }
+
     private function getSalesPercentageIntervals($shopId, $currentModel): array
     {
         $models = PlatformShopSalesIntervals::where('shop_id', $shopId)->get();
@@ -131,7 +128,7 @@ class DashboardPlatformSalesResource extends JsonResource
 
         $result = [];
 
-        foreach (\App\Enums\DateIntervals\DateIntervalEnum::cases() as $interval) {
+        foreach (DateIntervalEnum::cases() as $interval) {
             $key = 'sales_' . $interval->value;
 
             $total = $totalPerInterval[$key] ?? 0;

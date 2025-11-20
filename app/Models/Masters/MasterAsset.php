@@ -95,7 +95,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $marketing_dimensions
  * @property MasterAssetStocksStatusEnum|null $stocks_status
  * @property MasterAssetProductsStatusEnum|null $products_status
- * @property string|null $offers_data
+ * @property array<array-key, mixed>|null $offers_data
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

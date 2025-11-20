@@ -165,7 +165,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $origin_country_id
  * @property string|null $ufi_number
  * @property string|null $scpn_number
- * @property string|null $offers_data
+ * @property array<array-key, mixed>|null $offers_data
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -216,6 +216,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, WebpageHasProduct> $webpageHasProducts
+ * @property mixed $gpsr_product_languages
  * @method static \Database\Factories\Catalogue\ProductFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newQuery()

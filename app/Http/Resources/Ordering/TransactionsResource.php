@@ -42,6 +42,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $order_id
  * @property mixed $price
  * @property mixed $offers_data
+ * @property mixed $product_image_id
+ * @property mixed $model_type
+ * @property mixed $product_id
  */
 class TransactionsResource extends JsonResource
 {
