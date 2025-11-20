@@ -277,8 +277,6 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('hydrate:scheduled-task-logs --name=utc_23')->dailyAt('23:00')->withoutOverlapping()->timezone('UTC');
 
-        $schedule->command('hydrate:scheduled-task-logs --name=utc_24')->dailyAt('24:00')->withoutOverlapping()->timezone('UTC');
-
         $this->logSchedule(
             $schedule
                 ->command('hydrate:ping')
