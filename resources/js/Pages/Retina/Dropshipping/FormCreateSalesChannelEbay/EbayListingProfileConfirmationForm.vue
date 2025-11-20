@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-    import { inject, ref } from "vue";
+import { inject, onMounted, ref } from "vue";
     import { faInfoCircle } from "@fal";
     import Select from "primevue/select";
     import { trans } from "laravel-vue-i18n";
@@ -18,30 +18,44 @@
     import { library } from "@fortawesome/fontawesome-svg-core";
     import Button from "@/Components/Elements/Buttons/Button.vue";
     import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+    import axios from "axios";
 
     library.add(faInfoCircle);
 
     const closeCreateEbayModal = inject("closeCreateEbayModal");
     const ebayName = inject("ebayName");
+    const ebayId = inject("ebayId");
 
     const isVAT = ref(false);
 
-    const sites = ref([
-        { name: "United States", value: "us" },
-        { name: "United Kingdom", value: "uk" },
-    ]);
+    const returnProfiles = ref([]);
+    const shippingProfiles = ref([]);
+    const paymentProfiles = ref([]);
 
     const form = useForm({
         app: "Ebay",
         account: ebayName.value,
-        inclusiveVATPercentage: 0,
-        suggestedCategories: false
+        inclusiveVATPercentage: 0
     });
 
     const submitForm = async () => {
-        console.log(form.data());
         closeCreateEbayModal();
     }
+
+    onMounted(async () => {
+        const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay_policies.index', {
+            ebayUser: ebayId.value
+        }));
+
+        if(data?.fulfillment_policies?.total > 0) {
+            shippingProfiles.value = data?.fulfillment_policies?.fulfillmentPolicies?.map((item) => {
+                return {
+                    name: item.name,
+                    value: item.fulfillmentPolicyId
+                };
+            })
+        }
+    })
 </script>
 
 <template>
@@ -71,27 +85,14 @@
                     />
                 </div>
 
-                <div class="flex flex-col gap-2 p-4">
-                    <label class="font-semibold">{{ trans("Listing Duration") }}</label>
-                    <div class="flex items-center gap-2 w-full md:w-80">
-                        <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
-                        <FontAwesomeIcon v-tooltip="trans('Select eBay site name')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
-                    </div>
-                </div>
-
                 <div class="flex flex-col gap-2 p-4 w-full md:w-80">
-                    <label class="font-semibold">{{ trans("Inclusive VAT Rate") }}</label>
+                    <label class="font-semibold">{{ trans("VAT Rate") }}</label>
                     <ToggleSwitch v-model="isVAT" />
                 </div>
 
                 <div v-if="isVAT" class="flex flex-col gap-2 w-full md:w-80 p-4">
-                    <label class="font-semibold">{{ trans("Inclusive VAT Percentage") }}</label>
+                    <label class="font-semibold">{{ trans("VAT Percentage") }}</label>
                     <InputNumber v-model="form.inclusiveVATPercentage" inputId="minmax" :min="0" :max="100" fluid />
-                </div>
-
-                <div class="flex flex-col gap-2 p-4 w-full md:w-80">
-                    <label class="font-semibold">{{ trans("Suggested categories") }}</label>
-                    <ToggleSwitch v-model="form.suggestedCategories" />
                 </div>
             </div>
         </div>
