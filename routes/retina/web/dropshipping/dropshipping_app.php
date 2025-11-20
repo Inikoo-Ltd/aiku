@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Amazon\AuthorizeRetinaAmazonUser;
 use App\Actions\Dropshipping\Amazon\CallbackRetinaAmazonUser;
 use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
+use App\Actions\Dropshipping\Ebay\CheckEbayUserAuthorized;
 use App\Actions\Dropshipping\Ebay\ShowCallbackSuccessRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\StoreMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
@@ -65,6 +66,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
     Route::post('ebay-user', StoreRetinaEbayUser::class)->name('ebay.store');
     Route::patch('ebay-user/{ebayUser}', UpdateRetinaEbayUser::class)->name('ebay.update')->withoutScopedBindings();
+    Route::get('ebay-user/{ebayUser}/auth-check', CheckEbayUserAuthorized::class)->name('ebay.auth_check')->withoutScopedBindings();
 });
 
 Route::prefix('platform')->as('platform.')->group(function () {

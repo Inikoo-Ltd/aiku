@@ -40,14 +40,13 @@
             const {data} = await axios.patch(route('retina.dropshipping.customer_sales_channels.ebay.update', {
                 ebayUser: ebayId.value
             }), form.data());
-            ebayId.value = data.id;
             goNext();
             isLoadingStep.value = false
         } catch (err) {
             isLoadingStep.value = false;
             notify({
                 title: trans("Something went wrong"),
-                text: err.message,
+                text: err.response?.data?.message,
                 type: "error"
             });
         }

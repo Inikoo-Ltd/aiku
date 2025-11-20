@@ -13,6 +13,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
+import axios from "axios";
 
 library.add(faInfoCircle);
 
@@ -35,7 +36,7 @@ const onSubmitEbay = async () => {
         isLoadingStep.value = false;
         notify({
             title: trans("Something went wrong"),
-            text: err.message,
+            text: err.response?.data?.message,
             type: "error"
         });
     }
@@ -44,19 +45,32 @@ const onSubmitEbay = async () => {
 const form = useForm({});
 
 const submitForm = async () => {
-    console.log(form.data());
-    goNext();
+    isLoadingStep.value = true
+    try {
+        const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.auth_check', {
+            ebayUser: ebayId.value
+        }));
+        goNext();
+        isLoadingStep.value = false
+    } catch (err) {
+        isLoadingStep.value = false;
+        notify({
+            title: trans("Something went wrong"),
+            text: err.response?.data?.message,
+            type: "error"
+        });
+    }
 }
 </script>
 
 <template>
     <div class="flex flex-col gap-2">
-        <span class="text-lg font-semibold">{{ trans("API Settings") }}</span>
-        <span class="text-sm">{{ trans("This is where you need to add your API settings") }}</span>
+        <span class="text-lg font-semibold">{{ trans("Authentication Settings") }}</span>
+        <span class="text-sm">{{ trans("This is where you need to auth your store to our system.") }}</span>
     </div>
     <form @submit.prevent="submitForm" class="flex flex-col gap-6">
         <div class="flex items-center gap-2 w-full md:w-80">
-            <Button size="sm" :loading="isLoadingStep" @click="onSubmitEbay">{{ trans("AuthKey") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="onSubmitEbay">{{ trans("Auth Store") }}</Button>
             <FontAwesomeIcon
                 v-tooltip="trans('Requests a token from eBay so we can sync without you entering your account details each time')"
                 icon="fal fa-info-circle" class="hidden md:block size-5 text-black"/>
