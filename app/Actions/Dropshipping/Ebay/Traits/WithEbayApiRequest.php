@@ -1196,7 +1196,8 @@ trait WithEbayApiRequest
                 ]
             ],
             "marketplaceId" => $marketplaceId,
-            "name" => "Shipping UK",
+            "name" => "Shipping",
+            "globalShipping" => false,
             "handlingTime" => [
                 "unit"  => "DAY",
                 "value"  => Arr::get($attributes, 'max_dispatch_time', Arr::get($defaults, 'max_dispatch_time'))
