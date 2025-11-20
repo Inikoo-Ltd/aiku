@@ -50,6 +50,7 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", retinaLayoutStructure)
+const firstLoad = ref(null)
 const products = ref<any[]>(
     props.fieldValue?.products?.meta?.last_page == 1
         ? [
@@ -157,6 +158,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
     if (isLoadMore) {
         isLoadingMore.value = true;
     } else {
+        if(firstLoad.value == 1)
         isLoadingInitial.value = true;
     }
 
@@ -210,6 +212,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
     } finally {
         isLoadingInitial.value = false;
         isLoadingMore.value = false;
+        firstLoad.value++;
     }
 };
 
@@ -283,7 +286,8 @@ onMounted(() => {
     }
 
     if (layout?.iris?.is_logged_in) {
-      /*   fetchProducts(); */
+        firstLoad.value = 1
+        fetchProducts(); // break chace from product dont deleted
         fetchHasInBasket();
     }
 })

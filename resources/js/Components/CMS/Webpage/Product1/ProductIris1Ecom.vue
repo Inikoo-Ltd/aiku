@@ -60,12 +60,9 @@ const props = withDefaults(defineProps<{
 }>(), {})
 
 const layout = inject("layout", {})
-const currency = layout?.iris?.currency
-const locale = useLocaleStore()
 const isFavorite = ref(false)
 const contentRef = ref<Element | null>(null)
 const expanded = ref(false)
-const showButton = ref(false)
 const isLoadingRemindBackInStock = ref(false)
 const customerData = ref(null)
 const keyCustomer = ref(ulid())
@@ -413,7 +410,7 @@ const validImages = computed(() => {
                         </div>
                     </div>
 
-                    <LinkIris v-else :href="urlLoginWithRedirect()" :style="getStyles(fieldValue?.button?.properties, screenType)"
+                    <LinkIris v-else :href="urlLoginWithRedirect()" :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                         class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
@@ -497,7 +494,7 @@ const validImages = computed(() => {
                 <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :customerData="customerData" :product="fieldValue.product"  :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                 <div v-else>
-                    <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+                    <Button :label="trans('Out of stock')" type="tertiary" disabled full  :inject-style="getStyles(fieldValue?.buttonLogin?.properties, screenType)"/>
                 </div>
             </div>
 
