@@ -44,6 +44,11 @@ import { faListUl, faEye } from "@far"
 import { trans } from "laravel-vue-i18n"
 import BreadcrumbsIris from "@/Components/Navigation/BreadcrumbsIris.vue"
 import RetinaBottomNavigation from "./Retina/RetinaBottomNavigation.vue"
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";
+import Modal from "@/Components/Utils/Modal.vue";
+import PureInputNumber from "@/Components/Pure/PureInputNumber.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
 const layout = useLayoutStore()
@@ -53,6 +58,7 @@ provide("layout", layout)
 provide("locale", locale)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 const { props } = usePage()
+const isOpenModalCreditCard = ref(props.retina.show_cards_modal)
 const irisTheme = props?.iris?.theme ?? { color: [...useColorTheme[2]] }
 
 const sidebarOpen = ref(false)
@@ -126,7 +132,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 							</span>
 						</Link>
 					</div>
-					
+
 					<div
 						class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
 						<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 overflow-x-auto" />
@@ -138,17 +144,33 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 			</main>
 		</div>
 
+
+        <Modal :isOpen="isOpenModalCreditCard" @onClose="isOpenModalCreditCard = false" width="w-[600px]">
+            <div class="isolate bg-white px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl mb-2">{{ trans("Add Credit Card") }}</h2>
+                    <p class="text-sm leading-5 text-gray-400">
+                        {{ trans("Important Update: To ensure the fastest and most seamless experience with our fully automated order processing system via our sales channels, we strongly recommend saving your payment card in your account. This allows your future orders to be processed instantly and without any manual delays") }}
+                    </p>
+                </div>
+
+                <div class="mt-6 mb-4 relative">
+                    <ButtonWithLink @click="isOpenModalCreditCard = false" :url="route('retina.dropshipping.mit_saved_cards.dashboard')" label="Add Credit Card" full />
+                </div>
+            </div>
+        </Modal>
+
 		<IrisFooter
 			v-if="layout.iris?.footer && !isArray(layout.iris.footer)"
 			:data="layout.iris.footer"
 			:colorThemed="irisTheme"
 		/>
 
-			
+
 		<!-- Section: bottom navigation -->
 		<div v-if="layout.user && screenType === 'mobile'" class="bg-[rgb(20,20,20)] text-white fixed bottom-0 w-full z-10">
 			<RetinaBottomNavigation
-				
+
 			/>
 		</div>
 	</div>
