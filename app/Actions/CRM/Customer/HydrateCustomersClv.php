@@ -9,30 +9,61 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
-use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\CRM\Customer;
 use Exception;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
 class HydrateCustomersClv
 {
-    use WithHydrateCommand;
+    use AsAction;
+
+    private string $model = Customer::class;
 
     public string $commandSignature = 'hydrate:customers-clv {organisations?*} {--S|shop= shop slug} {--s|slug=}';
 
-    public function __construct()
+    public function handle(): void
     {
-        $this->model = Customer::class;
+        $tableName = (new $this->model())->getTable();
+
+        $query = DB::table($tableName)
+            ->select("$tableName.id")
+            ->whereExists(function ($q) use ($tableName) {
+                $q->select(DB::raw(1))
+                    ->from('invoices')
+                    ->whereColumn('invoices.customer_id', "$tableName.id");
+            })
+            ->orderBy("$tableName.id", 'desc');
+
+        $query->chunk(
+            1000,
+            function (Collection $modelsData) {
+                foreach ($modelsData as $modelId) {
+                    $model = (new $this->model());
+
+                    if ($this->hasSoftDeletes($model)) {
+                        $instance = $model->withTrashed()->find($modelId->id);
+                    } else {
+                        $instance = $model->find($modelId->id);
+                    }
+
+                    try {
+                        CustomerHydrateClv::run($instance);
+                    } catch (Exception $e) {
+                        Log::info("Failed to Hydrate Customers CLV: " . $e->getMessage());
+                        Sentry::captureMessage("Failed to Hydrate Customers CLV to: " . $e->getMessage());
+                    }
+                }
+            }
+        );
     }
 
-    public function handle(Customer $customer): void
+    public function hasSoftDeletes($model): bool
     {
-        try {
-            CustomerHydrateClv::run($customer);
-        } catch (Exception $e) {
-            Log::info("Failed to Hydrate Customers Clv: " . $e->getMessage());
-            Sentry::captureMessage("Failed to Hydrate Customers Clv to: " . $e->getMessage());
-        }
+        return in_array(SoftDeletes::class, class_uses_recursive($model));
     }
 }

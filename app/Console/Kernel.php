@@ -169,17 +169,24 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'ConsolidateRecurringBills',
         );
 
-        $schedule->command('hydrate:customers-clv')->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+        $schedule->command('hydrate:customers-clv')->dailyAt('01:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'HydrateCustomersClv',
         );
 
-        $schedule->command('hydrate:customers-tag')->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+        $schedule->command('hydrate:customers-tag')->dailyAt('01:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'HydrateCustomersTag',
         );
 
         $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
         );
+
+        $schedule->command('hydrate:ping')->dailyAt('02:45')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+
+        (new Schedule())->command('hydrate:ping')->everyTwoHours('02:48')->timezone('UTC');
+
     }
 
 

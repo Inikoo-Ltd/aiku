@@ -59,14 +59,14 @@ enum DateIntervalEnum: string
             '1m'  => '1m',
             '1w'  => '1w',
             '3d'  => '3d',
-            'ytd' => 'YTD',
-            'qtd' => 'QTD',
-            'mtd' => 'MTD',
-            'wtd' => 'WTD',
+            'ytd' => 'YtD',
+            'qtd' => 'QtD',
+            'mtd' => 'MtD',
+            'wtd' => 'WtD',
             'tdy' => 'Today',
             'lm'  => 'LM',
             'lw'  => 'LW',
-            'ld'  => 'YDAY',
+            'ld'  => 'YDay',
 
         ];
     }
