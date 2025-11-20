@@ -179,6 +179,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('hydrate:ping')->dailyAt('02:45')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'HydratePing',
         );
+
+        (new Schedule())->command('hydrate:ping')->everyTwoHours('02:48')->timezone('UTC');
+
     }
 
 
