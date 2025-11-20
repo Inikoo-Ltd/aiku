@@ -57,18 +57,9 @@ class CallbackRetinaEbayUser extends RetinaAction
                     ->orderBy('updated_at', 'desc')
                     ->first();
 
-                $ebayUser->refresh();
-                $userData = $ebayUser->getUser();
-
-                $registrationMarketplaceId = Arr::get($userData, 'registrationMarketplaceId');
-                if ($registrationMarketplaceId === "EBAY_US") {
-                    $registrationMarketplaceId = "EBAY_GB";
-                }
-
                 $ebayUser = UpdateEbayUser::run($ebayUser, [
                         'step' => EbayUserStepEnum::AUTH,
                         'settings' => [
-                            'marketplace_id' => $registrationMarketplaceId,
                             'credentials' => [
                                 'ebay_access_token' => $tokenData['access_token'],
                                 'ebay_refresh_token' => $tokenData['refresh_token'],

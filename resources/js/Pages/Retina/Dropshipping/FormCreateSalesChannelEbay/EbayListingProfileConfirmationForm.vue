@@ -22,6 +22,7 @@
     library.add(faInfoCircle);
 
     const closeCreateEbayModal = inject("closeCreateEbayModal");
+    const ebayName = inject("ebayName");
 
     const isVAT = ref(false);
 
@@ -31,9 +32,8 @@
     ]);
 
     const form = useForm({
-        profileName: "",
         app: "Ebay",
-        account: "",
+        account: ebayName.value,
         inclusiveVATPercentage: 0,
         suggestedCategories: false
     });
@@ -45,27 +45,7 @@
 </script>
 
 <template>
-    <div class="flex flex-col gap-2">
-        <span class="text-lg font-semibold">{{ trans("Add eBay listing profile") }}</span>
-        <hr class="w-full border-t" />
-    </div>
     <form @submit.prevent="submitForm" class="flex flex-col gap-6">
-        <div class="flex flex-col w-full border rounded-xl">
-            <div class="bg-gray-100 px-4 py-2">
-                <span class="font-semibold">{{ trans("Listing profile name") }}</span>
-            </div>
-            <div class="flex">
-                <div class="flex flex-col gap-2 w-full md:w-80 p-4">
-                    <label class="font-semibold">{{ trans("Profile name") }}</label>
-                    <PureInput
-                        type="text"
-                        v-model="form.profileName"
-                        readonly
-                    />
-                </div>
-            </div>
-        </div>
-
         <hr class="w-full border-t" />
 
         <div class="flex flex-col w-full border rounded-xl">
@@ -263,28 +243,6 @@
                                 <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
                                 <FontAwesomeIcon v-tooltip="trans('Select eBay profile')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex flex-col w-full border rounded-xl">
-                    <div class="bg-gray-100 px-4 py-2">
-                        <span class="font-semibold">{{ trans("Payment Methods") }}</span>
-                    </div>
-                    <div class="grid lg:grid-cols-2">
-                        <div class="flex flex-col gap-2 w-full md:w-80 p-4">
-                            <label class="font-semibold">{{ trans("Credit card accepted") }}</label>
-                            <ToggleSwitch v-model="form.suggestedCategories" />
-                        </div>
-
-                        <div class="flex flex-col gap-2 w-full md:w-80 p-4">
-                            <label class="font-semibold">{{ trans("Paypal") }}</label>
-                            <ToggleSwitch v-model="form.suggestedCategories" />
-                        </div>
-
-                        <div class="flex flex-col gap-2 w-full md:w-80 p-4">
-                            <label class="font-semibold">{{ trans("Email") }}</label>
-                            <InputText name="email" type="text" v-model="form.profileName" />
                         </div>
                     </div>
                 </div>

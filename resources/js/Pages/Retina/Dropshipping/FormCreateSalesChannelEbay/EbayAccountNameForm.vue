@@ -15,6 +15,7 @@ import axios from "axios";
 
 const goNext = inject("goNext");
 const ebayId = inject("ebayId");
+const ebayName = inject("ebayName");
 const closeCreateEbayModal = inject("closeCreateEbayModal");
 
 const isLoadingStep = ref(false)
@@ -28,6 +29,7 @@ const submitForm = async () => {
     try {
         const {data} = await axios.post(route('retina.dropshipping.customer_sales_channels.ebay.store'), form.data());
         ebayId.value = data.id;
+        ebayName.value = data.name;
         goNext();
         isLoadingStep.value = false
     } catch (err) {
