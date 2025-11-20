@@ -570,6 +570,7 @@ const onChangeInsurance = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
             
+            <!-- Section: Charge Premium Dispatch -->
             <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                     <InformationIcon :information="charges.premium_dispatch?.description" />

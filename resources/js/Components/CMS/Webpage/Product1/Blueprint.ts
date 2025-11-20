@@ -95,9 +95,29 @@ export default {
 				},
 			],
 		},
-		 {
-            name: "Button",
+		{
+            name: "Button Add to basket / portofolio",
             key: ["button", "properties"],
+            replaceForm: [
+                    {
+                        key: ["background"],
+                        label : "Background",
+                        type: "background",
+                    },
+                    {
+                        key: ["text"],
+                        type: "textProperty",
+                    },
+                    {
+                        key: ["border"],
+                        label : "Border",
+                        type: "border",
+                    },
+                ],
+        },
+		{
+            name: "Button login",
+            key: ["buttonLogin", "properties"],
             replaceForm: [
                     {
                         key: ["background"],

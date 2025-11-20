@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
-import { toInteger } from 'lodash'
+import { toInteger } from 'lodash-es'
 
 
 interface ProductResource {
@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<{
     routeToAllPortfolios?: routeType
     routeToSpecificChannel?: routeType
     buttonStyle?: object
+    buttonStyleLogin?:object | undefined
 
 }>(), {
     productHasPortfolio: () => [],
@@ -276,6 +277,6 @@ watch(() => props.productHasPortfolio, (newVal) => {
     </a> -->
 
     <a  v-else  :href="urlLoginWithRedirect()" class="w-full">
-        <Button label="Login / Register to Start" full :injectStyle="buttonStyle"/>
+        <Button label="Login / Register to Start" full :injectStyle="buttonStyleLogin"/>
     </a>
 </template>

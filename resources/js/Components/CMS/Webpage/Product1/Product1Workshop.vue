@@ -4,7 +4,7 @@ import { faBox } from "@far"
 import { faCircle, faDotCircle, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref , inject, useAttrs, onMounted, computed} from "vue"
+import { ref, inject, useAttrs, onMounted, computed } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { useLocaleStore } from '@/Stores/locale'
@@ -18,27 +18,28 @@ import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vu
 import { getStyles } from "@/Composables/styles"
 import { isArray } from "lodash-es"
 import ProductPrices from "./ProductPrices.vue"
+import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
 library.add(faCube, faLink, faFileDownload)
 
 type TemplateType = 'webpage' | 'template'
 
 const props = withDefaults(defineProps<{
-  modelValue: any
-  webpageData?: any
-  blockData?: object
-  templateEdit?: TemplateType
-  indexBlock? : number
-  screenType: "mobile" | "tablet" | "desktop"
-  currency: {
-    code: string
-    name: string
-  }
+    modelValue: any
+    webpageData?: any
+    blockData?: object
+    templateEdit?: TemplateType
+    indexBlock?: number
+    screenType: "mobile" | "tablet" | "desktop"
+    currency: {
+        code: string
+        name: string
+    }
 }>(), {
-  templateEdit: 'webpage'
+    templateEdit: 'webpage'
 })
 
-const layout = inject('layout',{})
+const layout = inject('layout', {})
 const locale = useLocaleStore()
 const isFavorite = ref(false)
 const cancelToken = ref<Function | null>(null)
@@ -50,14 +51,14 @@ const toggleFavorite = () => {
     isFavorite.value = !isFavorite.value
 }
 const debounceTimer = ref(null)
-const onDescriptionUpdate = (key : string, val : string) => {
+const onDescriptionUpdate = (key: string, val: string) => {
     clearTimeout(debounceTimer.value)
     debounceTimer.value = setTimeout(() => {
         saveDescriptions(key, val)
     }, 5000)
 }
 
-const saveDescriptions = (key : string, val : string) => {
+const saveDescriptions = (key: string, val: string) => {
     if (cancelToken.value) cancelToken.value()
     router.patch(
         route("grp.models.product.update", { product: props.modelValue.product.id }),
@@ -82,106 +83,101 @@ const saveDescriptions = (key : string, val : string) => {
     )
 }
 
-function formatNumber(value : Number) {
-  return Number.parseFloat(value).toString();
+function formatNumber(value: Number) {
+    return Number.parseFloat(value).toString();
 }
 
 defineOptions({
-  inheritAttrs: false,
+    inheritAttrs: false,
 })
 
 const attrs = useAttrs()
 
 // ✅ helper for responsive classes
 function resolveResponsiveClass(
-  screenType: "mobile" | "tablet" | "desktop",
-  options: Record<string, string>
+    screenType: "mobile" | "tablet" | "desktop",
+    options: Record<string, string>
 ) {
-  return options[screenType] || ""
+    return options[screenType] || ""
 }
 
 const imagesSetup = ref(isArray(props.modelValue.product.images) ? props.modelValue.product.images :
-	props.modelValue.product.images
-		.filter(item => item.type == "image")
-		.map(item => ({
-			label: item.label,
-			column: item.column_in_db,
-			images: item.images,
-		}))
+    props.modelValue.product.images
+        .filter(item => item.type == "image")
+        .map(item => ({
+            label: item.label,
+            column: item.column_in_db,
+            images: item.images,
+        }))
 )
 
 const videoSetup = ref(
-	props.modelValue.product.images.find(item => item.type === "video") || null
+    props.modelValue.product.images.find(item => item.type === "video") || null
 )
 
 
 const validImages = computed(() => {
-  if (!imagesSetup.value) return []
+    if (!imagesSetup.value) return []
 
-  const hasType = imagesSetup.value.some(item => "type" in item)
+    const hasType = imagesSetup.value.some(item => "type" in item)
 
-  if (hasType) {
+    if (hasType) {
+        return imagesSetup.value
+            .filter(item => item.images)
+            .flatMap(item => {
+                const images = Array.isArray(item.images) ? item.images : [item.images]
+                return images.map(img => ({
+                    source: img,
+                    thumbnail: img
+                }))
+            })
+    }
+
+    // berarti array of string/url
     return imagesSetup.value
-      .filter(item => item.images)
-      .flatMap(item => {
-        const images = Array.isArray(item.images) ? item.images : [item.images]
-        return images.map(img => ({
-          source: img,
-          thumbnail: img
-        }))
-      })
-  }
-
-  // berarti array of string/url
-  return imagesSetup.value
 })
 
 
 onMounted(() => {
-  requestAnimationFrame(() => {
-    if (contentRef?.value?.scrollHeight > 100) {
-      showButton.value = true
-    }
-  })
+    requestAnimationFrame(() => {
+        if (contentRef?.value?.scrollHeight > 100) {
+            showButton.value = true
+        }
+    })
 
-  if(props.templateEdit != 'webpage') {
-    layout.iris = {
-        is_logged_in : true
+    if (props.templateEdit != 'webpage') {
+        layout.iris = {
+            is_logged_in: true
+        }
     }
-  }
 })
 
 const toggleExpanded = () => {
-  expanded.value = !expanded.value
+    expanded.value = !expanded.value
 }
 </script>
 
 <template>
     <!-- Desktop / Tablet Layout -->
-    <div
-      id="product-1"
-      v-bind="attrs"
-      :style="{
+    <div id="product-1" v-bind="attrs" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        marginLeft : 'auto',
-        marginRight : 'auto'
-      }"
-      :class="[
+        marginLeft: 'auto',
+        marginRight: 'auto'
+    }" :class="[
         'mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6',
         resolveResponsiveClass(screenType, {
-          mobile: 'hidden',
-          tablet: 'block',
-          desktop: 'block'
+            mobile: 'hidden',
+            tablet: 'block',
+            desktop: 'block'
         })
-      ]"
-    >
+    ]">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="py-1 w-full">
                     <ImageProducts :images="validImages" :video="videoSetup?.url" />
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
-                    <div class="flex items-center gap-1 text-xs" v-for="(tag,index) in modelValue.product.tags"
+                    <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in modelValue.product.tags"
                         :key="index">
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <div v-else class="aspect-square w-full h-[15px]">
@@ -192,12 +188,13 @@ const toggleExpanded = () => {
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-span-5 self-start">
                 <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
                         <h1 class="text-2xl font-bold text-gray-900">{{ modelValue.product.name }}</h1>
-                        <div class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
+                        <div
+                            class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ modelValue.product.code }}</div>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
@@ -205,9 +202,9 @@ const toggleExpanded = () => {
                                 :class="modelValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
                                 {{
-                                modelValue.product.stock > 0
-                                ? `In Stock (${modelValue.product.stock})`
-                                : 'Out Of Stock'
+                                    modelValue.product.stock > 0
+                                        ? `In Stock (${modelValue.product.stock})`
+                                        : 'Out Of Stock'
                                 }}
                             </span>
                         </div>
@@ -244,11 +241,24 @@ const toggleExpanded = () => {
                     </div>
                 </div> -->
                 <div class="flex gap-2 mb-6">
-                    <ButtonAddPortfolio :product="modelValue.product" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)"/>
+                    <ButtonAddPortfolio 
+                        v-if="['awd', 'dssk', 'dse'].includes(route().params.shop)"
+                        :product="modelValue.product"
+                        :buttonStyle="getStyles(modelValue?.button?.properties, screenType)"
+                        :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
+                     />
+                    <div v-else class="w-full">
+                        <EcomAddToBasketv2 v-if="layout?.iris?.is_logged_in" :product="modelValue.product"
+                            :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
+                        <div v-else :style="getStyles(modelValue?.buttonLogin?.properties, screenType)"
+                            class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+                            {{ trans("Login or Register for Wholesale Prices") }}
+                        </div>
+                    </div>
                 </div>
                 <div class="flex items-center text-sm text-medium text-gray-500 mb-6">
                     <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
-                    <span>{{`order ${formatNumber(modelValue?.product?.units)} for full pack`}}</span>
+                    <span>{{ `order ${formatNumber(modelValue?.product?.units)} for full pack` }}</span>
                 </div>
                 <div class="space-y-1">
                     <!-- <div class="text-sm font-medium text-gray-800" :style="getStyles(modelValue?.description?.description_title, screenType)">
@@ -259,7 +269,8 @@ const toggleExpanded = () => {
                         <div v-else>{{ modelValue.product.description_title }}</div>
                     </div> -->
 
-                    <div class="text-xs font-normal text-gray-700" :style="getStyles(modelValue?.description?.description_content, screenType)">
+                    <div class="text-xs font-normal text-gray-700"
+                        :style="getStyles(modelValue?.description?.description_content, screenType)">
                         <EditorV2 v-if="templateEdit === 'webpage'" v-model="modelValue.product.description"
                             placeholder="Write product description..."
                             @update:model-value="(e) => onDescriptionUpdate('description', e)"
@@ -271,9 +282,10 @@ const toggleExpanded = () => {
 
                 <div v-if="modelValue.setting?.information" class="my-4 space-y-2">
                     <InformationSideProduct v-if="modelValue?.information?.length > 0"
-                        :informations="modelValue?.information"  :styleData="modelValue.information_style"/>
+                        :informations="modelValue?.information" :styleData="modelValue.information_style" />
                     <div v-if="modelValue?.paymentData?.length > 0"
-                        class="items-center gap-3 border-gray-400 font-bold text-gray-800 py-2" :style="getStyles(modelValue?.information_style?.title)">
+                        class="items-center gap-3 border-gray-400 font-bold text-gray-800 py-2"
+                        :style="getStyles(modelValue?.information_style?.title)">
                         {{ trans("Secure Payments") }}:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
@@ -284,38 +296,39 @@ const toggleExpanded = () => {
             </div>
         </div>
 
-        <div class="text-xs font-normal text-gray-700 py-2" :style="getStyles(modelValue?.description?.description_extra, screenType)">
+        <div class="text-xs font-normal text-gray-700 py-2"
+            :style="getStyles(modelValue?.description?.description_extra, screenType)">
             <EditorV2 v-if="templateEdit === 'webpage'" v-model="modelValue.product.description_extra"
                 placeholder="Write product description extra ..."
-                @update:model-value="(e) => onDescriptionUpdate('description_extra', e)" class="text-xs text-gray-800" />
-            <div v-else   ref="contentRef" class="prose prose-sm text-gray-700 max-w-none" v-html="modelValue.product.description_extra"></div>
+                @update:model-value="(e) => onDescriptionUpdate('description_extra', e)"
+                class="text-xs text-gray-800" />
+            <div v-else ref="contentRef" class="prose prose-sm text-gray-700 max-w-none"
+                v-html="modelValue.product.description_extra"></div>
 
-             <button v-if="showButton" @click="toggleExpanded"
+            <button v-if="showButton" @click="toggleExpanded"
                 class="mt-1 text-gray-900 text-xs underline focus:outline-none">
                 {{ expanded ? trans("Show Less") : trans("Read More") }}
             </button>
         </div>
 
         <ProductContents :product="props.modelValue.product" :styleData="modelValue.information_style"
-            :setting="modelValue.setting" :templateEdit="templateEdit"/>
+            :setting="modelValue.setting" :templateEdit="templateEdit" />
     </div>
 
     <!-- Mobile Layout -->
-    <div
-      :class="[
+    <div :class="[
         'px-4 py-6 text-gray-800',
         resolveResponsiveClass(screenType, {
-          mobile: 'block',
-          tablet: 'hidden',
-          desktop: 'hidden'
+            mobile: 'block',
+            tablet: 'hidden',
+            desktop: 'hidden'
         })
-      ]"
-    >
+    ]">
         <h2 class="text-xl font-bold mb-2">{{ modelValue.product.name }}</h2>
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
         <div class="flex justify-between items-start gap-4 mt-4">
-             <div v-if="layout?.iris?.is_logged_in">
-               <ProductPrices :field-value="modelValue" />
+            <div v-if="layout?.iris?.is_logged_in">
+                <ProductPrices :field-value="modelValue" />
             </div>
 
             <div class="mt-1">
@@ -337,13 +350,25 @@ const toggleExpanded = () => {
         </div>
 
         <div class="mt-6 flex flex-col gap-2">
-            <ButtonAddPortfolio :product="modelValue.product" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
+            <ButtonAddPortfolio v-if="['awd', 'dssk', 'dse'].includes(route().params.shop)"
+                :product="modelValue.product"
+                :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
+                :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
+            <div v-else class="w-full">
+                <EcomAddToBasketv2 v-if="layout?.iris?.is_logged_in" :product="modelValue.product"
+                    :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
+                <div v-else :style="getStyles(modelValue?.buttonLogin?.properties, screenType)"
+                    class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+                    {{ trans("Login or Register for Wholesale Prices") }}
+                </div>
+            </div>
         </div>
         <div class="text-xs font-medium py-3">
             <EditorV2 v-model="modelValue.product.description" @update:model-value="(e) => onDescriptionUpdate(e)" />
         </div>
         <div class="mt-4">
-               <InformationSideProduct v-if="modelValue?.information?.length > 0" :informations="modelValue?.information" :styleData="modelValue.information_style"  />
+            <InformationSideProduct v-if="modelValue?.information?.length > 0" :informations="modelValue?.information"
+                :styleData="modelValue.information_style" />
             <div v-if="modelValue?.paymentData?.length > 0" class="text-sm font-semibold mb-2">Secure Payments:</div>
             <div v-if="modelValue?.paymentData?.length > 0" class="flex flex-wrap gap-4">
                 <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
@@ -354,11 +379,13 @@ const toggleExpanded = () => {
         <div class="text-xs font-normal text-gray-700 my-6">
             <EditorV2 v-if="templateEdit === 'webpage'" v-model="modelValue.product.description_extra"
                 placeholder="Write product description extra ..."
-                @update:model-value="(e) => onDescriptionUpdate('description_extra', e)" class="text-xs text-gray-800" />
-            <div v-else class="prose prose-sm text-gray-700 max-w-none" v-html="modelValue.product.description_extra"></div>
+                @update:model-value="(e) => onDescriptionUpdate('description_extra', e)"
+                class="text-xs text-gray-800" />
+            <div v-else class="prose prose-sm text-gray-700 max-w-none" v-html="modelValue.product.description_extra">
+            </div>
         </div>
 
         <ProductContents :product="props.modelValue.product" :styleData="modelValue.information_style"
-            :setting="modelValue.setting" :templateEdit="templateEdit"/>
+            :setting="modelValue.setting" :templateEdit="templateEdit" />
     </div>
 </template>

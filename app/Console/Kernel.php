@@ -21,92 +21,154 @@ use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
+use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
+    use LoggableSchedule;
+
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
 
         $schedule->command('cloudflare:reload')->daily();
+
         $schedule->command('domain:check-cloudflare-status')->hourly();
 
-
-        $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'FulfilmentCustomersHydrateStatus',
+        $this->logSchedule(
+            $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'FulfilmentCustomersHydrateStatus'
+            ),
+            name: 'FulfilmentCustomersHydrateStatus',
+            type: 'job',
+            scheduledAt: '00:00'
         );
 
-        $schedule->job(ResetYearIntervals::makeJob())->yearlyOn(1, 1, '00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'ResetYearIntervals',
-        );
-        $schedule->job(ResetMonthlyIntervals::makeJob())->monthlyOn(1, '00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'ResetMonthlyIntervals',
-        );
-        $schedule->job(ResetQuarterlyIntervals::makeJob())->quarterlyOn(1, '00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'ResetQuarterlyIntervals',
-        );
-        $schedule->job(ResetWeeklyIntervals::makeJob())->weeklyOn(1, '00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'ResetWeeklyIntervals',
-        );
-        $schedule->job(ResetDailyIntervals::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'ResetDailyIntervals',
+        $this->logSchedule(
+            $schedule->job(ResetYearIntervals::makeJob())->yearlyOn(1, 1, '00:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ResetYearIntervals'
+            ),
+            name: 'ResetYearIntervals',
+            type: 'job',
+            scheduledAt: '00:00'
         );
 
-        $schedule->job(UpdateCurrentRecurringBillsTemporalAggregates::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'UpdateCurrentRecurringBillsTemporalAggregates',
+        $this->logSchedule(
+            $schedule->job(ResetMonthlyIntervals::makeJob())->monthlyOn(1, '00:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ResetMonthlyIntervals',
+            ),
+            name: 'ResetMonthlyIntervals',
+            type: 'job',
+            scheduledAt: '00:00'
         );
 
-        $schedule->job(PurgeWebUserPasswordReset::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'PurgeWebUserPasswordReset',
+        $this->logSchedule(
+            $schedule->job(ResetQuarterlyIntervals::makeJob())->quarterlyOn(1, '00:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ResetQuarterlyIntervals',
+            ),
+            name: 'ResetQuarterlyIntervals',
+            type: 'job',
+            scheduledAt: '00:00'
         );
 
-        $schedule->job(DeleteTempIsdoc::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'DeleteTempIsdoc',
+        $this->logSchedule(
+            $schedule->job(ResetWeeklyIntervals::makeJob())->weeklyOn(1, '00:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ResetWeeklyIntervals',
+            ),
+            name: 'ResetWeeklyIntervals',
+            type: 'job',
+            scheduledAt: '00:00'
         );
 
+        $this->logSchedule(
+            $schedule->job(ResetDailyIntervals::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ResetDailyIntervals',
+            ),
+            name: 'ResetDailyIntervals',
+            type: 'job',
+            scheduledAt: '00:00'
+        );
+
+        $this->logSchedule(
+            $schedule->job(UpdateCurrentRecurringBillsTemporalAggregates::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'UpdateCurrentRecurringBillsTemporalAggregates',
+            ),
+            name: 'UpdateCurrentRecurringBillsTemporalAggregates',
+            type: 'job',
+            scheduledAt: '00:00'
+        );
+
+        $this->logSchedule(
+            $schedule->job(PurgeWebUserPasswordReset::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PurgeWebUserPasswordReset',
+            ),
+            name: 'PurgeWebUserPasswordReset',
+            type: 'job',
+            scheduledAt: '03:00'
+        );
+
+        $this->logSchedule(
+            $schedule->job(DeleteTempIsdoc::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'DeleteTempIsdoc',
+            ),
+            name: 'DeleteTempIsdoc',
+            type: 'job',
+            scheduledAt: '00:00'
+        );
 
         $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'SaveDataFeeds',
         );
 
-        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')
-            ->withoutOverlapping()->sentryMonitor(
-                monitorSlug: 'FetchOrdersInBasket',
-            );
+        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'FetchOrdersInBasket',
+        );
 
-        $schedule->command('fetch:stock_locations aw')->dailyAt('2:30')
-            ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+        $this->logSchedule(
+            $schedule->command('fetch:stock_locations aw')->dailyAt('02:30')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockLocationsAW',
-            );
+            ),
+            name: 'FetchAuroraStockLocationsAW',
+            type: 'command',
+            scheduledAt: '02:30'
+        );
 
-        $schedule->command('fetch:stock_locations sk')->dailyAt('2:45')
-            ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+        $this->logSchedule(
+            $schedule->command('fetch:stock_locations sk')->dailyAt('02:45')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockLocationsSK',
-            );
+            ),
+            name: 'FetchAuroraStockLocationsSK',
+            type: 'command',
+            scheduledAt: '02:45'
+        );
 
-        $schedule->command('fetch:stock_locations es')->dailyAt('3:00')
-            ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+        $this->logSchedule(
+            $schedule->command('fetch:stock_locations es')->dailyAt('03:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockLocationsES',
-            );
+            ),
+            name: 'FetchAuroraStockLocationsES',
+            type: 'command',
+            scheduledAt: '03:00'
+        );
 
-        $schedule->command('fetch:stock_locations aroma')->dailyAt('3:15')
-            ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+        $this->logSchedule(
+            $schedule->command('fetch:stock_locations aroma')->dailyAt('3:15')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockLocationsAroma',
-            );
+            ),
+            name: 'FetchAuroraStockLocationsAroma',
+            type: 'command',
+            scheduledAt: '03:15'
+        );
 
+        $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'FetchDispatchedEmails',
+        );
 
-        $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)->withoutOverlapping()
-            ->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'FetchDispatchedEmails',
-            );
-
-        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(4, 17)->timezone('UTC')->withoutOverlapping()
-            ->sentryMonitor(
-                monitorSlug: 'FetchEmailTrackingEvents',
-            );
-
+        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(4, 17)->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'FetchEmailTrackingEvents',
+        );
 
         $schedule->command('fetch:ebay-orders')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchEbayOrders',
@@ -120,87 +182,107 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'PingActiveWooChannel',
         );
 
-        $schedule->command('woo:revive_in_active_channel')->daily()->withoutOverlapping()->sentryMonitor(
-            monitorSlug: 'ReviveInActiveWooChannel',
+        $this->logSchedule(
+            $schedule->command('woo:revive_in_active_channel')->daily()->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'ReviveInActiveWooChannel',
+            ),
+            name: 'ReviveInActiveWooChannel',
+            type: 'command',
+            scheduledAt: ''
         );
 
         $schedule->command('ebay:ping')->daily()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'CheckAllEbayChannels',
         );
 
-        $schedule->command('woo:update-inventory')
-            ->hourly()
-            ->withoutOverlapping()->sentryMonitor(
-                monitorSlug: 'UpdateWooStockInventories',
-            );
+        $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'UpdateWooStockInventories',
+        );
 
-        $schedule->command('ebay:update-inventory')
-            ->everyTwoHours()
-            ->withoutOverlapping()->sentryMonitor(
-                monitorSlug: 'UpdateInventoryInEbayPortfolio',
-            );
+        $schedule->command('ebay:update-inventory')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'UpdateInventoryInEbayPortfolio',
+        );
 
         $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateInventoryInShopifyPortfolio',
         );
 
-        $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'CheckShopifyPortfolios',
+        $this->logSchedule(
+            $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CheckShopifyPortfolios',
+            ),
+            name: 'CheckShopifyPortfolios',
+            type: 'command',
+            scheduledAt: '03:00'
         );
 
-        $schedule->command('platform-logs:delete')->daily()->sentryMonitor(
-            monitorSlug: 'PlatformDeletePortfolioLogs',
+        $this->logSchedule(
+            $schedule->command('platform-logs:delete')->daily()->sentryMonitor(
+                monitorSlug: 'PlatformDeletePortfolioLogs',
+            ),
+            name: 'PlatformDeletePortfolioLogs',
+            type: 'command',
+            scheduledAt: ''
         );
-
-        (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
-        (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');
-        (new Schedule())->command('hydrate:shops')->everyTwoHours('23:00')->timezone('UTC');
-        (new Schedule())->command('hydrate:invoice_categories')->everyTwoHours('23:00')->timezone('UTC');
 
         $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'ProcessFetchStacks',
         );
 
-        $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'SaveWebsitesSitemap',
+        $this->logSchedule(
+            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'SaveWebsitesSitemap',
+            ),
+            name: 'SaveWebsitesSitemap',
+            type: 'job',
+            scheduledAt: '00:00'
         );
 
-        $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'ConsolidateRecurringBills',
+        $this->logSchedule(
+            $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ConsolidateRecurringBills',
+            ),
+            name: 'ConsolidateRecurringBills',
+            type: 'job',
+            scheduledAt: '17:00'
         );
 
-        $schedule->command('hydrate:customers-clv')->dailyAt('01:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'HydrateCustomersClv',
+        $this->logSchedule(
+            $schedule->command('hydrate:customers-clv')->dailyAt('01:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateCustomersClv',
+            ),
+            name: 'HydrateCustomersClv',
+            type: 'command',
+            scheduledAt: '02:00'
         );
 
-        $schedule->command('hydrate:customers-tag')->dailyAt('01:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'HydrateCustomersTag',
+        $this->logSchedule(
+            $schedule->command('hydrate:customers-tag')->dailyAt('02:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateCustomersTag',
+            ),
+            name: 'HydrateCustomersTag',
+            type: 'command',
+            scheduledAt: '02:00'
         );
 
         $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
         );
 
-        $schedule->command('hydrate:ping')->dailyAt('02:45')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'HydratePing',
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_0')->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateScheduledTaskLogs',
         );
 
-        $schedule->command('hydrate:ping')->dailyAt('12:59')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'HydratePing',
-        );
-
-        $schedule->command('hydrate:ping')->dailyAt('11:58')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'HydratePing',
-        );
-
-        $schedule->command('hydrate:ping')->dailyAt('13:57')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'HydratePing',
-        );
-
-        (new Schedule())->command('hydrate:ping')->everyTwoHours('02:48')->timezone('UTC');
-
+//        $this->logSchedule(
+//            $schedule
+//                ->command('hydrate:ping')
+//                ->everyMinute()
+//                ->timezone('UTC'),
+//            name: 'ping',
+//            type: 'command',
+//            scheduledAt: '00:00'
+//        );
     }
-
 
     protected function commands(): void
     {
