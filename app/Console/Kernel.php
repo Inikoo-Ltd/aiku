@@ -196,25 +196,108 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'HydratePing',
         );
 
-        $this->logSchedule(
-            $schedule
-                ->command('hydrate:ping')
-                ->everyMinute()
-                ->timezone('UTC'),
-            name: 'test every minutes with $schedule->command()',
-            type: 'command',
-            scheduledAt: 'every minutes'
+        $schedule->command('hydrate:scheduled-task-logs --name=test_a')->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
         );
 
-        $this->logSchedule(
-            (new Schedule())
-                ->command('hydrate:ping')
-                ->everyMinute()
-                ->timezone('UTC'),
-            name: 'test every minutes with Schedule()',
-            type: 'command',
-            scheduledAt: 'every minutes'
+        (new Schedule())->command('hydrate:scheduled-task-logs --name=test_b')->everyMinute()->timezone('UTC');
+
+
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_0')->dailyAt('00:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
         );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_1')->dailyAt('01:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_2')->dailyAt('02:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_3')->dailyAt('03:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_4')->dailyAt('04:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_5')->dailyAt('05:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_6')->dailyAt('06:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_7')->dailyAt('07:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_8')->dailyAt('08:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_9')->dailyAt('09:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_10')->dailyAt('10:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_11')->dailyAt('11:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_12')->dailyAt('12:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_13')->dailyAt('13:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_14')->dailyAt('14:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_15')->dailyAt('15:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_16')->dailyAt('16:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_17')->dailyAt('17:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_18')->dailyAt('18:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_19')->dailyAt('19:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_20')->dailyAt('20:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_21')->dailyAt('21:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_22')->dailyAt('22:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_23')->dailyAt('23:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+        $schedule->command('hydrate:scheduled-task-logs --name=utc_24')->dailyAt('24:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+
+//        $this->logSchedule(
+//            $schedule
+//                ->command('hydrate:ping')
+//                ->everyMinute()
+//                ->timezone('UTC'),
+//            name: 'test every minutes with $schedule->command()',
+//            type: 'command',
+//            scheduledAt: 'every minutes'
+//        );
+//
+//        $this->logSchedule(
+//            (new Schedule())
+//                ->command('hydrate:ping')
+//                ->everyMinute()
+//                ->timezone('UTC'),
+//            name: 'test every minutes with Schedule()',
+//            type: 'command',
+//            scheduledAt: 'every minutes'
+//        );
     }
 
     protected function commands(): void
