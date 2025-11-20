@@ -141,6 +141,7 @@ class FetchIrisEcomBasket extends IrisAction
                 'gross_amount',
                 'products.url',
                 'products.name',
+                'products.units',
                 'products.code',
                 'products.available_quantity',
                 'products.web_images',
@@ -170,6 +171,7 @@ class FetchIrisEcomBasket extends IrisAction
                 'offers_data'          => json_decode($productData->offers_data, 1),
                 'name'                 => $productData->name,
                 'code'                 => $productData->code,
+                'units'                => (int) $productData->units,
                 'web_image_thumbnail'  => $webImageThumbnail,
 
             ];

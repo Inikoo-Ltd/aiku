@@ -205,7 +205,7 @@ const convertToFloat2 = (val: any) => {
     <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">
         <!-- Toggle: collapse-expand rightbasket -->
         <div @click="handleToggleLeftBar"
-            class="absolute z-10  top-2/4 -translate-y-full w-8 lg:w-8 aspect-square xborder xborder-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
+            class="absolute z-10  top-2/4 -translate-y-full w-8 lg:w-8 aspect-square xborder xborder-gray-300 rounded-full flex justify-center items-center cursor-pointer"
             :class="layout.rightbasket?.show ? 'left-0 -translate-x-1/2' : '-left-12'"
             v-tooltip="layout.rightbasket?.show ? trans('Collapse the bar') : trans('Expand the bar')"
             :style="{
@@ -309,9 +309,7 @@ const convertToFloat2 = (val: any) => {
                         <li v-for="product in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-2 relative">
                             <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
                             <div class="relative">
-                                <LinkIris :href="product.canonical_url" class="block group font-medium hover:underline size-20 shrink-0 overflow-hidden rounded-md border"
-                                    :class="Object.keys(product.offers_data || {})?.length ? 'border-pink-300' : 'border-gray-200'"
-                                >
+                                <LinkIris :href="product.canonical_url" class="block group font-medium hover:underline size-20 shrink-0 overflow-hidden rounded-md border border-gray-200">
                                     <Image
                                         :src="product?.web_image_thumbnail"
                                         class="w-full h-full flex justify-center items-center group-hover:scale-110 transition-all"
@@ -325,9 +323,11 @@ const convertToFloat2 = (val: any) => {
                                     <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" />
                         
                                     <div class="flex justify-between font-medium">
-                                        <h4 v-tooltip="product.name">
-                                            <LinkIris :href="product.canonical_url" class="font-medium hover:underline">{{ product.code }}</LinkIris>
-                                        </h4>
+                                        <div v-tooltip="product.code" class="text-sm">
+                                            <LinkIris :href="product.canonical_url" class="font-medium hover:underline truncate block w-52">
+                                                <span v-if="product.units > 1">{{ product.units }}x </span>{{ product.name }}
+                                            </LinkIris>
+                                        </div>
                                     </div>
 
                                     <div class="flex flex-1 items-end justify-between">
