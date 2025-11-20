@@ -49,7 +49,7 @@ class ShowIrisWebpagesList
                     ->where('products.state', ProductStateEnum::ACTIVE->value)
                     ->where('webpages.sub_type', 'product')
                     ->orderBy('sales_1q', 'desc')
-                    ->limit(2500);
+                    ->limit(4000);
             } elseif ($mode == 'families') {
                 $query = DB::table('webpages')
                     ->leftJoin('product_categories', 'webpages.model_id', '=', 'product_categories.id')
