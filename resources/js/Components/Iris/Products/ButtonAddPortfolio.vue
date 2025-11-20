@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
-import { toInteger } from 'lodash'
+import { toInteger } from 'lodash-es'
 
 
 interface ProductResource {
