@@ -12,6 +12,7 @@ use App\Actions\Utils\Abbreviate;
 use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Models\Dropshipping\CustomerSalesChannelDownloadPortfolio;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
