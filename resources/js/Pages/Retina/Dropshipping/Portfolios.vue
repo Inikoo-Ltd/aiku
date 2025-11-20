@@ -18,9 +18,11 @@ import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faSyncAlt, faHandPointer, faBan} from "@fas";
-import { useFormatTime } from "@/Composables/useFormatTime";
+import { useFormatTime, useTimeCountdown} from "@/Composables/useFormatTime";
 import Icon from '@/Components/Icon.vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue"
+import { differenceInHours, differenceInMinutes, differenceInSeconds, addDays } from 'date-fns';
+
 
 import {
     faBracketsCurly, faPawClaws,
@@ -102,6 +104,8 @@ const props = defineProps<{
 
     // inactive: {}
     product_count: number
+    download_portfolio_customer_sales_channel_url: string | null
+    last_created_at_download_portfolio_customer_sales_channel: string | null
 }>();
 
 const step = ref(props.step);
@@ -353,8 +357,6 @@ const initSocketListener = () => {
     }
 
     channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
-        // make show the link only,
-        console.log(eventData.download_url)
         stateDownloadImagesReady.value = 'success'
         linkDownloadImages.value = 'https://' + eventData.download_url
         isModalDownloadImages.value = false
@@ -366,27 +368,43 @@ const initSocketListener = () => {
             type: "success",
         })
 
+        sessionStorage.removeItem('download_code')
+        codeString.value = null
         // stop listening after this event
         channel.stopListening(socketAction)
         isSocketActive.value = false
     })
 }
 
+watch(() => props.download_portfolio_customer_sales_channel_url, () => {
+    if(props.download_portfolio_customer_sales_channel_url){
+        sessionStorage.removeItem('download_code')
+        linkDownloadImages.value ='https://'+ props.download_portfolio_customer_sales_channel_url
+    } else {
+        linkDownloadImages.value = null
+    }
+}, {
+    immediate: true
+})
+
 // === STORAGE & SOCKET SYNC ===
 onMounted(() => {
-
-    if (codeString.value) {
+    const storedCode = sessionStorage.getItem('download_code')
+    if (storedCode) {
+        codeString.value = storedCode
         initSocketListener()
     }
 
     watch(codeString, (newCode) => {
         if (newCode) {
+            sessionStorage.setItem('download_code', newCode)
             initSocketListener()
         }
     })
 
     onBeforeUnmount(() => {
         if (channel) channel.stopListening(".upload-portfolio-to-r2")
+        linkDownloadImages.value = null
     })
 })
 
@@ -398,12 +416,6 @@ const handleDownloadClick = async (type: string, event: Event) => {
         console.error('No valid URL found for download');
         return;
     }
-
-    notify({
-        title: "Download on progress",
-        text: "Please wait while your download is being prepared",
-        type: "success",
-    })
     // Convert URL to string if it's a Router object
     const urlString = typeof url === 'string' ? url : url.toString();
 
@@ -432,17 +444,62 @@ const handleDownloadClick = async (type: string, event: Event) => {
     }
 }
 
+// Time countdown for download link expiration
+const timeCountdown = ref('');
+const countdownInterval = ref<number | null>(null);
 
-const downloadZipFromUrl = (downloadUrl: string): void => {
-  if (!downloadUrl) return;
+// Set countdown for download link expiration
+const setCountdown = (expiryDate: Date) => {
+    clearInterval(countdownInterval.value!);
+    console.log('Setting countdown for:', expiryDate, 'Current time:', new Date());
 
-  const downloadUrlString = typeof downloadUrl === 'string' ? downloadUrl : downloadUrl.toString();
-  const fullUrl = downloadUrlString.startsWith('http') ?
-      downloadUrlString :
-      `https://${downloadUrlString}`;
+    // Initial update
+    timeCountdown.value = useTimeCountdown(expiryDate.toISOString(), { human: true });
 
-  window.open(fullUrl, '_blank');
+    // Update every second
+    countdownInterval.value = window.setInterval(() => {
+        const countdown = useTimeCountdown(expiryDate.toISOString(), { human: true });
+        timeCountdown.value = countdown;
+
+        // Clear interval when countdown is done
+        if (!countdown) {
+            if (countdownInterval.value !== null) {
+                clearInterval(countdownInterval.value);
+            }
+            timeCountdown.value = 'Expired';
+        }
+    }, 1000);
 };
+
+// Update the time left
+const updateTimeLeft = () => {
+    if (!props.last_created_at_download_portfolio_customer_sales_channel) {
+        timeCountdown.value = 'Download link is ready';
+        return;
+    }
+
+    const expiryDate = addDays(new Date(props.last_created_at_download_portfolio_customer_sales_channel), 1);
+    const now = new Date();
+    console.log('Now:', now, 'Expiry:', expiryDate)
+
+    if (now > expiryDate) {
+        timeCountdown.value = 'Expired';
+        return;
+    }
+
+    setCountdown(expiryDate);
+};
+
+// Watch for changes to the creation date
+watch(() => props.last_created_at_download_portfolio_customer_sales_channel, updateTimeLeft, { immediate: true });
+
+// Clean up interval when component is unmounted
+onBeforeUnmount(() => {
+    if (countdownInterval.value) {
+        clearInterval(countdownInterval.value);
+    }
+});
+
 
 
 </script>
@@ -466,7 +523,7 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                 <a v-if="!linkDownloadImages" href="#" @click.prevent="!isSocketActive && handleDownloadClick('images', $event)">
                     <Button :icon="faImage" type="tertiary" class="border-l-0 rounded-l-none" :disabled="isSocketActive">
                         <template #label>
-                            <LoadingText v-if="stateDownloadImagesReady === 'loading'" />
+                            <LoadingIcon v-if="stateDownloadImagesReady === 'loading'" />
                             <span v-else>
                                 {{ trans('Images') }}
                             </span>
@@ -474,10 +531,17 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                     </Button>
                 </a>
 
-                <a v-else :href="linkDownloadImages" target="_blank" rel="noopener" download>
-                    <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive">
-                    </Button>
-                </a>
+                <VTooltip v-else class="w-fit inline">
+                    <a :href="linkDownloadImages" target="_blank" rel="noopener" download>
+                        <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive" >
+                        </Button>
+                    </a>
+                    <template #popper>
+                        <div class="text-xs tabular-nums">
+                            {{ trans(":timeCountdown left before link expires", { timeCountdown: timeCountdown}) }}.
+                        </div>
+                    </template>
+                </VTooltip>
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
@@ -501,7 +565,7 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                             >
                                 <template #default="{ loading }">
                                     <div class="flex gap-x-2 justify-start items-center w-full">
-                                        <LoadingIcon v-if="loading" class="h-5"/>
+                                        <LoadingIcon v-if="loading" class="h-5"  v-tooltip="trans('Processing...')"/>
                                         <img
                                             v-else
                                             :src="`/assets/channel_logo/${manual_channel.platform_code}.svg`"
@@ -702,24 +766,21 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                     <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100"
                         xclass="getBgColorDependsOnStatus(selectedModal?.status)"
                     >
-                        <!-- <FontAwesomeIcon v-if="selectedModal?.status == 'error' || selectedModal?.status == 'failure'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' /> -->
-                        <FontAwesomeIcon icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon icon='fas fa-spinner' class="text-gray-500 text-2xl animate-spin" fixed-width aria-hidden='true' />
                     </div>
-                    
+
                     <div class="mt-3 text-center sm:mt-5">
                         <div as="h3" class="font-semibold text-2xl">
                             Your download images request is being processed.
                         </div>
 
                         <div xv-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
-                            Please wait a moment and don't refresh the page. It takes around 10 seconds. You will receive a notification when it's ready.
+                            This may take around 10 seconds. You'll receive a notification once it's ready.
                         </div>
 
                     </div>
                 </div>
-                
+
 
                 <a v-if="linkDownloadImages" :href="linkDownloadImages" class="mt-5 sm:mt-6">
                     <Button
@@ -742,19 +803,19 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                     >
                         <FontAwesomeIcon icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
                     </div>
-                    
+
                     <div class="mt-3 text-center sm:mt-5">
                         <div as="h3" class="font-semibold text-2xl">
-                            Your download images is ready.
+                           Your images are ready for download.
                         </div>
 
                         <div xv-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
-                            Click the download button below to get your files.
+                            Click the button below to retrieve your files.
                         </div>
 
                     </div>
                 </div>
-                
+
 
                 <a v-if="linkDownloadImages" :href="linkDownloadImages" target="_blank" download class="mt-5 sm:mt-6 block">
                     <Button

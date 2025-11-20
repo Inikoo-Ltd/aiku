@@ -40,6 +40,7 @@ use App\Http\Resources\Traits\HasPriceMetrics;
  * @property mixed $webpage_id
  * @property mixed $website_id
  * @property mixed $shop_id
+ * @property mixed $quantity_ordered
  */
 class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {

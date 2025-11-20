@@ -9,6 +9,7 @@ import { trans } from 'laravel-vue-i18n'
 import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductResource } from '@/types/Iris/Products'
+import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 
 const props = defineProps<{
     product: {
@@ -99,7 +100,7 @@ const debUpdateQuantity = debounce((newVal?: number) => {
             <FontAwesomeIcon icon="far fa-minus" class="" fixed-width aria-hidden="true" />
         </div>
 
-        <div class="max-w-full">
+        <div class="max-w-full relative">
             <InputNumber
                 :modelValue="product.quantity_ordered_new"
                 @input="(e) => (set(product, 'quantity_ordered_new', e?.value), debUpdateQuantity())"
@@ -107,11 +108,18 @@ const debUpdateQuantity = debounce((newVal?: number) => {
                 size="small"
                 inputId="minmax-buttons"
                 mode="decimal"
-                inputClass="text-center"
+                :inputClass="
+                    status === 'success' ? 'text-center !border-green-500' : 
+                    status === 'error' ? 'text-center !border-red-500' : 'text-center'
+                "
                 :min="0"
                 :max="product.available_quantity"
                 fluid
             />
+            
+            <div v-if="status === 'loading'" class="inset-0 absolute flex items-center justify-center rounded bg-black/50 text-white text-lg">
+                <ConditionIcon :state="'loading'" />
+            </div>
         </div>
 
         <div @click="() => product.quantity_ordered_new < product.available_quantity ? (product.quantity_ordered_new++, debUpdateQuantity()) : null"

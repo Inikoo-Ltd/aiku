@@ -135,7 +135,7 @@ const updateDataDisplayType = (value: string) => {
 					v-tooltip="interval.label"
 					class="relative flex-1 rounded py-1 md:py-1.5 px-2 md:px-4 text-center w-fit text-sm cursor-pointer select-none">
 					<span :class="isLoadingInterval === interval.value ? 'opacity-0' : ''">
-						{{ interval.value }}
+						{{ interval.labelShort }}
 					</span>
 					<span
 						class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -154,7 +154,7 @@ const updateDataDisplayType = (value: string) => {
 				<FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-2xl" />
 			</div>
 		</div>
-		
+
 		<transition name="slide-to-right">
 			<div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-wrap justify-between items-center gap-4 lg:gap-8 mb-2">
 
