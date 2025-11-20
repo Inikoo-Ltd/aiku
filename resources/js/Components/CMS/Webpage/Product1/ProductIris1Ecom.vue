@@ -3,7 +3,7 @@ import { faCube, faLink, faHeart } from "@fal"
 import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, inject, onMounted, computed } from "vue"
+import { ref, inject, onMounted, computed, watch, onUnmounted } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import ProductContentsIris from "./ProductContentIris.vue"
@@ -223,8 +223,17 @@ const getOrderingProduct = async () => {
 }
 
 
+watch(() => layout?.iris?.is_logged_in, (newVal) => {
+    if (newVal) {
+        getOrderingProduct()
+    }
+}, {
+    immediate: true
+})
+
+
 onMounted(() => {
-    if (layout?.iris?.is_logged_in) getOrderingProduct()
+    set(layout, "temp.fetchIrisProductCustomerData", getOrderingProduct)
 
     // Luigi: last_seen recommendations
     if (props.fieldValue?.product?.luigi_identity) {
@@ -238,6 +247,11 @@ onMounted(() => {
                 ]
             }
         })
+    }
+})
+onUnmounted(() => {
+    if (layout?.temp?.fetchIrisProductCustomerData) {
+        delete layout.temp.fetchIrisProductCustomerData
     }
 })
 
@@ -386,8 +400,13 @@ const validImages = computed(() => {
                 <div class="relative flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in && customerData" class="w-full">
                         <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
-                        <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product"
-                            :customerData="customerData" :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"/>
+                        <EcomAddToBasketv2
+                            v-if="fieldValue.product.stock > 0"
+                            :product="fieldValue.product"
+                            :customerData="customerData"
+                            :key="keyCustomer"
+                            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
+                        />
 
                         <div v-else>
                             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
@@ -400,6 +419,8 @@ const validImages = computed(() => {
                     </LinkIris>
                 </div>
 
+                <!-- <pre>customerData: {{ customerData }}</pre>
+                <pre>layout?.temp_irisProduct: {{ layout?.temp_irisProduct }}</pre> -->
 
                 <div class="text-xs font-medium text-gray-800"
                     :style="getStyles(fieldValue?.description?.description_content, screenType)">
@@ -473,7 +494,7 @@ const validImages = computed(() => {
             <!-- <ButtonAddToBasket :product="fieldValue.product" /> -->
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
                 <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
-                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product"  :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :customerData="customerData" :product="fieldValue.product"  :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                 <div v-else>
                     <Button :label="trans('Out of stock')" type="tertiary" disabled full />

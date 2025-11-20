@@ -65,7 +65,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $source_alt_id to be used in no products transactions
  * @property int|null $original_invoice_transaction_id For refunds link to original invoice transaction
  * @property bool $in_process Used for refunds only
- * @property string|null $offers_data
+ * @property array<array-key, mixed>|null $offers_data
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
  * @property-read \App\Models\CRM\Customer $customer
@@ -110,10 +110,12 @@ class InvoiceTransaction extends Model
         'org_exchange'   => 'decimal:4',
         'grp_net_amount' => 'decimal:2',
         'org_net_amount' => 'decimal:2',
+        'offers_data'    => 'array',
     ];
 
     protected $attributes = [
         'data' => '{}',
+        'offers_data' => '{}',
     ];
 
     protected $guarded = [];

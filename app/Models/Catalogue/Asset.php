@@ -59,6 +59,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property bool $follow_master
+ * @property array<array-key, mixed>|null $offers_data
  * @property ProductUnitRelationshipType $unit_relationship_type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Barcode> $barcode
  * @property-read Charge|null $charge
@@ -108,11 +109,13 @@ class Asset extends Model implements HasMedia
         'status'                 => 'boolean',
         'type'                   => AssetTypeEnum::class,
         'state'                  => AssetStateEnum::class,
-        'unit_relationship_type' => ProductUnitRelationshipType::class
+        'unit_relationship_type' => ProductUnitRelationshipType::class,
+        'offers_data'            => 'array',
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'          => '{}',
+        'offers_data'   => '{}',
     ];
 
     protected $guarded = [];

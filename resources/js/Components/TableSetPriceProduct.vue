@@ -237,6 +237,7 @@ function roundDown2(num: number) {
                                 :currency="item?.product?.shop_currency ?? item.currency ?? currency" :step="0.25"
                                 :showButtons="true" inputClass="w-full text-xs" :min="0"
                                 @input="emits('change', modelValue)" />
+                            <span v-if="form?.errors[`shop_products.${item.id}.price`]" class="text-xs text-red-500">{{ form?.errors[`shop_products.${item.id}.price`] }}</span>
                         </td>
 
                         <!-- Price per unit -->
@@ -283,6 +284,7 @@ function roundDown2(num: number) {
                                     {{ item.product?.useCustomRrp ? 'Auto' : 'Custom' }}
                                 </button>
                             </div>
+                            <span v-if="form?.errors[`shop_products.${item.id}.rrp`]" class="text-xs text-red-500">{{ form?.errors[`shop_products.${item.id}.rrp`] }}</span>
                         </td>
 
                         <!-- RRP Margin -->

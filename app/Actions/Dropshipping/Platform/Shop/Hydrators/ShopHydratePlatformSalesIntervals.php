@@ -47,7 +47,7 @@ class ShopHydratePlatformSalesIntervals implements ShouldBeUnique
             ShopHydrateAllPlatformsSalesIntervalsSales::run($shop);
             ShopHydrateAllPlatformsSalesIntervalsSalesOrgCurrency::run($shop);
             ShopHydrateAllPlatformsSalesIntervalsSalesGrpCurrency::run($shop);
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             Log::info("Failed to Hydrate Shop Sales Intervals: " . $e->getMessage());
             Sentry::captureMessage("Failed to Hydrate Shop Sales Intervals to: " . $e->getMessage());
         }

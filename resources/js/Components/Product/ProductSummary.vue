@@ -13,6 +13,17 @@ import { faTag } from "@far"
 import { ProductShowcase } from "@/types/product-showcase"
 import FractionDisplay from "../DataDisplay/FractionDisplay.vue"
 import { Link } from "@inertiajs/vue3"
+import {
+	faLock,
+	faGlobe,
+	faFile,
+	faCheckCircle,
+	faFileCheck,
+	faFilePdf,
+	faFileWord,
+} from "@fal"
+
+library.add(faLock, faGlobe, faFile, faCheckCircle, faFileCheck, faFilePdf, faFileWord)
 
 interface Stats {
 	amount: number | null
@@ -87,11 +98,12 @@ interface PropsData {
 const props = withDefaults(
 	defineProps<{
 		data: ProductShowcase
-        // gpsr?: Gpsr
+		// gpsr?: Gpsr
 		parts?: { id: number; name: string }[]
 		type?: string
 		video?: string
 		hide?: string[]
+		publicAttachment: array<any>
 		properties?: {
 			country_of_origin?: { code: string; name: string }
 			tariff_code?: string
@@ -191,7 +203,18 @@ function normalizeVideoUrl(url: string): string {
 
 const embedUrl = computed(() => normalizeVideoUrl(props.video || ""))
 
-console.log('product summary : ', props)
+const getIcon = (type?: string) => {
+	if (!type) return faFileCheck
+	switch (type.toLowerCase()) {
+		case "pdf":
+			return faFilePdf
+		case "doc":
+		case "docx":
+			return faFileWord
+		default:
+			return faFileCheck
+	}
+}
 </script>
 
 
@@ -206,74 +229,77 @@ console.log('product summary : ', props)
 
 				
 			</div> -->
-			
+
 			<dl class="mt-4 space-y-6 text-sm">
 				<div class="space-y-3">
 					<!-- Section: Since -->
-                    <div  class="flex justify-between flex-wrap gap-1">
-                        <dt class="text-gray-500">{{ trans("Since") }}</dt>
-                        <dd class="font-medium">{{ useFormatTime(data?.created_at) }}</dd>
-                    </div>
-					
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Since") }}</dt>
+						<dd class="font-medium">{{ useFormatTime(data?.created_at) }}</dd>
+					</div>
+
 					<!-- Section: Units -->
-					<div  class="flex justify-between flex-wrap gap-1">
+					<div class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Units") }}</dt>
-						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }}  ({{data.unit}}) </dd>
+						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }} ({{ data.unit }}) </dd>
 					</div>
 
 					<!-- Section: Weight marketing -->
-                    <div  class="flex justify-between flex-wrap gap-1">
-                        <dt class="text-gray-500">{{ trans("Weight") }} <span class="text-xs font-light text-gray-500">({{trans('Marketing')}})</span></dt>
-                        <dd class="font-medium">
-                            {{ data?.marketing_weight }}
-                        </dd>
-                    </div>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Weight") }} <span
+								class="text-xs font-light text-gray-500">({{ trans('Marketing') }})</span></dt>
+						<dd class="font-medium">
+							{{ data?.marketing_weight }}
+						</dd>
+					</div>
 
 					<!-- Section: Weight shipping -->
 					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Weight") }} <span class="text-xs font-light text-gray-500">({{trans('Shipping')}})</span></dt>
+						<dt class="text-gray-500">{{ trans("Weight") }} <span
+								class="text-xs font-light text-gray-500">({{ trans('Shipping') }})</span></dt>
 						<dd class="font-medium">
 							{{ data?.gross_weight }}
 						</dd>
 					</div>
 
 					<!-- Section: Marketing Dimensions -->
-					<div  class="flex justify-between flex-wrap gap-1">
+					<div class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Dimensions") }}</dt>
 						<dd class="font-medium">
-							{{ data?.marketing_dimensions}}
+							{{ data?.marketing_dimensions }}
 						</dd>
 					</div>
 
 					<!-- Section: Barcode -->
-                    <div  class="flex justify-between flex-wrap gap-1">
-                        <dt class="text-gray-500">{{ trans("Barcode") }} <FontAwesomeIcon :icon="faBarcode" /></dt>
-                        <dd class="font-medium">
-                            {{ data?.barcode}}
-                        </dd>
-                    </div>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Barcode") }}
+							<FontAwesomeIcon :icon="faBarcode" />
+						</dt>
+						<dd class="font-medium">
+							{{ data?.barcode }}
+						</dd>
+					</div>
 
 					<!-- Section: Picking -->
-                    <div  class="flex justify-between flex-wrap gap-0.5"  v-if="!hide?.includes('picking')">
-                        <dt class="text-gray-500">{{ trans("Picking") }}</dt>
+					<div class="flex justify-between flex-wrap gap-0.5" v-if="!hide?.includes('picking')">
+						<dt class="text-gray-500">{{ trans("Picking") }}</dt>
 						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded">
 							<template v-if="data?.picking_factor?.length">
 								<div v-for="pick in data.picking_factor" class="grid grid-cols-4">
 									<div class="col-span-3">
 										<div class="w-fit">
-											<Link :href="route('grp.helpers.redirect_org_stock', pick.org_stock_id)" class="primaryLink -ml-1">{{ pick.org_stock_code }}</Link>
+											<Link :href="route('grp.helpers.redirect_org_stock', pick.org_stock_id)"
+												class="primaryLink -ml-1">{{ pick.org_stock_code }}</Link>
 											<span class="italic opacity-60">({{ pick.org_stock_id }})</span>
 										</div>
 										<div v-tooltip="trans('Note')" class="text-gray-400 text-xs w-fit">
 											{{ pick.note || '-' }}
 										</div>
 									</div>
-								
+
 									<div class=" text-right">
-										<FractionDisplay
-											v-tooltip="trans('Number of packed in')"
-											:fractionData="pick.picking_factor"
-										/>
+										<FractionDisplay v-tooltip="trans('Number of packed in')"
+											:fractionData="pick.picking_factor" />
 									</div>
 								</div>
 							</template>
@@ -281,7 +307,7 @@ console.log('product summary : ', props)
 								{{ trans("No data available") }}
 							</div>
 						</dd>
-                    </div>
+					</div>
 				</div>
 
 
@@ -302,12 +328,8 @@ console.log('product summary : ', props)
 									<div class="flex justify-between items-start gap-3">
 										<dt class="text-gray-500 whitespace-nowrap">{{ trans("Brands") }}</dt>
 										<dd class="font-medium flex flex-wrap gap-1">
-											<span
-												v-for="brand in data.brands"
-												:key="brand.id"
-												v-tooltip="'brand'"
-												class="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-100"
-											>
+											<span v-for="brand in data.brands" :key="brand.id" v-tooltip="'brand'"
+												class="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-100">
 												{{ brand.name }}
 											</span>
 										</dd>
@@ -317,12 +339,8 @@ console.log('product summary : ', props)
 									<div class="flex justify-between items-start gap-3">
 										<dt class="text-gray-500 whitespace-nowrap">{{ trans("Tags") }}</dt>
 										<dd class="font-medium flex flex-wrap gap-1">
-											<span
-												v-for="tag in data.tags"
-												:key="tag.id"
-												v-tooltip="'tag'"
-												class="px-2 py-0.5 rounded-full text-xs bg-green-100 bg-green-50 border border-blue-100"
-											>
+											<span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
+												class="px-2 py-0.5 rounded-full text-xs bg-green-100 bg-green-50 border border-blue-100">
 												{{ tag.name }}
 											</span>
 										</dd>
@@ -340,14 +358,14 @@ console.log('product summary : ', props)
 							</AccordionHeader>
 							<AccordionContent>
 								<div class="space-y-3 py-2">
-                                    <div  class="flex justify-between flex-wrap gap-1">
-                                        <dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
-                                      <dd class="font-medium max-w-[236px] text-right">
-										{{ Array.isArray(data?.marketing_ingredients)
-											? data.marketing_ingredients.join(', ')
-											: data?.marketing_ingredients ?? '' }}
-									 </dd>
-                                    </div>
+									<div class="flex justify-between flex-wrap gap-1">
+										<dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
+										<dd class="font-medium max-w-[236px] text-right">
+											{{ Array.isArray(data?.marketing_ingredients)
+												? data.marketing_ingredients.join(', ')
+												: data?.marketing_ingredients ?? '' }}
+										</dd>
+									</div>
 
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("Country of origin") }}</dt>
@@ -356,15 +374,15 @@ console.log('product summary : ', props)
 												<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
 													:src="'/flags/' + data?.country_of_origin.code.toLowerCase() + '.png'"
 													loading="lazy" />
-												<span class="ml-2">{{ data.country_of_origin.name}}</span>
+												<span class="ml-2">{{ data.country_of_origin.name }}</span>
 											</div>
 
 										</dd>
 									</div>
-                                    <div v-if="!hide?.includes('cpnp')" class="flex justify-between flex-wrap gap-1">
-                                        <dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
-                                        <dd class="font-medium">{{data?.cpnp_number}}</dd>
-                                    </div>
+									<div v-if="!hide?.includes('cpnp')" class="flex justify-between flex-wrap gap-1">
+										<dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
+										<dd class="font-medium">{{ data?.cpnp_number }}</dd>
+									</div>
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("Tariff code") }}</dt>
 										<dd class="font-medium">
@@ -379,25 +397,25 @@ console.log('product summary : ', props)
 									</div>
 									<div class="flex justify-between">
 										<dt v-tooltip="'Harmonized Tariff Schedule of the United States Code'"
-											class="text-gray-500">{{ trans("HTS US") }}
+											class="text-gray-500">{{
+												trans("HTS US") }}
 											<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
-												:src="'/flags/' + 'us' + '.png'" :alt="`Flag ${'us'}`"
-												loading="lazy" />
+												:src="'/flags/' + 'us' + '.png'" :alt="`Flag ${'us'}`" loading="lazy" />
 										</dt>
 										<dd class="font-medium">
-                                            {{ data?.duty_rate }}
+											{{ data?.duty_rate }}
 										</dd>
 									</div>
 
 
-                                    <div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
-                                        <dt class="text-gray-500">{{ trans("UFI Number") }}</dt>
-                                        <dd class="font-medium">{{data?.ufi_number}}</dd>
-                                    </div>
-                                    <div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
-                                        <dt class="text-gray-500">{{ trans("SCPN Number") }}</dt>
-                                        <dd class="font-medium">{{data?.scpn_number}}</dd>
-                                    </div>
+									<div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
+										<dt class="text-gray-500">{{ trans("UFI Number") }}</dt>
+										<dd class="font-medium">{{ data?.ufi_number }}</dd>
+									</div>
+									<div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
+										<dt class="text-gray-500">{{ trans("SCPN Number") }}</dt>
+										<dd class="font-medium">{{ data?.scpn_number }}</dd>
+									</div>
 
 								</div>
 							</AccordionContent>
@@ -414,37 +432,71 @@ console.log('product summary : ', props)
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("UN number") }}</dt>
 										<dd class="font-medium">
-                                            {{data?.un_number}}
+											{{ data?.un_number }}
 										</dd>
 									</div>
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("UN class") }}</dt>
 										<dd class="font-medium">
-                                            {{data?.un_class}}
+											{{ data?.un_class }}
 										</dd>
 									</div>
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("Packing group") }}</dt>
 										<dd class="font-medium">
-                                            {{data?.packing_group}}
+											{{ data?.packing_group }}
 										</dd>
 									</div>
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("Proper shipping name") }}</dt>
 										<dd class="font-medium">
-                                            {{data?.proper_shipping_name}}
+											{{ data?.proper_shipping_name }}
 										</dd>
 									</div>
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("Hazard identification number") }}</dt>
 										<dd class="font-medium">
-                                            {{data?.hazard_identification_number}}
+											{{ data?.hazard_identification_number }}
 										</dd>
+									</div>
+									<div class="">
+										<dt class="text-gray-500 pb-2 border-b">{{ trans("Public Documents") }}</dt>
+										<div>
+											<ul v-if="publicAttachment.some(i => i.attachment)"
+												class="divide-y divide-gray-100 text-sm">
+												<li v-for="(item, index) in publicAttachment.filter(i => i.attachment)"
+													:key="'public-' + index"
+													class="flex items-center justify-between px-1 py-2 hover:bg-blue-50 transition">
+													<div class="flex items-center gap-1.5">
+														<FontAwesomeIcon :icon="getIcon(item.attachment?.type)" :class="[
+															item.attachment ? 'text-green-500' : 'text-gray-400',
+															'text-xs'
+														]" />
+														<span class="text-gray-700 truncate">{{ item.label }}</span>
+													</div>
+
+													<div class="flex items-center gap-1 text-xs">
+														<template v-if="item.attachment">
+															<a :href="route(item?.download_route?.name, item?.download_route?.parameters)"
+																target="_blank"
+																class="text-green-600 flex items-center gap-1 hover:underline truncate max-w-[150px]">
+																<FontAwesomeIcon :icon="faCheckCircle"
+																	class="text-green-500 text-[10px]" />
+																{{ item.attachment.name }}
+															</a>
+														</template>
+
+														<span v-else class="italic text-gray-400">Not Uploaded</span>
+													</div>
+												</li>
+											</ul>
+										</div>
+
 									</div>
 								</div>
 							</AccordionContent>
 						</AccordionPanel>
-						<AccordionPanel value="6" >
+						<AccordionPanel value="6">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">GPSR</span>
@@ -459,23 +511,23 @@ console.log('product summary : ', props)
 											<div class="flex justify-between items-start">
 												<dt class="text-gray-500 text-sm">{{ trans("Manufacturer") }}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
-													<span >{{data?.gpsr_manufacturer }}</span>
+													<span>{{ data?.gpsr_manufacturer }}</span>
 												</dd>
 											</div>
 
 											<div class="flex justify-between items-start">
 												<dt class="text-gray-500 text-sm">{{ trans("EU responsible") }}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
-													<span >{{data?.gpsr_eu_responsible }}</span>
-                                                </dd>
+													<span>{{ data?.gpsr_eu_responsible }}</span>
+												</dd>
 											</div>
 
 											<div class="flex justify-between items-start">
 												<dt class="text-gray-500 text-sm">{{ trans("Class & category of danger")
 												}}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
-													<span>{{data?.gpsr_class_category_danger }}</span>
-													
+													<span>{{ data?.gpsr_class_category_danger }}</span>
+
 												</dd>
 											</div>
 
@@ -483,8 +535,8 @@ console.log('product summary : ', props)
 												<dt class="text-gray-500 text-sm">{{ trans("Product GPSR Languages")
 												}}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
-													<span>{{data?.gpsr_product_languages }}</span>
-													
+													<span>{{ data?.gpsr_product_languages }}</span>
+
 												</dd>
 											</div>
 										</div>

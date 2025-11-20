@@ -54,7 +54,8 @@ const currentQuantity = computed(() => {
     const safeQuantity = Number(quantity ?? 0)
 
     // Use new quantity if set, otherwise fallback
-    return safeQuantityNew > 0 ? safeQuantityNew : safeQuantity
+    // return safeQuantityNew > 0 ? safeQuantityNew : safeQuantity
+    return safeQuantityNew
 })
 
 
@@ -91,6 +92,24 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
 
         if (response.status !== 200) {
             throw new Error('Failed to add to basket')
+        }
+
+        const productToAddToBasket = {
+            ...product,
+            transaction_id: response.data?.transaction_id,
+            quantity_ordered: response.data?.quantity_ordered,
+            quantity_ordered_new: response.data?.quantity_ordered,
+        }
+        
+        // Check the product in Basket, if exist: replace, not exist: push
+        const products = layout.rightbasket?.products
+        if (products) {
+            const index = products.findIndex((p: any) => p.transaction_id === productToAddToBasket.transaction_id)
+            if (index !== -1) {
+                products[index] = productToAddToBasket
+            } else {
+                products.push(productToAddToBasket)
+            }
         }
 
         layout.reload_handle()
@@ -130,6 +149,8 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
 
 // Update quantity function - exact copy dari ButtonAddToBasketInFamily
 const onUpdateQuantity = (product: ProductResource, basket: any) => {
+    const isWillRemoveFrombasket = get(basket, ['quantity_ordered_new'], 0) === 0
+    const productTransactionId = product.transaction_id
     router[props.updateBasketQuantityRoute.method || 'post'](
         route(props.updateBasketQuantityRoute.name, {
             transaction: product.transaction_id
@@ -148,7 +169,27 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
             onSuccess: () => {
                 setStatus('success')
                 layout.reload_handle()
-                basket.quantity_ordered = product.quantity_ordered_new
+                basket.quantity_ordered = basket.quantity_ordered_new
+                if (isWillRemoveFrombasket) {
+                    // Remove product from layout basket
+                    const products = layout.rightbasket?.products
+                    if (products) {
+                        const index = products.findIndex((p: any) => p.transaction_id === productTransactionId)
+                        if (index !== -1) {
+                            products.splice(index, 1)
+                        }
+                    }
+                } else {
+                    // Update product quantity in layout basket
+                    const products = layout.rightbasket?.products
+                    if (products) {
+                        const index = products.findIndex((p: any) => p.transaction_id === productTransactionId)
+                        if (index !== -1) {
+                            products[index].quantity_ordered = basket.quantity_ordered_new
+                            products[index].quantity_ordered_new = basket.quantity_ordered_new
+                        }
+                    }
+                }
             },
             onError: errors => {
                 setStatus('error')

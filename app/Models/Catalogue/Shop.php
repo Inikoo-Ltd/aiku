@@ -143,6 +143,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property string $price_rrp_ratio
  * @property bool $is_migrating_to_aiku
+ * @property array<array-key, mixed>|null $offers_data
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -263,6 +264,7 @@ class Shop extends Model implements HasMedia, Auditable
         'state'           => ShopStateEnum::class,
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
+        'offers_data'     => 'array',
     ];
 
     protected $attributes = [
@@ -270,7 +272,8 @@ class Shop extends Model implements HasMedia, Auditable
         'settings' => '{}',
         'location' => '{}',
         'extra_languages' => '{}',
-        'forbidden_dispatch_countries' => '{}'
+        'forbidden_dispatch_countries' => '{}',
+        'offers_data'   => '{}',
     ];
 
     protected $guarded = [];

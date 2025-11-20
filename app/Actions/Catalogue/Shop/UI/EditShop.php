@@ -188,13 +188,13 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
-                        [
-                            'label'  => __('contact/details'),
-                            'icon'   => 'fa-light fa-user',
-                            'fields' => [
+                        // [
+                        //     'label'  => __('contact/details'),
+                        //     'icon'   => 'fa-light fa-user',
+                        //     'fields' => [
 
-                            ]
-                        ],
+                        //     ]
+                        // ],
                         [
                             'label'  => __('Pricing'),
                             'icon'   => 'fa-light fa-money-bill',

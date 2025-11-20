@@ -251,7 +251,7 @@ const idxSlideLoading = ref(false)
 
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
-                class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative"
+                class="block w-full mb-1 rounded xsm:h-[305px] h-[180px] relative"
                 @start="() => idxSlideLoading = true"
                 @finish="() => idxSlideLoading = false"
             >

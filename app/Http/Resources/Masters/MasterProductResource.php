@@ -6,7 +6,6 @@ use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Helpers\NaturalLanguage;
-use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketAttachment;
 
 class MasterProductResource extends JsonResource

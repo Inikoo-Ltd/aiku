@@ -560,6 +560,7 @@ const onChangeInsurance = async (val: boolean) => {
         :address_management
         :is_unable_dispatch
         :contact_address
+        :currency_code="order?.currency_code"
     />
     
     <template v-if="order">

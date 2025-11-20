@@ -10,27 +10,37 @@
 namespace App\Actions\Helpers\Tag\Hydrators;
 
 use App\Models\Helpers\Tag;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class TagHydrateModels
+class TagHydrateModels implements ShouldBeUnique
 {
     use AsAction;
 
-    public function handle(Tag $tag): void
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(int $tagID): string
     {
-        $stats = [];
+        return $tagID;
+    }
 
-        if (!empty($tag->tradeUnits())) {
-            $stats = [
-                'number_models' => $tag->tradeUnits()->count(),
-            ];
+    public function handle(int $tagID): void
+    {
+        $tag = Tag::find($tagID);
+        if (!$tag) {
+            return;
         }
 
-        if (!empty($tag->customers())) {
-            $stats = [
-                'number_models' => $tag->customers()->count(),
-            ];
-        }
+        // Count distinct model IDs that have this tag assigned
+        $number_models = DB::table('model_has_tags')
+            ->where('tag_id', $tag->id)
+            ->distinct()
+            ->count('model_id');
+        $stats = [
+            'number_models' => $number_models
+        ];
+
 
         $tag->updateQuietly($stats);
     }

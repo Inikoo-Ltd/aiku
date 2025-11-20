@@ -57,7 +57,7 @@ class UpdateOrder extends OrgAction
         $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (Arr::hasAny($changes, ['tax_category_id', 'collection_address_id'])) {
-            CalculateOrderTotalAmounts::run($order, true, true);
+            CalculateOrderTotalAmounts::run($order, true, true, true);
         }
 
         if (count($changes) > 0) {

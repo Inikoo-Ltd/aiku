@@ -175,7 +175,7 @@ onMounted(() => {
         </Breadcrumb>
     </div>
 
-    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" />
+    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :handleTabUpdate />
 
     <!-- ✅ PrimeVue Dialog -->
     <Dialog v-model:visible="showDialog" modal header="Add Item to Other Shop" :style="{ width: '60vw' }">

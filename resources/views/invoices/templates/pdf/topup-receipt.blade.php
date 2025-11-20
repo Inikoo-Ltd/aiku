@@ -171,9 +171,9 @@
                 @if($customer->identity_document_number)
                     {{__('Registration Number')}}: {{$customer->identity_document_number}}
                 @endif
-                @if($customer->taxNumber && $customer->taxNumber->status == 'valid')
+                @if($customer->taxNumber && $customer->taxNumber->valid)
                     <div>
-                        <span class="address_label">{{ __('Tax Number') }}:</span> <span
+                        <span class="address_label">{{ __('VAT Number') }}:</span> <span
                             class="address_value">{{ $customer->taxNumber->number }}</span>
                     </div>
                 @endif

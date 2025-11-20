@@ -11,7 +11,6 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Traits\HasBucketImages;
-use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -29,6 +28,10 @@ class GetMasterProductShowcase
             'images' => $this->getImagesData($masterAsset),
             'main_image'      => $masterAsset->imageSources(),
             'masterProduct' => MasterProductResource::make($masterAsset)->toArray(request()),
+            'properties'           => null,  // TODO
+            'gpsr'                 => null,  // TODO
+            'parts'                 => null,  // TODO
+
         ];
     }
 

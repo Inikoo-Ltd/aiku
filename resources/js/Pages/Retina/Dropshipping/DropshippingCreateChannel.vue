@@ -11,6 +11,7 @@ import {routeType} from "@/types/route";
 
 import {trans} from "laravel-vue-i18n";
 import Modal from "@/Components/Utils/Modal.vue";
+import Dialog from 'primevue/dialog';
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import {notify} from "@kyvg/vue3-notification";
@@ -26,6 +27,8 @@ import EbayProgressBar from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelE
 import EbayAccountNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAccountNameForm.vue";
 import EbaySiteForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbaySiteForm.vue";
 import EbayAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAuthKeyForm.vue";
+import EbayListingProfileNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileNameForm.vue";
+import EbayListingProfileConfirmationForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileConfirmationForm.vue";
 library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers);
@@ -282,6 +285,8 @@ const steps = ref([
     { name: "Ebay Account Name", status: "current" },
     { name: "Ebay Site", status: "upcoming" },
     { name: "Ebay Auth Key", status: "upcoming" },
+    { name: "Ebay Listing Profile Name", status: "upcoming" },
+    { name: "Ebay Listing Profile Confirmation", status: "upcoming" }
 ]);
 
 provide("steps", steps);
@@ -289,7 +294,9 @@ provide("steps", steps);
 const stepComponents = [
     EbayAccountNameForm,
     EbaySiteForm,
-    EbayAuthKeyForm
+    EbayAuthKeyForm,
+    EbayListingProfileNameForm,
+    EbayListingProfileConfirmationForm
 ];
 
 const currentStep = ref(0);
@@ -455,7 +462,6 @@ provide("goNext", goNext);
                     />
 
                     <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
-
                 </div>
             </div>
 
@@ -645,12 +651,12 @@ provide("goNext", goNext);
         </div>
     </Modal>
 
-    <Modal :isOpen="isModalCreateEbay" @onClose="isModalCreateEbay = false" width="max-w-[60%] w-full h-[500px]">
+    <Dialog v-model:visible="isModalCreateEbay" modal header="eBay" class="max-w-[90%] w-full">
         <div class="flex flex-col gap-6">
             <EbayProgressBar />
             <component :is="stepComponents[currentStep]" />
         </div>
-    </Modal>
+    </Dialog>
 
     <!-- Modal: Magento -->
     <Modal :isOpen="isModalMagento" @onClose="isModalMagento = false" width="w-full max-w-lg">

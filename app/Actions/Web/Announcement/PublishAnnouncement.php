@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Announcement;
 
+use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreAnnouncementSnapshot;
 use App\Actions\OrgAction;
@@ -128,6 +129,10 @@ class PublishAnnouncement extends OrgAction
         }
 
         $this->update($announcement, $updateData);
+        ClearCacheByWildcard::run("irisData:website:$announcement->website_id:*");
+
+
+
     }
 
     public function authorize(ActionRequest $request): bool

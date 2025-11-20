@@ -266,6 +266,19 @@ class ShowProduct extends OrgAction
 
         $actions = [];
 
+        if ($this->canEdit) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('Edit'),
+                'route' => [
+                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ];
+        }
+
+
         if ($product->webpage) {
             $actions[] =
                 [
@@ -298,17 +311,6 @@ class ShowProduct extends OrgAction
                 ];
         }
 
-        if ($this->canEdit) {
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'edit',
-                'label' => __('Edit'),
-                'route' => [
-                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                    'parameters' => $request->route()->originalParameters()
-                ]
-            ];
-        }
 
 
         return Inertia::render(
