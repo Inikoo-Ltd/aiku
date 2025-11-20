@@ -185,6 +185,18 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'HydratePing',
         );
 
+        $schedule->command('hydrate:ping')->dailyAt('12:59')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+
+        $schedule->command('hydrate:ping')->dailyAt('11:58')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+
+        $schedule->command('hydrate:ping')->dailyAt('13:57')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydratePing',
+        );
+
         (new Schedule())->command('hydrate:ping')->everyTwoHours('02:48')->timezone('UTC');
 
     }
