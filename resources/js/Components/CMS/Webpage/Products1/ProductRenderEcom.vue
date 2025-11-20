@@ -44,6 +44,7 @@ const props = withDefaults(defineProps<{
     bestSeller?:any
     buttonStyleHover?:any
     buttonStyle?:object | undefined
+    buttonStyleLogin?:object | undefined
 
 }>(), {
     basketButton: true,
@@ -227,8 +228,11 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
 
 
-
 const idxSlideLoading = ref(false)
+const typeOfLink = computed(() =>
+    window.location.href.includes('app') ? 'external' : 'internal'
+)
+
 
 </script>
 
@@ -250,8 +254,8 @@ const idxSlideLoading = ref(false)
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
 
             <!-- Product Image -->
-            <component :is="product.url ? Link : 'div'" :href="product.url"
-                class="block w-full mb-1 rounded xsm:h-[305px] h-[180px] relative"
+            <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"  :type="typeOfLink"
+                class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative"
                 @start="() => idxSlideLoading = true"
                 @finish="() => idxSlideLoading = false"
             >
@@ -293,18 +297,14 @@ const idxSlideLoading = ref(false)
                             fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
                     </button>
                 </div>
-
-                
-                
             </component>
 
             <div class="px-3">
                 <!-- Title -->
                 <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
-                    type="internal">
+                    :type="typeOfLink" :id="product?.url?.id">
                     <template #default>
-                        <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{
-                        product.name }}
+                        <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{product.name }}
                     </template>
                 </LinkIris>
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
@@ -343,7 +343,7 @@ const idxSlideLoading = ref(false)
                 {{ trans("Login or Register for Wholesale Prices") }}
             </a> -->
              <a :href="urlLoginWithRedirect()" class="w-full"> 
-                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyle"/>
+                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin"/>
             </a>
         </div>
 
