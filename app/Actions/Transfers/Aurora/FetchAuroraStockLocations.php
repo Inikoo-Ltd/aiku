@@ -10,6 +10,7 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStock\SyncOrgStockLocations;
+use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Models\Inventory\OrgStock;
 use App\Transfers\Aurora\WithAuroraAttachments;
 use App\Transfers\SourceOrganisationService;
@@ -37,6 +38,11 @@ class FetchAuroraStockLocations extends FetchAuroraAction
             $orgStock->update([
                 'source_quantity_in_submitted_orders' => $stockData[0]->{'Part Current Stock Ordered Paid'},
                 'source_quantity_to_be_picked'        => $stockData[0]->{'Part Current Stock In Process'},
+
+            ]);
+
+            UpdateOrgStock::run($orgStock,[
+                'is_on_demand'                        => $stockData[0]->{'Part On Demand'} == 'Yes',
             ]);
 
 
@@ -47,8 +53,6 @@ class FetchAuroraStockLocations extends FetchAuroraAction
 
 
             OrgStockHydrateQuantityInLocations::run($orgStock);
-
-
         }
 
         return [];

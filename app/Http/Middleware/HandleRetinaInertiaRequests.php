@@ -95,6 +95,10 @@ class HandleRetinaInertiaRequests extends Middleware
                     "type"     => $website->shop->type->value,
                     "currency" => CurrencyResource::make($website->shop->currency)->toArray(request()),
                     "balance"  => $webUser?->customer?->balance,
+                    'show_cards_modal' => !$webUser?->customer->mitSavedCard()->exists() && $webUser?->customer
+                            ->customerSalesChannels()
+                            ->whereNot('platform_id', 4)
+                            ->exists(),
                 ],
                 'iris'     => $this->getIrisData($website, $webUser)
             ],

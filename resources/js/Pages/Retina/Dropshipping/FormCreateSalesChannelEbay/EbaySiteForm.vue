@@ -13,24 +13,43 @@
     import { library } from "@fortawesome/fontawesome-svg-core";
     import Button from "@/Components/Elements/Buttons/Button.vue";
     import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+    import axios from "axios";
+    import { notify } from "@kyvg/vue3-notification";
 
     library.add(faInfoCircle);
 
     const goNext = inject("goNext");
     const closeCreateEbayModal = inject("closeCreateEbayModal");
+    const ebayId = inject("ebayId");
+
+    const isLoadingStep = ref(false)
 
     const sites = ref([
-        { name: "United States", value: "us" },
-        { name: "United Kingdom", value: "uk" },
+        { name: "United Kingdom", value: "EBAY_UK" },
+        { name: "Spain", value: "EBAY_ES" },
+        { name: "Europe", value: "EBAY_DE" },
     ]);
 
     const form = useForm({
-        site: ""
+        marketplace: ""
     });
 
     const submitForm = async () => {
-        console.log(form.data());
-        goNext();
+        isLoadingStep.value = true
+        try {
+            const {data} = await axios.patch(route('retina.dropshipping.customer_sales_channels.ebay.update', {
+                ebayUser: ebayId.value
+            }), form.data());
+            goNext();
+            isLoadingStep.value = false
+        } catch (err) {
+            isLoadingStep.value = false;
+            notify({
+                title: trans("Something went wrong"),
+                text: err.response?.data?.message,
+                type: "error"
+            });
+        }
     }
 </script>
 
@@ -43,7 +62,7 @@
         <div class="flex flex-col gap-2 ">
             <label class="font-semibold">{{ trans("eBay Site") }}</label>
             <div class="flex items-center gap-2 w-full md:w-80">
-                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
+                <Select v-model="form.marketplace" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
                 <FontAwesomeIcon v-tooltip="trans('Select listing duration')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
             </div>
         </div>
@@ -52,7 +71,7 @@
 
         <div class="flex md:justify-end gap-4">
             <Button type="secondary" size="sm" @click="closeCreateEbayModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
         </div>
     </form>
 </template>

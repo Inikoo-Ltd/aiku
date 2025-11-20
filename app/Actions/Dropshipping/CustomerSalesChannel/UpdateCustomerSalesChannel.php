@@ -16,8 +16,14 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\EbayUser;
+use App\Models\Dropshipping\MagentoUser;
+use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Rules\IUnique;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,6 +37,13 @@ class UpdateCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
+        /** @var EbayUser|WooCommerceUser|ShopifyUser|MagentoUser|AmazonUser|Model $platformUser */
+        $platformUser = $customerSalesChannel->user;
+
+        $shippingService = Arr::pull($modelData, 'shipping_service');
+        $shippingPrice = Arr::pull($modelData, 'shipping_price');
+        $shippingDispatchTime = Arr::pull($modelData, 'shipping_max_dispatch_time');
+
         if (Arr::has($modelData, 'is_vat_adjustment')) {
             data_set($modelData, 'settings.tax_category.checked', Arr::get($modelData, 'is_vat_adjustment'));
         }
@@ -39,31 +52,28 @@ class UpdateCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.tax_category.id', Arr::get($modelData, 'tax_category_id'));
         }
 
-        if (Arr::has($modelData, 'shipping_service')) {
-            data_set($modelData, 'settings.shipping.service', Arr::get($modelData, 'shipping_service'));
+        if ($shippingService) {
+            $shippingServiceData = $platformUser->getServicesWithCarrierInfo()[$shippingService];
+            data_set($modelData, 'settings.shipping', $shippingServiceData);
         }
-        if (Arr::has($modelData, 'shipping_price')) {
-            data_set($modelData, 'settings.shipping.price', Arr::get($modelData, 'shipping_price'));
+        if ($shippingPrice) {
+            data_set($modelData, 'settings.shipping.price', $shippingPrice);
         }
-        if (Arr::has($modelData, 'shipping_max_dispatch_time')) {
-            data_set($modelData, 'settings.shipping.max_dispatch_time', Arr::get($modelData, 'shipping_max_dispatch_time'));
+        if ($shippingDispatchTime) {
+            data_set($modelData, 'settings.shipping.max_dispatch_time', $shippingDispatchTime);
         }
 
         data_forget($modelData, 'tax_category_id');
         data_forget($modelData, 'is_vat_adjustment');
 
-        if ($customerSalesChannel->platform->type === PlatformTypeEnum::EBAY) {
-            if (Arr::has($modelData, 'shipping_service') || Arr::has($modelData, 'shipping_price') || Arr::has($modelData, 'shipping_max_dispatch_time')) {
-                data_forget($modelData, 'shipping_service');
-                data_forget($modelData, 'shipping_price');
-                data_forget($modelData, 'shipping_max_dispatch_time');
+        $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
+        $changes = Arr::except($customerSalesChannel->getChanges(), ['updated_at', 'last_fetched_at']);
 
+        if ($customerSalesChannel->platform->type === PlatformTypeEnum::EBAY) {
+            if ($shippingService || $shippingPrice || $shippingDispatchTime) {
                 UpdateShippingPolicyEbayUser::run($customerSalesChannel->user, $modelData);
             }
         }
-
-        $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
-        $changes = Arr::except($customerSalesChannel->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (Arr::has($changes, 'status')) {
             ShopHydratePlatformSalesIntervalsNewChannels::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay($this->hydratorsDelay);

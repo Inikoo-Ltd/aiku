@@ -24,6 +24,9 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
     {
         $request->route()->getName();
 
+        /** @var \App\Models\Dropshipping\EbayUser $ebay */
+        $ebay = $customerSalesChannel->user;
+
         return Inertia::render(
             'EditModel',
             [
@@ -54,6 +57,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                         [
                             [
                                 "label"  => __("Properties"),
+                                'icon'    => 'fa-light fa-fingerprint',
                                 'title'  => __('properties'),
                                 'fields' => [
                                     'name' => [
@@ -65,6 +69,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                             ],
                             [
                                 "label"  => __("Pricing"),
+                                'icon'    => 'fa-light fa-user',
                                 'title'  => __('pricing'),
                                 'fields' => [
                                     'is_vat_adjustment' => [
@@ -84,12 +89,14 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                             ],
                             [
                                 "label"  => __("Shipping"),
+                                'icon'    => 'fa-light fa-truck',
                                 'title'  => __('shipping'),
                                 'fields' => [
                                     'shipping_service' => [
                                         'type'  => 'select',
                                         'label' => __('shipping service'),
-                                        'value' => Arr::get($customerSalesChannel->settings, 'shipping.service'),
+                                        'options' => Options::forArray($ebay->getServicesForOptions()),
+                                        'value' => Arr::get($customerSalesChannel->settings, 'shipping.service_code'),
                                     ],
                                     'shipping_price' => [
                                         'type'  => 'input',
