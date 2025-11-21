@@ -15,7 +15,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome } from '@fal'
+import { faHome, faImage } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
@@ -26,7 +26,7 @@ import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
 import IrisRightsideBasket from '@/Components/Iris/Layout/IrisRightsideBasket.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
-library.add(faHome, faExclamationTriangle, faWhatsapp)
+library.add(faHome, faImage, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
 
