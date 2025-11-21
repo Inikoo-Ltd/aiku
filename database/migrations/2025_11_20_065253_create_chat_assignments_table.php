@@ -24,6 +24,7 @@ return new class extends Migration
             $table->foreign('session_id')
                   ->references('id')
                   ->on('chat_sessions')
+                  ->onUpdate('cascade')
                   ->onDelete('cascade');
 
             $table->foreign('agent_id')

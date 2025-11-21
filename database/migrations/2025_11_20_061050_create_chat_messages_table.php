@@ -15,8 +15,7 @@ return new class extends Migration
 
             // FOREIGN KEY → chat_sessions.id
             $table->unsignedInteger('session_id');
-
-            $table->foreign('session_id')->references('id')->on('chat_sessions');
+            $table->foreign('session_id')->references('id')->on('chat_sessions')->onUpdate('cascade')->onDelete('cascade');
 
             $table->enum('message_type', ['text', 'image', 'file'])->default('text');
 
@@ -30,7 +29,7 @@ return new class extends Migration
 
             // media file
             $table->unsignedInteger('media_id');
-            $table->foreign('media_id')->references('id')->on('media')->onDelete('cascade');;
+            $table->foreign('media_id')->references('id')->on('media')->onDelete('cascade');
 
 
             $table->boolean('is_read')->default(false);
