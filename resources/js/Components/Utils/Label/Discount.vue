@@ -9,9 +9,9 @@ const props = defineProps<{
     offers_data: {
         v: number
         o: {
-            oc: number  // Offer Campaign
-            o: number  // Offer
-            oa: number  // 
+            oc: number  // Offer Campaign id
+            o: number  // Offer id
+            oa: number  // Offer Allowance id
             t: string  // Type: "percentage"
             p: string  // Percentage: "10.0%"
             l: string  // Label
