@@ -27,7 +27,6 @@ return new class extends Migration
 
             $table->string('sender_type');
             $table->unsignedInteger('sender_id')->nullable();
-            // Proper composite index for polymorphic sender reference
             $table->index(['sender_type', 'sender_id'], 'chat_messages_sender_idx');
 
             $table->text('message_text')->nullable();

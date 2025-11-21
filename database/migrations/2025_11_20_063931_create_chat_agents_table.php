@@ -18,8 +18,8 @@ return new class extends Migration
             $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
 
             $table->unsignedSmallInteger('max_concurrent_chats')->default(10);
-            $table->boolean('is_online')->default(false);
-            $table->boolean('is_available')->default(false);
+            $table->boolean('is_online')->index()->default(false);
+            $table->boolean('is_available')->index()->default(false);
 
             $table->unsignedSmallInteger('current_chat_count')->default(0);
             $table->json('specialization')->nullable(); // ["billing", "technical", "sales"]
