@@ -89,7 +89,7 @@ test('update offer campaign', function () {
 test('create offer', function () {
     $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
-    $offer         = StoreOffer::make()->action($offerCampaign, $shop, Offer::factory()->definition());
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
     $offerCampaign->refresh();
     $this->group->refresh();
     $this->organisation->refresh();
