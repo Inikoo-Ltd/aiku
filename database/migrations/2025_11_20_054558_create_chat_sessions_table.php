@@ -23,6 +23,10 @@ return new class extends Migration
             $table->string('language', 10)->default('en');
             $table->enum('priority', ['low', 'normal', 'high', 'urgent'])
                   ->default('normal');
+             $table->decimal('rating', 2, 1)
+                  ->unsigned()
+                  ->nullable()
+                  ->check('rating >= 1 AND rating <= 5');
             $table->enum('closed_by', ['user', 'agent', 'system'])->nullable();
 
             // Timestamps
@@ -32,7 +36,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             // Foreign Keys
-            $table->foreign('web_user_id')->references('id')->on('web_users')->onDelete('cascade');
+            $table->foreign('web_user_id')->references('id')->on('web_users')->onUpdate('cascade')->onDelete('cascade');
 
         });
     }

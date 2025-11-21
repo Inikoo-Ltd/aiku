@@ -14,10 +14,9 @@ return new class extends Migration
     {
         Schema::create('chat_agents', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('user_id');
+            $table->unsignedInteger('user_id')->unique();
             // Foreign key constraint
-            $table->foreign('user_id')->references('id')->on('users');
-
+            $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
 
             $table->integer('max_concurrent_chats')->default(10);
             $table->boolean('is_online')->default(false);
