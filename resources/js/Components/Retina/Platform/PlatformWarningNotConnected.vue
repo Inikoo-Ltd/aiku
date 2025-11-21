@@ -116,7 +116,7 @@ const ipAddresses = [
         </div>
         <div class="ml-2">
             <div>
-                <small>{{ trans('Please add this IP Address to whitelist: ')}}</small>
+                <small>{{ trans('Please add this IP Address to whitelist:')}}</small>
             </div>
             <div v-for="(ip, i) in ipAddresses" :key="i">
                 <blockquote>{{ ip }}</blockquote>

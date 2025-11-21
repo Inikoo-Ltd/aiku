@@ -29,7 +29,7 @@ class PdfTimesheet extends OrgAction
      */
     public function handle(Employee $employee): Response
     {
-        $filename = __('Timesheets - ') . $employee->contact_name . '.pdf';
+        $filename = __('Timesheets') . ' - ' . $employee->contact_name . '.pdf';
         $config = [
             'title' => $filename,
             'margin_left' => 8,
