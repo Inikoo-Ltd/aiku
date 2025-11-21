@@ -21,8 +21,7 @@ class GetWebBlockLuigiRecommendations
     public function handle(Webpage $webpage, array $webBlock): array
     {
         if ($webpage->model instanceof Product) {
-            $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
-            data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
+            data_set($webBlock, 'web_block.layout.data.fieldValue.product.luigi_identity', $webpage->model->getLuigiIdentity());
         }
 
         return $webBlock;
