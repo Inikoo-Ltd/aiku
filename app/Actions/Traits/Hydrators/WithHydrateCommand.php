@@ -26,6 +26,7 @@ trait WithHydrateCommand
 
     private string $model;
     private ?string $restriction = null;
+    private ?array $evadeState = null;
 
     protected function getOrganisationsIds(Command $command): array
     {
@@ -109,6 +110,10 @@ trait WithHydrateCommand
             $query->where('type', ProductCategoryTypeEnum::FAMILY);
         } elseif ($this->restriction == 'sub_department') {
             $query->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
+        }
+
+        if($this->evadeState && count($this->evadeState) > 0) {
+            $query->whereNotIn('state', $this->evadeState);
         }
 
         return $query;
