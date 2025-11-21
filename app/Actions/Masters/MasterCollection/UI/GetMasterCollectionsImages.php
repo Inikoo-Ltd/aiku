@@ -27,21 +27,21 @@ class GetMasterCollectionsImages
             'images_category_box' => $this->getSingleImageData($masterCollection),
             'images_update_route' => [
                 'method'     => 'patch',
-                'name'       => 'grp.models.master_product_category.update_images',
+                'name'       => 'grp.models.master_collection.update_images',
                 'parameters' => [
                     'masterCollection' => $masterCollection->id,
                 ],
             ],
             'upload_images_route' => [
                 'method'     => 'post',
-                'name'       => 'grp.models.master_product_category.upload_images',
+                'name'       => 'grp.models.master_collection.upload_images',
                 'parameters' => [
                     'masterCollection' => $masterCollection->id,
                 ],
             ],
             'delete_images_route' => [
                 'method'     => 'post',
-                'name'       => 'grp.models.master_product_category.delete_images',
+                'name'       => 'grp.models.master_collection.delete_images',
                 'parameters' => [
                     'masterCollection' => $masterCollection->id,
                     'media'   => ''
