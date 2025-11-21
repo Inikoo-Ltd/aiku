@@ -2,6 +2,8 @@
 
 namespace App\Enums\CRM\Livechat;
 
+use App\Enums\EnumHelperTrait;
+
 enum ChatAgentSpecializationEnum: string
 {
      use EnumHelperTrait;
