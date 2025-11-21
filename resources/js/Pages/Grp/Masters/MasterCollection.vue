@@ -41,6 +41,7 @@ const props = defineProps<{
     collections?: {}
     shop_collections?: {}
     history?: {};
+    images?:{};
     routes: {
         families: { dataList: routeType, submitAttach: routeType, detach: routeType }
         products: { dataList: routeType, submitAttach: routeType, detach: routeType }
