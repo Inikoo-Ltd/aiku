@@ -11,29 +11,21 @@ return new class extends Migration
     {
         Schema::create('chat_assignments', function (Blueprint $table) {
 
-            $table->id();
-            $table->unsignedInteger('session_id'); // Foreign key to chat_sessions
-            $table->unsignedInteger('agent_id')->nullable(); // Foreign key to agents (bisa null)
+            $table->increments('id');
+            $table->unsignedInteger('chat_session_id')->index()->nullable();
+            $table->foreign('chat_session_id')->references('id')->on('chat_sessions')->nullOnDelete();
+
+            $table->unsignedInteger('chat_agent_id')->index()->nullable();
+            $table->foreign('chat_agent_id')->references('id')->on('chat_agents')->nullOnDelete();
+
             $table->enum('status', ['pending', 'active', 'resolved', 'rejected'])->default('pending');
             $table->enum('assigned_by', ['system', 'user', 'agent'])->default('system');
-            $table->timestamp('assigned_at')->useCurrent();
+            $table->timestamp('assigned_at');
             $table->timestamp('resolved_at')->nullable();
-            $table->string('note', 500)->nullable();
-
-            // Foreign key constraints
-            $table->foreign('session_id')
-                  ->references('id')
-                  ->on('chat_sessions')
-                  ->onUpdate('cascade')
-                  ->onDelete('cascade');
-
-            $table->foreign('agent_id')
-                  ->references('id')
-                  ->on('agents')
-                  ->onDelete('set null');
-
+            $table->text('note')->nullable();
 
             $table->timestampsTz();
+            $table->softDeletesTz();
         });
     }
 

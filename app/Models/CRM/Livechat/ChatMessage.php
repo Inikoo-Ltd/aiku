@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\CRM\Livechat\ChatSession;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -59,19 +60,13 @@ class ChatMessage extends Model
         return $this->belongsTo(Media::class);
     }
 
-    /**
-     * Get the sender model based on sender_type (polymorphic-like relationship).
-     */
-    public function sender()
+
+    public function sender(): MorphTo
     {
-        return match($this->sender_type) {
-            ChatSenderTypeEnum::USER => $this->belongsTo(WebUser::class, 'sender_id'),
-            ChatSenderTypeEnum::AGENT => $this->belongsTo(ChatAgent::class, 'sender_id'),
-            ChatSenderTypeEnum::GUEST => null,
-            ChatSenderTypeEnum::SYSTEM => null, // System messages have no sender
-            ChatSenderTypeEnum::AI => null, // AI messages have no specific sender
-        };
+        return $this->morphTo();
     }
+
+
 
     /**
      * Mark message as delivered.

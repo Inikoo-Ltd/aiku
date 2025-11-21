@@ -13,21 +13,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('chat_agents', function (Blueprint $table) {
-            $table->increments('id');
-            $table->unsignedInteger('user_id')->unique();
-            // Foreign key constraint
-            $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->smallIncrements('id');
+            $table->unsignedSmallInteger('user_id')->index()->unique();
+            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
 
-            $table->integer('max_concurrent_chats')->default(10);
+            $table->unsignedSmallInteger('max_concurrent_chats')->default(10);
             $table->boolean('is_online')->default(false);
-            $table->integer('current_chat_count')->default(0);
+            $table->boolean('is_available')->default(false);
+
+            $table->unsignedSmallInteger('current_chat_count')->default(0);
             $table->json('specialization')->nullable(); // ["billing", "technical", "sales"]
             $table->boolean('auto_accept')->default(true);
-            $table->tinyInteger('is_available')->default(1);
 
-            $table->index('user_id');
             $table->timestampsTz();
-
             $table->softDeletes();
         });
     }

@@ -5,7 +5,7 @@ namespace App\Models\CRM\Livechat;
 use App\Models\CRM\WebUser;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
-use App\Enums\CRM\Livechat\ClosedByTypeEnum;
+use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 use App\Models\CRM\Livechat\ChatMessage;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,11 +30,11 @@ class ChatSession extends Model
     ];
 
      protected $casts = [
-        'status' => ChatSessionStatusEnum::class,
-        'priority' => ChatPriorityEnum::class,
-        'closed_by' => ClosedByTypeEnum::class,
-        'closed_at' => 'datetime',
-        'rating' => 'decimal:1',
+         'status' => ChatSessionStatusEnum::class,
+         'priority' => ChatPriorityEnum::class,
+         'closed_by' => ChatSessionClosedByTypeEnum::class,
+         'closed_at' => 'datetime',
+         'rating' => 'decimal:1',
     ];
 
     public function getRatingAttribute($value): float|null
