@@ -357,7 +357,6 @@ class ShowProduct extends OrgAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
                 'taxonomy'    => $this->getProductTaxonomy($product, $request),
-
                 'webpage_canonical_url' => $product->webpage?->canonical_url,
 
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
