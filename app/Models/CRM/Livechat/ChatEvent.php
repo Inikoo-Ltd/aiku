@@ -3,11 +3,28 @@
 namespace App\Models\CRM\Livechat;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\CRM\Livechat\ChatSession;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+/**
+ * @property int $id
+ * @property int $chat_session_id
+ * @property ChatEventTypeEnum|null $event_type
+ * @property ChatActorTypeEnum|null $actor_type
+ * @property int|null $actor_id
+ * @property array<array-key, mixed>|null $payload
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent fromActor(\App\Enums\CRM\Livechat\ChatActorTypeEnum $actorType, ?int $actorId = null)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent ofType(\App\Enums\CRM\Livechat\ChatEventTypeEnum $eventType)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent ratings()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent transfers()
+ * @mixin \Eloquent
+ */
 class ChatEvent extends Model
 {
     use HasFactory;

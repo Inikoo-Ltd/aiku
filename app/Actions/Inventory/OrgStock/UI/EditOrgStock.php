@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Louis Perez
  * created on 20-11-2025-16h-35m
@@ -8,23 +9,15 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
-use App\Actions\Catalogue\Product\UI\IndexProductsInOrgStock;
-use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
-use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\UI\Procurement\OrgStockTabsEnum;
-use App\Http\Resources\Catalogue\ProductsResource;
-use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockResource;
-use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\Models\Goods\StockFamily;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -151,34 +144,34 @@ class EditOrgStock extends OrgAction
             ];
         };
 
-        return match ($routeName) { 
-                'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.edit',
-                'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.edit',
-                'grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.edit',
-                'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.edit',
-                'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.edit',
-                'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.edit',
-                'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit',
-                'maya.org.warehouses.show.inventory.org_stocks.edit' =>
-                    array_merge(
-                        (new ShowInventoryDashboard())->getBreadcrumbs($routeParameters),
-                        $headCrumb(
-                            $orgStock,
-                            [
-                                'index' => [
-                                    'name'       => preg_replace('/\.edit$/', '.index', $routeName),
-                                    'parameters' => $routeParameters
-                                ],
-                                'model' => [
-                                    'name'       => preg_replace('/\.edit$/', '.show', $routeName),
-                                    'parameters' => $routeParameters
-                                ]
+        return match ($routeName) {
+            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit',
+            'maya.org.warehouses.show.inventory.org_stocks.edit' =>
+                array_merge(
+                    (new ShowInventoryDashboard())->getBreadcrumbs($routeParameters),
+                    $headCrumb(
+                        $orgStock,
+                        [
+                            'index' => [
+                                'name'       => preg_replace('/\.edit$/', '.index', $routeName),
+                                'parameters' => $routeParameters
                             ],
-                            $suffix
-                        )
-                    ),
+                            'model' => [
+                                'name'       => preg_replace('/\.edit$/', '.show', $routeName),
+                                'parameters' => $routeParameters
+                            ]
+                        ],
+                        $suffix
+                    )
+                ),
 
-                default => []
-            };
+            default => []
+        };
     }
 }

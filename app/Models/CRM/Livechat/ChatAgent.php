@@ -6,9 +6,33 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property int $max_concurrent_chats
+ * @property bool $is_online
+ * @property int $is_available
+ * @property int $current_chat_count
+ * @property array<array-key, mixed>|null $specialization
+ * @property bool $auto_accept
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent available()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent online()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent withSpecialization(string $specialization)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent withoutTrashed()
+ * @mixin \Eloquent
+ */
 class ChatAgent extends Model
 {
-     use HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
 
     protected $table = 'chat_agents';
 
@@ -32,7 +56,7 @@ class ChatAgent extends Model
         'is_available',
     ];
 
-     protected static function booted(): void
+    protected static function booted(): void
     {
         static::creating(function (ChatAgent $agent) {
             // check, what if user_id have activated
@@ -76,7 +100,7 @@ class ChatAgent extends Model
     }
 
 
-     public function user(): BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class);
     }

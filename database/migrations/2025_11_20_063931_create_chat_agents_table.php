@@ -5,10 +5,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Stubs\Migrations\HasSoftDeletes;
 
-
-return new class extends Migration
-{
-     use HasSoftDeletes;
+return new class () extends Migration {
+    use HasSoftDeletes;
 
     public function up(): void
     {

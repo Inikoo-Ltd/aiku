@@ -3,11 +3,7 @@
 namespace App\Models\CRM\Livechat;
 
 use App\Models\Media;
-
-use App\Models\CRM\WebUser;
-use App\Models\CRM\Livechat\ChatAgent;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\CRM\Livechat\ChatSession;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -15,9 +11,37 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+/**
+ * @property int $id
+ * @property int|null $chat_session_id
+ * @property ChatMessageTypeEnum $message_type
+ * @property ChatSenderTypeEnum $sender_type
+ * @property int|null $sender_id
+ * @property string|null $message_text
+ * @property int|null $media_id
+ * @property bool $is_read
+ * @property \Illuminate\Support\Carbon|null $delivered_at
+ * @property \Illuminate\Support\Carbon|null $read_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read Model|\Eloquent|null $sender
+ * @property-read ChatSession|null $session
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage fromSenderType(\App\Enums\CRM\Livechat\ChatSenderTypeEnum $senderType)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage textMessages()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage unread()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage withoutTrashed()
+ * @mixin \Eloquent
+ */
 class ChatMessage extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
 
     protected $table = 'chat_messages';
 

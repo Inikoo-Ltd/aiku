@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Enums\CRM\Livechat;
+
 use App\Enums\EnumHelperTrait;
 
 enum ChatSessionStatusEnum: string

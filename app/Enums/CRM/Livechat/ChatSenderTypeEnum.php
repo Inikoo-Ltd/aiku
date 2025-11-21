@@ -6,7 +6,7 @@ use App\Enums\EnumHelperTrait;
 
 enum ChatSenderTypeEnum: string
 {
-     use EnumHelperTrait;
+    use EnumHelperTrait;
 
     case USER = 'user';
     case GUEST = 'guest';

@@ -32,7 +32,6 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Accounting\Invoice;
-use App\Models\SysAdmin\GroupSalesIntervals;
 
 trait WithRunInvoiceHydrators
 {

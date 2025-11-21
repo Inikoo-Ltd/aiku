@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Enums\CRM\Livechat;
+
 use App\Enums\EnumHelperTrait;
+
 enum ChatSessionClosedByTypeEnum: string
 {
     use EnumHelperTrait;

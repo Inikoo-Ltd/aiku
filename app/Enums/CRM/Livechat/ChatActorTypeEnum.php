@@ -2,6 +2,8 @@
 
 namespace App\Enums\CRM\Livechat;
 
+use App\Enums\EnumHelperTrait;
+
 enum ChatActorTypeEnum: string
 {
     use EnumHelperTrait;
@@ -15,11 +17,11 @@ enum ChatActorTypeEnum: string
     public static function labels(): array
     {
         return [
-            'guest' => __('Guest'),
-            'user' => __('User'),
-            'agent' => __('Agent'),
+            'guest'  => __('Guest'),
+            'user'   => __('User'),
+            'agent'  => __('Agent'),
             'system' => __('System'),
-            'ai' => __('AI'),
+            'ai'     => __('AI'),
         ];
     }
 }
