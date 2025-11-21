@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use Exception;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
-use App\Actions\Retina\Dropshipping\Portfolio\RemoveFilesFromCatalogueIrisR2;
 use Illuminate\Support\Facades\Log;
 
 class PurgeDownloadPortfolioCustomerSalesChannel

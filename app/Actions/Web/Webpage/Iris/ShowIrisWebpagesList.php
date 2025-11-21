@@ -49,7 +49,7 @@ class ShowIrisWebpagesList
                     ->where('products.state', ProductStateEnum::ACTIVE->value)
                     ->where('webpages.sub_type', 'product')
                     ->orderBy('sales_1q', 'desc')
-                    ->limit(1000);
+                    ->limit(4000);
             } elseif ($mode == 'families') {
                 $query = DB::table('webpages')
                     ->leftJoin('product_categories', 'webpages.model_id', '=', 'product_categories.id')
@@ -61,7 +61,7 @@ class ShowIrisWebpagesList
                     ->where('webpages.state', WebpageStateEnum::LIVE->value)
                     ->where('webpages.sub_type', 'family')
                     ->orderBy('sales_1q', 'desc')
-                    ->limit(500);
+                    ->limit(750);
 
             } elseif ($mode == 'base') {
                 $query->whereNotIn('webpages.sub_type', ['product', 'family']);
@@ -71,10 +71,10 @@ class ShowIrisWebpagesList
             // Iterate using a cursor (no chunkById)
             foreach ($query->get() as $row) {
                 print "$row->canonical_url\n";
-                $url = $domain . $row->url;
-                if ($url != $row->canonical_url) {
-                    print $url . "\n";
-                }
+//                $url = $domain . $row->url;
+//                if ($url != $row->canonical_url) {
+//                    print $url . "\n";
+//                }
                 // Flush output buffers periodically to stream to the client
                 if (function_exists('flush')) {
                     @flush();

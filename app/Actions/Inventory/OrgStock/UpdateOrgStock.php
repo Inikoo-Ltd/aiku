@@ -19,6 +19,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\Organisation;
 
 class UpdateOrgStock extends OrgAction
 {
@@ -60,15 +62,6 @@ class UpdateOrgStock extends OrgAction
         return $orgStock;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("inventory.orgStocks.edit");
-    }
-
     public function rules(): array
     {
         $rules = [
@@ -99,11 +92,11 @@ class UpdateOrgStock extends OrgAction
         return $this->handle($orgStock, $this->validatedData);
     }
 
-    public function asController(OrgStock $orgStock, ActionRequest $request): OrgStock
+    public function asController(Organisation $organisation, Warehouse $warehouse, OrgStock $orgStock, ActionRequest $request): OrgStock
     {
         $this->orgStock = $orgStock;
-        $this->initialisation($orgStock->organisation, $request);
-
+        $this->initialisationFromWarehouse($warehouse, $request);
+        
         return $this->handle($orgStock, $this->validatedData);
     }
 

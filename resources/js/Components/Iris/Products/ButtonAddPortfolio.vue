@@ -61,7 +61,7 @@ const emits = defineEmits<{
 
 const productHasPortfolioList = ref(toRaw(props.productHasPortfolio))
 const layout = inject('layout', retinaLayoutStructure)
-const channelList = layout?.user?.customerSalesChannels || []
+const channelList = ref(layout?.user?.customerSalesChannels || [])
 // Section: Add to all Portfolios
 const isLoadingAllPortfolios = ref(false)
 const onAddToAllPortfolios = (product: ProductResource) => {
@@ -92,7 +92,7 @@ const onAddToAllPortfolios = (product: ProductResource) => {
                 })
             },
             onSuccess: () => {
-                const keys = Object.keys(channelList).map(key => Number(key))
+                const keys = Object.keys(channelList.value).map(key => Number(key))
                 productHasPortfolioList.value = keys
 
                 notify({
@@ -186,12 +186,12 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) 
 const _popover = ref()
 
 const isInAllChannels = computed(() => {
-  const allChannelIds = Object.keys(channelList).map(Number)
+  const allChannelIds = Object.keys(channelList.value).map(Number)
   return allChannelIds.some(id => productHasPortfolioList.value?.includes(toInteger(id)))
 })
 
 const CheckChannels = computed(() => {
-  const allChannelIds = Object.keys(channelList).map(Number)
+  const allChannelIds = Object.keys(channelList.value).map(Number)
   return allChannelIds.every(id => productHasPortfolioList.value?.includes(toInteger(id)))
 })
 
@@ -203,6 +203,14 @@ watch(() => props.productHasPortfolio, (newVal) => {
     productHasPortfolioList.value = []
   } 
 })
+
+watch(
+  () => layout.iris,
+  newVal => {
+    channelList.value = layout?.user?.customerSalesChannels || []
+  },
+  { deep: true }
+)
 
 </script>
 

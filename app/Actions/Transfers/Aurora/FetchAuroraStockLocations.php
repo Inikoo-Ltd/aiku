@@ -41,7 +41,7 @@ class FetchAuroraStockLocations extends FetchAuroraAction
 
             ]);
 
-            UpdateOrgStock::run($orgStock,[
+            UpdateOrgStock::run($orgStock, [
                 'is_on_demand'                        => $stockData[0]->{'Part On Demand'} == 'Yes',
             ]);
 

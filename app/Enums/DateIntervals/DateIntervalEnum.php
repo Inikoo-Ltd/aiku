@@ -35,7 +35,7 @@ enum DateIntervalEnum: string
         return [
             'all' => __('All'),
             '1y'  => __('1 Year'),
-            '1q'  => __('1 Quarter'),
+            '1q'  => __('Last 90 Days'),
             '1m'  => __('1 Month'),
             '1w'  => __('1 Week'),
             '3d'  => __('3 Days'),
@@ -123,13 +123,10 @@ enum DateIntervalEnum: string
 
     public static function allExceptHistorical(): array
     {
-        return array_map(
-            fn ($case) => $case->value,
-            array_values(array_filter(
-                self::cases(),
-                fn ($case) => !in_array($case, [self::YESTERDAY, self::LAST_WEEK, self::LAST_MONTH])
-            ))
-        );
+        return array_values(array_filter(
+            self::cases(),
+            fn ($case) => !in_array($case, [self::YESTERDAY, self::LAST_WEEK, self::LAST_MONTH])
+        ));
     }
 
 

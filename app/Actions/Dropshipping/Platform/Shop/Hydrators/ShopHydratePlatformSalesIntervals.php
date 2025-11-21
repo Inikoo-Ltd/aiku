@@ -7,11 +7,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Illuminate\Support\Facades\Log;
-use Exception;
-use Sentry;
 
-// Note: Experimental Data (Need to be checked)
 class ShopHydratePlatformSalesIntervals implements ShouldBeUnique
 {
     use AsAction;
@@ -30,26 +26,22 @@ class ShopHydratePlatformSalesIntervals implements ShouldBeUnique
 
         if (!$shop) {
             $command->error("Shop not found.");
+
             return;
         }
 
         $this->handle($shop);
     }
 
-    public function handle(Shop $shop): void
+    public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-        try {
-            ShopHydrateAllPlatformsSalesIntervalsInvoices::run($shop);
-            ShopHydrateAllPlatformsSalesIntervalsNewChannels::run($shop);
-            ShopHydrateAllPlatformsSalesIntervalsNewCustomers::run($shop);
-            ShopHydrateAllPlatformsSalesIntervalsNewPortfolios::run($shop);
-            ShopHydrateAllPlatformsSalesIntervalsNewCustomerClient::run($shop);
-            ShopHydrateAllPlatformsSalesIntervalsSales::run($shop);
-            ShopHydrateAllPlatformsSalesIntervalsSalesOrgCurrency::run($shop);
-            ShopHydrateAllPlatformsSalesIntervalsSalesGrpCurrency::run($shop);
-        } catch (Exception $e) {
-            Log::info("Failed to Hydrate Shop Sales Intervals: " . $e->getMessage());
-            Sentry::captureMessage("Failed to Hydrate Shop Sales Intervals to: " . $e->getMessage());
-        }
+        ShopHydrateAllPlatformsSalesIntervalsInvoices::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsNewChannels::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsNewCustomers::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsNewPortfolios::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsNewCustomerClient::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsSales::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsSalesOrgCurrency::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsSalesGrpCurrency::run($shop, $intervals, $doPreviousPeriods);
     }
 }

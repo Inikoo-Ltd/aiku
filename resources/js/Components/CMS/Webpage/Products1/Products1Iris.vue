@@ -55,6 +55,7 @@ const props = defineProps<{
 
 const categoryId = props.fieldValue.model_id
 const layout = inject("layout", retinaLayoutStructure);
+const firstLoad = ref(null)
 const products = ref<any[]>(
     props.fieldValue?.products?.meta?.last_page == 1
         ? [
@@ -168,6 +169,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
     if (isLoadMore) {
         loadingMore.value = true;
     } else {
+        if(firstLoad.value == 1)
         loadingInitial.value = true;
     }
 
@@ -186,7 +188,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
             ...filters,
             "filter[global]": q.value,
             sort: orderBy.value,
-            index_perPage: 25,
+            index_perPage: 50,
             page: page.value
         }));
 
@@ -220,6 +222,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
     } finally {
         loadingInitial.value = false;
         loadingMore.value = false;
+        firstLoad.value++;
     }
 };
 
@@ -293,8 +296,9 @@ onMounted(() => {
     }
 
     if (layout?.iris?.is_logged_in) {
+        firstLoad.value = 1
         fetchProductHasPortfolio();
-        /* fetchProducts() */
+        fetchProducts() // break chace from product dont deleted
     }
 
 

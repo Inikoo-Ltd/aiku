@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Louis Perez
  * created on 20-11-2025-15h-21m
@@ -11,10 +12,6 @@ namespace App\Actions\Iris\Catalogue;
 use App\Actions\IrisAction;
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
-use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Services\QueryBuilder;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetProductDetail extends IrisAction
