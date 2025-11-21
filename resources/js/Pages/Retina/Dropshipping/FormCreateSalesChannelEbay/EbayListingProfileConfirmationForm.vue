@@ -32,6 +32,7 @@ import { inject, onMounted, ref } from "vue";
     const shippingProfiles = ref([]);
     const paymentProfiles = ref([]);
     const shippingServices = ref([]);
+    const taxCategories = ref([]);
     const returnAcceptedOptions = ref([
         {name: "Returns Accepted", value: true},
         {name: "Returns Not Accepted", value: false}
@@ -99,6 +100,9 @@ import { inject, onMounted, ref } from "vue";
             let shippingServicesData = data?.shipping_services;
             shippingServices.value = shippingServicesData;
         }
+        if(data?.tax_categories?.length > 0) {
+            taxCategories.value = data?.tax_categories;
+        }
     })
 </script>
 
@@ -130,13 +134,13 @@ import { inject, onMounted, ref } from "vue";
                 </div>
 
                 <div class="flex flex-col gap-2 p-4 w-full md:w-80">
-                    <label class="font-semibold">{{ trans("VAT Rate") }}</label>
+                    <label class="font-semibold">{{ trans("VAT Rates") }}</label>
                     <ToggleSwitch v-model="isVAT" />
                 </div>
 
                 <div v-if="isVAT" class="flex flex-col gap-2 w-full md:w-80 p-4">
-                    <label class="font-semibold">{{ trans("VAT Percentage") }}</label>
-                    <InputNumber v-model="form.vat_rate" inputId="minmax" :min="0" :max="100" fluid />
+                    <label class="font-semibold">{{ trans("VAT") }}</label>
+                    <Select v-model="form.vat_rate" :options="taxCategories" optionLabel="label" optionValue="value" class="w-full" />
                 </div>
             </div>
         </div>

@@ -13,9 +13,11 @@ use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\EbayUser;
+use App\Models\Helpers\TaxCategory;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Spatie\LaravelOptions\Options;
 
 class IndexEbayUserPolicies extends RetinaAction
 {
@@ -40,7 +42,8 @@ class IndexEbayUserPolicies extends RetinaAction
                     'name' =>  $shippingService,
                     'value' => $key
                 ];
-            })->values()
+            })->values(),
+            'tax_categories' => Options::forModels(TaxCategory::class)
         ];
     }
 
