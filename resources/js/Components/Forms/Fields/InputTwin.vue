@@ -25,7 +25,6 @@ const props = defineProps<{
 const emits = defineEmits()
 
 
-console.log('twin',props)
 </script>
 <template>
     <div 
@@ -44,15 +43,14 @@ console.log('twin',props)
             >
                 {{ field.label }}
             </label>
-
             <PureInputNumber
                 v-model="value[field.key]"
                 v-bind="field"
+                :suffix="field.suffix"
                 class="p-0"
             />
         </div>
     </div>
-
     <p
         v-if="get(form, ['errors', fieldName])"
         class="mt-2 text-sm text-red-600"

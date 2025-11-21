@@ -267,33 +267,31 @@ class EditMasterFamily extends OrgAction
                             'label'  => __('Discounts'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
-                                // Need rework later. For now just use two different input
-                                // Need to combine GR/VOL under one input
                                 'vol_gr'  =>  [
                                     'label'         => 'Vol / GR',
                                     'type'          => 'input_twin',
                                     'value' => [
                                         [
-                                            'volume'   => $masterProductCategory->offers_data['gr_vol']['volume'] ?? 0,
-                                            'discount' => $masterProductCategory->offers_data['gr_vol']['discount'] ?? 0,
+                                            'volume'   => $masterProductCategory->offers_data['vol_gr']['volume'] ?? null,
+                                            'discount' => $masterProductCategory->offers_data['vol_gr']['discount'] ?? null,
                                         ]
                                     ],
                                     'fields' => [
                                         'volume' => [
-                                            'label'       => __('Volume'),
-                                            'key'         => 'volume', //need same with key value of object
+                                            'key'         => 'volume',
                                             'placeholder' => __('Minimal Volume'),
                                             'required'    => true,
                                             'minValue'    => 0,
                                             'type'        => 'number',
+                                            'suffix'      => '%'
                                         ],
                                         'discount' => [
-                                            'label'       => __('Discount'),
-                                            'key'         => 'discount', //need same with key value of object
+                                            'key'         => 'discount',
                                             'placeholder' => __('Discount %'),
                                             'required'    => true,
                                             'minValue'    => 0,
                                             'type'        => 'number',
+                                            'suffix'      => '%'
                                         ]
                                     ]
                                 ],

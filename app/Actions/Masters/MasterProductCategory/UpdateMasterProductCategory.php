@@ -99,8 +99,9 @@ class UpdateMasterProductCategory extends OrgAction
         }
 
         $modelData['offers_data'] = $masterProductCategory->offers_data;
-        if(Arr::has($modelData, 'gr_vol')) {
-            $modelData['offers_data']['gr_vol'] = Arr::pull($modelData, 'gr_vol');
+        if(Arr::has($modelData, 'vol_gr')) {
+            $modelData['vol_gr'] = $modelData['vol_gr'][0];
+            $modelData['offers_data']['vol_gr'] = Arr::pull($modelData, 'vol_gr');
         }
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
 
@@ -143,13 +144,8 @@ class UpdateMasterProductCategory extends OrgAction
     }
 
 
-    public function rules(ActionRequest $request): array
+    public function rules(): array
     {
-        $this->offersData['gr_vol'] = [
-            'volume'    => $request->input('volume') ?? $this->masterProductCategory->offers_data['gr_vol']['volume'] ?? null,
-            'discount'  => $request->input('discount') ?? $this->masterProductCategory->offers_data['gr_vol']['discount'] ?? null,
-        ];
-
         $rules = [
             'code'                     => [
                 'sometimes',
@@ -185,6 +181,7 @@ class UpdateMasterProductCategory extends OrgAction
             'description_title_i8n'    => ['sometimes', 'array'],
             'description_i8n'          => ['sometimes', 'array'],
             'description_extra_i8n'    => ['sometimes', 'array'],
+            'vol_gr'                   => ['sometimes', 'array'],
             'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0']
         ];
 
