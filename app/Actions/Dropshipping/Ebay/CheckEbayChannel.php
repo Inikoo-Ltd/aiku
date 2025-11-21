@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Ebay;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
+use App\Enums\Dropshipping\EbayUserStepEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Console\Command;
@@ -25,11 +26,21 @@ class CheckEbayChannel
     {
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
+        $step = EbayUserStepEnum::NAME;
         if (! blank($ebayUser->getUser())) {
-            $platformStatus = true;
             $canConnectToPlatform = true;
             $existInPlatform = true;
+            $step = EbayUserStepEnum::AUTH;
+
+            if ($ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key) {
+                $step = EbayUserStepEnum::COMPLETED;
+                $platformStatus = true;
+            }
         }
+
+        $this->update($ebayUser, [
+            'step' => $step
+        ]);
 
         return UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
             'state' => CustomerSalesChannelStateEnum::AUTHENTICATED,

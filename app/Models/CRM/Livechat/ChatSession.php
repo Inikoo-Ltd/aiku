@@ -2,12 +2,15 @@
 
 namespace App\Models\CRM\Livechat;
 
+use App\Models\Language;
 use App\Models\CRM\WebUser;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
-use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 
 /**
  * @property int $id
@@ -38,19 +41,6 @@ class ChatSession extends Model
     use HasFactory;
     protected $table = 'chat_sessions';
 
-    protected $fillable = [
-        'web_user_id',
-        'session_uuid',
-        'status',
-        'guest_identifier',
-        'ai_model_version',
-        'language',
-        'rating',
-        'priority',
-        'closed_by',
-        'closed_at',
-        'deleted_at',
-    ];
 
     protected $casts = [
         'status' => ChatSessionStatusEnum::class,
@@ -60,25 +50,7 @@ class ChatSession extends Model
         'rating' => 'decimal:1',
     ];
 
-    public function getRatingAttribute($value): float|null
-    {
-        return $value ? round($value, 1) : null;
-    }
-
-    // Mutator untuk memastikan valid range
-    public function setRatingAttribute($value): void
-    {
-        if ($value !== null) {
-            $value = max(1, min(5, round($value, 1))); // Clamp antara 1-5
-        }
-        $this->attributes['rating'] = $value;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
+    protected $guarded = [];
 
 
     public function webUser()
@@ -86,9 +58,28 @@ class ChatSession extends Model
         return $this->belongsTo(WebUser::class, 'web_user_id');
     }
 
-    public function messages()
+     public function language(): BelongsTo
     {
-        return $this->hasMany(ChatMessage::class, 'session_id');
+        return $this->belongsTo(Language::class);
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class, 'chat_session_id');
+    }
+
+
+    public function getRatingAttribute($value): float|null
+    {
+        return $value ? round($value, 1) : null;
+    }
+
+    public function setRatingAttribute($value): void
+    {
+        if ($value !== null) {
+            $value = max(1, min(5, round($value, 1)));
+        }
+        $this->attributes['rating'] = $value;
     }
 
 }

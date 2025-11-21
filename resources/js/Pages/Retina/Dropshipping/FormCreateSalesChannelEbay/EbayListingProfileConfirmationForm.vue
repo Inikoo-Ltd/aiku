@@ -19,27 +19,71 @@ import { inject, onMounted, ref } from "vue";
     import Button from "@/Components/Elements/Buttons/Button.vue";
     import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
     import axios from "axios";
+import { notify } from "@kyvg/vue3-notification";
 
     library.add(faInfoCircle);
 
     const closeCreateEbayModal = inject("closeCreateEbayModal");
     const ebayName = inject("ebayName");
     const ebayId = inject("ebayId");
+    const customerSalesChannelId = inject("customerSalesChannelId");
 
     const isVAT = ref(false);
 
     const returnProfiles = ref([]);
     const shippingProfiles = ref([]);
     const paymentProfiles = ref([]);
+    const shippingServices = ref([]);
+    const taxCategories = ref([]);
+    const returnAcceptedOptions = ref([
+        {name: trans("Returns Accepted"), value: true},
+        {name: trans("Returns Not Accepted"), value: false}
+    ]);
+    const returnPayers = ref([
+        {name: trans("Seller"), value: "SELLER"},
+        {name: trans("Buyer"), value: "BUYER"}
+    ]);
+    const returnWithinOptions = ref([
+        {name: trans("14 Day"), value: 14},
+        {name: trans("30 Day"), value: 30},
+        {name: trans("60 Day"), value: 60}
+    ]);
+
+    const isLoadingStep = ref(false)
 
     const form = useForm({
-        app: "Ebay",
-        account: ebayName.value,
-        inclusiveVATPercentage: 0
+            app: "Ebay",
+            account: ebayName.value,
+            return_policy_id: null,
+            payment_policy_id: null,
+            fulfillment_policy_id: null,
+            tax_category_id: null,
+            is_vat_adjustment: false,
+            shipping_max_dispatch_time: 0,
+            shipping_service: null,
+            shipping_price: 0,
+            return_accepted: null,
+            return_payer: null,
+            return_within: 1,
+            return_description: ""
     });
 
     const submitForm = async () => {
-        closeCreateEbayModal();
+        isLoadingStep.value = true
+        try {
+            const response = await axios.patch(route('retina.models.customer_sales_channel.update', {
+                customerSalesChannel: customerSalesChannelId.value
+            }), form.data());
+            window.location.href = route('retina.dropshipping.customer_sales_channels.redirect', customerSalesChannelId.value)
+            isLoadingStep.value = false
+        } catch (err) {
+            isLoadingStep.value = false;
+            notify({
+                title: trans("Something went wrong"),
+                text: err.response?.data?.message,
+                type: "error"
+            });
+        }
     }
 
     onMounted(async () => {
@@ -48,12 +92,40 @@ import { inject, onMounted, ref } from "vue";
         }));
 
         if(data?.fulfillment_policies?.total > 0) {
-            shippingProfiles.value = data?.fulfillment_policies?.fulfillmentPolicies?.map((item) => {
+            let shippingPolicies = data?.fulfillment_policies?.fulfillmentPolicies?.map((shipping) => {
                 return {
-                    name: item.name,
-                    value: item.fulfillmentPolicyId
+                    name: shipping.name,
+                    value: shipping.fulfillmentPolicyId
                 };
             })
+
+            shippingProfiles.value = shippingPolicies;
+        }
+        if(data?.return_policies?.total > 0) {
+            let returnPolicies = data?.return_policies?.returnPolicies?.map((returns) => {
+                return {
+                    name: returns.name,
+                    value: returns.returnPolicyId
+                };
+            })
+            returnProfiles.value = returnPolicies;
+        }
+        if(data?.payment_policies?.total > 0) {
+            let paymentPolicies = data?.payment_policies?.paymentPolicies?.map((payment) => {
+                return {
+                    name: payment.name,
+                    value: payment.paymentPolicyId
+                };
+            })
+
+            paymentProfiles.value = paymentPolicies;
+        }
+        if(data?.shipping_services?.length > 0) {
+            let shippingServicesData = data?.shipping_services;
+            shippingServices.value = shippingServicesData;
+        }
+        if(data?.tax_categories?.length > 0) {
+            taxCategories.value = data?.tax_categories;
         }
     })
 </script>
@@ -86,13 +158,13 @@ import { inject, onMounted, ref } from "vue";
                 </div>
 
                 <div class="flex flex-col gap-2 p-4 w-full md:w-80">
-                    <label class="font-semibold">{{ trans("VAT Rate") }}</label>
-                    <ToggleSwitch v-model="isVAT" />
+                    <label class="font-semibold">{{ trans("VAT Rates") }}</label>
+                    <ToggleSwitch v-model="form.is_vat_adjustment" />
                 </div>
 
-                <div v-if="isVAT" class="flex flex-col gap-2 w-full md:w-80 p-4">
-                    <label class="font-semibold">{{ trans("VAT Percentage") }}</label>
-                    <InputNumber v-model="form.inclusiveVATPercentage" inputId="minmax" :min="0" :max="100" fluid />
+                <div v-if="form.is_vat_adjustment" class="flex flex-col gap-2 w-full md:w-80 p-4">
+                    <label class="font-semibold">{{ trans("VAT") }}</label>
+                    <Select v-model="form.tax_category_id" :options="taxCategories" optionLabel="label" optionValue="value" class="w-full" />
                 </div>
             </div>
         </div>
@@ -116,8 +188,8 @@ import { inject, onMounted, ref } from "vue";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select eBay profile')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <Select v-model="form.return_policy_id" :options="returnProfiles" optionLabel="name" optionValue="value" class="w-full" />
+                                <FontAwesomeIcon v-tooltip="trans('Select eBay return policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
                     </div>
@@ -131,30 +203,29 @@ import { inject, onMounted, ref } from "vue";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Return accepted") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select return accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <Select v-model="form.return_accepted" :options="returnAcceptedOptions" optionLabel="name" optionValue="value" class="w-full" />
+                                <FontAwesomeIcon v-tooltip="trans('Select returns accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
 
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Return paid by") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
+                                <Select v-model="form.return_payer" :options="returnPayers" optionLabel="name" optionValue="value" class="w-full" />
                                 <FontAwesomeIcon v-tooltip="trans('Select return paid by')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
 
                         <div class="flex flex-col gap-2 p-4">
-                            <label class="font-semibold">{{ trans("Return within") }}</label>
+                            <label class="font-semibold">{{ trans("Return within (day)") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select return within')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <Select v-model="form.return_within" :options="returnWithinOptions" optionLabel="name" optionValue="value" class="w-full" />
                             </div>
                         </div>
 
                         <div class="flex flex-col gap-2 w-full md:w-96 p-4">
                             <label class="font-semibold">{{ trans("Detailed return policy explanation") }}</label>
-                            <Textarea v-model="value" rows="5" />
+                            <Textarea v-model="form.return_description" rows="5" />
                         </div>
                     </div>
                 </div>
@@ -180,8 +251,8 @@ import { inject, onMounted, ref } from "vue";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select eBay profile')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <Select v-model="form.fulfillment_policy_id" :options="shippingProfiles" optionLabel="name" optionValue="value" class="w-full" />
+                                <FontAwesomeIcon v-tooltip="trans('Select ebay shipping policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
                     </div>
@@ -195,26 +266,20 @@ import { inject, onMounted, ref } from "vue";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Shipping service") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select return accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <Select v-model="form.shipping_service" :options="shippingServices" optionLabel="name" optionValue="value" class="w-full" />
+                                <FontAwesomeIcon v-tooltip="trans('Select shipping services')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
 
                         <div class="flex flex-col gap-2 w-full md:w-80 p-4">
                             <label class="font-semibold">{{ trans("Shipping price") }}</label>
-                            <InputNumber v-model="form.inclusiveVATPercentage" inputId="integeronly" fluid />
-                        </div>
-
-                        <div class="flex flex-col gap-2 w-full md:w-80 p-4">
-                            <label class="font-semibold">{{ trans("Shipping service additional cost") }}</label>
-                            <InputNumber v-model="form.inclusiveVATPercentage" inputId="integeronly" fluid />
+                            <InputNumber v-model="form.shipping_price" inputId="integeronly" fluid />
                         </div>
 
                         <div class="flex flex-col gap-2 p-4">
-                            <label class="font-semibold">{{ trans("Max dispatch time") }}</label>
+                            <label class="font-semibold">{{ trans("Max dispatch time (day)") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select return accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <InputNumber v-model="form.shipping_max_dispatch_time" inputId="integeronly" fluid />
                             </div>
                         </div>
                     </div>
@@ -241,8 +306,8 @@ import { inject, onMounted, ref } from "vue";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select eBay profile')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <Select v-model="form.payment_policy_id" :options="paymentProfiles" optionLabel="name" optionValue="value" class="w-full" />
+                                <FontAwesomeIcon v-tooltip="trans('Select eBay payment policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
                     </div>

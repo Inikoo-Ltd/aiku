@@ -26,6 +26,8 @@ import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
 import IrisRightsideBasket from '@/Components/Iris/Layout/IrisRightsideBasket.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
+/* import ChatButton from '@/Components/Chat/ChatButton.vue' */
+
 library.add(faHome, faImage, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
@@ -221,6 +223,7 @@ console.log('handle', usePage().props)
     </notifications>
 
 
+   <!--  <ChatButton data="null"/> -->
 
 
 </template>
