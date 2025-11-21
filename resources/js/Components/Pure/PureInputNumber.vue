@@ -104,7 +104,6 @@ defineExpose({
                 :step="step"
                 class="disabled:bg-gray-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none remove-arrows-input block w-full text-gray-600 sm:text-sm placeholder:text-gray-400 border-transparent focus:ring-0 focus:ring-gray-500 focus:outline-0 focus:border-transparent disabled:ring-0 disabled:ring-transparent disabled:focus:border-transparent disabled:focus:border-gray-300 disabled:text-gray-500" 
             />
-
             <slot v-if="suffix" name="suffix">
                 <Transition name="spin-to-down">
                     <div :key="suffix" class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 opacity-50 select-none">
