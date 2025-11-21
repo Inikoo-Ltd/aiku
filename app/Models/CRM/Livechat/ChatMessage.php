@@ -1,0 +1,170 @@
+<?php
+
+namespace App\Models\CRM\Livechat;
+
+use App\Models\Media;
+
+use App\Models\CRM\WebUser;
+use App\Models\CRM\Livechat\ChatAgent;
+use Illuminate\Database\Eloquent\Model;
+use App\Models\CRM\Livechat\ChatSession;
+use App\Enums\CRM\Livechat\ChatSenderType;
+use App\Enums\CRM\Livechat\ChatMessageType;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class ChatMessage extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $table = 'chat_messages';
+
+    protected $casts = [
+        'message_type' => ChatMessageType::class,
+        'sender_type' => ChatSenderType::class,
+        'is_read' => 'boolean',
+        'delivered_at' => 'datetime',
+        'read_at' => 'datetime',
+        'deleted_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    protected $fillable = [
+        'session_id',
+        'message_type',
+        'sender_type',
+        'sender_id',
+        'message_text',
+        'media_id',
+        'is_read',
+        'delivered_at',
+        'read_at',
+    ];
+
+    /**
+     * Get the chat session that owns the message.
+     */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(ChatSession::class);
+    }
+
+    /**
+     * Get the media associated with the message.
+     */
+    public function media(): BelongsTo
+    {
+        return $this->belongsTo(Media::class);
+    }
+
+    /**
+     * Get the sender model based on sender_type (polymorphic-like relationship).
+     */
+    public function sender()
+    {
+        return match($this->sender_type) {
+            ChatSenderType::USER => $this->belongsTo(WebUser::class, 'sender_id'),
+            ChatSenderType::AGENT => $this->belongsTo(ChatAgent::class, 'sender_id'),
+            ChatSenderType::GUEST => null,
+            ChatSenderType::SYSTEM => null, // System messages have no sender
+            ChatSenderType::AI => null, // AI messages have no specific sender
+        };
+    }
+
+    /**
+     * Mark message as delivered.
+     */
+    public function markAsDelivered(): void
+    {
+        if (!$this->delivered_at) {
+            $this->update(['delivered_at' => now()]);
+        }
+    }
+
+    /**
+     * Mark message as read.
+     */
+    public function markAsRead(): void
+    {
+        if (!$this->is_read) {
+            $this->update([
+                'is_read' => true,
+                'read_at' => now()
+            ]);
+        }
+    }
+
+    /**
+     * Check if message is from user.
+     */
+    public function isFromUser(): bool
+    {
+        return $this->sender_type === ChatSenderType::USER;
+    }
+
+    /**
+     * Check if message is from agent.
+     */
+    public function isFromAgent(): bool
+    {
+        return $this->sender_type === ChatSenderType::AGENT;
+    }
+
+    /**
+     * Check if message is from AI.
+     */
+    public function isFromAI(): bool
+    {
+        return $this->sender_type === ChatSenderType::AI;
+    }
+
+    /**
+     * Check if message is text type.
+     */
+    public function isText(): bool
+    {
+        return $this->message_type === ChatMessageType::TEXT;
+    }
+
+    /**
+     * Check if message is image type.
+     */
+    public function isImage(): bool
+    {
+        return $this->message_type === ChatMessageType::IMAGE;
+    }
+
+    /**
+     * Check if message is file type.
+     */
+    public function isFile(): bool
+    {
+        return $this->message_type === ChatMessageType::FILE;
+    }
+
+    /**
+     * Scope a query to only include unread messages.
+     */
+    public function scopeUnread($query)
+    {
+        return $query->where('is_read', false);
+    }
+
+    /**
+     * Scope a query to only include messages from specific sender type.
+     */
+    public function scopeFromSenderType($query, ChatSenderType $senderType)
+    {
+        return $query->where('sender_type', $senderType);
+    }
+
+    /**
+     * Scope a query to only include text messages.
+     */
+    public function scopeTextMessages($query)
+    {
+        return $query->where('message_type', ChatMessageType::TEXT);
+    }
+}
