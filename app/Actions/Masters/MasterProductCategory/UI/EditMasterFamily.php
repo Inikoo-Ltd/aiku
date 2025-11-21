@@ -263,6 +263,40 @@ class EditMasterFamily extends OrgAction
                             ],
 
                         ],
+                        [
+                            'label'  => __('Discounts'),
+                            'icon'   => 'fa-light fa-badge-percent',
+                            'fields' => [
+                                'vol_gr'  =>  [
+                                    'label'         => 'Vol / GR',
+                                    'type'          => 'input_twin',
+                                    'value' => [
+                                        [
+                                            'volume'   => $masterProductCategory->offers_data['vol_gr']['volume'] ?? null,
+                                            'discount' => $masterProductCategory->offers_data['vol_gr']['discount'] ?? null,
+                                        ]
+                                    ],
+                                    'fields' => [
+                                        'volume' => [
+                                            'key'         => 'volume',
+                                            'placeholder' => __('Minimal Volume'),
+                                            'required'    => true,
+                                            'minValue'    => 0,
+                                            'type'        => 'number',
+                                            'suffix'      => '%'
+                                        ],
+                                        'discount' => [
+                                            'key'         => 'discount',
+                                            'placeholder' => __('Discount %'),
+                                            'required'    => true,
+                                            'minValue'    => 0,
+                                            'type'        => 'number',
+                                            'suffix'      => '%'
+                                        ]
+                                    ]
+                                ],
+                            ],
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [

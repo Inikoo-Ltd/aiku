@@ -65,6 +65,7 @@ import WrapperEmailSubscribetion from '@/Components/Forms/Fields/WrapperEmailSub
 import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
 import TagsCustomer from "@/Components/Forms/Fields/TagsCustomer.vue";
 import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue";
+import InputTwin from '@/Components/Forms/Fields/InputTwin.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -131,7 +132,8 @@ export const componentsList: {[key: string]: Component} = {
     'invoice_serial_references' : invoiceSerialReferences,
     'tags-customer': TagsCustomer,
     'retina-tags-customer': RetinaTagsCustomer,
-    'email_subscriptions': WrapperEmailSubscribetion
+    'email_subscriptions': WrapperEmailSubscribetion,
+    'input_twin' : InputTwin
 }
 
 export const getComponent = (componentName: string) => {
