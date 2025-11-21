@@ -668,7 +668,7 @@ onBeforeUnmount(() => {
                         v-if="selectedProducts.length > 0"
                         v-tooltip="trans('Upload as new product to the :platform', { platform: props.platform_data?.name })"
                         :type="'create'"
-                        :label="trans('Create New Product (:count)', { count: selectedProducts?.length })"
+                        :label="trans('Create New Product (:_count)', { _count: selectedProducts?.length })"
                         :loading="loadingAction.includes('bulk-create')"
                         @click="() => submitPortfolioAction({
                             label : 'bulk-create',

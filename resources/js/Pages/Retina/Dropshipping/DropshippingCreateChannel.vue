@@ -659,7 +659,7 @@ provide("goNext", goNext);
                 <PureInput v-model="wooCommerceInput.name" :placeholder="trans('Your store name')"></PureInput>
                 <PureInputWithAddOn v-model="wooCommerceInput.url" :leftAddOn="{
                     icon: 'fal fa-globe'
-                }" :placeholder="trans('e.g https://storeurlexample.com')"
+                }" :placeholder="'e.g https://storeurlexample.com'"
                                     @keydown.enter="() => onSubmitWoocommerce()"/>
             </div>
 
@@ -717,7 +717,7 @@ provide("goNext", goNext);
                 <PurePassword v-model="magentoInput.password" :placeholder="trans('Password')"></PurePassword>
                 <PureInputWithAddOn v-model="magentoInput.url" :leftAddOn="{
                     icon: 'fal fa-globe'
-                }" :placeholder="trans('e.g https://storeurlexample.com')"
+                }" :placeholder="'e.g https://storeurlexample.com'"
                                     @keydown.enter="() => onSubmitMagento()"/>
             </div>
 
