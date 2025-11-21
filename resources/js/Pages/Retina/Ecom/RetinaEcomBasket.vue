@@ -721,7 +721,7 @@ const onChangeInsurance = async (val: boolean) => {
                     />
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
-                    <div class="text-red-500">*{{ trans("We cannot deliver to :country. Please update the address or contact support.", { country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
+                    <div class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
                 </div>
             </div>
         </div>
