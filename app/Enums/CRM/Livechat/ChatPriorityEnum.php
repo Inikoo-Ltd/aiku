@@ -2,7 +2,7 @@
 
 namespace App\Enums\CRM\Livechat;
 use App\Enums\EnumHelperTrait;
-enum ChatPriority: string
+enum ChatPriorityEnum: string
 {
     use EnumHelperTrait;
 

@@ -4,10 +4,10 @@ namespace App\Models\CRM\Livechat;
 
 use App\Models\CRM\WebUser;
 use Illuminate\Database\Eloquent\Model;
-use App\Enums\CRM\Livechat\ChatPriority;
-use App\Enums\CRM\Livechat\ClosedByType;
+use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\CRM\Livechat\ClosedByTypeEnum;
 use App\Models\CRM\Livechat\ChatMessage;
-use App\Enums\CRM\Livechat\ChatSessionStatus;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ChatSession extends Model
@@ -30,9 +30,9 @@ class ChatSession extends Model
     ];
 
      protected $casts = [
-        'status' => ChatSessionStatus::class,
-        'priority' => ChatPriority::class,
-        'closed_by' => ClosedByType::class,
+        'status' => ChatSessionStatusEnum::class,
+        'priority' => ChatPriorityEnum::class,
+        'closed_by' => ClosedByTypeEnum::class,
         'closed_at' => 'datetime',
         'rating' => 'decimal:1',
     ];

@@ -2,7 +2,7 @@
 
 namespace App\Enums\CRM\Livechat;
 use App\Enums\EnumHelperTrait;
-enum ClosedByType: string
+enum ClosedByTypeEnum: string
 {
     use EnumHelperTrait;
 

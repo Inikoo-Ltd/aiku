@@ -3,7 +3,7 @@
 namespace App\Enums\CRM\Livechat;
 use App\Enums\EnumHelperTrait;
 
-enum ChatSessionStatus: string
+enum ChatSessionStatusEnum: string
 {
     use EnumHelperTrait;
 

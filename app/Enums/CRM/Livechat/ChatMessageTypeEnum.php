@@ -4,7 +4,7 @@ namespace App\Enums\CRM\Livechat;
 
 use App\Enums\EnumHelperTrait;
 
-enum ChatMessageType: string
+enum ChatMessageTypeEnum: string
 {
     use EnumHelperTrait;
 

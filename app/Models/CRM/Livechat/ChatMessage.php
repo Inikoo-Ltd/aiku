@@ -8,8 +8,8 @@ use App\Models\CRM\WebUser;
 use App\Models\CRM\Livechat\ChatAgent;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\CRM\Livechat\ChatSession;
-use App\Enums\CRM\Livechat\ChatSenderType;
-use App\Enums\CRM\Livechat\ChatMessageType;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,8 +21,8 @@ class ChatMessage extends Model
     protected $table = 'chat_messages';
 
     protected $casts = [
-        'message_type' => ChatMessageType::class,
-        'sender_type' => ChatSenderType::class,
+        'message_type' => ChatMessageTypeEnum::class,
+        'sender_type' => ChatSenderTypeEnum::class,
         'is_read' => 'boolean',
         'delivered_at' => 'datetime',
         'read_at' => 'datetime',
@@ -65,11 +65,11 @@ class ChatMessage extends Model
     public function sender()
     {
         return match($this->sender_type) {
-            ChatSenderType::USER => $this->belongsTo(WebUser::class, 'sender_id'),
-            ChatSenderType::AGENT => $this->belongsTo(ChatAgent::class, 'sender_id'),
-            ChatSenderType::GUEST => null,
-            ChatSenderType::SYSTEM => null, // System messages have no sender
-            ChatSenderType::AI => null, // AI messages have no specific sender
+            ChatSenderTypeEnum::USER => $this->belongsTo(WebUser::class, 'sender_id'),
+            ChatSenderTypeEnum::AGENT => $this->belongsTo(ChatAgent::class, 'sender_id'),
+            ChatSenderTypeEnum::GUEST => null,
+            ChatSenderTypeEnum::SYSTEM => null, // System messages have no sender
+            ChatSenderTypeEnum::AI => null, // AI messages have no specific sender
         };
     }
 
@@ -101,7 +101,7 @@ class ChatMessage extends Model
      */
     public function isFromUser(): bool
     {
-        return $this->sender_type === ChatSenderType::USER;
+        return $this->sender_type === ChatSenderTypeEnum::USER;
     }
 
     /**
@@ -109,7 +109,7 @@ class ChatMessage extends Model
      */
     public function isFromAgent(): bool
     {
-        return $this->sender_type === ChatSenderType::AGENT;
+        return $this->sender_type === ChatSenderTypeEnum::AGENT;
     }
 
     /**
@@ -117,7 +117,7 @@ class ChatMessage extends Model
      */
     public function isFromAI(): bool
     {
-        return $this->sender_type === ChatSenderType::AI;
+        return $this->sender_type === ChatSenderTypeEnum::AI;
     }
 
     /**
@@ -125,7 +125,7 @@ class ChatMessage extends Model
      */
     public function isText(): bool
     {
-        return $this->message_type === ChatMessageType::TEXT;
+        return $this->message_type === ChatMessageTypeEnum::TEXT;
     }
 
     /**
@@ -133,7 +133,7 @@ class ChatMessage extends Model
      */
     public function isImage(): bool
     {
-        return $this->message_type === ChatMessageType::IMAGE;
+        return $this->message_type === ChatMessageTypeEnum::IMAGE;
     }
 
     /**
@@ -141,7 +141,7 @@ class ChatMessage extends Model
      */
     public function isFile(): bool
     {
-        return $this->message_type === ChatMessageType::FILE;
+        return $this->message_type === ChatMessageTypeEnum::FILE;
     }
 
     /**
@@ -155,7 +155,7 @@ class ChatMessage extends Model
     /**
      * Scope a query to only include messages from specific sender type.
      */
-    public function scopeFromSenderType($query, ChatSenderType $senderType)
+    public function scopeFromSenderType($query, ChatSenderTypeEnum $senderType)
     {
         return $query->where('sender_type', $senderType);
     }
@@ -165,6 +165,6 @@ class ChatMessage extends Model
      */
     public function scopeTextMessages($query)
     {
-        return $query->where('message_type', ChatMessageType::TEXT);
+        return $query->where('message_type', ChatMessageTypeEnum::TEXT);
     }
 }

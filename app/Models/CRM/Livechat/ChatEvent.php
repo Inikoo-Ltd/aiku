@@ -4,8 +4,8 @@ namespace App\Models\CRM\Livechat;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\CRM\Livechat\ChatSession;
-use App\Enums\CRM\Livechat\ChatActorType;
-use App\Enums\CRM\Livechat\ChatEventType;
+use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ChatEvent extends Model
@@ -15,8 +15,8 @@ class ChatEvent extends Model
     protected $table = 'chat_events';
 
     protected $casts = [
-        'event_type' => ChatEventType::class,
-        'actor_type' => ChatActorType::class,
+        'event_type' => ChatEventTypeEnum::class,
+        'actor_type' => ChatActorTypeEnum::class,
         'payload' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -48,11 +48,11 @@ class ChatEvent extends Model
         }
 
         return match($this->actor_type) {
-            ChatActorType::USER => $this->belongsTo(WebUser::class, 'actor_id'),
-            ChatActorType::AGENT => $this->belongsTo(ChatAgent::class, 'actor_id'),
-            ChatActorType::GUEST => null,
-            ChatActorType::SYSTEM => null, // System events have no specific actor
-            ChatActorType::AI => null, // AI events have no specific actor
+            ChatActorTypeEnum::USER => $this->belongsTo(WebUser::class, 'actor_id'),
+            ChatActorTypeEnum::AGENT => $this->belongsTo(ChatAgent::class, 'actor_id'),
+            ChatActorTypeEnum::GUEST => null,
+            ChatActorTypeEnum::SYSTEM => null, // System events have no specific actor
+            ChatActorTypeEnum::AI => null, // AI events have no specific actor
         };
     }
 
@@ -61,7 +61,7 @@ class ChatEvent extends Model
      */
     public function isOpenEvent(): bool
     {
-        return $this->event_type === ChatEventType::OPEN;
+        return $this->event_type === ChatEventTypeEnum::OPEN;
     }
 
     /**
@@ -69,7 +69,7 @@ class ChatEvent extends Model
      */
     public function isCloseEvent(): bool
     {
-        return $this->event_type === ChatEventType::CLOSE;
+        return $this->event_type === ChatEventTypeEnum::CLOSE;
     }
 
     /**
@@ -77,7 +77,7 @@ class ChatEvent extends Model
      */
     public function isTransferRequest(): bool
     {
-        return $this->event_type === ChatEventType::TRANSFER_REQUEST;
+        return $this->event_type === ChatEventTypeEnum::TRANSFER_REQUEST;
     }
 
     /**
@@ -85,7 +85,7 @@ class ChatEvent extends Model
      */
     public function isTransferAccept(): bool
     {
-        return $this->event_type === ChatEventType::TRANSFER_ACCEPT;
+        return $this->event_type === ChatEventTypeEnum::TRANSFER_ACCEPT;
     }
 
     /**
@@ -93,7 +93,7 @@ class ChatEvent extends Model
      */
     public function isTransferReject(): bool
     {
-        return $this->event_type === ChatEventType::TRANSFER_REJECT;
+        return $this->event_type === ChatEventTypeEnum::TRANSFER_REJECT;
     }
 
     /**
@@ -101,7 +101,7 @@ class ChatEvent extends Model
      */
     public function isAiReply(): bool
     {
-        return $this->event_type === ChatEventType::AI_REPLY;
+        return $this->event_type === ChatEventTypeEnum::AI_REPLY;
     }
 
     /**
@@ -109,7 +109,7 @@ class ChatEvent extends Model
      */
     public function isRating(): bool
     {
-        return $this->event_type === ChatEventType::RATING;
+        return $this->event_type === ChatEventTypeEnum::RATING;
     }
 
     /**
@@ -117,7 +117,7 @@ class ChatEvent extends Model
      */
     public function isNote(): bool
     {
-        return $this->event_type === ChatEventType::NOTE;
+        return $this->event_type === ChatEventTypeEnum::NOTE;
     }
 
     /**
@@ -125,7 +125,7 @@ class ChatEvent extends Model
      */
     public function isTranslateMessage(): bool
     {
-        return $this->event_type === ChatEventType::TRANSLATE_MESSAGE;
+        return $this->event_type === ChatEventTypeEnum::TRANSLATE_MESSAGE;
     }
 
     /**
@@ -158,9 +158,9 @@ class ChatEvent extends Model
     public function getTransferDetails(): ?array
     {
         if (!in_array($this->event_type, [
-            ChatEventType::TRANSFER_REQUEST,
-            ChatEventType::TRANSFER_ACCEPT,
-            ChatEventType::TRANSFER_REJECT
+            ChatEventTypeEnum::TRANSFER_REQUEST,
+            ChatEventTypeEnum::TRANSFER_ACCEPT,
+            ChatEventTypeEnum::TRANSFER_REJECT
         ]) || !$this->payload) {
             return null;
         }
@@ -175,7 +175,7 @@ class ChatEvent extends Model
     /**
      * Scope a query to only include events of specific type.
      */
-    public function scopeOfType($query, ChatEventType $eventType)
+    public function scopeOfType($query, ChatEventTypeEnum $eventType)
     {
         return $query->where('event_type', $eventType);
     }
@@ -183,7 +183,7 @@ class ChatEvent extends Model
     /**
      * Scope a query to only include events from specific actor.
      */
-    public function scopeFromActor($query, ChatActorType $actorType, ?int $actorId = null)
+    public function scopeFromActor($query, ChatActorTypeEnum $actorType, ?int $actorId = null)
     {
         $query = $query->where('actor_type', $actorType);
 
@@ -199,7 +199,7 @@ class ChatEvent extends Model
      */
     public function scopeRatings($query)
     {
-        return $query->where('event_type', ChatEventType::RATING);
+        return $query->where('event_type', ChatEventTypeEnum::RATING);
     }
 
     /**
@@ -208,9 +208,9 @@ class ChatEvent extends Model
     public function scopeTransfers($query)
     {
         return $query->whereIn('event_type', [
-            ChatEventType::TRANSFER_REQUEST,
-            ChatEventType::TRANSFER_ACCEPT,
-            ChatEventType::TRANSFER_REJECT
+            ChatEventTypeEnum::TRANSFER_REQUEST,
+            ChatEventTypeEnum::TRANSFER_ACCEPT,
+            ChatEventTypeEnum::TRANSFER_REJECT
         ]);
     }
 
@@ -219,8 +219,8 @@ class ChatEvent extends Model
      */
     public static function logEvent(
         int $sessionId,
-        ChatEventType $eventType,
-        ?ChatActorType $actorType = null,
+        ChatEventTypeEnum $eventType,
+        ?ChatActorTypeEnum $actorType = null,
         ?int $actorId = null,
         ?array $payload = null
     ): self {
