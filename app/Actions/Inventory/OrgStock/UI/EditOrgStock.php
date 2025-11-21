@@ -166,11 +166,11 @@ class EditOrgStock extends OrgAction
                             $orgStock,
                             [
                                 'index' => [
-                                    'name'       => preg_replace('/\.show$/', '.index', $routeName),
+                                    'name'       => preg_replace('/\.edit$/', '.index', $routeName),
                                     'parameters' => $routeParameters
                                 ],
                                 'model' => [
-                                    'name'       => $routeName,
+                                    'name'       => preg_replace('/\.edit$/', '.show', $routeName),
                                     'parameters' => $routeParameters
                                 ]
                             ],
