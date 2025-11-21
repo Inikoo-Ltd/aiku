@@ -10,6 +10,7 @@ namespace App\Enums\CRM\Livechat;
 
 use App\Enums\EnumHelperTrait;
 
+
 enum ChatAssigmentStatusEnum: string
 {
     use EnumHelperTrait;
@@ -28,6 +29,5 @@ enum ChatAssigmentStatusEnum: string
             'rejected' => __('Rejected')
         ];
     }
-
 
 }

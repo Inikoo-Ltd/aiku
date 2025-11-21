@@ -56,29 +56,15 @@ class ChatMessage extends Model
         'updated_at' => 'datetime',
     ];
 
-    protected $fillable = [
-        'session_id',
-        'message_type',
-        'sender_type',
-        'sender_id',
-        'message_text',
-        'media_id',
-        'is_read',
-        'delivered_at',
-        'read_at',
-    ];
+    protected $guarded = [];
 
-    /**
-     * Get the chat session that owns the message.
-     */
-    public function session(): BelongsTo
+
+    public function chatSession(): BelongsTo
     {
         return $this->belongsTo(ChatSession::class);
     }
 
-    /**
-     * Get the media associated with the message.
-     */
+
     public function media(): BelongsTo
     {
         return $this->belongsTo(Media::class);
@@ -91,10 +77,6 @@ class ChatMessage extends Model
     }
 
 
-
-    /**
-     * Mark message as delivered.
-     */
     public function markAsDelivered(): void
     {
         if (!$this->delivered_at) {
@@ -102,9 +84,7 @@ class ChatMessage extends Model
         }
     }
 
-    /**
-     * Mark message as read.
-     */
+
     public function markAsRead(): void
     {
         if (!$this->is_read) {
@@ -115,73 +95,55 @@ class ChatMessage extends Model
         }
     }
 
-    /**
-     * Check if message is from user.
-     */
+
     public function isFromUser(): bool
     {
         return $this->sender_type === ChatSenderTypeEnum::USER;
     }
 
-    /**
-     * Check if message is from agent.
-     */
+
     public function isFromAgent(): bool
     {
         return $this->sender_type === ChatSenderTypeEnum::AGENT;
     }
 
-    /**
-     * Check if message is from AI.
-     */
+
     public function isFromAI(): bool
     {
         return $this->sender_type === ChatSenderTypeEnum::AI;
     }
 
-    /**
-     * Check if message is text type.
-     */
+
     public function isText(): bool
     {
         return $this->message_type === ChatMessageTypeEnum::TEXT;
     }
 
-    /**
-     * Check if message is image type.
-     */
+
     public function isImage(): bool
     {
         return $this->message_type === ChatMessageTypeEnum::IMAGE;
     }
 
-    /**
-     * Check if message is file type.
-     */
+
     public function isFile(): bool
     {
         return $this->message_type === ChatMessageTypeEnum::FILE;
     }
 
-    /**
-     * Scope a query to only include unread messages.
-     */
+
     public function scopeUnread($query)
     {
         return $query->where('is_read', false);
     }
 
-    /**
-     * Scope a query to only include messages from specific sender type.
-     */
+
     public function scopeFromSenderType($query, ChatSenderTypeEnum $senderType)
     {
         return $query->where('sender_type', $senderType);
     }
 
-    /**
-     * Scope a query to only include text messages.
-     */
+
     public function scopeTextMessages($query)
     {
         return $query->where('message_type', ChatMessageTypeEnum::TEXT);
