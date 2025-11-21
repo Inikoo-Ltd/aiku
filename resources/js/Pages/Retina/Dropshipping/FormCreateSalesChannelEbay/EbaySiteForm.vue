@@ -25,7 +25,7 @@
     const isLoadingStep = ref(false)
 
     const sites = ref([
-        { name: "United Kingdom", value: "EBAY_UK" },
+        { name: "United Kingdom", value: "EBAY_GB" },
         { name: "Spain", value: "EBAY_ES" },
         { name: "Europe", value: "EBAY_DE" },
     ]);

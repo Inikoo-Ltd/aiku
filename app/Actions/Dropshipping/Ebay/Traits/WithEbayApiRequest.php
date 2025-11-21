@@ -14,6 +14,7 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 trait WithEbayApiRequest
 {
@@ -258,7 +259,7 @@ trait WithEbayApiRequest
         $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');
 
         $services = [
-            'EBAY_UK' => [
+            'EBAY_GB' => [
                 'UK_OtherCourier' => [
                     'service_code' => 'UK_OtherCourier',
                     'service_name' => 'Yodel',
@@ -416,13 +417,13 @@ trait WithEbayApiRequest
             ],
         ];
 
-        return $services[$marketplace] ?? $services['EBAY_UK'];
+        return $services[$marketplace] ?? $services['EBAY_GB'];
     }
 
     public function defaultCarrier(): array
     {
         return [
-            'EBAY_UK' => [
+            'EBAY_GB' => [
                 'service_code' => 'UK_OtherCourier',
                 'service_name' => 'Yodel',
                 'carrier_code' => 'Yodel',
@@ -1173,7 +1174,7 @@ trait WithEbayApiRequest
                 ]
             ],
             "marketplaceId" => $marketplaceId,
-            "name" => "Shipping",
+            "name" => "Shipping-" . Str::upper(Str::random(3)),
             "handlingTime" => [
                 "unit"  => "DAY",
                 "value"  => Arr::get($attributes, 'max_dispatch_time', 1)
@@ -1283,7 +1284,7 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
 
         $data = [
-            "name" => "minimal Payment Policy",
+            "name" => "minimal Payment Policy-" . Str::upper(Str::random(3)),
             "marketplaceId" => $marketplaceId,
             "categoryTypes" => [
                 [
@@ -1327,7 +1328,7 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
 
         $data = [
-            "name" => "minimal return policy",
+            "name" => "minimal return policy" . Str::upper(Str::random(3)),
             "marketplaceId" => $marketplaceId,
             "refundMethod" => "MONEY_BACK",
             "returnsAccepted" => true,

@@ -106,11 +106,24 @@ class PayOrderWithMitCard
 
             $amount = Arr::get($response, 'amount', 0) / 100;
 
+            $status = PaymentStatusEnum::FAIL;
+            $state = PaymentStateEnum::DECLINED;
+
+            if (in_array(Arr::get($response, 'status'), ["Authorized", "Paid", "Captured"]) && Arr::get($response, 'approved')) {
+                $status = PaymentStatusEnum::SUCCESS;
+                $state = PaymentStateEnum::COMPLETED;
+            }
+
+            if (Arr::get($response, 'status') == "Pending") {
+                $status = PaymentStatusEnum::IN_PROCESS;
+                $state = PaymentStateEnum::IN_PROCESS;
+            }
+
             $paymentData = [
                 'reference'               => Arr::get($response, 'id'),
                 'amount'                  => $amount,
-                'status'                  => PaymentStatusEnum::SUCCESS,
-                'state'                   => PaymentStateEnum::COMPLETED,
+                'status'                  => $status,
+                'state'                   => $state,
                 'type'                    => PaymentTypeEnum::PAYMENT,
                 'payment_account_shop_id' => $paymentAccountShop->id,
                 'data'                    => [
