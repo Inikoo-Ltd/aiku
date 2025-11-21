@@ -111,42 +111,26 @@ const props = defineProps<{
 	}
 }>();
 
-/* const imagesSetup = ref(
-	props.data.images
-		.filter(item => item.type === "image")
-		.map(item => ({
-			label: item.label,
-			column: item.column_in_db,
-			images: item.images,
-		}))
-)
- */
-/* const videoSetup = ref(
-	props.data.images.find(item => item.type === "video") || null
-)
- */
-/* const images = computed(() => props.data?.images ?? []) */
+/* const tradeUnitTags = computed(() => {
+	const list = props.data?.masterProduct.trade_units ?? []
+	const tags = list.flatMap(item => item.tags ?? [])
+	const unique = new Map(tags.map(tag => [tag.id, tag]))
+	return [...unique.values()]
+}) */
 
+const tradeUnitTags = computed(() => {
+	const list = props.data?.masterProduct?.trade_units ?? []
+	const tags = list.flatMap(item => item.tags ?? [])
+	const unique = new Map(tags.map(tag => [tag.id, tag]))
+	return [...unique.values()]
+})
 
-/* const validImages = computed(() =>
-	imagesSetup.value
-		.filter(item => item.images) // only keep if images exist
-		.flatMap(item => {
-			const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
-			return images.map(img => ({
-				source: img,
-				thumbnail: img
-			}))
-		})
-) */
 
 </script>
 
 
 <template>
 	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
-
-
 		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
 			<!-- Units box -->
 			<span
@@ -160,13 +144,17 @@ const props = defineProps<{
 				{{ data.masterProduct.name }}
 			</span>
 		</span>
-
-
 	</div>
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
+			 <dd class="font-medium flex flex-wrap gap-1 p-4">
+				<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
+					class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+					{{ tag.name }}
+				</span>
+			</dd>
 			<div class="bg-white   p-4 lg:p-5">
 				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
 					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />

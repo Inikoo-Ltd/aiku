@@ -110,16 +110,6 @@ class GetProductShowcase
             'parts'           => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'stats'           => $product->stats,
             'trade_units'     => $dataTradeUnits,
-            'translation_box' => [
-                'title'      => __('Multi-language Translations'),
-                'languages'  => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
-                'save_route' => [
-                    'name'       => 'grp.models.trade-unit.translations.update',
-                    'parameters' => [
-                        'tradeUnit' => "",
-                    ],
-                ],
-            ],
             'images'          => $this->getImagesData($product),
             'main_image'      => $product->imageSources(),
             'attachment_box'  => $this->getAttachmentData($product),

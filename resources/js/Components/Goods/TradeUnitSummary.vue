@@ -3,13 +3,13 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref, computed } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
 import { faTag } from "@far"
+import { faFileCheck, faFilePdf, faFileWord, faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 
 interface Stats {
 	amount: number | null
@@ -89,6 +89,7 @@ const props = withDefaults(
 		type: string
 		video?: string
 		hide?: string[]
+		publicAttachment: array<any>
 		properties?: {
 			country_of_origin?: { code: string; name: string }
 			tariff_code?: string
@@ -188,7 +189,18 @@ function normalizeVideoUrl(url: string): string {
 
 const embedUrl = computed(() => normalizeVideoUrl(props.video || ""))
 
-console.log('product summary : ', props)
+const getIcon = (type?: string) => {
+	if (!type) return faFileCheck
+	switch (type.toLowerCase()) {
+		case "pdf":
+			return faFilePdf
+		case "doc":
+		case "docx":
+			return faFileWord
+		default:
+			return faFileCheck
+	}
+}
 </script>
 
 
@@ -524,6 +536,40 @@ console.log('product summary : ', props)
 										<dd class="font-medium">
 											-
 										</dd>
+									</div>
+											<div class="">
+										<dt class="text-gray-500 pb-2">{{ trans("Public Documents") }}</dt>
+										<div>
+											<ul v-if="publicAttachment.some(i => i.attachment)"
+												class="divide-y divide-gray-100 text-sm">
+												<li v-for="(item, index) in publicAttachment.filter(i => i.attachment)"
+													:key="'public-' + index"
+													class="flex items-center justify-between px-1 py-2 hover:bg-blue-50 transition">
+													<div class="flex items-center gap-1.5">
+														<FontAwesomeIcon :icon="getIcon(item.attachment?.type)" :class="[
+															item.attachment ? 'text-green-500' : 'text-gray-400',
+															'text-xs'
+														]" />
+														<span class="text-gray-700 truncate">{{ item.label }}</span>
+													</div>
+
+													<div class="flex items-center gap-1 text-xs">
+														<template v-if="item.attachment">
+															<a :href="route(item?.download_route?.name, item?.download_route?.parameters)"
+																target="_blank"
+																class="text-green-600 flex items-center gap-1 hover:underline truncate max-w-[150px]">
+																<FontAwesomeIcon :icon="faCheckCircle"
+																	class="text-green-500 text-[10px]" />
+																{{ item.attachment.name }}
+															</a>
+														</template>
+
+														<span v-else class="italic text-gray-400">Not Uploaded</span>
+													</div>
+												</li>
+											</ul>
+										</div>
+
 									</div>
 								</div>
 							</AccordionContent>
