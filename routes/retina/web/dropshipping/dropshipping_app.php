@@ -42,6 +42,7 @@ use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ReconnectRetinaCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\RedirectRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
@@ -65,6 +66,8 @@ Route::get('select-products-for-basket/{order:id}', IndexRetinaDropshippingProdu
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
     Route::get('/', IndexRetinaDropshippingCustomerSalesChannels::class)->name('index');
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
+
+    Route::get('/{customerSalesChannel:id}/redirect', RedirectRetinaCustomerSalesChannel::class)->name('redirect');
 
     Route::post('ebay-user', StoreRetinaEbayUser::class)->name('ebay.store');
     Route::patch('ebay-user/{ebayUser}', UpdateRetinaEbayUser::class)->name('ebay.update')->withoutScopedBindings();

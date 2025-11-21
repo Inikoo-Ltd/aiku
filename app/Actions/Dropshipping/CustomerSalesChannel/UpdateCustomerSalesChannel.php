@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
+use App\Actions\Dropshipping\Ebay\UpdateReturnPolicyEbayUser;
 use App\Actions\Dropshipping\Ebay\UpdateShippingPolicyEbayUser;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewChannels;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomers;
@@ -70,6 +71,8 @@ class UpdateCustomerSalesChannel extends OrgAction
         $returnDescription = Arr::pull($modelData, 'return_description');
 
         $paymentPolicyId = Arr::pull($modelData, 'payment_policy_id');
+        $returnPolicyId = Arr::pull($modelData, 'return_policy_id');
+        $fulfillmentPolicyId = Arr::pull($modelData, 'fulfillment_policy_id');
 
         if ($returnAccepted !== null) {
             data_set($modelData, 'settings.return.accepted', $returnAccepted);
@@ -92,11 +95,13 @@ class UpdateCustomerSalesChannel extends OrgAction
 
         if ($customerSalesChannel->platform->type === PlatformTypeEnum::EBAY) {
             if ($shippingService || $shippingPrice || $shippingDispatchTime) {
+                data_set($modelData, 'fulfillment_policy_id', $fulfillmentPolicyId);
                 UpdateShippingPolicyEbayUser::run($customerSalesChannel->user, $modelData);
             }
 
             if ($returnAccepted || $returnPayer || $returnWithin || $returnDescription) {
-                //
+                data_set($modelData, 'return_policy_id', $returnPolicyId);
+                UpdateReturnPolicyEbayUser::run($customerSalesChannel->user, $modelData);
             }
 
             if ($paymentPolicyId) {

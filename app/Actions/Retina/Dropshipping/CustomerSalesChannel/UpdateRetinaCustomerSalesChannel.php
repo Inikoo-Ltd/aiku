@@ -10,9 +10,11 @@
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
@@ -27,6 +29,10 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
         $customerSalesChannel = UpdateCustomerSalesChannel::run($customerSalesChannel, $modelData);
+
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::EBAY) {
+            CheckEbayChannel::run($customerSalesChannel->user);
+        }
 
         return $customerSalesChannel;
     }

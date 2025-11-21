@@ -1321,6 +1321,39 @@ trait WithEbayApiRequest
         }
     }
 
+    public function updateReturnPolicy($returnId, $returnData)
+    {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        $defaults = Arr::get($this->settings, 'return');
+        $attributes = Arr::get($returnData, 'settings.return');
+
+        $data = [
+            "name" => "minimal return policy",
+            "categoryTypes" => [
+                [
+                    "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
+                ]
+            ],
+            "marketplaceId" => $marketplaceId,
+            "description" => Arr::get($attributes, 'description', Arr::get($defaults, 'description')),
+            "returnsAccepted" => Arr::get($attributes, 'accepted', Arr::get($defaults, 'accepted')),
+            "returnShippingCostPayer" => Arr::get($attributes, 'payer', Arr::get($defaults, 'payer')),
+            "returnPeriod" => [
+                "value" => Arr::get($attributes, 'within', Arr::get($defaults, 'within')),
+                "unit" => "DAY"
+            ]
+        ];
+
+        try {
+            $endpoint = "/sell/account/v1/return_policy/$returnId";
+            return $this->makeEbayRequest('put', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Update Return Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
     /**
      * Get user's eBay Return Policies
      */
