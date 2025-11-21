@@ -419,6 +419,30 @@ trait WithEbayApiRequest
         return $services[$marketplace] ?? $services['EBAY_UK'];
     }
 
+    public function defaultCarrier(): array
+    {
+        return [
+            'EBAY_UK' => [
+                'service_code' => 'UK_OtherCourier',
+                'service_name' => 'Yodel',
+                'carrier_code' => 'Yodel',
+                'carrier_name' => 'Yodel',
+            ],
+            'EBAY_DE' => [
+                'service_code' => 'DE_Sonstige',
+                'service_name' => 'Sonstige (Other)',
+                'carrier_code' => 'OTHER',
+                'carrier_name' => 'Sonstige (Other)',
+            ],
+            'EBAY_ES' => [
+                'service_code' => 'ES_Other',
+                'service_name' => 'Otro (Other)',
+                'carrier_code' => 'OTHER',
+                'carrier_name' => 'Otro (Other)',
+            ]
+        ];
+    }
+
     public function getServicesForOptions(): array
     {
         return array_map(function ($service) {
@@ -1140,6 +1164,8 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
         $currency = Arr::get($this->getEbayConfig(), 'currency');
 
+        $default = $this->defaultCarrier()[$marketplaceId];
+
         $data = [
             "categoryTypes" => [
                 [
@@ -1150,7 +1176,7 @@ trait WithEbayApiRequest
             "name" => "Shipping",
             "handlingTime" => [
                 "unit"  => "DAY",
-                "value"  => Arr::get($attributes, 'max_dispatch_time')
+                "value"  => Arr::get($attributes, 'max_dispatch_time', 1)
             ],
             "shippingOptions" => [
                 [
@@ -1162,10 +1188,10 @@ trait WithEbayApiRequest
                             "freeShipping" => "false",
                             "shippingCost" => [
                                 'currency' => $currency,
-                                'value' => Arr::get($attributes, 'price')
+                                'value' => Arr::get($attributes, 'price', 1)
                             ],
-                            "shippingCarrierCode" => Arr::get($attributes, 'carrier_code'),
-                            "shippingServiceCode" => Arr::get($attributes, 'service_code')
+                            "shippingCarrierCode" => Arr::get($attributes, 'carrier_code', $default['carrier_code']),
+                            "shippingServiceCode" => Arr::get($attributes, 'service_code', $default['service_code'])
                         ]
                     ]
                 ]
