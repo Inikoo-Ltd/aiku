@@ -19,12 +19,14 @@ import { inject, onMounted, ref } from "vue";
     import Button from "@/Components/Elements/Buttons/Button.vue";
     import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
     import axios from "axios";
+import { notify } from "@kyvg/vue3-notification";
 
     library.add(faInfoCircle);
 
     const closeCreateEbayModal = inject("closeCreateEbayModal");
     const ebayName = inject("ebayName");
     const ebayId = inject("ebayId");
+    const customerSalesChannelId = inject("customerSalesChannelId");
 
     const isVAT = ref(false);
 
@@ -34,13 +36,15 @@ import { inject, onMounted, ref } from "vue";
     const shippingServices = ref([]);
     const taxCategories = ref([]);
     const returnAcceptedOptions = ref([
-        {name: "Returns Accepted", value: true},
-        {name: "Returns Not Accepted", value: false}
+        {name: trans("Returns Accepted"), value: true},
+        {name: trans("Returns Not Accepted"), value: false}
     ]);
     const returnPayers = ref([
-        {name: "Seller", value: "SELLER"},
-        {name: "Buyer", value: "BUYER"}
+        {name: trans("Seller"), value: "SELLER"},
+        {name: trans("Buyer"), value: "BUYER"}
     ]);
+
+    const isLoadingStep = ref(false)
 
     const form = useForm({
             app: "Ebay",
@@ -48,9 +52,10 @@ import { inject, onMounted, ref } from "vue";
             return_policy_id: null,
             payment_policy_id: null,
             fulfillment_policy_id: null,
-            vat_rate: 0,
-            max_dispatch_time: 0,
-            shipping_service: 0,
+            tax_category_id: null,
+            is_vat_adjustment: false,
+            shipping_max_dispatch_time: 0,
+            shipping_service: null,
             shipping_price: 0,
             return_accepted: null,
             return_payer: null,
@@ -59,7 +64,20 @@ import { inject, onMounted, ref } from "vue";
     });
 
     const submitForm = async () => {
-        closeCreateEbayModal();
+        isLoadingStep.value = true
+        try {
+            const {data} = await axios.patch(route('retina.models.customer_sales_channel.update', {
+                customerSalesChannel: customerSalesChannelId.value
+            }), form.data());
+            isLoadingStep.value = false
+        } catch (err) {
+            isLoadingStep.value = false;
+            notify({
+                title: trans("Something went wrong"),
+                text: err.response?.data?.message,
+                type: "error"
+            });
+        }
     }
 
     onMounted(async () => {
@@ -135,12 +153,12 @@ import { inject, onMounted, ref } from "vue";
 
                 <div class="flex flex-col gap-2 p-4 w-full md:w-80">
                     <label class="font-semibold">{{ trans("VAT Rates") }}</label>
-                    <ToggleSwitch v-model="isVAT" />
+                    <ToggleSwitch v-model="form.is_vat_adjustment" />
                 </div>
 
-                <div v-if="isVAT" class="flex flex-col gap-2 w-full md:w-80 p-4">
+                <div v-if="form.is_vat_adjustment" class="flex flex-col gap-2 w-full md:w-80 p-4">
                     <label class="font-semibold">{{ trans("VAT") }}</label>
-                    <Select v-model="form.vat_rate" :options="taxCategories" optionLabel="label" optionValue="value" class="w-full" />
+                    <Select v-model="form.tax_category_id" :options="taxCategories" optionLabel="label" optionValue="value" class="w-full" />
                 </div>
             </div>
         </div>
@@ -165,7 +183,7 @@ import { inject, onMounted, ref } from "vue";
                             <label class="font-semibold">{{ trans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.return_policy_id" :options="returnProfiles" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select eBay profile')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('Select eBay return policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
                     </div>
@@ -180,7 +198,7 @@ import { inject, onMounted, ref } from "vue";
                             <label class="font-semibold">{{ trans("Return accepted") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.return_accepted" :options="returnAcceptedOptions" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select return accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('Select returns accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
 
@@ -228,7 +246,7 @@ import { inject, onMounted, ref } from "vue";
                             <label class="font-semibold">{{ trans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.fulfillment_policy_id" :options="shippingProfiles" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select eBay profile')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('Select ebay shipping policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
                     </div>
@@ -243,7 +261,7 @@ import { inject, onMounted, ref } from "vue";
                             <label class="font-semibold">{{ trans("Shipping service") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.shipping_service" :options="shippingServices" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select return accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('Select shipping services')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
 
@@ -255,7 +273,7 @@ import { inject, onMounted, ref } from "vue";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Max dispatch time (day)") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <InputNumber v-model="form.max_dispatch_time" inputId="integeronly" fluid />
+                                <InputNumber v-model="form.shipping_max_dispatch_time" inputId="integeronly" fluid />
                             </div>
                         </div>
                     </div>
@@ -283,7 +301,7 @@ import { inject, onMounted, ref } from "vue";
                             <label class="font-semibold">{{ trans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.payment_policy_id" :options="paymentProfiles" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select eBay profile')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('Select eBay payment policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
                     </div>

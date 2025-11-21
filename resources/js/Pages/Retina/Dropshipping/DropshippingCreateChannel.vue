@@ -267,10 +267,11 @@ const isModalEbayDuplicate = ref(false)
 
 const isModalCreateEbay = ref(false);
 const ebayId = ref<int|null>(null);
+const customerSalesChannelId = ref<int|null>(null);
 const ebayName = ref<string|null>(null);
 
-watch(ebayId, (value) => {
-    console.log("ebayId", value)
+watch(customerSalesChannelId, (value) => {
+    console.log("customerSalesChannelId", value)
 }, { immediate: true });
 
 const closeCreateEbayModal = () => {
@@ -283,6 +284,7 @@ const openCreateEbayModal = async () => {
     const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.creating_check'));
     if(data) {
         ebayId.value = data.id;
+        customerSalesChannelId.value = data.customer_sales_channel_id;
         ebayName.value = data.name;
         switch (data.step) {
             case 'name':
@@ -321,6 +323,7 @@ const openCreateEbayModal = async () => {
 provide("closeCreateEbayModal", closeCreateEbayModal);
 provide("ebayId", ebayId);
 provide("ebayName", ebayName);
+provide("customerSalesChannelId", customerSalesChannelId);
 
 const steps = ref([
     { name: "Ebay Account Name", status: "current" },

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
+use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
 use App\Actions\Dropshipping\Ebay\UpdateShippingPolicyEbayUser;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewChannels;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomers;
@@ -41,8 +42,8 @@ class UpdateCustomerSalesChannel extends OrgAction
         $platformUser = $customerSalesChannel->user;
 
         $shippingService = Arr::pull($modelData, 'shipping_service');
-        $shippingPrice = Arr::pull($modelData, 'shipping_price');
-        $shippingDispatchTime = Arr::pull($modelData, 'shipping_max_dispatch_time');
+        $shippingPrice = (string) Arr::pull($modelData, 'shipping_price');
+        $shippingDispatchTime = (string) Arr::pull($modelData, 'shipping_max_dispatch_time');
 
         if (Arr::has($modelData, 'is_vat_adjustment')) {
             data_set($modelData, 'settings.tax_category.checked', Arr::get($modelData, 'is_vat_adjustment'));
@@ -63,6 +64,26 @@ class UpdateCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.shipping.max_dispatch_time', $shippingDispatchTime);
         }
 
+        $returnAccepted = Arr::pull($modelData, 'return_accepted');
+        $returnPayer = Arr::pull($modelData, 'return_payer');
+        $returnWithin = Arr::pull($modelData, 'return_within');
+        $returnDescription = Arr::pull($modelData, 'return_description');
+
+        $paymentPolicyId = Arr::pull($modelData, 'payment_policy_id');
+
+        if ($returnAccepted !== null) {
+            data_set($modelData, 'settings.return.accepted', $returnAccepted);
+        }
+        if ($returnPayer) {
+            data_set($modelData, 'settings.return.payer', $returnPayer);
+        }
+        if ($returnWithin) {
+            data_set($modelData, 'settings.return.within', $returnWithin);
+        }
+        if ($returnDescription) {
+            data_set($modelData, 'settings.return.description', $returnDescription);
+        }
+
         data_forget($modelData, 'tax_category_id');
         data_forget($modelData, 'is_vat_adjustment');
 
@@ -72,6 +93,16 @@ class UpdateCustomerSalesChannel extends OrgAction
         if ($customerSalesChannel->platform->type === PlatformTypeEnum::EBAY) {
             if ($shippingService || $shippingPrice || $shippingDispatchTime) {
                 UpdateShippingPolicyEbayUser::run($customerSalesChannel->user, $modelData);
+            }
+
+            if ($returnAccepted || $returnPayer || $returnWithin || $returnDescription) {
+                //
+            }
+
+            if ($paymentPolicyId) {
+                UpdateEbayUser::run($customerSalesChannel->user, [
+                    'payment_policy_id' => $paymentPolicyId
+                ]);
             }
         }
 
@@ -107,6 +138,7 @@ class UpdateCustomerSalesChannel extends OrgAction
                     ]
                 ),
             ],
+            'is_vat_adjustment' => ['sometimes', 'boolean'],
             'tax_category_id'   => ['sometimes', 'integer', Rule::exists('tax_categories', 'id')],
             'status'            => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'state'             => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],
@@ -114,7 +146,17 @@ class UpdateCustomerSalesChannel extends OrgAction
             'shipping_service'              => ['sometimes', 'string', 'max:255'],
             'shipping_price'              => ['sometimes', 'string', 'max:255'],
             'shipping_max_dispatch_time'              => ['sometimes', 'string', 'max:255'],
-            'closed_at'         => ['sometimes', 'date'],
+
+            'return_policy_id' => ['sometimes', 'string'],
+            'payment_policy_id' => ['sometimes', 'string'],
+            'fulfillment_policy_id' => ['sometimes', 'string'],
+
+            'return_accepted' => ['sometimes', 'boolean'],
+            'return_payer' => ['sometimes', 'string'],
+            'return_within' => ['sometimes', 'integer'],
+            'return_description' => ['sometimes', 'string'],
+
+            'closed_at'         => ['sometimes', 'date']
         ];
     }
 
