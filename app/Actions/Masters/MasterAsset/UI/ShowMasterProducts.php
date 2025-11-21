@@ -181,9 +181,6 @@ class ShowMasterProducts extends GrpAction
                         'icon'    => 'fas fa-times-circle',
                         'class'   => 'text-red-400'
                     ],
-                    'afterTitle' => [
-                        'label' => $masterAsset->name
-                    ],
                     'actions' => [
                         [
                             'key'   => 'edit',

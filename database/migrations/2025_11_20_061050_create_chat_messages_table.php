@@ -1,43 +1,47 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 21 Nov 2025 11:12:23 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('chat_messages', function (Blueprint $table) {
 
-            $table->increments('id');
+            $table->id();
 
-            // FOREIGN KEY → chat_sessions.id
-            $table->unsignedInteger('session_id');
-            $table->foreign('session_id')->references('id')->on('chat_sessions')->onUpdate('cascade')->onDelete('cascade');
 
-            $table->enum('message_type', ['text', 'image', 'file'])->default('text');
+            $table->unsignedInteger('chat_session_id')->index()->nullable();
+            $table->foreign('chat_session_id')->references('id')->on('chat_sessions')->nullOnDelete();
 
-             // sender type: source type
-            $table->enum('sender_type', ['user', 'guest', 'agent', 'system', 'ai']);
+            $table->string('message_type')->index()->default(ChatMessageTypeEnum::TEXT->value);
 
-            // sender_id fleksibel → can web_user_id / agent_chat_id (join base on sender type)
+            $table->string('sender_type');
             $table->unsignedInteger('sender_id')->nullable();
+            $table->index(['sender_type', 'sender_id'], 'chat_messages_sender_idx');
 
             $table->text('message_text')->nullable();
 
-            // media file
-            $table->unsignedInteger('media_id');
-            $table->foreign('media_id')->references('id')->on('media')->onDelete('cascade');
+
+            $table->unsignedInteger('media_id')->index()->nullable();
+            $table->foreign('media_id')->references('id')->on('media')->nullOnDelete();
 
 
-            $table->boolean('is_read')->default(false);
+            $table->boolean('is_read')->index()->default(false);
             $table->timestampTz('delivered_at')->nullable();
             $table->timestampTz('read_at')->nullable();
-            $table->timestampTz('deleted_at')->nullable();
+
 
             $table->timestampsTz();
+            $table->softDeletesTz();
         });
     }
 
