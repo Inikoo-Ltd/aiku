@@ -152,6 +152,10 @@ const debUpdateQuantity = debounce((newVal?: number) => {
                 :min="0"
                 :max="product.available_quantity"
                 fluid
+                :inputStyle="{
+                    lineHeight: '1rem',
+                    borderRadius: '3px'
+                }"
             />
             
             <div v-if="status === 'loading'" class="inset-0 absolute flex items-center justify-center rounded bg-black/50 text-white text-lg">

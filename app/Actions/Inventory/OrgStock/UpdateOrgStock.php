@@ -96,7 +96,7 @@ class UpdateOrgStock extends OrgAction
     {
         $this->orgStock = $orgStock;
         $this->initialisationFromWarehouse($warehouse, $request);
-        
+
         return $this->handle($orgStock, $this->validatedData);
     }
 

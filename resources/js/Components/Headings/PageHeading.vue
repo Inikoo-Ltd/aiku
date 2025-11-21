@@ -135,7 +135,7 @@ const setError = (e) => {
                             <span class="inline-block">{{ useTruncate(data.title, 30) }}</span>
                         </div>
                         <!-- Section: After Title -->
-                        <slot name="afterTitle">
+                        <slot name="afterTitle" :data="data">
                             <component
                                     v-if="data.iconRight || data.titleRight || data.afterTitle"
                                     :is="data?.iconRight?.url ? 'a' : 'div'"
