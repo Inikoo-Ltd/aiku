@@ -182,14 +182,6 @@ const onSubmitManual = async () => {
     isLoading.value = false;
 }
 
-// Section: ebay
-const onSubmitEbay = async () => {
-    const response = await axios.post(
-        route(props.type_ebay.connectRoute.name, props.type_ebay.connectRoute.parameters));
-
-    window.location.href = response.data;
-};
-
 // Section: amazon
 const onSubmitAmazon = async () => {
     const response = await axios.post(
@@ -274,18 +266,67 @@ const isModalEbayDuplicate = ref(false)
     })
 
 const isModalCreateEbay = ref(false);
+const ebayId = ref<int|null>(null);
+const ebayName = ref<string|null>(null);
+
+watch(ebayId, (value) => {
+    console.log("ebayId", value)
+}, { immediate: true });
 
 const closeCreateEbayModal = () => {
     isModalCreateEbay.value = false;
+    ebayId.value = null;
+    ebayName.value = null;
+}
+
+const openCreateEbayModal = async () => {
+    const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.creating_check'));
+    if(data) {
+        ebayId.value = data.id;
+        ebayName.value = data.name;
+        switch (data.step) {
+            case 'name':
+                currentStep.value = 1
+                steps.value[0].status = "complete";
+                steps.value[1].status = "current";
+                steps.value[2].status = "upcoming";
+                steps.value[3].status = "upcoming";
+                break
+            case 'marketplace':
+                currentStep.value = 2
+                steps.value[0].status = "complete";
+                steps.value[1].status = "complete";
+                steps.value[2].status = "current";
+                steps.value[3].status = "upcoming";
+                break
+            case 'auth':
+                currentStep.value = 3
+                steps.value[0].status = "complete";
+                steps.value[1].status = "complete";
+                steps.value[2].status = "complete";
+                steps.value[3].status = "current";
+                break
+            default:
+                currentStep.value = 0
+                steps.value[0].status = "current";
+                steps.value[1].status = "upcoming";
+                steps.value[2].status = "upcoming";
+                steps.value[3].status = "upcoming";
+        }
+    }
+
+    isModalCreateEbay.value = true;
 }
 
 provide("closeCreateEbayModal", closeCreateEbayModal);
+provide("ebayId", ebayId);
+provide("ebayName", ebayName);
 
 const steps = ref([
     { name: "Ebay Account Name", status: "current" },
     { name: "Ebay Site", status: "upcoming" },
     { name: "Ebay Auth Key", status: "upcoming" },
-    { name: "Ebay Listing Profile Name", status: "upcoming" },
+    // { name: "Ebay Listing Profile Name", status: "upcoming" },
     { name: "Ebay Listing Profile Confirmation", status: "upcoming" }
 ]);
 
@@ -295,7 +336,7 @@ const stepComponents = [
     EbayAccountNameForm,
     EbaySiteForm,
     EbayAuthKeyForm,
-    EbayListingProfileNameForm,
+    // EbayListingProfileNameForm,
     EbayListingProfileConfirmationForm
 ];
 
@@ -458,7 +499,7 @@ provide("goNext", goNext);
                         type="primary"
                         full
                         iconRight="fal fa-external-link-alt"
-                        @click="() => isModalCreateEbay = true"
+                        @click="openCreateEbayModal"
                     />
 
                     <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
@@ -654,7 +695,7 @@ provide("goNext", goNext);
     <Dialog v-model:visible="isModalCreateEbay" modal header="eBay" class="max-w-[90%] w-full">
         <div class="flex flex-col gap-6">
             <EbayProgressBar />
-            <component :is="stepComponents[currentStep]" />
+            <component :is="stepComponents[currentStep]" :props="props" />
         </div>
     </Dialog>
 

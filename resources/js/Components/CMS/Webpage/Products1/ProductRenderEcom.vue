@@ -229,9 +229,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
 
 const idxSlideLoading = ref(false)
-const typeOfLink = computed(() =>
-    window.location.href.includes('app') ? 'external' : 'internal'
-)
+const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
 
 </script>

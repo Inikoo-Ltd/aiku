@@ -104,7 +104,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $art3Image
  * @property-read Media|null $art4Image
  * @property-read Media|null $art5Image
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
  * @property-read Media|null $bottomImage
  * @property-read Media|null $frontImage
@@ -116,23 +116,24 @@ use Spatie\Translatable\HasTranslations;
  * @property-read MasterAsset|null $mainMasterProduct
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterDepartment
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterFamily
- * @property-read \Illuminate\Database\Eloquent\Collection<int, MasterAsset> $masterProductVariants
+ * @property-read LaravelCollection<int, MasterAsset> $masterProductVariants
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
+ * @property-read LaravelCollection<int, Product> $products
  * @property-read Media|null $rightImage
  * @property-read \App\Models\Masters\MasterAssetSalesIntervals|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Stock> $stocks
+ * @property-read LaravelCollection<int, Stock> $stocks
+ * @property-read LaravelCollection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAssetTimeSeries> $timeSeries
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterAssetTimeSeries> $timeSeries
  * @property-read Media|null $topImage
- * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
+ * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newModelQuery()

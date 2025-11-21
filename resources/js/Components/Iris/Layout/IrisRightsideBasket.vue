@@ -6,12 +6,12 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { debounce, get, set } from 'lodash-es'
 import { faChevronRight, faTrashAlt } from "@fal"
 import { faCheckCircle } from "@fas"
-import { faMinus, faArrowRight, faPlus } from "@far"
+import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LinkIris from '../LinkIris.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { InputNumber } from 'primevue'
+import { InputNumber, ToggleSwitch } from 'primevue'
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { ProductResource } from '@/types/Iris/Products'
@@ -24,7 +24,9 @@ import Image from '@/Components/Image.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
 import { computed } from 'vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
-library.add(faMinus, faArrowRight, faPlus, faChevronRight, faTrashAlt, faCheckCircle)
+import { notify } from '@kyvg/vue3-notification'
+import { routeType } from '@/types/route'
+library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle)
 // import { XMarkIcon } from '@heroicons/vue/24/outline'
 
 interface DataSideBasket {
@@ -198,6 +200,36 @@ const convertToFloat2 = (val: any) => {
     const num = parseFloat(val)
     if (isNaN(num)) return 0.00
     return parseFloat(num.toFixed(2))
+}
+
+
+// Section: Charge
+const listLoadingCharges = ref<string[]>([])
+const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeType) => {
+    try {
+        listLoadingCharges.value.push(key_db)
+        const response = await axios.patch(
+            route(
+                routeUpdate.name,
+                routeUpdate.parameters
+            ),
+            { [key_db]: val }
+        )
+
+        if (response.status === 200) {
+            debFetchDataSideBasket(true)
+        }
+        
+    } catch (error: any) {
+        console.log('eerr charge', error)
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to update, try again."),
+            type: "error"
+        })
+    } finally {
+        listLoadingCharges.value = listLoadingCharges.value.filter(item => item !== key_db)
+    }
 }
 </script>
 
@@ -397,6 +429,36 @@ const convertToFloat2 = (val: any) => {
                     :order_summary="dataSideBasket?.order_summary"
                     :currency_code="layout.iris?.currency?.code"
                 />
+
+                <!-- Section: Charge Premium Dispatch -->
+                <div class="mt-3 border-t border-gray-200">
+                    <template v-for="charge in dataSideBasket?.charges">
+                        <div v-if="charge?.id" class="flex gap-4 my-4 justify-between">
+                            <div class="flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                                <InformationIcon :information="charge?.description" />
+                                {{ charge?.label ?? charge?.name }}
+                                <span class="text-gray-400">({{ locale.currencyFormat(layout.iris?.currency?.code, charge?.amount) }})</span>
+                            </div>
+
+                            <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                                <ToggleSwitch
+                                    :modelValue="dataSideBasket?.order_data?.[charge.key_db]"
+                                    @update:modelValue="(e) => onChangeCharge(charge.key_db, e, charge.route_update)"
+                                    xdisabled="isLoadingPriorityDispatch"
+                                >
+                                    <template #handle="{ checked }">
+                                        <LoadingIcon v-if="listLoadingCharges.includes(charge.key_db)" xclass="text-sm text-gray-500" />
+                                        <template v-else>
+                                            <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </template>
+                                </ToggleSwitch>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
 
                 <div v-if="isLoadingFetch" class="absolute inset-0">
                     <div class="inset-0 h-full w-full skeleton z-10" />

@@ -8,11 +8,6 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use Exception;
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
 
