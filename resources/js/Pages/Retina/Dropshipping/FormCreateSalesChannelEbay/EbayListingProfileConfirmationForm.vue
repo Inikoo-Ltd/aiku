@@ -32,17 +32,29 @@ import { inject, onMounted, ref } from "vue";
     const shippingProfiles = ref([]);
     const paymentProfiles = ref([]);
     const shippingServices = ref([]);
+    const returnAcceptedOptions = ref([
+        {name: "Returns Accepted", value: true},
+        {name: "Returns Not Accepted", value: false}
+    ]);
+    const returnPayers = ref([
+        {name: "Seller", value: "SELLER"},
+        {name: "Buyer", value: "BUYER"}
+    ]);
 
     const form = useForm({
-        app: "Ebay",
-        account: ebayName.value,
-        return_policy_id: null,
-        payment_policy_id: null,
-        fulfillment_policy_id: null,
-        vat_rate: 0,
-        max_dispatch_time: 0,
-        shipping_service: 0,
-        shipping_price: 0,
+            app: "Ebay",
+            account: ebayName.value,
+            return_policy_id: null,
+            payment_policy_id: null,
+            fulfillment_policy_id: null,
+            vat_rate: 0,
+            max_dispatch_time: 0,
+            shipping_service: 0,
+            shipping_price: 0,
+            return_accepted: null,
+            return_payer: null,
+            return_within: 1,
+            return_description: ""
     });
 
     const submitForm = async () => {
@@ -163,7 +175,7 @@ import { inject, onMounted, ref } from "vue";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Return accepted") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
+                                <Select v-model="form.return_accepted" :options="returnAcceptedOptions" optionLabel="name" optionValue="value" class="w-full" />
                                 <FontAwesomeIcon v-tooltip="trans('Select return accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
@@ -171,22 +183,21 @@ import { inject, onMounted, ref } from "vue";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Return paid by") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
+                                <Select v-model="form.return_payer" :options="returnPayers" optionLabel="name" optionValue="value" class="w-full" />
                                 <FontAwesomeIcon v-tooltip="trans('Select return paid by')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                         </div>
 
                         <div class="flex flex-col gap-2 p-4">
-                            <label class="font-semibold">{{ trans("Return within") }}</label>
+                            <label class="font-semibold">{{ trans("Return within (day)") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select return within')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <InputNumber v-model="form.return_within" inputId="minmax" :min="1" :max="14" fluid />
                             </div>
                         </div>
 
                         <div class="flex flex-col gap-2 w-full md:w-96 p-4">
                             <label class="font-semibold">{{ trans("Detailed return policy explanation") }}</label>
-                            <Textarea v-model="value" rows="5" />
+                            <Textarea v-model="form.return_description" rows="5" />
                         </div>
                     </div>
                 </div>
