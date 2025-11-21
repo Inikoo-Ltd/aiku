@@ -145,7 +145,7 @@ const LBInitSearchResult = async () => {
                         "default": trans("Default"),
                         "price_amount:asc": trans("Price: Low to High"),
                         "price_amount:desc": trans("Price: High to Low"),
-                        "headlineTitle": trans("Sort by: &nbsp;"),
+                        "headlineTitle": trans("Sort by") + ": ",
                     },
                     "site": {
                         "titleResults": trans("Results for :query (:hitsCount)"),

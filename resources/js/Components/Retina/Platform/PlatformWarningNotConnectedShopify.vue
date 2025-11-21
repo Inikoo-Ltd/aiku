@@ -60,7 +60,7 @@ const onClickReconnect = async () => {
             />
 
             <div class="w-full sm:w-fit h-fit mt-4 text-red-400">
-                {{ trans("Make sure you click the button \"Install\" in the Shopify dashboard to finalize the connection.") }}
+                {{ trans('Make sure you click the button "Install" in the Shopify dashboard to finalize the connection.') }}
                 <span @click="() => onClickReconnect()" class="font-bold hover:text-red-500 underline cursor-pointer">{{ trans("Click here to install") }}</span>
             </div>
         </div>

@@ -301,7 +301,7 @@ class IndexPayments extends OrgAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('payments '),
+                'title'       => __('payments'),
                 'pageHead'    => [
                     'subNavigation' => $subNavigation,
                     'icon'      => ['fal', 'fa-coins'],

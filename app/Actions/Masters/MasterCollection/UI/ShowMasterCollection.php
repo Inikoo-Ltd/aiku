@@ -29,6 +29,7 @@ use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Masters\MasterCollection\UI\GetMasterCollectionsImages;
 
 class ShowMasterCollection extends GrpAction
 {
@@ -224,6 +225,10 @@ class ShowMasterCollection extends GrpAction
                 MasterCollectionTabsEnum::COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::COLLECTIONS->value ?
                     fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))
                     : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))),
+
+               MasterCollectionTabsEnum::IMAGES->value => $this->tab == MasterCollectionTabsEnum::IMAGES->value ?
+                    fn () =>  GetMasterCollectionsImages::run($masterCollection)
+                    : Inertia::lazy(fn () => GetMasterCollectionsImages::run($masterCollection)),
 
                 MasterCollectionTabsEnum::SHOP_COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::SHOP_COLLECTIONS->value ?
                     fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))

@@ -12,11 +12,12 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 
 trait HasBucketImages
 {
-    public function getImagesData(MasterAsset|Product|TradeUnit $model): array
+    public function getImagesData(MasterAsset|Product|TradeUnit|MasterCollection $model): array
     {
         return [
             [
@@ -194,7 +195,7 @@ trait HasBucketImages
         ];
     }
 
-    public function getSingleImageData(MasterProductCategory|ProductCategory $model): array
+    public function getSingleImageData(MasterProductCategory|ProductCategory|MasterCollection $model): array
     {
         return [
             [
