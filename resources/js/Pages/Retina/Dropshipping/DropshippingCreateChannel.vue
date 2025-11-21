@@ -282,6 +282,7 @@ const closeCreateEbayModal = () => {
 
 const openCreateEbayModal = async () => {
     const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.creating_check'));
+    console.log(data)
     if(data) {
         ebayId.value = data.id;
         customerSalesChannelId.value = data.customer_sales_channel_id;
