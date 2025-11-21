@@ -63,15 +63,15 @@ class ShopHydrateOrderHandling implements ShouldBeUnique
             'orders_state_submitted_amount_org_currency'            => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->sum('org_net_amount'),
             'orders_state_submitted_amount_grp_currency'            => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->sum('grp_net_amount'),
 
-            'number_orders_state_submitted_paid'                    => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', OrderPayStatusEnum::PAID)->count(),
-            'orders_state_submitted_paid_amount'                    => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', OrderPayStatusEnum::PAID)->sum('net_amount'),
-            'orders_state_submitted_paid_amount_org_currency'       => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', OrderPayStatusEnum::PAID)->sum('org_net_amount'),
-            'orders_state_submitted_paid_amount_grp_currency'       => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', OrderPayStatusEnum::PAID)->sum('grp_net_amount'),
+            'number_orders_state_submitted_paid'                    => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->whereIn('pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])->count(),
+            'orders_state_submitted_paid_amount'                    => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->whereIn('pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])->sum('net_amount'),
+            'orders_state_submitted_paid_amount_org_currency'       => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->whereIn('pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])->sum('org_net_amount'),
+            'orders_state_submitted_paid_amount_grp_currency'       => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->whereIn('pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])->sum('grp_net_amount'),
 
-            'number_orders_state_submitted_not_paid'                => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', OrderPayStatusEnum::UNPAID)->count(),
-            'orders_state_submitted_not_paid_amount'                => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', OrderPayStatusEnum::UNPAID)->sum('net_amount'),
-            'orders_state_submitted_not_paid_amount_org_currency'   => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', OrderPayStatusEnum::UNPAID)->sum('org_net_amount'),
-            'orders_state_submitted_not_paid_amount_grp_currency'   => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', OrderPayStatusEnum::UNPAID)->sum('grp_net_amount'),
+            'number_orders_state_submitted_not_paid'                => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->whereIn('pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])->count(),
+            'orders_state_submitted_not_paid_amount'                => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->whereIn('pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])->sum('net_amount'),
+            'orders_state_submitted_not_paid_amount_org_currency'   => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->whereIn('pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])->sum('org_net_amount'),
+            'orders_state_submitted_not_paid_amount_grp_currency'   => $shop->orders()->where('state', OrderStateEnum::SUBMITTED)->whereIn('pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])->sum('grp_net_amount'),
 
             'number_orders_state_in_warehouse'                      => $shop->orders()->where('state', OrderStateEnum::IN_WAREHOUSE)->count(),
             'orders_state_in_warehouse_amount'                      => $shop->orders()->where('state', OrderStateEnum::IN_WAREHOUSE)->sum('net_amount'),
