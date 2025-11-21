@@ -27,6 +27,8 @@ enum MasterCollectionTabsEnum: string
     case COLLECTIONS = 'collections';
 
     case HISTORY = 'history';
+
+    case IMAGES = 'images';
     case SHOP_COLLECTIONS = 'shop_collections';
 
 
@@ -79,6 +81,13 @@ enum MasterCollectionTabsEnum: string
             MasterCollectionTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            
+             MasterCollectionTabsEnum::IMAGES => [
+                'title' => __('Media'),
+                'icon'  => 'fal fa-camera-retro',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
         };
     }

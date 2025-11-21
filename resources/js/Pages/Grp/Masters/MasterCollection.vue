@@ -22,6 +22,7 @@ import TableProducts from '@/Components/Tables/Grp/Org/Catalogue/TableProducts.v
 import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
+import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
 
 import { faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -72,7 +73,8 @@ const component = computed(() => {
         products: TableProducts,
         collections: TableMasterCollections,
         shop_collections: TableCollections,
-        history: TableHistories
+        history: TableHistories,
+        images: ImagesManagement,
     }
     return components[currentTab.value]
 })
