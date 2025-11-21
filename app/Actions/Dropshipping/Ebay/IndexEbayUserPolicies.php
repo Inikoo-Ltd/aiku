@@ -29,11 +29,18 @@ class IndexEbayUserPolicies extends RetinaAction
         $fulfillmentPolicies = $ebayUser->getFulfilmentPolicies();
         $paymentPolicies = $ebayUser->getPaymentPolicies();
         $returnPolicies = $ebayUser->getReturnPolicies();
+        $shippingServices = $ebayUser->getServicesForOptions();
 
         return [
             'fulfillment_policies' => $fulfillmentPolicies,
             'payment_policies' => $paymentPolicies,
             'return_policies' => $returnPolicies,
+            'shipping_services' => collect($shippingServices)->map(function ($shippingService, $key) {
+                return [
+                    'name' =>  $shippingService,
+                    'value' => $key
+                ];
+            })->values()
         ];
     }
 
