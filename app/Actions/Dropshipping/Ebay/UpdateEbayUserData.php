@@ -29,9 +29,13 @@ class UpdateEbayUserData extends OrgAction
     public function handle(EbayUser $ebayUser): EbayUser
     {
         $ebayUser->createOptInProgram();
-        $fulfilment = $ebayUser->createFulfilmentPolicy([]);
-        $payment = $ebayUser->createPaymentPolicy();
-        $return = $ebayUser->createReturnPolicy();
+        $ebayUser->createFulfilmentPolicy([]);
+        $ebayUser->createPaymentPolicy();
+        $ebayUser->createReturnPolicy();
+
+        $fulfilmentPolicies = $ebayUser->getFulfilmentPolicies();
+        $paymentPolicies = $ebayUser->getPaymentPolicies();
+        $returnPolicies = $ebayUser->getReturnPolicies();
 
         $defaultLocationData = match (Arr::get($ebayUser->customer?->shop?->settings, 'ebay.marketplace_id', 'EBAY_GB')) {
             'EBAY_ES' => [
@@ -50,11 +54,10 @@ class UpdateEbayUserData extends OrgAction
 
         $ebayUser->createInventoryLocation($defaultLocationData);
 
-
         return UpdateEbayUser::run($ebayUser, [
-            'fulfillment_policy_id' => Arr::get($fulfilment, 'fulfillmentPolicyId'),
-            'payment_policy_id' => Arr::get($payment, 'paymentPolicyId'),
-            'return_policy_id' => Arr::get($return, 'returnPolicyId'),
+            'fulfillment_policy_id' => Arr::get($fulfilmentPolicies, 'fulfillmentPolicies.0.fulfillmentPolicyId'),
+            'payment_policy_id' => Arr::get($paymentPolicies, 'paymentPolicies.0.paymentPolicyId'),
+            'return_policy_id' => Arr::get($returnPolicies, 'returnPolicies.0.returnPolicyId'),
             'location_key' => Arr::get($defaultLocationData, 'locationKey'),
         ]);
     }
