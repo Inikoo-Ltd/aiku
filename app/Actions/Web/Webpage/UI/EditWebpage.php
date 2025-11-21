@@ -71,7 +71,7 @@ class EditWebpage extends OrgAction
         $fields = [
             "seo_image"        => [
                 "type"    => "image_crop_square",
-                "label"   => __("Preview image"),
+                "label"   => __("share image"),
                 "value"   => $webpage->imageSources(1200, 1200, 'seoImage'),
                 'options' => [
                     "minAspectRatio" => 1,
