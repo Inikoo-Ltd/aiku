@@ -30,7 +30,7 @@ const layout: any = inject("layout", {})
 			<!-- Section 1: Image (fixed ratio) -->
 			<div class="w-full md:w-1/3 lg:w-1/2 relative cursor-pointer overflow-hidden bg-center bg-cover bg-no-repeat"
 				:style="{ aspectRatio: '16/9' }">
-				<Image :src="fieldValue?.image?.source" :imageCover
+				<Image :src="fieldValue?.image?.source" imageCover
 					:alt="fieldValue?.image?.alt" :imgAttributes="fieldValue?.image?.attributes"
 					:style="getStyles(fieldValue?.image?.properties)" class="w-full h-full object-cover" />
 			</div>

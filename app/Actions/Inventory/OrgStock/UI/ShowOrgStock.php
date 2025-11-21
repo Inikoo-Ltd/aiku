@@ -82,7 +82,17 @@ class ShowOrgStock extends OrgAction
                     ],
                     'model' => __('SKU'),
                     'title' => $orgStock->code,
-
+                    'actions'      => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'edit',
+                            'label'   => __('Edit SKU'),
+                            'route'   => [
+                                'name'       => preg_replace('/\.show$/', '.edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters(),
+                            ]
+                        ]
+                    ]
                 ],
                 'tabs'                            => [
                     'current'    => $this->tab,
@@ -143,7 +153,7 @@ class ShowOrgStock extends OrgAction
 
         return match ($routeName) {
             'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
-            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', =>
+            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show' =>
             array_merge(
                 (new ShowInventoryDashboard())->getBreadcrumbs($routeParameters),
                 $headCrumb(
@@ -185,6 +195,31 @@ class ShowOrgStock extends OrgAction
                     $suffix
                 )
             ),
+            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit',
+            'maya.org.warehouses.show.inventory.org_stocks.edit' =>
+                array_merge(
+                    (new ShowInventoryDashboard())->getBreadcrumbs($routeParameters),
+                    $headCrumb(
+                        $orgStock,
+                        [
+                            'index' => [
+                                'name'       => preg_replace('/\.show$/', '.index', $routeName),
+                                'parameters' => Arr::except($routeParameters, ['orgStock'])
+                            ],
+                            'model' => [
+                                'name'       => $routeName,
+                                'parameters' => $routeParameters
+                            ]
+                        ],
+                        $suffix
+                    )
+                ),
             default => []
         };
     }

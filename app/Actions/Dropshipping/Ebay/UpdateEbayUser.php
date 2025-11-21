@@ -23,7 +23,6 @@ class UpdateEbayUser extends OrgAction
 
     public function handle(EbayUser $ebayUser, array $modelData): EbayUser
     {
-
         $ebayUser = $this->update($ebayUser, $modelData, ['settings']);
 
         $ebayUser->refresh();

@@ -5,23 +5,42 @@
   -->
 
 <script setup lang="ts">
-    import { inject } from "vue";
-    import { useForm } from "@inertiajs/vue3";
-    import PureInput from "@/Components/Pure/PureInput.vue";
-    import Button from "@/Components/Elements/Buttons/Button.vue";
-    import { trans } from "laravel-vue-i18n";
+import { inject, ref, watch, onMounted, provide } from "vue";
+import { router, useForm } from "@inertiajs/vue3";
+import PureInput from "@/Components/Pure/PureInput.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import { trans } from "laravel-vue-i18n";
+import { notify } from "@kyvg/vue3-notification";
+import axios from "axios";
 
-    const goNext = inject("goNext");
-    const closeCreateEbayModal = inject("closeCreateEbayModal");
+const goNext = inject("goNext");
+const ebayId = inject("ebayId");
+const ebayName = inject("ebayName");
+const closeCreateEbayModal = inject("closeCreateEbayModal");
 
-    const form = useForm({
-        name: ""
-    });
+const isLoadingStep = ref(false)
 
-    const submitForm = async () => {
-        console.log(form.data());
+const form = useForm({
+    name: ""
+});
+
+const submitForm = async () => {
+    isLoadingStep.value = true
+    try {
+        const {data} = await axios.post(route('retina.dropshipping.customer_sales_channels.ebay.store'), form.data());
+        ebayId.value = data.id;
+        ebayName.value = data.name;
         goNext();
+        isLoadingStep.value = false
+    } catch (err) {
+        isLoadingStep.value = false;
+        notify({
+            title: trans("Something went wrong"),
+            text: err.response?.data?.message,
+            type: "error"
+        });
     }
+}
 </script>
 
 <template>
@@ -35,11 +54,11 @@
             />
         </div>
 
-        <hr class="w-full border-t" />
+        <hr class="w-full border-t"/>
 
         <div class="flex md:justify-end gap-4">
             <Button type="secondary" size="sm" @click="closeCreateEbayModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
         </div>
     </form>
 </template>

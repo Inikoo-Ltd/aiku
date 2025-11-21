@@ -206,6 +206,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ProductCategory> $productCategories
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Product> $products
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\Product> $productsInStock
  * @property-read LaravelCollection<int, Prospect> $prospects
  * @property-read LaravelCollection<int, Purge> $purges
  * @property-read LaravelCollection<int, Query> $queries

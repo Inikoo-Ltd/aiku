@@ -12,7 +12,7 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
-use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Actions\Traits\WithTabsBox;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Shop;
@@ -24,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrdersBacklog extends OrgAction
 {
+    use WithTabsBox;
     use WithOrderingAuthorisation;
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
@@ -40,203 +41,22 @@ class ShowOrdersBacklog extends OrgAction
         return $organisation;
     }
 
-
     public function htmlResponse(Organisation|Shop $parent, ActionRequest $request): Response
     {
-        $currency = '_org_currency';
-
-        if ($parent instanceof Shop) {
-            $currency = '';
-        }
-
-        $currencyCode = $parent->currency->code;
-
-
-
-        $tabsBox = [
-            [
-                'label'         => __('In Basket'),
-                'currency_code' => $currencyCode,
-                'tabs'          => [
-                    [
-                        'tab_slug'    => 'in_basket',
-                        'label'       => __('In basket'),
-                        'value'       => $parent->orderHandlingStats->number_orders_state_creating,
-                        'type'        => 'number',
-                        'icon_data'        => [
-                            'icon'    => 'fal fa-shopping-basket',
-                            'tooltip' => __('In Basket'),
-                        ],
-                        'information' => [
-                            'type'  => 'currency',
-                            'label' => $parent->orderHandlingStats->{"orders_state_creating_amount$currency"},
-                        ]
-                    ]
-                ]
-            ],
-            [
-                'label'         => __('Submitted'),
-                'currency_code' => $currencyCode,
-                'tabs'          => [
-                    [
-                        'tab_slug'    => 'submitted_paid',
-                        'label'       => __('Submitted Paid'),
-                        'value'       => $parent->orderHandlingStats->number_orders_state_submitted_paid,
-                        'type'        => 'number',
-
-
-                        'icon_data'   => [
-                            'tooltip' => __('Submitted Paid'),
-                            'icon'    => 'fal fa-check-circle',
-                            'class'   => 'text-green-600',
-                            'color'   => 'lime',
-                            'app'     => [
-                                'name' => 'check-circle',
-                                'type' => 'font-awesome-5'
-                            ]
-                        ],
-                        'information' => [
-                            'label' => $parent->orderHandlingStats->{"orders_state_submitted_paid_amount$currency"},
-                            'type'  => 'currency'
-                        ]
-                    ],
-                    [
-                        'tab_slug'    => 'submitted_unpaid',
-                        'label'       => __('Submitted Unpaid'),
-                        'value'       => $parent->orderHandlingStats->number_orders_state_submitted_not_paid,
-                        'type'        => 'number',
-                        'icon_data'   =>
-                            [
-                            'tooltip' => __('Submitted Unpaid'),
-                            'icon'    => 'fal fa-circle',
-                            'class'   => 'text-gray-500',
-                            'color'   => 'gray',
-                            'app'     => [
-                                'name' => 'circle',
-                                'type' => 'font-awesome-5'
-                            ]
-                        ],
-                        'information' => [
-                            'label' => $parent->orderHandlingStats->{"orders_state_submitted_not_paid_amount$currency"},
-                            'type'  => 'currency'
-                        ]
-                    ]
-                ]
-            ],
-            [
-                'label'         => __('Warehouse'),
-                'currency_code' => $currencyCode,
-                'tabs'          => [
-                    [
-                        'tab_slug'    => 'in_warehouse',
-                        'label'       => __('Waiting to be picked'),
-                        'value'       => $parent->orderHandlingStats->number_orders_state_in_warehouse,
-                        'type'        => 'number',
-                        'icon_data'   => [
-                            'tooltip' => __('Waiting'),
-                            'icon'    => 'fal fa-snooze',
-                        ],
-                        'information' => [
-                            'label' => $parent->orderHandlingStats->{"orders_state_in_warehouse_amount$currency"},
-                            'type'  => 'currency'
-                        ]
-                    ],
-                    [
-                        'tab_slug'    => 'handling',
-                        'label'       => __('Picking'),
-                        'value'       => $parent->orderHandlingStats->number_orders_state_handling,
-                        'type'        => 'number',
-                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING->value],
-                        'information' => [
-                            'label' => $parent->orderHandlingStats->{"orders_state_handling_amount$currency"},
-                            'type'  => 'currency',
-                        ]
-                    ],
-                    [
-                        'tab_slug'    => 'handling_blocked',
-                        'label'       => __('Picking Blocked'),
-                        'value'       => $parent->orderHandlingStats->number_orders_state_handling_blocked,
-                        'type'        => 'number',
-                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING_BLOCKED->value],
-                        'information' => [
-                            'label' => $parent->orderHandlingStats->{"orders_state_handling_blocked_amount$currency"},
-                            'type'  => 'currency',
-                        ]
-                    ],
-                    [
-                        'tab_slug'    => 'packed',
-                        'label'       => __('Packed'),
-                        'value'       => $parent->orderHandlingStats->number_orders_state_packed,
-                        // 'icon'        => OrderStateEnum::stateIcon()[OrderStateEnum::PACKED->value],
-                        // 'iconClass'   => 'text-teal-500',
-                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PACKED->value],
-                        'information' => [
-                            'label' => $parent->orderHandlingStats->{"orders_state_packed_amount$currency"},
-                            'type'  => 'currency'
-                        ]
-                    ],
-                ]
-            ],
-            [
-                'label'         => __('Waiting for dispatch'),
-                'currency_code' => $currencyCode,
-                'tabs'          => [
-
-                    [
-                        'tab_slug'    => 'finalised',
-                        'label'       => __('Invoiced'),
-                        'value'       => $parent->orderHandlingStats->number_orders_state_finalised,
-                        // 'icon'        => 'fal fa-box-check',
-                        // 'iconClass'   => 'text-orange-500',
-                        'icon_data'   => [
-                            'icon'    => 'fal fa-box-check',
-                            'tooltip' => __('Finalised'),
-                        ],
-                        'information' => [
-                            'label' => $parent->orderHandlingStats->{"orders_state_finalised_amount$currency"},
-                            'type'  => 'currency'
-                        ]
-                    ],
-                ]
-            ],
-            [
-                'label'         => __('Dispatched Today'),
-                'currency_code' => $currencyCode,
-                'tabs'          => [
-                    [
-                        'tab_slug'    => 'dispatched_today',
-                        'label'       => __('Dispatched Today'),
-                        'value'       => $parent->orderHandlingStats->number_orders_dispatched_today,
-                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::DISPATCHED->value],
-                        'type'        => 'number',
-                        'information' => [
-                            'label' => $parent->orderHandlingStats->{"orders_dispatched_today_amount$currency"},
-                            'type'  => 'currency'
-                        ]
-                    ],
-                ]
-            ]
-        ];
+        $tabsBox = $this->getTabsBox($parent);
 
         return Inertia::render(
             'Ordering/OrdersBacklog',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $parent,
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($parent, $request->route()->originalParameters()),
                 'title'       => __('Orders backlog'),
                 'pageHead'    => [
                     'title' => __('Orders backlog'),
-
                 ],
-
-
-                'tabs' => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $tabsBox
                 ],
-
 
                 OrdersBacklogTabsEnum::IN_BASKET->value => $this->tab == OrdersBacklogTabsEnum::IN_BASKET->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))
@@ -253,7 +73,6 @@ class ShowOrdersBacklog extends OrgAction
                 OrdersBacklogTabsEnum::IN_WAREHOUSE->value => $this->tab == OrdersBacklogTabsEnum::IN_WAREHOUSE->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_WAREHOUSE->value, bucket: OrdersBacklogTabsEnum::IN_WAREHOUSE->value))
                     : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_WAREHOUSE->value, bucket: OrdersBacklogTabsEnum::IN_WAREHOUSE->value))),
-
 
                 OrdersBacklogTabsEnum::HANDLING->value => $this->tab == OrdersBacklogTabsEnum::HANDLING->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING->value, bucket: OrdersBacklogTabsEnum::HANDLING->value))
@@ -274,7 +93,6 @@ class ShowOrdersBacklog extends OrgAction
                 OrdersBacklogTabsEnum::DISPATCHED_TODAY->value => $this->tab == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))
                     : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))),
-
             ]
         )->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_PAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_PAID->value))
@@ -324,5 +142,4 @@ class ShowOrdersBacklog extends OrgAction
             )
         };
     }
-
 }

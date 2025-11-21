@@ -110,8 +110,8 @@ class UpdateTradeUnit extends GrpAction
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
         $tradeUnit->refresh();
 
-        if($tradeUnit->wasChanged('marketing_dimensions')){
-            foreach($tradeUnit->products as $product){
+        if ($tradeUnit->wasChanged('marketing_dimensions')) {
+            foreach ($tradeUnit->products as $product) {
                 ProductHydrateMarketingDimensionFromTradeUnits::dispatch($product);
             }
         }
