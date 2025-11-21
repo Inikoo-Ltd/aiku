@@ -336,6 +336,15 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
+            $schedule->command('hydrate:best_seller')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateBestSellerProduct',
+            ),
+            name: 'HydrateBestSellerProduct',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
             $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
             ),

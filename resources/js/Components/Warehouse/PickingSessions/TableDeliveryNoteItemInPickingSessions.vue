@@ -345,7 +345,7 @@ onMounted(() => {
                                                     selectedItemValue = deliveryItem;
                                                     selectedItemProxy = proxyItem;
                                                 }"
-                                                v-tooltip="trans(`Other :count_location locations`, { count_location: deliveryItem.locations.length - 1})"
+                                                v-tooltip="trans(`Other :_count_location locations`, { _count_location: deliveryItem.locations.length - 1})"
                                                 class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-1.5 lg:py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
                                                 <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width
                                                     aria-hidden="true" />
@@ -496,7 +496,7 @@ onMounted(() => {
                                         isModalLocation = true;
                                         selectedItemValue = itemValue;
                                         selectedItemProxy = proxyItem;
-                                    }" v-tooltip="trans(`Other :count_location locations`, { count_location: itemValue.locations?.length - 1})"
+                                    }" v-tooltip="trans(`Other :_count_location locations`, { _count_location: itemValue.locations?.length - 1})"
                                         class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap px-3 lg:px-1 py-2 lg:py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded">
                                         <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width
                                             aria-hidden="true" />
