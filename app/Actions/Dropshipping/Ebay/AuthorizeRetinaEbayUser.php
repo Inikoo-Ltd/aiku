@@ -21,6 +21,9 @@ class AuthorizeRetinaEbayUser extends RetinaAction
 
     public $commandSignature = 'retina:ds:authorize-ebay {customer} {name} {url}';
 
+    /**
+     * @throws \Exception
+     */
     public function handle(): string
     {
         return $this->getEbayAuthUrl();
@@ -32,12 +35,18 @@ class AuthorizeRetinaEbayUser extends RetinaAction
     }
 
 
+    /**
+     * @throws \Exception
+     */
     public function asController(ActionRequest $request): string
     {
         $this->initialisation($request);
         return $this->handle();
     }
 
+    /**
+     * @throws \Exception
+     */
     public function asCommand(Command $command): void
     {
 
