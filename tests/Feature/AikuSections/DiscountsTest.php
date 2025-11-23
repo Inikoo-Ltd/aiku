@@ -11,9 +11,12 @@
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Discounts\Offer\ActivatePermanentOffer;
+use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\HydrateOffers;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
 use App\Actions\Discounts\Offer\StoreOffer;
+use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateOffer;
 use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignSearch;
@@ -21,7 +24,12 @@ use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Models\Analytics\AikuScopedSection;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
@@ -161,7 +169,7 @@ test('UI show offer campaigns', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $offerCampaign->name)
                     ->etc()
             )
@@ -222,4 +230,187 @@ test('offer hydrator', function () {
 
 test('Discounts hydrator', function () {
     $this->artisan('hydrate -s disc')->assertExitCode(0);
+});
+
+test('delete offer', function () {
+    $shop          = $this->shop;
+    $offerCampaign = $shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $allowanceData = OfferAllowance::factory()->definition();
+    data_set($allowanceData, 'trigger_type', 'Shop');
+    data_set($allowanceData, 'trigger_id', $offer->shop->id);
+
+    StoreOfferAllowance::make()->action($offer, $allowanceData);
+
+    DeleteOffer::make()->action($offer);
+
+    $this->assertSoftDeleted($offer);
+    $this->assertSoftDeleted($offer->offerAllowances()->withTrashed()->first());
+});
+
+test('force delete offer', function () {
+    $shop          = $this->shop;
+    $offerCampaign = $shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $allowanceData = OfferAllowance::factory()->definition();
+    data_set($allowanceData, 'trigger_type', 'Shop');
+    data_set($allowanceData, 'trigger_id', $offer->shop->id);
+
+    StoreOfferAllowance::make()->action($offer, $allowanceData);
+    $offerAllowance = $offer->offerAllowances()->first();
+
+    DeleteOffer::make()->action($offer, true);
+
+    $this->assertModelMissing($offer);
+    $this->assertModelMissing($offerAllowance);
+});
+
+test('create first order bonus', function () {
+    $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    $this->artisan('offer:create_first_order_bonus', [
+        'shop'     => $shop->slug,
+        'amount'   => 100,
+        'discount' => 10
+    ])->assertExitCode(0);
+
+    $offer = \App\Models\Discounts\Offer::where('shop_id', $shop->id)
+        ->where('type', 'Amount AND Order Number')
+        ->latest()
+        ->first();
+
+    expect($offer)->toBeInstanceOf(Offer::class)
+        ->and($offer->trigger_data['min_amount'])->toBe(100)
+        ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(10);
+});
+
+test('update offer allowance signature', function () {
+    $shop          = $this->shop;
+    $offerCampaign = $shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $allowanceData = OfferAllowance::factory()->definition();
+    data_set($allowanceData, 'type', OfferAllowanceType::PERCENTAGE_OFF);
+    data_set($allowanceData, 'target_type', OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER);
+    data_set($allowanceData, 'data.percentage_off', 10);
+    // Ensure status is true via state
+    data_set($allowanceData, 'state', OfferAllowanceStateEnum::ACTIVE);
+
+    $allowance1 = StoreOfferAllowance::make()->action($offer, $allowanceData);
+    $allowance1->update(['status' => true]);
+
+    UpdateOfferAllowanceSignature::run($offer);
+    $offer->refresh();
+
+    $expectedSignature1 = 'all_products_in_order:percentage_off:10';
+    expect($offer->allowance_signature)->toBe($expectedSignature1);
+
+    // Add a second allowance
+    $allowanceData2 = OfferAllowance::factory()->definition();
+    data_set($allowanceData2, 'type', OfferAllowanceType::PERCENTAGE_OFF);
+    data_set($allowanceData2, 'target_type', OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY);
+    data_set($allowanceData2, 'data.percentage_off', 20);
+    data_set($allowanceData2, 'state', OfferAllowanceStateEnum::ACTIVE);
+
+    $allowance2 = StoreOfferAllowance::make()->action($offer, $allowanceData2);
+    $allowance2->update(['status' => true]);
+
+    UpdateOfferAllowanceSignature::run($offer);
+    $offer->refresh();
+
+    // Order depends on DB retrieval order (default ID asc).
+    $expectedSignature2 = 'all_products_in_order:percentage_off:10|all_products_in_product_category:percentage_off:20';
+    expect($offer->allowance_signature)->toBe($expectedSignature2);
+
+    // Deactivate the first allowance
+    $allowance1->update(['status' => false]);
+    UpdateOfferAllowanceSignature::run($offer);
+    $offer->refresh();
+
+    $expectedSignature3 = 'all_products_in_product_category:percentage_off:20';
+    expect($offer->allowance_signature)->toBe($expectedSignature3);
+
+    // Test Command with ID
+    $allowance1->update(['status' => true]); // Re-enable
+    $offer->update(['allowance_signature' => '']);
+
+    $this->artisan('offer:update_allowance_signature', ['offer' => $offer->id])
+        ->assertExitCode(0);
+
+    $offer->refresh();
+    expect($offer->allowance_signature)->toBe($expectedSignature2);
+
+    // Test Command without ID (All offers)
+    $offer->update(['allowance_signature' => '']);
+    $this->artisan('offer:update_allowance_signature')
+        ->assertExitCode(0);
+
+    $offer->refresh();
+    expect($offer->allowance_signature)->toBe($expectedSignature2);
+});
+
+test('force delete offer with soft deleted allowances', function () {
+    $shop          = $this->shop;
+    $offerCampaign = $shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $allowanceData = OfferAllowance::factory()->definition();
+    data_set($allowanceData, 'trigger_type', 'Shop');
+    data_set($allowanceData, 'trigger_id', $offer->shop->id);
+
+    StoreOfferAllowance::make()->action($offer, $allowanceData);
+
+    /** @var OfferAllowance $offerAllowance */
+    $offerAllowance = $offer->offerAllowances()->first();
+
+    // Soft delete the allowance first
+    $offerAllowance->delete();
+    $this->assertSoftDeleted($offerAllowance);
+
+    // Force delete the offer
+    DeleteOffer::make()->action($offer, true);
+
+    // Check if the offer is gone
+    $this->assertModelMissing($offer);
+    // Check if the allowance is gone (force deleted)
+    $this->assertModelMissing($offerAllowance);
+});
+
+test('create volume discount', function () {
+    $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::VOLUME_DISCOUNT)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    /** @var ProductCategory $category */
+    $category = ProductCategory::factory()->create([
+        'shop_id'         => $shop->id,
+        'organisation_id' => $shop->organisation_id,
+        'group_id'        => $shop->group_id,
+        'code'            => 'TEST-CAT',
+        'type'            => ProductCategoryTypeEnum::FAMILY->value
+    ]);
+
+    $this->artisan('offer:create_volume_discount', [
+        'family'        => $category->slug,
+        'item_quantity' => 5,
+        'discount'      => .20
+    ])->assertExitCode(0);
+
+    $offer = Offer::where('shop_id', $shop->id)
+        ->where('trigger_type', 'ProductCategory')
+        ->where('trigger_id', $category->id)
+        ->first();
+
+    expect($offer)->toBeInstanceOf(Offer::class)
+        ->and($offer->status)->toBeTrue()
+        ->and($offer->offerAllowances->first()->status)->toBeTrue()
+        ->and($offer->allowance_signature)->toBe('all_products_in_product_category:1:percentage_off:0.2')
+        ->and($offer->trigger_data['item_quantity'])->toBe(5)
+        ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.2);
 });

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload } from "@fal"
+import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft } from "@fal"
 import { faExclamationTriangle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -17,12 +17,12 @@ import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import { routeType } from "@/types/route";
+import { routeType } from "@/types/route"
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
-import Breadcrumb from 'primevue/breadcrumb'
-import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue";
+import Breadcrumb from "primevue/breadcrumb"
+import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue"
 
 library.add(
     faFolder,
@@ -35,7 +35,8 @@ library.add(
     faMoneyBillWave,
     faBrowser,
     faExclamationTriangle,
-    faFolderDownload
+    faFolderDownload,
+    faQuoteLeft
 )
 
 
@@ -46,7 +47,7 @@ const props = defineProps<{
         current: string
         navigation: object
     }
-    storeProductRoute : routeType
+    storeProductRoute: routeType
     mini_breadcrumbs?: any[]
     customers: object
     mailshots: object
@@ -54,14 +55,14 @@ const props = defineProps<{
     details: object
     history?: object;
     is_orphan?: boolean
-    currency?:Object
-    url_master?:routeType
-    shopsData? :any
-    masterProductCategory?:number
-    images?:object
+    currency?: Object
+    url_master?: routeType
+    shopsData?: any
+    masterProductCategory?: number
+    images?: object
     sales: any
 }>()
-console.log('family',props)
+console.log("family", props)
 const currentTab = ref(props.tabs.current)
 
 
@@ -82,7 +83,7 @@ const component = computed(() => {
     return components[currentTab.value] ?? ModelDetails
 })
 
-const showDialog = ref(false);
+const showDialog = ref(false)
 
 
 </script>
@@ -97,8 +98,8 @@ const showDialog = ref(false);
         </template>
 
         <template #afterTitle>
-           <div class="whitespace-nowrap">
-                <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master family'" :class="'opacity-70 hover:opacity-100'">
+            <div class="whitespace-nowrap">
+                <Link v-if="url_master" :href="route(url_master.name,url_master.parameters)" v-tooltip="'Go to Master family'" :class="'opacity-70 hover:opacity-100'">
                     <FontAwesomeIcon
                         :icon="faOctopusDeploy"
                         color="#4B0082"
@@ -115,18 +116,18 @@ const showDialog = ref(false);
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-  <div v-if="mini_breadcrumbs.length != 0"  class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
-        <Breadcrumb  :model="mini_breadcrumbs">
+    <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
+        <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
                     <!-- Breadcrumb link or text -->
                     <component :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
-                        :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
-                        :class="item.to
+                               :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
+                               :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
                         <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
-                        <span class="">{{ item.label || '-' }}</span>
+                        <span class="">{{ item.label || "-" }}</span>
                     </component>
                 </div>
             </template>

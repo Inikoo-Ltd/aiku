@@ -16,19 +16,17 @@ enum FamilyTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE  = 'showcase';
-    case SALES     = 'sales';
-
-    case OFFERS    = 'offers';
-    // case MAILSHOTS = 'mailshots';
-    case HISTORY   = 'history';
-    case IMAGES    = 'images';
+    case SHOWCASE = 'showcase';
+    case CONTENT = 'content';
+    case SALES = 'sales';
+    case OFFERS = 'offers';
+    case HISTORY = 'history';
+    case IMAGES = 'images';
     case CUSTOMERS = 'customers';
 
     public function blueprint(): array
     {
         return match ($this) {
-
             FamilyTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
@@ -43,10 +41,10 @@ enum FamilyTabsEnum: string
                 'title' => __('Offers'),
                 'icon'  => 'fal fa-tags',
             ],
-            // FamilyTabsEnum::MAILSHOTS => [
-            //     'title' => __('Mailshots'),
-            //     'icon'  => 'fal fa-bullhorn',
-            // ],
+            FamilyTabsEnum::CONTENT => [
+                'title' => __('Content'),
+                'icon'  => 'fal fa-quote-left',
+            ],
             FamilyTabsEnum::IMAGES => [
                 'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
