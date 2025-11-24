@@ -14,7 +14,6 @@ use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $code
@@ -26,6 +25,13 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $number_current_products
  * @property mixed $id
  * @property mixed $quantity
+ * @property mixed $description
+ * @property mixed $description_title
+ * @property mixed $description_extra
+ * @property mixed $image_id
+ * @property mixed $marketing_weight
+ * @property mixed $gross_weight
+ * @property mixed $marketing_dimensions
  */
 class TradeUnitsForMasterResource extends JsonResource
 {
@@ -60,6 +66,8 @@ class TradeUnitsForMasterResource extends JsonResource
             'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
             'packed_in'               => trimDecimalZeros($this->quantity),
             'units'                   => $this->quantity,
+            'pick_fractional_ds'  => riseDivisor(divideWithRemainder(findSmallestFactors(1)), $this->quantity),
+
 //            'quantity'                => trimDecimalZeros($this->quantity), -> packed_in
 //            'ecom_quantity'           => $this->quantity, // for FE -> units
 //            'ds_quantity'             => 1 // for FE // Vika delete this
