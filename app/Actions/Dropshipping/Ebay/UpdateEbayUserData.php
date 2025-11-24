@@ -32,7 +32,6 @@ class UpdateEbayUserData extends OrgAction
         $ebayUser->createFulfilmentPolicy([]);
         $ebayUser->createPaymentPolicy();
         $ebayUser->createReturnPolicy();
-
         $fulfilmentPolicies = $ebayUser->getFulfilmentPolicies();
         $paymentPolicies = $ebayUser->getPaymentPolicies();
         $returnPolicies = $ebayUser->getReturnPolicies();
@@ -43,6 +42,12 @@ class UpdateEbayUserData extends OrgAction
                 'city' => 'Zavar',
                 'state' => 'Trnava Region',
                 'country' => 'ES',
+            ],
+            'EBAY_DE' => [
+                'locationKey' => 'deWarehouse',
+                'city' => 'Zavar',
+                'state' => 'Trnava Region',
+                'country' => 'DE',
             ],
             default => [
                 'locationKey' => 'mainWarehouse',
