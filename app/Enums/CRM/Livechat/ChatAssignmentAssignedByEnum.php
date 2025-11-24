@@ -4,7 +4,7 @@ namespace App\Enums\CRM\Livechat;
 
 use App\Enums\EnumHelperTrait;
 
-enum ChatAssigmentAssignedByEnum:string
+enum ChatAssignmentAssignedByEnum:string
 {
     use EnumHelperTrait;
 
