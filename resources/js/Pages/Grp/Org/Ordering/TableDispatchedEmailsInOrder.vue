@@ -21,7 +21,8 @@ import {
     faSpellCheck,
     faSquare,
     faTimesCircle,
-    faVirus
+    faVirus,
+    faEyeEvil
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "@/Components/Icon.vue";
@@ -29,6 +30,7 @@ import { inject, ref} from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Modal from "@/Components/Utils/Modal.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(
     faSpellCheck,
@@ -44,7 +46,8 @@ library.add(
     faDumpster,
     faHandPaper,
     faCheck,
-    faTimesCircle
+    faTimesCircle,
+    faEyeEvil
 );
 defineProps<{
     data: object,
@@ -82,13 +85,12 @@ const locale = inject("locale", aikuLocaleStructure);
             <Icon v-if="dispatchedEmail.state_icon" :data="dispatchedEmail.state_icon" />
         </template>
         <template #cell(subject)="{ item: dispatchedEmail }">
-            <span
-                class="cursor-pointer hover:underline"
-                @click="() => {
-                    dispatchedEmailRoute(dispatchedEmail);
-                }">
-                {{ dispatchedEmail["subject"] }}
-            </span>
+            <div class="flex items-center gap-2">
+                <span>{{ dispatchedEmail["subject"] }}</span>
+                <span class="cursor-pointer" @click="() => { dispatchedEmailRoute(dispatchedEmail); }">
+                    <FontAwesomeIcon :icon="faEyeEvil" />
+                </span>
+            </div>
         </template>
         <template #cell(sent_at)="{ item: dispatchedEmail }">
             {{ useFormatTime(dispatchedEmail.sent_at, { localeCode: locale.language.code, formatTime: "aiku" }) }}
@@ -97,7 +99,7 @@ const locale = inject("locale", aikuLocaleStructure);
     </Table>
 
       <!-- Email Preview Modal -->
-    <Modal :show="showEmailPreview" @close="showEmailPreview = false">
+    <Modal :show="showEmailPreview" @close="showEmailPreview = false" width="w-full max-w-lg">
       <div class="p-4">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Email Preview</h3>
         <div v-if="selectedEmail" class="space-y-4">
