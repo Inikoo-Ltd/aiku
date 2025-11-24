@@ -533,7 +533,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Unit')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Unit label')}}</label>
                             <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
                                 class="w-full" />
                             <small v-if="form.errors.unit" class="text-red-500 text-xs flex items-center gap-1 mt-1">

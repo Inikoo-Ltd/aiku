@@ -418,7 +418,7 @@ defineExpose({
 
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
-                                                        {{ locale?.currencyFormat(item.currency_code || 'usd',  item.price || 0) }}
+                                                        {{ locale?.currencyFormat(item.currency_code || '',  item.price || 0) }}
                                                     </div>
 
                                                     
