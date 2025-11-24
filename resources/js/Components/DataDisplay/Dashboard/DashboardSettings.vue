@@ -121,10 +121,7 @@ onMounted(() => {
 			<!-- Section: Period options list -->
 			<nav class="isolate rounded border p-1 flex flex-wrap items-center w-full" aria-label="Tabs">
 				<div v-if="layout.app.environment === 'local'" class="mr-1">
-					<DashboardCustomDateRange
-						:interval="intervals"
-						:updateInterval
-					/>
+					<DashboardCustomDateRange :intervals="intervals" />
 				</div>
 
 				<div
@@ -213,7 +210,7 @@ onMounted(() => {
 							<RadioGroupLabel class="sr-only">Choose the radio</RadioGroupLabel>
 							<div class="flex gap-y-1 flex-wrap border border-gray-300 rounded-md overflow-hidden">
 								<RadioGroupOption
-									as="template" v-for="(option, index) in settings.currency_type.options"
+									as="template" v-for="(option) in settings.currency_type.options"
 									:key="option.value"
 									:value="option.value"
 									v-slot="{ active, checked }"
