@@ -42,7 +42,6 @@ class TradeUnitsForMasterResource extends JsonResource
             $media = Media::find($this->image_id);
         }
 
-
         $tradeUnit = TradeUnit::find($this->id);// Todo remove this get tags the proper way
 
 

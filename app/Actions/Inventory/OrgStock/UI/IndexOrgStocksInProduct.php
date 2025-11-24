@@ -14,6 +14,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
 use App\Services\QueryBuilder;
+use Illuminate\Support\Facades\DB;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -50,6 +51,7 @@ class IndexOrgStocksInProduct extends OrgAction
                 'org_stocks.discontinued_in_organisation_at',
                 'org_stock_families.slug as family_slug',
                 'org_stock_families.code as family_code',
+                'product_has_org_stocks.trade_units_per_org_stock as packed_in'
             ])
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
             ->allowedSorts(['code', 'name', 'quantity'])
@@ -73,10 +75,10 @@ class IndexOrgStocksInProduct extends OrgAction
                 ->withModelOperations($modelOperations);
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'code', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 }

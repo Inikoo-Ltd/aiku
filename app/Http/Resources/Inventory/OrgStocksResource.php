@@ -51,6 +51,7 @@ class OrgStocksResource extends JsonResource
             'organisation_name'               => $this->organisation_name,
             'organisation_slug'               => $this->organisation_slug,
             'warehouse_slug'                  => $this->warehouse_slug,
+            'pick_fractional'                 => ($this->quantity && $this->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity)), $this->packed_in) : [],
         ];
     }
 }

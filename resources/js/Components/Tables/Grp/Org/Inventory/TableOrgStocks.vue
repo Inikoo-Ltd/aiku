@@ -15,6 +15,7 @@ import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle } from
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { OrgStock } from "@/types/org-stock"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle)
 
@@ -91,6 +92,13 @@ function stockFamilyRoute(stock: Stock) {
         ]
     )
 }
+
+const displayFraction = (stock: Stock) => {
+    let reminder = 0;
+    // let text = `${number}`
+    return stock.product_units % stock.packed_in;
+}
+
 </script>
 
 <template>
@@ -127,7 +135,7 @@ function stockFamilyRoute(stock: Stock) {
 
         <template #cell(quantity)="{ item: stock }">
             <div class="text-right">
-                {{ stock.quantity ?? "" }}
+                <FractionDisplay v-if="stock.pick_fractional.length > 0" :fractionData="stock.pick_fractional"/>
             </div>
         </template>
 
