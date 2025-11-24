@@ -150,7 +150,12 @@ const getTableData = (data) => {
             }
         }
 
-        console.log(finalDataTable)
+        if (props.is_dropship) {
+            for (const item of form.trade_units) {
+                item.quantity = item.ds_quantity;
+            }
+        }
+
         try {
             const response = await axios.post(
                 route("grp.models.master_product_category.product_creation_data", {
@@ -254,7 +259,7 @@ const submitForm = async (redirect = true) => {
     if(props.is_dropship){
         for(const item of payload.trade_units){
             // item.quantity = item.ds_quantity
-            item.packed_in = 1
+            item.packed_in = item.ds_quantity
         }
     }
 
@@ -396,7 +401,7 @@ const successEditTradeUnit = (data) => {
                     :tabs="selectorTab" 
                     head_label="Select Trade Units" 
                     @update:model-value="ListSelectorChange"
-                    :key_quantity="'quantity'" 
+                    :key_quantity="is_dropship ? 'ds_quantity' : 'quantity'" 
                     :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }

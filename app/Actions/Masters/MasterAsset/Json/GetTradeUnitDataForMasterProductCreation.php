@@ -105,6 +105,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
                 ->where('model_has_trade_units.trade_unit_id', $tradeUnit['id'])
                 ->first();
 
+            // dd($tradeUnit['quantity'], $packedIn->quantity, riseDivisor(divideWithRemainder(findSmallestFactors(2)), $packedIn->quantity));
 
             $finalData['trade_units'][] = [
                 'id'     => $tradeUnit['id'],
