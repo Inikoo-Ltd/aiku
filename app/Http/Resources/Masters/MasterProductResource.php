@@ -38,6 +38,7 @@ class MasterProductResource extends JsonResource
             ],
             'description_extra'     => $this->description_extra,
             'units'                 => $this->units,
+            'unit'                  => $this->unit,
             'trade_units'           => TradeUnitsForMasterResource::collection($tradeUnits)->resolve(),
             'name_i8n'              => $this->getTranslations('name_i8n'),
             'description_i8n'       => $this->getTranslations('description_i8n'),

@@ -23,6 +23,7 @@ import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
 import MasterProductSummary from "@/Components/Goods/MasterProductSummary.vue"
+import { trans } from "laravel-vue-i18n"
 
 
 library.add(
@@ -131,13 +132,13 @@ const tradeUnitTags = computed(() => {
 
 <template>
 	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
-		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
+		<span class="text-xl font-semibold whitespace-pre-wrap">
 			<!-- Units box -->
 			<span
 				v-if="data.masterProduct?.units !== null && data.masterProduct?.units !== undefined && data.masterProduct?.units !== ''"
 				class="inline-flex items-center border border-gray-300 rounded px-2 py-0.5 mr-2 bg-white text-gray-900">
 				<span>{{ toInteger(data.masterProduct.units) }}</span>
-				<span class="ml-1">x</span>
+				<span class="ml-0.5 lowercase">x <span v-tooltip="trans('Unit label')" class="text-base"><span class="font-light opacity-50">[</span><span class="font-light ">{{data.masterProduct?.unit}}</span><span class="opacity-50 font-light">]</span></span></span>
 			</span>
 			<!-- Product name -->
 			<span class="align-middle">
