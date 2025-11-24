@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterProductCategory;
@@ -39,6 +40,7 @@ class GetAllTradeUnits extends GrpAction
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $parent->group_id);
+        $queryBuilder->where('status', TradeUnitStatusEnum::ACTIVE);
 
         return $queryBuilder
             ->defaultSort('trade_units.code')

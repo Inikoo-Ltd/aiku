@@ -239,11 +239,6 @@ class EditMasterProduct extends GrpAction
                         'label' => __('unit'),
                         'value' => $masterProduct->unit,
                     ],
-                    'units'       => [
-                        'type'  => 'input',
-                        'label' => __('units'),
-                        'value' => $masterProduct->units,
-                    ],
                     'barcode'       => [
                         'type'  => 'select',
                         'label' => __('barcode'),
