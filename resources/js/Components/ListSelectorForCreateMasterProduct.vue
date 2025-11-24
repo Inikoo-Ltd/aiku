@@ -19,6 +19,7 @@ import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faForklift, faTrashAlt } from '@far'
 import Toggle from './Pure/Toggle.vue'
+import FractionDisplay from './DataDisplay/FractionDisplay.vue'
 
 library.add(faCheckCircle, faTimes, faBoxUp)
 
@@ -286,11 +287,11 @@ defineExpose({
                                    <div class="text-sm text-gray-700 px-3 font-bold">{{ item.type }}</div>
                                 </template>
                                  <template #prefix>
-                                   <div  v-if="is_dropship" class="text-sm  px-3 w-24 text-teal-600">
-                                       <span >SKU &#8623;</span> <span class="font-bold">1</span>
-                                </div>
-                                 <div v-else class="text-sm text-gray-700 px-3 font-bold flex text-center w-24">
-                                    <span ><FontAwesomeIcon :icon="faForklift" class="mr-2" /> {{ ( parseInt(item.packed_in)/ parseInt(item?.ecom_packed_in)) }} &nbsp; / </span>
+                                <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap">
+                                    <span class=""> &#8623; SKU </span>
+                                    <span class="font-bold">
+                                        <FractionDisplay :fractionData="item.pick_fractional" />
+                                    </span>
                                 </div>
                                   
                                 </template>

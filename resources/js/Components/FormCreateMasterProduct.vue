@@ -167,10 +167,20 @@ const getTableData = (data) => {
                     tableData.value.data[index].product = {
                         ...tableData.value.data[index].product,
                         ...item,
+                        pick_fractional: item.pick_fractional,
                         rrp : item.rrp / (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1)
                     }
                 }
             }
+
+            // Section: Modify pick_fractional from response to form.trade_units
+            for (const trade_unit of response.data.trade_units) {
+                const target = form.trade_units.find((item) => item.id === trade_unit.id)
+                if (target) {
+                    target.pick_fractional = trade_unit.pick_fractional
+                }
+            }
+            
         } catch (error: any) {
             if (!(axios.isCancel(error) || error.name === "CanceledError")) {
                 console.error("Terjadi error:", error)
@@ -180,7 +190,7 @@ const getTableData = (data) => {
 }
 
 const ListSelectorChange = (value) => {
-    // console.log('selector:', value)
+    console.log('selector:', value)
     if (value.length >= 1) {
         form.name = value[0].name
         form.code = value[0].code
