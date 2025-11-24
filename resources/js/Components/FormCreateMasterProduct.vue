@@ -91,7 +91,9 @@ const form = useForm({
     name: "",
     unit: '',
    /*  units: null, */
-    trade_units: [],
+    trade_units: [
+
+    ],
     image: null,
     shop_products: null,
     marketing_weight: 0,
