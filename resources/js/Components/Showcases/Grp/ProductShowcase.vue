@@ -19,6 +19,7 @@ import AttachmentCard from "@/Components/AttachmentCard.vue"
 import ProductPriceGrp from "@/Components/Product/ProductPriceGrp.vue"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
+import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -107,15 +108,16 @@ const tradeUnitTags = computed(() => {
 
 		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
 			<!-- Units box -->
-			<span
-				v-if="data.product?.data?.units !== null && data.product?.data?.units !== undefined && data.product?.data?.units !== ''"
-				class="inline-flex items-center border border-gray-300 rounded px-2 py-0.5 mr-2 bg-white text-gray-900">
-				<span>{{ data.product.data.units }}</span>
-				<span class="ml-1">x</span>
-			</span>
+			<ProductUnitLabel
+				v-if="data.product?.data?.units"
+				:units="data.product?.data?.units"
+				:unit="data.product?.data?.unit"
+				class="mr-2"
+			/>
+			
 			<!-- Product name -->
 			<span class="align-middle">
-				{{data.product.data.name}}
+				{{ data.product.data.name }}
 			</span>
 		</span>
 
