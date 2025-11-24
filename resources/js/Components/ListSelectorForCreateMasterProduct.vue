@@ -283,13 +283,13 @@ defineExpose({
                                 @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
                                 noUndoButton noSaveButton parentClass="w-min" >
                                 <template #suffix>
-                                   <div class="text-sm text-gray-700 px-3 font-bold capitalize">{{ is_dropship ? 'SKU' : item.type }}</div>
+                                   <div class="text-sm text-gray-700 px-3 font-bold">{{ item.type }}</div>
                                 </template>
                                  <template #prefix>
-                                   <div  v-if="is_dropship" class="text-sm text-gray-700 px-3 font-bold capitalize w-24">
-                                    <span>{{ `${parseInt(item.ds_packed_in)}  ${item.type}` }}&nbsp; /</span>
+                                   <div  v-if="is_dropship" class="text-sm  px-3 w-24 text-teal-600">
+                                       <span >SKU &#8623;</span> <span class="font-bold">1</span>
                                 </div>
-                                 <div v-else class="text-sm text-gray-700 px-3 font-bold flex text-center capitalize w-24">
+                                 <div v-else class="text-sm text-gray-700 px-3 font-bold flex text-center w-24">
                                     <span ><FontAwesomeIcon :icon="faForklift" class="mr-2" /> {{ ( parseInt(item.packed_in)/ parseInt(item?.ecom_packed_in)) }} &nbsp; / </span>
                                 </div>
                                   
@@ -421,9 +421,9 @@ defineExpose({
                                                     </div>
 
                                                     
-                                                    <div v-tooltip="trans('Package in :qty', { qty: item.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
+                                                    <div v-tooltip="trans('Packed in :qty', { qty: item.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
                                                         <FontAwesomeIcon icon="fas fa-box-up" class="mr-1" fixed-width aria-hidden="true" />
-                                                        {{ item.packed_in }} {{ item.type }}
+                                                        {{ item.packed_in }} [{{ item.type }}]
                                                     </div>
                                                 </div>
                                             </slot>

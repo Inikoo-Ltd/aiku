@@ -16,6 +16,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetTradeUnitDataForMasterProductCreation extends GrpAction
@@ -97,9 +98,18 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         }
 
         foreach ($tradeUnits as $tradeUnit) {
+
+            $packedIn = DB::table('model_has_trade_units')
+                ->select('quantity')
+                ->where('model_has_trade_units.model_type', 'Stock')
+                ->where('model_has_trade_units.trade_unit_id', $tradeUnit['id'])
+                ->first();
+
+
             $finalData['trade_units'][] = [
                 'id'     => $tradeUnit['id'],
-                'images' => $tradeUnit['images']
+                'images' => $tradeUnit['images'],
+                'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit['quantity'])), $packedIn->quantity),
             ];
         }
 

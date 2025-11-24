@@ -43,7 +43,8 @@ class TradeUnitsForMasterResource extends JsonResource
         }
 
 
-        $tradeUnit = TradeUnit::find($this->id);
+        $tradeUnit = TradeUnit::find($this->id);// Todo remove this get tags the proper way
+
 
         return [
             'slug'                    => $this->slug,
@@ -65,12 +66,13 @@ class TradeUnitsForMasterResource extends JsonResource
             'tags'                    => TagsResource::collection($tradeUnit->tags)->resolve(),
             'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
             'packed_in'               => trimDecimalZeros($this->quantity),
-            'quantity'                   => trimDecimalZeros($this->quantity),
-            'pick_fractional_ds'  => riseDivisor(divideWithRemainder(findSmallestFactors(1)), $this->quantity),
+            'quantity'                => trimDecimalZeros($this->quantity),
+            'pick_fractional'         => riseDivisor(divideWithRemainder(findSmallestFactors(1)), 1),
+            'pick_fractional_ds'      => riseDivisor(divideWithRemainder(findSmallestFactors(1)), $this->quantity),
 
-//            'quantity'                => trimDecimalZeros($this->quantity), -> packed_in
-//            'ecom_quantity'           => $this->quantity, // for FE -> units
-//            'ds_quantity'             => 1 // for FE // Vika delete this
+            //            'quantity'                => trimDecimalZeros($this->quantity), -> packed_in
+            //            'ecom_quantity'           => $this->quantity, // for FE -> units
+            //            'ds_quantity'             => 1 // for FE // Vika delete this
         ];
     }
 }

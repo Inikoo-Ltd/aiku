@@ -412,9 +412,9 @@ const successEditTradeUnit = (data) => {
                                 </div>
 
                                 <!-- Quantity -->
-                                <div v-tooltip="trans('Package in :qty', { qty: data.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
+                                <div v-tooltip="trans('Packed in :qty', { qty: data.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
                                     <FontAwesomeIcon icon="fas fa-box-up" class="mr-1" fixed-width aria-hidden="true" />
-                                    {{ data.packed_in }} {{ data.type }}
+                                    {{ data.packed_in }} [{{ data.type }}]
                                 </div>
 
                                 <!-- Price -->
