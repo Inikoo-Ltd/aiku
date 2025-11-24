@@ -43,9 +43,10 @@ import { cloneDeep } from "lodash";
 import PureInputNumber from "./Pure/PureInputNumber.vue";
 import Image from "./Image.vue";
 import { faPencil } from "@fal";
+import { faBoxUp } from "@fas";
 
 library.add(
-    faShapes,
+    faShapes, faBoxUp,
     faSortAmountDownAlt,
     faSortAmountDown,
     faHome,
@@ -91,7 +92,9 @@ const form = useForm({
     name: "",
     unit: '',
    /*  units: null, */
-    trade_units: [],
+    trade_units: [
+
+    ],
     image: null,
     shop_products: null,
     marketing_weight: 0,
@@ -240,7 +243,8 @@ const submitForm = async (redirect = true) => {
 
     if(props.is_dropship){
         for(const item of payload.trade_units){
-            item.quantity = item.ds_quantity
+            // item.quantity = item.ds_quantity
+            item.packed_in = 1
         }
     }
 
@@ -382,7 +386,7 @@ const successEditTradeUnit = (data) => {
                     :tabs="selectorTab" 
                     head_label="Select Trade Units" 
                     @update:model-value="ListSelectorChange"
-                    :key_quantity="is_dropship ? 'ds_quantity' : 'quantity'" 
+                    :key_quantity="'quantity'" 
                     :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }
@@ -405,6 +409,12 @@ const successEditTradeUnit = (data) => {
                                         title="Edit" @click="() => openModalTradeUnit(data)">
                                         <FontAwesomeIcon :icon="faPencil" class="w-3.5 h-3.5 text-blue-500" />
                                     </button>
+                                </div>
+
+                                <!-- Quantity -->
+                                <div v-tooltip="trans('Package in :qty', { qty: data.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
+                                    <FontAwesomeIcon icon="fas fa-box-up" class="mr-1" fixed-width aria-hidden="true" />
+                                    {{ data.packed_in }} {{ data.type }}
                                 </div>
 
                                 <!-- Price -->
