@@ -496,7 +496,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                         </template>
                         <div class="w-full">
                             <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
-                                placeholder="Search products..." :clear="true" :isLoading="loadingInitial"
+                                :placeholder="trans('Search products') + '...'" :clear="true" :isLoading="loadingInitial"
                                 :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
                                 <template #prefix>
                                     <div class="pl-3 whitespace-nowrap text-gray-400">
@@ -558,9 +558,16 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                     <template v-else-if="products.length">
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border p-3 relative rounded bg-white">
-                            <ProductRender :product="product" :key="index" :bestSeller="fieldValue.bestseller" :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                                :productHasPortfolio="productHasPortfolio.list[product.id]" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+                            class="border p-3 relative rounded bg-white"
+                        >
+                            <ProductRender
+                                :product="product"
+                                :key="index"
+                                :bestSeller="fieldValue.bestseller"
+                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
+                                :productHasPortfolio="productHasPortfolio.list[product.id]"
+                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
+                            />
                         </div>
                     </template>
 
