@@ -53,10 +53,10 @@ const product = ref(props.fieldValue.product)
 const isLoadingFetchExistenceChannels = ref(false)
 const productExistenceInChannels = ref<number[]>([])
 const fetchProductExistInChannel = async () => {
-    isLoadingFetchExistenceChannels.value = true
-
+    
     if(layout.iris?.customer?.id){
         try {
+            isLoadingFetchExistenceChannels.value = true
             const response = await axios.get(
                 route(
                     "iris.json.customer.product.channel_ids.index",
