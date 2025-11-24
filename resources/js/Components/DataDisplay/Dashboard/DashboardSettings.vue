@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref } from "vue"
+import { inject, onMounted, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -109,6 +109,10 @@ const updateDataDisplayType = (value: string) => {
 	props.settings.data_display_type.value = value
 	debStoreDataDisplayType(value)
 }
+
+onMounted(() => {
+	updateInterval('all');
+})
 </script>
 
 <template>
