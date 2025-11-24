@@ -39,8 +39,8 @@ class UpdateEbayUserData extends OrgAction
         $defaultLocationData = match ($ebayUser->marketplace ?? Arr::get($ebayUser->customer?->shop?->settings, 'ebay.marketplace_id', 'EBAY_GB')) {
             'EBAY_ES' => [
                 'locationKey' => 'esWarehouse',
-                'city' => 'Zavar',
-                'state' => 'Trnava Region',
+                'city' => 'Guadalhorce',
+                'state' => 'Málaga',
                 'country' => 'ES',
             ],
             'EBAY_DE' => [

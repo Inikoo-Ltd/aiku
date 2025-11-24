@@ -57,6 +57,7 @@ class MasterProductsResource extends JsonResource
             'show_in_website'        => $this->show_in_website,
             'used_in'                => $this->used_in,
             'unit'                   => $this->unit,
+            'units'                  => $this->units,
             'price'                  => $this->price,
             'rrp'                    => $this->rrp,
             'status'                 => $this->status,

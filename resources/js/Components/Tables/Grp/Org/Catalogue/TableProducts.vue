@@ -24,6 +24,7 @@ import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
 import { faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
+import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 
 
 
@@ -365,6 +366,18 @@ onMounted(() => {
         </template>
         <template #cell(state)="{ item: product }">
             <Icon :data="product.state"></Icon>
+        </template>
+
+        <template #cell(name)="{ item: product }">
+            <div>
+                <ProductUnitLabel
+                    v-if="product?.units"
+                    :units="product?.units"
+                    :unit="product?.unit"
+                    class="mr-2"
+                />
+                {{ product.name }}
+            </div>
         </template>
 
         <template #cell(unit)="{ item: product }"> 
