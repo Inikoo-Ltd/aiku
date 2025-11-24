@@ -154,12 +154,12 @@ class StoreEbayProduct extends RetinaAction
             }
 
             $inventoryItem = [
-                'sku' => $product->code,
+                'sku' => $portfolio->sku,
                 'availability' => [
                     'shipToLocationAvailability' => [
                         'availabilityDistributions' => [
                                 [
-                                    'merchantLocationKey' => Arr::get($ebayUser->settings, 'defaults.main_location_key'),
+                                    'merchantLocationKey' => $ebayUser->location_key,
                                     'quantity' => $product->available_quantity
                                 ]
                             ],

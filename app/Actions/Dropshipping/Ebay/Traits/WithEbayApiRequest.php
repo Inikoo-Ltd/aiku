@@ -697,12 +697,19 @@ trait WithEbayApiRequest
         try {
             $token = $this->getEbayAccessToken();
             $url   = $this->getEbayBaseUrl().$endpoint;
+            $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+            $contentLanguage = match ($marketplaceId) {
+                'EBAY_DE' => 'de-DE',
+                'EBAY_ES' => 'es-ES',
+                default => 'en-GB'
+            };
 
             $response = Http::withHeaders([
                 'Authorization'    => 'Bearer '.$token,
                 'Content-Type'     => 'application/json',
                 'Accept'           => 'application/json',
-                'Content-Language' => 'en-GB'
+                'Content-Language' => $contentLanguage
             ])->withQueryParameters($queryParams)
                 ->$method(
                     $url,
@@ -882,12 +889,12 @@ trait WithEbayApiRequest
                 ]
             ],
             "listingPolicies"     => [
-                "fulfillmentPolicyId" => Arr::get($this->settings, 'defaults.main_fulfilment_policy_id'),
-                "paymentPolicyId"     => Arr::get($this->settings, 'defaults.main_payment_policy_id'),
-                "returnPolicyId"      => Arr::get($this->settings, 'defaults.main_return_policy_id'),
+                "fulfillmentPolicyId" => $this->fulfillment_policy_id,
+                "paymentPolicyId"     => $this->payment_policy_id,
+                "returnPolicyId"      => $this->return_policy_id,
             ],
             "categoryId"          => Arr::get($offerData, 'category_id'),
-            "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
+            "merchantLocationKey" => $this->location_key,
         ];
 
         try {
@@ -987,12 +994,12 @@ trait WithEbayApiRequest
                     ]
                 ],
                 "listingPolicies"     => [
-                    "fulfillmentPolicyId" => Arr::get($this->settings, 'defaults.main_fulfilment_policy_id'),
-                    "paymentPolicyId"     => Arr::get($this->settings, 'defaults.main_payment_policy_id'),
-                    "returnPolicyId"      => Arr::get($this->settings, 'defaults.main_return_policy_id'),
+                    "fulfillmentPolicyId" => $this->fulfillment_policy_id,
+                    "paymentPolicyId"     => $this->payment_policy_id,
+                    "returnPolicyId"      => $this->return_policy_id,
                 ],
                 "categoryId"          => Arr::get($offerData, 'category_id'),
-                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
+                "merchantLocationKey" => $this->location_key,
             ];
 
             $endpoint = "/sell/inventory/v1/offer/$offerId";
