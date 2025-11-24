@@ -415,7 +415,7 @@ class GetShopNavigation
                             "label"   => __("Dashboard"),
                             "icon"    => ["fal", "fa-tachometer-alt"],
                             "route"   => [
-                                "name"       => "grp.org.shops.show.crm.customers.index",
+                                "name"       => "grp.org.shops.show.crm.dashboard",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
