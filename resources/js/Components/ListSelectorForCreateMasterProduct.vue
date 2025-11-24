@@ -402,9 +402,17 @@ defineExpose({
                                                 aria-hidden="true" />
 
                                             <slot name="product" :item="item">
-                                                <Image v-if="item.image" :src="item.image?.thumbnail"
-                                                    class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0"
-                                                    imageCover :alt="item.name" />
+                                                <div class="w-16 h-16 border border-gray-500/20 rounded aspect-square overflow-y-clip text-xxs flex items-center justify-center">
+                                                    <Image
+                                                        v-if="item.image"
+                                                        :src="item.image?.thumbnail"
+                                                        imageCover
+                                                        :alt="item.name"
+                                                    />
+                                                    <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="opacity-70 text-xl" fixed-width aria-hidden="true" />
+
+                                                </div>
+                                                
                                                 <div class="flex flex-col justify-between w-full">
                                                     <div v-if="!item.no_code" class="font-semibold">
                                                         {{ item.code || 'no code' }}
@@ -418,7 +426,7 @@ defineExpose({
 
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
-                                                        {{ locale?.currencyFormat(item.currency_code || '',  item.price || 0) }}
+                                                        {{ locale?.currencyFormat(item.currency_code || 'usd',  item.price || 0) }}
                                                     </div>
 
                                                     
