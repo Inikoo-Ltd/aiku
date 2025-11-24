@@ -188,6 +188,7 @@ trait WithEbayApiRequest
     public function extractProductAttributes($product, $categoryAspects)
     {
         $attributes = [];
+        $brand = $product->getBrand();
 
         // Get required aspects from a category
         $requiredAspects = collect($categoryAspects['aspects'] ?? [])
@@ -205,10 +206,13 @@ trait WithEbayApiRequest
                         ['Not Specified'];
                     break;
                 case 'Brand':
-                    $attributes['Brand'] = [$product->shop?->name ?? 'Unbranded'];
+                    $attributes['Brand'] = [$brand?->name ?? $product->shop?->name ?? 'Unbranded'];
                     break;
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
+                    break;
+                case 'EAN':
+                    $attributes['EAN'] = [$product->barcode];
                     break;
                     // Add more mappings as needed
                 default:
@@ -250,6 +254,20 @@ trait WithEbayApiRequest
 
             return ['aspects' => []]; // Return empty aspects on failure
         }
+    }
+
+    public function getRequiredItemAspectsForCategory($categoryId)
+    {
+        return collect(Arr::get($this->getItemAspectsForCategory($categoryId), 'aspects', []))->filter(function ($aspect, $key) {
+            return $aspect['aspectConstraint']['aspectRequired'] === true;
+        })->map(function ($aspect) {
+            return [
+                'name' => $aspect['localizedAspectName'],
+                'dataType' => $aspect['aspectConstraint']['aspectDataType'],
+                'mode' => $aspect['aspectConstraint']['aspectMode'],
+                'cardinality' => $aspect['aspectConstraint']['itemToAspectCardinality']
+            ];
+        })->values();
     }
 
     public function getServicesWithCarrierInfo(): array
