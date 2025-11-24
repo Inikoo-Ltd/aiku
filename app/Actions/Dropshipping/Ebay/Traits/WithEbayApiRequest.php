@@ -240,8 +240,16 @@ trait WithEbayApiRequest
 
     public function getItemAspectsForCategory($categoryId)
     {
+        $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        $categoryTree = match ($marketplace) {
+            'EBAY_ES' => 186,
+            'EBAY_DE' => 77,
+            default => 3
+        };
+
         try {
-            $endpoint = "/commerce/taxonomy/v1/category_tree/3/get_item_aspects_for_category";
+            $endpoint = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_item_aspects_for_category";
 
             return $this->makeEbayRequest('get', $endpoint, [
                 'category_id' => $categoryId
