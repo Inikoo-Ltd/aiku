@@ -69,11 +69,6 @@ class TradeUnitsForMasterResource extends JsonResource
             'quantity'                => trimDecimalZeros($this->quantity ?? 0),
             'ds_quantity'             => trimDecimalZeros(1),
             'pick_fractional'         => riseDivisor(divideWithRemainder(findSmallestFactors(1)), 1),
-            'pick_fractional_ds'      => riseDivisor(divideWithRemainder(findSmallestFactors(1)), $this->quantity ?? 0),
-
-            //            'quantity'                => trimDecimalZeros($this->quantity), -> packed_in
-            //            'ecom_quantity'           => $this->quantity, // for FE -> units
-            //            'ds_quantity'             => 1 // for FE // Vika delete this
         ];
     }
 }
