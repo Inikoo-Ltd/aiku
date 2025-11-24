@@ -36,7 +36,7 @@ class UpdateEbayUserData extends OrgAction
         $paymentPolicies = $ebayUser->getPaymentPolicies();
         $returnPolicies = $ebayUser->getReturnPolicies();
 
-        $defaultLocationData = match (Arr::get($ebayUser->customer?->shop?->settings, 'ebay.marketplace_id', 'EBAY_GB')) {
+        $defaultLocationData = match ($ebayUser->marketplace ?? Arr::get($ebayUser->customer?->shop?->settings, 'ebay.marketplace_id', 'EBAY_GB')) {
             'EBAY_ES' => [
                 'locationKey' => 'esWarehouse',
                 'city' => 'Zavar',
