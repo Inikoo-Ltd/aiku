@@ -9,7 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateEbayCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -18,7 +18,7 @@ use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateRetinaCustomerSalesChannel extends RetinaAction
+class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
 {
     use WithActionUpdate;
 
@@ -26,7 +26,7 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
-        return UpdateCustomerSalesChannel::run($customerSalesChannel, $modelData);
+        return UpdateEbayCustomerSalesChannel::run($customerSalesChannel, $modelData);
     }
 
     public function rules(): array
