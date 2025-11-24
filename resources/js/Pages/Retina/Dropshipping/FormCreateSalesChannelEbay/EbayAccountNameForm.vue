@@ -19,6 +19,7 @@ const ebayName = inject("ebayName");
 const closeCreateEbayModal = inject("closeCreateEbayModal");
 
 const isLoadingStep = ref(false)
+const errors = ref({})
 
 const form = useForm({
     name: ""
@@ -33,6 +34,7 @@ const submitForm = async () => {
         goNext();
         isLoadingStep.value = false
     } catch (err) {
+        errors.value = err.response?.data?.errors;
         isLoadingStep.value = false;
         notify({
             title: trans("Something went wrong"),
@@ -48,10 +50,12 @@ const submitForm = async () => {
         <div class="flex flex-col gap-2 w-full md:w-80">
             <label class="font-semibold">{{ trans("ebay Account Name") }}</label>
             <PureInput
+                :is-error="errors.name"
                 type="text"
                 v-model="form.name"
-                @update:model-value="form.errors.name = null"
+                @update:model-value="errors.name = null"
             />
+            <p v-if="errors.name" class="text-sm text-red-600 mt-1">{{ errors.name?.[0] }}</p>
         </div>
 
         <hr class="w-full border-t"/>
