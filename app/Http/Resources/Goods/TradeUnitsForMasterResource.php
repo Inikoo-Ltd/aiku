@@ -65,10 +65,10 @@ class TradeUnitsForMasterResource extends JsonResource
             'cost_price'              => $this->cost_price ?? 0,
             'tags'                    => TagsResource::collection($tradeUnit->tags)->resolve(),
             'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
-            'packed_in'               => trimDecimalZeros($this->quantity),
-            'quantity'                => trimDecimalZeros($this->quantity),
+            'packed_in'               => trimDecimalZeros($this->quantity ?? 0),
+            'quantity'                => trimDecimalZeros($this->quantity ?? 0),
             'pick_fractional'         => riseDivisor(divideWithRemainder(findSmallestFactors(1)), 1),
-            'pick_fractional_ds'      => riseDivisor(divideWithRemainder(findSmallestFactors(1)), $this->quantity),
+            'pick_fractional_ds'      => riseDivisor(divideWithRemainder(findSmallestFactors(1)), $this->quantity ?? 0),
 
             //            'quantity'                => trimDecimalZeros($this->quantity), -> packed_in
             //            'ecom_quantity'           => $this->quantity, // for FE -> units
