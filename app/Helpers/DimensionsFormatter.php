@@ -8,6 +8,7 @@
 
 namespace App\Helpers;
 
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class DimensionsFormatter
@@ -23,61 +24,61 @@ class DimensionsFormatter
                     convertUnits(
                         $data['l'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
                 ).'x'.number(
                     convertUnits(
                         $data['w'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
                 ).'x'.number(
                     convertUnits(
                         $data['h'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
-                ).' ('.$data['units'].')',
+                ).' ('.Arr::get($data, 'units', 'm').')',
                 'sheet' => number(
                     convertUnits(
                         $data['l'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
                 ).'x'.number(
                     convertUnits(
                         $data['w'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
-                ).' ('.$data['units'].')',
+                ).' ('.Arr::get($data, 'units', 'm').')',
                 'cilinder' => number(
                     convertUnits(
                         $data['h'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
                 ).'x'.number(
                     convertUnits(
                         $data['w'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
-                ).' ('.$data['units'].')',
+                ).' ('.Arr::get($data, 'units', 'm').')',
                 'sphere' => 'D:'.number(
                     convertUnits(
                         $data['h'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
-                ).' ('.$data['units'].')',
+                ).' ('.Arr::get($data, 'units', 'm').')',
                 'string' => 'L.'.number(
                     convertUnits(
                         $data['l'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
-                ).' ('.$data['units'].')',
+                ).' ('.Arr::get($data, 'units', 'm').')',
                 default => '',
             };
         }
