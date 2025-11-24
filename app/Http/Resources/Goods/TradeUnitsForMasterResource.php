@@ -58,9 +58,11 @@ class TradeUnitsForMasterResource extends JsonResource
             'cost_price'              => $this->cost_price ?? 0,
             'tags'                    => TagsResource::collection($tradeUnit->tags)->resolve(),
             'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
-            'quantity'                => trimDecimalZeros($this->quantity),
-            'ecom_quantity'           => $this->quantity, // for FE
-            'ds_quantity'             => 1 // for FE
+            'packed_in'               => trimDecimalZeros($this->quantity),
+            'units'                   => $this->quantity,
+//            'quantity'                => trimDecimalZeros($this->quantity), -> packed_in
+//            'ecom_quantity'           => $this->quantity, // for FE -> units
+//            'ds_quantity'             => 1 // for FE // Vika delete this
         ];
     }
 }
