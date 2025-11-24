@@ -34,8 +34,8 @@ const submitForm = async () => {
         goNext();
         isLoadingStep.value = false
     } catch (err) {
-        errors.value = err.response?.data?.errors;
         isLoadingStep.value = false;
+        errors.value = err.response?.data?.errors;
         notify({
             title: trans("Something went wrong"),
             text: err.response?.data?.message,
