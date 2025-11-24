@@ -25,6 +25,9 @@ use App\Models\Web\Website;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Comms\Outbox\ReorderRemainder\UI\IndexReorderEmailBulkRuns;
+use App\Http\Resources\Mail\EmailBulkRunsResource;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @property Outbox $outbox
@@ -87,6 +90,7 @@ class ShowOutbox extends OrgAction
 
     public function htmlResponse(Outbox $outbox, ActionRequest $request): Response
     {
+        Log::info($outbox);
         $actions = [
             [
                 'type'  => 'button',
@@ -149,6 +153,10 @@ class ShowOutbox extends OrgAction
                     fn () => GetOutboxShowcase::run($outbox)
                     : Inertia::lazy(fn () => GetOutboxShowcase::run($outbox)),
 
+                OutboxTabsEnum::EMAIL_RUNS->value => $this->tab == OutboxTabsEnum::EMAIL_RUNS->value ?
+                    fn () => EmailBulkRunsResource::collection(IndexReorderEmailBulkRuns::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))
+                    : Inertia::lazy(fn () => EmailBulkRunsResource::collection(IndexReorderEmailBulkRuns::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))),
+
                 OutboxTabsEnum::MAILSHOTS->value => $this->tab == OutboxTabsEnum::MAILSHOTS->value ?
                     fn () => MailshotResource::collection(IndexMailshots::run($outbox, OutboxTabsEnum::MAILSHOTS->value))
                     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($outbox, OutboxTabsEnum::MAILSHOTS->value))),
@@ -162,7 +170,8 @@ class ShowOutbox extends OrgAction
 
             ]
         )->table(IndexMailshots::make()->tableStructure(parent:$outbox, prefix: OutboxTabsEnum::MAILSHOTS->value))
-            ->table(IndexDispatchedEmails::make()->tableStructure(parent: $outbox, prefix: OutboxTabsEnum::DISPATCHED_EMAILS->value));
+            ->table(IndexDispatchedEmails::make()->tableStructure(parent: $outbox, prefix: OutboxTabsEnum::DISPATCHED_EMAILS->value))
+            ->table(IndexReorderEmailBulkRuns::make()->tableStructure(parent: $outbox, prefix: OutboxTabsEnum::EMAIL_RUNS->value));
 
     }
 
