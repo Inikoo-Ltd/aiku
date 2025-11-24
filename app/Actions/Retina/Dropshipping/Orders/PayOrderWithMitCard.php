@@ -108,10 +108,10 @@ class PayOrderWithMitCard
 
             if (in_array(Arr::get($response, 'status'), ["Authorized", "Paid", "Captured"]) && Arr::get($response, 'approved')) {
                 $status = PaymentStatusEnum::SUCCESS;
-                $state = PaymentStateEnum::COMPLETED;
+                $state  = PaymentStateEnum::COMPLETED;
             } else {
                 $status = PaymentStatusEnum::FAIL;
-                $state = PaymentStateEnum::DECLINED;
+                $state  = PaymentStateEnum::DECLINED;
             }
 
             $paymentData = [
@@ -120,6 +120,9 @@ class PayOrderWithMitCard
                 'status'                  => $status,
                 'state'                   => $state,
                 'type'                    => PaymentTypeEnum::PAYMENT,
+                'is_mit'                  => true,
+                'debug_mit_status'        => Arr::get($response, 'status'),
+                'debug_mit_is_approved'   => (bool)Arr::get($response, 'approved', false),
                 'payment_account_shop_id' => $paymentAccountShop->id,
                 'data'                    => [
                     'checkout_com' => $response

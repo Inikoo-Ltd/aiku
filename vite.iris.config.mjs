@@ -79,8 +79,10 @@ export default defineConfig(
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes('node_modules')) {
-              return 'vendor'; // This will create a single chunk named 'vendor.js' (with a hash)
+            if (id.includes("node_modules")) {
+              return id.toString().
+                split("node_modules/")[1].split(
+                "/")[0].toString();
             }
           }
         }

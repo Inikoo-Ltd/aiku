@@ -8,40 +8,43 @@
 
 namespace App\Actions\CRM\Customer\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\Hydrators\WithHydrateInvoices;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\CRM\Customer;
 use Carbon\Carbon;
-use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class CustomerHydrateClv implements ShouldBeUnique
 {
-    use AsAction;
     use WithEnumStats;
     use WithHydrateInvoices;
+    use WithHydrateCommand;
 
-    public string $commandSignature = 'hydrate:customer-clv {customer}';
+    public string $jobQueue = 'low-priority';
 
-    public function getJobUniqueId(Customer $customer): string
+    public string $commandSignature = 'hydrate:customers-clv {organisations?*} {--S|shop= shop slug} {--s|slug=}';
+
+    public function __construct()
     {
-        return $customer->id;
+        $this->model = Customer::class;
+        $this->modelAsHandleArg = false;
     }
 
-    public function asCommand(Command $command): void
+    public function getJobUniqueId(int $customerID): string
     {
-        $customer = Customer::where('slug', $command->argument('customer'))->first();
+        return $customerID;
+    }
 
+
+    public function handle(int $customerID): void
+    {
+
+        $customer = Customer::find($customerID);
         if (!$customer) {
             return;
         }
 
-        $this->handle($customer);
-    }
-
-    public function handle(Customer $customer): void
-    {
         // Aggregate invoice stats in a single, efficient SQL query
         $invoiceStats = $customer->invoices()
             ->where('in_process', false)
@@ -183,10 +186,10 @@ class CustomerHydrateClv implements ShouldBeUnique
             return ['todayPosition' => 0, 'nextOrderPosition' => null];
         }
 
-        // One year from today for predicted period
+        // One year from today for a predicted period
         $oneYearFromNow = $today->copy()->addYear();
 
-        // Calculate total timeline range (from first order to 1 year from now)
+        // Calculate the total timeline range (from first order to 1 year from now)
         $totalRange = $oneYearFromNow->diffInSeconds($firstOrderDate);
 
         // Calculate positions as percentages

@@ -49,7 +49,7 @@ class HydrateCustomers
         CustomerHydrateBasket::run($customer);
         CustomerHydrateExclusiveProducts::run($customer);
         CustomerHydrateCustomerSalesChannels::run($customer->id);
-        CustomerHydrateClv::run($customer);
+        CustomerHydrateClv::run($customer->id);
 
         if ($customer->fulfilmentCustomer) {
             HydrateFulfilmentCustomer::run($customer->fulfilmentCustomer);

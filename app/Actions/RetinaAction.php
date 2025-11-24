@@ -51,14 +51,12 @@ class RetinaAction
     protected array $validatedData;
 
 
-
-
     public function registerFulfilmentInitialisation(Fulfilment $fulfilment, ActionRequest $request): static
     {
-        $this->fulfilment = $fulfilment;
-        $this->shop = $this->fulfilment->shop;
+        $this->fulfilment   = $fulfilment;
+        $this->shop         = $this->fulfilment->shop;
         $this->organisation = $this->shop->organisation;
-        $this->website = $request->get('website');
+        $this->website      = $request->get('website');
         $this->fillFromRequest($request);
         $this->validatedData = $this->validateAttributes();
 
@@ -67,22 +65,29 @@ class RetinaAction
 
     public function initialisation(ActionRequest $request): static
     {
-        $this->webUser = $request->user();
-
-        if ($this->webUser) {
-            $this->customer = $this->webUser?->customer;
-            $this->fulfilmentCustomer = $this->customer?->fulfilmentCustomer;
-            $this->shop = $this->customer?->shop;
-            $this->fulfilment = $this->shop?->fulfilment;
-        } else {
-            $this->customer = null;
-            $this->fulfilmentCustomer = null;
-            $this->shop = null;
-            $this->fulfilment = null;
-        }
 
         $this->website = $request->get('website');
         $this->organisation = $this->website->organisation;
+        $this->shop    = $this->website->shop;
+        if ($this->shop->type === ShopTypeEnum::FULFILMENT) {
+            $this->fulfilment = $this->shop->fulfilment;
+        } else {
+            $this->fulfilment         = null;
+            $this->fulfilmentCustomer = null;
+        }
+
+        $this->webUser = $request->user();
+
+        if ($this->webUser) {
+            $this->customer = $this->webUser->customer;
+            if ($this->fulfilment) {
+                $this->fulfilmentCustomer = $this->customer?->fulfilmentCustomer;
+            }
+        } else {
+            $this->customer = null;
+        }
+
+
         $this->fillFromRequest($request);
 
         $this->validatedData = $this->validateAttributes();
@@ -92,12 +97,12 @@ class RetinaAction
 
     public function initialisationFulfilmentActions(FulfilmentCustomer $fulfilmentCustomer, array $modelData): static
     {
-        $this->fulfilment = $fulfilmentCustomer->fulfilment;
+        $this->fulfilment         = $fulfilmentCustomer->fulfilment;
         $this->fulfilmentCustomer = $fulfilmentCustomer;
-        $this->customer = $fulfilmentCustomer->customer;
-        $this->shop = $this->fulfilment->shop;
-        $this->organisation = $this->fulfilment->organisation;
-        $this->webUser = $this->customer->webUsers()->first();
+        $this->customer           = $fulfilmentCustomer->customer;
+        $this->shop               = $this->fulfilment->shop;
+        $this->organisation       = $this->fulfilment->organisation;
+        $this->webUser            = $this->customer->webUsers()->first();
         $this->setRawAttributes($modelData);
         $this->validatedData = $this->validateAttributes();
 
@@ -106,10 +111,10 @@ class RetinaAction
 
     public function initialisationActions(Customer $customer, array $modelData): static
     {
-        $this->customer = $customer;
-        $this->shop = $this->customer->shop;
+        $this->customer     = $customer;
+        $this->shop         = $this->customer->shop;
         $this->organisation = $this->customer->organisation;
-        $this->webUser = $this->customer->webUsers()->first();
+        $this->webUser      = $this->customer->webUsers()->first();
         $this->setRawAttributes($modelData);
         $this->validatedData = $this->validateAttributes();
 
@@ -118,11 +123,10 @@ class RetinaAction
 
     public function logoutInitialisation(ActionRequest $request): static
     {
-
         $this->website = $request->get('website');
 
-        $this->shop = $this->website->shop;
-        $this->fulfilment = $this->shop->fulfilment;
+        $this->shop         = $this->website->shop;
+        $this->fulfilment   = $this->shop->fulfilment;
         $this->organisation = $this->shop->organisation;
 
         $this->fillFromRequest($request);
@@ -133,18 +137,16 @@ class RetinaAction
     }
 
 
-
-
     public function initialisationFromPupil(ActionRequest $request): static
     {
-        $this->asPupil = true;
-        $this->shopifyUser = $request->user('pupil');
-        $this->customer = $this->shopifyUser->customer;
+        $this->asPupil            = true;
+        $this->shopifyUser        = $request->user('pupil');
+        $this->customer           = $this->shopifyUser->customer;
         $this->fulfilmentCustomer = $this->customer->fulfilmentCustomer;
-        $this->shop = $this->customer->shop;
-        $this->fulfilment = $this->shop->fulfilment;
-        $this->organisation = $this->shop->organisation;
-        $this->website = $this->shop->website;
+        $this->shop               = $this->customer->shop;
+        $this->fulfilment         = $this->shop->fulfilment;
+        $this->organisation       = $this->shop->organisation;
+        $this->website            = $this->shop->website;
         $this->fillFromRequest($request);
 
         $this->validatedData = $this->validateAttributes();
@@ -154,7 +156,6 @@ class RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-
         if ($this->asAction) {
             return true;
         }

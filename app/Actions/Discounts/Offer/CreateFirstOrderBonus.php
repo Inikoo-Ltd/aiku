@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\Offer;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\Rules\WithStoreOfferRules;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
@@ -21,15 +22,14 @@ use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Helpers\Language;
-use App\Rules\IUnique;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
-class StoreFirstOrderBonus extends OrgAction
+class CreateFirstOrderBonus extends OrgAction
 {
     use WithNoStrictRules;
     use WithStoreOffer;
+    use WithStoreOfferRules;
 
     /**
      * @throws \Throwable
@@ -62,31 +62,6 @@ class StoreFirstOrderBonus extends OrgAction
         return $offer;
     }
 
-    public function rules(): array
-    {
-        return [
-            'code'         => [
-                'required',
-                new IUnique(
-                    table: 'offers',
-                    extraConditions: [
-                        ['column' => 'shop_id', 'value' => $this->shop->id],
-                    ]
-                ),
-
-                'max:64',
-                'alpha_dash'
-            ],
-            'name'         => ['required', 'max:250', 'string'],
-            'data'         => ['sometimes', 'required'],
-            'settings'     => ['sometimes', 'required'],
-            'trigger_data' => ['sometimes', 'required'],
-            'start_at'     => ['sometimes', 'date'],
-            'end_at'       => ['sometimes', 'nullable', 'date'],
-            'type'         => ['required', 'string'],
-            'trigger_type' => ['sometimes', Rule::in(['Order'])],
-        ];
-    }
 
     public function getCommandSignature(): string
     {
@@ -118,7 +93,13 @@ class StoreFirstOrderBonus extends OrgAction
             ]
         ];
 
-        $this->handle($shop, $modelData);
+        $offer = $this->handle($shop, $modelData);
+
+        if ($offer) {
+            $command->info('Offer created: '.$offer->name.' ('.$offer->code.')');
+        } else {
+            $command->error('Offer could not be created');
+        }
 
         return 0;
     }
