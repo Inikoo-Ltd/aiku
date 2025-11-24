@@ -44,9 +44,9 @@ import { notify } from "@kyvg/vue3-notification";
         {name: trans("Buyer"), value: "BUYER"}
     ]);
     const returnWithinOptions = ref([
-        {name: trans("14 Day"), value: 14},
-        {name: trans("30 Day"), value: 30},
-        {name: trans("60 Day"), value: 60}
+        {name: trans("14 Days"), value: 14},
+        {name: trans("30 Days"), value: 30},
+        {name: trans("60 Days"), value: 60}
     ]);
 
     const isLoadingStep = ref(false)
@@ -71,7 +71,7 @@ import { notify } from "@kyvg/vue3-notification";
     const submitForm = async () => {
         isLoadingStep.value = true
         try {
-            const response = await axios.patch(route('retina.models.customer_sales_channel.update', {
+            const response = await axios.patch(route('retina.models.customer_sales_channel.ebay_update', {
                 customerSalesChannel: customerSalesChannelId.value
             }), form.data());
             window.location.href = route('retina.dropshipping.customer_sales_channels.redirect', customerSalesChannelId.value)
@@ -208,7 +208,7 @@ import { notify } from "@kyvg/vue3-notification";
                             </div>
                         </div>
 
-                        <div class="flex flex-col gap-2 p-4">
+                        <div class="flex flex-col gap-2 p-4" v-if="form.return_accepted">
                             <label class="font-semibold">{{ trans("Return paid by") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.return_payer" :options="returnPayers" optionLabel="name" optionValue="value" class="w-full" />
@@ -216,14 +216,14 @@ import { notify } from "@kyvg/vue3-notification";
                             </div>
                         </div>
 
-                        <div class="flex flex-col gap-2 p-4">
+                        <div class="flex flex-col gap-2 p-4" v-if="form.return_accepted">
                             <label class="font-semibold">{{ trans("Return within (day)") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.return_within" :options="returnWithinOptions" optionLabel="name" optionValue="value" class="w-full" />
                             </div>
                         </div>
 
-                        <div class="flex flex-col gap-2 w-full md:w-96 p-4">
+                        <div class="flex flex-col gap-2 w-full md:w-96 p-4" v-if="form.return_accepted">
                             <label class="font-semibold">{{ trans("Detailed return policy explanation") }}</label>
                             <Textarea v-model="form.return_description" rows="5" />
                         </div>

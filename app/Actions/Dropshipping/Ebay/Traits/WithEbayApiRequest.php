@@ -192,7 +192,7 @@ trait WithEbayApiRequest
 
         // Get required aspects from a category
         $requiredAspects = collect($categoryAspects['aspects'] ?? [])
-            ->filter(fn($aspect) => $aspect['aspectConstraint']['aspectRequired'] ?? false);
+            ->filter(fn ($aspect) => $aspect['aspectConstraint']['aspectRequired'] ?? false);
 
         foreach ($requiredAspects as $aspect) {
             $aspectName = $aspect['localizedAspectName'];
@@ -211,7 +211,7 @@ trait WithEbayApiRequest
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
-                // Add more mappings as needed
+                    // Add more mappings as needed
                 default:
                     // Use generic mapping or default value
                     $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
@@ -253,11 +253,6 @@ trait WithEbayApiRequest
         }
     }
 
-    /**
-     * Alternative format: Get services with carrier info embedded
-     *
-     * @throws \Exception
-     */
     public function getServicesWithCarrierInfo(): array
     {
         $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');
@@ -448,9 +443,6 @@ trait WithEbayApiRequest
         ];
     }
 
-    /**
-     * @throws \Exception
-     */
     public function getServicesForOptions(): array
     {
         return array_map(function ($service) {
@@ -466,7 +458,7 @@ trait WithEbayApiRequest
     protected function getEbayConfig(): array
     {
         $shop = $this->shop ?? $this->customer?->shop ?? $this->customerSalesChannel?->shop;
-        if($shop === null){
+        if ($shop === null) {
             throw new Exception('Shop not found');
         }
 
