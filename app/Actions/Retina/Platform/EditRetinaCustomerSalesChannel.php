@@ -29,7 +29,9 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
         $user = $customerSalesChannel->user;
 
         $properties = [];
+        $routeName = 'retina.models.customer_sales_channel.update';
         if ($user instanceof EbayUser) {
+            $routeName = 'retina.models.customer_sales_channel.ebay_update';
             $properties = [
                 [
                     "label"  => __("Pricing"),
@@ -121,7 +123,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                         ],
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'retina.models.customer_sales_channel.update',
+                            'name'       => $routeName,
                             'parameters' => [
                                 'customerSalesChannel' => $customerSalesChannel->id
                             ],
