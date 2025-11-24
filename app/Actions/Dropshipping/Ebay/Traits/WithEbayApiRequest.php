@@ -14,7 +14,6 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 trait WithEbayApiRequest
 {
@@ -431,13 +430,13 @@ trait WithEbayApiRequest
             'EBAY_DE' => [
                 'service_code' => 'DE_Sonstige',
                 'service_name' => 'Sonstige (Other)',
-                'carrier_code' => 'OTHER',
-                'carrier_name' => 'Sonstige (Other)',
+                'carrier_code' => 'Other',
+                'carrier_name' => 'Other',
             ],
             'EBAY_ES' => [
                 'service_code' => 'ES_Other',
                 'service_name' => 'Otro (Other)',
-                'carrier_code' => 'OTHER',
+                'carrier_code' => 'Other',
                 'carrier_name' => 'Otro (Other)',
             ]
         ];
@@ -462,6 +461,8 @@ trait WithEbayApiRequest
             throw new Exception('Shop not found');
         }
 
+        $marketplace = $this->marketplace ?? Arr::get($shop->settings, 'ebay.marketplace_id');
+
         return [
             'client_id'      => config('services.ebay.client_id'),
             'client_secret'  => config('services.ebay.client_secret'),
@@ -469,8 +470,11 @@ trait WithEbayApiRequest
             'sandbox'        => config('services.ebay.sandbox'),
             'access_token'   => Arr::get($this->settings, 'credentials.ebay_access_token'),
             'refresh_token'  => Arr::get($this->settings, 'credentials.ebay_refresh_token'),
-            'marketplace_id' => Arr::get($shop->settings, 'ebay.marketplace_id'),
-            'currency'       => $shop->currency?->code ?? 'GBP'
+            'marketplace_id' => $marketplace,
+            'currency'       => match ($marketplace) {
+                'EBAY_ES', 'EBAY_DE' => 'EUR',
+                default => $shop->currency?->code ?? 'GBP'
+            }
         ];
     }
 
@@ -1246,7 +1250,7 @@ trait WithEbayApiRequest
                 ]
             ],
             "marketplaceId"   => $marketplaceId,
-            "name"            => "Shipping-".Str::upper(Str::random(3)),
+            "name"            => "Shipping-".$this->customerSalesChannel?->slug,
             "handlingTime"    => [
                 "unit"  => "DAY",
                 "value" => Arr::get($attributes, 'max_dispatch_time', 1)
@@ -1369,7 +1373,7 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
 
         $data = [
-            "name"          => "minimal Payment Policy-".Str::upper(Str::random(3)),
+            "name"          => "Payment Policy-".$this->customerSalesChannel?->slug,
             "marketplaceId" => $marketplaceId,
             "categoryTypes" => [
                 [
@@ -1421,7 +1425,7 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
 
         $data = [
-            "name"                    => "minimal return policy".Str::upper(Str::random(3)),
+            "name"                    => "Return Policy-".$this->customerSalesChannel?->slug,
             "marketplaceId"           => $marketplaceId,
             "refundMethod"            => "MONEY_BACK",
             "returnsAccepted"         => true,
