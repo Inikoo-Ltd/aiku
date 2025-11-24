@@ -77,8 +77,6 @@ class IndexDispatchedEmailsInOrder extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
-
-            // $table->column(key: 'id', label: 'ID', canBeHidden: true, hidden: true); // Add this line
             $table->column(key: 'state', label: 'State', canBeHidden: false, type: 'icon');
             $table->column(key: 'subject', label: 'Subject', canBeHidden: false, sortable: true);
             $table->column(key: 'email_address', label: __('Email'), canBeHidden: false, sortable: true);

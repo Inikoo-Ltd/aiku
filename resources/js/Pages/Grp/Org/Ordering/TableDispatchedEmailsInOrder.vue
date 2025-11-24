@@ -106,7 +106,6 @@ const locale = inject("locale", aikuLocaleStructure);
             <p class="text-sm text-gray-500">Sent: {{ formatDate(selectedEmail?.sent_at) }}</p>
           </div>
           <div class="border-t border-gray-200 pt-4">
-            <h4 class="font-medium mb-2">Preview:</h4>
             <div class="bg-gray-50 p-4 rounded" v-html="selectedEmail?.body_preview"></div>
           </div>
         </div>
