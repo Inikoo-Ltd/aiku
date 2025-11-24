@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $number_current_stocks
  * @property mixed $number_current_products
  * @property mixed $id
+ * @property mixed $quantity
  */
 class TradeUnitsForMasterResource extends JsonResource
 {
@@ -34,11 +35,7 @@ class TradeUnitsForMasterResource extends JsonResource
         if ($this->image_id) {
             $media = Media::find($this->image_id);
         }
-        // $tags = DB::table('model_has_tags')->where('model_type', 'TradeUnit')->where('model_id', $this->id)
-        //         ->pluck('tag_id')->toArray();
 
-        // $brands = DB::table('model_has_brands')->where('model_type', 'TradeUnit')->where('model_id', $this->id)
-        //         ->pluck('brand_id')->toArray();
 
         $tradeUnit = TradeUnit::find($this->id);
 
@@ -54,7 +51,6 @@ class TradeUnitsForMasterResource extends JsonResource
             'marketing_weight'        => $this->marketing_weight,
             'gross_weight'            => $this->gross_weight,
             'dimensions'              => $this->marketing_dimensions,
-            'type'                    => $this->type,
             'number_current_stocks'   => $this->number_current_stocks,
             'number_current_products' => $this->number_current_products,
             'id'                      => $this->id,
@@ -62,9 +58,8 @@ class TradeUnitsForMasterResource extends JsonResource
             'cost_price'              => $this->cost_price ?? 0,
             'tags'                    => TagsResource::collection($tradeUnit->tags)->resolve(),
             'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
-            'quantity'                => $this->quantity,
-            'stock_available'         => $this->quantity ? true : false,
-            'ecom_quantity'             => $this->quantity, // for FE
+            'quantity'                => trimDecimalZeros($this->quantity),
+            'ecom_quantity'           => $this->quantity, // for FE
             'ds_quantity'             => 1 // for FE
         ];
     }
