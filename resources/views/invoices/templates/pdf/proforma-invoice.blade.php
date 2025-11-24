@@ -251,7 +251,7 @@
                         RRP: {{ $transaction->model->rrp }} <br>
                     @endif
                     @if($parts)
-                        {{ __('Parts: ') }}: {{ $transaction->historicAsset?->name }} <br>
+                        {{ __('Parts') }}: {{ $transaction->historicAsset?->name }} <br>
                     @endif
                     @if($commodity_codes)
                         {{ __('Tariff Code') }}: {{ $transaction->model->tariff_code }} <br>

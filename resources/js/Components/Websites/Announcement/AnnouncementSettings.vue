@@ -494,7 +494,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                 <FontAwesomeIcon v-tooltip="trans('Warning')" icon="fas fa-exclamation-triangle" class="text-amber-700/50 absolute top-3 right-3 text-lg" fixed-width aria-hidden="true" />
 
                 <div class="font-medium">
-                    {{ trans("You have current :count active announcements:", { count: listActiveAnnouncements.length }) }}
+                    {{ trans("You have current :_count active announcements:", { _count: listActiveAnnouncements.length }) }}
                 </div>
 
                 <ul class="list-disc list-inside">

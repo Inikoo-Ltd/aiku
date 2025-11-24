@@ -70,7 +70,7 @@ trait WithRunInvoiceHydrators
             ShippingZoneSchemaHydrateUsageInInvoices::dispatch($invoice->shipping_zone_schema_id)->delay($this->hydratorsDelay);
         }
 
-        CustomerHydrateClv::dispatch($invoice->customer)->delay($this->hydratorsDelay);
+        CustomerHydrateClv::dispatch($invoice->customer_id)->delay($this->hydratorsDelay);
 
         InvoiceRecordSearch::dispatch($invoice);
 

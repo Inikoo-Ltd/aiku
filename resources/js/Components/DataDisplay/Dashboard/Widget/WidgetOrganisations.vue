@@ -93,7 +93,7 @@ const isLoadingVisit = ref<number | null>(null)
                 class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
                 <!-- Total Count -->
                 <div class="flex gap-x-2 items-end">
-                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_grp_currency_minified[intervals.value].formatted_value }}
+                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_grp_currency_minified?.[intervals.value]?.formatted_value }}
                 </div>
 
                 <!-- Case Breakdown -->

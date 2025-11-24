@@ -231,6 +231,8 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
         listLoadingCharges.value = listLoadingCharges.value.filter(item => item !== key_db)
     }
 }
+
+const idxProductLoading = ref<number | null>(null)
 </script>
 
 <template>
@@ -336,36 +338,42 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
 
             <!-- Section: Products List -->
             <div class="mt-8 flow-root">
-                <ul role="list" class="!mx-0 -my-6">
+                <ul role="list" class="!mx-0 mt-6 mb-0">
                     <template v-if="!isLoadingProducts">
-                        <li v-for="product in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-2 relative">
+                        <li v-for="(product, idxProd) in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-1 relative">
                             <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
 
                             <!-- Product: Image -->
-                            <div class="relative">
-                                <LinkIris :href="product.canonical_url" class="block group font-medium hover:underline size-20 shrink-0 overflow-hidden rounded-md border border-gray-200">
+                            <div class="relative group">
+                                <LinkIris :href="product.canonical_url" class="block font-medium hover:underline size-16 shrink-0 overflow-hidden rounded-md border border-gray-200"
+                                    @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
                                     <Image
                                         :src="product?.web_image_thumbnail"
                                         class="w-full h-full flex justify-center items-center group-hover:scale-110 transition-all"
                                     />
                                 </LinkIris>
+                                
+                                <div v-if="idxProductLoading === idxProd"
+                                    class="absolute inset-0 grid justify-center rounded items-center bg-black/50 text-white text-2xl">
+                                    <LoadingIcon />
+                                </div>
                             </div>
                             
-                            <div class="ml-4 flex justify-between gap-x-4 w-full">
+                            <div class="ml-4 flex justify-between gap-x-4 w-full text-sm">
                                 <!-- Section: label Discount, product name, product price -->
                                 <div class="flex flex-1 flex-col">
-                                    <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" />
+                                    <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs" />
                         
                                     <div class="flex justify-between font-medium">
-                                        <div v-tooltip="product.code" class="text-sm">
-                                            <LinkIris :href="product.canonical_url" class="font-medium hover:underline truncate block w-52">
+                                        <div v-tooltip="product.code" class="">
+                                            <LinkIris :href="product.canonical_url" class="font-medium hover:underline truncate block w-52" @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
                                                 <span v-if="product.units > 1" class="mr-1">{{ product.units }}x</span>{{ product.name }}
                                             </LinkIris>
                                         </div>
                                     </div>
 
                                     <div class="flex flex-1 items-end justify-between">
-                                        <p class=" text-lg" :class="product.gross_amount != product?.net_amount ? 'text-green-500' : ''">
+                                        <p class="" :class="product.gross_amount != product?.net_amount ? 'text-green-500' : ''">
                                             <span v-if="product.gross_amount != product?.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(layout.iris?.currency?.code, product.gross_amount) }}</span>
                                             <span>{{ locale.currencyFormat(layout.iris?.currency?.code || '', product.net_amount) }}</span>
                                         </p>
@@ -423,18 +431,19 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
         </div>
         
         <!-- Section: Order Summary -->
-        <div class="border-t border-gray-200 px-4 py-6 sm:px-6">
+        <div class="border-t border-gray-200 px-4 pt-3 pb-6 sm:px-6">
             <div class="relative isolate">
                 <OrderSummary
                     :order_summary="dataSideBasket?.order_summary"
                     :currency_code="layout.iris?.currency?.code"
+                    size="sm"
                 />
 
                 <!-- Section: Charge Premium Dispatch -->
-                <div class="mt-3 border-t border-gray-200">
+                <div class="pt-3 border-t border-gray-200 space-y-2.5">
                     <template v-for="charge in dataSideBasket?.charges">
-                        <div v-if="charge?.id" class="flex gap-4 my-4 justify-between">
-                            <div class="flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                        <div v-if="charge?.id" class="flex gap-4 justify-between">
+                            <div class="text-xs flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                                 <InformationIcon :information="charge?.description" />
                                 {{ charge?.label ?? charge?.name }}
                                 <span class="text-gray-400">({{ locale.currencyFormat(layout.iris?.currency?.code, charge?.amount) }})</span>
@@ -445,12 +454,13 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
                                     :modelValue="dataSideBasket?.order_data?.[charge.key_db]"
                                     @update:modelValue="(e) => onChangeCharge(charge.key_db, e, charge.route_update)"
                                     xdisabled="isLoadingPriorityDispatch"
+                                    size="small"
                                 >
                                     <template #handle="{ checked }">
-                                        <LoadingIcon v-if="listLoadingCharges.includes(charge.key_db)" xclass="text-sm text-gray-500" />
+                                        <LoadingIcon v-if="listLoadingCharges.includes(charge.key_db)" xclass="text-xs text-gray-500" />
                                         <template v-else>
-                                            <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                                            <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-xs text-green-500" fixed-width aria-hidden="true" />
+                                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-xs text-red-500" fixed-width aria-hidden="true" />
                                         </template>
                                     </template>
                                 </ToggleSwitch>
@@ -460,21 +470,12 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
                 </div>
 
 
-                <div v-if="isLoadingFetch" class="absolute inset-0">
+                <div v-if="isLoadingFetch" class="absolute inset-0 h-52">
                     <div class="inset-0 h-full w-full skeleton z-10" />
                 </div>
             </div>
 
-            <!-- <div class="flex justify-between  font-medium">
-                <p>Subtotal</p>
-                <p>$262.00</p>
-            </div>
-
-            <p class="mt-0.5 text-sm text-gray-500">
-                Shipping and taxes calculated at checkout.
-            </p> -->
-
-            <div class="mt-12">
+            <div class="mt-4">
                 <LinkIris href="/app/checkout">
                     <Button
                         full
@@ -485,7 +486,7 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
                 </LinkIris>
             </div>
             
-            <div class="mt-6 flex justify-start text-center text-sm text-gray-500">
+            <div class="mt-2 flex justify-start text-center text-sm text-gray-500">
                 <p>
                     or{{ ' ' }}
                     <LinkIris

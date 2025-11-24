@@ -38,6 +38,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $payment_policy_id
  * @property string|null $return_policy_id
  * @property string|null $location_key
+ * @property string|null $marketplace
+ * @property EbayUserStepEnum $step
  * @property WebUserTypeEnum $state
  * @property WebUserAuthTypeEnum $auth_type
  * @property-read Customer $customer

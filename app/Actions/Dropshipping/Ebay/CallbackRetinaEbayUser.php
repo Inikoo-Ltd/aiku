@@ -68,7 +68,7 @@ class CallbackRetinaEbayUser extends RetinaAction
                         ]
                     ]);
 
-                // UpdateEbayUserData::dispatch($ebayUser);
+                UpdateEbayUserData::run($ebayUser);
                 // CheckEbayChannel::run($ebayUser);
 
                 $routeName = match ($ebayUser->customer->is_fulfilment) {

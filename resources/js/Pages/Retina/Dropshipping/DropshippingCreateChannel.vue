@@ -267,10 +267,11 @@ const isModalEbayDuplicate = ref(false)
 
 const isModalCreateEbay = ref(false);
 const ebayId = ref<int|null>(null);
+const customerSalesChannelId = ref<int|null>(null);
 const ebayName = ref<string|null>(null);
 
-watch(ebayId, (value) => {
-    console.log("ebayId", value)
+watch(customerSalesChannelId, (value) => {
+    console.log("customerSalesChannelId", value)
 }, { immediate: true });
 
 const closeCreateEbayModal = () => {
@@ -281,8 +282,10 @@ const closeCreateEbayModal = () => {
 
 const openCreateEbayModal = async () => {
     const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.creating_check'));
+    console.log(data)
     if(data) {
         ebayId.value = data.id;
+        customerSalesChannelId.value = data.customer_sales_channel_id;
         ebayName.value = data.name;
         switch (data.step) {
             case 'name':
@@ -321,6 +324,7 @@ const openCreateEbayModal = async () => {
 provide("closeCreateEbayModal", closeCreateEbayModal);
 provide("ebayId", ebayId);
 provide("ebayName", ebayName);
+provide("customerSalesChannelId", customerSalesChannelId);
 
 const steps = ref([
     { name: "Ebay Account Name", status: "current" },
@@ -659,7 +663,7 @@ provide("goNext", goNext);
                 <PureInput v-model="wooCommerceInput.name" :placeholder="trans('Your store name')"></PureInput>
                 <PureInputWithAddOn v-model="wooCommerceInput.url" :leftAddOn="{
                     icon: 'fal fa-globe'
-                }" :placeholder="trans('e.g https://storeurlexample.com')"
+                }" :placeholder="'e.g https://storeurlexample.com'"
                                     @keydown.enter="() => onSubmitWoocommerce()"/>
             </div>
 
@@ -717,7 +721,7 @@ provide("goNext", goNext);
                 <PurePassword v-model="magentoInput.password" :placeholder="trans('Password')"></PurePassword>
                 <PureInputWithAddOn v-model="magentoInput.url" :leftAddOn="{
                     icon: 'fal fa-globe'
-                }" :placeholder="trans('e.g https://storeurlexample.com')"
+                }" :placeholder="'e.g https://storeurlexample.com'"
                                     @keydown.enter="() => onSubmitMagento()"/>
             </div>
 

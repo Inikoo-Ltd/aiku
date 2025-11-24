@@ -29,7 +29,7 @@ class UpdateShippingPolicyEbayUser extends OrgAction
         data_set($modelData, 'settings.shipping.price', Arr::get($customerSalesChannel->settings, 'shipping.price'));
         data_set($modelData, 'settings.shipping.max_dispatch_time', Arr::get($customerSalesChannel->settings, 'shipping.max_dispatch_time'));
 
-        $fulfillmentPolicyId = $ebayUser->fulfillment_policy_id;
+        $fulfillmentPolicyId = Arr::get($modelData, 'fulfillment_policy_id', $ebayUser->fulfillment_policy_id);
         $fulfillmentPolicy = $ebayUser->updateFulfilmentPolicy($fulfillmentPolicyId, $modelData);
 
         if (! Arr::has($fulfillmentPolicy, 'errors')) {

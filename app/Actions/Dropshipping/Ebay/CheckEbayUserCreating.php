@@ -26,15 +26,16 @@ class CheckEbayUserCreating extends RetinaAction
     use WithActionUpdate;
     use WithEbayApiRequest;
 
-    public function handle(Customer $customer): EbayUser
+    public function handle(Customer $customer): EbayUser|null
     {
         return EbayUser::where('customer_id', $customer->id)
             ->whereNot('step', EbayUserStepEnum::COMPLETED)
+            ->whereNotNull('customer_sales_channel_id')
             ->orderBy('updated_at', 'desc')
             ->first();
     }
 
-    public function asController(ActionRequest $request): EbayUser
+    public function asController(ActionRequest $request): EbayUser|null
     {
         $this->initialisation($request);
 

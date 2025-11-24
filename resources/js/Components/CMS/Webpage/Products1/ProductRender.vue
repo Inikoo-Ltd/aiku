@@ -51,12 +51,12 @@ const props = defineProps<{
     product: ProductResource
     productHasPortfolio: Array<Number> | undefined
     bestSeller: any
-    buttonStyle?:object | undefined
+    buttonStyle?: object | undefined
     currency?: {
         code: string
         name: string
     }
-    buttonStyleLogin?:object | undefined
+    buttonStyleLogin?: object | undefined
 }>()
 
 
@@ -251,20 +251,27 @@ const profitMargin = computed(() => {
                 <span class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
             </div>
 
-            <!-- SKU and RRP -->
-            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                <span>{{ product?.code }}</span>
-                <span v-if="product.rpp">
-                    RRP: {{ locale.currencyFormat((currency.code, product.rpp || 0)) }}/ {{ product.unit }}
-                </span>
+            <!-- code and stock -->
+            <div class="text-xs text-gray-600 mb-1 w-full grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1 items-center">
+                <!-- Product Code -->
+                <div class="flex items-center">
+                    {{ product?.code }}
+                </div>
 
-                <div class="flex justify-between items-center text-xs mb-2">
-                    <!-- Stock indicator -->
+                <!-- Stock Info -->
+                <div class="flex items-center md:justify-end justify-start">
                     <div v-if="layout?.iris?.is_logged_in"
-                        class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
-                        :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
-                        <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
-                        <span>{{ product.stock > 0 ? product.stock : 0 }} {{ trans("available") }}</span>
+                        class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
+                        :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+
+                        <FontAwesomeIcon :icon="faCircle" class="text-[6px] mt-[6px]" />
+
+                        <span class="text-xs">
+                            {{ product.stock > 10000
+                                ? trans("Unlimited quantity available")
+                                : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' + trans('available'))
+                            }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -274,12 +281,8 @@ const profitMargin = computed(() => {
         <div class="mt-auto">
             <Prices :product="product" :currency="currency" />
         </div>
-        <ButtonAddPortfolio 
-            :product="product" 
-            :productHasPortfolio="productHasPortfolio" 
-            :buttonStyle="buttonStyle"
-            :buttonStyleLogin
-        />
+        <ButtonAddPortfolio :product="product" :productHasPortfolio="productHasPortfolio" :buttonStyle="buttonStyle"
+            :buttonStyleLogin />
     </div>
 </template>
 

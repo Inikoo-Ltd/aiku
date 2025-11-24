@@ -5,20 +5,16 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, onMounted, computed, watch } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import { useLocaleStore } from "@/Stores/locale"
 import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
-import { notify } from "@kyvg/vue3-notification"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { trans } from "laravel-vue-i18n"
-import { router } from "@inertiajs/vue3"
 import { Image as ImageTS } from "@/types/Image"
-import { set, isArray } from "lodash-es"
+import { isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import axios from "axios"
 import ProductPrices from "./ProductPrices.vue"
-import ProductSales from "@/Components/Product/ProductSales.vue"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -58,32 +54,33 @@ const isLoadingFetchExistenceChannels = ref(false)
 const productExistenceInChannels = ref<number[]>([])
 const fetchProductExistInChannel = async () => {
     isLoadingFetchExistenceChannels.value = true
-    try {
-        const response = await axios.get(
-            route(
-                "iris.json.customer.product.channel_ids.index",
-                {
-                    customer: layout.iris?.customer?.id,
-                    product: product.value.id
-                }
+
+    if(layout.iris?.customer?.id){
+        try {
+            const response = await axios.get(
+                route(
+                    "iris.json.customer.product.channel_ids.index",
+                    {
+                        customer: layout.iris?.customer?.id,
+                        product: product.value.id
+                    }
+                )
             )
-        )
 
-        if (response.status !== 200) {
-            throw new Error("Failed to fetch product existence in channel")
+            if (response.status !== 200) {
+                throw new Error("Failed to fetch product existence in channel")
+            }
+
+            // console.log('Product exist in channel response:', response.data)
+            productExistenceInChannels.value = response.data || []
+        } catch (error: any) {
+            console.error('Error fetching product existence in channel:', error.message)
+        } finally {
+            isLoadingFetchExistenceChannels.value = false
         }
-
-        // console.log('Product exist in channel response:', response.data)
-        productExistenceInChannels.value = response.data || []
-    } catch (error: any) {
-        notify({
-            title: trans("Something went wrong"),
-            text: error.message,
-            type: "error"
-        })
-    } finally {
-        isLoadingFetchExistenceChannels.value = false
     }
+
+
 }
 
 const toggleExpanded = () => {
