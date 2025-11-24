@@ -49,21 +49,21 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
                     ]
                 ),
             ],
-            'is_vat_adjustment' => ['sometimes', 'boolean'],
+            'is_vat_adjustment' => ['sometimes', 'required', 'boolean'],
             'tax_category_id'   => ['sometimes', 'nullable', 'integer', Rule::exists('tax_categories', 'id')],
             'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'name' => ['sometimes', 'string', 'max:255'],
-            'shipping_service'              => ['sometimes', 'string'],
-            'shipping_price'              => ['sometimes', 'integer'],
-            'shipping_max_dispatch_time'              => ['sometimes', 'integer'],
+            'shipping_service'              => ['sometimes', 'required', 'string'],
+            'shipping_price'              => ['sometimes', 'required', 'integer'],
+            'shipping_max_dispatch_time'              => ['sometimes', 'required', 'integer'],
 
-            'return_policy_id' => ['sometimes', 'string'],
-            'payment_policy_id' => ['sometimes', 'string'],
-            'fulfillment_policy_id' => ['sometimes', 'string'],
+            'return_policy_id' => ['sometimes', 'required', 'string'],
+            'payment_policy_id' => ['sometimes', 'required', 'string'],
+            'fulfillment_policy_id' => ['sometimes', 'required', 'string'],
 
-            'return_accepted' => ['sometimes', 'boolean'],
-            'return_payer' => ['sometimes', 'string'],
-            'return_within' => ['sometimes', 'integer'],
+            'return_accepted' => ['sometimes', 'required', 'boolean'],
+            'return_payer' => ['sometimes', 'nullable', 'string'],
+            'return_within' => ['sometimes', 'nullable', 'integer'],
             'return_description' => ['nullable', 'string']
         ];
     }

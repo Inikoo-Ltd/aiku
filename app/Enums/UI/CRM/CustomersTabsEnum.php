@@ -18,19 +18,14 @@ enum CustomersTabsEnum: string
     use HasTabs;
 
     case CUSTOMERS = 'customers';
-    case DASHBOARD = 'dashboard';
 
     public function blueprint(): array
     {
         return match ($this) {
-            CustomersTabsEnum::DASHBOARD => [
-                'title' => __('Dashboard'),
-                'icon'  => 'fal fa-tachometer-alt',
-            ],
             CustomersTabsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
                 'icon'  => 'fal fa-transporter',
-            ],
+            ]
         };
     }
 }

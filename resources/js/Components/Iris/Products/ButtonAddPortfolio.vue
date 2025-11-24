@@ -224,8 +224,14 @@ watch(
                 <div class="w-full flex flex-nowrap relative">
 
                     <Button v-if="isInAllChannels"
-                        :label="CheckChannels ? trans('Exist on all channels') : trans('Exist on some channels')" type="tertiary" disabled
-                        class="border-none border-transparent" :class="!CheckChannels ? 'rounded-r-none' : ''" full  />
+                        :label="CheckChannels ? trans('Exist on all channels') : trans('Exist on some channels')"
+                        type="tertiary"
+                        disabled
+                        class="border-none border-transparent"
+                        :class="!CheckChannels ? 'rounded-r-none' : ''"
+                        full
+                        :iconRight="CheckChannels ? 'fal fa-check-double' : ''"
+                    />
                     <Button v-else @click="() => onAddToAllPortfolios(product)" :label="trans('Add to all channels')"
                         :loading="isLoadingAllPortfolios" :icon="faPlus" :class="!CheckChannels ? 'rounded-r-none' : ''"
                         class="border-none border-transparent" full   :injectStyle="buttonStyle"/>
