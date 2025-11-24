@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
-
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
 
@@ -11,27 +9,20 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
-import { Autoplay, Navigation, Pagination } from 'swiper/modules'
+import { Autoplay } from 'swiper/modules'
 import Cookies from 'js-cookie';
 
-// Font Awesome
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { trans } from "laravel-vue-i18n"
-// import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
 
 const props = defineProps<{
-    fieldValue: {
-        product: {
-            luigi_identity: string
-        }
-    }
+    fieldValue: {}
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
@@ -49,7 +40,6 @@ const slidesPerView = computed(() => {
     }[props.screenType] ?? 5
 })
 
-const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
 const listProducts = ref<ProductHit[] | null>()
@@ -118,7 +108,6 @@ onMounted(() => {
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
                 <div class="text-3xl font-semibold">
-                    <!-- <div v-html="fieldValue.title"></div> -->
                     <div>
                         <p style="text-align: center">{{ trans("Trending") }}</p>
                     </div>

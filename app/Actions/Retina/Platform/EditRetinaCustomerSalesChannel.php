@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Platform;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\EbayUser;
 use App\Models\Helpers\TaxCategory;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -24,8 +25,59 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
     {
         $request->route()->getName();
 
-        /** @var \App\Models\Dropshipping\EbayUser $ebay */
-        $ebay = $customerSalesChannel->user;
+        /** @var \App\Models\Dropshipping\EbayUser|\App\Models\Dropshipping\WooCommerceUser|\App\Models\Dropshipping\ShopifyUser $user */
+        $user = $customerSalesChannel->user;
+
+        $properties = [];
+        $routeName = 'retina.models.customer_sales_channel.update';
+        if ($user instanceof EbayUser) {
+            $routeName = 'retina.models.customer_sales_channel.ebay_update';
+            $properties = [
+                [
+                    "label"  => __("Pricing"),
+                    'icon'    => 'fa-light fa-user',
+                    'title'  => __('pricing'),
+                    'fields' => [
+                        'is_vat_adjustment' => [
+                            'type'  => 'toggle',
+                            'label' => __('VAT Pricing Adjustment'),
+                            'value' => (bool) Arr::get($customerSalesChannel->settings, 'tax_category.checked')
+                        ],
+                        'tax_category_id' => [
+                            'type'     => 'select',
+                            'label'    => __('Vat Category'),
+                            'required' => true,
+                            'hidden' => ! Arr::get($customerSalesChannel->settings, 'tax_category.checked'),
+                            'options' => Options::forModels(TaxCategory::class),
+                            'value'    => Arr::get($customerSalesChannel->settings, 'tax_category.id')
+                        ],
+                    ]
+                ],
+                [
+                    "label"  => __("Shipping"),
+                    'icon'    => 'fa-light fa-truck',
+                    'title'  => __('shipping'),
+                    'fields' => [
+                        'shipping_service' => [
+                            'type'  => 'select',
+                            'label' => __('shipping service'),
+                            'options' => Options::forArray($user->getServicesForOptions()),
+                            'value' => Arr::get($customerSalesChannel->settings, 'shipping.service_code'),
+                        ],
+                        'shipping_price' => [
+                            'type'  => 'input',
+                            'label' => __('shipping price'),
+                            'value' => Arr::get($customerSalesChannel->settings, 'shipping.price')
+                        ],
+                        'shipping_max_dispatch_time' => [
+                            'type'  => 'input',
+                            'label' => __('shipping max dispatch time'),
+                            'value' => Arr::get($customerSalesChannel->settings, 'shipping.max_dispatch_time')
+                        ],
+                    ]
+                ],
+            ];
+        }
 
         return Inertia::render(
             'EditModel',
@@ -67,53 +119,11 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                     ],
                                 ]
                             ],
-                            [
-                                "label"  => __("Pricing"),
-                                'icon'    => 'fa-light fa-user',
-                                'title'  => __('pricing'),
-                                'fields' => [
-                                    'is_vat_adjustment' => [
-                                        'type'  => 'toggle',
-                                        'label' => __('VAT Pricing Adjustment'),
-                                        'value' => (bool) Arr::get($customerSalesChannel->settings, 'tax_category.checked')
-                                    ],
-                                    'tax_category_id' => [
-                                        'type'     => 'select',
-                                        'label'    => __('Vat Category'),
-                                        'required' => true,
-                                        'hidden' => ! Arr::get($customerSalesChannel->settings, 'tax_category.checked'),
-                                        'options' => Options::forModels(TaxCategory::class),
-                                        'value'    => Arr::get($customerSalesChannel->settings, 'tax_category.id')
-                                    ],
-                                ]
-                            ],
-                            [
-                                "label"  => __("Shipping"),
-                                'icon'    => 'fa-light fa-truck',
-                                'title'  => __('shipping'),
-                                'fields' => [
-                                    'shipping_service' => [
-                                        'type'  => 'select',
-                                        'label' => __('shipping service'),
-                                        'options' => Options::forArray($ebay->getServicesForOptions()),
-                                        'value' => Arr::get($customerSalesChannel->settings, 'shipping.service_code'),
-                                    ],
-                                    'shipping_price' => [
-                                        'type'  => 'input',
-                                        'label' => __('shipping price'),
-                                        'value' => Arr::get($customerSalesChannel->settings, 'shipping.price')
-                                    ],
-                                    'shipping_max_dispatch_time' => [
-                                        'type'  => 'input',
-                                        'label' => __('shipping max dispatch time'),
-                                        'value' => Arr::get($customerSalesChannel->settings, 'shipping.max_dispatch_time')
-                                    ],
-                                ]
-                            ],
+                            ...$properties
                         ],
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'retina.models.customer_sales_channel.update',
+                            'name'       => $routeName,
                             'parameters' => [
                                 'customerSalesChannel' => $customerSalesChannel->id
                             ],

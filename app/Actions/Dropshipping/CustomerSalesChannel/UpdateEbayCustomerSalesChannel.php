@@ -8,19 +8,22 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewChannels;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomers;
+use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
+use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
+use App\Actions\Dropshipping\Ebay\UpdateReturnPolicyEbayUser;
+use App\Actions\Dropshipping\Ebay\UpdateShippingPolicyEbayUser;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\EbayUser;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateCustomerSalesChannel extends OrgAction
+class UpdateEbayCustomerSalesChannel extends OrgAction
 {
     use WithActionUpdate;
 
@@ -29,16 +32,81 @@ class UpdateCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
-        $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
-        $changes = Arr::except($customerSalesChannel->getChanges(), ['updated_at', 'last_fetched_at']);
+        /** @var EbayUser $platformUser */
+        $platformUser = $customerSalesChannel->user;
 
-        if (Arr::has($changes, 'status')) {
-            ShopHydratePlatformSalesIntervalsNewChannels::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay($this->hydratorsDelay);
-            ShopHydratePlatformSalesIntervalsNewCustomers::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay($this->hydratorsDelay);
+        $shippingService = Arr::pull($modelData, 'shipping_service');
+        $shippingPrice = (string) Arr::pull($modelData, 'shipping_price');
+        $shippingDispatchTime = (string) Arr::pull($modelData, 'shipping_max_dispatch_time');
 
+        if (Arr::has($modelData, 'is_vat_adjustment')) {
+            data_set($modelData, 'settings.tax_category.checked', Arr::get($modelData, 'is_vat_adjustment'));
         }
 
+        if (Arr::has($modelData, 'tax_category_id')) {
+            data_set($modelData, 'settings.tax_category.id', Arr::get($modelData, 'tax_category_id'));
+        }
+
+        if ($shippingService) {
+            $shippingServiceData = $platformUser->getServicesWithCarrierInfo()[$shippingService];
+            data_set($modelData, 'settings.shipping', $shippingServiceData);
+        }
+        if ($shippingPrice) {
+            data_set($modelData, 'settings.shipping.price', $shippingPrice);
+        }
+        if ($shippingDispatchTime) {
+            data_set($modelData, 'settings.shipping.max_dispatch_time', $shippingDispatchTime);
+        }
+
+        $returnAccepted = Arr::pull($modelData, 'return_accepted');
+        $returnPayer = Arr::pull($modelData, 'return_payer');
+        $returnWithin = Arr::pull($modelData, 'return_within');
+        $returnDescription = Arr::pull($modelData, 'return_description');
+
+        $paymentPolicyId = Arr::pull($modelData, 'payment_policy_id');
+        $returnPolicyId = Arr::pull($modelData, 'return_policy_id');
+        $fulfillmentPolicyId = Arr::pull($modelData, 'fulfillment_policy_id');
+
+        if ($returnAccepted !== null) {
+            data_set($modelData, 'settings.return.accepted', $returnAccepted);
+        }
+        if ($returnPayer) {
+            data_set($modelData, 'settings.return.payer', $returnPayer);
+        }
+        if ($returnWithin) {
+            data_set($modelData, 'settings.return.within', $returnWithin);
+        }
+        if ($returnDescription) {
+            data_set($modelData, 'settings.return.description', $returnDescription);
+        }
+
+        data_forget($modelData, 'tax_category_id');
+        data_forget($modelData, 'is_vat_adjustment');
+
+        $customerSalesChannel = UpdateCustomerSalesChannel::run($customerSalesChannel, $modelData);
+
+        if ($shippingService || $shippingPrice || $shippingDispatchTime) {
+            data_set($modelData, 'fulfillment_policy_id', $fulfillmentPolicyId);
+            UpdateShippingPolicyEbayUser::run($customerSalesChannel->user, $modelData);
+        }
+
+        if ($returnAccepted || $returnPayer || $returnWithin || $returnDescription) {
+            data_set($modelData, 'return_policy_id', $returnPolicyId);
+            UpdateReturnPolicyEbayUser::run($customerSalesChannel->user, $modelData);
+        }
+
+        if ($paymentPolicyId) {
+            UpdateEbayUser::run($customerSalesChannel->user, [
+                'payment_policy_id' => $paymentPolicyId
+            ]);
+        }
+
+        CheckEbayChannel::run($customerSalesChannel->user);
+
         return $customerSalesChannel;
+
+
+
     }
 
     public function rules(): array

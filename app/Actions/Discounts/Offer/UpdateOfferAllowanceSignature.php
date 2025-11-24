@@ -25,7 +25,12 @@ class UpdateOfferAllowanceSignature extends OrgAction
         $allowanceSignature = '';
 
         /** @var OfferAllowance $offerAllowance */
-        foreach ($offer->offerAllowances()->where('status', true)->get() as $offerAllowance) {
+        foreach (
+            $offer->offerAllowances()
+                ->where('status', true)
+                ->orderBy('id')->get()
+            as $offerAllowance
+        ) {
             if ($allowanceSignature != '') {
                 $allowanceSignature .= '|';
             }
@@ -33,6 +38,11 @@ class UpdateOfferAllowanceSignature extends OrgAction
             if ($offerAllowance->target_type) {
                 $allowanceSignature .= $offerAllowance->target_type->value.':';
             }
+
+            if ($offerAllowance->target_id) {
+                $allowanceSignature .= $offerAllowance->target_id.':';
+            }
+
             if ($offerAllowance->type) {
                 $allowanceSignature .= $offerAllowance->type->value.':';
             }
@@ -41,6 +51,7 @@ class UpdateOfferAllowanceSignature extends OrgAction
                 $allowanceSignature .= Arr::get($offerAllowance->data, 'percentage_off', 'error');
             }
         }
+
 
         $offer->update(['allowance_signature' => $allowanceSignature]);
 

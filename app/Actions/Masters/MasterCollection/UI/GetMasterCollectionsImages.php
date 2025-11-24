@@ -24,6 +24,7 @@ class GetMasterCollectionsImages
     {
         return [
             'id' => $masterCollection->id,
+            'editable' => false,
             'images_category_box' => $this->getSingleImageData($masterCollection),
             'images_update_route' => [
                 'method'     => 'patch',
