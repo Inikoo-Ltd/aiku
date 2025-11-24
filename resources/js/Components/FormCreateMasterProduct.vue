@@ -150,7 +150,12 @@ const getTableData = (data) => {
             }
         }
 
-        console.log(finalDataTable)
+        if (props.is_dropship) {
+            for (const item of form.trade_units) {
+                item.quantity = item.ds_quantity;
+            }
+        }
+
         try {
             const response = await axios.post(
                 route("grp.models.master_product_category.product_creation_data", {
@@ -167,10 +172,20 @@ const getTableData = (data) => {
                     tableData.value.data[index].product = {
                         ...tableData.value.data[index].product,
                         ...item,
+                        pick_fractional: item.pick_fractional,
                         rrp : item.rrp / (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1)
                     }
                 }
             }
+
+            // Section: Modify pick_fractional from response to form.trade_units
+            for (const trade_unit of response.data.trade_units) {
+                const target = form.trade_units.find((item) => item.id === trade_unit.id)
+                if (target) {
+                    target.pick_fractional = trade_unit.pick_fractional
+                }
+            }
+            
         } catch (error: any) {
             if (!(axios.isCancel(error) || error.name === "CanceledError")) {
                 console.error("Terjadi error:", error)
@@ -180,7 +195,7 @@ const getTableData = (data) => {
 }
 
 const ListSelectorChange = (value) => {
-    // console.log('selector:', value)
+    console.log('selector:', value)
     if (value.length >= 1) {
         form.name = value[0].name
         form.code = value[0].code
@@ -244,7 +259,7 @@ const submitForm = async (redirect = true) => {
     if(props.is_dropship){
         for(const item of payload.trade_units){
             // item.quantity = item.ds_quantity
-            item.packed_in = 1
+            item.packed_in = item.ds_quantity
         }
     }
 
@@ -386,7 +401,7 @@ const successEditTradeUnit = (data) => {
                     :tabs="selectorTab" 
                     head_label="Select Trade Units" 
                     @update:model-value="ListSelectorChange"
-                    :key_quantity="'quantity'" 
+                    :key_quantity="is_dropship ? 'ds_quantity' : 'quantity'" 
                     :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }

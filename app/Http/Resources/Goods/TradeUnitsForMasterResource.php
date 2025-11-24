@@ -67,6 +67,7 @@ class TradeUnitsForMasterResource extends JsonResource
             'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
             'packed_in'               => trimDecimalZeros($this->quantity ?? 0),
             'quantity'                => trimDecimalZeros($this->quantity ?? 0),
+            'ds_quantity'             => trimDecimalZeros(1),
             'pick_fractional'         => riseDivisor(divideWithRemainder(findSmallestFactors(1)), 1),
             'pick_fractional_ds'      => riseDivisor(divideWithRemainder(findSmallestFactors(1)), $this->quantity ?? 0),
 
