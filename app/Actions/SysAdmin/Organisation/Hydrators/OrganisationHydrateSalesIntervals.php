@@ -27,6 +27,17 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
 
     public string $jobQueue = 'urgent';
     public string $commandSignature = 'hydrate:organisation-sales-intervals {organisation}';
+    private ?int $organisationID;
+
+    public function __construct(Organisation $organisation)
+    {
+        $this->organisationID = $organisation->id;
+    }
+
+    public function tags(): array
+    {
+        return ['org_sales', 'org_sales:'.$this->organisationID];
+    }
 
     public function getJobUniqueId(Organisation $organisation, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {

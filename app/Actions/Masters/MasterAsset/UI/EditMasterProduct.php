@@ -128,14 +128,14 @@ class EditMasterProduct extends GrpAction
                 ->toArray();
 
         $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
-            return array_merge(
-                ['quantity' => $t->pivot->quantity],
+                return array_merge(
+                    ['quantity' => (int) $t->pivot->quantity],
                 ['fraction'   =>  $t->pivot->quantity /  $packedIn[$t->id]],
                 ['packed_in'   =>  $packedIn[$t->id]],
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity /  $packedIn[$t->id])), $packedIn[$t->id])],
-                $t->toArray()
-            );
-        });
+                    $t->toArray()
+                );
+            });
 
         return [
             [
