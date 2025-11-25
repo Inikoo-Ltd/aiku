@@ -253,11 +253,11 @@ const onSubmitToFamily = () => {
                 xoptionsList="(options) => dataFamilyList = options"
             >
                 <template #singlelabel="{ value }">
-                       <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.current_master_assets) }} {{ trans("products") }})</span></div>
+                       <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div>
                 </template>
                 
                 <template #option="{ option, isSelected, isPointed }">
-                    <div class="">{{ option.code }} - {{ option.name }} <Icon :data="option.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(option.current_master_assets) }} {{ trans("products") }})</span></div>
+                    <div class="">{{ option.code }} - {{ option.name }} <Icon :data="option.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(option.number_current_products) }} {{ trans("products") }})</span></div>
                 </template>
             </PureMultiselectInfiniteScroll>
         </div>
