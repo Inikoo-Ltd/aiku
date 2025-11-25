@@ -44,7 +44,6 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
-
         $webpageData = [];
         if (Arr::has($modelData, 'webpage_title')) {
             $webpageData['title'] = Arr::pull($modelData, 'webpage_title');
@@ -66,31 +65,41 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        $orgStocks = null;
+        // todo: remove this after total aurora migration
+        if (!$this->strict) {
+            $orgStocks = null;
 
-        if (Arr::has($modelData, 'org_stocks')) {
-            $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
+            if (Arr::has($modelData, 'org_stocks')) {
+                $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
 
 
-            $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
+                $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
 
-            $orgStocksRaw = array_map(function ($item) {
-                $filtered             = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
-                $filtered['quantity'] = (float)$filtered['quantity']; // or (int) if you want integers
+                $orgStocksRaw = array_map(function ($item) {
+                    $filtered             = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
+                    $filtered['quantity'] = (float)$filtered['quantity']; // or (int) if you want integers
 
-                return $filtered;
-            }, $orgStocksRaw);
+                    return $filtered;
+                }, $orgStocksRaw);
 
-            $orgStocks = $orgStocksRaw;
+                $orgStocks = $orgStocksRaw;
+            }
+
+            if (Arr::has($modelData, 'well_formatted_org_stocks')) {
+                $orgStocks = Arr::pull($modelData, 'well_formatted_org_stocks', []);
+            }
+
+            if ($orgStocks !== null) {
+                $this->syncOrgStocksToBeDeleted($product, $orgStocks);
+            }
+        } elseif (Arr::has($modelData, 'trade_units')) {
+            $product = SyncProductTradeUnits::run($product, Arr::pull($modelData, 'trade_units'));
         }
 
-        if (Arr::has($modelData, 'well_formatted_org_stocks')) {
-            $orgStocks = Arr::pull($modelData, 'well_formatted_org_stocks', []);
-        }
 
-        if ($orgStocks !== null) {
-            $this->syncOrgStocks($product, $orgStocks);
-        }
+
+
+
 
         $assetData = [];
         if (Arr::has($modelData, 'follow_master')) {
@@ -321,15 +330,14 @@ class UpdateProduct extends OrgAction
                 'integer',
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
-            'org_stocks'                => ['sometimes', 'present', 'array'],
-            'well_formatted_org_stocks' => ['sometimes', 'present', 'array'],
-            'name_i8n'                  => ['sometimes', 'array'],
-            'description_title_i8n'     => ['sometimes', 'array'],
-            'description_i8n'           => ['sometimes', 'array'],
-            'description_extra_i8n'     => ['sometimes', 'array'],
-            'gross_weight'              => ['sometimes', 'numeric'],
-            'marketing_weight'          => ['sometimes', 'numeric'],
-            'marketing_dimensions'      => ['sometimes'],
+
+            'name_i8n'              => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n'       => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
+            'gross_weight'          => ['sometimes', 'numeric'],
+            'marketing_weight'      => ['sometimes', 'numeric'],
+            'marketing_dimensions'  => ['sometimes'],
 
             'cpnp_number'                  => ['sometimes', 'nullable', 'string'],
             'ufi_number'                   => ['sometimes', 'nullable', 'string'],
@@ -365,9 +373,9 @@ class UpdateProduct extends OrgAction
             'pictogram_oxidising'          => ['sometimes', 'boolean'],
             'pictogram_danger'             => ['sometimes', 'boolean'],
 
-            'webpage_title'       => ['sometimes', 'string'],
-            'webpage_description' => ['sometimes', 'string'],
-            'webpage_breadcrumb_label'    => ['sometimes', 'string', 'max:40'],
+            'webpage_title'            => ['sometimes', 'string'],
+            'webpage_description'      => ['sometimes', 'string'],
+            'webpage_breadcrumb_label' => ['sometimes', 'string', 'max:40'],
 
         ];
 
@@ -376,8 +384,12 @@ class UpdateProduct extends OrgAction
             $rules['org_stocks']                = ['sometimes', 'nullable', 'array'];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
+            $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
+
 
             $rules = $this->noStrictUpdateRules($rules);
+        } else {
+            $rules['trade_units'] = ['sometimes', 'present', 'array'];
         }
 
         return $rules;

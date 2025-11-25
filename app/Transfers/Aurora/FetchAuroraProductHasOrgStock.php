@@ -72,27 +72,11 @@ class FetchAuroraProductHasOrgStock extends FetchAurora
                 list($smallestDividend, $correspondingDivisor) = findSmallestFactors($ratio);
 
 
-                $correctedRatio = $smallestDividend / $correspondingDivisor;
-
-                //                $diff = abs($correctedRatio - $ratio);
-                //
-                //                if ($diff != 0 and $diff>0.01) {
-                //         print "$ratio $smallestDividend  $correspondingDivisor  $correctedRatio   $diff  $orgStock->slug $orgStock->source_id   \n";
-                //                }
 
 
                 $ratio = $smallestDividend / $correspondingDivisor;
 
-                //                dd(
-                //                    [
-                //                        'quantity'        => $ratio,
-                //                        'notes'           => $modelData->{'Product Part Note'} ?? null,
-                //                        'source_id'       => $this->organisation->id.':'.$modelData->{'Product Part Key'},
-                //                        'dividend'        => $smallestDividend,
-                //                        'divisor'         => $correspondingDivisor,
-                //                        'last_fetched_at' => now(),
-                //                    ]
-                //                );
+
 
 
                 $productStocks[$orgStock->id] = [
