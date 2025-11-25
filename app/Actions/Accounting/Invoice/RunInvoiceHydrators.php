@@ -43,7 +43,7 @@ class RunInvoiceHydrators
 
     public function handle(Invoice $invoice, int $hydratorsDelay = 0): void
     {
-        Sentry::captureMessage('Running RunInvoiceHydrators... for Invoices id: '.$invoice->slug.' Org: '.$invoice->organisation_id);
+        Sentry::captureMessage('Running RunInvoiceHydrators... for Inv: '.$invoice->slug.' Shop: '.$invoice->shop_id.' Org: '.$invoice->organisation_id);
         // Todo: remove (testing in dashboard)
         $hydratorsDelay = 0;
 

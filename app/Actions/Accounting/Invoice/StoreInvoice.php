@@ -10,19 +10,29 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\MatchCustomerProspects;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsInvoices;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSales;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesGrpCurrency;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesOrgCurrency;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
@@ -187,7 +197,7 @@ class StoreInvoice extends OrgAction
             return $invoice;
         });
 
-        Sentry::captureMessage('Invoice created: '.$invoice->id.' Org id: '.$invoice->organisation_id);
+        Sentry::captureMessage('Invoice created: '.$invoice->slug.' Shp id: '.$invoice->shop_id.' Org id: '.$invoice->organisation_id);
         $invoice->refresh();
         CategoriseInvoice::run($invoice);
 
@@ -201,6 +211,30 @@ class StoreInvoice extends OrgAction
         }
 
         RunInvoiceHydrators::run($invoice,$this->hydratorsDelay);
+        if (!$this->strict) {
+
+            print "Running invoice hydrators for invoice: $invoice->id\n";
+
+            //todo: debug some how the fetch invoices do not run this dont know why
+
+            $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+            ShopHydrateSalesIntervals::dispatch($invoice->shop, $intervalsExceptHistorical, []);
+            OrganisationHydrateSalesIntervals::dispatch($invoice->organisation, $intervalsExceptHistorical, []);
+            GroupHydrateSalesIntervals::dispatch($invoice->group, $intervalsExceptHistorical, []);
+
+            if ($invoice->master_shop_id) {
+                MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id, $intervalsExceptHistorical, []);
+                MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id, $intervalsExceptHistorical, []);
+            }
+
+            if ($invoice->platform_id) {
+                ShopHydratePlatformSalesIntervalsInvoices::dispatch($invoice->shop_id, $invoice->platform_id, $intervalsExceptHistorical, []);
+                ShopHydratePlatformSalesIntervalsSales::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []);
+                ShopHydratePlatformSalesIntervalsSalesOrgCurrency::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []);
+                ShopHydratePlatformSalesIntervalsSalesGrpCurrency::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []);
+            }
+
+        }
 
         if ($invoice->shop->type == 'fulfilment') {
             SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);
