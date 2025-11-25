@@ -17,12 +17,14 @@
             rel="stylesheet">
     </noscript>
 
-    @if(request()->header('X-Logged-Status') !== null || auth()->check())
-        @if(request()->header('X-Logged-Status') === 'In' || auth()->check())
-            <script async data-jsd-embedded
-                    data-key="{{Arr::get(request()->get('website')->settings, 'jira_help_desk_widget', '') }}"
-                    data-base-url="https://jsd-widget.atlassian.com"
-                    src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
+    @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'jira_help_desk_widget', ''))
+        @if(request()->header('X-Logged-Status') !== null || auth()->check())
+            @if(request()->header('X-Logged-Status') === 'In' || auth()->check())
+                <script async data-jsd-embedded
+                        data-key="{{Arr::get(request()->get('website')->settings, 'jira_help_desk_widget', '') }}"
+                        data-base-url="https://jsd-widget.atlassian.com"
+                        src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
+            @endif
         @endif
     @endif
 
