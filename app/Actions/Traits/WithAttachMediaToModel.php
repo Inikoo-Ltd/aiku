@@ -9,6 +9,7 @@
 namespace App\Actions\Traits;
 
 use App\Models\Announcement;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -27,7 +28,7 @@ use stdClass;
 
 trait WithAttachMediaToModel
 {
-    protected function attachMediaToModel(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|Announcement|MasterCollection $model, Media $media, string $scope = 'default', string $subScope = null, $data = null): Group|Organisation|Shop|User|Website|Webuser|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|Announcement|MasterCollection
+    protected function attachMediaToModel(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|Announcement|MasterCollection|Collection $model, Media $media, string $scope = 'default', string $subScope = null, $data = null): Group|Organisation|Shop|User|Website|Webuser|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|Announcement|MasterCollection|Collection
     {
 
 

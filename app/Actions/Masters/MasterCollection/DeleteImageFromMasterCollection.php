@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Catalogue\Collection\DeleteImageFromCollection;
 use App\Actions\GrpAction;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterCollection;
@@ -44,14 +45,15 @@ class DeleteImageFromMasterCollection extends GrpAction
 
     public function updateDependants(MasterCollection $seedMasterCollection, Media $media): void
     {
-        // Master Collections don't have dependants to update
-        // This method is kept for consistency with the trait interface
+        foreach ($seedMasterCollection->childrenCollections as $collection) {
+            DeleteImageFromCollection::run($collection, $media);
+        }
     }
 
     public function asController(MasterCollection $masterCollection, Media $media, ActionRequest $request): void
     {
         $this->initialisation($masterCollection->group, $request);
 
-        $this->handle($masterCollection, $media, false);
+        $this->handle($masterCollection, $media, true);
     }
 }

@@ -7,21 +7,21 @@
  * copyright 2025
 */
 
-namespace App\Actions\Masters\MasterCollection;
+namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\GrpAction;
+use App\Actions\Masters\MasterCollection\UpdateMasterCollectionImages;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Collection;
 use App\Models\Helpers\Media;
-use App\Models\Masters\MasterCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Catalogue\Collection\UpdateCollectionImages;
 
-class UpdateMasterCollectionImages extends GrpAction
+class UpdateCollectionImages extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(MasterCollection $masterCollection, array $modelData, bool $updateDependants = false)
+    public function handle(Collection $collection, array $modelData, bool $updateDependants = false): Collection
     {
         $imageTypeMapping = [
             'image_id' => 'main',
@@ -36,9 +36,9 @@ class UpdateMasterCollectionImages extends GrpAction
             $mediaId = $modelData[$imageKey];
 
             if ($mediaId === null) {
-                $masterCollection->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
+                $collection->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
                     ->updateExistingPivot(
-                        $masterCollection->images()
+                        $collection->images()
                             ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
                             ->first()?->id,
                         ['sub_scope' => null]
@@ -47,7 +47,7 @@ class UpdateMasterCollectionImages extends GrpAction
                 $media = Media::find($mediaId);
 
                 if ($media) {
-                    $masterCollection->images()->updateExistingPivot(
+                    $collection->images()->updateExistingPivot(
                         $media->id,
                         ['sub_scope' => $imageTypeMapping[$imageKey]]
                     );
@@ -55,20 +55,9 @@ class UpdateMasterCollectionImages extends GrpAction
             }
         }
 
-        $this->update($masterCollection, $modelData);
+        $this->update($collection, $modelData);
 
-        if ($updateDependants) {
-            $this->updateDependants($masterCollection, $modelData);
-        }
-
-        return $masterCollection;
-    }
-
-    public function updateDependants(MasterCollection $seedMasterCollection, array $modelData): void
-    {
-        foreach ($seedMasterCollection->childrenCollections as $collection) {
-            UpdateCollectionImages::run($collection, $modelData, false);
-        }
+        return $collection;
     }
 
     public function rules(): array
@@ -78,11 +67,10 @@ class UpdateMasterCollectionImages extends GrpAction
         ];
     }
 
-
-    public function asController(MasterCollection $masterCollection, ActionRequest $request): void
+    public function asController(Collection $collection, ActionRequest $request): void
     {
-        $this->initialisation($masterCollection->group, $request);
+        $this->initialisationFromShop($collection->shop, $request);
 
-        $this->handle($masterCollection, $this->validatedData, true);
+        $this->handle($collection, $this->validatedData, true);
     }
 }

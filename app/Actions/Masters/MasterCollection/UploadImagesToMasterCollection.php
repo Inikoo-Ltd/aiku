@@ -31,8 +31,11 @@ class UploadImagesToMasterCollection extends GrpAction
 
     public function updateDependants(MasterCollection $seedMasterCollection, array $medias, string $scope): void
     {
-        // Master Collections don't have dependants to update
-        // This method is kept for consistency with the trait interface
+       foreach ($seedMasterCollection->childrenCollections as $collection) {
+            foreach ($medias as $media) {
+                $this->attachMediaToModel($collection, $media, $scope);
+            }
+        }
     }
 
     public function rules(): array
@@ -44,6 +47,6 @@ class UploadImagesToMasterCollection extends GrpAction
     {
         $this->initialisation($masterCollection->group, $request);
 
-        $this->handle($masterCollection, 'image', $this->validatedData, false);
+        $this->handle($masterCollection, 'image', $this->validatedData, true);
     }
 }
