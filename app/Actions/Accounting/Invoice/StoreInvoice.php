@@ -41,7 +41,6 @@ class StoreInvoice extends OrgAction
     use WithFixedAddressActions;
     use WithOrderExchanges;
     use WithNoStrictRules;
-    use WithRunInvoiceHydrators;
 
 
     private Order|Customer|RecurringBill $parent;
@@ -199,8 +198,8 @@ class StoreInvoice extends OrgAction
             CustomerClientHydrateInvoices::dispatch($invoice->customerClient)->delay($this->hydratorsDelay);
         }
 
+        RunInvoiceHydrators::run($invoice,$this->hydratorsDelay);
 
-        $this->runInvoiceHydrators($invoice);
         if ($invoice->shop->type == 'fulfilment') {
             SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);
         }

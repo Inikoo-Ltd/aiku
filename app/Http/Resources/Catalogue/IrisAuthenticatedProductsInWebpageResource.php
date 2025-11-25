@@ -121,6 +121,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'profit_per_unit'      => $profitPerUnit,
             'price_per_unit'       => $pricePerUnit,
             'available_quantity'      => $this->available_quantity,
+            'is_coming_soon'       => false,  // TODO: INI-373 (Raul)
         ];
     }
 

@@ -94,6 +94,8 @@ const isSomeSubnavActive = (nav: {}) => {
             />
         </template>
 
+        <slot />
+
         <Popover ref="_op">
             <template #container>
                 <RetinaNavigationHorizontalNew

@@ -373,6 +373,18 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ] : [],
+                        [
+                            'label'  => __('HELP Portal'),
+                            'icon'   => 'fal fa-life-ring',
+                            'fields' => [
+                                'portal_link'  => [
+                                    'type'          => 'input',
+                                    'placeholder'   => 'https://example.com',
+                                    'label'         => __('Portal Link'),
+                                    'value'         => Arr::get($shop->settings, 'portal.link', ''),
+                                ],
+                            ]
+                        ]
                     ],
                     'args'      => [
                         'updateRoute' => [

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use App\Http\Resources\Helpers\CurrencyResource;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Arr;
 use Tighten\Ziggy\Ziggy;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 
@@ -48,7 +49,6 @@ class HandleRetinaInertiaRequests extends Middleware
 
         $website                           = $request->get('website');
         $firstLoadOnlyProps['environment'] = app()->environment();
-
 
         $customerSalesChannels = [];
         if ($webUser) {
@@ -94,6 +94,7 @@ class HandleRetinaInertiaRequests extends Middleware
                 "retina"   => [
                     "type"     => $website->shop->type->value,
                     "currency" => CurrencyResource::make($website->shop->currency)->toArray(request()),
+                    'portal_link' => Arr::get($website->shop->settings, 'portal.link', ''),
                     "balance"  => $webUser?->customer?->balance,
                     'show_cards_modal' => !$webUser?->customer->mitSavedCard()->exists() && $webUser?->customer
                             ->customerSalesChannels()
