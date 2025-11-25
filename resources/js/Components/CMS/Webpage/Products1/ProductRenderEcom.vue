@@ -256,11 +256,12 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 :type="typeOfLink" class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative"
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false">
                 <slot name="image" :product="product">
-                    <Image :src="product?.web_images?.main?.gallery" alt="product image"
+                    <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery" :alt="product.name"
                         :style="{ objectFit: 'contain' }" />
+                    <FontAwesomeIcon v-else icon="fal fa-image" class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" fixed-width aria-hidden="true" />
                 </slot>
 
-                <template v-if="layout?.retina?.type != 'dropshipping' && layout?.iris?.is_logged_in">
+                <template v-if="layout?.iris?.is_logged_in">
                     <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl z-10">
                         <LoadingIcon />
                     </div>
