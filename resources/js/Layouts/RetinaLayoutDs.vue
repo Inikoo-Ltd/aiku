@@ -45,7 +45,7 @@ import { faListUl, faEye } from "@far"
 
 import { trans } from "laravel-vue-i18n"
 import BreadcrumbsIris from "@/Components/Navigation/BreadcrumbsIris.vue"
-import RetinaBottomNavigation from "./Retina/RetinaBottomNavigation.vue"
+import RetinaBottomNavigationOnMobile from "./Retina/RetinaBottomNavigationOnMobile.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import PureInputNumber from "@/Components/Pure/PureInputNumber.vue";
@@ -171,9 +171,24 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 
 		<!-- Section: bottom navigation -->
 		<div v-if="layout.user && screenType === 'mobile'" class="bg-[rgb(20,20,20)] text-white fixed bottom-0 w-full z-10">
-			<RetinaBottomNavigation
+			<RetinaBottomNavigationOnMobile>
+				<template #default>
+					<a
+                        v-if="layout.retina.portal_link"
+                        :href="layout.retina.portal_link"
+                        class="relative group flex items-center px-2 text-[20px] gap-x-2 navigation"
+                        v-tooltip="{ content: trans('Open help portal'), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
+                        :style="{
+                            color: layout?.app?.theme[1],
+                        }"
+                        target="_blank"
+                    >
+                        <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0" fixed-width icon="fal fa-life-ring" />
 
-			/>
+                        <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-80 absolute right-0 top-0 text-xxs text-[var(--theme-color-1)]" fixed-width aria-hidden="true" />
+                    </a>
+				</template>
+			</RetinaBottomNavigationOnMobile>
 		</div>
 	</div>
 </template>
