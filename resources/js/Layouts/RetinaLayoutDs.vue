@@ -122,17 +122,38 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 							/>
 						</div>
 
-						<Link
-							v-if="layout.iris?.is_logged_in"
-							:href="route('retina.top_up.dashboard')"
-							class="place-self-end bg-pink-100 border border-pink-300 text-sm px-3 md:px-4 md:py-0.5 rounded-full w-fit flex items-center gap-x-2 xtext-indigo-600"
-						>
-							<!-- <FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" /> -->
-							{{ trans("My balance") }}:
-							<span class="font-semibold tabular-nums">
-								{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0)}}
-							</span>
-						</Link>
+						<div class="flex justify-between">
+							<!-- Customer Reference (mobile only) -->
+							<div class="md:hidden">
+								<div
+									class="bottom-full left-3"
+									:class="layout.leftSidebar.show ? '' : 'px-2'"
+									v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.iris?.customer?.reference}`"
+								>
+									<div class="text-xxs text-gray-500 -mb-1 italic">
+										{{ trans("Customer reference:") }}
+									</div>
+
+									<div class="text-xl text-[#1d252e] font-semibold flex items-center gap-2">
+										<Transition name="slide-to-left">
+											<span>#{{ layout?.iris?.customer?.reference ?? '-' }}</span>
+										</Transition>
+									</div>
+								</div>
+							</div>
+
+							<!-- My Balance -->
+							<Link
+								v-if="layout.iris?.is_logged_in"
+								:href="route('retina.top_up.dashboard')"
+								class="place-self-end bg-pink-100 border border-pink-300 text-sm px-3 md:px-4 md:py-0.5 rounded-full w-fit flex items-center gap-x-2"
+							>
+								{{ trans("My balance") }}:
+								<span class="font-semibold tabular-nums">
+									{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0) }}
+								</span>
+							</Link>
+						</div>
 					</div>
 
 					<div
