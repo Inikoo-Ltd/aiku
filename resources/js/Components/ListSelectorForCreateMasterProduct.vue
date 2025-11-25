@@ -229,7 +229,7 @@ console.log(route().params)
 
 const updatePickFractional = async (item: any) => {
     await axios.get(route('grp.json.product.get-pick-fractional', {
-        numerator: item.fraction,
+        numerator: (Number(item.quantity) / Number(item.packed_in)),
         denominator: item.packed_in,
     })).then((result) => {
         const index = committedProducts.value.findIndex(
@@ -239,9 +239,10 @@ const updatePickFractional = async (item: any) => {
         if (index !== -1) {
             committedProducts.value[index].pick_fractional = result.data;
         }
-        console.log(committedProducts.value[index])
     })
 }
+
+const debounceUpdatePickFractional = debounce((item: any) => updatePickFractional(item), 500)
 
 
 defineExpose({
@@ -299,13 +300,13 @@ defineExpose({
                             <NumberWithButtonSave v-if="withQuantity"
                                 :key="item.id + '-' + (item[props.key_quantity] || 1)"
                                 :modelValue="item[props.key_quantity]" :bindToTarget="{ min: 1 }"
-                                @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]); updatePickFractional(item) }"
+                                @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]); debounceUpdatePickFractional(item) }"
                                 noUndoButton noSaveButton parentClass="w-min" >
                                 <template #suffix>
                                    <div class="text-sm text-gray-700 px-3 font-bold">{{ item.type }}</div>
                                 </template>
                                  <template #prefix>
-                                <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap">
+                                <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap w-full">
                                     <span class=""> &#8623; SKU </span>
                                     <span class="font-bold">
                                         <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
