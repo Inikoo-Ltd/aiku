@@ -119,6 +119,7 @@ class StoreEbayProduct extends RetinaAction
             $categories = $ebayUser->getCategorySuggestions($product->department->name);
 
             $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
+            $categoryName = Arr::get($categories, 'categorySuggestions.0.category.categoryName');
 
             if (! $categoryId) {
                 $categories = $ebayUser->searchAvailableProducts($product->department->name);
@@ -128,6 +129,7 @@ class StoreEbayProduct extends RetinaAction
                 }
 
                 $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
+                $categoryName = Arr::get($categories, 'itemSummaries.0.categories.0.categoryName');
             }
 
             if ($handleError($categories)) {
@@ -141,10 +143,6 @@ class StoreEbayProduct extends RetinaAction
             if (!blank($productAttributes)) {
                 $aspects['aspects'] = $productAttributes;
             }
-
-            UpdatePortfolio::run($portfolio, [
-                'data' => $aspects
-            ]);
 
             $inventoryItem = [
                 'sku' => $portfolio->sku,
@@ -169,6 +167,18 @@ class StoreEbayProduct extends RetinaAction
                     ...$imageUrls
                 ]
             ];
+
+            UpdatePortfolio::run($portfolio, [
+                'data' => [
+                    'product' => [
+                        ...Arr::get($inventoryItem, 'product'),
+                        'category' => [
+                            'id' => $categoryId,
+                            'name' => $categoryName
+                        ]
+                    ]
+                ]
+            ]);
 
             $offerExist = $ebayUser->getOffers([
                 'sku' => Arr::get($inventoryItem, 'sku')
