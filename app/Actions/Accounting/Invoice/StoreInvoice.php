@@ -35,6 +35,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Sentry;
 
 class StoreInvoice extends OrgAction
 {
@@ -186,6 +187,7 @@ class StoreInvoice extends OrgAction
             return $invoice;
         });
 
+        Sentry::captureMessage('Invoice created: '.$invoice->id.' Org id: '.$invoice->organisation_id);
         $invoice->refresh();
         CategoriseInvoice::run($invoice);
 
