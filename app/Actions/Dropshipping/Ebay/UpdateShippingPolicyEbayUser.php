@@ -34,6 +34,7 @@ class UpdateShippingPolicyEbayUser extends OrgAction
 
         if (! Arr::has($fulfillmentPolicy, 'errors')) {
             data_set($modelData, 'data.fulfillment_policy', $fulfillmentPolicy);
+            data_set($modelData, 'fulfillment_policy_id', Arr::get($fulfillmentPolicy, 'fulfillmentPolicyId'));
         }
 
         UpdateEbayUser::run($ebayUser, $modelData);

@@ -76,6 +76,47 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                         ],
                     ]
                 ],
+                [
+                    "label"  => __("Returns"),
+                    'icon'    => 'fa-light fa-arrow-left',
+                    'title'  => __('returns'),
+                    'fields' => [
+                        'return_accepted' => [
+                            'type'  => 'toggle',
+                            'label' => __('Returns Accepted'),
+                            'value' => (bool) Arr::get($customerSalesChannel->settings, 'return.accepted')
+                        ],
+                        'return_payer' => [
+                            'type'     => 'select',
+                            'label'    => __('Vat Category'),
+                            'required' => true,
+                            'hidden' => ! Arr::get($customerSalesChannel->settings, 'return.accepted'),
+                            'options' => Options::forArray([
+                                    'SELLER' => __('Seller'),
+                                    'BUYER' => __('Buyer')
+                                ]),
+                            'value'    => Arr::get($customerSalesChannel->settings, 'return.payer')
+                        ],
+                        'return_within' => [
+                            'type'  => 'select',
+                            'label' => __('returns within'),
+                            'required' => true,
+                            'hidden' => ! Arr::get($customerSalesChannel->settings, 'return.accepted'),
+                            'options' => Options::forArray([
+                                14 => __('14 Days'),
+                                30 => __('30 Days'),
+                                60 => __('60 Days')
+                            ]),
+                            'value' => Arr::get($customerSalesChannel->settings, 'return.within')
+                        ],
+                        'return_description' => [
+                            'type'  => 'textarea',
+                            'label' => __('return description'),
+                            'hidden' => ! Arr::get($customerSalesChannel->settings, 'return.accepted'),
+                            'value' => Arr::get($customerSalesChannel->settings, 'return.description')
+                        ],
+                    ]
+                ],
             ];
         }
 

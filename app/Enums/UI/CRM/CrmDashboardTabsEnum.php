@@ -23,14 +23,14 @@ enum CrmDashboardTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
-            CrmDashboardTabsEnum::PROSPECTS => [
-                'title' => __('Prospects'),
-                'icon'  => 'fal fa-tachometer-alt',
-            ],
             CrmDashboardTabsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
                 'icon'  => 'fal fa-users',
             ],
+            CrmDashboardTabsEnum::PROSPECTS => [
+                'title' => __('Prospects'),
+                'icon'  => 'fal fa-transporter',
+            ]
         };
     }
 }

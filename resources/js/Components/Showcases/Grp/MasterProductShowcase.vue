@@ -23,6 +23,8 @@ import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
 import MasterProductSummary from "@/Components/Goods/MasterProductSummary.vue"
+import { trans } from "laravel-vue-i18n"
+import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 
 
 library.add(
@@ -131,20 +133,22 @@ const tradeUnitTags = computed(() => {
 
 <template>
 	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
-		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
+		<span class="text-xl font-semibold whitespace-pre-wrap">
 			<!-- Units box -->
-			<span
-				v-if="data.masterProduct?.units !== null && data.masterProduct?.units !== undefined && data.masterProduct?.units !== ''"
-				class="inline-flex items-center border border-gray-300 rounded px-2 py-0.5 mr-2 bg-white text-gray-900">
-				<span>{{ toInteger(data.masterProduct.units) }}</span>
-				<span class="ml-1">x</span>
-			</span>
+			<ProductUnitLabel
+				v-if="data.masterProduct?.units"
+				:units="data.masterProduct?.units"
+				:unit="data.masterProduct?.unit"
+				class="mr-2"
+			/>
+
 			<!-- Product name -->
 			<span class="align-middle">
 				{{ data.masterProduct.name }}
 			</span>
 		</span>
 	</div>
+
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">

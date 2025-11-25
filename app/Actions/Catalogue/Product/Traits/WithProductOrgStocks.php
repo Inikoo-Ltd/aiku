@@ -63,20 +63,22 @@ trait WithProductOrgStocks
     }
 
 
-    protected function syncOrgStocks(Product $product, array $orgStocksRaw): Product
+    // todo: this method need to be removed after aurora no longer in use, syncTradeUnits will be used instead
+    protected function syncOrgStocksToBeDeleted(Product $product, array $orgStocksRaw): Product
     {
         $orgStocks = $this->processOrgStocks($orgStocksRaw);
         $product->orgStocks()->sync($orgStocks);
         $product->refresh();
 
 
-        $product = $this->syncTradeUnits($product);
+        $product = $this->syncTradeUnitsToBeDeleted($product);
         $product->refresh();
 
         return $product;
     }
 
-    protected function syncTradeUnits(Product $product): Product
+    // todo: this method need to be removed after aurora no longer in use
+    protected function syncTradeUnitsToBeDeleted(Product $product): Product
     {
         $tradeUnits = [];
         foreach ($product->orgStocks as $orgStock) {

@@ -15,6 +15,7 @@
     import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
     import axios from "axios";
     import { notify } from "@kyvg/vue3-notification";
+    import PureInput from "@/Components/Pure/PureInput.vue";
 
     library.add(faInfoCircle);
 
@@ -23,11 +24,12 @@
     const ebayId = inject("ebayId");
 
     const isLoadingStep = ref(false)
+    const errors = ref({})
 
     const sites = ref([
         { name: "United Kingdom", value: "EBAY_GB" },
         { name: "Spain", value: "EBAY_ES" },
-        { name: "Europe", value: "EBAY_DE" },
+        { name: "Germany", value: "EBAY_DE" },
     ]);
 
     const form = useForm({
@@ -44,6 +46,7 @@
             isLoadingStep.value = false
         } catch (err) {
             isLoadingStep.value = false;
+            errors.value = err.response?.data?.errors;
             notify({
                 title: trans("Something went wrong"),
                 text: err.response?.data?.message,
@@ -62,9 +65,12 @@
         <div class="flex flex-col gap-2 ">
             <label class="font-semibold">{{ trans("eBay Site") }}</label>
             <div class="flex items-center gap-2 w-full md:w-80">
-                <Select v-model="form.marketplace" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
+                <Select v-model="form.marketplace" :options="sites" optionLabel="name" optionValue="value"
+                        class="w-full"
+                        @update:model-value="errors.marketplace = null "/>
                 <FontAwesomeIcon v-tooltip="trans('Select listing duration')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
             </div>
+            <p v-if="errors.marketplace" class="text-sm text-red-600 mt-1">{{ errors.marketplace?.[0] }}</p>
         </div>
 
         <hr class="w-full border-t" />

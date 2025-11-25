@@ -119,6 +119,7 @@ class StoreEbayProduct extends RetinaAction
             $categories = $ebayUser->getCategorySuggestions($product->department->name);
 
             $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
+
             if (! $categoryId) {
                 $categories = $ebayUser->searchAvailableProducts($product->department->name);
 
@@ -136,30 +137,22 @@ class StoreEbayProduct extends RetinaAction
             $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);
             $productAttributes = $ebayUser->extractProductAttributes($product, $categoryAspects);
 
-            $brand = $product->getBrand();
-
-            $aspects = [
-                'aspects' => [
-                    'Type' => ['Other'],
-                    'Brand' => [$brand?->name ?? $product->shop?->name]
-                ]
-            ];
-
-            if ($product->barcode) {
-                $aspects['aspects']['EAN'] = [$product->barcode];
-            }
-
+            $aspects = [];
             if (!blank($productAttributes)) {
-                $aspects['aspects'] = array_merge($aspects['aspects'], $productAttributes);
+                $aspects['aspects'] = $productAttributes;
             }
+
+            UpdatePortfolio::run($portfolio, [
+                'data' => $aspects
+            ]);
 
             $inventoryItem = [
-                'sku' => $product->code,
+                'sku' => $portfolio->sku,
                 'availability' => [
                     'shipToLocationAvailability' => [
                         'availabilityDistributions' => [
                                 [
-                                    'merchantLocationKey' => Arr::get($ebayUser->settings, 'defaults.main_location_key'),
+                                    'merchantLocationKey' => $ebayUser->location_key,
                                     'quantity' => $product->available_quantity
                                 ]
                             ],
@@ -171,7 +164,7 @@ class StoreEbayProduct extends RetinaAction
                     'title' => $portfolio->customer_product_name,
                     'description' => $descriptions,
                     ...$aspects,
-                    'brand' => 'AncientWisdom',
+                    'brand' => 'Ancient Wisdom',
                     'mpn' => $product->code,
                     ...$imageUrls
                 ]

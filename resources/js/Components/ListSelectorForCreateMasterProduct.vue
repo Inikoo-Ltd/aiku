@@ -13,14 +13,15 @@ import Image from '@/Components/Image.vue'
 import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
-import { faPlus, faTimes } from "@fal"
+import { faPlus, faTimes, faBoxUp } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faForklift, faTrashAlt } from '@far'
 import Toggle from './Pure/Toggle.vue'
+import FractionDisplay from './DataDisplay/FractionDisplay.vue'
 
-library.add(faCheckCircle, faTimes)
+library.add(faCheckCircle, faTimes, faBoxUp)
 
 const props = withDefaults(defineProps<{
     modelValue?: Portfolio[]
@@ -279,18 +280,18 @@ defineExpose({
                         <div class="flex items-center gap-2">
                             <NumberWithButtonSave v-if="withQuantity"
                                 :key="item.id + '-' + (item[props.key_quantity] || 1)"
-                                :modelValue="item[props.key_quantity] || 1" :bindToTarget="{ min: 1 }"
+                                :modelValue="item[props.key_quantity]" :bindToTarget="{ min: 1 }"
                                 @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
                                 noUndoButton noSaveButton parentClass="w-min" >
                                 <template #suffix>
-                                   <div class="text-sm text-gray-700 px-3 font-bold capitalize">{{ is_dropship ? 'SKU' : item.type }}</div>
+                                   <div class="text-sm text-gray-700 px-3 font-bold">{{ item.type }}</div>
                                 </template>
                                  <template #prefix>
-                                   <div  v-if="is_dropship" class="text-sm text-gray-700 px-3 font-bold capitalize w-24">
-                                    <span>{{ `${parseInt(item.quantity)}  ${item.type}` }}&nbsp; /</span>
-                                </div>
-                                 <div v-else class="text-sm text-gray-700 px-3 font-bold flex text-center capitalize w-24">
-                                    <span ><FontAwesomeIcon :icon="faForklift" class="mr-2" /> {{ ( parseInt(item.quantity)/ parseInt(item?.ecom_quantity)) }} &nbsp; / </span>
+                                <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap">
+                                    <span class=""> &#8623; SKU </span>
+                                    <span class="font-bold">
+                                        <FractionDisplay :fractionData="item.pick_fractional" />
+                                    </span>
                                 </div>
                                   
                                 </template>
@@ -388,14 +389,11 @@ defineExpose({
                                 <template v-if="!isLoadingFetch">
                                     <template v-if="list.length > 0">
                                         <div v-for="(item, index) in listData" :key="index" @click="selectProduct(item)"
-                                            class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                            class="relative h-full rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                             :class="[
                                                 compSelectedProduct.includes(item.id)
                                                     ? 'bg-indigo-100 border-indigo-300'
                                                     : 'bg-white hover:bg-gray-200 border-gray-300',
-                                                !item.stock_available
-                                                    ? 'opacity-50 pointer-events-none cursor-not-allowed hover:bg-white'
-                                                    : ''
                                             ]">
 
                                             <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)"
@@ -408,30 +406,26 @@ defineExpose({
                                                     class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0"
                                                     imageCover :alt="item.name" />
                                                 <div class="flex flex-col justify-between w-full">
-                                                    <div class="flex items-center gap-2">
-                                                        <div class="font-semibold leading-none mb-1">{{ item.name || 'noname' }}</div>
-                                                    </div>
-                                                    <div v-if="!item.no_code" class="text-xs text-gray-400 italic">
+                                                    <div v-if="!item.no_code" class="font-semibold">
                                                         {{ item.code || 'no code' }}
+                                                    </div>
+                                                    <div class="flex items-center gap-2 text-xs">
+                                                        <div class="leading-none mb-1">{{ item.name || 'noname' }}</div>
                                                     </div>
                                                     <div v-if="item.reference" class="text-xs text-gray-400 italic">
                                                         {{ item.reference }}
                                                     </div>
-                                                    <div v-if="item.gross_weight" class="text-xs text-gray-400 italic">
-                                                        {{ item.gross_weight }}
-                                                    </div>
+
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
-                                                        {{ locale?.currencyFormat(item.currency_code || 'usd',  item.price || 0) }}
+                                                        {{ locale?.currencyFormat(item.currency_code || '',  item.price || 0) }}
                                                     </div>
-                                                    <template v-if="item.stock_available">
-                                                      <div class="text-sm font-semibold text-emerald-600">
-                                                        {{ parseInt(item.quantity) }} {{ item.type }}
-                                                      </div>
-                                                    </template>
-                                                    <template v-else>
-                                                        <span class="text-xs text-red-500 italic">Don't have stock</span>
-                                                    </template>
+
+                                                    
+                                                    <div v-tooltip="trans('Packed in :qty', { qty: item.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
+                                                        <FontAwesomeIcon icon="fas fa-box-up" class="mr-1" fixed-width aria-hidden="true" />
+                                                        {{ item.packed_in }} [{{ item.type }}]
+                                                    </div>
                                                 </div>
                                             </slot>
                                         </div>

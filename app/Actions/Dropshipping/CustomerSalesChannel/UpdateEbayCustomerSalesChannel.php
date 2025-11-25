@@ -86,12 +86,16 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         $customerSalesChannel = UpdateCustomerSalesChannel::run($customerSalesChannel, $modelData);
 
         if ($shippingService || $shippingPrice || $shippingDispatchTime) {
-            data_set($modelData, 'fulfillment_policy_id', $fulfillmentPolicyId);
+            if ($fulfillmentPolicyId) {
+                data_set($modelData, 'fulfillment_policy_id', $fulfillmentPolicyId);
+            }
             UpdateShippingPolicyEbayUser::run($customerSalesChannel->user, $modelData);
         }
 
-        if ($returnAccepted || $returnPayer || $returnWithin || $returnDescription) {
-            data_set($modelData, 'return_policy_id', $returnPolicyId);
+        if ($returnAccepted !== null || $returnPayer || $returnWithin || $returnDescription) {
+            if ($returnPolicyId) {
+                data_set($modelData, 'return_policy_id', $returnPolicyId);
+            }
             UpdateReturnPolicyEbayUser::run($customerSalesChannel->user, $modelData);
         }
 

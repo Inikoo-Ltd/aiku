@@ -7,15 +7,14 @@
 
 namespace App\Actions\CRM\UI;
 
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\GetCustomersDashboard;
-use App\Actions\Dashboard\ShowOrganisationDashboard;
+use App\Actions\CRM\Prospect\UI\GetProspectsDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Enums\UI\CRM\CrmDashboardTabsEnum;
-use App\Enums\UI\CRM\CustomersTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,28 +30,23 @@ class ShowCrmDashboard extends OrgAction
         return $request;
     }
 
-
     public function htmlResponse(ActionRequest $request): Response
     {
         $title = __('CRM Dashboard');
 
         return Inertia::render(
-            'Org/CRM/CrmDashboard',
+            'Org/Shop/CRM/CRMDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => $title,
                 'pageHead'    => [
                     'icon'      => [
-                        'icon'  => ['fal', 'fa-user-hard-hat'],
-                        'title' => $title
-                    ],
-                    'iconRight' => [
-                        'icon'  => ['fal', 'fa-chart-network'],
+                        'icon'  => ['fal', 'fa-tachometer-alt'],
                         'title' => $title
                     ],
                     'title'     => $title,
                 ],
-                'tabs'                              => [
+                'tabs'          => [
                     'current'    => $this->tab,
                     'navigation' => CrmDashboardTabsEnum::navigation()
                 ],
@@ -61,13 +55,26 @@ class ShowCrmDashboard extends OrgAction
                     fn () => GetCustomersDashboard::run($this->shop, $request)
                     : Inertia::lazy(fn () => GetCustomersDashboard::run($this->shop, $request)),
 
-
+                CrmDashboardTabsEnum::PROSPECTS->value => $this->tab == CrmDashboardTabsEnum::PROSPECTS->value ?
+                    fn () => GetProspectsDashboard::run($this->shop, $request)
+                    : Inertia::lazy(fn () => GetProspectsDashboard::run($this->shop, $request)),
             ]
         );
     }
 
-    public function getBreadcrumbs($routeParameters): array
+    public function getBreadcrumbs(array $routeParameters): array
     {
-        return [];
+        return array_merge(
+            ShowShop::make()->getBreadcrumbs($routeParameters),
+            [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => $routeParameters,
+                        'label' => __('CRM Dashboard')
+                    ],
+                ],
+            ]
+        );
     }
 }

@@ -18,6 +18,8 @@ import { faPlus } from "@far"
 import { faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { faMinus } from "@fal"
+import { trans } from "laravel-vue-i18n"
+import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 
 defineProps<{
     data: {}
@@ -207,7 +209,7 @@ function onCancel(item) {
         @onSelectRow="(item) => emits('selectedRow', item)" key="product-table">
 
         <template #cell(master_shop_code)="{ item: masterProduct }">
-            <Link v-tooltip="masterProduct.master_shop_name" :href="masterShopRoute(masterProduct) as string"
+            <Link v-tooltip="masterProduct.master_shop_name" :href="(masterShopRoute(masterProduct) as string)"
                   class="secondaryLink">
                 {{ masterProduct["master_shop_code"] }}
             </Link>
@@ -215,7 +217,7 @@ function onCancel(item) {
 
         <template #cell(master_department_code)="{ item: masterProduct }">
             <Link v-if="masterProduct.master_department_slug" v-tooltip="masterProduct.master_department_name"
-                  :href="masterDepartmentRoute(masterProduct) as string" class="secondaryLink">
+                  :href="(masterDepartmentRoute(masterProduct) as string)" class="secondaryLink">
                 {{ masterProduct["master_department_code"] }}
             </Link>
             <span v-else class="opacity-70  text-red-500">
@@ -225,7 +227,7 @@ function onCancel(item) {
 
         <template #cell(master_family_code)="{ item: masterProduct }">
             <Link v-if="masterProduct.master_family_slug" v-tooltip="masterProduct.master_family_name"
-                  :href="masterFamilyRoute(masterProduct) as string" class="secondaryLink">
+                  :href="(masterFamilyRoute(masterProduct) as string)" class="secondaryLink">
                 {{ masterProduct["master_family_code"] }}
             </Link>
             <span v-else class="opacity-70  text-red-500">
@@ -235,12 +237,22 @@ function onCancel(item) {
 
         <template #cell(code)="{ item: masterProduct }">
             <Link v-if="masterProduct.code" v-tooltip="masterProduct.code"
-                  :href="masterProductRoute(masterProduct) as string" class="secondaryLink">
+                  :href="(masterProductRoute(masterProduct) as string)" class="secondaryLink">
                 {{ masterProduct["code"] }}
             </Link>
         </template>
         <template #cell(name)="{ item: masterProduct }">
-            {{ masterProduct["name"] }}
+            <div>
+                <ProductUnitLabel
+                    v-if="masterProduct?.units"
+                    :units="masterProduct?.units"
+                    :unit="masterProduct?.unit"
+                    class="!py-0 !px-1 !rounded-sm !text-sm mr-1"
+                />
+
+                {{ masterProduct["name"] }}
+
+            </div>
         </template>
 
          <template #cell(unit)="{ item: product }"> 
