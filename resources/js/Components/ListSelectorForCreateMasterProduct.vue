@@ -18,8 +18,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faForklift, faTrashAlt } from '@far'
-import Toggle from './Pure/Toggle.vue'
-import FractionDisplay from './DataDisplay/FractionDisplay.vue'
+import Toggle from '@/Components/Pure/Toggle.vue'
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 
 library.add(faCheckCircle, faTimes, faBoxUp)
 
@@ -290,7 +290,7 @@ defineExpose({
                                 <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap">
                                     <span class=""> &#8623; SKU </span>
                                     <span class="font-bold">
-                                        <FractionDisplay :fractionData="item.pick_fractional" />
+                                        <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
                                     </span>
                                 </div>
                                   

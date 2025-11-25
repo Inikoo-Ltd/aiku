@@ -120,6 +120,12 @@ class EditMasterProduct extends GrpAction
     public function getBlueprint(MasterAsset $masterProduct): array
     {
         $barcodes = $masterProduct->tradeUnits->pluck('barcode')->filter()->unique();
+        $tradeUnits = $masterProduct->tradeUnits->map(function ($t) {
+            return array_merge(
+                ['quantity' => $t->pivot->quantity],
+                $t->toArray()
+            );
+        });
 
         return [
             [
@@ -271,7 +277,7 @@ class EditMasterProduct extends GrpAction
                     'fields' => [
                         'trade_units' => [
                             'label'        => __('Trade Units'),
-                            'type'         => 'list-selector',
+                            'type'         => 'list-selector-trade-unit',
                             'key_quantity' => 'quantity',
                             'withQuantity' => true,
                             'full'         => true,
@@ -306,7 +312,7 @@ class EditMasterProduct extends GrpAction
                                     ],
                                 ],
                             ],
-                            'value'        => $masterProduct->tradeUnits,
+                            'value'        => $tradeUnits,
                         ],
                     ],
                 ],

@@ -35,6 +35,7 @@ import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
 import FormEditTradeUnit from '@/Components/Forms/Fields/FormEditTradeUnit.vue'
 import TagsTradeUnits from '@/Components/Forms/Fields/TagsTradeUnits.vue'
 import invoiceSerialReferences from '@/Components/Forms/Fields/invoiceSerialReferences.vue'
+import ListSelectorTradeUnit from "@/Components/Forms/Fields/ListSelectorTradeUnit.vue"
 
 
 const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
@@ -133,7 +134,8 @@ export const componentsList: {[key: string]: Component} = {
     'tags-customer': TagsCustomer,
     'retina-tags-customer': RetinaTagsCustomer,
     'email_subscriptions': WrapperEmailSubscribetion,
-    'input_twin' : InputTwin
+    'input_twin' : InputTwin,
+    'list-selector-trade-unit' : ListSelectorTradeUnit
 }
 
 export const getComponent = (componentName: string) => {
