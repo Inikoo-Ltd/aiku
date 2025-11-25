@@ -71,7 +71,8 @@ class CheckWooChannel
             ['Customer Sales Channel', $customerSalesChannel->slug],
             ['Platform Status', $customerSalesChannel->platform_status ? 'Yes' : 'No'],
             ['Can Connect to Platform', $customerSalesChannel->can_connect_to_platform ? 'Yes' : 'No'],
-            ['Exist in Platform', $customerSalesChannel->exist_in_platform ? 'Yes' : 'No']
+            ['Exist in Platform', $customerSalesChannel->exist_in_platform ? 'Yes' : 'No'],
+            ['Ban', $customerSalesChannel->ban_stock_update_util ?? '-']
         ];
 
 
