@@ -379,7 +379,7 @@ class EditShop extends OrgAction
                             'fields' => [
                                 'portal_link'  => [
                                     'type'          => 'input',
-                                    'placeholder'   => 'https://example.com'
+                                    'placeholder'   => 'https://example.com',
                                     'label'         => __('Portal Link'),
                                     'value'         => Arr::get($shop->settings, 'portal.link', ''),
                                 ],
