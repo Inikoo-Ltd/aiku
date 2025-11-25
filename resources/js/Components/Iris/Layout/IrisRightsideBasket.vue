@@ -345,7 +345,7 @@ const idxProductLoading = ref<number | null>(null)
 
                             <!-- Product: Image -->
                             <div class="relative group">
-                                <LinkIris :href="product.canonical_url" class="block font-medium hover:underline size-16 shrink-0 overflow-hidden rounded-md border border-gray-200"
+                                <LinkIris :href="product.canonical_url" class="block font-medium hover:underline size-14 shrink-0 overflow-hidden rounded-md border border-gray-200"
                                     @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
                                     <Image
                                         :src="product?.web_image_thumbnail"
@@ -359,7 +359,7 @@ const idxProductLoading = ref<number | null>(null)
                                 </div>
                             </div>
                             
-                            <div class="ml-4 flex justify-between gap-x-4 w-full text-sm">
+                            <div class="ml-4 flex justify-between gap-x-4 w-full text-xs">
                                 <!-- Section: label Discount, product name, product price -->
                                 <div class="flex flex-1 flex-col">
                                     <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs" />
