@@ -21,6 +21,7 @@ import {
 	faFolder,
 	faBuilding,
 	faCreditCard,
+	faLifeRing,
 	faEllipsisV,
 } from "@fal"
 import { faArrowRight, faExclamationCircle, faCheckCircle } from "@fas"
@@ -34,6 +35,7 @@ library.add(
 	faFolder,
 	faBuilding,
 	faCreditCard,
+	faLifeRing,
 	faExclamationCircle,
 	faCheckCircle,
 	faArrowRight,
