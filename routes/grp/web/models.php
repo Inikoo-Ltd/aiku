@@ -231,6 +231,7 @@ use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
 use App\Actions\Masters\MasterAsset\UploadImagesToMasterProduct;
+use App\Actions\Masters\MasterAsset\UpdateMultipleMasterProductsFamily;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
@@ -432,6 +433,7 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
 Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(function () {
     Route::post('store-assets', StoreMasterProductFromTradeUnits::class)->name('store-assets');
     Route::post('clone-to-other-store', CloneMasterAssetToOtherShop::class)->name('clone_to_other_store');
+    Route::post('/move-products', UpdateMultipleMasterProductsFamily::class)->name('bulk_add_family');
 });
 
 Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {
