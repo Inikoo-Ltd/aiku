@@ -383,6 +383,12 @@ class EditShop extends OrgAction
                                     'label'         => __('Portal Link'),
                                     'value'         => Arr::get($shop->settings, 'portal.link', ''),
                                 ],
+                                'widget_key'  => [
+                                    'type'          => 'input',
+                                    'placeholder'   => 'keyExample',
+                                    'label'         => __('Widget Key'),
+                                    'value'         => Arr::get($shop->website->settings, 'jira_help_desk_widget'),
+                                ],
                             ]
                         ]
                     ],
