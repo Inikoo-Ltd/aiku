@@ -9,6 +9,8 @@ use App\Models\CRM\Livechat\ChatEvent;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\Livechat\ChatAssignment;
+use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 

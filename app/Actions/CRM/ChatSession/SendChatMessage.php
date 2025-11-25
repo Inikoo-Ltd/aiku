@@ -13,6 +13,7 @@ use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 
 class SendChatMessage
@@ -61,7 +62,7 @@ class SendChatMessage
     {
         ChatEvent::create([
             'chat_session_id' => $chatSession->id,
-            'event_type' => ChatEventTypeEnum::MESSAGE_SENT->value,
+            'event_type' => ChatEventTypeEnum::OPEN->value,
             'actor_type' => $senderType,
             'actor_id' => $senderId,
             'payload' => [
@@ -87,11 +88,11 @@ class SendChatMessage
             'sender_type' => [
                 'required',
                 Rule::in([
-                    ChatActorTypeEnum::GUEST->value,
-                    ChatActorTypeEnum::USER->value,
-                    ChatActorTypeEnum::AGENT->value,
-                    ChatActorTypeEnum::SYSTEM->value,
-                    ChatActorTypeEnum::AI->value,
+                    ChatSenderTypeEnum::GUEST->value,
+                    ChatSenderTypeEnum::USER->value,
+                    ChatSenderTypeEnum::AGENT->value,
+                    ChatSenderTypeEnum::SYSTEM->value,
+                    ChatSenderTypeEnum::AI->value,
                 ])
             ],
             'sender_id' => [
@@ -107,9 +108,9 @@ class SendChatMessage
 
     public function asController(ChatSession $chatSession, ActionRequest $request): ChatMessage
     {
-        $senderData = $this->determineSenderData();
+        // $senderData = $this->determineSenderData();
 
-        $request->merge($senderData);
+        // $request->merge($senderData);
 
         return $this->handle($chatSession, $request->validated());
     }

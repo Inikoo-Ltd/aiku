@@ -5,6 +5,7 @@ namespace App\Models\CRM\Livechat;
 use App\Models\Language;
 use App\Models\CRM\WebUser;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\CRM\Livechat\ChatAssignment;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -66,6 +67,11 @@ class ChatSession extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(ChatMessage::class, 'chat_session_id');
+    }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(ChatAssignment::class, 'chat_session_id');
     }
 
 

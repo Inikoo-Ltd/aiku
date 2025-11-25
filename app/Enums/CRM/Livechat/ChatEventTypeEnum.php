@@ -17,7 +17,6 @@ enum ChatEventTypeEnum: string
     case CLOSE = 'close';
     case RATING = 'rating';
     case NOTE = 'note';
-
     case REPLY = 'reply';
 
     public static function labels(): array
