@@ -60,12 +60,12 @@ import { notify } from "@kyvg/vue3-notification";
             fulfillment_policy_id: null,
             tax_category_id: null,
             is_vat_adjustment: false,
-            shipping_max_dispatch_time: 0,
+            shipping_max_dispatch_time: null,
             shipping_service: null,
-            shipping_price: 0,
+            shipping_price: null,
             return_accepted: null,
             return_payer: null,
-            return_within: 1,
+            return_within: null,
             return_description: ""
     });
 
@@ -295,8 +295,8 @@ import { notify } from "@kyvg/vue3-notification";
                             <label class="font-semibold">{{ trans("Max dispatch time (day)") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <InputNumber v-model="form.shipping_max_dispatch_time" @update:model-value="errors.shipping_max_dispatch_time = null" inputId="integeronly" fluid />
-                                <p v-if="errors.shipping_max_dispatch_time" class="text-sm text-red-600 mt-1">{{ errors.shipping_max_dispatch_time?.[0] }}</p>
                             </div>
+                            <p v-if="errors.shipping_max_dispatch_time" class="text-sm text-red-600 mt-1">{{ errors.shipping_max_dispatch_time?.[0] }}</p>
                         </div>
                     </div>
                 </div>
