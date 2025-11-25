@@ -8,8 +8,13 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
@@ -24,7 +29,11 @@ use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -199,7 +208,7 @@ class StoreInvoice extends OrgAction
 
         Sentry::captureMessage('Invoice created: '.$invoice->slug.' Shp id: '.$invoice->shop_id.' Org id: '.$invoice->organisation_id);
         $invoice->refresh();
-        CategoriseInvoice::run($invoice);
+        $invoice=CategoriseInvoice::run($invoice);
 
 
         if ($invoice->customer_id) {
@@ -213,11 +222,22 @@ class StoreInvoice extends OrgAction
         RunInvoiceHydrators::run($invoice,$this->hydratorsDelay);
         if (!$this->strict) {
 
-            print "Running invoice hydrators for invoice: $invoice->id\n";
+            print "Running invoice hydrators for invoice V2 : $invoice->id\n";
 
             //todo: debug some how the fetch invoices do not run this dont know why
 
             $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+
+            ShopHydrateInvoices::run($invoice->shop);
+            OrganisationHydrateInvoices::run($invoice->organisation);
+            GroupHydrateInvoices::run($invoice->group);
+
+            if ($invoice->invoiceCategory) {
+                InvoiceCategoryHydrateInvoices::run($invoice->invoiceCategory);
+                InvoiceCategoryHydrateSalesIntervals::run($invoice->invoiceCategory, $intervalsExceptHistorical, []);
+                InvoiceCategoryHydrateOrderingIntervals::run($invoice->invoiceCategory, $intervalsExceptHistorical, []);
+            }
+
             ShopHydrateSalesIntervals::run($invoice->shop, $intervalsExceptHistorical, []);
             OrganisationHydrateSalesIntervals::run($invoice->organisation, $intervalsExceptHistorical, []);
             GroupHydrateSalesIntervals::run($invoice->group, $intervalsExceptHistorical, []);
@@ -226,6 +246,11 @@ class StoreInvoice extends OrgAction
                 MasterShopHydrateSalesIntervals::run($invoice->master_shop_id, $intervalsExceptHistorical, []);
                 MasterShopHydrateInvoiceIntervals::run($invoice->master_shop_id, $intervalsExceptHistorical, []);
             }
+
+            ShopHydrateInvoiceIntervals::run($invoice->shop, $intervalsExceptHistorical, []);
+            OrganisationHydrateInvoiceIntervals::run($invoice->organisation, $intervalsExceptHistorical, []);
+            GroupHydrateInvoiceIntervals::run($invoice->group, $intervalsExceptHistorical, []);
+
 
             if ($invoice->platform_id) {
                 ShopHydratePlatformSalesIntervalsInvoices::run($invoice->shop_id, $invoice->platform_id, $intervalsExceptHistorical, []);
