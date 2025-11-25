@@ -197,7 +197,7 @@ class StoreInvoice extends OrgAction
             return $invoice;
         });
 
-        Sentry::captureMessage('Invoice created: '.$invoice->id.' Org id: '.$invoice->organisation_id);
+        Sentry::captureMessage('Invoice created: '.$invoice->slug.' Shp id: '.$invoice->shop_id.' Org id: '.$invoice->organisation_id);
         $invoice->refresh();
         CategoriseInvoice::run($invoice);
 
