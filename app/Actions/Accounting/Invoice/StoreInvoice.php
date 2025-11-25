@@ -218,20 +218,20 @@ class StoreInvoice extends OrgAction
             //todo: debug some how the fetch invoices do not run this dont know why
 
             $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-            ShopHydrateSalesIntervals::dispatch($invoice->shop, $intervalsExceptHistorical, []);
-            OrganisationHydrateSalesIntervals::dispatch($invoice->organisation, $intervalsExceptHistorical, []);
-            GroupHydrateSalesIntervals::dispatch($invoice->group, $intervalsExceptHistorical, []);
+            ShopHydrateSalesIntervals::run($invoice->shop, $intervalsExceptHistorical, []);
+            OrganisationHydrateSalesIntervals::run($invoice->organisation, $intervalsExceptHistorical, []);
+            GroupHydrateSalesIntervals::run($invoice->group, $intervalsExceptHistorical, []);
 
             if ($invoice->master_shop_id) {
-                MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id, $intervalsExceptHistorical, []);
-                MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id, $intervalsExceptHistorical, []);
+                MasterShopHydrateSalesIntervals::run($invoice->master_shop_id, $intervalsExceptHistorical, []);
+                MasterShopHydrateInvoiceIntervals::run($invoice->master_shop_id, $intervalsExceptHistorical, []);
             }
 
             if ($invoice->platform_id) {
-                ShopHydratePlatformSalesIntervalsInvoices::dispatch($invoice->shop_id, $invoice->platform_id, $intervalsExceptHistorical, []);
-                ShopHydratePlatformSalesIntervalsSales::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []);
-                ShopHydratePlatformSalesIntervalsSalesOrgCurrency::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []);
-                ShopHydratePlatformSalesIntervalsSalesGrpCurrency::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []);
+                ShopHydratePlatformSalesIntervalsInvoices::run($invoice->shop_id, $invoice->platform_id, $intervalsExceptHistorical, []);
+                ShopHydratePlatformSalesIntervalsSales::run($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []);
+                ShopHydratePlatformSalesIntervalsSalesOrgCurrency::run($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []);
+                ShopHydratePlatformSalesIntervalsSalesGrpCurrency::run($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []);
             }
 
         }
