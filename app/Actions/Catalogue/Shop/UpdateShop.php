@@ -90,6 +90,7 @@ class UpdateShop extends OrgAction
                     'vat_number' => 'data.vat_number',
                     'ebay_redirect_key' => 'settings.ebay.redirect_key',
                     'ebay_marketplace_id' => 'settings.ebay.marketplace_id',
+                    'portal_link'   => 'settings.portal.link',
                     default => $key
                 },
                 $value
@@ -104,6 +105,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'vat_number');
         data_forget($modelData, 'ebay_redirect_key');
         data_forget($modelData, 'ebay_marketplace_id');
+        data_forget($modelData, 'portal_link');
 
         if (Arr::exists($modelData, 'collection_address')) {
             $collectionAddressData = Arr::get($modelData, 'collection_address');
@@ -257,6 +259,7 @@ class UpdateShop extends OrgAction
             'vat_number'                   => ['sometimes', 'string'],
             'ebay_redirect_key'            => ['sometimes', 'string'],
             'ebay_marketplace_id'          => ['sometimes', 'string'],
+            'portal_link'                  => ['sometimes', 'string'],
             'required_approval'            => ['sometimes', 'boolean'],
             'required_phone_number'        => ['sometimes', 'boolean'],
             'marketing_opt_in_default'     => ['sometimes', 'boolean'],
