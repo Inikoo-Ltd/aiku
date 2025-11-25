@@ -160,6 +160,7 @@ class StoreOrderFromWooCommerce extends OrgAction
             'dependent_locality'  => null,
             'locality'            => Arr::get($wooOrderData, 'city'),
             'administrative_area' => Arr::get($wooOrderData, 'state'),
+            'country_code'        => $country->code,
             'country_id'          => $country->id
         ];
 

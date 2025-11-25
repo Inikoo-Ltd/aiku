@@ -99,7 +99,7 @@ const locale = inject("locale", aikuLocaleStructure);
     </Table>
 
       <!-- Email Preview Modal -->
-    <Modal :show="showEmailPreview" @close="showEmailPreview = false" width="w-full max-w-lg">
+    <Modal :show="showEmailPreview" @close="showEmailPreview = false" width="w-auto max-w-4xl px-4">
       <div class="p-4">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Email Preview</h3>
         <div v-if="selectedEmail" class="space-y-4">

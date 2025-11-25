@@ -42,10 +42,11 @@ import { notify } from "@kyvg/vue3-notification";
 import { cloneDeep } from "lodash";
 import PureInputNumber from "./Pure/PureInputNumber.vue";
 import Image from "./Image.vue";
-import { faPencil } from "@fal";
+import { faPencil, faImage } from "@fal";
+import { faBoxUp } from "@fas";
 
 library.add(
-    faShapes,
+    faShapes, faBoxUp,
     faSortAmountDownAlt,
     faSortAmountDown,
     faHome,
@@ -58,7 +59,7 @@ library.add(
     faMinimize,
     faExpand,
     faXmark,
-    faCamera
+    faCamera, faImage
 );
 
 const props = defineProps<{
@@ -91,7 +92,9 @@ const form = useForm({
     name: "",
     unit: '',
    /*  units: null, */
-    trade_units: [],
+    trade_units: [
+
+    ],
     image: null,
     shop_products: null,
     marketing_weight: 0,
@@ -147,7 +150,12 @@ const getTableData = (data) => {
             }
         }
 
-        console.log(finalDataTable)
+        if (props.is_dropship) {
+            for (const item of form.trade_units) {
+                item.quantity = item.ds_quantity;
+            }
+        }
+
         try {
             const response = await axios.post(
                 route("grp.models.master_product_category.product_creation_data", {
@@ -164,10 +172,20 @@ const getTableData = (data) => {
                     tableData.value.data[index].product = {
                         ...tableData.value.data[index].product,
                         ...item,
+                        pick_fractional: item.pick_fractional,
                         rrp : item.rrp / (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1)
                     }
                 }
             }
+
+            // Section: Modify pick_fractional from response to form.trade_units
+            for (const trade_unit of response.data.trade_units) {
+                const target = form.trade_units.find((item) => item.id === trade_unit.id)
+                if (target) {
+                    target.pick_fractional = trade_unit.pick_fractional
+                }
+            }
+            
         } catch (error: any) {
             if (!(axios.isCancel(error) || error.name === "CanceledError")) {
                 console.error("Terjadi error:", error)
@@ -177,7 +195,7 @@ const getTableData = (data) => {
 }
 
 const ListSelectorChange = (value) => {
-    // console.log('selector:', value)
+    console.log('selector:', value)
     if (value.length >= 1) {
         form.name = value[0].name
         form.code = value[0].code
@@ -240,7 +258,8 @@ const submitForm = async (redirect = true) => {
 
     if(props.is_dropship){
         for(const item of payload.trade_units){
-            item.quantity = item.ds_quantity
+            // item.quantity = item.ds_quantity
+            item.packed_in = item.ds_quantity
         }
     }
 
@@ -390,8 +409,10 @@ const successEditTradeUnit = (data) => {
                     <template #info="{ data }">
                         <div class="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition">
                             <!-- Product Image -->
-                            <Image v-if="data.image" :src="data.image.thumbnail" alt="Product image"
-                                class="w-12 h-12 rounded-lg object-cover border border-gray-200 shadow-sm" />
+                            <div class="w-12 h-12 rounded-lg border border-gray-200 shadow-sm flex items-center justify-center ">
+                                <Image v-if="data.image" :src="data.image.thumbnail" alt="Product image" object-cover />
+                                <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="opacity-70" fixed-width aria-hidden="true" />
+                            </div>
 
                             <!-- Product Details -->
                             <div class="flex flex-col flex-1 min-w-0">
@@ -405,6 +426,12 @@ const successEditTradeUnit = (data) => {
                                         title="Edit" @click="() => openModalTradeUnit(data)">
                                         <FontAwesomeIcon :icon="faPencil" class="w-3.5 h-3.5 text-blue-500" />
                                     </button>
+                                </div>
+
+                                <!-- Quantity -->
+                                <div v-tooltip="trans('Packed in :qty', { qty: data.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
+                                    <FontAwesomeIcon icon="fas fa-box-up" class="mr-1" fixed-width aria-hidden="true" />
+                                    {{ data.packed_in }} [{{ data.type }}]
                                 </div>
 
                                 <!-- Price -->
@@ -508,7 +535,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Unit')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Unit label')}}</label>
                             <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
                                 class="w-full" />
                             <small v-if="form.errors.unit" class="text-red-500 text-xs flex items-center gap-1 mt-1">

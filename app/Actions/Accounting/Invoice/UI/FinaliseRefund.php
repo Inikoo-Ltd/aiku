@@ -9,7 +9,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
-use App\Actions\Accounting\Invoice\WithRunInvoiceHydrators;
+use App\Actions\Accounting\Invoice\RunInvoiceHydrators;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
@@ -22,7 +22,6 @@ use Lorisleiva\Actions\ActionRequest;
 class FinaliseRefund extends OrgAction
 {
     use WithActionUpdate;
-    use WithRunInvoiceHydrators;
 
     public function handle(Invoice $refund): Invoice
     {
@@ -55,7 +54,7 @@ class FinaliseRefund extends OrgAction
         );
 
 
-        $this->runInvoiceHydrators($refund);
+        RunInvoiceHydrators::run($refund,$this->hydratorsDelay);
         if ($refund->shop->type == 'fulfilment') {
             SendInvoiceToFulfilmentCustomerEmail::dispatch($refund);
         }

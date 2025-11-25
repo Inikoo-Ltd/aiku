@@ -16,12 +16,15 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -78,8 +81,28 @@ class UpdateMasterAsset extends OrgAction
                 ]
             ]);
         }
-        $masterAsset = $this->update($masterAsset, $modelData);
 
+        $tradeUnits     = Arr::pull($modelData, 'trade_units', []);
+
+        $masterAsset    = DB::transaction(function () use ($masterAsset, $modelData, $tradeUnits) {
+            /** @var MasterAsset $masterAsset */
+            if(count($tradeUnits) > 0){
+                $this->processTradeUnits($masterAsset, $tradeUnits);
+                if(count($tradeUnits) == 1){
+                    data_set($modelData, 'units', $tradeUnits[0]['quantity']);
+                    data_set($modelData, 'unit', $tradeUnits[0]['type']);
+                }else{
+                    data_set($modelData, 'units', 1);
+                    data_set($modelData, 'unit', 'bundle');
+                }
+            }
+            $this->update($masterAsset, $modelData);
+
+            return ModelHydrateSingleTradeUnits::run($masterAsset);
+        });
+
+        CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+        
         if ($masterAsset->wasChanged('status')) {
             GroupHydrateMasterAssets::dispatch($masterAsset->group)->delay($this->hydratorsDelay);
             MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
@@ -92,6 +115,29 @@ class UpdateMasterAsset extends OrgAction
         }
 
         return $masterAsset;
+    }
+
+    public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnitsRaw): void
+    {
+        $stocks = [];
+        $tradeUnits = [];
+        foreach ($tradeUnitsRaw as $item) {
+            $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
+            $tradeUnits[$tradeUnit->id] = [
+                'quantity' => Arr::get($item, 'quantity')
+            ];
+
+
+            foreach ($tradeUnit->stocks as $stock) {
+                $stocks[$stock->id] = [
+                    'quantity' =>  Arr::get($item, 'quantity') / $stock->pivot->quantity ,
+                ];
+            }
+        }
+
+        $masterAsset->tradeUnits()->sync($tradeUnits);
+        $masterAsset->stocks()->sync($stocks);
+        $masterAsset->refresh();
     }
 
     public function rules(): array
@@ -111,6 +157,7 @@ class UpdateMasterAsset extends OrgAction
                     ]
                 ),
             ],
+            'trade_units'      => ['sometimes', 'array', 'nullable'],
             'name'             => ['sometimes', 'required', 'max:250', 'string'],
             'price'            => ['sometimes', 'required', 'numeric', 'min:0'],
             'description'      => ['sometimes', 'required', 'max:1500'],

@@ -15,10 +15,12 @@ import axios from "axios";
 
 const goNext = inject("goNext");
 const ebayId = inject("ebayId");
+const customerSalesChannelId = inject("customerSalesChannelId");
 const ebayName = inject("ebayName");
 const closeCreateEbayModal = inject("closeCreateEbayModal");
 
 const isLoadingStep = ref(false)
+const errors = ref({})
 
 const form = useForm({
     name: ""
@@ -29,11 +31,13 @@ const submitForm = async () => {
     try {
         const {data} = await axios.post(route('retina.dropshipping.customer_sales_channels.ebay.store'), form.data());
         ebayId.value = data.id;
+        customerSalesChannelId.value = data.customer_sales_channel_id;
         ebayName.value = data.name;
         goNext();
         isLoadingStep.value = false
     } catch (err) {
         isLoadingStep.value = false;
+        errors.value = err.response?.data?.errors;
         notify({
             title: trans("Something went wrong"),
             text: err.response?.data?.message,
@@ -48,10 +52,12 @@ const submitForm = async () => {
         <div class="flex flex-col gap-2 w-full md:w-80">
             <label class="font-semibold">{{ trans("ebay Account Name") }}</label>
             <PureInput
+                :is-error="errors.name"
                 type="text"
                 v-model="form.name"
-                @update:model-value="form.errors.name = null"
+                @update:model-value="errors.name = null"
             />
+            <p v-if="errors.name" class="text-sm text-red-600 mt-1">{{ errors.name?.[0] }}</p>
         </div>
 
         <hr class="w-full border-t"/>

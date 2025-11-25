@@ -11,8 +11,10 @@ namespace App\Actions\Masters\MasterAsset\UI;
 use App\Actions\GrpAction;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -119,6 +121,21 @@ class EditMasterProduct extends GrpAction
     public function getBlueprint(MasterAsset $masterProduct): array
     {
         $barcodes = $masterProduct->tradeUnits->pluck('barcode')->filter()->unique();
+        $packedIn = DB::table('model_has_trade_units')
+                ->where('model_type', 'Stock')
+                ->whereIn('trade_unit_id', $masterProduct->tradeUnits->pluck('id'))
+                ->pluck('quantity', 'trade_unit_id')
+                ->toArray();
+
+        $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
+                return array_merge(
+                    ['quantity' => (int) $t->pivot->quantity],
+                ['fraction'   =>  $t->pivot->quantity /  $packedIn[$t->id]],
+                ['packed_in'   =>  $packedIn[$t->id]],
+                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity /  $packedIn[$t->id])), $packedIn[$t->id])],
+                    $t->toArray()
+                );
+            });
 
         return [
             [
@@ -239,11 +256,6 @@ class EditMasterProduct extends GrpAction
                         'label' => __('unit'),
                         'value' => $masterProduct->unit,
                     ],
-                    'units'       => [
-                        'type'  => 'input',
-                        'label' => __('units'),
-                        'value' => $masterProduct->units,
-                    ],
                     'barcode'       => [
                         'type'  => 'select',
                         'label' => __('barcode'),
@@ -275,10 +287,11 @@ class EditMasterProduct extends GrpAction
                     'fields' => [
                         'trade_units' => [
                             'label'        => __('Trade Units'),
-                            'type'         => 'list-selector',
-                            'value'        => $masterProduct->tradeUnits,
+                            'type'         => 'list-selector-trade-unit',
                             'key_quantity' => 'quantity',
                             'withQuantity' => true,
+                            'full'         => true,
+                            'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
                             'tabs' => [
                                 [
                                     'label' => __('To do'),
@@ -309,6 +322,7 @@ class EditMasterProduct extends GrpAction
                                     ],
                                 ],
                             ],
+                            'value'        => $tradeUnits,
                         ],
                     ],
                 ],

@@ -36,17 +36,17 @@ const layout = inject('layout')
             :intervals="props.intervals"
         />
 <!--        <CustomerClv v-if="layout?.app?.environment === 'local'" />-->
-        <Sales
-            v-if="props.tableData?.tables?.invoice_categories"
-            :scope="props.tableData?.tables?.organisations ? 'group' : 'organisation'"
-            :tableData="props.tableData"
-            :intervals="props.intervals"
-        />
-        <Invoices
-            v-if="props.tableData?.tables?.invoice_categories"
-            :scope="props.tableData?.tables?.organisations ? 'group' : 'organisation'"
-            :tableData="props.tableData"
-            :intervals="props.intervals"
-        />
+<!--        <Sales-->
+<!--            v-if="props.tableData?.tables?.invoice_categories"-->
+<!--            :scope="props.tableData?.tables?.organisations ? 'group' : 'organisation'"-->
+<!--            :tableData="props.tableData"-->
+<!--            :intervals="props.intervals"-->
+<!--        />-->
+<!--        <Invoices-->
+<!--            v-if="props.tableData?.tables?.invoice_categories"-->
+<!--            :scope="props.tableData?.tables?.organisations ? 'group' : 'organisation'"-->
+<!--            :tableData="props.tableData"-->
+<!--            :intervals="props.intervals"-->
+<!--        />-->
     </div>
 </template>

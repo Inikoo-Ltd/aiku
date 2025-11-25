@@ -125,7 +125,6 @@ const debounceUpdateQuantity = debounce(
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">
             <div class="px-2 relative text-right w-full">
-                <!-- <pre>{{ item }}</pre> -->
                 <div class="w-fit ml-auto">
                     <NumberWithButtonSave
                         v-model="item.quantity_ordered"
@@ -138,6 +137,7 @@ const debounceUpdateQuantity = debounce(
                         noSaveButton
                         noUndoButton
                         :min="1"
+                        :max="item.available_quantity"
                     />
                 </div>
 
@@ -145,7 +145,6 @@ const debounceUpdateQuantity = debounce(
                     class="absolute ml-2 top-1/2 -translate-y-1/2 text-base"
                     :state="get(listState, [item.id, 'quantity'], null)"
                 />
-
             </div>
         </template>
 

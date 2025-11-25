@@ -38,7 +38,7 @@ class UpdateRetinaEbayUser extends RetinaAction
     public function rules(): array
     {
         return [
-            'marketplace' => ['sometimes', 'string']
+            'marketplace' => ['sometimes', 'required', 'string']
         ];
     }
 

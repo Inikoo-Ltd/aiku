@@ -2,6 +2,7 @@
 
 namespace App\Models\CRM\Livechat;
 
+use App\Enums\CRM\Livechat\ChatEventActorTypeEnum;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
@@ -163,6 +164,22 @@ class ChatEvent extends Model
     public function scopeRatings($query)
     {
         return $query->where('event_type', ChatEventTypeEnum::RATING);
+    }
+
+    public static function logEvent(
+        int $sessionId,
+        ChatEventActorTypeEnum $eventType,
+        ?ChatActorTypeEnum $actorType = null,
+        ?int $actorId = null,
+        ?array $payload = null
+    ): self {
+        return self::create([
+            'session_id' => $sessionId,
+            'event_type' => $eventType,
+            'actor_type' => $actorType,
+            'actor_id' => $actorId,
+            'payload' => $payload,
+        ]);
     }
 
 

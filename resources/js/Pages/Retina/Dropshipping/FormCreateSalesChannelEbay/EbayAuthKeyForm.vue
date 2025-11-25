@@ -22,10 +22,13 @@ const closeCreateEbayModal = inject("closeCreateEbayModal");
 const ebayId = inject("ebayId");
 
 const isLoadingStep = ref(false)
+const errors = ref({})
+
 const {props} = defineProps({props: {}});
 // Section: ebay
 const onSubmitEbay = async () => {
     isLoadingStep.value = true;
+    errors.value = {};
 
     try {
         const response = await axios.post(
@@ -54,6 +57,7 @@ const submitForm = async () => {
         isLoadingStep.value = false
     } catch (err) {
         isLoadingStep.value = false;
+        errors.value = err.response?.data?.errors;
         notify({
             title: trans("Something went wrong"),
             text: err.response?.data?.message,
@@ -75,6 +79,7 @@ const submitForm = async () => {
                 v-tooltip="trans('Requests a token from eBay so we can sync without you entering your account details each time')"
                 icon="fal fa-info-circle" class="hidden md:block size-5 text-black"/>
         </div>
+        <p v-if="errors.message" class="text-sm text-red-600 mt-1">{{ errors.message?.[0] }}</p>
 
         <hr class="w-full border-t"/>
 

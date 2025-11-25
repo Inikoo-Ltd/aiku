@@ -311,8 +311,6 @@ class ShowProduct extends OrgAction
                 ];
         }
 
-
-
         return Inertia::render(
             'Org/Catalogue/Product',
             [

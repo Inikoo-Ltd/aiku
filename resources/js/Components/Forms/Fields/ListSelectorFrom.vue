@@ -19,12 +19,16 @@ const props = defineProps<{
     form: any
     fieldName: string
     options?: any
-    fieldData?: {
+    fieldData: {
         type: string
         withQuantity?: boolean
         routeFetch: routeType
         key_quantity? : string
-        tabs:array
+        tabs: {
+            label: string
+            routeFetch: routeType
+        }[]
+        is_dropship: boolean
     }
 }>()
 

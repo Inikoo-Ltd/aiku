@@ -123,6 +123,7 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.slug',
                 'available_quantity',
                 'units',
+                'unit',
                 'master_product_id',
             ])
             ->selectRaw("'{$shop->currency->code}'  as currency_code")
