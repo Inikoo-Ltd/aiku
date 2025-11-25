@@ -27,6 +27,7 @@ import { cloneDeep } from "lodash-es";
 import { trans } from "laravel-vue-i18n"
 import axios from "axios";
 import TradeUnit from "../Goods/TradeUnit.vue"
+import ProductSales from "@/Components/Product/ProductSales.vue"
 
 library.add(
     faChartLine, faCheckCircle, faFolderTree, faFolder, faCube,
@@ -45,6 +46,7 @@ const props = defineProps<{
     language?: {}
     products?: {}
     trade_units?: {}
+    sales: {}
     images?: {}
     mini_breadcrumbs?: any[]
     attachments?: {}
@@ -67,13 +69,14 @@ const form = useForm({
 });
 
 const component = computed(() => {
-    const components = {
+    const components: Record<string, any> ={
         showcase: MasterProductShowcase,
         history: TableHistories,
         products: TableProducts,
         images: TradeUnitImagesManagement,
         trade_units: TableTradeUnits,
         attachments: AttachmentManagement,
+        sales: ProductSales,
     }
     return components[currentTab.value]
 })
@@ -180,9 +183,7 @@ onMounted(() => {
             <div v-else></div>
         </template>
     </PageHeading>
-
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-
     <div v-if="mini_breadcrumbs.length" class="bg-white px-4 py-2 w-full border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item }">

@@ -18,18 +18,35 @@ enum MasterAssetTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
     case SHOWCASE = 'showcase';
     case PRODUCTS = 'products';
-    case TRADE_UNITS = 'trade_units';
     case IMAGES = 'images';
+    case SALES = 'sales';
+
     case HISTORY  = 'history';
+    case TRADE_UNITS = 'trade_units';
 
 
     public function blueprint(): array
     {
         return match ($this) {
-
+            MasterAssetTabsEnum::SHOWCASE => [
+                'title' => __('Overview'),
+                'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            MasterAssetTabsEnum::PRODUCTS => [
+                'title' => __('Products in shop'),
+                'icon'  => 'fal fa-store',
+            ],
+            MasterAssetTabsEnum::IMAGES => [
+                'title' => __('Media'),
+                'icon'  => 'fal fa-camera-retro',
+            ],
+            MasterAssetTabsEnum::SALES => [
+                'title' => __('Sales'),
+                'icon'  => 'fal fa-money-bill-wave',
+            ],
+            
             MasterAssetTabsEnum::TRADE_UNITS => [
                 'title' => __('Trade units'),
                 'icon'  => 'fal fa-atom',
@@ -37,26 +54,10 @@ enum MasterAssetTabsEnum: string
                 'align' => 'right',
             ],
             MasterAssetTabsEnum::HISTORY => [
-                'align' => 'right',
-                'type'  => 'icon',
-                'title' => __('Changelog'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
-
-            ],
-
-            MasterAssetTabsEnum::IMAGES => [
-                'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
-            ],
-            MasterAssetTabsEnum::PRODUCTS => [
-                'title' => __('Products in shop'),
-                'icon'  => 'fal fa-store',
-            ],
-            MasterAssetTabsEnum::SHOWCASE => [
-                'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'type'  => 'icon',
             ],
         };
     }

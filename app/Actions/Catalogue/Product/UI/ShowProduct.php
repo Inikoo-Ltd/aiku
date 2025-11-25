@@ -311,6 +311,20 @@ class ShowProduct extends OrgAction
                 ];
         }
 
+        if($product->webpage?->canonical_url) {
+            $actions[] = 
+                [
+                    'type'  => 'button',
+                    'style' => 'edit',
+                    'icon'  => ["fal", "fa-external-link"],
+                    'tooltip'   => "Open website in a new tab",
+                    'route' => [
+                        'url'       => $product->webpage?->canonical_url,
+                        'openBlank'  => true,
+                    ]
+                ];
+        }
+
         return Inertia::render(
             'Org/Catalogue/Product',
             [
@@ -356,6 +370,8 @@ class ShowProduct extends OrgAction
                 ],
                 'taxonomy'    => $this->getProductTaxonomy($product, $request),
                 'webpage_canonical_url' => $product->webpage?->canonical_url,
+                'is_single_trade_unit'  => $product->is_single_trade_unit,
+                'trade_unit_slug'       => $product->tradeUnits?->first->slug,
 
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)

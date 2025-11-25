@@ -129,7 +129,7 @@ class EditMasterProduct extends GrpAction
 
         $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
                 return array_merge(
-                    ['quantity' => (int) $t->pivot->quantity],
+                ['quantity' => (int) $t->pivot->quantity],
                 ['fraction'   =>  $t->pivot->quantity /  $packedIn[$t->id]],
                 ['packed_in'   =>  $packedIn[$t->id]],
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity /  $packedIn[$t->id])), $packedIn[$t->id])],
@@ -281,51 +281,51 @@ class EditMasterProduct extends GrpAction
                     ],
                 ]
             ],
-            [
-                    'label' => __('Trade unit'),
-                    'icon'  => 'fa-light fa-atom',
-                    'fields' => [
-                        'trade_units' => [
-                            'label'        => __('Trade Units'),
-                            'type'         => 'list-selector-trade-unit',
-                            'key_quantity' => 'quantity',
-                            'withQuantity' => true,
-                            'full'         => true,
-                            'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
-                            'tabs' => [
-                                [
-                                    'label' => __('To do'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.recommended-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $masterProduct->masterFamily->slug,
-                                        ],
-                                    ],
-                                ],
-                                [
-                                    'label' => __('Done'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.taken-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $masterProduct->masterFamily->slug,
-                                        ],
-                                    ],
-                                ],
-                                [
-                                    'label'   => __('All'),
-                                    'search'  => true,
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.all-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $masterProduct->masterFamily->slug,
-                                        ],
+            $masterProduct->masterFamily ? [
+                'label' => __('Trade unit'),
+                'icon'  => 'fa-light fa-atom',
+                'fields' => [
+                    'trade_units' => [
+                        'label'        => __('Trade Units'),
+                        'type'         => 'list-selector-trade-unit',
+                        'key_quantity' => 'quantity',
+                        'withQuantity' => true,
+                        'full'         => true,
+                        'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
+                        'tabs' => [
+                            [
+                                'label' => __('To do'),
+                                'routeFetch' => [
+                                    'name'       => 'grp.json.master-product-category.recommended-trade-units',
+                                    'parameters' => [
+                                        'masterProductCategory' => $masterProduct->masterFamily->slug,
                                     ],
                                 ],
                             ],
-                            'value'        => $tradeUnits,
+                            [
+                                'label' => __('Done'),
+                                'routeFetch' => [
+                                    'name'       => 'grp.json.master-product-category.taken-trade-units',
+                                    'parameters' => [
+                                        'masterProductCategory' => $masterProduct->masterFamily->slug,
+                                    ],
+                                ],
+                            ],
+                            [
+                                'label'   => __('All'),
+                                'search'  => true,
+                                'routeFetch' => [
+                                    'name'       => 'grp.json.master-product-category.all-trade-units',
+                                    'parameters' => [
+                                        'masterProductCategory' => $masterProduct->masterFamily->slug,
+                                    ],
+                                ],
+                            ],
                         ],
+                        'value'        => $tradeUnits,
                     ],
                 ],
+            ] : [],
         ];
     }
 
