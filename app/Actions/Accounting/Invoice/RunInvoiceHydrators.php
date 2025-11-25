@@ -34,6 +34,7 @@ use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class RunInvoiceHydrators
 {
@@ -42,6 +43,10 @@ class RunInvoiceHydrators
 
     public function handle(Invoice $invoice, int $hydratorsDelay = 0): void
     {
+        Sentry::captureMessage('Running RunInvoiceHydrators... for Invoices id: '.$invoice->slug.' Org: '.$invoice->organisation_id);
+        // Todo: remove (testing in dashboard)
+        $hydratorsDelay = 0;
+
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
         ShopHydrateInvoices::dispatch($invoice->shop)->delay($hydratorsDelay);
