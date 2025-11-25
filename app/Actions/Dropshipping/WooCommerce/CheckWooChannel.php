@@ -40,14 +40,21 @@ class CheckWooChannel
             ])
         ]);
 
-        return UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, [
+
+        $data = [
             'state'                   => CustomerSalesChannelStateEnum::AUTHENTICATED,
             'name'                    => $wooCommerceUser->name,
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform
-        ]);
+        ];
+        if ($platformStatus) {
+            $data['ban_stock_update_util'] = null;
+        }
+
+        return UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, $data);
     }
+
 
     public function getCommandSignature(): string
     {
@@ -67,15 +74,6 @@ class CheckWooChannel
             ['Exist in Platform', $customerSalesChannel->exist_in_platform ? 'Yes' : 'No']
         ];
 
-
-        $shopData = $customerSalesChannel->user->data['shop'] ?? [];
-
-
-        if (empty($shopData)) {
-            $command->info("No shop data found.");
-
-            return;
-        }
 
         $command->info("\nCustomer Sales Channel Status:");
         $command->table(['Field', 'Value'], $statusData);
