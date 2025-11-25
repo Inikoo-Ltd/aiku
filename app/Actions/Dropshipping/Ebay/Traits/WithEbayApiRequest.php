@@ -188,6 +188,7 @@ trait WithEbayApiRequest
     public function extractProductAttributes($product, $categoryAspects)
     {
         $attributes = [];
+        $brand = $product->getBrand();
 
         // Get required aspects from a category
         $requiredAspects = collect($categoryAspects['aspects'] ?? [])
@@ -205,10 +206,13 @@ trait WithEbayApiRequest
                         ['Not Specified'];
                     break;
                 case 'Brand':
-                    $attributes['Brand'] = [$product->shop?->name ?? 'Unbranded'];
+                    $attributes['Brand'] = [$brand?->name ?? $product->shop?->name ?? 'Unbranded'];
                     break;
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
+                    break;
+                case 'EAN':
+                    $attributes['EAN'] = [$product->barcode];
                     break;
                     // Add more mappings as needed
                 default:
@@ -236,8 +240,16 @@ trait WithEbayApiRequest
 
     public function getItemAspectsForCategory($categoryId)
     {
+        $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        $categoryTree = match ($marketplace) {
+            'EBAY_ES' => 186,
+            'EBAY_DE' => 77,
+            default => 3
+        };
+
         try {
-            $endpoint = "/commerce/taxonomy/v1/category_tree/3/get_item_aspects_for_category";
+            $endpoint = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_item_aspects_for_category";
 
             return $this->makeEbayRequest('get', $endpoint, [
                 'category_id' => $categoryId
@@ -250,6 +262,20 @@ trait WithEbayApiRequest
 
             return ['aspects' => []]; // Return empty aspects on failure
         }
+    }
+
+    public function getRequiredItemAspectsForCategory($categoryId)
+    {
+        return collect(Arr::get($this->getItemAspectsForCategory($categoryId), 'aspects', []))->filter(function ($aspect, $key) {
+            return $aspect['aspectConstraint']['aspectRequired'] === true;
+        })->map(function ($aspect) {
+            return [
+                'name' => $aspect['localizedAspectName'],
+                'dataType' => $aspect['aspectConstraint']['aspectDataType'],
+                'mode' => $aspect['aspectConstraint']['aspectMode'],
+                'cardinality' => $aspect['aspectConstraint']['itemToAspectCardinality']
+            ];
+        })->values();
     }
 
     public function getServicesWithCarrierInfo(): array
@@ -697,12 +723,19 @@ trait WithEbayApiRequest
         try {
             $token = $this->getEbayAccessToken();
             $url   = $this->getEbayBaseUrl().$endpoint;
+            $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+            $contentLanguage = match ($marketplaceId) {
+                'EBAY_DE' => 'de-DE',
+                'EBAY_ES' => 'es-ES',
+                default => 'en-GB'
+            };
 
             $response = Http::withHeaders([
                 'Authorization'    => 'Bearer '.$token,
                 'Content-Type'     => 'application/json',
                 'Accept'           => 'application/json',
-                'Content-Language' => 'en-GB'
+                'Content-Language' => $contentLanguage
             ])->withQueryParameters($queryParams)
                 ->$method(
                     $url,
@@ -882,12 +915,12 @@ trait WithEbayApiRequest
                 ]
             ],
             "listingPolicies"     => [
-                "fulfillmentPolicyId" => Arr::get($this->settings, 'defaults.main_fulfilment_policy_id'),
-                "paymentPolicyId"     => Arr::get($this->settings, 'defaults.main_payment_policy_id'),
-                "returnPolicyId"      => Arr::get($this->settings, 'defaults.main_return_policy_id'),
+                "fulfillmentPolicyId" => $this->fulfillment_policy_id,
+                "paymentPolicyId"     => $this->payment_policy_id,
+                "returnPolicyId"      => $this->return_policy_id,
             ],
             "categoryId"          => Arr::get($offerData, 'category_id'),
-            "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
+            "merchantLocationKey" => $this->location_key,
         ];
 
         try {
@@ -987,12 +1020,12 @@ trait WithEbayApiRequest
                     ]
                 ],
                 "listingPolicies"     => [
-                    "fulfillmentPolicyId" => Arr::get($this->settings, 'defaults.main_fulfilment_policy_id'),
-                    "paymentPolicyId"     => Arr::get($this->settings, 'defaults.main_payment_policy_id'),
-                    "returnPolicyId"      => Arr::get($this->settings, 'defaults.main_return_policy_id'),
+                    "fulfillmentPolicyId" => $this->fulfillment_policy_id,
+                    "paymentPolicyId"     => $this->payment_policy_id,
+                    "returnPolicyId"      => $this->return_policy_id,
                 ],
                 "categoryId"          => Arr::get($offerData, 'category_id'),
-                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
+                "merchantLocationKey" => $this->location_key,
             ];
 
             $endpoint = "/sell/inventory/v1/offer/$offerId";

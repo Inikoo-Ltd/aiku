@@ -29,7 +29,7 @@
     const sites = ref([
         { name: "United Kingdom", value: "EBAY_GB" },
         { name: "Spain", value: "EBAY_ES" },
-        { name: "Europe", value: "EBAY_DE" },
+        { name: "Germany", value: "EBAY_DE" },
     ]);
 
     const form = useForm({

@@ -27,6 +27,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
  * @property mixed $warehouse_slug
+ * @property mixed $packed_in
  */
 class OrgStocksResource extends JsonResource
 {

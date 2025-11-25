@@ -20,7 +20,7 @@ return new class () extends Migration {
             $table->boolean('is_available')->index()->default(false);
 
             $table->unsignedSmallInteger('current_chat_count')->default(0);
-            $table->json('specialization')->nullable(); // ["billing", "technical", "sales"]
+            $table->json('specialization')->nullable();
             $table->boolean('auto_accept')->default(true);
 
             $table->timestampsTz();
