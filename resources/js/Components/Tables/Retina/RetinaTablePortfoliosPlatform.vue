@@ -394,14 +394,17 @@ const selectedEditProduct = ref(null)
 const selectedErrorProduct = ref(null)
 const isOpenModalEditProduct = ref(false)
 const isLoadingSubmitErrorTitle = ref(false)
-const submitErrorProduct = (sel) => {
+
+const submitUpdateAndUploadProduct = (sel, state: 'draft' | 'publish') => {
     // Section: Submit
     router.post(
-        route('retina.models.portfolio.update_new_ebay_product', {
-            portfolio: sel.product.id
+        route(`retina.models.portfolio.update_new_ebay_product.${state}`, {
+            portfolio: sel.id
         }),
         {
-            title: sel.product.new_name
+            title: sel.name,
+            price: sel.customer_price,
+            description: sel.description
         },
         {
             preserveScroll: true,
@@ -902,8 +905,7 @@ const calculateVat = (price: number) => {
             <div class="mb-3">
                 <label for="edit-product-title" class="block text-sm font-semibold">{{ trans("Title") }}</label>
                     <InputText
-                        :modelValue="selectedEditProduct.name"
-                        @update:modelValue="(value) => set(selectedErrorProduct, ['product', 'new_name'], value)"
+                        v-model="selectedEditProduct.name"
                         fluid
                         inputId="edit-product-title"
                         size="small"
@@ -915,8 +917,7 @@ const calculateVat = (price: number) => {
                 <label for="edit-product-rrp" class="block text-sm font-semibold">{{ trans("Selling Price") }}</label>
                 <InputText
                     type="number"
-                    :modelValue="selectedEditProduct.customer_price"
-                    @update:modelValue="(value) => set(selectedErrorProduct, ['product', 'new_name'], value)"
+                    v-model="selectedEditProduct.customer_price"
                     fluid
                     inputId="edit-product-rrp"
                     size="small"
@@ -924,20 +925,20 @@ const calculateVat = (price: number) => {
                 />
             </div>
 
-            <div v-if="platform_data.type === 'ebay'">
+<!--            <div v-if="platform_data.type === 'ebay'">
                 <div class="mb-3" v-for="(aspect, key) in selectedEditProduct.portfolio_data?.product?.aspects">
                     <label :for="'edit-product-'+key" class="block text-sm font-semibold">{{ trans(key) }}</label>
                     <InputText
                         type="text"
                         :modelValue="aspect?.[0]"
-                        @update:modelValue="(value) => set(selectedEditProduct, ['product', 'new_name'], value)"
+                        @update:modelValue="(value) => set(selectedEditProduct, ['new_name'], value)"
                         fluid
                         :inputId="'edit-product-'+key"
                         size="small"
                         :disabled="isLoadingSubmitErrorTitle"
                     />
                 </div>
-            </div>
+            </div>-->
             <div class="mb-3">
                 <label for="edit-product-description" class="block text-sm font-semibold">{{ trans("Description") }}</label>
                 <textarea
@@ -945,18 +946,19 @@ const calculateVat = (price: number) => {
                     rows="5"
                     v-model="selectedEditProduct.description"
                     id="edit-product-description"
+                    :disabled="isLoadingSubmitErrorTitle"
                 />
             </div>
             <div class="mt-3 flex gap-2">
                 <Button
                     type="tertiary"
-                    @click="() => submitErrorProduct(selectedErrorProduct)"
+                    @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'draft')"
                     :label="trans('Save as Draf')"
                     full
                     :loading="isLoadingSubmitErrorTitle"
                 />
                 <Button
-                    @click="() => submitErrorProduct(selectedErrorProduct)"
+                    @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'publish')"
                     :label="trans('Save & Upload')"
                     full
                     :loading="isLoadingSubmitErrorTitle"
