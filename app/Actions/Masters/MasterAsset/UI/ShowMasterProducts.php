@@ -19,9 +19,11 @@ use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsSales;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Catalogue\MasterProductSalesResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
@@ -186,6 +188,7 @@ class ShowMasterProducts extends GrpAction
                             'key'   => 'edit',
                             'type'  => 'button',
                             'style' => 'edit',
+                            'label' => _('Edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -232,12 +235,17 @@ class ShowMasterProducts extends GrpAction
                     fn () =>  GetMasterProductImages::run($masterAsset)
                     : Inertia::lazy(fn () => GetMasterProductImages::run($masterAsset)),
 
+                MasterAssetTabsEnum::SALES->value => $this->tab == MasterAssetTabsEnum::SALES->value ?
+                    fn () => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
+
                 MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
                     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
 
             ]
         )->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value))
+        ->table(IndexMasterProductsSales::make()->tableStructure(prefix: MasterAssetTabsEnum::SALES->value))
         ->table(IndexMailshots::make()->tableStructure($masterAsset))
         ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value));
     }

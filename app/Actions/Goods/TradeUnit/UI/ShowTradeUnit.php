@@ -8,6 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
 use App\Actions\Goods\Stock\UI\IndexStocksInTradeUnit;
 use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
@@ -16,6 +17,7 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Masters\MasterProductsResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
 use App\Models\Goods\TradeUnit;
@@ -93,6 +95,10 @@ class ShowTradeUnit extends GrpAction
                 TradeUnitTabsEnum::IMAGES->value => $this->tab == TradeUnitTabsEnum::IMAGES->value ?
                     fn () => GetTradeUnitImages::run($tradeUnit)
                     : Inertia::lazy(fn () => GetTradeUnitImages::run($tradeUnit)),
+                
+                TradeUnitTabsEnum::MASTER_PRODUCTS->value => $this->tab == TradeUnitTabsEnum::MASTER_PRODUCTS->value ?
+                    fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))
+                    : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))),
 
                 TradeUnitTabsEnum::PRODUCTS->value => $this->tab == TradeUnitTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))
@@ -104,6 +110,7 @@ class ShowTradeUnit extends GrpAction
 
             ]
         )
+            ->table(IndexMasterProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::MASTER_PRODUCTS->value))
             ->table(IndexProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::PRODUCTS->value))
             ->table(IndexStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::STOCKS->value))
             ->table(IndexAttachments::make()->tableStructure(TradeUnitTabsEnum::ATTACHMENTS->value))

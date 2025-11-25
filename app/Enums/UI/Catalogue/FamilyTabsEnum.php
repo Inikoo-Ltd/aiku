@@ -18,10 +18,11 @@ enum FamilyTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case CONTENT = 'content';
+    case IMAGES = 'images';
     case SALES = 'sales';
+    
     case OFFERS = 'offers';
     case HISTORY = 'history';
-    case IMAGES = 'images';
     case CUSTOMERS = 'customers';
 
     public function blueprint(): array
@@ -48,8 +49,6 @@ enum FamilyTabsEnum: string
             FamilyTabsEnum::IMAGES => [
                 'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
-                'align' => 'right',
             ],
             FamilyTabsEnum::HISTORY => [
                 'title' => __('History'),
