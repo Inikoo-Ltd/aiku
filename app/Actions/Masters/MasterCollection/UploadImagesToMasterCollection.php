@@ -8,18 +8,8 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
-use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterCollection\Search\MasterCollectionRecordSearch;
-use App\Enums\Catalogue\MasterCollection\MasterCollectionProductStatusEnum;
-use App\Enums\Catalogue\MasterCollection\MasterCollectionStateEnum;
-use App\Http\Resources\Masters\MasterCollectionResource;
 use App\Models\Masters\MasterCollection;
-use App\Models\SysAdmin\Group;
-use App\Rules\AlphaDashDot;
-use App\Rules\IUnique;
-use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
@@ -41,11 +31,8 @@ class UploadImagesToMasterCollection extends GrpAction
 
     public function updateDependants(MasterCollection $seedMasterCollection, array $medias, string $scope): void
     {
-        foreach ($seedMasterCollection->productCategories as $productCategory) {
-            foreach ($medias as $media) {
-                $this->attachMediaToModel($productCategory, $media, $scope);
-            }
-        }
+        // Master Collections don't have dependants to update
+        // This method is kept for consistency with the trait interface
     }
 
     public function rules(): array
@@ -57,6 +44,6 @@ class UploadImagesToMasterCollection extends GrpAction
     {
         $this->initialisation($masterCollection->group, $request);
 
-        $this->handle($masterCollection, 'image', $this->validatedData, true);
+        $this->handle($masterCollection, 'image', $this->validatedData, false);
     }
 }

@@ -24,7 +24,7 @@ class GetMasterCollectionsImages
     {
         return [
             'id' => $masterCollection->id,
-            'editable' => false,
+            'editable' => true,
             'images_category_box' => $this->getSingleImageData($masterCollection),
             'images_update_route' => [
                 'method'     => 'patch',
@@ -41,14 +41,14 @@ class GetMasterCollectionsImages
                 ],
             ],
             'delete_images_route' => [
-                'method'     => 'post',
+                'method'     => 'delete',
                 'name'       => 'grp.models.master_collection.delete_images',
                 'parameters' => [
                     'masterCollection' => $masterCollection->id,
                     'media'   => ''
                 ],
             ],
-           /*  'images' => ImagesResource::collection(IndexMasterProductCategoryImages::run($masterCollection))->resolve(), */
+        'images' => ImagesResource::collection(IndexMasterCollectionImages::run($masterCollection))->resolve(),
 
         ];
     }

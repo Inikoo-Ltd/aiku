@@ -240,6 +240,8 @@ use App\Actions\Masters\MasterCollection\DetachMasterCollectionFromModel;
 use App\Actions\Masters\MasterCollection\DetachMasterModelFromMasterCollection;
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterCollection\UploadImagesToMasterCollection;
+use App\Actions\Masters\MasterCollection\UpdateMasterCollectionImages;
+use App\Actions\Masters\MasterCollection\DeleteImageFromMasterCollection;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DeleteImageFromMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
@@ -430,6 +432,8 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
     Route::post('attach-parents', AttachMultipleParentsToAMasterCollection::class)->name('attach_parents');
 
     Route::post('upload-images', UploadImagesToMasterCollection::class)->name('upload_images');
+    Route::patch('update-images', UpdateMasterCollectionImages::class)->name('update_images');
+    Route::delete('delete-images/{media:id}', DeleteImageFromMasterCollection::class)->name('delete_images')->withoutScopedBindings();
 });
 
 Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(function () {
