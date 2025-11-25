@@ -99,7 +99,7 @@ const getRoute = (tabSlug) => {
                             </div>
 
                             <div class="relative text-center">
-                                <span class="inline group-hover:underline opacity-80 group-hover:opacity-100 transition-all">
+                                <span class="inline group-hover:cursor-pointer group-hover:underline opacity-80 group-hover:opacity-100 transition-all">
                                   {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
                                 </span>
                             </div>
