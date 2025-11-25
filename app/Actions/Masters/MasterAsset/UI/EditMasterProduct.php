@@ -13,6 +13,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -271,9 +272,10 @@ class EditMasterProduct extends GrpAction
                         'trade_units' => [
                             'label'        => __('Trade Units'),
                             'type'         => 'list-selector',
-                            'value'        => $masterProduct->tradeUnits,
                             'key_quantity' => 'quantity',
                             'withQuantity' => true,
+                            'full'         => true,
+                            'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
                             'tabs' => [
                                 [
                                     'label' => __('To do'),
@@ -304,6 +306,7 @@ class EditMasterProduct extends GrpAction
                                     ],
                                 ],
                             ],
+                            'value'        => $masterProduct->tradeUnits,
                         ],
                     ],
                 ],
