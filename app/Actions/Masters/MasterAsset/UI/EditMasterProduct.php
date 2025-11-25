@@ -247,6 +247,36 @@ class EditMasterProduct extends GrpAction
                 ]
             ],
             [
+                'label'  => __('Master Family'),
+                'icon'   => 'fal fa-folder',
+                'fields' => [
+                    'master_family_id'   => [
+                        'type'        => 'select_infinite',
+                        'label'       => __('Master Family'),
+                        'value'       => $masterProduct->masterFamily->id,
+                        'options'   => [
+                                [
+                                    'code' =>  $masterProduct->masterFamily->code ?? null,
+                                    'name' =>  $masterProduct->masterFamily->name ?? null,
+                                    'number_current_products' =>  $masterProduct->masterFamily->stats->number_current_master_assets ?? 0
+                                ]
+                        ],
+                        'fetchRoute'    => [
+                            'name' => 'grp.json.master-family.all-master-family',
+                            'parameters' => [
+                                'masterShop' => $this->masterShop->slug,
+                                'withMasterProductCategoryStat' => true,
+                            ]
+                        ],
+                        'required' => true,
+                        'type_label' => 'families',
+                        'valueProp' => 'id',
+                        'labelProp' => 'code',
+                        'value'   => $masterProduct->masterFamily->id ?? null,
+                    ]
+                ]
+            ],
+            [
                 'label'  => __('Properties'),
                 'title'  => __('id'),
                 'icon'   => 'fa-light fa-fingerprint',
