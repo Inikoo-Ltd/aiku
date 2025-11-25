@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { inject } from "vue"
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faInfoCircle, faPallet, faCircle } from '@fas'
+import Icon from "../Icon.vue"
 import { faSpinnerThird } from '@fad'
-import { faAppleCrate,faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream } from '@fal'
+import { router } from '@inertiajs/vue3'
+import { faInfoCircle, faPallet, faCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import Icon from "../Icon.vue"
+import { faAppleCrate,faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream } from '@fal'
 
 library.add(
     faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle,
@@ -51,6 +52,21 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
         return label || '-'
     }
 }
+
+const getRoute = (tabSlug) => {
+    const currentRoute = layoutStore.currentRoute;
+    const currentParams = layoutStore.currentParams;
+
+    switch (currentRoute) {
+        case 'grp.org.shops.show.dashboard.show':
+            return route('grp.org.shops.show.ordering.backlog', {
+                ...currentParams,
+                tab: tabSlug
+            });
+        default:
+            return route(currentRoute, currentParams);
+    }
+}
 </script>
 
 <template>
@@ -62,29 +78,30 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                 :key="box.label"
                 class="rounded-md px-3 relative border w-full flex flex-col py-2 select-none"
                 :style="{
-          backgroundColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '22' : 'transparent',
-          color: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit',
-          borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit'
-        }"
+                  backgroundColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '22' : 'transparent',
+                  color: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit',
+                  borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit'
+                }"
             >
                 <div class="flex gap-x-4">
                     <div
                         v-for="tab in box.tabs"
                         :key="tab.tab_slug"
                         class="w-full flex flex-col items-center"
+                        @click="router.get(getRoute(tab.tab_slug))"
                     >
                         <div class="group flex items-center gap-1 tabular-nums relative text-xl px-2 mb-1 cursor-default">
                             <div class="mx-auto text-center">
                                 <template v-if="tab.icon || tab.icon_data">
-                                    <Icon v-if="tab.icon_data" :data="tab.icon_data" class="text-xl" />
+                                    <Icon v-if="tab.icon_data" :data="tab.icon_data" class="text-xl group-hover:cursor-pointer" />
                                     <FontAwesomeIcon v-else :icon="tab.icon" class="text-xl" fixed-width aria-hidden="true" />
                                 </template>
                             </div>
 
                             <div class="relative text-center">
-                <span class="inline opacity-80 group-hover:opacity-100 transition-opacity">
-                  {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
-                </span>
+                                <span class="inline group-hover:cursor-pointer group-hover:underline opacity-80 group-hover:opacity-100 transition-all">
+                                  {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
+                                </span>
                             </div>
 
                             <template v-if="tab.indicator">

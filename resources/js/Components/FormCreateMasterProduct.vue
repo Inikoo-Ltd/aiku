@@ -42,7 +42,7 @@ import { notify } from "@kyvg/vue3-notification";
 import { cloneDeep } from "lodash";
 import PureInputNumber from "./Pure/PureInputNumber.vue";
 import Image from "./Image.vue";
-import { faPencil } from "@fal";
+import { faPencil, faImage } from "@fal";
 import { faBoxUp } from "@fas";
 
 library.add(
@@ -59,7 +59,7 @@ library.add(
     faMinimize,
     faExpand,
     faXmark,
-    faCamera
+    faCamera, faImage
 );
 
 const props = defineProps<{
@@ -409,8 +409,10 @@ const successEditTradeUnit = (data) => {
                     <template #info="{ data }">
                         <div class="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition">
                             <!-- Product Image -->
-                            <Image v-if="data.image" :src="data.image.thumbnail" alt="Product image"
-                                class="w-12 h-12 rounded-lg object-cover border border-gray-200 shadow-sm" />
+                            <div class="w-12 h-12 rounded-lg border border-gray-200 shadow-sm flex items-center justify-center ">
+                                <Image v-if="data.image" :src="data.image.thumbnail" alt="Product image" object-cover />
+                                <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="opacity-70" fixed-width aria-hidden="true" />
+                            </div>
 
                             <!-- Product Details -->
                             <div class="flex flex-col flex-1 min-w-0">

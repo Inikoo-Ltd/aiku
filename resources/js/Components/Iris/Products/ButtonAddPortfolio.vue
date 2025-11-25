@@ -219,7 +219,11 @@ watch(
    <!--  <pre>{{ layout?.user?.customerSalesChannels }}</pre> -->
     <!-- Bottom Section (fixed position in layout) -->
     <div v-if="layout?.iris?.is_logged_in" class="w-full">
-        <div v-if="product.stock > 0" class="flex items-center gap-2 xmt-2">
+        <div v-if="product.is_coming_soon">
+            <Button :label="trans('Coming soon')" type="tertiary" disabled full />
+        </div>
+
+        <div v-else-if="product.stock > 0" class="flex items-center gap-2 xmt-2">
             <div class="flex gap-2  w-full">
                 <div class="w-full flex flex-nowrap relative">
 
@@ -272,23 +276,16 @@ watch(
                                     </template>
                                 </Button>
                             </div>
-
                         </div>
                     </Popover>
-
                 </div>
-
-
             </div>
         </div>
+
         <div v-else>
             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
         </div>
     </div>
-
-   <!--  <a v-else :href="urlLoginWithRedirect()" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-    {{ trans("Login / Register to Start") }}
-    </a> -->
 
     <a  v-else  :href="urlLoginWithRedirect()" class="w-full">
         <Button label="Login / Register to Start" full :injectStyle="buttonStyleLogin"/>
