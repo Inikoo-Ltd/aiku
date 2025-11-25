@@ -42,6 +42,9 @@ class RunInvoiceHydrators
 
     public function handle(Invoice $invoice, int $hydratorsDelay = 0): void
     {
+        // Todo: remove (testing in dashboard)
+        $hydratorsDelay = 0;
+
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
         ShopHydrateInvoices::dispatch($invoice->shop)->delay($hydratorsDelay);
