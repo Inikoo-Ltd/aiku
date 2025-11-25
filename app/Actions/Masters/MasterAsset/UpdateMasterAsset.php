@@ -88,6 +88,13 @@ class UpdateMasterAsset extends OrgAction
             /** @var MasterAsset $masterAsset */
             if(count($tradeUnits) > 0){
                 $this->processTradeUnits($masterAsset, $tradeUnits);
+                if(count($tradeUnits) == 1){
+                    data_set($modelData, 'units', $tradeUnits[0]['quantity']);
+                    data_set($modelData, 'unit', $tradeUnits[0]['type']);
+                }else{
+                    data_set($modelData, 'units', 1);
+                    data_set($modelData, 'unit', 'bundle');
+                }
             }
             $this->update($masterAsset, $modelData);
 
