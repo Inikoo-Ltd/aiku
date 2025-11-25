@@ -141,6 +141,10 @@ const selectSocketiBasedPlatform = (porto: { id: number }) => {
     }
 }
 
+const ebayCalculator = () => {
+    //
+}
+
 const debReloadPage = debounce(() => {
     router.reload({
         except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
@@ -787,7 +791,11 @@ const calculateVat = (price: number) => {
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }"  v-if=!disabled>
             <div class="flex gap-2">
-                <Button v-if="! item.platform_status && platform_data.type === 'ebay'" v-tooltip="trans('Edit detail of the product')" type="tertiary" icon="fal fa-pencil"
+                <Button v-if="! item.platform_status && platform_data.type === 'ebay'"
+                        v-tooltip="trans('Edit detail of the product')"
+                        type="tertiary"
+                        size="xs"
+                        icon="fal fa-pencil"
                 @click="openEditModal(item)"/>
 
             <ButtonWithLink v-tooltip="trans('Unselect product. This will not remove the product from :platform', {platform: props.platform_data.name})" type="negative" icon="fal fa-skull"
