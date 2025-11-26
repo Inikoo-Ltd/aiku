@@ -66,15 +66,13 @@ class OrganisationHydrateSalesMetrics implements ShouldBeUnique
             ]
         ]);
 
-        dump($metrics);
-
-//        OrganisationSalesMetrics::updateOrCreate(
-//            [
-//                'group_id'        => $organisation->group_id,
-//                'organization_id' => $organisation->id,
-//                'date'            => $dayStart
-//            ],
-//            $metrics
-//        );
+        OrganisationSalesMetrics::updateOrCreate(
+            [
+                'group_id'        => $organisation->group_id,
+                'organization_id' => $organisation->id,
+                'date'            => $dayStart
+            ],
+            $metrics
+        );
     }
 }

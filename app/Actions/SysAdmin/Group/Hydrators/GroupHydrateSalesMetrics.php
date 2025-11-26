@@ -62,14 +62,12 @@ class GroupHydrateSalesMetrics implements ShouldBeUnique
             ]
         ]);
 
-        dump($metrics);
-
-//        GroupSalesMetrics::updateOrCreate(
-//            [
-//                'group_id' => $group->id,
-//                'date'     => $dayStart
-//            ],
-//            $metrics
-//        );
+        GroupSalesMetrics::updateOrCreate(
+            [
+                'group_id' => $group->id,
+                'date'     => $dayStart
+            ],
+            $metrics
+        );
     }
 }
