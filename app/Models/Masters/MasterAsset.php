@@ -127,6 +127,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $duty_rate
  * @property string|null $hts_us
  * @property string|null $marketing_ingredients
+ * @property int|null $origin_country_id
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
