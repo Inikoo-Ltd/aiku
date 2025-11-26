@@ -45,6 +45,8 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import {routeType} from "@/types/route";
 import {InputText, Message} from "primevue"
+import { EditorContent } from "@tiptap/vue-3";
+import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue";
 
 library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
@@ -949,13 +951,17 @@ const calculateVat = (price: number) => {
             </div>-->
             <div class="mb-3">
                 <label for="edit-product-description" class="block text-sm font-semibold">{{ trans("Description") }}</label>
-                <textarea
-                    class="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:ring-gray-500 focus:outline-0 focus:border-gray-500"
-                    rows="5"
+                <Editor2
                     v-model="selectedEditProduct.description"
-                    id="edit-product-description"
-                    :disabled="isLoadingSubmitErrorTitle"
-                />
+                    class="w-full"
+                    :placeholder="trans('Enter text')"
+                >
+                    <template #editor-content="{ editor }">
+                        <div class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-gray-400">
+                            <EditorContent :editor="editor" class="focus:outline-none" />
+                        </div>
+                    </template>
+                </Editor2>
             </div>
             <div class="mt-3 flex gap-2">
                 <Button
