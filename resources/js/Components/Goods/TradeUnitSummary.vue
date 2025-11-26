@@ -191,7 +191,13 @@ const getIcon = (type?: string) => {
 					</div>
 
 					<!-- Section: Units -->
-					<div class="flex justify-between flex-wrap gap-1">
+					<div class="flex justify-between flex-wrap gap-1" v-if="data.unit && data.unit">
+						<dt class="text-gray-500">{{ trans("Units") }}</dt>
+						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }} ({{ data.unit }}) </dd>
+					</div>
+
+
+					<div class="flex justify-between flex-wrap gap-1" v-else>
 						<dt class="text-gray-500">{{ trans("Units label") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }} </dd>
 					</div>
