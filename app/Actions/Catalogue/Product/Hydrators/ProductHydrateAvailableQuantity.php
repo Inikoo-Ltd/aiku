@@ -13,6 +13,7 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -108,8 +109,10 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         $chunkSize = 100; // Process 100 products at a time to save memory
         $count     = 0;
 
+        $aikuShops=Shop::where('is_aiku', true)->pluck('id')->toArray();
+
         // Get total count for progress bar
-        $total = Product::count();
+        $total = Product::whereIn('shop_id', $aikuShops)->count();
 
         if ($total === 0) {
             $command->info("No products found.");
@@ -122,7 +125,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $progressBar->start();
 
-        Product::chunk($chunkSize, function ($products) use (&$count, $progressBar) {
+        Product::whereIn('shop_id', $aikuShops)->chunk($chunkSize, function ($products) use (&$count, $progressBar) {
             foreach ($products as $product) {
                 $this->handle($product);
                 $count++;
