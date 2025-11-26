@@ -8,32 +8,17 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
-use App\Actions\Comms\PostRoom\UI\ShowPostRoom;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\UI\Marketing\MarketingHub;
-use App\Http\Resources\Mail\DispatchedEmailsResource;
-use App\Http\Resources\Ordering\DispatchedEmailsInOrderResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
-use App\Models\Comms\Mailshot;
-use App\Models\Comms\Outbox;
-use App\Models\Comms\PostRoom;
-use App\Models\CRM\Customer;
-use App\Models\CRM\Prospect;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Pagination\LengthAwarePaginator;
-
 
 class IndexDispatchedEmailsInOrder extends OrgAction
 {
-    public function handle(Order $parent, $prefix = null):LengthAwarePaginator
+    public function handle(Order $parent, $prefix = null): LengthAwarePaginator
     {
 
         if ($prefix) {
@@ -42,7 +27,7 @@ class IndexDispatchedEmailsInOrder extends OrgAction
 
         $queryBuilder = QueryBuilder::for(DispatchedEmail::class);
         $queryBuilder->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id')
-            ->join('model_has_dispatched_emails', function($join) use ($parent) {
+            ->join('model_has_dispatched_emails', function ($join) use ($parent) {
                 $join->on('dispatched_emails.id', '=', 'model_has_dispatched_emails.dispatched_email_id')
                     ->where('model_has_dispatched_emails.model_type', '=', class_basename($parent))
                     ->where('model_has_dispatched_emails.model_id', '=', $parent->id);

@@ -50,6 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $picking_percentage
  * @property string $packing_percentage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNote> $deliveryNotes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNotesItems
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\PickingSessionItem> $pickingSessionItem

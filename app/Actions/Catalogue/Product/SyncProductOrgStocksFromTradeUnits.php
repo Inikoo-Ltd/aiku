@@ -8,15 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
-use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
-use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
 use App\Models\Catalogue\Product;
-use App\Models\Goods\TradeUnit;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class SyncProductOrgStocksFromTradeUnits
@@ -27,7 +19,7 @@ class SyncProductOrgStocksFromTradeUnits
     {
         $orgStocks  = [];
 
-        foreach ($product->tradeUnits  as $tradeUnit) {
+        foreach ($product->tradeUnits as $tradeUnit) {
 
             foreach ($tradeUnit->stocks as $stock) {
                 $orgStock = $stock->orgStocks->where('organisation_id', $product->organisation_id)->first();

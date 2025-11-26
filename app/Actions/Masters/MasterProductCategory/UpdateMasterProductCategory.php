@@ -23,7 +23,6 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
-use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterProductCategory extends OrgAction
 {
@@ -99,7 +98,7 @@ class UpdateMasterProductCategory extends OrgAction
         }
 
         $modelData['offers_data'] = $masterProductCategory->offers_data;
-        if(Arr::has($modelData, 'vol_gr')) {
+        if (Arr::has($modelData, 'vol_gr')) {
             $modelData['vol_gr'] = $modelData['vol_gr'][0];
             $modelData['offers_data']['vol_gr'] = Arr::pull($modelData, 'vol_gr');
         }

@@ -46,7 +46,7 @@ enum MasterAssetTabsEnum: string
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
-            
+
             MasterAssetTabsEnum::TRADE_UNITS => [
                 'title' => __('Trade units'),
                 'icon'  => 'fal fa-atom',

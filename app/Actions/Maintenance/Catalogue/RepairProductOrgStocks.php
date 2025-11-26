@@ -9,12 +9,8 @@
 namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
-use App\Actions\Catalogue\Product\UpdateProduct;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
-use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairProductOrgStocks
@@ -31,7 +27,7 @@ class RepairProductOrgStocks
             ->chunkById(500, function ($products) use ($command) {
                 foreach ($products as $product) {
                     foreach ($product->orgStocks as $orgStock) {
-                        if($orgStock->organisation_id!=$product->organisation_id){
+                        if ($orgStock->organisation_id != $product->organisation_id) {
                             $command->info("Error found org stock $orgStock->id ($orgStock->organisation_id) for product $product->id $product->organisation_id");
                             SyncProductOrgStocksFromTradeUnits::run($product);
 

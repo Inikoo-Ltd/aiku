@@ -109,7 +109,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         $chunkSize = 100; // Process 100 products at a time to save memory
         $count     = 0;
 
-        $aikuShops=Shop::where('is_aiku', true)->pluck('id')->toArray();
+        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
 
         // Get total count for progress bar
         $total = Product::whereIn('shop_id', $aikuShops)->count();

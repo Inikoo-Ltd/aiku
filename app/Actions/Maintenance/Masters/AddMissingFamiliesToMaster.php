@@ -20,7 +20,6 @@ use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Illuminate\Support\Facades\Log;
 
 class AddMissingFamiliesToMaster
 {
@@ -181,14 +180,14 @@ class AddMissingFamiliesToMaster
      */
     public function asCommand(Command $command): int
     {
-        if($command->argument('to') && $command->argument('from')){
+        if ($command->argument('to') && $command->argument('from')) {
             $fromShop = Shop::where('slug', $command->argument('from'))->firstOrFail();
             $toShop   = MasterShop::where('slug', $command->argument('to'))->firstOrFail();
-    
+
             $this->handle($fromShop, $toShop);
-        }else{
+        } else {
             $shops = Shop::whereNotNull('master_shop_id')->get();
-            foreach($shops as $shop){
+            foreach ($shops as $shop) {
                 $this->handle($shop, $shop->masterShop);
             }
         }
