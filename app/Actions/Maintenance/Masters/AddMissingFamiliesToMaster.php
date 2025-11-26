@@ -38,11 +38,6 @@ class AddMissingFamiliesToMaster
         foreach ($categoriesToAdd as $categoryToAdd) {
             // Create/Find Master Family using Family Data
             $masterFamily = $this->upsertMasterFamily($shop, $categoryToAdd);
-            // Link/Attach Family to MasterFamily
-            UpdateProductCategory::make()->action(
-                $categoryToAdd,
-                ['master_product_category_id' => $masterFamily->id]
-            );
         }
     }
 
@@ -77,6 +72,14 @@ class AddMissingFamiliesToMaster
                 ],
                 createChildren: false
             );
+
+            // if(!$family->master_product_category_id){
+            //     // Link Product Category with Master
+            //     UpdateProductCategory::make()->action(
+            //         $family,
+            //         ['master_product_category_id' => $foundMasterFamily->id]
+            //     );
+            // }
         } else {
             $foundMasterFamily = MasterProductCategory::find($foundMasterFamilyData->id);
 
@@ -170,7 +173,7 @@ class AddMissingFamiliesToMaster
 
     public function getCommandSignature(): string
     {
-        return 'repair:add_missing_families_to_master {from} {to}';
+        return 'repair:add_missing_families_to_master {from?} {to?}';
     }
 
     /**
@@ -178,10 +181,17 @@ class AddMissingFamiliesToMaster
      */
     public function asCommand(Command $command): int
     {
-        $toShop   = MasterShop::where('slug', $command->argument('to'))->firstOrFail();
-        $fromShop = Shop::where('slug', $command->argument('from'))->firstOrFail();
-
-        $this->handle($fromShop, $toShop);
+        if($command->argument('to') && $command->argument('from')){
+            $fromShop = Shop::where('slug', $command->argument('from'))->firstOrFail();
+            $toShop   = MasterShop::where('slug', $command->argument('to'))->firstOrFail();
+    
+            $this->handle($fromShop, $toShop);
+        }else{
+            $shops = Shop::whereNotNull('master_shop_id')->get();
+            foreach($shops as $shop){
+                $this->handle($shop, $shop->masterShop);
+            }
+        }
 
         return 0;
     }
