@@ -236,7 +236,7 @@ const getIcon = (type?: string) => {
 
 				<div class="space-y-3">
 					<Accordion multiple>
-						<AccordionPanel v-if="!hide?.includes('brands_tags') && type == 'trade_unit'" value="2">
+						<AccordionPanel  value="2">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("Brands & Tags") }}</span>
