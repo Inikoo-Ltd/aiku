@@ -25,7 +25,6 @@ class SyncProductTradeUnits
 
     public function handle(Product $product, array $tradeUnitsRaw): Product
     {
-        $orgStocks  = [];
         $tradeUnits = [];
         foreach ($tradeUnitsRaw as $tradeUnitID => $tradeUnitData) {
             $tradeUnit                  = TradeUnit::find($tradeUnitID);
@@ -33,42 +32,9 @@ class SyncProductTradeUnits
                 'quantity' => Arr::get($tradeUnitData, 'quantity')
             ];
 
-
-            foreach ($tradeUnit->stocks as $stock) {
-                $orgStock = $stock->orgStocks->where('organisation_id', $product->organisation_id)->first();
-
-
-                if ($orgStock) {
-                    $packedIn        = null;
-                    $tradeUnitsCount = $orgStock->tradeUnits->count();
-                    if ($tradeUnitsCount == 1) {
-                        $packedIn = $orgStock->tradeUnits->first()->pivot->quantity;
-                        // If packedIn is not an integer, set it to null
-                        if ($packedIn !== null) {
-                            $pf = (float)$packedIn;
-                            if (floor($pf) != $pf) {
-                                $packedIn = null;
-                            }
-                        }
-
-                        if ($packedIn !== null) {
-                            $packedIn = (int)$packedIn;
-                        }
-                    }
-                    list($smallestDividend, $correspondingDivisor) = findSmallestFactors($stock->pivot->quantity);
-
-                    $orgStocks[$orgStock->id] = [
-                        'quantity'                  => Arr::get($tradeUnitData, 'quantity') / $stock->pivot->quantity,
-                        'trade_units_per_org_stock' => $packedIn,
-                        'divisor'                   => $correspondingDivisor,
-                        'dividend'                  => $smallestDividend
-                    ];
-                }
-            }
         }
 
         $product->tradeUnits()->sync($tradeUnits);
-        $product->orgStocks()->sync($orgStocks);
 
         ProductHydrateGrossWeightFromTradeUnits::dispatch($product);
         ProductHydrateBarcodeFromTradeUnit::dispatch($product);
@@ -87,6 +53,8 @@ class SyncProductTradeUnits
         }
 
         $product->refresh();
+
+        SyncProductOrgStocksFromTradeUnits::run($product);
 
         return $product;
     }
