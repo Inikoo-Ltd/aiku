@@ -32,6 +32,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Support\Facades\Log;
 
 class StoreMasterProductCategory extends GrpAction
 {
@@ -146,6 +147,7 @@ class StoreMasterProductCategory extends GrpAction
                 new IUnique(
                     table: 'master_product_categories',
                     extraConditions: [
+                        ['column' => 'type', 'value' => $this->attributes['type']->value],
                         ['column' => 'master_shop_id', 'value' => $this->masterShop->id],
                         ['column' => 'deleted_at', 'operator' => 'null'],
                     ]

@@ -10,6 +10,7 @@ namespace App\Actions\Maintenance\Masters;
 
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -19,6 +20,7 @@ use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Support\Facades\Log;
 
 class AddMissingFamiliesToMaster
 {
@@ -34,7 +36,13 @@ class AddMissingFamiliesToMaster
             ->get();
 
         foreach ($categoriesToAdd as $categoryToAdd) {
-            $this->upsertMasterFamily($shop, $categoryToAdd);
+            // Create/Find Master Family using Family Data
+            $masterFamily = $this->upsertMasterFamily($shop, $categoryToAdd);
+            // Link/Attach Family to MasterFamily
+            UpdateProductCategory::make()->action(
+                $categoryToAdd,
+                ['master_product_category_id' => $masterFamily->id]
+            );
         }
     }
 
@@ -50,7 +58,6 @@ class AddMissingFamiliesToMaster
             ->where('type', MasterProductCategoryTypeEnum::FAMILY->value)
             ->where('deleted_at', null)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
-
 
         if (!$foundMasterFamilyData) {
             $masterParent = $this->getMasterParent($masterShop, $family);
