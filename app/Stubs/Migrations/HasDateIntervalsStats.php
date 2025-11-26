@@ -20,7 +20,7 @@ trait HasDateIntervalsStats
         foreach ($subjects as $subject) {
             $subject = $subject ? $subject.'_' : '';
 
-            foreach (DateIntervalEnum::values() as $col) {
+            foreach (DateIntervalEnum::valuesWithoutCustom() as $col) {
                 $table->decimal($subject.$col, 16)->default(0);
             }
 
@@ -43,7 +43,7 @@ trait HasDateIntervalsStats
         foreach ($subjects as $subject) {
             $subject = $subject ? $subject.'_' : '';
 
-            foreach (DateIntervalEnum::values() as $col) {
+            foreach (DateIntervalEnum::valuesWithoutCustom() as $col) {
                 $table->unsignedInteger($subject.$col)->default(0);
             }
             foreach (DateIntervalEnum::lastYearValues() as $col) {
@@ -65,7 +65,7 @@ trait HasDateIntervalsStats
         foreach ($subjects as $subject) {
             $subject = $subject ? $subject.'_' : '';
 
-            foreach (DateIntervalEnum::values() as $col) {
+            foreach (DateIntervalEnum::valuesWithoutCustom() as $col) {
                 $table->jsonb($subject.$col)->nullable();
             }
             foreach (DateIntervalEnum::lastYearValues() as $col) {

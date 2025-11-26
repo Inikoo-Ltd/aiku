@@ -128,7 +128,7 @@ class DashboardPlatformSalesResource extends JsonResource
 
         $result = [];
 
-        foreach (DateIntervalEnum::cases() as $interval) {
+        foreach (DateIntervalEnum::casesWithoutCustom() as $interval) {
             $key = 'sales_' . $interval->value;
 
             $total = $totalPerInterval[$key] ?? 0;

@@ -22,6 +22,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
 library.add(faStore, faBookmark, faUndoAlt)
 
@@ -34,7 +35,7 @@ const isModalAddress = ref(false)
 
 <template>
     <div class="p-6 grid grid-cols-2 gap-x-4">
-        <div aria-label="trans('Statistic')" class="border border-gray-300 rounded-lg w-full sm:max-w-lg">
+        <div aria-label="trans('Statistic')" class="h-fit border border-gray-300 rounded-lg w-full sm:max-w-lg">
             <div v-if="route().params.platform !== 'manual'"
                  class="py-3 px-2 flex items-center justify-between gap-x-4 w-full border-b border-gray-900/15">
                 <dl v-if="true" class="flex-auto pl-3">
@@ -207,26 +208,6 @@ const isModalAddress = ref(false)
                 </ModalConfirmationDelete>
 
                 <ModalConfirmation
-                    v-if="data?.customer_sales_channel?.status === 'closed'"
-                    :routeDelete="{
-                        name: 'grp.models?.customer_sales_channel?.reopen',
-                        parameters: {
-                            customerSalesChannel: data?.customer_sales_channel?.id,
-                        },
-                        method: 'patch'
-                    }"
-                    :title="trans('Are you sure you want to open the channel?')"
-                    xisFullLoading
-                >
-                    <template #default="{ isOpenModal, changeModel }">
-                        <Button @click.stop="changeModel" label="Re-Open Channel" type="positive"
-                                icon="fal fa-undo-alt">
-
-                        </Button>
-                    </template>
-                </ModalConfirmation>
-
-                <ModalConfirmation
                     v-if="data?.customer_sales_channel?.status === 'open' && !data?.customer_sales_channel?.platform_status"
                     :routeYes="{
                         name: 'grp.models.customer_sales_channel.check',
@@ -264,15 +245,133 @@ const isModalAddress = ref(false)
                     </template>
                 </ModalConfirmationDelete>
             </div>
-            <div>
-                <pre>
-<!--                    {{data.fulfilment_policies}}-->
-                </pre>
+
+            <!-- Section: Fulfilment Policies -->
+            <div v-if="data.fulfilment_policies?.total && data.fulfilment_policies?.fulfillmentPolicies?.length"
+                 class="border-t border-gray-300 pt-3">
+                <div class="font-semibold">
+                    {{ trans("Fulfilment Policies") }} ({{ data.fulfilment_policies?.total }}):
+                </div>
+
+                <div class="mt-1 grid grid-cols-2 gap-4">
+                    <div v-for="policy in data.fulfilment_policies?.fulfillmentPolicies"
+                         class="border-l-4 px-2 bg-gray-100 py-2 border-gray-300">
+                        <div class="font-medium text-sm">
+                            <InformationIcon v-if="policy.description" :information="policy.description"/>
+                            {{ policy.name }}
+                        </div>
+
+                        <ul class="text-xs list-disc list-outside pl-4 mt-2">
+                            <!-- List: Handling time -->
+                            <li v-if="policy.handlingTime?.value">
+                                {{ trans("Handling time") }}: {{ policy.handlingTime?.value }}
+                                {{ policy.handlingTime?.unit }}
+                            </li>
+
+                            <!-- List: Shipping Options -->
+                            <li v-if="policy.shippingOptions?.length">
+                                <span class="font-bold">{{ trans("Shipping Options:") }}</span>
+                                <div v-for="shippingOption in policy.shippingOptions">
+                                    <ul>
+                                        <li>{{ trans("Type: ") }} {{ shippingOption.optionType }}</li>
+                                        <li>{{ trans("Cost Type: ") }} {{ shippingOption.costType }}</li>
+                                        <span class="font-bold">{{ trans("Shipping Services:") }}</span>
+                                        <div v-for="shippingService in shippingOption.shippingServices">
+                                            <ul>
+                                                <li>{{ trans("Carrier Code: ") }} {{
+                                                        shippingService.shippingCarrierCode
+                                                    }}
+                                                </li>
+                                                <li>{{ trans("Service Code: ") }} {{
+                                                        shippingService.shippingServiceCode
+                                                    }}
+                                                </li>
+                                                <li>{{ trans("Shipping Cost: ") }} {{
+                                                        shippingService.shippingCost.value
+                                                    }} {{ shippingService.shippingCost.currency }}
+                                                </li>
+                                                <li>{{ trans("Additional Shipping Cost: ") }}
+                                                    {{ shippingService.additionalShippingCost.value }}
+                                                    {{ shippingService.additionalShippingCost.currency }}
+                                                </li>
+                                                <li>{{ trans("Free Shipping: ") }}
+                                                    {{ shippingService.freeShipping ? trans('Yes') : trans('No') }}
+                                                </li>
+                                                <li>{{ trans("Buyer Responsible For Shipping: ") }} {{
+                                                        shippingService.buyerResponsibleForShipping ? trans('Yes') : trans('No')
+                                                    }}
+                                                </li>
+                                                <li>{{ trans("Buyer Responsible For Pickup: ") }} {{
+                                                        shippingService.buyerResponsibleForPickup ? trans('Yes') : trans('No')
+                                                    }}
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </ul>
+                                </div>
+                            </li>
+
+                            <!-- List: Freight Shipping -->
+                            <li v-if="(typeof policy.freightShipping !== 'undefined')">
+                                {{ trans("Freight Shipping") }}: {{
+                                    policy.freightShipping ? trans('Yes') : trans('No')
+                                }}
+                            </li>
+
+                            <!-- List: Global Shipping -->
+                            <li v-if="(typeof policy.globalShipping !== 'undefined')">
+                                {{ trans("Global Shipping") }}: {{ policy.globalShipping ? trans('Yes') : trans('No') }}
+                            </li>
+
+                            <!-- List: Region Excluded -->
+                            <li v-if="policy.shipToLocations?.regionExcluded?.length">
+                                {{ trans("Region excluded") }} ({{ policy.shipToLocations?.regionExcluded?.length }}):
+                                <span class="italic">{{
+                                        policy.shipToLocations?.regionExcluded?.map(item => item.regionName).join(", ")
+                                    }}</span>
+                            </li>
+
+                            <!-- List: Category Types -->
+                            <li v-if="policy.categoryTypes?.length">
+                                {{ trans("Category Types") }}: <span
+                                class="italic">{{ policy.categoryTypes?.map(item => item.name).join(", ") }}</span>
+                            </li>
+
+                            <!-- List: Marketplace ID -->
+                            <li v-if="policy.marketplaceId">
+                                {{ trans("Marketplace ID") }}: {{ policy.marketplaceId }}
+                            </li>
+
+                            <!-- List: Fulfilment Policy ID -->
+                            <li v-if="policy.fulfillmentPolicyId">
+                                {{ trans("Fulfilment Policy ID") }}: {{ policy.fulfillmentPolicyId }}
+                            </li>
+
+                            <!-- List: Rate Table ID -->
+                            <li v-for="option in policy.shippingOptions">
+                                <template v-if="option.rateTableId">
+                                    {{ trans("Rate Table ID") }}: {{ option.rateTableId }}
+                                </template>
+                            </li>
+
+                            <!-- List: Shipping Discount Profile ID -->
+                            <li v-for="option in policy.shippingOptions">
+                                <template v-if="option.shippingDiscountProfileId">
+                                    {{ trans("Shipping Discount Profile ID") }}: {{ option.shippingDiscountProfileId }}
+                                </template>
+                            </li>
+
+                            <!-- List: Shipping Promotion -->
+                            <li v-for="option in policy.shippingOptions">
+                                <template v-if="typeof option.shippingPromotionOffered !== 'undefined'">
+                                    {{ trans("Shipping Promotion Offered") }}:
+                                    {{ option.shippingPromotionOffered ? trans('Yes') : trans('No') }}
+                                </template>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-
-    <!-- has_valid_platform_product_id
-    exist_in_platform
-    platform_status -->
 </template>

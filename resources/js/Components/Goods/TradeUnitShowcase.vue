@@ -95,6 +95,22 @@ const validImages = computed(() =>
 
 
 <template>
+	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
+		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
+			<!-- Units box -->
+			<ProductUnitLabel
+				v-if="data.tradeUnit?.units"
+				:units="data.tradeUnit?.units"
+				:unit="data.tradeUnit?.unit"
+				class="mr-2"
+			/>
+			
+			<!-- Product name -->
+			<span class="align-middle">
+				{{ data.tradeUnit.name }}
+			</span>
+		</span>
+	</div>
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 
 		<!-- Sidebar -->
@@ -124,8 +140,12 @@ const validImages = computed(() =>
 		</div>
 
 		<!-- Trade Unit Summary -->
-		<TradeUnitSummary :publicAttachment="data.attachment_box?.public" :data="data.tradeUnit" :gpsr="data.gpsr"
-			:properties="data.properties" type="trade_unit" :video="videoSetup?.url ?? null" />
+		<TradeUnitSummary 
+			:publicAttachment="data.attachment_box?.public" 
+			:data="data.tradeUnit" 
+			:gpsr="data.gpsr"
+			:properties="data.properties" 
+		/>
 
 		<!-- Attachments -->
 		<div>

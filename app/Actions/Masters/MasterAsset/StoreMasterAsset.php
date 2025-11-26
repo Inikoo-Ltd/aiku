@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
@@ -129,6 +130,9 @@ class StoreMasterAsset extends OrgAction
 
         $masterAsset->tradeUnits()->sync($tradeUnits);
         $masterAsset->stocks()->sync($stocks);
+        // Hydrate GSPR & Properties from trade units
+        MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
+
         $masterAsset->refresh();
 
     }
