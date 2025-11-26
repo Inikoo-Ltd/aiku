@@ -208,26 +208,6 @@ const isModalAddress = ref(false)
                 </ModalConfirmationDelete>
 
                 <ModalConfirmation
-                    v-if="data?.customer_sales_channel?.status === 'closed'"
-                    :routeDelete="{
-                        name: 'grp.models?.customer_sales_channel?.reopen',
-                        parameters: {
-                            customerSalesChannel: data?.customer_sales_channel?.id,
-                        },
-                        method: 'patch'
-                    }"
-                    :title="trans('Are you sure you want to open the channel?')"
-                    xisFullLoading
-                >
-                    <template #default="{ isOpenModal, changeModel }">
-                        <Button @click.stop="changeModel" label="Re-Open Channel" type="positive"
-                                icon="fal fa-undo-alt">
-
-                        </Button>
-                    </template>
-                </ModalConfirmation>
-
-                <ModalConfirmation
                     v-if="data?.customer_sales_channel?.status === 'open' && !data?.customer_sales_channel?.platform_status"
                     :routeYes="{
                         name: 'grp.models.customer_sales_channel.check',
@@ -284,17 +264,17 @@ const isModalAddress = ref(false)
                             <li v-if="policy.handlingTime?.value">
                                 {{ trans("Handling time") }}: {{ policy.handlingTime?.value }} {{ policy.handlingTime?.unit }}
                             </li>
-                            
+
                             <!-- List: Freight Shipping -->
                             <li v-if="(typeof policy.freightShipping !== 'undefined')">
                                 {{ trans("Freight Shipping") }}: {{ policy.freightShipping ? trans('Yes') : trans('No') }}
                             </li>
-                            
+
                             <!-- List: Global Shipping -->
                             <li v-if="(typeof policy.globalShipping !== 'undefined')">
                                 {{ trans("Global Shipping") }}: {{ policy.globalShipping ? trans('Yes') : trans('No') }}
                             </li>
-                            
+
                             <!-- List: Region Excluded -->
                             <li v-if="policy.shipToLocations?.regionExcluded?.length">
                                 {{ trans("Region excluded") }} ({{ policy.shipToLocations?.regionExcluded?.length }}): <span class="italic">{{ policy.shipToLocations?.regionExcluded?.map(item => item.regionName).join(", ") }}</span>
