@@ -81,7 +81,8 @@ class EditMasterProduct extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'   => $masterAsset->code,
+                    'title'   => __('Edit master product'),
+                    'model'   => $masterAsset->code,
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],

@@ -19,65 +19,14 @@ import { Icon as IconTS } from '@/types/Utils/Icon'
 import Icon from '@/Components/Icon.vue'
 import { routeType } from '@/types/route'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
+import { StockLocation, StocksManagementTS } from '@/types/Inventory/StocksManagement'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faShoppingBasket, faStickyNote, faShoppingCart)
 
 const props = defineProps<{
-    stocks_management: {
-        routes: {
-            fetch_locations: routeType
-            submit_audit_stocks: routeType
-            update_stocks_locations: routeType
-        }
-        summary: {
-            [key: string]: {
-                icon_state: IconTS
-                value: number
-            }
-        }
-        locations: {
-            id: number
-            code: string
-            quantity: string
-            value: string
-            audited_at: string
-            commercial_value: string
-            type: string
-            picking_priority: number
-            notes: string | null
-            data: []
-            settings: {
-                min_stock: number
-            },
-            created_at: string
-            updated_at: string
-            location: {
-                id: number
-                slug: string
-                code: string
-                stock_value: string
-                stock_commercial_value: string
-                allow_stocks: boolean
-                allow_fulfilment: boolean
-                allow_dropshipping: boolean
-                has_stock_slots: boolean
-                has_fulfilment: boolean
-                has_dropshipping_slots: boolean
-                organisation_slug: null
-                organisation_name: null
-                warehouse_slug: null
-                max_weight: number
-                max_volume: number
-            }
-        }[]
-        part_locations: {
-            id: number
-            name: string
-            slug: string
-            stock: number
-            isAudited: boolean
-        }[]
-    }
+    stocks_management: StocksManagementTS
 }>()
+
+console.log('stocks_management', props.stocks_management)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -102,18 +51,17 @@ const setActivePickingLocation = (locationId: number) => {
     activePickingLocation.value = activePickingLocation.value === locationId ? null : locationId
 }
 
-const popoverRefs = ref<Record<number, any>>({})
 const questionPopoverRefs = ref<Record<number, any>>({})
 const locationMinMaxStock = ref<Record<number, { min: number | null, max: number | null, replenishment: number | null }>>({})
 const questionPopovers = ref<Record<number, boolean>>({})
 const tempMinMaxStock = ref<Record<number, { min: number | null, max: number | null, replenishment: number | null }>>({})
 
 
-const setPopoverRef = (el: any, locationId: number) => {
-    if (el) {
-        popoverRefs.value[locationId] = el
-    }
-}
+// const setPopoverRef = (el: any, locationId: number) => {
+//     if (el) {
+//         popoverRefs.value[locationId] = el
+//     }
+// }
 
 const setQuestionPopoverRef = (el: any, locationId: number) => {
     if (el) {
@@ -121,28 +69,6 @@ const setQuestionPopoverRef = (el: any, locationId: number) => {
     }
 }
 
-const toggleNotePopover = (locationId: number, event: Event) => {
-    event.stopPropagation()
-
-    // Close all other popovers first
-    Object.keys(popoverRefs.value).forEach(key => {
-        const keyNum = parseInt(key)
-        if (keyNum !== locationId && popoverRefs.value[keyNum]) {
-            popoverRefs.value[keyNum].hide()
-        }
-    })
-
-    // Initialize temp note
-    if (!notePopovers.value[locationId]) {
-        tempNotes.value[locationId] = locationNotes.value[locationId] || ''
-    }
-
-    // Toggle current popover
-    if (popoverRefs.value[locationId]) {
-        popoverRefs.value[locationId].toggle(event)
-        notePopovers.value[locationId] = !notePopovers.value[locationId]
-    }
-}
 
 const toggleQuestionPopover = (locationId: number, event: Event) => {
     event.stopPropagation()
@@ -212,25 +138,53 @@ const cancelMinMaxStock = (locationId: number) => {
     }
 }
 
-const saveNote = (locationId: number) => {
-    locationNotes.value[locationId] = tempNotes.value[locationId] || ''
-    notePopovers.value[locationId] = false
-    if (popoverRefs.value[locationId]) {
-        popoverRefs.value[locationId].hide()
+// Section: Notes
+const _popoverNotes = ref<Record<number, any>>({})
+const tempLocToEdit = ref<StockLocation | null>(null)
+const toggleNotePopover = (event: Event, loc: StockLocation) => {
+    event.stopPropagation()
+
+    tempLocToEdit.value = {...loc}
+    _popoverNotes.value?.toggle(event)
+
+    // Close all other popovers first
+    // Object.keys(popoverRefs.value).forEach(key => {
+    //     const keyNum = parseInt(key)
+    //     if (keyNum !== locationId && popoverRefs.value[keyNum]) {
+    //         popoverRefs.value[keyNum].hide()
+    //     }
+    // })
+
+    // Initialize temp note
+    // if (!notePopovers.value[locationId]) {
+    //     tempNotes.value[locationId] = locationNotes.value[locationId] || ''
+    // }
+
+    // // Toggle current popover
+    // if (popoverRefs.value[locationId]) {
+    //     popoverRefs.value[locationId].toggle(event)
+    //     notePopovers.value[locationId] = !notePopovers.value[locationId]
+    // }
+}
+const onSaveNote = () => {
+    // locationNotes.value[locationId] = tempNotes.value[locationId] || ''
+    // notePopovers.value[locationId] = false
+    if (_popoverNotes.value) {
+        _popoverNotes.value.hide()
     }
 }
 
-const cancelNote = (locationId: number) => {
-    notePopovers.value[locationId] = false
-    tempNotes.value[locationId] = ''
-    if (popoverRefs.value[locationId]) {
-        popoverRefs.value[locationId].hide()
-    }
-}
+// const cancelNote = (locationId: number) => {
+//     notePopovers.value[locationId] = false
+//     tempNotes.value[locationId] = ''
+//     if (_popoverNotes.value[locationId]) {
+//         _popoverNotes.value[locationId].hide()
+//     }
+// }
 
-const hasNote = (locationId: number) => {
-    return locationNotes.value[locationId] && locationNotes.value[locationId].trim().length > 0
-}
+// const hasNote = (locationId: number) => {
+//     return locationNotes.value[locationId] && locationNotes.value[locationId].trim().length > 0
+// }
 
 // const hasMinMaxStock = (locationId: number) => {
 //     return locationMinMaxStock.value[locationId] &&
@@ -282,10 +236,12 @@ const getQuestionTooltip = (locationId: number) => {
             <div class="grid grid-cols-7 gap-x-3">
                 <div class="col-span-2 font-semibold text-gray-600">Stock value:</div>
                 <div class="col-span-3 text-right">
-                    4720000
+                    <!-- 4720000 -->
+                    -
                 </div>
                 <div class="col-span-2 text-right">
-                    8000 /SKO
+                    <!-- 8000 /SKO -->
+                    -
                 </div>
             </div>
             <div class="grid grid-cols-7 gap-x-3">
@@ -294,7 +250,8 @@ const getQuestionTooltip = (locationId: number) => {
                     <!-- 4720000 -->
                 </div>
                 <div class="col-span-2 text-right">
-                    8000 /Unit
+                    <!-- 8000 /Unit -->
+                    -
                 </div>
             </div>
         </div>
@@ -304,22 +261,26 @@ const getQuestionTooltip = (locationId: number) => {
             <KeepAlive>
                 <template v-if="isStockCheck">
                     <StockCheck
-                        :part_locations="props.stocks_management.part_locations"
+                        :stock_locations="props.stocks_management.locations"
                         @onClickBackground="isStockCheck = false"
+                        :auditRoute="props.stocks_management?.routes?.audit_route"
                     />
                 </template>
+                
                 <template v-else-if="isMoveStock">
                     <MoveStock
-                        :part_locations="props.stocks_management.part_locations"
+                        :part_locations="props.stocks_management.locations"
                         @onClickBackground="isMoveStock = false"
                     />
                 </template>
+
                 <template v-else-if="isEditLocations">
                     <EditLocations
-                        :part_locations="props.stocks_management.part_locations"
+                        :part_locations="props.stocks_management.locations"
                         @onClickBackground="isEditLocations = false"
                     />
                 </template>
+
                 <div v-else>
                     <div v-for="(loc, idx) in props.stocks_management.locations" :key="loc.id"
                         class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded transition-colors duration-200"
@@ -330,44 +291,13 @@ const getQuestionTooltip = (locationId: number) => {
                         <div class="col-span-4 flex items-center gap-x-2">
                             <!-- Note Icon with Popover -->
                             <div class="relative">
-                                <div @click="(event) => toggleNotePopover(loc.id, event)"
+                                <div @click="(event) => toggleNotePopover(event, loc)"
                                     v-tooltip="trans(`Add part's location note`)"
                                     class="cursor-pointer transition-colors duration-200"
                                     :class="loc.notes ? 'text-orange-600' : 'text-gray-400 hover:text-gray-700'"
                                 >
                                     <FontAwesomeIcon :icon="loc.notes ? 'fas fa-sticky-note' : 'fal fa-sticky-note'" class="" fixed-width aria-hidden="true" />
                                 </div>
-
-                                <!-- Note Popover -->
-                                <Popover :ref="(el) => setPopoverRef(el, loc.id)">
-                                    <div class="w-80 p-2">
-                                        <div class="mb-3">
-                                            <label class="block text-sm mb-2">
-                                                {{ trans('Location Note') }} - <span class="font-bold">{{ loc.code }}</span>
-                                            </label>
-
-                                            <PureTextarea
-                                                v-model="loc.notes"
-                                                :placeholder="trans('Enter note for this location...')"
-                                                class="resize-none"
-                                                rows="4"
-                                            />
-                                        </div>
-                                        
-                                        <div class="flex justify-end gap-2">
-                                            <Button
-                                                @click="() => cancelNote(loc.id)"
-                                                type="negative"
-                                                label="Cancel"
-                                            />
-                                            <Button
-                                                @click="() => saveNote(loc.id)"
-                                                label="Save"
-                                                full
-                                            />
-                                        </div>
-                                    </div>
-                                </Popover>
                             </div>
 
                             <!-- Shopping Basket Icon -->
@@ -485,5 +415,43 @@ const getQuestionTooltip = (locationId: number) => {
             <Button @click="() => isEditLocations = !isEditLocations" iconRight="fal fa-edit"
                 :label="trans('Edit locations')" size="sm" type="tertiary" />
         </div>
+
+        
+
+        <!-- Popover: Notes -->
+        <Popover ref="_popoverNotes">
+            <div class="w-80 p-2">
+                <div class="mb-3">
+                    <label class="block text-sm mb-2">
+                        {{ trans('Location Note') }} - <span class="font-bold">{{ tempLocToEdit?.code }}</span>
+                    </label>
+
+                    <PureTextarea
+                        :modelValue="tempLocToEdit?.notes || ''"
+                        @update:modelValue="(val) => {
+                            if (tempLocToEdit) {
+                                tempLocToEdit.notes = val
+                            }
+                        }"
+                        :placeholder="trans('Enter note for this location...')"
+                        class="resize-none"
+                        rows="4"
+                    />
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <Button
+                        @click="() => _popoverNotes?.hide()"
+                        type="negative"
+                        label="Cancel"
+                    />
+                    <Button
+                        @click="() => onSaveNote()"
+                        label="Save"
+                        full
+                    />
+                </div>
+            </div>
+        </Popover>
     </div>
 </template>
