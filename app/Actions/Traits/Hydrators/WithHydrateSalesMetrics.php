@@ -101,6 +101,13 @@ trait WithHydrateSalesMetrics
                         ->sum('org_net_amount');
                     break;
 
+                case 'sales_invoice_category_currency':
+                    $results['sales_invoice_category_currency'] = Invoice::where($context)
+                        ->where('in_process', false)
+                        ->whereBetween('date', [$start, $end])
+                        ->sum('net_amount');
+                    break;
+
                 case 'revenue':
                     $results['revenue'] = Invoice::where($context)
                         ->where('in_process', false)
@@ -125,6 +132,14 @@ trait WithHydrateSalesMetrics
                         ->sum('org_net_amount');
                     break;
 
+                case 'revenue_invoice_category_currency':
+                    $results['revenue_invoice_category_currency'] = Invoice::where($context)
+                        ->where('in_process', false)
+                        ->where('type', InvoiceTypeEnum::INVOICE)
+                        ->whereBetween('date', [$start, $end])
+                        ->sum('net_amount');
+                    break;
+
                 case 'lost_revenue':
                     $results['lost_revenue'] = Invoice::where($context)
                         ->where('in_process', false)
@@ -147,6 +162,14 @@ trait WithHydrateSalesMetrics
                         ->where('type', InvoiceTypeEnum::REFUND)
                         ->whereBetween('date', [$start, $end])
                         ->sum('org_net_amount');
+                    break;
+
+                case 'lost_revenue_invoice_category_currency':
+                    $results['lost_revenue_invoice_category_currency'] = Invoice::where($context)
+                        ->where('in_process', false)
+                        ->where('type', InvoiceTypeEnum::REFUND)
+                        ->whereBetween('date', [$start, $end])
+                        ->sum('net_amount');
                     break;
             }
         }

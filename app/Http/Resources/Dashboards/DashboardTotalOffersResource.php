@@ -54,7 +54,7 @@ class DashboardTotalOffersResource extends JsonResource
     {
         $sums = [];
 
-        foreach (DateIntervalEnum::cases() as $interval) {
+        foreach (DateIntervalEnum::casesWithoutCustom() as $interval) {
             $key = $field . '_' . $interval->value;
             $sums[$key] = 0;
 
@@ -68,7 +68,7 @@ class DashboardTotalOffersResource extends JsonResource
 
     private function getDashboardTableColumnFromArray(array $summedData, string $scope): array
     {
-        $intervals = DateIntervalEnum::cases();
+        $intervals = DateIntervalEnum::casesWithoutCustom();
         $columns = [];
 
         foreach ($intervals as $interval) {
