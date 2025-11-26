@@ -22,6 +22,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
 library.add(faStore, faBookmark, faUndoAlt)
 
@@ -34,7 +35,7 @@ const isModalAddress = ref(false)
 
 <template>
     <div class="p-6 grid grid-cols-2 gap-x-4">
-        <div aria-label="trans('Statistic')" class="border border-gray-300 rounded-lg w-full sm:max-w-lg">
+        <div aria-label="trans('Statistic')" class="h-fit border border-gray-300 rounded-lg w-full sm:max-w-lg">
             <div v-if="route().params.platform !== 'manual'"
                  class="py-3 px-2 flex items-center justify-between gap-x-4 w-full border-b border-gray-900/15">
                 <dl v-if="true" class="flex-auto pl-3">
@@ -264,10 +265,46 @@ const isModalAddress = ref(false)
                     </template>
                 </ModalConfirmationDelete>
             </div>
-            <div>
-                <pre>
-<!--                    {{data.fulfilment_policies}}-->
-                </pre>
+
+            <!-- Section: Fulfilment Policies -->
+            <div class="border-t border-gray-300 pt-3">
+                <div class="font-semibold">
+                    {{ trans("Fulfilment Policies") }} ({{data.fulfilment_policies?.total}}):
+                </div>
+
+                <div class="mt-1 grid grid-cols-2 gap-4">
+                    <div v-for="policy in data.fulfilment_policies?.fulfillmentPolicies" class="border-l-4 px-2 bg-gray-100 py-2 border-gray-300">
+                        <div class="font-medium text-sm">
+                            <InformationIcon v-if="policy.description" :information="policy.description" />
+                            {{ policy.name }}
+                        </div>
+
+                        <ul class="text-xs list-disc list-outside pl-4 mt-2">
+                            <!-- List: Handling time -->
+                            <li v-if="policy.handlingTime?.value">
+                                {{ trans("Handling time") }}: {{ policy.handlingTime?.value }} {{ policy.handlingTime?.unit }}
+                            </li>
+                            
+                            <!-- List: Freight Shipping -->
+                            <li v-if="(typeof policy.freightShipping !== 'undefined')">
+                                {{ trans("Freight Shipping") }}: {{ policy.freightShipping ? trans('Yes') : trans('No') }}
+                            </li>
+                            
+                            <!-- List: Global Shipping -->
+                            <li v-if="(typeof policy.globalShipping !== 'undefined')">
+                                {{ trans("Global Shipping") }}: {{ policy.globalShipping ? trans('Yes') : trans('No') }}
+                            </li>
+                            
+                            <!-- List: Region Excluded -->
+                            <li v-if="policy.shipToLocations?.regionExcluded?.length">
+                                {{ trans("Region excluded") }} ({{ policy.shipToLocations?.regionExcluded?.length }}): <span class="italic">{{ policy.shipToLocations?.regionExcluded?.map(item => item.regionName).join(", ") }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- <pre>
+                   {{data.fulfilment_policies}}
+                </pre> -->
             </div>
         </div>
     </div>
