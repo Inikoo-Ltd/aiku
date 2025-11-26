@@ -57,7 +57,7 @@ class SyncProductTradeUnits
                     }
                     list($smallestDividend, $correspondingDivisor) = findSmallestFactors($stock->pivot->quantity);
 
-                    $orgStocks[$stock->id] = [
+                    $orgStocks[$orgStock->id] = [
                         'quantity'                  => Arr::get($tradeUnitData, 'quantity') / $stock->pivot->quantity,
                         'trade_units_per_org_stock' => $packedIn,
                         'divisor'                   => $correspondingDivisor,
