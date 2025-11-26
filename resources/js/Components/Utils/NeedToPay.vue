@@ -22,7 +22,7 @@ const locale = inject('locale', aikuLocaleStructure)
 <template>
     <dd class="relative w-full flex flex-col border px-2.5 py-1 rounded-md  overflow-hidden"
         :class="[
-            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300' : 'bg-white border-gray-300',
+            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 pr-5' : 'bg-white border-gray-300',
         ]"
     >
         <!-- Block: Corner label (fully paid) -->
