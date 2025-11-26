@@ -12,6 +12,7 @@ namespace App\Models\Inventory;
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -111,6 +112,11 @@ class PickingSession extends Model
             'picking_session_id',
             'delivery_note_id'
         );
+    }
+
+    public function deliveryNotesItems(): HasMany
+    {
+        return $this->hasMany(DeliveryNoteItem::class);
     }
 
     public function trolleys(): HasMany
