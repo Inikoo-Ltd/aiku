@@ -15,6 +15,7 @@ use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketAttachment;
+use App\Helpers\NaturalLanguage;
 
 class GetMasterProductShowcase
 {
@@ -24,13 +25,50 @@ class GetMasterProductShowcase
 
     public function handle(MasterAsset $masterAsset): array
     {
+
+        $tradeUnits = $masterAsset->tradeUnits;
+        $tradeUnits->loadMissing(['ingredients']);
+
+        $properties = [
+            'country_of_origin' => NaturalLanguage::make()->country($masterAsset->country_of_origin),
+            'ingredients'       => $masterAsset->marketing_ingredients,
+            'tariff_code'       => $masterAsset->tariff_code,
+            'duty_rate'         => $masterAsset->duty_rate,
+            'hts_us'            => $masterAsset->hts_us,
+        ];
+        
+
+        $gpsr = [
+            'manufacturer'               => $masterAsset->gpsr_manufacturer,
+            'eu_responsible'             => $masterAsset->gpsr_eu_responsible,
+            'warnings'                   => $masterAsset->gpsr_warnings,
+            'how_to_use'                 => $masterAsset->gpsr_manual,
+            'gpsr_class_category_danger' => $masterAsset->gpsr_class_category_danger,
+            'product_languages'          => $masterAsset->gpsr_class_languages,
+            'acute_toxicity'             => $masterAsset->pictogram_toxic,
+            'corrosive'                  => $masterAsset->pictogram_corrosive,
+            'explosive'                  => $masterAsset->pictogram_explosive,
+            'flammable'                  => $masterAsset->pictogram_flammable,
+            'gas_under_pressure'         => $masterAsset->pictogram_gas,
+            'hazard_environment'         => $masterAsset->pictogram_environment,
+            'health_hazard'              => $masterAsset->pictogram_health,
+            'oxidising'                  => $masterAsset->pictogram_oxidising,
+        ];
+
+
+
+
+
+
         return [
             'images' => $this->getImagesData($masterAsset),
             'main_image'      => $masterAsset->imageSources(),
             'masterProduct' => MasterProductResource::make($masterAsset)->toArray(request()),
-            'properties'           => null,  // TODO
-            'gpsr'                 => null,  // TODO
-            'parts'                 => null,  // TODO
+            'properties'           => $properties,
+            'gpsr'                 => $gpsr,  
+            'attachment_box'  => [
+                'public' => []
+            ],
 
         ];
     }

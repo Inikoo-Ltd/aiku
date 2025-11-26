@@ -72,5 +72,14 @@ export interface ProductShowcase {
   gpsr_manual: string | null
   gpsr_class_category_danger: string | null
   gpsr_product_languages: string | null
-
+  gpsr : {
+     acute_toxicity : boolean
+     corrosive : boolean
+     explosive : boolean
+     flammable : boolean
+     gas_under_pressure : boolean
+     hazard_environment : boolean
+     health_hazard : boolean
+     oxidising : boolean
+  }
 }

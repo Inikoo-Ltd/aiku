@@ -98,9 +98,6 @@ interface PropsData {
 const props = withDefaults(
 	defineProps<{
 		data: ProductShowcase
-		// gpsr?: Gpsr
-		parts?: { id: number; name: string }[]
-		type?: string
 		video?: string
 		hide?: string[]
 		publicAttachment: array<any>
@@ -109,10 +106,7 @@ const props = withDefaults(
 			tariff_code?: string
 			duty_rate?: string
 		}
-	}>(),
-	{
-		type: "product", // default type is 'product' (alternative: 'trade_unit')
-	}
+	}>(),{}
 )
 
 library.add(
@@ -137,7 +131,6 @@ library.add(
 const locale = inject("locale", aikuLocaleStructure)
 const showFullWarnings = ref(false)
 const showFullInstructions = ref(false)
-const showFullDescription = ref(false)
 
 
 
@@ -160,21 +153,21 @@ const getActiveHazards = () => {
 	return hazardDefinitions.value.filter((hazard) => {
 		switch (hazard.key) {
 			case "acuteToxicity":
-				return props.data?.gpsr?.acute_toxicity
+				return props?.data?.gpsr?.acute_toxicity
 			case "corrosive":
-				return props.data?.gpsr?.corrosive
+				return props?.data?.gpsr?.corrosive
 			case "explosive":
-				return props.data?.gpsr?.explosive
+				return props?.data?.gpsr?.explosive
 			case "flammable":
-				return props.data?.gpsr?.flammable
+				return props?.data?.gpsr?.flammable
 			case "gasUnderPressure":
-				return props.data?.gpsr?.gas_under_pressure
+				return props?.data?.gpsr?.gas_under_pressure
 			case "environmentHazard":
-				return props.data?.gpsr?.hazard_environment
+				return props?.data?.gpsr?.hazard_environment
 			case "healthHazard":
-				return props.data?.gpsr?.health_hazard
+				return props?.data?.gpsr?.health_hazard
 			case "oxidising":
-				return props.data?.gpsr?.oxidising
+				return props?.data?.gpsr?.oxidising
 			default:
 				return false
 		}

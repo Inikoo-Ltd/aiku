@@ -15,7 +15,7 @@ use App\Stubs\Migrations\HasProductInformation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductHydrateTradeUnitsFields implements ShouldBeUnique
+class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
     use HasDangerousGoodsFields;

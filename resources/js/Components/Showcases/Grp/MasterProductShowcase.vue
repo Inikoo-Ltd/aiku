@@ -24,6 +24,7 @@ import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
 import MasterProductSummary from "@/Components/Goods/MasterProductSummary.vue"
 import { trans } from "laravel-vue-i18n"
+import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 
 
@@ -185,9 +186,7 @@ const tradeUnitTags = computed(() => {
 			:data="data.masterProduct"
 			:gpsr="data.gpsr"
 			:properties="data.properties"
-			:parts="data.parts"
-			:video="videoSetup?.url"
-			:hide="['price', 'rrp', 'stock', 'weight', 'dimension','picking']"
+			:public-attachment="[]"
 		/>
 	</div>
 </template>
