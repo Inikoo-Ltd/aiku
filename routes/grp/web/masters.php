@@ -16,6 +16,7 @@ use App\Actions\Masters\MasterCollection\UI\IndexMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollectionsInMasterProductCategory;
 use App\Actions\Masters\MasterCollection\UI\ShowMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\EditMasterCollection;
+use App\Actions\Masters\MasterProductCategory\UI\DeleteMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\EditMasterDepartment;
@@ -103,6 +104,8 @@ Route::name("master_shops")->prefix('master-shops')
 
                 Route::get('{masterDepartment}/blueprint', ShowMasterDepartmentWorkshop::class)->name('blueprint');
                 Route::get('{masterDepartment}/edit', EditMasterDepartment::class)->name('edit');
+                Route::delete('{masterDepartment}/delete', DeleteMasterDepartment::class)->name('delete');
+
 
                 Route::prefix('{masterDepartment}')->name('show')->group(function () {
                     Route::get('', ShowMasterDepartment::class);
@@ -200,7 +203,7 @@ Route::name("master_shops")->prefix('master-shops')
             });
 
             Route::get('/master-products-orphan', [IndexMasterProductsWithNoFamily::class, 'inMasterShop'])->name('.master_products_orphan');
-            
+
             Route::prefix('master-collections')->as('.master_collections.')->group(function () {
                 Route::get('', IndexMasterCollections::class)->name('index');
                 Route::get('create', CreateMasterCollection::class)->name('create');

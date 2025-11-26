@@ -11,7 +11,8 @@ import {
     faBullhorn,
     faCameraRetro, faClock,
     faCube, faCubes, faQuoteLeft,
-    faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling
+    faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling,
+    faTrashAlt
 } from "@fal";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -51,7 +52,8 @@ library.add(
     faMoneyBillWave,
     faDiagramNext,
     faCubes,
-    faFolders, faBrowser, faSeedling, faQuoteLeft
+    faFolders, faBrowser, faSeedling, faQuoteLeft,
+    faTrashAlt
 );
 
 
@@ -73,10 +75,16 @@ const props = defineProps<{
     url_master?:routeType
     images?:object
     mini_breadcrumbs?: any[]
+    delete_parameters:{
+        id: string;
+        master_shop: string;
+        can_delete?: boolean;
+        route: string;
+    }
 }>();
 
 let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
     const components = {
@@ -113,16 +121,27 @@ function masterDepartmentRoute(department: Department) {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-delete="propx">
-            <ModalConfirmationDelete :routeDelete="{
-                    name: propx.action.route.name,
-                    parameters: propx.action.route.parameters,
-                }" :title="trans('Are you sure you want to delete department') + '?'" isFullLoading>
+          <template #other>
+            <ModalConfirmationDelete
+            :routeDelete="{
+                name: props.delete_parameters.route,
+                parameters: {
+                    masterShop: props.delete_parameters.master_shop,
+                    masterDepartment: props.delete_parameters.id
+                },
+                method: 'delete'
+            }"
+                :title="trans('Are you sure you want to delete this department?')"
+                isFullLoading
+            >
                 <template #default="{ isOpenModal, changeModel }">
-                    <div @click="changeModel"
-                        class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
-                        <Button type="delete" />
-                    </div>
+                    <Button
+                        :disabled="!props.delete_parameters.can_delete"
+                        icon="fal fa-trash-alt"
+                        type="negative"
+                        @click="changeModel"
+                        :tooltip="props.delete_parameters.can_delete ? 'Delete' : 'Cannot delete this department'"
+                    />
                 </template>
             </ModalConfirmationDelete>
         </template>
