@@ -11,6 +11,7 @@ namespace App\Actions\UI\Dashboards;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
+use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -30,6 +31,7 @@ class ShowGroupDashboard extends OrgAction
     use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
     use WithTabsBox;
+    use WithCustomRangeDashboard;
 
     public function handle(Group $group, ActionRequest $request): Response
     {
@@ -41,6 +43,7 @@ class ShowGroupDashboard extends OrgAction
             $currentTab = Arr::first(GroupDashboardSalesTableTabsEnum::values());
         }
 
+        $customRangeData = $this->setupCustomRange($userSettings, $group);
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
         $tabsBox = $this->getTabsBox($group);
@@ -65,7 +68,7 @@ class ShowGroupDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group),
+                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $customRangeData),
                             'charts'      => [] // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
                         ]
                     ],
@@ -90,6 +93,7 @@ class ShowGroupDashboard extends OrgAction
     public function asController(ActionRequest $request): Response
     {
         $group = group();
+
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $request);
@@ -99,7 +103,6 @@ class ShowGroupDashboard extends OrgAction
     {
         return [
             [
-
                 'type'   => 'simple',
                 'simple' => [
                     'icon'  => 'fal fa-tachometer-alt-fast',
