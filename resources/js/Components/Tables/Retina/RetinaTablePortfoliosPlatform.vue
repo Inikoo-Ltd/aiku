@@ -961,7 +961,7 @@ const calculateVat = (price: number) => {
                 <Button
                     type="tertiary"
                     @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'draft')"
-                    :label="trans('Save as Draf')"
+                    :label="trans('Save as Draft')"
                     full
                     :loading="isLoadingSubmitErrorTitle"
                 />
