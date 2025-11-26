@@ -266,7 +266,7 @@ class EditMasterProduct extends GrpAction
                     'master_family_id'   => [
                         'type'        => 'select_infinite',
                         'label'       => __('Master Family'),
-                        'value'       => $masterProduct->masterFamily->id,
+                        'value'       => $masterProduct->masterFamily->id ?? null,
                         'options'   => [
                                 [
                                     'code' =>  $masterProduct->masterFamily->code ?? null,

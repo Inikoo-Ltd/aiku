@@ -45,9 +45,10 @@ const props = withDefaults(defineProps<{
     categoryHasChannels?: number[]
     routeAddPortfolios?: routeType
     routeGetCategoryChannels?: routeType
-
+    modelType:string
 }>(), {
     categoryHasChannels: () => [],
+    modelType: 'ProductCategory',
     routeAddPortfolios : {
         name: 'iris.models.multi_channels.product_category.portfolio.store',
         parameters: {}
@@ -209,18 +210,19 @@ const fetchProductExistInChannel = async () => {
         console.log('Xxx product exist in channel response:', response.data)
         categoryHasChannelsList.value = response.data || []
     } catch (error: any) {
-        notify({
+        console.error(error)
+       /*  notify({
             title: trans('Something went wrong'),
             text: error.message,
             type: 'error'
-        })
+        }) */
     } finally {
         isLoadingFetchExistenceChannels.value = false
     }
 }
 
 onMounted(() => {
-    if(layout?.iris?.is_logged_in)
+    if(layout?.iris?.is_logged_in && props.modelType != 'Collection')
     fetchProductExistInChannel()
 })
 

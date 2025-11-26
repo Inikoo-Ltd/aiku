@@ -539,7 +539,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                     </div>
 
                     <div v-if="layout?.iris?.customer?.id">
-                        <ButtonAddCategoryToPortfolio :products :categoryId  />
+                        <ButtonAddCategoryToPortfolio :products :categoryId  :modelType="props.fieldValue.model_type"/>
                     </div>
                 </div>
 

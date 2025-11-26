@@ -62,6 +62,7 @@ const onUpdateDatePicker = (newValue) => {
         route('grp.models.profile.update'),
         {
             settings: {
+                selected_interval: 'ctm',
                 custom_range_interval: formattedDateRange(newValue)
             }
         },
@@ -81,6 +82,7 @@ const resetDatePicker = () => {
         route('grp.models.profile.update'),
         {
             settings: {
+                selected_interval: 'all',
                 custom_range_interval: ''
             }
         },
@@ -146,7 +148,14 @@ const _popover = ref(null);
 <template>
     <div class="flex rounded-md">
         <div @click="(e) => _popover?.toggle(e)" v-tooltip="trans('Filter by dates')" class="group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75">
-            <div class="h-7 w-9 rounded flex justify-center items-center border border-gray-300 hover:bg-gray-300 text-gray-600">
+            <div
+                class="h-7 w-9 rounded flex justify-center items-center border border-gray-300 hover:bg-gray-300 text-gray-700"
+                :class="[
+                    intervals.value === 'ctm'
+                        ? 'bg-indigo-500 text-white hover:text-gray-700 font-medium'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
+                ]"
+            >
                 <FontAwesomeIcon v-if="!isLoadingReload" icon='fal fa-calendar-alt' class='cursor-pointer' fixed-width aria-hidden='true' />
                 <LoadingIcon v-else />
             </div>
