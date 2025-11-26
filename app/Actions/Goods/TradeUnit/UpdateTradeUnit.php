@@ -157,8 +157,16 @@ class UpdateTradeUnit extends GrpAction
         }
 
         if ($fieldsForProductsUpdated) {
-            foreach ($tradeUnit->products as $product) {
-                ProductHydrateTradeUnitsFields::dispatch($product);
+            if($tradeUnit->products->count() > 500){
+                // If trade unit is linked with more than 500 products, use horizon
+                foreach ($tradeUnit->products as $product) {
+                    ProductHydrateTradeUnitsFields::dispatch($product);
+                }
+            }else{
+                // If trade unit is linked with 500 or less products brute force it
+                foreach ($tradeUnit->products as $product) {
+                    ProductHydrateTradeUnitsFields::run($product);
+                }
             }
         }
 

@@ -88,18 +88,26 @@ const getRoute = (tabSlug) => {
                         v-for="tab in box.tabs"
                         :key="tab.tab_slug"
                         class="w-full flex flex-col items-center"
-                        @click="router.get(getRoute(tab.tab_slug))"
+                        @click="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? null : router.get(getRoute(tab.tab_slug))"
                     >
                         <div class="group flex items-center gap-1 tabular-nums relative text-xl px-2 mb-1 cursor-default">
                             <div class="mx-auto text-center">
                                 <template v-if="tab.icon || tab.icon_data">
-                                    <Icon v-if="tab.icon_data" :data="tab.icon_data" class="text-xl group-hover:cursor-pointer" />
+                                    <Icon
+                                        v-if="tab.icon_data"
+                                        :data="tab.icon_data"
+                                        class="text-xl"
+                                        :class="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? 'cursor-not-allowed' : 'group-hover:cursor-pointer'"
+                                    />
                                     <FontAwesomeIcon v-else :icon="tab.icon" class="text-xl" fixed-width aria-hidden="true" />
                                 </template>
                             </div>
 
                             <div class="relative text-center">
-                                <span class="inline group-hover:cursor-pointer group-hover:underline opacity-80 group-hover:opacity-100 transition-all">
+                                <span
+                                    class="inline opacity-80 group-hover:opacity-100 transition-all"
+                                    :class="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? 'cursor-not-allowed' : 'group-hover:cursor-pointer group-hover:underline'"
+                                >
                                   {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
                                 </span>
                             </div>
