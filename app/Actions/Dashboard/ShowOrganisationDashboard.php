@@ -56,7 +56,7 @@ class ShowOrganisationDashboard extends OrgAction
                     'id'        => 'organisation_dashboard_tab',
                     'intervals' => [
                         'options'           => $this->dashboardIntervalOption(),
-                        'value'             => Arr::get($userSettings, 'selected_interval', 'all'),  // fix this
+                        'value'             => $saved_interval,
                         'range_interval'    => DashboardIntervalFilters::run($saved_interval)
                     ],
                     'settings'  => [

@@ -147,9 +147,9 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
             'fulfillment_policy_id' => ['sometimes', 'string'],
 
             'return_accepted' => ['sometimes', 'boolean'],
-            'return_payer' => ['sometimes', 'string'],
-            'return_within' => ['sometimes', 'integer'],
-            'return_description' => ['sometimes', 'string'],
+            'return_payer' => ['required_if:return_accepted,true', 'string'],
+            'return_within' => ['required_if:return_accepted,true', 'integer'],
+            'return_description' => ['required_if:return_accepted,true', 'string'],
 
             'closed_at'         => ['sometimes', 'date']
         ];

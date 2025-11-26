@@ -97,10 +97,6 @@ class UpdateProduct extends OrgAction
         }
 
 
-
-
-
-
         $assetData = [];
         if (Arr::has($modelData, 'follow_master')) {
             data_set($assetData, 'follow_master', Arr::pull($modelData, 'follow_master'));
@@ -227,9 +223,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInLuigi
-            )
+                    $changed,
+                    $fieldsUsedInLuigi
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
@@ -244,9 +240,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInWebpages
-            )
+                    $changed,
+                    $fieldsUsedInWebpages
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);

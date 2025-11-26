@@ -231,6 +231,7 @@ use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
 use App\Actions\Masters\MasterAsset\UploadImagesToMasterProduct;
+use App\Actions\Masters\MasterAsset\UpdateMultipleMasterProductsFamily;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
@@ -239,6 +240,9 @@ use App\Actions\Masters\MasterCollection\UpdateMasterCollection;
 use App\Actions\Masters\MasterCollection\DetachMasterCollectionFromModel;
 use App\Actions\Masters\MasterCollection\DetachMasterModelFromMasterCollection;
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
+use App\Actions\Masters\MasterCollection\UploadImagesToMasterCollection;
+use App\Actions\Masters\MasterCollection\UpdateMasterCollectionImages;
+use App\Actions\Masters\MasterCollection\DeleteImageFromMasterCollection;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DeleteImageFromMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
@@ -427,11 +431,16 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
     Route::delete('delete', DeleteMasterCollection::class)->name('delete');
     Route::patch('update', UpdateMasterCollection::class)->name('update');
     Route::post('attach-parents', AttachMultipleParentsToAMasterCollection::class)->name('attach_parents');
+
+    Route::post('upload-images', UploadImagesToMasterCollection::class)->name('upload_images');
+    Route::patch('update-images', UpdateMasterCollectionImages::class)->name('update_images');
+    Route::delete('delete-images/{media:id}', DeleteImageFromMasterCollection::class)->name('delete_images')->withoutScopedBindings();
 });
 
 Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(function () {
     Route::post('store-assets', StoreMasterProductFromTradeUnits::class)->name('store-assets');
     Route::post('clone-to-other-store', CloneMasterAssetToOtherShop::class)->name('clone_to_other_store');
+    Route::post('/move-products', UpdateMultipleMasterProductsFamily::class)->name('bulk_add_family');
 });
 
 Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {
