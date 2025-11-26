@@ -220,7 +220,7 @@ class StoreInvoice extends OrgAction
         }
 
         RunInvoiceHydrators::run($invoice,$this->hydratorsDelay);
-        if (!$this->strict) {
+        if (!$this->strict && false) {
 
             print "Running invoice hydrators for invoice V2 : $invoice->id\n";
 
