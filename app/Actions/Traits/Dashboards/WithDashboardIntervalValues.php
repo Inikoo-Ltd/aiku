@@ -22,7 +22,7 @@ trait WithDashboardIntervalValues
         array $options = [],
         array $routeTarget = []
     ): array {
-        return collect(DateIntervalEnum::casesWithoutCustom())->mapWithKeys(function ($interval) use ($intervalsModel, $field, $dataType, $options, $routeTarget) {
+        return collect(DateIntervalEnum::cases())->mapWithKeys(function ($interval) use ($intervalsModel, $field, $dataType, $options, $routeTarget) {
             $rawValue = $intervalsModel->{$field.'_'.$interval->value} ?? 0;
 
             $data = [
@@ -153,7 +153,7 @@ trait WithDashboardIntervalValues
         $sums = [];
 
         foreach ($models as $model) {
-            foreach (DateIntervalEnum::casesWithoutCustom() as $interval) {
+            foreach (DateIntervalEnum::cases() as $interval) {
                 $key = $field.'_'.$interval->value;
                 $sums[$key] = ($sums[$key] ?? 0) + ($model->{$key} ?? 0);
             }

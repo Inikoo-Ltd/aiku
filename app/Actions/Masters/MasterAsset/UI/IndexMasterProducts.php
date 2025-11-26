@@ -183,7 +183,7 @@ class IndexMasterProducts extends GrpAction
 
         return $queryBuilder
             ->defaultSort('master_assets.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'used_in'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
