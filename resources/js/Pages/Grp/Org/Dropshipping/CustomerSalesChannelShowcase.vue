@@ -21,6 +21,8 @@ import { faStore, faBookmark, faUndoAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
+
 library.add(faStore, faBookmark, faUndoAlt)
 
 const props = defineProps<{
@@ -34,7 +36,7 @@ const isModalAddress = ref(false)
     <div class="p-6 grid grid-cols-2 gap-x-4">
         <div aria-label="trans('Statistic')" class="border border-gray-300 rounded-lg w-full sm:max-w-lg">
             <div v-if="route().params.platform !== 'manual'"
-                class="py-3 px-2 flex items-center justify-between gap-x-4 w-full border-b border-gray-900/15">
+                 class="py-3 px-2 flex items-center justify-between gap-x-4 w-full border-b border-gray-900/15">
                 <dl v-if="true" class="flex-auto pl-3">
                     <dt class="text-xs text-gray-400">{{ trans("Account name") }}</dt>
                     <dd v-tooltip="trans('Account name')" class="w-fit mt text-xl font-semibold leading-6">
@@ -44,14 +46,14 @@ const isModalAddress = ref(false)
 
                 <div class="px-6 text-4xl">
                     <FontAwesomeIcon v-if="route().params.platform === 'shopify'" v-tooltip="'Shopify'"
-                        :icon="faShopify" class="" fixed-width aria-hidden="true" />
+                                     :icon="faShopify" class="" fixed-width aria-hidden="true"/>
                     <FontAwesomeIcon v-if="route().params.platform === 'tiktok'" v-tooltip="'Tiktok'" :icon="faTiktok"
-                        class="" fixed-width aria-hidden="true" />
+                                     class="" fixed-width aria-hidden="true"/>
                     <svg v-if="route().params.platform === 'woocommerce'" xmlns="http://www.w3.org/2000/svg" width="40"
-                        height="40" viewBox="0 0 440.000000 440.000000" preserveAspectRatio="xMidYMid meet">
+                         height="40" viewBox="0 0 440.000000 440.000000" preserveAspectRatio="xMidYMid meet">
 
                         <g transform="translate(0.000000,440.000000) scale(0.100000,-0.100000)" fill="currentFill"
-                            stroke="none">
+                           stroke="none">
                             <path d="M483 3336 c-106 -34 -195 -115 -235 -215 l-23 -56 -3 -653 c-2 -423
                         1 -673 8 -709 22 -120 91 -213 198 -265 l67 -33 810 -3 810 -3 340 -188 c187
                         -104 341 -186 342 -183 2 4 -31 88 -71 187 l-75 180 627 5 627 5 67 33 c81 40
@@ -70,11 +72,11 @@ const isModalAddress = ref(false)
                         216 88 354 41 83 65 118 122 175 121 122 243 159 392 121z m1020 -1 c118 -30
                         203 -101 260 -215 140 -276 36 -725 -210 -911 -131 -99 -318 -102 -463 -9 -84
                         55 -139 137 -178 266 -25 83 -25 292 0 390 52 201 179 384 316 456 72 38 184
-                        47 275 23z" />
+                        47 275 23z"/>
                             <path d="M2500 2683 c-35 -13 -70 -46 -104 -97 -100 -152 -119 -332 -50 -475
-                        47 -96 120 -102 212 -18 81 75 126 198 125 342 0 179 -80 287 -183 248z" />
+                        47 -96 120 -102 212 -18 81 75 126 198 125 342 0 179 -80 287 -183 248z"/>
                             <path d="M3494 2671 c-143 -87 -218 -371 -142 -541 32 -70 57 -92 106 -94 159
-                        -4 290 302 223 522 -36 120 -106 162 -187 113z" />
+                        -4 290 302 223 522 -36 120 -106 162 -187 113z"/>
                         </g>
                     </svg>
                 </div>
@@ -86,7 +88,7 @@ const isModalAddress = ref(false)
                 <dl v-if="data?.stats?.number_orders > -1" class="flex items-center w-full flex-none gap-x-4">
                     <dt v-tooltip="trans('Orders')" class="flex-none">
                         <FontAwesomeIcon icon="fal fa-shopping-cart" class="text-gray-400" fixed-width
-                            aria-hidden="true" />
+                                         aria-hidden="true"/>
                     </dt>
                     <dd class="text-gray-500">{{ data?.stats?.number_orders }}</dd>
                 </dl>
@@ -95,7 +97,7 @@ const isModalAddress = ref(false)
                 <dl v-if="data?.stats?.number_customer_clients > -1"
                     class="flex items-center w-full flex-none gap-x-4">
                     <dt v-tooltip="trans('Customer clients')" class="flex-none">
-                        <FontAwesomeIcon icon="fal fa-users" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-users" class="text-gray-400" fixed-width aria-hidden="true"/>
                     </dt>
                     <dd class="text-gray-500">{{ data?.stats?.number_customer_clients }}</dd>
                 </dl>
@@ -103,7 +105,7 @@ const isModalAddress = ref(false)
                 <!-- Field: Number portfolios -->
                 <dl v-if="data?.stats?.number_portfolios > -1" class="flex items-center w-full flex-none gap-x-4">
                     <dt v-tooltip="trans('Portfolios')" class="flex-none">
-                        <FontAwesomeIcon icon="fal fa-cube" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-cube" class="text-gray-400" fixed-width aria-hidden="true"/>
                     </dt>
                     <dd class="text-gray-500">{{ data?.stats?.number_portfolios }}</dd>
                 </dl>
@@ -113,7 +115,7 @@ const isModalAddress = ref(false)
                     <dt v-tooltip="trans('Created at')" class="flex-none">
                         <span class="sr-only">Created at</span>
                         <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width
-                            aria-hidden="true" />
+                                         aria-hidden="true"/>
                     </dt>
                     <dd class="text-gray-500">
                         <time datetime="2023-01-31">{{ useFormatTime(data?.customer?.created_at) }}</time>
@@ -123,7 +125,7 @@ const isModalAddress = ref(false)
                 <dl v-if="data?.customer?.email" class="flex items-center w-full flex-none gap-x-4">
                     <dt v-tooltip="trans('Email')" class="flex-none">
                         <span class="sr-only">Email</span>
-                        <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width aria-hidden="true"/>
                     </dt>
                     <dd class="text-gray-500">
                         <a :href="`mailto:${data?.customer.email}`">{{ data?.customer?.email }}</a>
@@ -133,7 +135,7 @@ const isModalAddress = ref(false)
                 <dl v-if="data?.customer?.phone" class="flex items-center w-full flex-none gap-x-4">
                     <dt v-tooltip="trans('Phone')" class="flex-none">
                         <span class="sr-only">Phone</span>
-                        <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true"/>
                     </dt>
                     <dd class="text-gray-500">
                         <a :href="`tel:${data?.customer.email}`">{{ data?.customer?.phone }}</a>
@@ -143,14 +145,14 @@ const isModalAddress = ref(false)
                 <dl v-if="data?.customer?.address" class="relative flex items w-full flex-none gap-x-4">
                     <dt v-tooltip="'Address'" class="flex-none">
                         <FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-gray-400" fixed-width
-                            aria-hidden="true" />
+                                         aria-hidden="true"/>
                     </dt>
                     <dd class="w-full text-gray-500">
                         <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                            <span class="" v-html="data?.customer?.address.formatted_address" />
+                            <span class="" v-html="data?.customer?.address.formatted_address"/>
                             <div v-if="data?.address_management.can_open_address_management"
-                                @click="() => isModalAddress = true"
-                                class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                 @click="() => isModalAddress = true"
+                                 class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                 <span>{{ trans("Edit") }}</span>
                             </div>
                         </div>
@@ -159,63 +161,109 @@ const isModalAddress = ref(false)
             </div>
         </div>
 
-        <div class="h-fit flex gap-x-2 w-fit text-xs">
-            <div class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
-                <FontAwesomeIcon v-if="data?.customer_sales_channel?.can_connect_to_platform" icon="fal fa-check"
-                    class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                {{trans('App installed')}}
+        <div>
+            <div class="h-fit flex gap-x-2 w-fit text-xs">
+                <div class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
+                    <FontAwesomeIcon v-if="data?.customer_sales_channel?.can_connect_to_platform" icon="fal fa-check"
+                                     class="text-green-500" fixed-width aria-hidden="true"/>
+                    <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true"/>
+                    {{ trans('App installed') }}
+                </div>
+                <div
+                    v-if="!data?.customer_sales_channel?.platform_status && data?.customer_sales_channel?.exist_in_platform"
+                    class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
+                    <FontAwesomeIcon v-if="data?.customer_sales_channel?.exist_in_platform" icon="fal fa-check"
+                                     class="text-green-500" fixed-width aria-hidden="true"/>
+                    <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true"/>
+                    {{ trans('Found old installation') }}
+                </div>
+                <div v-if="data?.customer_sales_channel?.can_connect_to_platform"
+                     class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
+                    <FontAwesomeIcon v-if="data?.customer_sales_channel?.platform_status" icon="fal fa-check"
+                                     class="text-green-500" fixed-width aria-hidden="true"/>
+                    <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true"/>
+                    {{ trans('Connected') }}
+                </div>
             </div>
-            <div v-if="!data?.customer_sales_channel?.platform_status && data?.customer_sales_channel?.exist_in_platform"  class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
-                <FontAwesomeIcon v-if="data?.customer_sales_channel?.exist_in_platform" icon="fal fa-check"
-                    class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                {{trans('Found old installation')}}
+
+            <div class="mt-3 h-fit flex gap-x-2 w-fit text-xs">
+                <ModalConfirmationDelete
+                    v-if="data?.customer_sales_channel?.can_connect_to_platform &&  !data?.customer_sales_channel?.platform_status"
+                    :routeDelete="{
+                        name: 'grp.models.data?.customer_sales_channel?.shopify_reset',
+                        parameters: {
+                            customerSalesChannel: data?.customer_sales_channel?.id,
+                        },
+                        method: 'patch'
+                    }"
+                    xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                    xisFullLoading
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button @click.stop="changeModel" label="Reset channel" type="negative" icon="fal fa-undo-alt">
+
+                        </Button>
+                    </template>
+                </ModalConfirmationDelete>
+
+                <ModalConfirmationDelete
+                    v-if="data?.customer_sales_channel?.status === 'closed'"
+                    :routeDelete="{
+                        name: 'grp.models.data?.customer_sales_channel?.shopify_reset',
+                        parameters: {
+                            customerSalesChannel: data?.customer_sales_channel?.id,
+                        },
+                        method: 'patch'
+                    }"
+                    xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                    xisFullLoading
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button @click.stop="changeModel" label="Re-Open Channel" type="positive"
+                                icon="fal fa-undo-alt">
+
+                        </Button>
+                    </template>
+                </ModalConfirmationDelete>
+
+                <ModalConfirmation
+                    v-if="data?.customer_sales_channel?.status === 'open'"
+                    :routeYes="{
+                        name: 'grp.models.ebay.check',
+                        parameters: {
+                            customerSalesChannel: data?.customer_sales_channel?.id,
+                        },
+                        method: 'patch'
+                    }"
+                    :description="trans('Are you sure you want to check channel')"
+                    xisFullLoading
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button @click.stop="changeModel" label="Check Channel" type="tertiary"
+                                icon="fal fa-check">
+
+                        </Button>
+                    </template>
+                </ModalConfirmation>
+
+                <ModalConfirmationDelete
+                    v-if="!data?.customer_sales_channel?.can_connect_to_platform && data?.customer_sales_channel?.status !== 'closed'"
+                    :routeDelete="{
+                        name: 'grp.models.data?.customer_sales_channel?.delete',
+                        parameters: {
+                            customerSalesChannel: data?.customer_sales_channel?.id,
+                        },
+                    }"
+                    xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                    isFullLoading
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button @click.stop="changeModel" label="Delete" type="delete">
+
+                        </Button>
+                    </template>
+                </ModalConfirmationDelete>
             </div>
-            <div v-if="data?.customer_sales_channel?.can_connect_to_platform"  class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
-                <FontAwesomeIcon v-if="data?.customer_sales_channel?.platform_status" icon="fal fa-check"
-                    class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                {{trans('Connected')}}
-            </div>
-
-
-            <ModalConfirmationDelete
-                v-if="data?.customer_sales_channel?.can_connect_to_platform &&  !data?.customer_sales_channel?.platform_status"
-                :routeDelete="{
-                    name: 'grp.models.data?.customer_sales_channel?.shopify_reset',
-                    parameters: {
-                        customerSalesChannel: data?.customer_sales_channel?.id,
-                    },
-                    method: 'patch'
-                }"
-                xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
-                xisFullLoading
-            >
-                <template #default="{ isOpenModal, changeModel }">
-                    <Button  @click.stop="changeModel" label="Reset channel" type="negative" icon="fal fa-undo-alt">
-
-                    </Button>
-                </template>
-            </ModalConfirmationDelete>
-
-            <ModalConfirmationDelete
-                v-if="!data?.customer_sales_channel?.can_connect_to_platform && data?.customer_sales_channel?.status !== 'closed'"
-                :routeDelete="{
-                    name: 'grp.models.data?.customer_sales_channel?.delete',
-                    parameters: {
-                        customerSalesChannel: data?.customer_sales_channel?.id,
-                    },
-                }"
-                xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
-                isFullLoading
-            >
-                <template #default="{ isOpenModal, changeModel }">
-                    <Button  @click.stop="changeModel" label="Delete" type="delete">
-
-                    </Button>
-                </template>
-            </ModalConfirmationDelete>
         </div>
     </div>
 
