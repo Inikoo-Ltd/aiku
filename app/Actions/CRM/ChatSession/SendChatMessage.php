@@ -105,17 +105,41 @@ class SendChatMessage
         ];
     }
 
-    public function asController(ChatSession $chatSession, Request $request): ChatMessage
+    public function asController(Request $request, $ulid): ChatMessage
     {
-
+        $this->validateUlid($ulid);
 
         $validated = $request->validate($this->rules());
 
+        $chatSession = ChatSession::where('ulid', $ulid)->first();
         $senderData = $this->determineSenderData();
         $validated = array_merge($validated, $senderData);
 
         return $this->handle($chatSession, $validated);
     }
+
+    protected function validateUlid($ulid): void
+    {
+        validator(
+            ['session_ulid' => $ulid],
+            $this->ulidRules()
+        )->validate();
+    }
+
+
+    protected function ulidRules(): array
+    {
+        return [
+            'session_ulid' => [
+                'required',
+                'string',
+                'ulid',
+                Rule::exists('chat_sessions', 'ulid')
+            ]
+        ];
+    }
+
+
 
     protected function determineSenderData(): array
     {

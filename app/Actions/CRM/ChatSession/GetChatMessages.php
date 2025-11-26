@@ -77,8 +77,7 @@ class GetChatMessages
     {
         validator(
             ['session_ulid' => $ulid],
-            $this->ulidRules(),
-            $this->getValidationMessages()
+            $this->ulidRules()
         )->validate();
     }
 
@@ -107,17 +106,6 @@ class GetChatMessages
         ];
     }
 
-    protected function getValidationMessages(): array
-    {
-        return [
-            'session_ulid.required' => 'Session ULID is required',
-            'session_ulid.ulid' => 'Invalid ULID format',
-            'session_ulid.exists' => 'Chat session not found',
-            'sender_type.in' => 'Invalid sender type',
-            'limit.min' => 'Limit must be at least 1',
-            'limit.max' => 'Limit cannot exceed 100',
-        ];
-    }
 
     public function jsonResponse($result): JsonResponse
     {
