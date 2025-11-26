@@ -42,12 +42,31 @@ const props = defineProps<{
     current?: string | number
 }>()
 
+
+const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
+    if (!amount) return 0
+    if (!currencyCode) {
+        return amount || 0
+    }
+
+    const num = typeof amount === "string" ? parseFloat(amount) : amount
+
+    const formatter = new Intl.NumberFormat(locale?.language?.code, {
+        style: (currencyCode) ? "currency" : "decimal",
+        currency: currencyCode || '',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    })
+
+    return formatter.format(num);
+}
+
 const renderLabelBasedOnType = (label?: string | number, type?: string, options?: { currency_code?: string }) => {
     if (type === 'number') {
         return locale.number(Number(label))
     } else if (type === 'currency') {
         if (!options?.currency_code) return label
-        return locale.currencyFormat(options?.currency_code, Number(label))
+        return currencyFormat(options?.currency_code, Number(label))
     } else {
         return label || '-'
     }
