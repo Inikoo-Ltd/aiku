@@ -93,6 +93,10 @@ trait IsDeliveryNotesIndex
             abort(419);
         }
 
+        // Todo: this hacks has to be deleted after we migrate from aurora
+        if ($shopType != 'all') {
+            $query->where('shops.is_aiku', true);
+        }
 
         // Subquery to count the number of picking sessions for each delivery note
         // Using a correlated subquery to ensure we only get one row per delivery note
