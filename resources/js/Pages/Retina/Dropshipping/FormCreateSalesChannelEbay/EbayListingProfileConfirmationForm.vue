@@ -50,6 +50,7 @@ import { notify } from "@kyvg/vue3-notification";
     ]);
 
     const isLoadingStep = ref(false)
+    const errors = ref({})
 
     const form = useForm({
             app: "Ebay",
@@ -59,12 +60,12 @@ import { notify } from "@kyvg/vue3-notification";
             fulfillment_policy_id: null,
             tax_category_id: null,
             is_vat_adjustment: false,
-            shipping_max_dispatch_time: 0,
+            shipping_max_dispatch_time: null,
             shipping_service: null,
-            shipping_price: 0,
+            shipping_price: null,
             return_accepted: null,
             return_payer: null,
-            return_within: 1,
+            return_within: null,
             return_description: ""
     });
 
@@ -78,11 +79,7 @@ import { notify } from "@kyvg/vue3-notification";
             isLoadingStep.value = false
         } catch (err) {
             isLoadingStep.value = false;
-            notify({
-                title: trans("Something went wrong"),
-                text: err.response?.data?.message,
-                type: "error"
-            });
+            errors.value = err.response?.data?.errors;
         }
     }
 
@@ -188,9 +185,12 @@ import { notify } from "@kyvg/vue3-notification";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.return_policy_id" :options="returnProfiles" optionLabel="name" optionValue="value" class="w-full" />
+                                <Select v-model="form.return_policy_id" :options="returnProfiles"
+                                        @update:model-value="errors.return_policy_id = null "
+                                        optionLabel="name" optionValue="value" class="w-full" />
                                 <FontAwesomeIcon v-tooltip="trans('Select eBay return policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
+                            <p v-if="errors.return_policy_id" class="text-sm text-red-600 mt-1">{{ errors.return_policy_id?.[0] }}</p>
                         </div>
                     </div>
                 </div>
@@ -203,29 +203,37 @@ import { notify } from "@kyvg/vue3-notification";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Return accepted") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.return_accepted" :options="returnAcceptedOptions" optionLabel="name" optionValue="value" class="w-full" />
+                                <Select v-model="form.return_accepted" :options="returnAcceptedOptions"
+                                        @update:model-value="errors.return_accepted = null "
+                                        optionLabel="name" optionValue="value" class="w-full" />
                                 <FontAwesomeIcon v-tooltip="trans('Select returns accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
+                            <p v-if="errors.return_accepted" class="text-sm text-red-600 mt-1">{{ errors.return_accepted?.[0] }}</p>
                         </div>
 
                         <div class="flex flex-col gap-2 p-4" v-if="form.return_accepted">
                             <label class="font-semibold">{{ trans("Return paid by") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.return_payer" :options="returnPayers" optionLabel="name" optionValue="value" class="w-full" />
+                                <Select v-model="form.return_payer" :options="returnPayers"
+                                        @update:model-value="errors.return_payer = null "
+                                        optionLabel="name" optionValue="value" class="w-full" />
                                 <FontAwesomeIcon v-tooltip="trans('Select return paid by')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
+                            <p v-if="errors.return_payer" class="text-sm text-red-600 mt-1">{{ errors.return_payer?.[0] }}</p>
                         </div>
 
                         <div class="flex flex-col gap-2 p-4" v-if="form.return_accepted">
                             <label class="font-semibold">{{ trans("Return within (day)") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.return_within" :options="returnWithinOptions" optionLabel="name" optionValue="value" class="w-full" />
+                                <Select v-model="form.return_within" @update:model-value="errors.return_within = null " :options="returnWithinOptions" optionLabel="name" optionValue="value" class="w-full" />
                             </div>
+                            <p v-if="errors.return_within" class="text-sm text-red-600 mt-1">{{ errors.return_within?.[0] }}</p>
                         </div>
 
                         <div class="flex flex-col gap-2 w-full md:w-96 p-4" v-if="form.return_accepted">
                             <label class="font-semibold">{{ trans("Detailed return policy explanation") }}</label>
-                            <Textarea v-model="form.return_description" rows="5" />
+                            <Textarea v-model="form.return_description" rows="5" @update:model-value="errors.return_description = null " />
+                            <p v-if="errors.return_description" class="text-sm text-red-600 mt-1">{{ errors.return_description?.[0] }}</p>
                         </div>
                     </div>
                 </div>
@@ -251,9 +259,12 @@ import { notify } from "@kyvg/vue3-notification";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.fulfillment_policy_id" :options="shippingProfiles" optionLabel="name" optionValue="value" class="w-full" />
+                                <Select v-model="form.fulfillment_policy_id"
+                                        @update:model-value="errors.fulfillment_policy_id = null "
+                                        :options="shippingProfiles" optionLabel="name" optionValue="value" class="w-full" />
                                 <FontAwesomeIcon v-tooltip="trans('Select ebay shipping policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
+                            <p v-if="errors.fulfillment_policy_id" class="text-sm text-red-600 mt-1">{{ errors.fulfillment_policy_id?.[0] }}</p>
                         </div>
                     </div>
                 </div>
@@ -266,21 +277,26 @@ import { notify } from "@kyvg/vue3-notification";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Shipping service") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.shipping_service" :options="shippingServices" optionLabel="name" optionValue="value" class="w-full" />
+                                <Select v-model="form.shipping_service"
+                                        @update:model-value="errors.shipping_service = null"
+                                        :options="shippingServices" optionLabel="name" optionValue="value" class="w-full" />
                                 <FontAwesomeIcon v-tooltip="trans('Select shipping services')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
+                            <p v-if="errors.shipping_service" class="text-sm text-red-600 mt-1">{{ errors.shipping_service?.[0] }}</p>
                         </div>
 
                         <div class="flex flex-col gap-2 w-full md:w-80 p-4">
                             <label class="font-semibold">{{ trans("Shipping price") }}</label>
-                            <InputNumber v-model="form.shipping_price" inputId="integeronly" fluid />
+                            <InputNumber v-model="form.shipping_price" @update:model-value="errors.shipping_price = null" inputId="integeronly" fluid />
+                            <p v-if="errors.shipping_price" class="text-sm text-red-600 mt-1">{{ errors.shipping_price?.[0] }}</p>
                         </div>
 
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Max dispatch time (day)") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <InputNumber v-model="form.shipping_max_dispatch_time" inputId="integeronly" fluid />
+                                <InputNumber v-model="form.shipping_max_dispatch_time" @update:model-value="errors.shipping_max_dispatch_time = null" inputId="integeronly" fluid />
                             </div>
+                            <p v-if="errors.shipping_max_dispatch_time" class="text-sm text-red-600 mt-1">{{ errors.shipping_max_dispatch_time?.[0] }}</p>
                         </div>
                     </div>
                 </div>
@@ -306,9 +322,12 @@ import { notify } from "@kyvg/vue3-notification";
                         <div class="flex flex-col gap-2 p-4">
                             <label class="font-semibold">{{ trans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
-                                <Select v-model="form.payment_policy_id" :options="paymentProfiles" optionLabel="name" optionValue="value" class="w-full" />
+                                <Select v-model="form.payment_policy_id"
+                                        @update:model-value="errors.payment_policy_id = null"
+                                        :options="paymentProfiles" optionLabel="name" optionValue="value" class="w-full" />
                                 <FontAwesomeIcon v-tooltip="trans('Select eBay payment policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
+                            <p v-if="errors.payment_policy_id" class="text-sm text-red-600 mt-1">{{ errors.payment_policy_id?.[0] }}</p>
                         </div>
                     </div>
                 </div>
@@ -319,7 +338,7 @@ import { notify } from "@kyvg/vue3-notification";
 
         <div class="flex md:justify-end gap-4">
             <Button type="secondary" size="sm" @click="closeCreateEbayModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
         </div>
     </form>
 </template>

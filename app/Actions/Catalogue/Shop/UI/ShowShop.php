@@ -51,7 +51,7 @@ class ShowShop extends OrgAction
                     'id'        => 'shop_dashboard_tab',
                     'intervals' => [
                         'options'        => $this->dashboardIntervalOption(),
-                        'value'          => Arr::get($userSettings, 'selected_interval', 'all'),
+                        'value'          => $saved_interval,
                         'range_interval' => DashboardIntervalFilters::run($saved_interval),
                     ],
                     'settings'  => [

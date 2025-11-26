@@ -38,11 +38,6 @@ const submitForm = async () => {
     } catch (err) {
         isLoadingStep.value = false;
         errors.value = err.response?.data?.errors;
-        notify({
-            title: trans("Something went wrong"),
-            text: err.response?.data?.message,
-            type: "error"
-        });
     }
 }
 </script>

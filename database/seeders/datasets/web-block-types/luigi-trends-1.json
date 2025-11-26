@@ -5,7 +5,7 @@
 	"name": "Luigi: Trends",
 	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"category": "block",
-	"fixed": true,
+	"fixed": false,
 	"data": {
 		"fieldValue": {
 			"settings": null,

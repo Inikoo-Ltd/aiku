@@ -2,7 +2,7 @@
 import { Popover } from 'primevue'
 import { router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
-import { onBeforeMount, ref, watch } from 'vue'
+import { onBeforeMount, ref } from 'vue'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -62,7 +62,7 @@ const onUpdateDatePicker = (newValue) => {
         route('grp.models.profile.update'),
         {
             settings: {
-                range_interval: formattedDateRange(newValue)
+                custom_range_interval: formattedDateRange(newValue)
             }
         },
         {
@@ -81,7 +81,7 @@ const resetDatePicker = () => {
         route('grp.models.profile.update'),
         {
             settings: {
-                range_interval: ''
+                custom_range_interval: ''
             }
         },
         {
@@ -127,8 +127,8 @@ onBeforeMount(() => {
     //     }
     // }
 
-    if (props.intervals?.range_interval) {
-        const dates = props.intervals.range_interval.split('-');
+    if (props.intervals?.custom_range_interval && props.intervals.custom_range_interval !== '') {
+        const dates = props.intervals.custom_range_interval.split('-');
 
         if (dates.length === 2) {
             dateFilterValue.value = [

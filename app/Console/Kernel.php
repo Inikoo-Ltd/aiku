@@ -12,6 +12,7 @@ use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
+use App\Actions\Helpers\HydrateSalesMetrics;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Helpers\Intervals\ResetMonthlyIntervals;
 use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
@@ -349,6 +350,15 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
             ),
             name: 'PurgeDownloadPortfolioCustomerSalesChannel',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(HydrateSalesMetrics::makeJob())->dailyAt('23.59')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateSalesMetrics',
+            ),
+            name: 'HydrateSalesMetrics',
             type: 'command',
             scheduledAt: now()->format('H:i')
         );

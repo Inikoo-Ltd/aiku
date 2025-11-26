@@ -110,9 +110,9 @@ const updateDataDisplayType = (value: string) => {
 	debStoreDataDisplayType(value)
 }
 
-onMounted(() => {
-	updateInterval('all');
-})
+// onMounted(() => {
+// 	updateInterval('all');
+// })
 </script>
 
 <template>

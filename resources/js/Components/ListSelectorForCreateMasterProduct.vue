@@ -18,8 +18,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faForklift, faTrashAlt } from '@far'
-import Toggle from './Pure/Toggle.vue'
-import FractionDisplay from './DataDisplay/FractionDisplay.vue'
+import Toggle from '@/Components/Pure/Toggle.vue'
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 
 library.add(faCheckCircle, faTimes, faBoxUp)
 
@@ -225,6 +225,25 @@ const listData = computed(() => {
     return list.value
 })
 
+console.log(route().params)
+
+const updatePickFractional = async (item: any) => {
+    await axios.get(route('grp.json.product.get-pick-fractional', {
+        numerator: (Number(item.quantity) / Number(item.packed_in)),
+        denominator: item.packed_in,
+    })).then((result) => {
+        const index = committedProducts.value.findIndex(
+            (p: any) => p.id === item.id
+        );
+
+        if (index !== -1) {
+            committedProducts.value[index].pick_fractional = result.data;
+        }
+    })
+}
+
+const debounceUpdatePickFractional = debounce((item: any) => updatePickFractional(item), 500)
+
 
 defineExpose({
     updateProduct,
@@ -281,16 +300,16 @@ defineExpose({
                             <NumberWithButtonSave v-if="withQuantity"
                                 :key="item.id + '-' + (item[props.key_quantity] || 1)"
                                 :modelValue="item[props.key_quantity]" :bindToTarget="{ min: 1 }"
-                                @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
+                                @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]); debounceUpdatePickFractional(item) }"
                                 noUndoButton noSaveButton parentClass="w-min" >
                                 <template #suffix>
                                    <div class="text-sm text-gray-700 px-3 font-bold">{{ item.type }}</div>
                                 </template>
                                  <template #prefix>
-                                <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap">
+                                <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap w-full">
                                     <span class=""> &#8623; SKU </span>
                                     <span class="font-bold">
-                                        <FractionDisplay :fractionData="item.pick_fractional" />
+                                        <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
                                     </span>
                                 </div>
                                   
@@ -402,9 +421,17 @@ defineExpose({
                                                 aria-hidden="true" />
 
                                             <slot name="product" :item="item">
-                                                <Image v-if="item.image" :src="item.image?.thumbnail"
-                                                    class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0"
-                                                    imageCover :alt="item.name" />
+                                                <div class="w-16 h-16 border border-gray-500/20 rounded aspect-square overflow-y-clip text-xxs flex items-center justify-center">
+                                                    <Image
+                                                        v-if="item.image"
+                                                        :src="item.image?.thumbnail"
+                                                        imageCover
+                                                        :alt="item.name"
+                                                    />
+                                                    <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="opacity-70 text-xl" fixed-width aria-hidden="true" />
+
+                                                </div>
+                                                
                                                 <div class="flex flex-col justify-between w-full">
                                                     <div v-if="!item.no_code" class="font-semibold">
                                                         {{ item.code || 'no code' }}
@@ -418,7 +445,7 @@ defineExpose({
 
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
-                                                        {{ locale?.currencyFormat(item.currency_code || '',  item.price || 0) }}
+                                                        {{ locale?.currencyFormat(item.currency_code || 'usd',  item.price || 0) }}
                                                     </div>
 
                                                     

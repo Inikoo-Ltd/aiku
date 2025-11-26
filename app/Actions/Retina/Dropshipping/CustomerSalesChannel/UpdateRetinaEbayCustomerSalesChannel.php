@@ -62,8 +62,8 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
             'fulfillment_policy_id' => ['sometimes', 'required', 'string'],
 
             'return_accepted' => ['sometimes', 'required', 'boolean'],
-            'return_payer' => ['sometimes', 'nullable', 'string'],
-            'return_within' => ['sometimes', 'nullable', 'integer'],
+            'return_payer' => ['sometimes', 'required_if:return_accepted,true', 'string'],
+            'return_within' => ['sometimes', 'required_if:return_accepted,true', 'integer'],
             'return_description' => ['nullable', 'string']
         ];
     }

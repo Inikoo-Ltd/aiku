@@ -105,7 +105,6 @@ const tradeUnitTags = computed(() => {
 <template>
 	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
 
-
 		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
 			<!-- Units box -->
 			<ProductUnitLabel
@@ -120,21 +119,16 @@ const tradeUnitTags = computed(() => {
 				{{ data.product.data.name }}
 			</span>
 		</span>
-
-
 	</div>
-
-
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
-			<dd class="font-medium flex flex-wrap gap-1 p-4">
-				<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
-					class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+			<!-- Product Tags -->
+			<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
+				<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
 					{{ tag.name }}
 				</span>
 			</dd>
-
 			<!-- Image Preview & Thumbnails -->
 			<div class="bg-white   p-4 lg:p-5">
 				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">

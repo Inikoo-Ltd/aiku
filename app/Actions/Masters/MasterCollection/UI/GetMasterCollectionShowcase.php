@@ -28,6 +28,7 @@ class GetMasterCollectionShowcase
             'data'                  => $masterCollection->data,
             'parent_departments'    => $masterCollection->parentMasterDepartments,
             'parent_subdepartments' => $masterCollection->parentMasterSubDepartments,
+            'image'                 => $masterCollection ->imageSources(720, 480),
             'state_icon'            => $masterCollection->state ? $masterCollection->state->stateIcon()[$masterCollection->state->value] : null,
             'can_edit'              => true,
             'routes'                => [

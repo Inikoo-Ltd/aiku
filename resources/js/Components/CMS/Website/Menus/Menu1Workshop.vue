@@ -139,7 +139,7 @@ const computedSelectedSidebarData = computed(() => {
     return productCategoriesAuto
 })
 
-const selectedMenu = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation
+const selectedMenu = ref(get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item)=>!item.hidden))
 
 const navHoverClass = ref(getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false))
 
@@ -147,6 +147,15 @@ watch(
   () => props.fieldValue?.hover,
   () => {
     navHoverClass.value = getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false)
+  },
+  { deep: true }
+)
+
+
+watch(
+  () => props.fieldValue.navigation,
+  () => {
+    selectedMenu.value = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item)=>!item.hidden)
   },
   { deep: true }
 )

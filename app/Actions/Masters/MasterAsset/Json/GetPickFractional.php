@@ -15,9 +15,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetPickFractional extends GrpAction
 {
-    public function asController(Group $group, ActionRequest $request): Array
+    public function asController(ActionRequest $request): Array
     {
-        $this->initialisation($group, $request);
+        $this->initialisation(group(), $request);
 
         return $this->handle();
     }

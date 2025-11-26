@@ -50,18 +50,22 @@ class DashboardShopSalesInOrganisationResource extends JsonResource
         $routeTargets = [
             'invoices' => [
                 'route_target' => [
-                    'name' => 'grp.helpers.redirect_invoices_from_dashboard',
+                    'name' => 'grp.org.shops.show.dashboard.invoices.index',
                     'parameters' => [
-                        'shop' => $this->id,
+                        'organisation' => $this->organisation_slug,
+                        'shop' => $this->slug,
                     ],
+                    'key_date_filter' => 'between[date]',
                 ],
             ],
             'registrations' => [
                 'route_target' => [
-                    'name' => 'grp.helpers.redirect_customers_from_dashboard',
+                    'name' => 'grp.org.shops.show.crm.customers.index',
                     'parameters' => [
-                        'shop' => $this->id,
+                        'organisation' => $this->organisation_slug,
+                        'shop' => $this->slug,
                     ],
+                    'key_date_filter' => 'between[registered_at]',
                 ],
             ],
             'inBasket' => [

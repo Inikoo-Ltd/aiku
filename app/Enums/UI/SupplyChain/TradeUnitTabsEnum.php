@@ -18,10 +18,12 @@ enum TradeUnitTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case MASTER_PRODUCTS = 'master_products';
     case PRODUCTS = 'products';
-    case STOCKS = 'stocks';
-    case HISTORY = 'history';
     case IMAGES = 'images';
+    case STOCKS = 'stocks';
+
+    case HISTORY = 'history';
     case ATTACHMENTS = 'attachments';
     case FEEDBACKS = 'feedbacks';
 
@@ -43,12 +45,6 @@ enum TradeUnitTabsEnum: string
                 'icon'  => 'fal fa-paperclip',
 
             ],
-            TradeUnitTabsEnum::IMAGES => [
-                'type'  => 'icon',
-                'align' => 'right',
-                'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
-            ],
             TradeUnitTabsEnum::HISTORY => [
                 'type'  => 'icon',
                 'align' => 'right',
@@ -60,9 +56,17 @@ enum TradeUnitTabsEnum: string
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
+            TradeUnitTabsEnum::MASTER_PRODUCTS => [
+                'title' => __('Master Products'),
+                'icon'  => 'fal fa-cube',
+            ],
             TradeUnitTabsEnum::PRODUCTS => [
                 'title' => __('Products'),
                 'icon'  => 'fal fa-cube',
+            ],
+            TradeUnitTabsEnum::IMAGES => [
+                'title' => __('Media'),
+                'icon'  => 'fal fa-camera-retro',
             ],
             TradeUnitTabsEnum::STOCKS => [
                 'title' => __('SKUs'),

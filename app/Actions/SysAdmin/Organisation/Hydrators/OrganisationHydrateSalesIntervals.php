@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class OrganisationHydrateSalesIntervals implements ShouldBeUnique
 {
@@ -27,6 +28,17 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
 
     public string $jobQueue = 'urgent';
     public string $commandSignature = 'hydrate:organisation-sales-intervals {organisation}';
+    private ?int $organisationID;
+
+    public function __construct(Organisation $organisation)
+    {
+        $this->organisationID = $organisation->id;
+    }
+
+    public function tags(): array
+    {
+        return ['org_sales', 'org_sales:'.$this->organisationID];
+    }
 
     public function getJobUniqueId(Organisation $organisation, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
@@ -42,6 +54,8 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
 
     public function handle(Organisation $organisation, ?array $intervals = null, $doPreviousPeriods = null): void
     {
+        Sentry::captureMessage('Running OrganisationHydrateSalesIntervals... for Organisation id: '.$organisation->id);
+
         if ($organisation->type == OrganisationTypeEnum::AGENT) {
             return;
         }
@@ -108,5 +122,8 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
         );
 
         $organisation->salesIntervals()->update($stats);
+
+        $statsFingerprint = json_encode($stats);
+        Sentry::captureMessage('Finish OrganisationHydrateSalesIntervals... for Organisation id: '.$organisation->id.' data: '.$statsFingerprint);
     }
 }

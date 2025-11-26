@@ -22,6 +22,13 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetMasterFamilies extends GrpAction
 {
+    public function inOrphanMasterProduct(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($masterShop->group, $request);
+
+        return $this->handle(parent: $masterShop);
+    }
+
     public function asController(MasterShop $masterShop, MasterCollection $scope, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($masterShop->group, $request);
@@ -29,7 +36,7 @@ class GetMasterFamilies extends GrpAction
         return $this->handle(parent: $masterShop, scope: $scope);
     }
 
-    public function handle(MasterShop $parent, MasterCollection $scope, $prefix = null): LengthAwarePaginator
+    public function handle(MasterShop $parent, MasterCollection|null $scope = null, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -40,7 +47,10 @@ class GetMasterFamilies extends GrpAction
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
         $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
-        $queryBuilder->whereNotIn('master_product_categories.id', $scope->masterFamilies()->pluck('model_id'));
+        if($scope){
+            $queryBuilder->whereNotIn('master_product_categories.id', $scope->masterFamilies()->pluck('model_id'));
+        }
+
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
             ->select([
@@ -52,6 +62,7 @@ class GetMasterFamilies extends GrpAction
                 'master_product_categories.created_at',
                 'master_product_categories.updated_at',
             ])
+            ->selectRaw('COALESCE(number_current_master_assets, 0) AS current_master_assets')
             ->leftJoin('master_product_category_stats', 'master_product_categories.id', 'master_product_category_stats.master_product_category_id')
             ->where('master_product_categories.type', MasterProductCategoryTypeEnum::FAMILY)
             ->allowedSorts(['code', 'name','shop_code'])
