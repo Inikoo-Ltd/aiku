@@ -122,7 +122,8 @@ class EditProduct extends OrgAction
                     'next'     => $this->getNext($product, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $product->code,
+                    'title'   => __('Edit product'),
+                    'model'   => $product->code,
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
@@ -136,6 +137,20 @@ class EditProduct extends OrgAction
                                 'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
+                        ]
+                    ],
+                    'iconLinks' => [
+                        [
+                            'icon'  => 'fab fa-octopus-deploy',
+                            'tooltip'  => __('Go to Edit Master Product'),
+                            'route'  => [
+                                'name'  => 'grp.masters.master_shops.show.master_products.edit',
+                                'parameters' => [
+                                    'masterShop' => $product->shop->masterShop->slug,
+                                    'masterProduct' => $product->masterProduct->slug,
+                                ]
+                            ],
+                            'color'  => 'rgb(75, 0, 130)'
                         ]
                     ]
                 ],
