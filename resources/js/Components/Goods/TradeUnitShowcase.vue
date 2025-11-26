@@ -97,14 +97,6 @@ const validImages = computed(() =>
 <template>
 	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
 		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
-			<!-- Units box -->
-			<ProductUnitLabel
-				v-if="data.tradeUnit?.units"
-				:units="data.tradeUnit?.units"
-				:unit="data.tradeUnit?.unit"
-				class="mr-2"
-			/>
-			
 			<!-- Product name -->
 			<span class="align-middle">
 				{{ data.tradeUnit.name }}

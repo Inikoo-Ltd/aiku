@@ -62,6 +62,7 @@ const onUpdateDatePicker = (newValue) => {
         route('grp.models.profile.update'),
         {
             settings: {
+                selected_interval: 'ctm',
                 custom_range_interval: formattedDateRange(newValue)
             }
         },
@@ -81,6 +82,7 @@ const resetDatePicker = () => {
         route('grp.models.profile.update'),
         {
             settings: {
+                selected_interval: 'all',
                 custom_range_interval: ''
             }
         },
