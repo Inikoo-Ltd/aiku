@@ -16,7 +16,7 @@ class StoreChatAgent
     {
         $user = User::findOrFail($modelData['user_id']);
 
-        $existingAgent = ChatAgent::where('user_id', $modelData['user_id'])
+        $existingAgent = ChatAgent::where('user_id', $user->id)
             ->whereNull('deleted_at')
             ->first();
 
@@ -57,7 +57,7 @@ class StoreChatAgent
                 'nullable',
                 'integer',
                 'min:1',
-                'max:20'
+                'max:50'
             ],
             'is_online' => [
                 'nullable',
@@ -84,12 +84,12 @@ class StoreChatAgent
 
     public function asController(Request $request): JsonResponse
     {
-        // if (!$this->authorizeCreateAgent()) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'You are not authorized to create chat agent profiles.'
-        //     ], 403);
-        // }
+        if (!$this->authorizeCreateAgent()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not authorized to create chat agent profiles.'
+            ], 403);
+        }
 
         try {
             $chatAgent = $this->handle($request->validated());
@@ -127,8 +127,7 @@ class StoreChatAgent
                 'specialization' => $chatAgent->specialization ?? [],
                 'auto_accept' => $chatAgent->auto_accept,
                 'available_slots' => $chatAgent->getAvailableSlots(),
-                'created_at' => $chatAgent->created_at->toISOString(),
-            ]
+                 ]
         ]);
     }
 

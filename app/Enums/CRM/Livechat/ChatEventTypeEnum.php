@@ -19,6 +19,8 @@ enum ChatEventTypeEnum: string
     case NOTE = 'note';
     case REPLY = 'reply';
 
+    case SEND = 'send';
+
     public static function labels(): array
     {
         return [
@@ -31,7 +33,8 @@ enum ChatEventTypeEnum: string
             'close' => __('Chat Closed'),
             'rating' => __('Rating Submitted'),
             'note' => __('Note Added'),
-            'reply'=> __('reply'),
+            'reply'=> __('Reply'),
+            'send'=> __('Send'),
         ];
     }
 
@@ -87,6 +90,11 @@ enum ChatEventTypeEnum: string
                 'tooltip'=> __('Message Reply'),
                 'icon'=> 'fas fa-reply',
                 'class'=> 'text-gray-500',
+            ],
+            'send'=> [
+                'tooltip'=> __('Message Sent'),
+                'icon'=> 'fas fa-paper-plane',
+                'class'=> 'text-blue-500',
             ]
         ];
     }

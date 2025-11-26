@@ -21,110 +21,155 @@ class AssignChatToAgent
     use AsAction;
 
 
-         public function handle(ChatSession $chatSession, int $agentId, int $assignedByAgentId): ChatAssignment
-        {
+        public function handle(ChatSession $chatSession, int $agentId, int $assignedByAgentId): ChatAssignment
+    {
+        // Validasi agent exists
+        $agent = ChatAgent::findOrFail($agentId);
 
-            $agent = ChatAgent::findOrFail($agentId);
-            if (!$agent->isAvailableForChat()) {
-                throw new Exception('Agent is not available for new chats.');
-            }
-
-            $chatSession->update([
-                'status' => ChatSessionStatusEnum::ACTIVE->value
-            ]);
-
-            $chatAssignment = ChatAssignment::create([
-                'chat_session_id' => $chatSession->id,
-                'chat_agent_id' => $agentId,
-                'status' => ChatAssignmentStatusEnum::ACTIVE->value,
-                'assigned_by' => ChatAssignmentAssignedByEnum::AGENT->value,
-                'assigned_at' => now(),
-            ]);
-
-            $agent->incrementChatCount();
-
-            $this->logTransferRequestEvent($chatSession, $assignedByAgentId, $agentId);
-
-            return $chatAssignment;
+        // Validasi agent available
+        if (!$agent->isAvailableForChat()) {
+            throw new Exception('Agent is not available for new chats.');
         }
 
+        // Update session status
+        $chatSession->update([
+            'status' => ChatSessionStatusEnum::ACTIVE->value
+        ]);
 
-        public function rules(): array
-        {
-            return [
-                'agent_id' => [
+        // Deactivate previous assignments
+        ChatAssignment::where('chat_session_id', $chatSession->id)
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->update([
+                'status' => ChatAssignmentStatusEnum::INACTIVE->value,
+                'ended_at' => now()
+            ]);
+
+        // Create new assignment
+        $chatAssignment = ChatAssignment::create([
+            'chat_session_id' => $chatSession->id,
+            'chat_agent_id' => $agentId,
+            'status' => ChatAssignmentStatusEnum::ACTIVE->value,
+            'assigned_by' => ChatAssignmentAssignedByEnum::AGENT->value,
+            'assigned_by_agent_id' => $assignedByAgentId,
+            'assigned_at' => now(),
+        ]);
+
+        // Update agent chat count
+        $agent->incrementChatCount();
+
+        // Log event
+        $this->logTransferRequestEvent($chatSession, $assignedByAgentId, $agentId);
+
+        return $chatAssignment;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'agent_id' => [
+                'required',
+                'integer',
+                'exists:chat_agents,id'
+            ],
+        ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'agent_id.required' => 'Agent ID is required',
+            'agent_id.integer' => 'Agent ID must be an integer',
+            'agent_id.exists' => 'Agent not found',
+        ];
+    }
+
+    public function asController(ChatSession $chatSession, Request $request): JsonResponse
+    {
+        $this->validateUlid($chatSession->ulid);
+
+        $assignedByAgent = $this->getCurrentAgent();
+
+        if (!$assignedByAgent) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only authenticated agents can assign chats'
+            ], 403);
+        }
+
+        $validated = $request->validate($this->rules(), $this->getValidationMessages());
+
+        try {
+            $this->handle(
+                $chatSession,
+                $validated['agent_id'],
+                $assignedByAgent->id
+            );
+
+            return $this->jsonResponse();
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    protected function validateUlid($ulid): void
+    {
+        validator(
+            ['session_ulid' => $ulid],
+            [
+                'session_ulid' => [
                     'required',
-                    'exists:chat_agents,id'
-                ],
-            ];
+                    'string',
+                    'ulid',
+                    'exists:chat_sessions,ulid'
+                ]
+            ],
+            [
+                'session_ulid.required' => 'Session ULID is required',
+                'session_ulid.ulid' => 'Invalid ULID format',
+                'session_ulid.exists' => 'Chat session not found',
+            ]
+        )->validate();
+    }
+
+    protected function getCurrentAgent(): ?ChatAgent
+    {
+        if (auth()->check()) {
+            $user = auth()->user();
+            return ChatAgent::where('user_id', $user->id)->first();
         }
 
-        public function asController(ChatSession $chatSession, Request $request): JsonResponse
-        {
-            $assignedByAgent = $this->getCurrentAgent();
+        return null;
+    }
 
-            if (!$assignedByAgent) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only agents can assign chats'
-                ], 403);
-            }
+    public function assignToSelf(ChatSession $chatSession): JsonResponse
+    {
+        $this->validateUlid($chatSession->ulid);
 
-            $validated = $request->validate($this->rules());
+        $agent = $this->getCurrentAgent();
 
-            try {
-                $chatAssignment = $this->handle(
-                    $chatSession,
-                    $validated['agent_id'],
-                    $assignedByAgent->id
-                );
-
-                return $this->jsonResponse($chatAssignment);
-
-            } catch (Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage()
-                ], 422);
-            }
+        if (!$agent) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only authenticated agents can assign chats'
+            ], 403);
         }
 
+        try {
+            $this->handle($chatSession, $agent->id, $agent->id);
 
-         protected function getCurrentAgent(): ?ChatAgent
-        {
-            if (auth()->check()) {
-                $user = auth()->user();
-                return ChatAgent::where('user_id', $user->id)->first();
-            }
+            return $this->jsonResponse();
 
-            return null;
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
         }
-
-
-        public function assignToSelf(ChatSession $chatSession): JsonResponse
-        {
-            $agent = $this->getCurrentAgent();
-
-            if (!$agent) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only agents can assign chats'
-                ], 403);
-            }
-
-            try {
-                $chatAssignment = $this->handle($chatSession, $agent->id, $agent->id);
-
-                return $this->jsonResponse($chatAssignment);
-
-            } catch (Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage()
-                ], 422);
-            }
-        }
-
+    }
 
     protected function logTransferRequestEvent(ChatSession $chatSession, int $fromAgentId, int $toAgentId): void
     {
@@ -144,43 +189,12 @@ class AssignChatToAgent
         ]);
     }
 
-    public function jsonResponse(ChatAssignment $chatAssignment): JsonResponse
+    public function jsonResponse(): JsonResponse
     {
-        $chatSession = $chatAssignment->chatSession;
-        $agent = $chatAssignment->chatAgent;
-
         return response()->json([
             'success' => true,
-            'message' => 'Chat assigned to agent successfully',
-            'data' => [
-                'assignment' => [
-                    'id' => $chatAssignment->id,
-                    'status' => $chatAssignment->status,
-                    'assigned_at' => $chatAssignment->assigned_at->toISOString(),
-                    'assigned_by' => $chatAssignment->assigned_by,
-                ],
-                'session' => [
-                    'ulid' => $chatSession->ulid,
-                    'status' => $chatSession->status,
-                    'guest_identifier' => $chatSession->guest_identifier,
-                    'web_user' => $chatSession->webUser ? [
-                        'name' => $chatSession->webUser->name,
-                        'email' => $chatSession->webUser->email,
-                    ] : null,
-                ],
-                'agent' => [
-                    'id' => $agent->id,
-                    'name' => $agent->user->name,
-                    'current_chat_count' => $agent->current_chat_count,
-                ]
-            ]
+            'message' => 'Chat assigned to agent successfully'
         ]);
-    }
-
-
-    public function htmlResponse(ChatAssignment $chatAssignment): JsonResponse
-    {
-        return $this->jsonResponse($chatAssignment);
     }
 
 
