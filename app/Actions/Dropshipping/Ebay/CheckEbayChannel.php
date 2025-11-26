@@ -68,16 +68,6 @@ class CheckEbayChannel
             ['Exist in Platform', $customerSalesChannel->exist_in_platform ? 'Yes' : 'No']
         ];
 
-
-        $shopData = $customerSalesChannel->user->data['shop'] ?? [];
-
-
-        if (empty($shopData)) {
-            $command->info("No shop data found.");
-
-            return;
-        }
-
         $command->info("\nCustomer Sales Channel Status:");
         $command->table(['Field', 'Value'], $statusData);
 
