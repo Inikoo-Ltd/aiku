@@ -210,6 +210,7 @@ const fetchProductExistInChannel = async () => {
         console.log('Xxx product exist in channel response:', response.data)
         categoryHasChannelsList.value = response.data || []
     } catch (error: any) {
+        console.error('Error fetching product existence in channels:', error)
         console.error(error)
        /*  notify({
             title: trans('Something went wrong'),
@@ -222,8 +223,9 @@ const fetchProductExistInChannel = async () => {
 }
 
 onMounted(() => {
-    if(layout?.iris?.is_logged_in && props.modelType != 'Collection')
-    fetchProductExistInChannel()
+    if(layout?.iris?.is_logged_in && props.modelType != 'Collection'){
+        fetchProductExistInChannel()
+    }
 })
 
 </script>
