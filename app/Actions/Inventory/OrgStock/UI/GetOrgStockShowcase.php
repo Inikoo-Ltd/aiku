@@ -29,6 +29,7 @@ class GetOrgStockShowcase
             $dataTradeUnits = $this->getDataTradeUnit($orgStock->tradeUnits);
         }
 
+        // dd($orgStock);
         return collect(
             [
                 'trade_units'               => $dataTradeUnits,
@@ -106,7 +107,7 @@ class GetOrgStockShowcase
                             'value'      => $orgStock->quantity_available
                         ],
                     ],
-                    'locations'      => LocationOrgStocksResource::collection($orgStock->locationOrgStocks),
+                    'locations'      => LocationOrgStocksResource::collection($orgStock->locationOrgStocks)->toArray(request()),
 
 
                 ]
