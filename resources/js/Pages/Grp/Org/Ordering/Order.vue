@@ -1048,11 +1048,12 @@ const onPayWithBalance = () => {
                         </dt>
 
                         <div v-if="box_stats.products.payment.pay_status != 'no_need'" class="">
-                            <div class="w-fit flex gap-x-2">
+                            <div class="w-fit flex gap-x-2 border border-gray-300 rounded-md pr-2">
                                 <NeedToPay :totalAmount="box_stats.products.payment.total_amount"
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
                                     xclass="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
+                                    class="border-0 border-r"
                                     :currencyCode="currency.code">
                                     <template #default>
                                         <!-- Pay: Invoice -->
@@ -1092,10 +1093,10 @@ const onPayWithBalance = () => {
                                     box_stats.products.payment.pay_amount > 0
                                     && box_stats.products.payment.pay_amount <= box_stats?.customer?.balance
                                     && props.data?.data?.state === 'submitted'
-                                " class="text-xs">
-                                    <div class="whitespace-nowrap">{{ trans("Customer balance") }}: <span class="font-bold">{{ locale.currencyFormat(currency.code, Number(box_stats?.customer?.balance)) }}</span></div>
+                                " class="text-xs py-1 flex items-center justify-center flex-col">
+                                    <div class="whitespace-nowrap text-xxs text-center">{{ trans("Customer balance") }}:<br><span class="font-bold text-xs">{{ locale.currencyFormat(currency.code, Number(box_stats?.customer?.balance)) }}</span></div>
                                     <div class="mt-2">
-                                        <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(currency.code, Number(box_stats.products.payment.pay_amount)) })" size="xs" type="secondary" :loading="isLoadingPayWithBalance" />
+                                        <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(currency.code, Number(box_stats.products.payment.pay_amount)) })" size="xxs" type="secondary" :loading="isLoadingPayWithBalance" />
                                     </div>
 
                                     <div v-if="isLoadingPayWithBalance" class="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
