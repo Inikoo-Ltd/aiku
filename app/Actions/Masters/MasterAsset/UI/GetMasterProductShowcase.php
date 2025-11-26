@@ -36,7 +36,6 @@ class GetMasterProductShowcase
             'duty_rate'         => $masterAsset->duty_rate,
             'hts_us'            => $masterAsset->hts_us,
         ];
-        
 
         $gpsr = [
             'manufacturer'               => $masterAsset->gpsr_manufacturer,
@@ -54,11 +53,6 @@ class GetMasterProductShowcase
             'health_hazard'              => $masterAsset->pictogram_health,
             'oxidising'                  => $masterAsset->pictogram_oxidising,
         ];
-
-
-
-
-
 
         return [
             'images' => $this->getImagesData($masterAsset),

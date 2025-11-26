@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTrad
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Models\Helpers\Country;
@@ -157,6 +158,11 @@ class UpdateTradeUnit extends GrpAction
         }
 
         if ($fieldsForProductsUpdated) {
+            // Hydrate Master Assets/Product
+            foreach ($tradeUnit->masterAssets as $masterAsset) {
+                MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
+            }
+            // Hydrate Products
             if($tradeUnit->products->count() > 500){
                 // If trade unit is linked with more than 500 products, use horizon
                 foreach ($tradeUnit->products as $product) {
