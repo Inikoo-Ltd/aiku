@@ -90,14 +90,11 @@ class ProductResource extends JsonResource
             'gpsr_manual'                   => $product->gpsr_manual,
             'gpsr_class_category_danger'    => $product->gpsr_class_category_danger,
             'gpsr_product_languages'        => $product->gpsr_product_languages,
-
             'rrp_per_unit'      => $rrpPerUnit,
             'margin'            => $margin,
             'profit'            => $profit,
             'profit_per_unit'   => $profitPerUnit,
             'price_per_unit'    => $pricePerUnit,
-
-
         ];
     }
 }

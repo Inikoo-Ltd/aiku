@@ -39,6 +39,7 @@ function tradeUnitRoute(tradeUnit: TradeUnit) {
             {{ tradeUnit["type"] }}
         </template>
         <template #cell(units)="{ item: tradeUnit }">
+            asdasd
             {{ tradeUnit["units"] }}
         </template>
     </Table>

@@ -104,7 +104,6 @@ const tradeUnitTags = computed(() => {
 
 <template>
 	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
-
 		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
 			<!-- Units box -->
 			<ProductUnitLabel
@@ -155,10 +154,12 @@ const tradeUnitTags = computed(() => {
 		</div>
 
 		<!-- Product Summary -->
-		<ProductSummary :data="data.product.data" :gpsr="data.gpsr" :properties="data.properties" :parts="data.parts"
-			:hide="['price', 'rrp', 'stock']" :public-attachment="data.attachment_box.public" />
-
-
+		<ProductSummary 
+			 :data="data.product.data" 
+			 :properties="data.properties" 
+			 :parts="data.parts"
+			 :public-attachment="data.attachment_box.public" 
+		/>
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
 				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
@@ -171,11 +172,8 @@ const tradeUnitTags = computed(() => {
 					}}
 				</span>
 			</div>
-
 			<!-- Section: Price -->
 			<ProductPriceGrp :product="data?.product?.data" :currency_code="data.product.data?.currency_code" />
-
-
 			<div>
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
 			</div>
