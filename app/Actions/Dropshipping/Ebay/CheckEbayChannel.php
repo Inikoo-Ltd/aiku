@@ -57,6 +57,14 @@ class CheckEbayChannel
         return 'ebay:check {customerSalesChannel?}';
     }
 
+    public function asController(CustomerSalesChannel $customerSalesChannel): CustomerSalesChannel
+    {
+        /** @var EbayUser $ebay */
+        $ebay = $customerSalesChannel->user;
+
+        return $this->handle($ebay);
+    }
+
     public function asCommand(Command $command): void
     {
         if ($command->argument('customerSalesChannel')) {
