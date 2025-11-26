@@ -268,17 +268,20 @@ class FetchAuroraWebBlocks
                     }
                 }
 
-                foreach ($categoriesId as $categoryId) {
-                    $family = $this->parseFamily($webpage->organisation->id.':'.$categoryId);
-                    if ($family) {
-                        $models[] = $family;
-                    } else {
-                        $department = $this->parseDepartment($webpage->organisation->id.':'.$categoryId);
-                        if ($department) {
-                            $models[] = $department;
-                        }
-                    }
-                }
+                // ignore collections and departments
+
+//                foreach ($categoriesId as $categoryId) {
+//                    $family = $this->parseFamily($webpage->organisation->id.':'.$categoryId);
+//                    if ($family) {
+//                        $models[] = $family;
+//                    }
+//                    else {
+//                        $department = $this->parseDepartment($webpage->organisation->id.':'.$categoryId);
+//                        if ($department) {
+//                            $models[] = $department;
+//                        }
+//                    }
+//                }
 
 
                 $layout = $this->processSeeAlsoData();
