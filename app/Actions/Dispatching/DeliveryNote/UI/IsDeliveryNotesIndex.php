@@ -225,7 +225,7 @@ trait IsDeliveryNotesIndex
 
 
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if (!$parent instanceof Customer) {
                 $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
             }
