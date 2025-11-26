@@ -8,9 +8,11 @@
 
 namespace App\Actions\Helpers;
 
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesMetrics;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesMetrics;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesMetrics;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesMetrics;
+use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -26,6 +28,7 @@ class HydrateSalesMetrics
         $groups = Group::all();
         $organisations = Organisation::all();
         $shops = Shop::all();
+        $invoiceCategories = InvoiceCategory::all();
 
         $today = Carbon::today('UTC');
 
@@ -39,6 +42,10 @@ class HydrateSalesMetrics
 
         foreach ($shops as $shop) {
             ShopHydrateSalesMetrics::dispatch($shop, $today);
+        }
+
+        foreach ($invoiceCategories as $invoiceCategory) {
+            InvoiceCategoryHydrateSalesMetrics::dispatch($invoiceCategory, $today);
         }
     }
 }

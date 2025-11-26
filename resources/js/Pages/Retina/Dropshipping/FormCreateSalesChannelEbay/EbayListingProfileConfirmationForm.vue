@@ -50,6 +50,7 @@ import { notify } from "@kyvg/vue3-notification";
     ]);
 
     const isLoadingStep = ref(false)
+    const isLoadingFirstHit = ref(false)
     const errors = ref({})
 
     const form = useForm({
@@ -84,6 +85,7 @@ import { notify } from "@kyvg/vue3-notification";
     }
 
     onMounted(async () => {
+        isLoadingFirstHit.value = true;
         const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay_policies.index', {
             ebayUser: ebayId.value
         }));

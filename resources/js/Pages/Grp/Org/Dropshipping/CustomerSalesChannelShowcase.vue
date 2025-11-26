@@ -206,16 +206,16 @@ const isModalAddress = ref(false)
                     </template>
                 </ModalConfirmationDelete>
 
-                <ModalConfirmationDelete
+                <ModalConfirmation
                     v-if="data?.customer_sales_channel?.status === 'closed'"
                     :routeDelete="{
-                        name: 'grp.models.data?.customer_sales_channel?.shopify_reset',
+                        name: 'grp.models?.customer_sales_channel?.reopen',
                         parameters: {
                             customerSalesChannel: data?.customer_sales_channel?.id,
                         },
                         method: 'patch'
                     }"
-                    xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                    :title="trans('Are you sure you want to open the channel?')"
                     xisFullLoading
                 >
                     <template #default="{ isOpenModal, changeModel }">
@@ -224,12 +224,12 @@ const isModalAddress = ref(false)
 
                         </Button>
                     </template>
-                </ModalConfirmationDelete>
+                </ModalConfirmation>
 
                 <ModalConfirmation
-                    v-if="data?.customer_sales_channel?.status === 'open'"
+                    v-if="data?.customer_sales_channel?.status === 'open' && !data?.customer_sales_channel?.platform_status"
                     :routeYes="{
-                        name: 'grp.models.ebay.check',
+                        name: 'grp.models.customer_sales_channel.check',
                         parameters: {
                             customerSalesChannel: data?.customer_sales_channel?.id,
                         },
@@ -263,6 +263,11 @@ const isModalAddress = ref(false)
                         </Button>
                     </template>
                 </ModalConfirmationDelete>
+            </div>
+            <div>
+                <pre>
+<!--                    {{data.fulfilment_policies}}-->
+                </pre>
             </div>
         </div>
     </div>

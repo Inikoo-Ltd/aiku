@@ -94,8 +94,8 @@ use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
-use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Ebay\Product\MatchBulkNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Ebay\Product\MatchPortfolioToCurrentEbayProduct;
 use App\Actions\Dropshipping\Ebay\Product\StoreBulkNewProductToCurrentEbay;
@@ -492,7 +492,7 @@ Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProduc
 Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
 
-Route::patch('{customerSalesChannel:id}/ebay-check', CheckEbayChannel::class)->name('ebay.check')->withoutScopedBindings();
+Route::patch('{customerSalesChannel:id}/check', CheckCustomerSalesChannel::class)->name('customer_sales_channel.check')->withoutScopedBindings();
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post("google-drive.authorize", [AuthorizeClientGoogleDrive::class, 'authorize'])->name('google_drive.authorize');
