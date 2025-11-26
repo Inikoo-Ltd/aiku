@@ -267,7 +267,7 @@ const isModalAddress = ref(false)
             </div>
 
             <!-- Section: Fulfilment Policies -->
-            <div class="border-t border-gray-300 pt-3">
+            <div v-if="data.fulfilment_policies?.total && data.fulfilment_policies?.fulfillmentPolicies?.length" class="border-t border-gray-300 pt-3">
                 <div class="font-semibold">
                     {{ trans("Fulfilment Policies") }} ({{data.fulfilment_policies?.total}}):
                 </div>
