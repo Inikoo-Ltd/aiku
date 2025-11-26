@@ -34,16 +34,13 @@ use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Sentry;
 
 class RunInvoiceHydrators
 {
-
     use asAction;
 
     public function handle(Invoice $invoice, int $hydratorsDelay = 0): void
     {
-        Sentry::captureMessage('Running RunInvoiceHydrators... for Inv: '.$invoice->slug.' Shop: '.$invoice->shop_id.' Org: '.$invoice->organisation_id);
 
         $this->runImportantJobs($invoice, $hydratorsDelay, async: true);
         $this->runAnotherJobs($invoice, $hydratorsDelay);
