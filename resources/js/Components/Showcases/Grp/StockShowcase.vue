@@ -92,6 +92,8 @@ const props = defineProps<{
     }
 }>()
 
+console.log('ggggggg', props.data)
+
 const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
 const selectedImage = ref(0)

@@ -2,6 +2,7 @@
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
 import { inject } from 'vue'
+import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle } from "@fal"
@@ -17,6 +18,7 @@ import EditLocations from './EditLocations.vue'
 import { Icon as IconTS } from '@/types/Utils/Icon'
 import Icon from '@/Components/Icon.vue'
 import { routeType } from '@/types/route'
+import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faShoppingBasket, faStickyNote, faShoppingCart)
 
 const props = defineProps<{
@@ -32,6 +34,41 @@ const props = defineProps<{
                 value: number
             }
         }
+        locations: {
+            id: number
+            code: string
+            quantity: string
+            value: string
+            audited_at: string
+            commercial_value: string
+            type: string
+            picking_priority: number
+            notes: string | null
+            data: []
+            settings: {
+                min_stock: number
+            },
+            created_at: string
+            updated_at: string
+            location: {
+                id: number
+                slug: string
+                code: string
+                stock_value: string
+                stock_commercial_value: string
+                allow_stocks: boolean
+                allow_fulfilment: boolean
+                allow_dropshipping: boolean
+                has_stock_slots: boolean
+                has_fulfilment: boolean
+                has_dropshipping_slots: boolean
+                organisation_slug: null
+                organisation_name: null
+                warehouse_slug: null
+                max_weight: number
+                max_volume: number
+            }
+        }[]
         part_locations: {
             id: number
             name: string
@@ -284,47 +321,50 @@ const getQuestionTooltip = (locationId: number) => {
                     />
                 </template>
                 <div v-else>
-                    <div v-for="(loc, idx) in props.stocks_management.part_locations" :key="loc.id"
+                    <div v-for="(loc, idx) in props.stocks_management.locations" :key="loc.id"
                         class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded transition-colors duration-200"
                         :class="{
                             'bg-blue-50 border border-blue-200': activePickingLocation === loc.id,
                             'hover:bg-gray-50': activePickingLocation !== loc.id
                         }">
-                        <div class="col-span-5 flex items-center gap-x-2">
+                        <div class="col-span-4 flex items-center gap-x-2">
                             <!-- Note Icon with Popover -->
                             <div class="relative">
                                 <div @click="(event) => toggleNotePopover(loc.id, event)"
                                     v-tooltip="trans(`Add part's location note`)"
-                                    class="cursor-pointer transition-colors duration-200" :class="{
-                                        'text-orange-600': hasNote(loc.id),
-                                        'text-gray-400 hover:text-gray-700': !hasNote(loc.id)
-                                    }">
-                                    <FontAwesomeIcon
-                                        :icon="hasNote(loc.id) ? 'fas fa-sticky-note' : 'fal fa-sticky-note'" class=""
-                                        fixed-width aria-hidden="true" />
+                                    class="cursor-pointer transition-colors duration-200"
+                                    :class="loc.notes ? 'text-orange-600' : 'text-gray-400 hover:text-gray-700'"
+                                >
+                                    <FontAwesomeIcon :icon="loc.notes ? 'fas fa-sticky-note' : 'fal fa-sticky-note'" class="" fixed-width aria-hidden="true" />
                                 </div>
 
                                 <!-- Note Popover -->
                                 <Popover :ref="(el) => setPopoverRef(el, loc.id)">
                                     <div class="w-80 p-2">
                                         <div class="mb-3">
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                                {{ trans('Location Note') }} - {{ loc.name }}
+                                            <label class="block text-sm mb-2">
+                                                {{ trans('Location Note') }} - <span class="font-bold">{{ loc.code }}</span>
                                             </label>
-                                            <textarea v-model="tempNotes[loc.id]"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+
+                                            <PureTextarea
+                                                v-model="loc.notes"
+                                                :placeholder="trans('Enter note for this location...')"
+                                                class="resize-none"
                                                 rows="4"
-                                                :placeholder="trans('Enter note for this location...')"></textarea>
+                                            />
                                         </div>
+                                        
                                         <div class="flex justify-end gap-2">
-                                            <button @click="() => cancelNote(loc.id)"
-                                                class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                                                {{ trans('Cancel') }}
-                                            </button>
-                                            <!-- <button @click="() => saveNote(loc.id)"
-                                                class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                                {{ trans('Save') }}
-                                            </button> -->
+                                            <Button
+                                                @click="() => cancelNote(loc.id)"
+                                                type="negative"
+                                                label="Cancel"
+                                            />
+                                            <Button
+                                                @click="() => saveNote(loc.id)"
+                                                label="Save"
+                                                full
+                                            />
                                         </div>
                                     </div>
                                 </Popover>
@@ -342,7 +382,7 @@ const getQuestionTooltip = (locationId: number) => {
                                     class="" fixed-width aria-hidden="true" />
                             </div>
 
-                            <span class="font-medium">{{ loc.name }}</span>
+                            <span class="font-medium">{{ loc.code }}</span>
 
                             <!-- Question Icon(s) -->
                             <div @click="(event) => toggleQuestionPopover(loc.id, event)"
@@ -367,7 +407,7 @@ const getQuestionTooltip = (locationId: number) => {
                                     <div class="mb-3">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
                                             {{ activePickingLocation === loc.id ? trans('Min/Max Stock') :
-                                            trans('Replenishment Quantity') }} - {{ loc.name }}
+                                            trans('Replenishment Quantity') }} - {{ loc.code }}
                                         </label>
 
                                         <!-- Show Min/Max inputs when location is active -->
@@ -419,14 +459,15 @@ const getQuestionTooltip = (locationId: number) => {
                                 </div>
                             </Popover>
                         </div>
-                        <div v-tooltip="trans('Last audit :date', { date: useFormatTime(new Date()) })"
-                            class="text-right text-sm">
-                            0
-                            <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400 ml-1" fixed-width
-                                aria-hidden="true" />
+
+                        <div v-tooltip="trans('Last audit :xdate', { xdate: useFormatTime(new Date(loc.audited_at)) })"
+                            class="col-span-2 text-right text-sm whitespace-nowrap">
+                            {{ formatDistanceStrict(new Date(loc.audited_at), new Date()) }}
+                            <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400 ml-1" fixed-width aria-hidden="true" />
                         </div>
+                        
                         <div class="text-right font-semibold">
-                            {{ loc.stock }}
+                            <span v-tooltip="trans('Stock quantity')">{{ Number(loc.quantity) }}</span>
                         </div>
                     </div>
                 </div>
