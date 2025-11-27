@@ -38,6 +38,7 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons";
 import TableDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableDepartments.vue";
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
 import Breadcrumb from 'primevue/breadcrumb'
+import axios from "axios"
 import MasterContentProductCategory from "@/Components/Master/MasterContentProductCategory.vue"
 
 library.add(
@@ -75,12 +76,12 @@ const props = defineProps<{
     url_master?:routeType
     images?:object
     mini_breadcrumbs?: any[]
-    delete_parameters:{
-        id: string;
-        master_shop: string;
-        can_delete?: boolean;
-        route: string;
-    }
+
+    delete_route?: routeType;
+    delete_condition?: {
+        can_delete: boolean;
+        master_shop_slug: string;
+    };
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -115,6 +116,27 @@ function masterDepartmentRoute(department: Department) {
 }
 
 
+  async function deleteItem() {
+      try {
+         const response: any = await axios.delete(
+            route(props.delete_route?.name, props.delete_route?.parameters),
+         );
+
+         if (response.status !== 200) {
+             throw new Error('Failed to delete department');
+         }
+
+        window.location.href = route('grp.masters.master_shops.show.master_departments.index', {
+            masterShop: props.delete_condition?.master_shop_slug
+        });
+         return true
+      } catch (error: any) {
+          console.error('Error deleting department:', error);
+          return false
+      }
+  }
+
+
 </script>
 
 
@@ -123,24 +145,17 @@ function masterDepartmentRoute(department: Department) {
     <PageHeading :data="pageHead">
           <template #other>
             <ModalConfirmationDelete
-            :routeDelete="{
-                name: props.delete_parameters.route,
-                parameters: {
-                    masterShop: props.delete_parameters.master_shop,
-                    masterDepartment: props.delete_parameters.id
-                },
-                method: 'delete'
-            }"
+            @onYes="deleteItem"
                 :title="trans('Are you sure you want to delete this department?')"
                 isFullLoading
             >
                 <template #default="{ isOpenModal, changeModel }">
                     <Button
-                        :disabled="!props.delete_parameters.can_delete"
+                        :disabled="!props.delete_condition?.can_delete"
                         icon="fal fa-trash-alt"
                         type="negative"
                         @click="changeModel"
-                        :tooltip="props.delete_parameters.can_delete ? 'Delete' : 'Cannot delete this department'"
+                        :tooltip="props.delete_condition?.can_delete ? 'Delete' : 'Cannot delete this department due to existing children'"
                     />
                 </template>
             </ModalConfirmationDelete>

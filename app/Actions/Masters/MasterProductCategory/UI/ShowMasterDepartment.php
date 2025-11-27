@@ -131,11 +131,16 @@ class ShowMasterDepartment extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => MasterDepartmentTabsEnum::navigation()
                 ],
-                'delete_parameters' => [
-                    'id' => $masterDepartment->slug,
+                'delete_route' => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.masters.master_departments.delete',
+                    'parameters' => [
+                        'masterProductCategory' => $masterDepartment->slug
+                    ]
+                ],
+                'delete_condition' => [
                     'can_delete' => $masterDepartment->children()->exists() === false,
-                    'route' => 'grp.masters.master_shops.show.master_departments.delete',
-                    'master_shop' => $masterDepartment->masterShop->slug,
+                    'master_shop_slug' => $masterDepartment->masterShop->slug,
                 ],
                 MasterDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryShowcase::run($masterDepartment)
