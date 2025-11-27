@@ -12,13 +12,17 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -31,7 +35,6 @@ class PayOrderWithCustomerBalance extends OrgAction
      */
     public function handle(Order $order): array
     {
-
         if ($order->payment_amount == $order->total_amount) {
             return [
                 'success' => false,
@@ -78,13 +81,22 @@ class PayOrderWithCustomerBalance extends OrgAction
             ];
             StoreCreditTransaction::make()->action($customer, $creditTransactionData);
 
+            if ($order->state == OrderStateEnum::SUBMITTED) {
+                SendOrderToWarehouse::run(
+                    $order,
+                    [
+                        'warehouse_id' => $order->organisation->warehouses()->first()->id
+                    ]
+                );
+            }
+
             return $order;
         });
 
         return [
             'success' => true,
+            'reason'  => 'Order paid successfully',
         ];
-
     }
 
     /**
@@ -96,12 +108,11 @@ class PayOrderWithCustomerBalance extends OrgAction
         $result = $this->handle($order);
 
         request()->session()->flash('notification', [
-            'status'  => $result['success'] ? 'success' : 'error',
-            'title'   => $result['type'],
+            'status'      => $result['success'] ? 'success' : 'error',
+            'title'       => Arr::get($result, 'reason', ''),
             'description' => ''
         ]);
     }
-
 
 
 }
