@@ -14,6 +14,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import Dialog from 'primevue/dialog';
 import axios from "axios";
+import {notify} from "@kyvg/vue3-notification";
+import {trans} from "laravel-vue-i18n";
 
 defineProps<{
     data: object,
@@ -71,18 +73,18 @@ const onSaveChangeParent = async () => {
     try {
         loadingChangeParent.value = true;
 
-        const requests = selectedSubDepartment.value.map((subDepartmentId: number) => {
-            return axios.patch(
-                route("grp.models.master_product_category.update", {
-                    masterProductCategory: subDepartmentId,
+        const response = await  axios.patch(
+                route("grp.models.master_product_category.master_sub_department.parent.update", {
+                    masterProductCategory: selectedParentId.value
                 }),
                 {
-                    master_department_or_master_sub_department_id: selectedParentId.value,
+                    sub_department_ids : selectedSubDepartment.value,
                 }
             );
-        });
 
-        await Promise.all(requests);
+        if (response.status !== 200) {
+            notify({title: trans("Error updating parent"), type: "error"});
+        }
 
         visibleDialog.value = false;
         selectedSubDepartment.value = [];
@@ -147,7 +149,8 @@ const onCheckedAll = (handle: { allChecked: boolean, data: Array<{id: number}> }
             <PureMultiselectInfiniteScroll :fetchRoute="{
                 name: 'grp.json.master_shop.master_departments_and_sub_departments',
                 parameters: {
-                    masterShop: (route().params as RouteParams).masterShop
+                    masterShop: (route().params as RouteParams).masterShop,
+                    master_department_only: true
                 }
             }" :required="true" valueProp="id" type_label="department-and-sub-department" labelProp="code"
             v-model="selectedParentId" />
