@@ -87,6 +87,7 @@ const props = defineProps<{
 const layout = inject("layout", layoutStructure);
 
 const isModalOpen = ref<string | boolean>(false);
+const isPlatformCreateLoading = ref<string | boolean>(false);
 const websiteInput = ref<string | null>(null);
 const isLoading = ref<string | boolean>(false);
 const errorShopify = ref('')
@@ -281,8 +282,9 @@ const closeCreateEbayModal = () => {
 }
 
 const openCreateEbayModal = async () => {
+    isPlatformCreateLoading.value = true;
     const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.creating_check'));
-    console.log(data)
+
     if(data) {
         ebayId.value = data.id;
         customerSalesChannelId.value = data.customer_sales_channel_id;
@@ -314,6 +316,7 @@ const openCreateEbayModal = async () => {
         }
     }
 
+    isPlatformCreateLoading.value = false;
     isModalCreateEbay.value = true;
 }
 
@@ -493,16 +496,16 @@ provide("goNext", goNext);
 <!--                    />-->
 
                     <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        :loading="isPlatformCreateLoading"
+                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         xtype="primary"
                         type="primary"
                         full
-                        iconRight="fal fa-external-link-alt"
                         @click="openCreateEbayModal"
                     />
 
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
+<!--                    <Button xv-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
                 </div>
             </div>
 
