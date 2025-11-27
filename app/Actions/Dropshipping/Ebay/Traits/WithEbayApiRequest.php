@@ -482,7 +482,8 @@ trait WithEbayApiRequest
      */
     protected function getEbayConfig(): array
     {
-        $shop = $this->shop ?? $this->customer?->shop ?? $this->customerSalesChannel?->shop;
+        $shop = $this->shop ?? $this->customer?->shop ?? $this->customerSalesChannel?->customer?->shop;
+
         if ($shop === null) {
             throw new Exception('Shop not found');
         }
