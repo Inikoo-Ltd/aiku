@@ -16,7 +16,7 @@ import {
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { faImage } from "@far"
-import TradeUnitSummary from "@/Components/Goods/TradeUnitSummary.vue"
+import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterProductSummary.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
 import ImagePrime from "primevue/image"
 
@@ -143,7 +143,7 @@ console.log
 		</div>
 
 		<!-- Trade Unit Summary -->
-		<TradeUnitSummary 
+		<TradeUnitMasterProductSummary 
 			:publicAttachment="data.attachment_box?.public" 
 			:data="data.tradeUnit" 
 			:gpsr="data.gpsr"
