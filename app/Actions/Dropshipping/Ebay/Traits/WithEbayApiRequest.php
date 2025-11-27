@@ -500,7 +500,8 @@ trait WithEbayApiRequest
             'marketplace_id' => $marketplace,
             'currency'       => match ($marketplace) {
                 'EBAY_ES', 'EBAY_DE' => 'EUR',
-                default => $shop->currency?->code ?? 'GBP'
+                'EBAY_GB' => 'GBP',
+                default => $shop->currency?->code
             }
         ];
     }
