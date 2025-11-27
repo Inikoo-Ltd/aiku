@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, computed, inject } from "vue"
+import { computed } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faTrash as falTrash,
@@ -18,15 +18,12 @@ import {
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { faImage } from "@far"
 import ImagePrime from "primevue/image"
-import { toInteger } from "lodash-es"
 import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
-import MasterProductSummary from "@/Components/Goods/MasterProductSummary.vue"
-import { trans } from "laravel-vue-i18n"
-import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import TradeUnitSummary from "@/Components/Goods/TradeUnitSummary.vue"
+import AttachmentCard from "@/Components/AttachmentCard.vue"
 
 
 library.add(
@@ -191,5 +188,11 @@ const tradeUnitBrands = computed(() => {
 			:properties="data.properties"
 			:public-attachment="[]" 
 		/>
+
+		<div>
+			<AttachmentCard :private="data.attachment_box?.private" />
+		</div>
 	</div>
+
+	
 </template>

@@ -143,6 +143,7 @@ class GetTradeUnitShowcase
             'brand_routes' => $brandRoute,
             'brand' => $tradeUnit->brand(),
             'tag_routes' => $tagRoute,
+            'main_image'      => $tradeUnit->imageSources(),
             'tags_selected_id' => $tradeUnit->tags->pluck('id')->toArray(),
             'tags' =>  TagsResource::collection($tradeUnit->tags)->toArray(request()),
             'translation_box' => [

@@ -70,7 +70,8 @@ class GetMasterProductShowcase
             'trade_units'           => $dataTradeUnits,
             'gpsr'                  => $gpsr,
             'attachment_box'        => [
-                'public'      => []
+                'public'      => [],
+                'private'     => []
             ]
         ];
     }
