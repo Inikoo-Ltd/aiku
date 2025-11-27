@@ -55,9 +55,6 @@ class GetChatSessions
 
     public function asController(Request $request): Array
     {
-        $validated = $request->validate($this->rules());
-
-        $sessions = $this->handle($validated);
 
         $validated = $request->validate($this->rules());
 
