@@ -49,13 +49,20 @@ class StoreMasterAsset extends OrgAction
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
-        // Update logic.
-        // if Trade Units only 1: Product unit follow trade unit, the units follow trade unit
-        // if Trade Units > 1: Product unit Label always 'bundle', the units always '1'
-        if (count($tradeUnits) > 1) {
+
+        $numberOfTradeUnits = count($tradeUnits);
+        if ($numberOfTradeUnits > 1) {
             data_set($modelData, 'units', 1);
             data_set($modelData, 'unit', 'bundle');
+        } elseif ($numberOfTradeUnits === 1) {
+            $single = Arr::first($tradeUnits);
+            data_set($modelData, 'units', $single['quantity'] ?? 1);
+        } else {
+            data_set($modelData, 'units', '1');
         }
+
+
+
 
         data_set($modelData, 'group_id', $masterFamily->group_id);
 
