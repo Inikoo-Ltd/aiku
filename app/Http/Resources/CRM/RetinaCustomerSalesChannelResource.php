@@ -29,6 +29,8 @@ use Illuminate\Support\Arr;
  * @property mixed $total_amount
  * @property mixed $platform_code
  * @property mixed $platform_name
+ * @property mixed $ban_stock_update_util
+ * @property mixed $settings
  */
 class RetinaCustomerSalesChannelResource extends JsonResource
 {
@@ -40,7 +42,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
         $customerSalesChannels = $this;
 
         $reconnectRoute = null;
-        $testRoute = null;
+        $testRoute      = null;
 
         if (in_array($customerSalesChannels->platform->type, [
             PlatformTypeEnum::SHOPIFY,
@@ -56,7 +58,6 @@ class RetinaCustomerSalesChannelResource extends JsonResource
                 ],
                 'method'     => 'get',
             ];
-
         }
 
         if ($customerSalesChannels->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
@@ -89,13 +90,13 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'platform_name'           => $this->platform_name,
             'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
 
-            'ban_stock_update_until'   => $this->ban_stock_update_util,
-            'include_vat'   => Arr::get($this->settings, 'tax_category.checked'),
-            'vat_rate'   => $taxCategory?->rate,
+            'ban_stock_update_until' => $this->ban_stock_update_util,
+            'include_vat'            => Arr::get($this->settings, 'tax_category.checked'),
+            'vat_rate'               => $taxCategory?->rate,
 
             'reconnect_route' => $reconnectRoute,
-            'test_route' => $testRoute,
-            'delete_route' => [
+            'test_route'      => $testRoute,
+            'delete_route'    => [
                 'method'     => 'delete',
                 'name'       => 'retina.models.customer_sales_channel.delete',
                 'parameters' => [

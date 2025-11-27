@@ -48,7 +48,7 @@ class GetProductShowcase
         ];
 
         $gpsr = [
-            'manufacturer'               => $product->gpsr_manufacturer,
+           'manufacturer'               => $product->gpsr_manufacturer,
             'eu_responsible'             => $product->gpsr_eu_responsible,
             'warnings'                   => $product->gpsr_warnings,
             'how_to_use'                 => $product->gpsr_manual,
@@ -62,7 +62,6 @@ class GetProductShowcase
             'hazard_environment'         => $product->pictogram_environment,
             'health_hazard'              => $product->pictogram_health,
             'oxidising'                  => $product->pictogram_oxidising,
-
         ];
 
         $dataTradeUnits = [];
@@ -71,41 +70,9 @@ class GetProductShowcase
         }
 
         return [
-            'imagesUploadedRoutes' => [
-                'name'       => 'grp.org.shops.show.catalogue.products.all_products.images',
-                'parameters' => [
-                    'organisation' => $product->organisation->slug,
-                    'shop'         => $product->shop->slug,
-                    'product'      => $product->slug
-                ]
-            ],
-            'stockImagesRoute'     => [
-                'name'       => 'grp.gallery.stock-images.index',
-                'parameters' => []
-            ],
-            'uploadImageRoute'     => [
-                'name'       => 'grp.models.product.images.store',
-                'parameters' => [
-                    'product' => $product->id
-                ]
-            ],
-            'attachImageRoute'     => [
-                'name'       => 'grp.models.org.product.images.attach',
-                'parameters' => [
-                    'organisation' => $product->organisation_id,
-                    'product'      => $product->id
-                ]
-            ],
-            'deleteImageRoute'     => [
-                'name'       => 'grp.models.org.product.images.delete',
-                'parameters' => [
-                    'organisation' => $product->organisation_id,
-                    'product'      => $product->id
-                ]
-            ],
-            'product'              => ProductResource::make($product),
-            'properties'           => $properties,
-            'gpsr'                 => $gpsr,
+            'product'         => ProductResource::make($product),
+            'properties'      => $properties,
+            'gpsr'            => $gpsr,
             'parts'           => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'stats'           => $product->stats,
             'trade_units'     => $dataTradeUnits,

@@ -123,7 +123,7 @@ class UpdateWooPortfolio implements ShouldBeUnique
 
                 if ($ban) {
                     $customerSalesChannel->update([
-                        'ban_stock_update_util' => now()->addHours(3),
+                        'ban_stock_update_util' => now()->addSeconds(10)
                     ]);
                 }
 
@@ -140,7 +140,7 @@ class UpdateWooPortfolio implements ShouldBeUnique
                 'stock_last_fail_updated_at' => now()
             ]);
             $customerSalesChannel->update([
-                'ban_stock_update_util' => now()->addHours(3),
+                'ban_stock_update_util' => now()->addSeconds(10)
             ]);
         }
     }

@@ -97,10 +97,6 @@ class UpdateProduct extends OrgAction
         }
 
 
-
-
-
-
         $assetData = [];
         if (Arr::has($modelData, 'follow_master')) {
             data_set($assetData, 'follow_master', Arr::pull($modelData, 'follow_master'));

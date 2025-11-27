@@ -99,7 +99,7 @@ const component = computed(() => {
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :tag_routes />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :tag_routes :handleTabUpdate="handleTabUpdate"/>
 
     <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',

@@ -50,6 +50,7 @@ class UpdateMasterAsset extends OrgAction
             $masterDepartmentID = $masterFamily?->master_department_id;
             data_set($modelData, 'master_department_id', $masterDepartmentID);
         }
+
         if (Arr::has($modelData, 'name_i8n')) {
             UpdateMasterProductTranslationsFromUpdate::make()->action($masterAsset, [
                 'translations' => [
@@ -86,12 +87,12 @@ class UpdateMasterAsset extends OrgAction
 
         $masterAsset    = DB::transaction(function () use ($masterAsset, $modelData, $tradeUnits) {
             /** @var MasterAsset $masterAsset */
-            if(count($tradeUnits) > 0){
+            if (count($tradeUnits) > 0) {
                 $this->processTradeUnits($masterAsset, $tradeUnits);
-                if(count($tradeUnits) == 1){
+                if (count($tradeUnits) == 1) {
                     data_set($modelData, 'units', $tradeUnits[0]['quantity']);
                     data_set($modelData, 'unit', $tradeUnits[0]['type']);
-                }else{
+                } else {
                     data_set($modelData, 'units', 1);
                     data_set($modelData, 'unit', 'bundle');
                 }
@@ -102,7 +103,32 @@ class UpdateMasterAsset extends OrgAction
         });
 
         CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
-        
+
+        if ($masterAsset->wasChanged('master_family_id')) {
+            $masterFamily = MasterProductCategory::find($masterAsset->master_family_id);
+
+            $shopsUnderMaster = DB::table('shops')
+                ->where('master_shop_id', $masterAsset->masterShop->id)
+                ->pluck('id')
+                ->toArray();
+
+            $masterFamilyIds = $masterFamily->productCategories()
+                ->whereIn('shop_id', $shopsUnderMaster)
+                ->pluck('id', 'shop_id');
+
+            $products = $masterAsset->products()
+                ->whereIn('shop_id', $shopsUnderMaster)
+                ->get();
+
+            foreach ($products as $product) {
+                if (isset($masterFamilyIds[$product->shop_id])) {
+                    $product->updateQuietly([
+                        'family_id' => $masterFamilyIds[$product->shop_id]
+                    ]);
+                }
+            }
+        }
+
         if ($masterAsset->wasChanged('status')) {
             GroupHydrateMasterAssets::dispatch($masterAsset->group)->delay($this->hydratorsDelay);
             MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);

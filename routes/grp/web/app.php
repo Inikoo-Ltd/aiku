@@ -44,11 +44,48 @@ Route::middleware(["auth"])->group(function () {
                 echo "<td>".$value->methods()[0]."</td>";
                 echo "<td>".$value->uri()."</td>";
                 echo "<td>".$value->getName()."</td>";
-                echo "<td>".preg_replace('/([^\\\\]+)$/', '<span style="background: #c790ff; padding: 0 2px">$1</span>', $value->getActionName())."</td>";
+                $actionName = $value->getActionName();
+                $fileNameWithoutActionName = preg_replace('/@.*$/', '', $actionName);
+                $highlighted = preg_replace(
+                    '/([^\\\\]+)$/',
+                    '<span class="copy-action" data-copy="'.$fileNameWithoutActionName.'" style="cursor:pointer;background:#c790ff;padding:2px 4px">$1</span>',
+                    $actionName
+                );
+
+                echo "<td>$highlighted</td>";
                 echo "</tr>";
                 $i++;
             }
             echo "</table>";
+            echo "
+                <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.querySelectorAll('.copy-action').forEach(function (el) {
+                        el.addEventListener('click', function () {
+                            const text = this.getAttribute('data-copy');
+
+                            navigator.clipboard.writeText(text).then(() => {
+                                // Notifikasi kecil
+                                const toast = document.createElement('div');
+                                toast.innerText = 'Copied: ' + text;
+                                toast.style.position = 'fixed';
+                                toast.style.bottom = '20px';
+                                toast.style.right = '20px';
+                                toast.style.background = '#4caf50';
+                                toast.style.color = 'white';
+                                toast.style.padding = '10px 14px';
+                                toast.style.borderRadius = '6px';
+                                toast.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+                                toast.style.zIndex = '9999';
+                                document.body.appendChild(toast);
+
+                                setTimeout(() => toast.remove(), 1500);
+                            });
+                        });
+                    });
+                });
+                </script>
+            ";
         });
     }
 

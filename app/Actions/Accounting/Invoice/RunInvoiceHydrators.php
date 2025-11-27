@@ -37,37 +37,67 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class RunInvoiceHydrators
 {
-
     use asAction;
 
     public function handle(Invoice $invoice, int $hydratorsDelay = 0): void
     {
+
+        $this->runImportantJobs($invoice, $hydratorsDelay, async: true);
+        $this->runAnotherJobs($invoice, $hydratorsDelay);
+    }
+
+    public function runImportantJobs(Invoice $invoice, int $hydratorsDelay, bool $async = false): void
+    {
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
-        ShopHydrateInvoices::dispatch($invoice->shop)->delay($hydratorsDelay);
-        OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($hydratorsDelay);
-        GroupHydrateInvoices::dispatch($invoice->group)->delay($hydratorsDelay);
+        // Helper internal
+        $queueOrRun = function ($job, array $params = []) use ($async, $hydratorsDelay) {
+            if ($async) {
+                return $job::dispatch(...$params)->delay($hydratorsDelay);
+            }
 
+            return $job::run(...$params);
+        };
 
+        // --- Basic Hydrators ---
+        $queueOrRun(ShopHydrateInvoices::class, [$invoice->shop]);
+        $queueOrRun(OrganisationHydrateInvoices::class, [$invoice->organisation]);
+        $queueOrRun(GroupHydrateInvoices::class, [$invoice->group]);
+
+        // --- Invoice Category ---
         if ($invoice->invoiceCategory) {
-            InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($hydratorsDelay);
-            InvoiceCategoryHydrateSalesIntervals::dispatch($invoice->invoiceCategory, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
-            InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
+            $queueOrRun(InvoiceCategoryHydrateInvoices::class, [$invoice->invoiceCategory]);
+            $queueOrRun(InvoiceCategoryHydrateSalesIntervals::class, [$invoice->invoiceCategory, $intervalsExceptHistorical, []]);
+            $queueOrRun(InvoiceCategoryHydrateOrderingIntervals::class, [$invoice->invoiceCategory, $intervalsExceptHistorical, []]);
         }
 
-        ShopHydrateSalesIntervals::dispatch($invoice->shop, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
-        OrganisationHydrateSalesIntervals::dispatch($invoice->organisation, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
-        GroupHydrateSalesIntervals::dispatch($invoice->group, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
+        // --- Sales Intervals ---
+        $queueOrRun(ShopHydrateSalesIntervals::class, [$invoice->shop, $intervalsExceptHistorical, []]);
+        $queueOrRun(OrganisationHydrateSalesIntervals::class, [$invoice->organisation, $intervalsExceptHistorical, []]);
+        $queueOrRun(GroupHydrateSalesIntervals::class, [$invoice->group, $intervalsExceptHistorical, []]);
 
+        // --- Master shop ---
         if ($invoice->master_shop_id) {
-            MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
-            MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
+            $queueOrRun(MasterShopHydrateSalesIntervals::class, [$invoice->master_shop_id, $intervalsExceptHistorical, []]);
+            $queueOrRun(MasterShopHydrateInvoiceIntervals::class, [$invoice->master_shop_id, $intervalsExceptHistorical, []]);
         }
 
-        ShopHydrateInvoiceIntervals::dispatch($invoice->shop, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
-        OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
-        GroupHydrateInvoiceIntervals::dispatch($invoice->group, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
+        // --- Invoice Intervals ---
+        $queueOrRun(ShopHydrateInvoiceIntervals::class, [$invoice->shop, $intervalsExceptHistorical, []]);
+        $queueOrRun(OrganisationHydrateInvoiceIntervals::class, [$invoice->organisation, $intervalsExceptHistorical, []]);
+        $queueOrRun(GroupHydrateInvoiceIntervals::class, [$invoice->group, $intervalsExceptHistorical, []]);
 
+        // --- Platform intervals ---
+        if ($invoice->platform_id) {
+            $queueOrRun(ShopHydratePlatformSalesIntervalsInvoices::class, [$invoice->shop_id, $invoice->platform_id, $intervalsExceptHistorical, []]);
+            $queueOrRun(ShopHydratePlatformSalesIntervalsSales::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
+            $queueOrRun(ShopHydratePlatformSalesIntervalsSalesOrgCurrency::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
+            $queueOrRun(ShopHydratePlatformSalesIntervalsSalesGrpCurrency::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
+        }
+    }
+
+    public function runAnotherJobs(Invoice $invoice, int $hydratorsDelay): void
+    {
         if ($invoice->shipping_zone_id) {
             ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($hydratorsDelay);
         }
@@ -78,13 +108,6 @@ class RunInvoiceHydrators
         CustomerHydrateClv::dispatch($invoice->customer_id)->delay($hydratorsDelay);
 
         InvoiceRecordSearch::dispatch($invoice);
-
-        if ($invoice->platform_id) {
-            ShopHydratePlatformSalesIntervalsInvoices::dispatch($invoice->shop_id, $invoice->platform_id, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
-            ShopHydratePlatformSalesIntervalsSales::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
-            ShopHydratePlatformSalesIntervalsSalesOrgCurrency::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
-            ShopHydratePlatformSalesIntervalsSalesGrpCurrency::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, [])->delay($hydratorsDelay);
-        }
     }
 
     public function getCommandSignature(): string

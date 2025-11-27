@@ -187,7 +187,7 @@ class StoreInvoice extends OrgAction
         });
 
         $invoice->refresh();
-        CategoriseInvoice::run($invoice);
+        $invoice = CategoriseInvoice::run($invoice);
 
 
         if ($invoice->customer_id) {
@@ -198,7 +198,8 @@ class StoreInvoice extends OrgAction
             CustomerClientHydrateInvoices::dispatch($invoice->customerClient)->delay($this->hydratorsDelay);
         }
 
-        RunInvoiceHydrators::run($invoice,$this->hydratorsDelay);
+        RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
+
 
         if ($invoice->shop->type == 'fulfilment') {
             SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);

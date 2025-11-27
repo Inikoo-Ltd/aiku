@@ -22,16 +22,9 @@ use App\Actions\Catalogue\Product\Json\GetIrisProductEcomOrdering;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProduct;
-use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInCollection;
-use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
-use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInCollection;
-use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
-use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
@@ -44,7 +37,6 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 
 
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
-
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
 
 
@@ -71,7 +63,8 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('collection/{collection:id}/out-of-stock-products', GetIrisOutOfStockProductsInCollection::class)->name('collection.out_of_stock_products.index');
     Route::get('customer/{customer:id}/product/{product:id}/channels', GetCustomerProductSalesChannelIds::class)->name('customer.product.channel_ids.index')->withoutScopedBindings();
     Route::get('customer/{customer:id}/product-category/{productCategory:id}/channels', GetCustomerProductCategorySalesChannelIds::class)->name('customer.product_category.channel_ids.index')->withoutScopedBindings();
+    Route::get('customer/{customer:id}/collection/{collection:id}/channels', GetCustomerCollectionSalesChannelIds::class)->name('customer.collection.channel_ids.index')->withoutScopedBindings();
+
     Route::get('channels', IndexRetinaDropshippingCustomerSalesChannels::class)->name('channels.index');
     Route::get('product/{product:id}', GetIrisProductEcomOrdering::class)->name('product.ecom_ordering_data');
-
 });

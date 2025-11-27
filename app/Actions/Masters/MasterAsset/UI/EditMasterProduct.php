@@ -81,7 +81,8 @@ class EditMasterProduct extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'   => $masterAsset->code,
+                    'title'   => __('Edit master product'),
+                    'model'   => $masterAsset->code,
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
@@ -128,14 +129,14 @@ class EditMasterProduct extends GrpAction
                 ->toArray();
 
         $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
-                return array_merge(
+            return array_merge(
                 ['quantity' => (int) $t->pivot->quantity],
                 ['fraction'   =>  $t->pivot->quantity /  $packedIn[$t->id]],
                 ['packed_in'   =>  $packedIn[$t->id]],
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity /  $packedIn[$t->id])), $packedIn[$t->id])],
-                    $t->toArray()
-                );
-            });
+                $t->toArray()
+            );
+        });
 
         return [
             [
@@ -230,23 +231,6 @@ class EditMasterProduct extends GrpAction
                 ]
             ],
             [
-                'label'  => __('Pricing'),
-                'icon'   => 'fa-light fa-money-bill',
-                'fields' => [
-                    'cost_price_ratio' => [
-                        'type'          => 'input_number',
-                        'bind' => [
-                            'maxFractionDigits' => 3
-                        ],
-                        'label'         => __('pricing ratio'),
-                        'placeholder'   => __('Cost price ratio'),
-                        'required'      => true,
-                        'value'         => $masterProduct->cost_price_ratio,
-                        'min'           => 0
-                    ],
-                ]
-            ],
-            [
                 'label'  => __('Properties'),
                 'title'  => __('id'),
                 'icon'   => 'fa-light fa-fingerprint',
@@ -265,20 +249,44 @@ class EditMasterProduct extends GrpAction
                             return [$barcode => $barcode];
                         })->toArray()
                     ],
-                    'price'       => [
-                        'type'     => 'input',
-                        'label'    => __('price'),
-                        'required' => true,
-                        'value'    => $masterProduct->price
-                    ],
-                    'marketing_weight'       => [
+                   /*  'marketing_weight'       => [
                         'type'     => 'input_number',
                         'label'    => __('marketing weight'),
                         'value'    => $masterProduct->marketing_weight,
                         'bind'     => [
                                 'suffix' => 'g'
                         ]
-                    ],
+                    ], */
+                ]
+            ],
+            [
+                'label'  => __('Master Family'),
+                'icon'   => 'fal fa-folder',
+                'fields' => [
+                    'master_family_id'   => [
+                        'type'        => 'select_infinite',
+                        'label'       => __('Master Family'),
+                        'value'       => $masterProduct->masterFamily->id ?? null,
+                        'options'   => [
+                                [
+                                    'code' =>  $masterProduct->masterFamily->code ?? null,
+                                    'name' =>  $masterProduct->masterFamily->name ?? null,
+                                    'number_current_products' =>  $masterProduct->masterFamily->stats->number_current_master_assets ?? 0
+                                ]
+                        ],
+                        'fetchRoute'    => [
+                            'name' => 'grp.json.master-family.all-master-family',
+                            'parameters' => [
+                                'masterShop' => $this->masterShop->slug,
+                                'withMasterProductCategoryStat' => true,
+                            ]
+                        ],
+                        'required' => true,
+                        'type_label' => 'families',
+                        'valueProp' => 'id',
+                        'labelProp' => 'code',
+                        'value'   => $masterProduct->masterFamily->id ?? null,
+                    ]
                 ]
             ],
             $masterProduct->masterFamily ? [

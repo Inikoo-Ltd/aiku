@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { inject } from "vue";
-import WidgetOrganisations from "./Widget/WidgetOrganisations.vue"
-import WidgetShops from "./Widget/WidgetShops.vue"
+import WidgetShops from "./Widget/WidgetShops.vue";
 import CustomerClv from "@/Components/CustomerCLV.vue";
+import WidgetOrganisations from "./Widget/WidgetOrganisations.vue";
 import Sales from "@/Components/DataDisplay/Dashboard/Widget/Sales.vue";
 import Invoices from "@/Components/DataDisplay/Dashboard/Widget/Invoices.vue";
 
@@ -15,9 +15,7 @@ const props = defineProps<{
 		}[]
 		value: string
 	}
-    tableData: {
-
-    }
+    tableData: {}
 }>()
 
 const layout = inject('layout')

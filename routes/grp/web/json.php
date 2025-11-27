@@ -215,6 +215,8 @@ Route::get('master-product-category/{masterProductCategory}/recommended-trade-un
 Route::get('master-product-category/{masterProductCategory}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory}/all-trade-units', GetAllTradeUnits::class)->name('master-product-category.all-trade-units')->withoutScopedBindings();
 
+Route::get('master-families/{masterShop}/all-master-family', GetMasterFamilies::class)->name('master-family.all-master-family')->withoutScopedBindings();
+
 Route::get('get-pick-fractional', GetPickFractional::class)->name('product.get-pick-fractional')->withoutScopedBindings();
 
 Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();

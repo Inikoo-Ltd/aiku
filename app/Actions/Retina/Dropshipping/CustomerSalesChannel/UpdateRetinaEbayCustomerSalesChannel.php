@@ -53,17 +53,17 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
             'tax_category_id'   => ['sometimes', 'nullable', 'integer', Rule::exists('tax_categories', 'id')],
             'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'name' => ['sometimes', 'string', 'max:255'],
-            'shipping_service'              => ['sometimes', 'required', 'string'],
-            'shipping_price'              => ['sometimes', 'required', 'integer'],
-            'shipping_max_dispatch_time'              => ['sometimes', 'required', 'integer'],
+            'shipping_service'              => ['sometimes', 'nullable', 'string'],
+            'shipping_price'              => ['sometimes', 'nullable', 'integer'],
+            'shipping_max_dispatch_time'              => ['sometimes', 'nullable', 'integer'],
 
             'return_policy_id' => ['sometimes', 'required', 'string'],
             'payment_policy_id' => ['sometimes', 'required', 'string'],
             'fulfillment_policy_id' => ['sometimes', 'required', 'string'],
 
             'return_accepted' => ['sometimes', 'required', 'boolean'],
-            'return_payer' => ['sometimes', 'nullable', 'string'],
-            'return_within' => ['sometimes', 'nullable', 'integer'],
+            'return_payer' => ['sometimes', 'required_if:return_accepted,true'],
+            'return_within' => ['sometimes', 'required_if:return_accepted,true'],
             'return_description' => ['nullable', 'string']
         ];
     }

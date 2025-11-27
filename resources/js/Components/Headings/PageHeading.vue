@@ -166,6 +166,22 @@ const setError = (e) => {
                         </slot>
 
                         <slot name="afterTitle2" />
+
+                        <!-- Section: Icon Links (to show master Octopus icon) -->
+                        <template v-if="data.iconLinks?.length">
+                            <Link v-for="(iconLink, idxLink) in data.iconLinks" :key="`iconLink-${idxLink}`"
+                                :href="iconLink.route?.name ? route(iconLink.route.name, iconLink.route.parameters) : '#'" v-tooltip="iconLink.tooltip || ''">
+                                <FontAwesomeIcon
+                                    :icon="iconLink.icon"
+                                    class="text-gray-400 hover:text-gray-600"
+                                    :style="{
+                                        color: iconLink.color
+                                    }"
+                                    fixed-width
+                                    aria-hidden="true"
+                                />
+                            </Link>
+                        </template>
                     </div>
                 </div>
             </div>

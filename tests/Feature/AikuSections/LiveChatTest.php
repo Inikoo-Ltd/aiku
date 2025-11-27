@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 27 Nov 2025 13:05:00 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 use Log;
 use Exception;
@@ -13,7 +18,6 @@ use App\Models\SysAdmin\User;
 use App\Models\SysAdmin\Group;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use App\Models\SysAdmin\Organisation;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatEvent;
@@ -33,16 +37,43 @@ use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Actions\CRM\ChatSession\AssignChatToAgent;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 
-
 beforeAll(function () {
     loadDB();
 });
 
 beforeEach(function () {
+
+    $web = Website::first();
+    if (!$web) {
+        list(
+            $this->organisation,
+            $this->user,
+            $this->shop
+            ) = createShop();
+        $web = createWebsite($this->shop);
+    } else {
+        $this->organisation = $web->organisation;
+        $this->user         = createAdminGuest($this->organisation->group)->getUser();
+        $this->shop         = $web->shop;
+    }
+    $web->refresh();
+    $this->web       = $web;
+    $this->warehouse = createWarehouse();
+
+    $customer = Customer::first();
+
+    if(!$customer){
+        $customer = createCustomer($this->shop);
+    }
+
+    $this->customer = $customer;
+
     $this->action = new StoreChatSession();
      $this->sendMessageAction = new SendChatMessage();
      $this->assignmentChatAction = new AssignChatToAgent();
       $this->closeChatAction = new CloseChatSession();
+
+
 
 });
 
@@ -79,18 +110,11 @@ test('can create chat session for guest with custom guest identifier', function 
 });
 
 test('can create chat session for authenticated web user', function () {
-    $organisation = Organisation::first() ?? Organisation::factory()->create();
-    $website = Website::first() ?? Website::factory()->create();
-    $customer = Customer::first() ?? Customer::factory()->create();
-    $group = Group::first() ?? Group::factory()->create();
 
-    $webUser = WebUser::factory()->create([
-        'organisation_id' => $organisation->id,
-        'group_id' => $group->id,
-        'website_id' => $website->id,
-        'customer_id' => $customer->id,
-        'type' => WebUserTypeEnum::WEB->value,
-    ]);
+
+
+    $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+
 
     $modelData = [
         'web_user_id' => $webUser->id,

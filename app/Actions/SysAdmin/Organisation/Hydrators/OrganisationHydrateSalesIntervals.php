@@ -53,6 +53,7 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
 
     public function handle(Organisation $organisation, ?array $intervals = null, $doPreviousPeriods = null): void
     {
+
         if ($organisation->type == OrganisationTypeEnum::AGENT) {
             return;
         }

@@ -28,8 +28,7 @@ class UpdateOfferAllowanceSignature extends OrgAction
         foreach (
             $offer->offerAllowances()
                 ->where('status', true)
-                ->orderBy('id')->get()
-            as $offerAllowance
+                ->orderBy('id')->get() as $offerAllowance
         ) {
             if ($allowanceSignature != '') {
                 $allowanceSignature .= '|';

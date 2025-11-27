@@ -24,7 +24,6 @@ class SendChatMessage
 
     public function handle(ChatSession $chatSession, array $modelData): ChatMessage
     {
-
         $chatMessageData = [];
 
         data_set($chatMessageData, 'chat_session_id', $chatSession->id);

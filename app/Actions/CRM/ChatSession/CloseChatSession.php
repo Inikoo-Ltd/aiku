@@ -18,7 +18,7 @@ class CloseChatSession
 {
     use AsAction;
 
-     public function handle(ChatSession $chatSession, int $closedByAgentId): ChatSession
+    public function handle(ChatSession $chatSession, int $closedByAgentId): ChatSession
     {
         $chatSession->update([
             'status' => ChatSessionStatusEnum::CLOSED->value,

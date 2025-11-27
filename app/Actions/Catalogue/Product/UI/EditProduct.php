@@ -8,12 +8,9 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
-use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
-use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Inventory\OrgStocksInProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -22,8 +19,6 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Inventory\OrgStocksResource;
-use App\Models\Goods\TradeUnit;
 
 class EditProduct extends OrgAction
 {
@@ -99,11 +94,30 @@ class EditProduct extends OrgAction
         $warning = null;
         if ($product->is_single_trade_unit) {
             $warning = [
-                    'type'  => 'warning',
-                    'title' => __('Important'),
-                    'text'  => __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.'),
-                    'icon'  => ['fas', 'fa-exclamation-triangle']
-                ];
+                'type'  => 'warning',
+                'title' => __('Important'),
+                'text'  => __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.'),
+                'icon'  => ['fas', 'fa-exclamation-triangle']
+            ];
+        }
+
+        $iconLinks = [
+
+        ];
+
+        if ($product->shop->masterShop) {
+            $iconLinks[] = [
+                'icon'    => 'fab fa-octopus-deploy',
+                'tooltip' => __('Go to Edit Master Product'),
+                'route'   => [
+                    'name'       => 'grp.masters.master_shops.show.master_products.edit',
+                    'parameters' => [
+                        'masterShop'    => $product->shop->masterShop->slug,
+                        'masterProduct' => $product->masterProduct->slug,
+                    ]
+                ],
+                'color'   => 'rgb(75, 0, 130)'
+            ];
         }
 
 
@@ -122,13 +136,14 @@ class EditProduct extends OrgAction
                     'next'     => $this->getNext($product, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $product->code,
-                    'icon'    =>
+                    'title'     => __('Edit product'),
+                    'model'     => $product->code,
+                    'icon'      =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
                             'title' => __('Goods')
                         ],
-                    'actions' => [
+                    'actions'   => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -137,7 +152,8 @@ class EditProduct extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks
                 ],
 
                 'formData' => [
@@ -162,9 +178,6 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-        //$value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
-
-
         $family = $product->family;
         if ($family) {
             $stateData = [
@@ -308,7 +321,7 @@ class EditProduct extends OrgAction
                             'type'     => 'input_number',
                             'label'    => __('Price'),
                             'required' => true,
-                            'bind' => [
+                            'bind'     => [
                                 'minFractionDigits' => 0,
                                 'maxFractionDigits' => 2,
                             ],
@@ -318,7 +331,7 @@ class EditProduct extends OrgAction
                             'type'     => 'input_number',
                             'label'    => __('RRP'),
                             'required' => true,
-                            'bind' => [
+                            'bind'     => [
                                 'minFractionDigits' => 0,
                                 'maxFractionDigits' => 2,
                             ],
@@ -392,38 +405,7 @@ class EditProduct extends OrgAction
 
                         ]
                     ],
-                //                [
-                //                    'label'  => __('Parts'),
-                //                    'icon' => 'fal fa-boxes',
-                //                    'fields' => [
-                //                        'org_stocks' => [
-                //                            'type'         => 'product_parts',
-                //                            'label'        => __('Parts'),
-                //                            'full'         => true,
-                //                            'fetch_route'  => [
-                //                                'name'       => 'grp.json.org_stocks.index',
-                //                                'parameters' => [
-                //                                    'organisation' => $product->organisation_id,
-                //                                ]
-                //                            ],
-                //                            'init_options' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
-                //                            'value'        => $value
-                //                        ],
-                //                    ]
-                //                ],
-                //                [
-                //                    'label' => __('Trade unit'),
-                //                    'icon' => 'fa-light fa-atom',
-                //                    'fields' => [
-                //                        'trade_units' => [
-                //                            'label'      => __('Trade Units'),
-                //                            'type' => 'edit-trade-unit-shop',
-                //                            'value' => null,
-                //                            'noSaveButton' => true,
-                //                            'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []
-                //                        ]
-                //                    ],
-                //                ],
+
                 [
                     'label'  => __('Family'),
                     'icon'   => 'fa-light fa-folder',
@@ -452,12 +434,6 @@ class EditProduct extends OrgAction
         );
     }
 
-    private function getDataTradeUnit($tradeUnits): array
-    {
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
-            return GetTradeUnitShowcase::run($tradeUnit);
-        })->toArray();
-    }
 
     public function getBreadcrumbs(Product $product, string $routeName, array $routeParameters): array
     {

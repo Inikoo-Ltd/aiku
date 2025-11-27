@@ -128,7 +128,7 @@ onMounted(() => {
 
 <template>
     <div id="grp_app" class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
-         :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
+         :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'w-[80%]' : 'mr-0']">
 
         <TopBar @sidebarOpen="(value: boolean) => sidebarOpen = value" :sidebarOpen="sidebarOpen"
                 :logoRoute="`grp.dashboard.show`" urlPrefix="grp." />
@@ -164,8 +164,9 @@ onMounted(() => {
         </main>
 
         <!-- Sidebar: Right -->
-        <RightSideBar class="fixed top-16 w-44 transition-all duration-200 ease-in-out"
-                      :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'right-0' : '-right-44']" />
+       
+        <RightSideBar class="fixed top-16  transition-all duration-200 ease-in-out"
+                      :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'right-0 w-[20%]' : '-right-44']" />
 
         <Teleport to="body">
             <div>

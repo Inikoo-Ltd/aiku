@@ -10,10 +10,11 @@ namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Models\Helpers\Country;
@@ -157,8 +158,21 @@ class UpdateTradeUnit extends GrpAction
         }
 
         if ($fieldsForProductsUpdated) {
-            foreach ($tradeUnit->products as $product) {
-                ProductHydrateTradeUnitsFields::dispatch($product);
+            // Hydrate Master Assets/Product
+            foreach ($tradeUnit->masterAssets as $masterAsset) {
+                MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
+            }
+            // Hydrate Products
+            if ($tradeUnit->products->count() > 500) {
+                // If trade unit is linked with more than 500 products, use horizon
+                foreach ($tradeUnit->products as $product) {
+                    ProductHydrateHeathAndSafetyFromTradeUnits::dispatch($product);
+                }
+            } else {
+                // If trade unit is linked with 500 or less products brute force it
+                foreach ($tradeUnit->products as $product) {
+                    ProductHydrateHeathAndSafetyFromTradeUnits::run($product);
+                }
             }
         }
 

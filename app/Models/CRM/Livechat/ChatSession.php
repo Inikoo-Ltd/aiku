@@ -30,7 +30,7 @@ use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, ChatMessage> $messages
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatMessage> $messages
  * @property-read WebUser|null $webUser
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatSession newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatSession newQuery()
@@ -59,7 +59,7 @@ class ChatSession extends Model
         return $this->belongsTo(WebUser::class, 'web_user_id');
     }
 
-     public function language(): BelongsTo
+    public function language(): BelongsTo
     {
         return $this->belongsTo(Language::class);
     }

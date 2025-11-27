@@ -70,10 +70,10 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         if ($returnAccepted !== null) {
             data_set($modelData, 'settings.return.accepted', $returnAccepted);
         }
-        if ($returnPayer) {
+        if (! blank($returnPayer)) {
             data_set($modelData, 'settings.return.payer', $returnPayer);
         }
-        if ($returnWithin) {
+        if (! blank($returnWithin)) {
             data_set($modelData, 'settings.return.within', $returnWithin);
         }
         if ($returnDescription) {
@@ -85,27 +85,34 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
 
         $customerSalesChannel = UpdateCustomerSalesChannel::run($customerSalesChannel, $modelData);
 
-        if ($shippingService || $shippingPrice || $shippingDispatchTime) {
+        if ($fulfillmentPolicyId || $shippingService || $shippingPrice || $shippingDispatchTime) {
             if ($fulfillmentPolicyId) {
                 data_set($modelData, 'fulfillment_policy_id', $fulfillmentPolicyId);
             }
-            UpdateShippingPolicyEbayUser::run($customerSalesChannel->user, $modelData);
+            UpdateShippingPolicyEbayUser::run($platformUser, $modelData);
         }
 
-        if ($returnAccepted !== null || $returnPayer || $returnWithin || $returnDescription) {
+        if ($returnPolicyId || $returnAccepted !== null || $returnPayer || $returnWithin || $returnDescription) {
             if ($returnPolicyId) {
                 data_set($modelData, 'return_policy_id', $returnPolicyId);
             }
-            UpdateReturnPolicyEbayUser::run($customerSalesChannel->user, $modelData);
+            UpdateReturnPolicyEbayUser::run($platformUser, $modelData);
         }
 
         if ($paymentPolicyId) {
-            UpdateEbayUser::run($customerSalesChannel->user, [
-                'payment_policy_id' => $paymentPolicyId
+            $defaultLocationData = match ($platformUser->marketplace) {
+                'EBAY_ES' => 'esWarehouse',
+                'EBAY_DE' => 'deWarehouse',
+                default => 'mainWarehouse'
+            };
+
+            UpdateEbayUser::run($platformUser, [
+                'payment_policy_id' => $paymentPolicyId,
+                'location_key' => $platformUser->location_key ?? $defaultLocationData,
             ]);
         }
 
-        CheckEbayChannel::run($customerSalesChannel->user);
+        CheckEbayChannel::run($platformUser);
 
         return $customerSalesChannel;
 
@@ -147,9 +154,9 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
             'fulfillment_policy_id' => ['sometimes', 'string'],
 
             'return_accepted' => ['sometimes', 'boolean'],
-            'return_payer' => ['sometimes', 'string'],
-            'return_within' => ['sometimes', 'integer'],
-            'return_description' => ['sometimes', 'string'],
+            'return_payer' => ['required_if:return_accepted,true', 'string'],
+            'return_within' => ['required_if:return_accepted,true', 'integer'],
+            'return_description' => ['required_if:return_accepted,true', 'string'],
 
             'closed_at'         => ['sometimes', 'date']
         ];

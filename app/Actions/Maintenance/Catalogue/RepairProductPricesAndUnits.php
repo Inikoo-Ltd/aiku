@@ -25,9 +25,7 @@ class RepairProductPricesAndUnits
      */
     public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, Command $command = null): void
     {
-
         $shop->products()
-            //->where('slug','awfo-01-bg')
             ->orderBy('id')
             ->chunkById(500, function ($products) use ($fromShop, $command) {
                 foreach ($products as $product) {
@@ -52,27 +50,26 @@ class RepairProductPricesAndUnits
         $dataToUpdate = [];
         if ($product->price != $fromProduct->price) {
             $command?->info("Updating price for product $product->code from $product->price to $fromProduct->price");
-
-            data_set($dataToUpdate, 'price', $fromProduct->price);
         }
 
         if ($product->rrp != $fromProduct->rrp) {
             $command?->info("Updating rrp for product $product->code from $product->rrp to $fromProduct->rrp");
-
-            data_set($dataToUpdate, 'rrp', $fromProduct->rrp);
         }
+        data_set($dataToUpdate, 'rrp', $fromProduct->rrp);
+        data_set($dataToUpdate, 'price', $fromProduct->price);
+
 
         data_set($dataToUpdate, 'units', $fromProduct->units);
 
         $tradeUnits = [];
         foreach ($fromProduct->tradeUnits as $tradeUnit) {
-
-
             $tradeUnits[$tradeUnit->id] = [
                 'quantity' => $tradeUnit->pivot->quantity,
             ];
         }
         data_set($dataToUpdate, 'trade_units', $tradeUnits);
+
+        // print_r($dataToUpdate);
 
         UpdateProduct::make()->action($product, $dataToUpdate);
     }
