@@ -33,11 +33,10 @@ trait WithCustomRangeDashboard
         $customRangeData = [];
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
-
         if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $customRangeInterval = Arr::get($userSettings, 'custom_range_interval');
-            if ($customRangeInterval) {
-                $dates = explode('-', $customRangeInterval);
+            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
+            if ($rangeInterval) {
+                $dates = explode('-', $rangeInterval);
                 if (count($dates) === 2) {
                     $customRangeData = $this->getCustomRangeData($parent, $dates[0], $dates[1]);
                 }

@@ -36,7 +36,6 @@ const selectedQuarter = computed(() => {
     if (!dateFilterValue.value || dateFilterValue.value.length !== 2) return null;
 
     const currentRange = formattedDateRange(dateFilterValue.value);
-    const currentYear = new Date().getFullYear();
 
     // Check each quarter
     for (let q = 1; q <= 4; q++) {
@@ -90,7 +89,7 @@ const setQuarterFilter = (quarter: number) => {
         {
             settings: {
                 selected_interval: 'ctm',
-                custom_range_interval: formattedDateRange(quarterDates)
+                range_interval: formattedDateRange(quarterDates)
             }
         },
         {
@@ -135,7 +134,7 @@ const onUpdateDatePicker = (newValue) => {
         {
             settings: {
                 selected_interval: 'ctm',
-                custom_range_interval: formattedDateRange(newValue)
+                range_interval: formattedDateRange(newValue)
             }
         },
         {
@@ -155,7 +154,7 @@ const resetDatePicker = () => {
         {
             settings: {
                 selected_interval: 'all',
-                custom_range_interval: ''
+                range_interval: ''
             }
         },
         {
@@ -201,8 +200,8 @@ onBeforeMount(() => {
     //     }
     // }
 
-    if (props.intervals?.custom_range_interval && props.intervals.custom_range_interval !== '') {
-        const dates = props.intervals.custom_range_interval.split('-');
+    if (props.intervals?.range_interval && props.intervals?.value === 'ctm') {
+        const dates = props.intervals.range_interval.split('-');
 
         if (dates.length === 2) {
             dateFilterValue.value = [
