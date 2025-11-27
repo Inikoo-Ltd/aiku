@@ -78,11 +78,6 @@ const onPayWithBalance = () => {
                 isLoadingPayWithBalance.value = true
             },
             onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Order paid with customer balance"),
-                    type: "success"
-                })
             },
             onError: errors => {
                 notify({
@@ -203,9 +198,9 @@ const onPayWithBalance = () => {
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
                     {{ trans("Order :xorder is not paid yet", { xorder: order?.data?.reference }) }}
                 </div>
-                <div class="mt-1 whitespace-nowrap text-xs xtext-center">{{ trans("Your balance") }}: <span class="font-bold text-xs">{{ locale.currencyFormat(layout.iris?.currency?.code, Number(summary?.customer?.balance)) }}</span></div>
-                <div class="">
-                    <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(layout.iris?.currency?.code, Number(summary.products.payment.pay_amount)) })" size="xxs" type="primary" :loading="isLoadingPayWithBalance" />
+                <div class="mt-2 whitespace-nowrap text-xs xtext-center">{{ trans("Your balance") }}: <span class="font-bold text-xs">{{ locale.currencyFormat(layout.iris?.currency?.code, Number(summary?.customer?.balance)) }}</span></div>
+                <div class="mt-1">
+                    <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(layout.iris?.currency?.code, Number(summary.products.payment.pay_amount)) })" size="xs" type="primary" :loading="isLoadingPayWithBalance" />
                 </div>
 
                 <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">

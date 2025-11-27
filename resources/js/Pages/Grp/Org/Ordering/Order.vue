@@ -642,11 +642,6 @@ const onPayWithBalance = () => {
                 isLoadingPayWithBalance.value = true
             },
             onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Order paid with customer balance"),
-                    type: "success"
-                })
             },
             onError: errors => {
                 notify({
@@ -1048,12 +1043,15 @@ const onPayWithBalance = () => {
                         </dt>
 
                         <div v-if="box_stats.products.payment.pay_status != 'no_need'" class="">
-                            <div class="w-fit flex gap-x-2 border border-gray-300 rounded-md pr-2">
+                            <!-- Section: pay with balance (if order Submit without paid) -->
+                            
+
+                            <div class="w-fit flex xgap-x-2 border rounded isolate">
                                 <NeedToPay :totalAmount="box_stats.products.payment.total_amount"
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
                                     xclass="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                                    class="border-0 border-r"
+                                    class="border-0 border-r pr-2"
                                     :currencyCode="currency.code">
                                     <template #default>
                                         <!-- Pay: Invoice -->
@@ -1088,24 +1086,29 @@ const onPayWithBalance = () => {
                                     </template>
                                 </NeedToPay>
 
-                                <!-- Section: pay with balance (if order Submit without paid) -->
                                 <div v-if="
                                     box_stats.products.payment.pay_amount > 0
                                     && box_stats.products.payment.pay_amount <= box_stats?.customer?.balance
                                     && props.data?.data?.state === 'submitted'
-                                " class="text-xs py-1 flex items-center justify-center flex-col">
-                                    <div class="whitespace-nowrap text-xxs text-center">{{ trans("Customer balance") }}:<br><span class="font-bold text-xs">{{ locale.currencyFormat(currency.code, Number(box_stats?.customer?.balance)) }}</span></div>
-                                    <div class="mt-2">
+                                " class="-ml-2 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded pl-4 pr-2">
+                                    <div class="text-yellow-700">
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                                        {{ trans("Order :xorder is not paid yet", { xorder: data?.data?.reference }) }}
+                                    </div>
+                                    <div class="mt-2 whitespace-nowrap text-xs xtext-center">{{ trans("Customer balance") }}: <span class="font-bold text-xs">{{ locale.currencyFormat(currency.code, Number(box_stats?.customer?.balance)) }}</span></div>
+                                    <div class="mt-1">
                                         <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(currency.code, Number(box_stats.products.payment.pay_amount)) })" size="xxs" type="secondary" :loading="isLoadingPayWithBalance" />
                                     </div>
 
-                                    <div v-if="isLoadingPayWithBalance" class="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
+                                    <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
                                         <LoadingIcon />
                                     </div>
                                 </div>
                             </div>
+
                             
-                            <div v-if="last_payment" class="text-xs text-gray-500">
+                            
+                            <div v-if="last_payment" class="mt-1.5 text-xs text-gray-500">
                                 {{ trans("Last payments:") }}
                                 <Link :href="route('grp.org.accounting.payments.show', {
                                     organisation: route().params.organisation,
