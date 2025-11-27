@@ -12,8 +12,6 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateBestSellerProduct;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Console\Command;
-use Illuminate\Database\Query\Builder;
 
 class HydrateBestSellerProduct
 {

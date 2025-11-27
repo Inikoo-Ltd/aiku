@@ -20,7 +20,7 @@ class StoreChatSession extends OrgAction
 {
     use AsAction;
 
-     public function handle(array $modelData): ChatSession
+    public function handle(array $modelData): ChatSession
     {
         $isGuest = empty($modelData['web_user_id']);
 

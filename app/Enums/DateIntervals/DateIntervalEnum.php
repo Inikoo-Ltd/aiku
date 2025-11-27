@@ -72,7 +72,7 @@ enum DateIntervalEnum: string
 
     public static function casesWithoutCustom(): array
     {
-        return array_filter(self::cases(), fn($case) => $case !== self::CUSTOM);
+        return array_filter(self::cases(), fn ($case) => $case !== self::CUSTOM);
     }
 
     public static function valuesWithoutCustom(): array

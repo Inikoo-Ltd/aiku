@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\PickingSession;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\PickingSession;
@@ -21,10 +22,12 @@ class AutoFinishPickingPickingSession extends OrgAction
     public function handle(PickingSession $pickingSession): PickingSession
     {
 
+        $numberItems = DeliveryNoteItem::where('picking_session_id', $pickingSession->id)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->count();
+
         $numberHandled = DeliveryNoteItem::where('picking_session_id', $pickingSession->id)
             ->where('is_handled', true)
             ->count();
-        if ($numberHandled == $pickingSession->number_items) {
+        if ($numberHandled == $numberItems) {
             $this->update($pickingSession, [
                 'state' => PickingSessionStateEnum::PICKING_FINISHED
             ]);

@@ -86,7 +86,7 @@ class IndexMasterProductsInTradeUnit extends OrgAction
             $table->column(key: 'master_shop_code', label: __('Master Shop'), canBeHidden: false, sortable: false, searchable: false)
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-                // ->column(key: 'sales_all', label: __('Total Sales'), canBeHidden: false, sortable: true, searchable: false);
+            // ->column(key: 'sales_all', label: __('Total Sales'), canBeHidden: false, sortable: true, searchable: false);
         };
     }
 

@@ -21,7 +21,7 @@ class SendChatMessage
 
     public function handle(ChatSession $chatSession, array $modelData): ChatMessage
     {
-         $chatMessageData = [];
+        $chatMessageData = [];
 
         data_set($chatMessageData, 'chat_session_id', $chatSession->id);
         data_set($chatMessageData, 'message_type', $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value);
@@ -57,7 +57,7 @@ class SendChatMessage
     }
 
 
-     protected function logMessageEvent(ChatSession $chatSession, string $senderType, ?int $senderId, ChatMessage $message): void
+    protected function logMessageEvent(ChatSession $chatSession, string $senderType, ?int $senderId, ChatMessage $message): void
     {
         ChatEvent::create([
             'chat_session_id' => $chatSession->id,

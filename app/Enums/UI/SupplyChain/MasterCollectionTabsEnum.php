@@ -82,12 +82,12 @@ enum MasterCollectionTabsEnum: string
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
-            
-             MasterCollectionTabsEnum::IMAGES => [
-                'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
-                'align' => 'right',
+
+            MasterCollectionTabsEnum::IMAGES => [
+               'title' => __('Media'),
+               'icon'  => 'fal fa-camera-retro',
+               'type'  => 'icon',
+               'align' => 'right',
             ],
         };
     }

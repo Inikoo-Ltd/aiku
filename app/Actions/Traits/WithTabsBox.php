@@ -53,26 +53,7 @@ trait WithTabsBox
                 'label'         => __('Submitted'),
                 'currency_code' => $currencyCode,
                 'tabs'          => [
-                    [
-                        'tab_slug'    => 'submitted_paid',
-                        'label'       => __('Submitted Paid'),
-                        'value'       => $parent->orderHandlingStats->number_orders_state_submitted_paid,
-                        'type'        => 'number',
-                        'icon_data'   => [
-                            'tooltip' => __('Submitted Paid'),
-                            'icon'    => 'fal fa-check-circle',
-                            'class'   => 'text-green-600',
-                            'color'   => 'lime',
-                            'app'     => [
-                                'name' => 'check-circle',
-                                'type' => 'font-awesome-5'
-                            ]
-                        ],
-                        'information' => [
-                            'label' => $parent->orderHandlingStats->{"orders_state_submitted_paid_amount$currency"},
-                            'type'  => 'currency'
-                        ]
-                    ],
+
                     [
                         'tab_slug'    => 'submitted_unpaid',
                         'label'       => __('Submitted Unpaid'),
@@ -93,7 +74,27 @@ trait WithTabsBox
                             'label' => $parent->orderHandlingStats->{"orders_state_submitted_not_paid_amount$currency"},
                             'type'  => 'currency'
                         ]
-                    ]
+                    ],
+                    [
+                        'tab_slug'    => 'submitted_paid',
+                        'label'       => __('Submitted Paid'),
+                        'value'       => $parent->orderHandlingStats->number_orders_state_submitted_paid,
+                        'type'        => 'number',
+                        'icon_data'   => [
+                            'tooltip' => __('Submitted Paid'),
+                            'icon'    => 'fal fa-check-circle',
+                            'class'   => 'text-green-600',
+                            'color'   => 'lime',
+                            'app'     => [
+                                'name' => 'check-circle',
+                                'type' => 'font-awesome-5'
+                            ]
+                        ],
+                        'information' => [
+                            'label' => $parent->orderHandlingStats->{"orders_state_submitted_paid_amount$currency"},
+                            'type'  => 'currency'
+                        ]
+                    ],
                 ]
             ],
             [

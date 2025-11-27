@@ -100,6 +100,13 @@ const tradeUnitTags = computed(() => {
 })
 
 
+const tradeUnitBrands = computed(() => {
+  return (props.data?.trade_units ?? [])
+    .flatMap(unit => unit?.brand ?? [])
+})
+
+
+
 </script>
 
 <template>
@@ -155,10 +162,11 @@ const tradeUnitTags = computed(() => {
 
 		<!-- Product Summary -->
 		<ProductSummary 
-			 :data="data.product.data" 
+			 :data="{...data.product.data, tags : tradeUnitTags, brands : tradeUnitBrands}" 
 			 :properties="data.properties" 
 			 :parts="data.parts"
 			 :public-attachment="data.attachment_box.public" 
+			 :gpsr="data.gpsr"
 		/>
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">

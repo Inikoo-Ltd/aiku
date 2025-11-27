@@ -10,7 +10,6 @@ namespace App\Http\Resources\Ordering;
 
 use App\Models\Comms\Mailshot;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Log;
 
 /**
  * @property string $state

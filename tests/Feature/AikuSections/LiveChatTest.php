@@ -3,11 +3,9 @@
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
 use App\Models\CRM\Customer;
-use Illuminate\Http\Request;
 use App\Models\SysAdmin\Group;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use App\Models\SysAdmin\Organisation;
 use App\Models\CRM\Livechat\ChatEvent;
 use App\Models\CRM\Livechat\ChatSession;
@@ -17,7 +15,6 @@ use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
-
 
 beforeAll(function () {
     loadDB();

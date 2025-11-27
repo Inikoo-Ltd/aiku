@@ -32,7 +32,7 @@ enum ChatEventTypeEnum: string
             'close' => __('Chat Closed'),
             'rating' => __('Rating Submitted'),
             'note' => __('Note Added'),
-            'reply'=> __('reply'),
+            'reply' => __('reply'),
         ];
     }
 
@@ -84,10 +84,10 @@ enum ChatEventTypeEnum: string
                 'icon' => 'fas fa-sticky-note',
                 'class' => 'text-indigo-500',
             ],
-            'reply'=> [
-                'tooltip'=> __('Message Reply'),
-                'icon'=> 'fas fa-reply',
-                'class'=> 'text-gray-500',
+            'reply' => [
+                'tooltip' => __('Message Reply'),
+                'icon' => 'fas fa-reply',
+                'class' => 'text-gray-500',
             ]
         ];
     }

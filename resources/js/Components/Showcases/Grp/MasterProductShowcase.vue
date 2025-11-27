@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, computed, inject } from "vue"
+import { computed } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faTrash as falTrash,
@@ -18,14 +18,12 @@ import {
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { faImage } from "@far"
 import ImagePrime from "primevue/image"
-import { toInteger } from "lodash-es"
 import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
-import MasterProductSummary from "@/Components/Goods/MasterProductSummary.vue"
-import { trans } from "laravel-vue-i18n"
-import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterProductSummary.vue"
+import AttachmentCard from "@/Components/AttachmentCard.vue"
 
 
 library.add(
@@ -51,66 +49,70 @@ const props = defineProps<{
 	currency: string,
 	handleTabUpdate: Function
 	data: {
-		stockImagesRoute: routeType
-		uploadImageRoute: routeType
-		attachImageRoute: routeType
-		deleteImageRoute: routeType
-		imagesUploadedRoutes: routeType
-		webpage_url: string
-		attachment_box?: {}
-		translation_box: {
-			title: string
-			languages: Record<string, string>
-			save_route: routeType
-		}
-		product: {
-			data: ProductResource
-		}
-		stats: {
-			amount: number | null
-			amount_ly: number | null
-			name: string
-			percentage: number | null
-		}[] | null
-		trade_units: {
-			brand: {}
-			brand_routes: {
-				index_brand: routeType
-				store_brand: routeType
-				update_brand: routeType
-				delete_brand: routeType
-				attach_brand: routeType
-				detach_brand: routeType
+		masterProduct: {
+			stockImagesRoute: routeType
+			uploadImageRoute: routeType
+			attachImageRoute: routeType
+			deleteImageRoute: routeType
+			imagesUploadedRoutes: routeType
+			webpage_url: string
+			attachment_box?: {}
+			translation_box: {
+				title: string
+				languages: Record<string, string>
+				save_route: routeType
 			}
-			tag_routes: {
-				index_tag: routeType
-				store_tag: routeType
-				update_tag: routeType
-				delete_tag: routeType
-				attach_tag: routeType
-				detach_tag: routeType
+			product: {
+				data: ProductResource
 			}
-			tags: {}[]
-			tags_selected_id: number[]
-		}[],
-		gpsr: {
-			acute_toxicity: boolean
-			corrosive: boolean
-			eu_responsible: string | null
-			explosive: boolean
-			flammable: boolean
-			gas_under_pressure: boolean
-			gpsr_class_category_danger: string | null
-			hazard_environment: boolean
-			health_hazard: boolean | null
-			how_to_use: string
-			manufacturer: null | string
-			oxidising: boolean
-			product_languages: string | null
-			warnings: string | null
+			stats: {
+				amount: number | null
+				amount_ly: number | null
+				name: string
+				percentage: number | null
+			}[] | null
+			trade_units: {
+				brand: {}
+				brand_routes: {
+					index_brand: routeType
+					store_brand: routeType
+					update_brand: routeType
+					delete_brand: routeType
+					attach_brand: routeType
+					detach_brand: routeType
+				}
+				tag_routes: {
+					index_tag: routeType
+					store_tag: routeType
+					update_tag: routeType
+					delete_tag: routeType
+					attach_tag: routeType
+					detach_tag: routeType
+				}
+				tags: {}[]
+				tags_selected_id: number[]
+			}[],
+			gpsr: {
+				acute_toxicity: boolean
+				corrosive: boolean
+				eu_responsible: string | null
+				explosive: boolean
+				flammable: boolean
+				gas_under_pressure: boolean
+				gpsr_class_category_danger: string | null
+				hazard_environment: boolean
+				health_hazard: boolean | null
+				how_to_use: string
+				manufacturer: null | string
+				oxidising: boolean
+				product_languages: string | null
+				warnings: string | null
+			}
+			images: any
+			main_image: ImageTS
+
 		}
-		images: any
-		main_image: ImageTS
+
 	}
 }>();
 
@@ -122,12 +124,16 @@ const props = defineProps<{
 }) */
 
 const tradeUnitTags = computed(() => {
-	const list = props.data?.masterProduct?.trade_units ?? []
+	const list = props.data?.trade_units ?? []
 	const tags = list.flatMap(item => item.tags ?? [])
 	const unique = new Map(tags.map(tag => [tag.id, tag]))
 	return [...unique.values()]
 })
 
+const tradeUnitBrands = computed(() => {
+  return (props.data?.trade_units ?? [])
+    .flatMap(unit => unit?.brand ?? [])
+})
 
 </script>
 
@@ -135,15 +141,8 @@ const tradeUnitTags = computed(() => {
 <template>
 	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
 		<span class="text-xl font-semibold whitespace-pre-wrap">
-			<!-- Units box -->
-			<ProductUnitLabel
-				v-if="data.masterProduct?.units"
-				:units="data.masterProduct?.units"
-				:unit="data.masterProduct?.unit"
-				class="mr-2"
-			/>
-
-			<!-- Product name -->
+			<ProductUnitLabel v-if="data.masterProduct?.units" :units="data.masterProduct?.units"
+				:unit="data.masterProduct?.unit" class="mr-2" />
 			<span class="align-middle">
 				{{ data.masterProduct.name }}
 			</span>
@@ -155,7 +154,8 @@ const tradeUnitTags = computed(() => {
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Master Product Tags -->
 			<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
-				<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+				<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
+					class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
 					{{ tag.name }}
 				</span>
 			</dd>
@@ -181,12 +181,18 @@ const tradeUnitTags = computed(() => {
 				</div>
 			</div>
 		</div>
-		
-		<MasterProductSummary
-			:data="data.masterProduct"
-			:gpsr="data.gpsr"
+
+		<TradeUnitMasterProductSummary
+			:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}" 
+			:gpsr="data.gpsr" 
 			:properties="data.properties"
-			:public-attachment="[]"
+			:public-attachment="[]" 
 		/>
+
+		<div>
+			<AttachmentCard :private="data.attachment_box?.private" />
+		</div>
 	</div>
+
+	
 </template>
