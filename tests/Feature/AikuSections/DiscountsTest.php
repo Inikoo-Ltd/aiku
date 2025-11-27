@@ -11,7 +11,6 @@
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\StoreShop;
-use App\Actions\Discounts\Offer\ActivatePermanentOffer;
 use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\HydrateOffers;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
@@ -169,7 +168,7 @@ test('UI show offer campaigns', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $offerCampaign->name)
                     ->etc()
             )

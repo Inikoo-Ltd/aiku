@@ -119,8 +119,8 @@ const updateDataDisplayType = (value: string) => {
 	<div class="relative px-1 md:px-4 md:mt-4">
 		<div class="mb-2 flex justify-between gap-x-2">
 			<!-- Section: Period options list -->
-			<nav class="isolate rounded border p-1 flex flex-wrap items-center w-full" aria-label="Tabs">
-				<div v-if="layout.app.environment === 'local'" class="mr-1">
+			<nav class="isolate rounded border py-1 px-2 flex flex-wrap gap-1 items-center w-full" aria-label="Tabs">
+				<div v-if="layout.app.environment === 'local'">
 					<DashboardCustomDateRange :intervals="intervals" />
 				</div>
 
@@ -134,7 +134,7 @@ const updateDataDisplayType = (value: string) => {
 							: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
 					]"
 					v-tooltip="interval.label"
-					class="relative flex-1 rounded py-1 md:py-1.5 px-2 md:px-4 text-center w-fit text-sm cursor-pointer select-none">
+					class="relative flex-grow rounded py-1 md:py-1.5 px-2 md:px-4 text-center w-fit text-sm cursor-pointer select-none">
 					<span :class="isLoadingInterval === interval.value ? 'opacity-0 truncate' : ''">
 						{{ interval.label }}
 					</span>

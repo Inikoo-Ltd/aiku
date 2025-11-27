@@ -11,7 +11,6 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
-use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;

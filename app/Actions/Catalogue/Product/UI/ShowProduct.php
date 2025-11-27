@@ -311,8 +311,8 @@ class ShowProduct extends OrgAction
                 ];
         }
 
-        if($product->webpage?->canonical_url) {
-            $actions[] = 
+        if ($product->webpage?->canonical_url) {
+            $actions[] =
                 [
                     'type'  => 'button',
                     'style' => 'edit',

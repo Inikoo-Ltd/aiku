@@ -10,7 +10,6 @@ namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
-use App\Http\Resources\Inventory\OrgStockResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;

@@ -83,7 +83,7 @@ class EditShop extends OrgAction
         ];
 
         // Disable Widget_Key input if shop doesn't have any related website
-        if($shop->website){
+        if ($shop->website) {
             $helpPortalFields['widget_key'] = [
                 'type'          => 'input',
                 'placeholder'   => 'keyExample',

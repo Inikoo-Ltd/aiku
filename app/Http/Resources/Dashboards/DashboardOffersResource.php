@@ -42,7 +42,7 @@ class DashboardOffersResource extends JsonResource
 
     private function getDashboardTableColumnFromArray(string $scope): array
     {
-        $intervals = DateIntervalEnum::casesWithoutCustom();
+        $intervals = DateIntervalEnum::cases();
         $columns = [];
 
         foreach ($intervals as $interval) {

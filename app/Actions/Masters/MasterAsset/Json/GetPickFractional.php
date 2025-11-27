@@ -9,30 +9,28 @@
 namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
-use App\Models\SysAdmin\Group;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetPickFractional extends GrpAction
 {
-    public function asController(ActionRequest $request): Array
+    public function asController(ActionRequest $request): array
     {
         $this->initialisation(group(), $request);
 
         return $this->handle();
     }
 
-    public function handle(): Array
-    {   
+    public function handle(): array
+    {
         return riseDivisor(divideWithRemainder(findSmallestFactors($this->validatedData['numerator'])), $this->validatedData['denominator']);
     }
 
-    public function jsonResponse(Array $pickFractional): Array
+    public function jsonResponse(array $pickFractional): array
     {
         return $pickFractional;
     }
 
-    public function rules(): Array
+    public function rules(): array
     {
         $rules = [
             'numerator'     => ['sometimes', 'numeric'],

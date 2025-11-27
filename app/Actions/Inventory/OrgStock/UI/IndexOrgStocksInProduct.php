@@ -14,7 +14,6 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
 use App\Services\QueryBuilder;
-use Illuminate\Support\Facades\DB;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;

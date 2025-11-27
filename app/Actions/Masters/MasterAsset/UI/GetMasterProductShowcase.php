@@ -16,6 +16,8 @@ use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Helpers\NaturalLanguage;
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
+use App\Models\Goods\TradeUnit;
 
 class GetMasterProductShowcase
 {
@@ -28,7 +30,6 @@ class GetMasterProductShowcase
 
         $tradeUnits = $masterAsset->tradeUnits;
         $tradeUnits->loadMissing(['ingredients']);
-
         $properties = [
             'country_of_origin' => NaturalLanguage::make()->country($masterAsset->country_of_origin),
             'ingredients'       => $masterAsset->marketing_ingredients,
@@ -54,17 +55,32 @@ class GetMasterProductShowcase
             'oxidising'                  => $masterAsset->pictogram_oxidising,
         ];
 
-        return [
-            'images' => $this->getImagesData($masterAsset),
-            'main_image'      => $masterAsset->imageSources(),
-            'masterProduct' => MasterProductResource::make($masterAsset)->toArray(request()),
-            'properties'           => $properties,
-            'gpsr'                 => $gpsr,  
-            'attachment_box'  => [
-                'public' => []
-            ],
 
+        $dataTradeUnits = [];
+        if ($masterAsset->tradeUnits) {
+            $dataTradeUnits = $this->getDataTradeUnit($masterAsset->tradeUnits);
+        }
+
+
+        return [
+            'images'                => $this->getImagesData($masterAsset),
+            'main_image'            => $masterAsset->imageSources(),
+            'masterProduct'         => MasterProductResource::make($masterAsset)->toArray(request()),
+            'properties'            => $properties,
+            'trade_units'           => $dataTradeUnits,
+            'gpsr'                  => $gpsr,
+            'attachment_box'        => [
+                'public'      => [],
+                'private'     => []
+            ]
         ];
+    }
+
+    private function getDataTradeUnit($tradeUnits): array
+    {
+        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
+            return GetTradeUnitShowcase::run($tradeUnit);
+        })->toArray();
     }
 
 

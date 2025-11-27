@@ -129,14 +129,14 @@ class EditMasterProduct extends GrpAction
                 ->toArray();
 
         $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
-                return array_merge(
+            return array_merge(
                 ['quantity' => (int) $t->pivot->quantity],
                 ['fraction'   =>  $t->pivot->quantity /  $packedIn[$t->id]],
                 ['packed_in'   =>  $packedIn[$t->id]],
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity /  $packedIn[$t->id])), $packedIn[$t->id])],
-                    $t->toArray()
-                );
-            });
+                $t->toArray()
+            );
+        });
 
         return [
             [
@@ -266,7 +266,7 @@ class EditMasterProduct extends GrpAction
                     'master_family_id'   => [
                         'type'        => 'select_infinite',
                         'label'       => __('Master Family'),
-                        'value'       => $masterProduct->masterFamily->id,
+                        'value'       => $masterProduct->masterFamily->id ?? null,
                         'options'   => [
                                 [
                                     'code' =>  $masterProduct->masterFamily->code ?? null,

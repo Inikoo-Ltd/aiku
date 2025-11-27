@@ -8,19 +8,17 @@
 
 namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\Masters\MasterCollection\DeleteImageFromMasterCollection;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Collection;
 use App\Models\Helpers\Media;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Log;
 
 class DeleteImageFromCollection extends OrgAction
 {
     public function handle(Collection $collection, Media $media): Collection
     {
 
-       $collection->images()->detach($media->id);
+        $collection->images()->detach($media->id);
 
         $imageColumns = [
             'image_id',

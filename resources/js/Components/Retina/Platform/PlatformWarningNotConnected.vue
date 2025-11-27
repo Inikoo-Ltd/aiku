@@ -29,7 +29,11 @@ const onClickReconnect = async () => {
         if (response.status !== 200) {
             throw new Error('Something went wrong. Try again later.')
         } else {
-            window.open(response.data, '_blank');
+            if(! response.data.id) {
+                window.open(response.data, '_blank');
+            } else {
+                window.location.href = ''
+            }
         }
     } catch (error: any) {
         notify({

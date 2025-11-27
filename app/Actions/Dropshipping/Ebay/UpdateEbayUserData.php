@@ -26,15 +26,28 @@ class UpdateEbayUserData extends OrgAction
 
     public $commandSignature = 'update:ebay {customerSalesChannel}';
 
+    /**
+     * @throws \Exception
+     */
     public function handle(EbayUser $ebayUser): EbayUser
     {
+        if ($ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key) {
+            return $ebayUser;
+        }
+
         $ebayUser->createOptInProgram();
         $ebayUser->createFulfilmentPolicy([]);
         $ebayUser->createPaymentPolicy();
         $ebayUser->createReturnPolicy();
+
         $fulfilmentPolicies = $ebayUser->getFulfilmentPolicies();
+        $fulfilmentPolicyId = Arr::get($fulfilmentPolicies, 'fulfillmentPolicies.0.fulfillmentPolicyId');
+
         $paymentPolicies = $ebayUser->getPaymentPolicies();
+        $paymentPolicyId = Arr::get($paymentPolicies, 'paymentPolicies.0.paymentPolicyId');
+
         $returnPolicies = $ebayUser->getReturnPolicies();
+        $returnPolicyId = Arr::get($returnPolicies, 'returnPolicies.0.returnPolicyId');
 
         $defaultLocationData = match ($ebayUser->marketplace ?? Arr::get($ebayUser->customer?->shop?->settings, 'ebay.marketplace_id', 'EBAY_GB')) {
             'EBAY_ES' => [
@@ -60,14 +73,14 @@ class UpdateEbayUserData extends OrgAction
         $ebayUser->createInventoryLocation($defaultLocationData);
 
         return UpdateEbayUser::run($ebayUser, [
-            'fulfillment_policy_id' => Arr::get($fulfilmentPolicies, 'fulfillmentPolicies.0.fulfillmentPolicyId'),
-            'payment_policy_id' => Arr::get($paymentPolicies, 'paymentPolicies.0.paymentPolicyId'),
-            'return_policy_id' => Arr::get($returnPolicies, 'returnPolicies.0.returnPolicyId'),
+            'fulfillment_policy_id' => $fulfilmentPolicyId,
+            'payment_policy_id' => $paymentPolicyId,
+            'return_policy_id' => $returnPolicyId,
             'location_key' => Arr::get($defaultLocationData, 'locationKey'),
         ]);
     }
 
-    public function asCommand(Command $command)
+    public function asCommand(Command $command): void
     {
         $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
 
