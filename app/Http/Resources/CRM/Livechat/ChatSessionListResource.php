@@ -3,6 +3,7 @@
 namespace App\Http\Resources\CRM\Livechat;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 
 class ChatSessionListResource extends JsonResource
 {
@@ -21,20 +22,15 @@ class ChatSessionListResource extends JsonResource
 
         $activeAssignment = null;
         if ($this->relationLoaded('assignments')) {
-            $activeAssignment = $this->assignments->where('status', 'active')->first();
+            $activeAssignment = $this->assignments->first();
         }
 
-        $userData = [
-            'name' => 'Guest ' . substr($this->guest_identifier, -6),
-            'email' => null,
-            'avatar' => null,
-        ];
+        $userData = false;
 
         if ($this->relationLoaded('webUser') && $this->webUser) {
             $userData = [
-                'name' => $this->webUser->name,
+                'name' => $this->webUser->customer->contact_name,
                 'email' => $this->webUser->email,
-                'avatar' => $this->webUser->avatar_url ?? null,
             ];
         }
 
@@ -45,10 +41,10 @@ class ChatSessionListResource extends JsonResource
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
             'created_at_timestamp' => $this->created_at->timestamp,
 
-            'user' => $userData,
+            'customer' => $userData,
 
             'last_message' => $lastMessage ? [
-                'message' => $this->truncateMessage($lastMessage->message),
+                'message' => $this->truncateMessage($lastMessage->message_text),
                 'sender_type' => $lastMessage->sender_type,
                 'created_at' => $lastMessage->created_at->format('Y-m-d H:i:s'),
                 'created_at_timestamp' => $lastMessage->created_at->timestamp,
@@ -62,15 +58,14 @@ class ChatSessionListResource extends JsonResource
             ],
 
             'assigned_agent' => $activeAssignment ? [
-                'id' => $activeAssignment->agent->id,
-                'name' => $activeAssignment->agent->user->name,
+                'id' => $activeAssignment->chatAgent->id,
+                'name' => $activeAssignment->chatAgent->user->contact_name ,
             ] : null,
 
             'unread_count' => $this->relationLoaded('messages')
                 ? $this->messages->where('is_read', false)->count()
                 : 0,
 
-            // Metadata
             'message_count' => $this->relationLoaded('messages')
                 ? $this->messages->count()
                 : 0,

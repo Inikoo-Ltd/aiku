@@ -4,7 +4,6 @@ namespace App\Actions\CRM\ChatSession;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -19,15 +18,16 @@ class GetChatSessions
     {
 
         $query = ChatSession::with([
-            'messages' => function ($query) {
-                $query->latest()->limit(1);
+            'messages' => function ($q) {
+                $q->latest()->limit(1);
             },
             'webUser',
             'assignments.chatAgent.user'
-        ])->latest()->get();
+        ])
+        ->whereHas('messages')
+        ->latest();
 
 
- // Filter by status
         if (isset($filters['status']) && $filters['status']) {
             $query->where('status', $filters['status']);
         }
@@ -46,26 +46,37 @@ class GetChatSessions
             }
         }
 
-        if (isset($filters['has_unread']) && $filters['has_unread']) {
-            $query->whereHas('messages', function ($q) {
-                $q->where('is_read', false);
-            });
-        }
 
         $limit = $filters['limit'] ?? 20;
 
-        $sessions = $query->paginate($limit);
+        return $query->paginate($limit);
 
-        return $sessions;
     }
 
-    public function asController(Request $request): JsonResponse
+    public function asController(Request $request): Array
     {
         $validated = $request->validate($this->rules());
 
         $sessions = $this->handle($validated);
 
-        return $this->jsonResponse($sessions);
+        $validated = $request->validate($this->rules());
+
+        $sessions = $this->handle($validated);
+
+        return [
+            'success' => true,
+            'message' => 'Chat sessions retrieved successfully',
+            'data' => [
+                'sessions' => ChatSessionListResource::collection($sessions),
+                'pagination' => [
+                    'current_page' => $sessions->currentPage(),
+                    'per_page' => $sessions->perPage(),
+                    'total' => $sessions->total(),
+                    'last_page' => $sessions->lastPage(),
+                    'has_more' => $sessions->hasMorePages(),
+                ]
+            ]
+        ];
     }
 
     public function rules(): array
@@ -94,21 +105,10 @@ class GetChatSessions
         return null;
     }
 
-    public function jsonResponse($sessions): JsonResponse
+    public function jsonResponse($result): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Chat sessions retrieved successfully',
-            'data' => [
-                'sessions' => ChatSessionListResource::collection($sessions),
-                'pagination' => [
-                    'current_page' => $sessions->currentPage(),
-                    'per_page' => $sessions->perPage(),
-                    'total' => $sessions->total(),
-                    'last_page' => $sessions->lastPage(),
-                    'has_more' => $sessions->hasMorePages(),
-                ]
-            ]
-        ]);
+         return response()->json($result);
+
+
     }
 }

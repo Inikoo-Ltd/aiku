@@ -10,10 +10,15 @@ enum ChatEventTypeEnum: string
 
     case OPEN = 'open';
     case AI_REPLY = 'ai_reply';
-    case TRANSFER_REQUEST = 'transfer_request';
+    case TRANSFER = 'transfer_request';
     case TRANSFER_ACCEPT = 'transfer_accept';
     case TRANSFER_REJECT = 'transfer_reject';
     case TRANSLATE_MESSAGE = 'translate_message';
+
+    case TRANSFER_TO_AGENT = 'transfer_to_agent';
+
+    case ASSIGNMENT_TO_SELF = 'assignment_to_self';
+
     case CLOSE = 'close';
     case RATING = 'rating';
     case NOTE = 'note';
@@ -35,6 +40,8 @@ enum ChatEventTypeEnum: string
             'note' => __('Note Added'),
             'reply'=> __('Reply'),
             'send'=> __('Send'),
+            'transfer_to_agent'=> __('Transfer to Agent'),
+            'Assignment_to_self'=> __('Assignment to Self'),
         ];
     }
 
@@ -95,7 +102,8 @@ enum ChatEventTypeEnum: string
                 'tooltip'=> __('Message Sent'),
                 'icon'=> 'fas fa-paper-plane',
                 'class'=> 'text-blue-500',
-            ]
+            ],
+
         ];
     }
 }

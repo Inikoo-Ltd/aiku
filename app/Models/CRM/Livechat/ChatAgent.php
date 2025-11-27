@@ -106,7 +106,6 @@ class ChatAgent extends Model
     }
 
 
-
     public function isAvailableForChat(): bool
     {
         return $this->is_online
