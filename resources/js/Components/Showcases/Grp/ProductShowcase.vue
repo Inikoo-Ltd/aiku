@@ -4,8 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import ImagePrime from "primevue/image"
 import { ref, computed, inject } from "vue"
-import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
-import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
+import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo} from "@fal"
+import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle, faTimesCircle } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
@@ -85,6 +85,11 @@ const props = defineProps<{
 			product_languages: string | null
 			warnings: string | null
 		}
+		availability_status?: {
+			is_for_sale: boolean           
+			product_state: string        
+			product_state_icon: []
+		}
 		images: any
 		main_image: ImageTS
 	}
@@ -110,8 +115,8 @@ const tradeUnitBrands = computed(() => {
 </script>
 
 <template>
-	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
-		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
+	<div class="w-full px-4 py-3 mb-3 shadow-sm grid grid-cols-2">
+		<div class="text-xl font-semibold text-gray-800 whitespace-pre-wrap justify-self-start">
 			<!-- Units box -->
 			<ProductUnitLabel
 				v-if="data.product?.data?.units"
@@ -124,7 +129,23 @@ const tradeUnitBrands = computed(() => {
 			<span class="align-middle">
 				{{ data.product.data.name }}
 			</span>
-		</span>
+		</div>
+		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center">
+			<span 
+			v-tooltip="trans('Product State: ') + data.availability_status.product_state_icon['tooltip'] "
+			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help me-2"
+			:class="data.availability_status.product_state_icon['class'].replace('text', 'border')">
+				{{ data.availability_status.product_state_icon['tooltip'] }} 
+				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']"/>
+			</span>
+			<span 
+			v-tooltip="data.availability_status.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
+			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
+			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
+				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
+				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+			</span>
+		</div>
 	</div>
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->

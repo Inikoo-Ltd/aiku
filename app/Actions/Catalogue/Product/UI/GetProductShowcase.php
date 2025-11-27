@@ -79,8 +79,12 @@ class GetProductShowcase
             'images'          => $this->getImagesData($product),
             'main_image'      => $product->imageSources(),
             'attachment_box'  => $this->getAttachmentData($product),
-            'webpage_url'     => $webpageUrl
-
+            'webpage_url'     => $webpageUrl,
+            'availability_status'     => [
+                'is_for_sale'           => $product->is_for_sale,
+                'product_state'         => $product->state->labels()[$product->state->value],
+                'product_state_icon'    => $product->state->stateIcon()[$product->state->value],
+            ],
         ];
     }
 
