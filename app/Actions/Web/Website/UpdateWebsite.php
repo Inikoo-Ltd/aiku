@@ -58,7 +58,7 @@ class UpdateWebsite extends OrgAction
             $shop = $website->shop;
             UpdateShop::run($shop, $shopUpdateData);
         }
-        
+
         if (Arr::has($modelData, "jira_help_desk_widget")) {
             data_set($modelData, "settings.jira_help_desk_widget", Arr::pull($modelData, "jira_help_desk_widget"));
         }

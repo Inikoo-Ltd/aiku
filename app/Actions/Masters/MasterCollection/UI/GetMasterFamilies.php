@@ -47,7 +47,7 @@ class GetMasterFamilies extends GrpAction
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
         $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
-        if($scope){
+        if ($scope) {
             $queryBuilder->whereNotIn('master_product_categories.id', $scope->masterFamilies()->pluck('model_id'));
         }
 

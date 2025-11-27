@@ -9,7 +9,6 @@
 
 namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\Masters\MasterCollection\UpdateMasterCollectionImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Collection;

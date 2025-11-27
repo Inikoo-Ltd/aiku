@@ -95,7 +95,7 @@ class ShowTradeUnit extends GrpAction
                 TradeUnitTabsEnum::IMAGES->value => $this->tab == TradeUnitTabsEnum::IMAGES->value ?
                     fn () => GetTradeUnitImages::run($tradeUnit)
                     : Inertia::lazy(fn () => GetTradeUnitImages::run($tradeUnit)),
-                
+
                 TradeUnitTabsEnum::MASTER_PRODUCTS->value => $this->tab == TradeUnitTabsEnum::MASTER_PRODUCTS->value ?
                     fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))
                     : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))),

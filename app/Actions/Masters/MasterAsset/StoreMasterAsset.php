@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
@@ -48,13 +49,20 @@ class StoreMasterAsset extends OrgAction
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
-        // Update logic. 
-        // if Trade Units only 1: Product unit follow trade unit, the units follow trade unit
-        // if Trade Units > 1: Product unit Label always 'bundle', the units always '1'
-        if(count($tradeUnits) > 1){
+
+        $numberOfTradeUnits = count($tradeUnits);
+        if ($numberOfTradeUnits > 1) {
             data_set($modelData, 'units', 1);
             data_set($modelData, 'unit', 'bundle');
+        } elseif ($numberOfTradeUnits === 1) {
+            $single = Arr::first($tradeUnits);
+            data_set($modelData, 'units', $single['quantity'] ?? 1);
+        } else {
+            data_set($modelData, 'units', '1');
         }
+
+
+
 
         data_set($modelData, 'group_id', $masterFamily->group_id);
 
@@ -129,6 +137,9 @@ class StoreMasterAsset extends OrgAction
 
         $masterAsset->tradeUnits()->sync($tradeUnits);
         $masterAsset->stocks()->sync($stocks);
+        // Hydrate GSPR & Properties from trade units
+        MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
+
         $masterAsset->refresh();
 
     }

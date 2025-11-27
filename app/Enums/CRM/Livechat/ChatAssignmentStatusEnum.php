@@ -10,8 +10,6 @@ namespace App\Enums\CRM\Livechat;
 
 use App\Enums\EnumHelperTrait;
 
-
-
 enum ChatAssignmentStatusEnum: string
 {
     use EnumHelperTrait;

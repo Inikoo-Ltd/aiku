@@ -69,7 +69,7 @@ class RepairProductPricesAndUnits
         }
         data_set($dataToUpdate, 'trade_units', $tradeUnits);
 
-        print_r($dataToUpdate);
+        // print_r($dataToUpdate);
 
         UpdateProduct::make()->action($product, $dataToUpdate);
     }

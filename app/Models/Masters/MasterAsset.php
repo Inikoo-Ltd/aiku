@@ -99,6 +99,35 @@ use Spatie\Translatable\HasTranslations;
  * @property MasterAssetStocksStatusEnum|null $stocks_status
  * @property MasterAssetProductsStatusEnum|null $products_status
  * @property array<array-key, mixed>|null $offers_data
+ * @property string|null $un_number
+ * @property string|null $un_class
+ * @property string|null $packing_group
+ * @property string|null $proper_shipping_name
+ * @property string|null $hazard_identification_number
+ * @property string|null $gpsr_manufacturer
+ * @property string|null $gpsr_eu_responsible
+ * @property string|null $gpsr_warnings
+ * @property string|null $gpsr_manual
+ * @property string|null $gpsr_class_category_danger
+ * @property string|null $gpsr_class_languages
+ * @property bool $pictogram_toxic
+ * @property bool $pictogram_corrosive
+ * @property bool $pictogram_explosive
+ * @property bool $pictogram_flammable
+ * @property bool $pictogram_gas
+ * @property bool $pictogram_environment
+ * @property bool $pictogram_health
+ * @property bool $pictogram_oxidising
+ * @property bool $pictogram_danger
+ * @property string|null $cpnp_number
+ * @property string|null $scpn_number
+ * @property string|null $ufi_number
+ * @property string|null $country_of_origin
+ * @property string|null $tariff_code
+ * @property string|null $duty_rate
+ * @property string|null $hts_us
+ * @property string|null $marketing_ingredients
+ * @property int|null $origin_country_id
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

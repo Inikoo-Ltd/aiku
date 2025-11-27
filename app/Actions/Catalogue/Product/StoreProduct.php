@@ -17,7 +17,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUn
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
@@ -120,7 +120,7 @@ class StoreProduct extends OrgAction
 
 
 
-            ProductHydrateTradeUnitsFields::run($product);
+            ProductHydrateHeathAndSafetyFromTradeUnits::run($product);
             $product = ModelHydrateSingleTradeUnits::run($product);
             $product = ProductHydrateForSale::run($product);
             ProductHydrateGrossWeightFromTradeUnits::run($product);

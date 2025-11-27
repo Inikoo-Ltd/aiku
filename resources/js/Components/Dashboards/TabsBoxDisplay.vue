@@ -42,12 +42,31 @@ const props = defineProps<{
     current?: string | number
 }>()
 
+
+const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
+    if (!amount) return 0
+    if (!currencyCode) {
+        return amount || 0
+    }
+
+    const num = typeof amount === "string" ? parseFloat(amount) : amount
+
+    const formatter = new Intl.NumberFormat(locale?.language?.code, {
+        style: (currencyCode) ? "currency" : "decimal",
+        currency: currencyCode || '',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    })
+
+    return formatter.format(num);
+}
+
 const renderLabelBasedOnType = (label?: string | number, type?: string, options?: { currency_code?: string }) => {
     if (type === 'number') {
         return locale.number(Number(label))
     } else if (type === 'currency') {
         if (!options?.currency_code) return label
-        return locale.currencyFormat(options?.currency_code, Number(label))
+        return currencyFormat(options?.currency_code, Number(label))
     } else {
         return label || '-'
     }
@@ -88,18 +107,26 @@ const getRoute = (tabSlug) => {
                         v-for="tab in box.tabs"
                         :key="tab.tab_slug"
                         class="w-full flex flex-col items-center"
-                        @click="router.get(getRoute(tab.tab_slug))"
+                        @click="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? null : router.get(getRoute(tab.tab_slug))"
                     >
                         <div class="group flex items-center gap-1 tabular-nums relative text-xl px-2 mb-1 cursor-default">
                             <div class="mx-auto text-center">
                                 <template v-if="tab.icon || tab.icon_data">
-                                    <Icon v-if="tab.icon_data" :data="tab.icon_data" class="text-xl group-hover:cursor-pointer" />
+                                    <Icon
+                                        v-if="tab.icon_data"
+                                        :data="tab.icon_data"
+                                        class="text-xl"
+                                        :class="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? 'cursor-not-allowed' : 'group-hover:cursor-pointer'"
+                                    />
                                     <FontAwesomeIcon v-else :icon="tab.icon" class="text-xl" fixed-width aria-hidden="true" />
                                 </template>
                             </div>
 
                             <div class="relative text-center">
-                                <span class="inline group-hover:cursor-pointer group-hover:underline opacity-80 group-hover:opacity-100 transition-all">
+                                <span
+                                    class="inline opacity-80 group-hover:opacity-100 transition-all"
+                                    :class="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? 'cursor-not-allowed' : 'group-hover:cursor-pointer group-hover:underline'"
+                                >
                                   {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
                                 </span>
                             </div>

@@ -293,28 +293,24 @@ const openCreateEbayModal = async () => {
                 steps.value[0].status = "complete";
                 steps.value[1].status = "current";
                 steps.value[2].status = "upcoming";
-                steps.value[3].status = "upcoming";
                 break
             case 'marketplace':
+                currentStep.value = 1
+                steps.value[0].status = "complete";
+                steps.value[1].status = "current";
+                steps.value[2].status = "upcoming";
+                break
+            case 'auth':
                 currentStep.value = 2
                 steps.value[0].status = "complete";
                 steps.value[1].status = "complete";
                 steps.value[2].status = "current";
-                steps.value[3].status = "upcoming";
-                break
-            case 'auth':
-                currentStep.value = 3
-                steps.value[0].status = "complete";
-                steps.value[1].status = "complete";
-                steps.value[2].status = "complete";
-                steps.value[3].status = "current";
                 break
             default:
                 currentStep.value = 0
                 steps.value[0].status = "current";
                 steps.value[1].status = "upcoming";
                 steps.value[2].status = "upcoming";
-                steps.value[3].status = "upcoming";
         }
     }
 
@@ -328,7 +324,7 @@ provide("customerSalesChannelId", customerSalesChannelId);
 
 const steps = ref([
     { name: "Ebay Account Name", status: "current" },
-    { name: "Ebay Site", status: "upcoming" },
+    // { name: "Ebay Site", status: "upcoming" },
     { name: "Ebay Auth Key", status: "upcoming" },
     // { name: "Ebay Listing Profile Name", status: "upcoming" },
     { name: "Ebay Listing Profile Confirmation", status: "upcoming" }
@@ -338,7 +334,7 @@ provide("steps", steps);
 
 const stepComponents = [
     EbayAccountNameForm,
-    EbaySiteForm,
+    // EbaySiteForm,
     EbayAuthKeyForm,
     // EbayListingProfileNameForm,
     EbayListingProfileConfirmationForm
@@ -408,7 +404,7 @@ provide("goNext", goNext);
             </div>
 
             <!-- Section: Tiktok -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                     <img
@@ -438,7 +434,7 @@ provide("goNext", goNext);
                     </a>
 
                 </div>
-            </div>
+            </div>-->
 
             <!-- Section: Woocommerce -->
             <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
@@ -511,7 +507,7 @@ provide("goNext", goNext);
             </div>
 
             <!-- Section: Amazon -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                     <img
@@ -543,10 +539,10 @@ provide("goNext", goNext);
                     <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
 
                 </div>
-            </div>
+            </div>-->
 
             <!-- Section: Magento -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                      <img src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
@@ -572,7 +568,7 @@ provide("goNext", goNext);
                     />
                     <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
-            </div>
+            </div>-->
         </div>
     </div>
 
@@ -690,7 +686,6 @@ provide("goNext", goNext);
                     @click="() => onSubmitEbay()"
                     :label="trans('Connect')"
                     full
-                    iconRight="fas fa-arrow-right"
                 />
             </div>
         </div>
