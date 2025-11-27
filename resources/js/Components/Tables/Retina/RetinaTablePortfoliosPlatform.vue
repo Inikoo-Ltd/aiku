@@ -568,8 +568,14 @@ const calculateVat = (price: number) => {
                 <div v-else>
                     {{ trans("Price:") }} {{ locale.currencyFormat(product.currency_code, product.price) }}
                 </div>
-                <div>
-                    {{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, product.customer_price) }}
+                <div v-if="customerSalesChannel.include_vat">
+                    {{ trans("RRP (include VAT):") }} {{ locale.currencyFormat(product.currency_code, product.customer_price) }}
+                </div>
+                <div v-else-if="platform_data.type === 'ebay'">
+                    {{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, (product.customer_price * 0.8)) }}
+                </div>
+                <div v-else>
+                    {{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, (product.customer_price)) }}
                 </div>
             </div>
 
