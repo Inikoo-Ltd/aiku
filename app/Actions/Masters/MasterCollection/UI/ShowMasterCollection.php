@@ -29,7 +29,6 @@ use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Masters\MasterCollection\UI\GetMasterCollectionsImages;
 
 class ShowMasterCollection extends GrpAction
 {

@@ -18,13 +18,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property array<array-key, mixed>|null $payload
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\CRM\Livechat\ChatSession $chatSession
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent fromActor(\App\Enums\CRM\Livechat\ChatActorTypeEnum $actorType, ?int $actorId = null)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent ofType(\App\Enums\CRM\Livechat\ChatEventTypeEnum $eventType)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent ratings()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent transfers()
  * @mixin \Eloquent
  */
 class ChatEvent extends Model

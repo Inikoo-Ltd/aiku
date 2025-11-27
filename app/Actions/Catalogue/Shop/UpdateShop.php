@@ -111,11 +111,11 @@ class UpdateShop extends OrgAction
         if (Arr::exists($modelData, 'widget_key')) {
             $widgetKey = Arr::pull($modelData, 'widget_key');
             UpdateWebsite::make()->action(
-                    website: $shop->website,
-                    modelData: ['jira_help_desk_widget' => $widgetKey],
-                    hydratorsDelay: 0,
-                    strict: false,
-                    audit: true
+                website: $shop->website,
+                modelData: ['jira_help_desk_widget' => $widgetKey],
+                hydratorsDelay: 0,
+                strict: false,
+                audit: true
             );
         }
 

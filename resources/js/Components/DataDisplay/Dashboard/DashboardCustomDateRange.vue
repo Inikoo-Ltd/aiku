@@ -2,7 +2,7 @@
 import { Popover } from 'primevue'
 import { router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
-import { onBeforeMount, ref } from 'vue'
+import { onBeforeMount, ref, computed } from 'vue'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -21,16 +21,88 @@ const formattedDateRange = (date: string[] | Date[]) => {
     return date?.map(dateString => {
         const date = dateString ? new Date(dateString) : new Date();
         const year = date.getFullYear();
-        const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Ensure two digits for month
-        const day = date.getDate().toString().padStart(2, '0'); // Ensure two digits for day
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
 
         return `${year}${month}${day}`;
     }).join('-')
 }
 
 const isLoadingReload = ref(false);
-
 const dateFilterValue = ref([new Date(), new Date()]);
+
+// Computed property to check which quarter is currently selected
+const selectedQuarter = computed(() => {
+    if (!dateFilterValue.value || dateFilterValue.value.length !== 2) return null;
+
+    const currentRange = formattedDateRange(dateFilterValue.value);
+    const currentYear = new Date().getFullYear();
+
+    // Check each quarter
+    for (let q = 1; q <= 4; q++) {
+        const quarterDates = getQuarterDates(q);
+        const quarterRange = formattedDateRange(quarterDates);
+
+        if (currentRange === quarterRange) {
+            return q;
+        }
+    }
+
+    return null;
+});
+
+// Function to get quarter date ranges
+const getQuarterDates = (quarter: number) => {
+    const currentYear = new Date().getFullYear();
+    let startDate, endDate;
+
+    switch (quarter) {
+        case 1: // Q1: Jan 1 - Mar 31
+            startDate = new Date(currentYear, 0, 1);
+            endDate = new Date(currentYear, 2, 31);
+            break;
+        case 2: // Q2: Apr 1 - Jun 30
+            startDate = new Date(currentYear, 3, 1);
+            endDate = new Date(currentYear, 5, 30);
+            break;
+        case 3: // Q3: Jul 1 - Sep 30
+            startDate = new Date(currentYear, 6, 1);
+            endDate = new Date(currentYear, 8, 30);
+            break;
+        case 4: // Q4: Oct 1 - Dec 31
+            startDate = new Date(currentYear, 9, 1);
+            endDate = new Date(currentYear, 11, 31);
+            break;
+        default:
+            return [new Date(), new Date()];
+    }
+
+    return [startDate, endDate];
+};
+
+// Function to set quarter filter
+const setQuarterFilter = (quarter: number) => {
+    const quarterDates = getQuarterDates(quarter);
+    dateFilterValue.value = quarterDates;
+
+    router.patch(
+        route('grp.models.profile.update'),
+        {
+            settings: {
+                selected_interval: 'ctm',
+                custom_range_interval: formattedDateRange(quarterDates)
+            }
+        },
+        {
+            onStart: () => {
+                isLoadingReload.value = true
+            },
+            onFinish: () => {
+                isLoadingReload.value = false
+            }
+        }
+    );
+};
 
 const onUpdateDatePicker = (newValue) => {
     // router.get(
@@ -163,13 +235,41 @@ const _popover = ref(null);
 
         <Popover ref="_popover">
             <div class="border-gray-300 rounded-md right-0 z-10 xmt-3 w-fit transform px-4 pt-4 pb-6">
-                <div class="flex items-center gap-x-3 mb-3">
-                    <div @click="() => resetDatePicker()" class="text-sm text-red-400 hover:text-red-600 cursor-pointer">
-                        {{ trans("Reset filter by dates") }}
+                <div class="mb-4">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-500 mb-2">{{ trans("Quarter This Year") }}</div>
+                        <div class="flex items-center gap-x-3 mb-4">
+                            <div @click="resetDatePicker" class="text-sm text-red-400 hover:text-red-600 cursor-pointer">
+                                {{ trans("Reset filter by dates") }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button
+                            v-for="q in 4"
+                            :key="q"
+                            @click="setQuarterFilter(q)"
+                            class="px-3 py-2 text-xs rounded-md transition-colors font-medium"
+                            :class="[
+                                selectedQuarter === q
+                                    ? 'bg-indigo-500 text-white shadow-sm'
+                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            ]"
+                        >
+                            Q{{ q }}
+                        </button>
                     </div>
                 </div>
 
-                <VueDatePicker v-model="dateFilterValue" @update:modelValue="(v) => onUpdateDatePicker(v)" range multi-calendars inline auto-apply :enableTimePicker="false" />
+                <VueDatePicker
+                    v-model="dateFilterValue"
+                    @update:modelValue="(v) => onUpdateDatePicker(v)"
+                    range
+                    multi-calendars
+                    inline
+                    auto-apply
+                    :enableTimePicker="false"
+                />
 
                 <div class="grid grid-cols-2 text-sm mt-3">
                     <div class="text-left px-1.5">

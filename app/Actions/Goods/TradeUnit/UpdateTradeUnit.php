@@ -163,12 +163,12 @@ class UpdateTradeUnit extends GrpAction
                 MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
             }
             // Hydrate Products
-            if($tradeUnit->products->count() > 500){
+            if ($tradeUnit->products->count() > 500) {
                 // If trade unit is linked with more than 500 products, use horizon
                 foreach ($tradeUnit->products as $product) {
                     ProductHydrateHeathAndSafetyFromTradeUnits::dispatch($product);
                 }
-            }else{
+            } else {
                 // If trade unit is linked with 500 or less products brute force it
                 foreach ($tradeUnit->products as $product) {
                     ProductHydrateHeathAndSafetyFromTradeUnits::run($product);
