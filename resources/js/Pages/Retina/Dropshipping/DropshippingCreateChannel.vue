@@ -264,6 +264,10 @@ const isModalEbayDuplicate = ref(false)
             isModalEbayDuplicate.value = true
             // router.get(window.location.origin + window.location.pathname)
         }
+
+        if(route().params?.['continueEbayRegistration']) {
+            openCreateEbayModal();
+        }
     })
 
 const isModalCreateEbay = ref(false);
