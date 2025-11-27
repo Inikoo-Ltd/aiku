@@ -19,6 +19,7 @@ import AttachmentCard from "@/Components/AttachmentCard.vue"
 import ProductPriceGrp from "@/Components/Product/ProductPriceGrp.vue"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
+import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -90,123 +91,83 @@ const props = defineProps<{
 	handleTabUpdate?: Function
 }>()
 
-const locale = inject("locale", aikuLocaleStructure)
-const imagesSetup = ref(
-	props?.data?.images?.filter((item: any) => item.type === "image")
-		.map((item : any) => ({
-			label: item.label,
-			column: item.column_in_db,
-			images: item.images,
-		}))
-)
 
-const videoSetup = ref(
-	props.data.images.find(item => item.type === "video") || null
-)
+const tradeUnitTags = computed(() => {
+	const list = props.data?.trade_units ?? []
+	const tags = list.flatMap(item => item.tags ?? [])
+	const unique = new Map(tags.map(tag => [tag.id, tag]))
+	return [...unique.values()]
+})
 
 
-const validImages = computed(() =>
-	imagesSetup.value
-		.filter(item => item.images) // only keep if images exist
-		.flatMap(item => {
-			const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
-			return images.map(img => ({
-				source: img,
-				thumbnail: img
-			}))
-		})
-)
+const tradeUnitBrands = computed(() => {
+  return (props.data?.trade_units ?? [])
+    .flatMap(unit => unit?.brand ?? [])
+})
+
+
+
 </script>
 
 <template>
-	<div
-		class="w-full  px-4 py-3 mb-3 shadow-sm">
-
-
-        <span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
-        <!-- Units box -->
-        <span v-if="data.product?.data?.units !== null && data.product?.data?.units !== undefined && data.product?.data?.units !== ''"
-              class="inline-flex items-center border border-gray-300 rounded px-2 py-0.5 mr-2 bg-white text-gray-900">
-            <span>{{ data.product.data.units }}</span>
-            <span class="ml-1">x</span>
-        </span>
-        <!-- Product name -->
-        <span class="align-middle">
-           {{data.product.data.name}}
-        </span>
-        </span>
-
-
+	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
+		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
+			<!-- Units box -->
+			<ProductUnitLabel
+				v-if="data.product?.data?.units"
+				:units="data.product?.data?.units"
+				:unit="data.product?.data?.unit"
+				class="mr-2"
+			/>
+			
+			<!-- Product name -->
+			<span class="align-middle">
+				{{ data.product.data.name }}
+			</span>
+		</span>
 	</div>
-
-
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
+			<!-- Product Tags -->
+			<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
+				<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+					{{ tag.name }}
+				</span>
+			</dd>
 			<!-- Image Preview & Thumbnails -->
 			<div class="bg-white   p-4 lg:p-5">
 				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
-					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview class="min-h-60" />
+					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview
+						class="min-h-60" />
 					<div class="text-sm italic text-gray-500">
-						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')" class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
+						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
+							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
 					</div>
 				</div>
-				<!-- <ImageProducts v-if="validImages.length" :images="validImages" :breakpoints="{
-					0: { slidesPerView: 3 },
-					480: { slidesPerView: 4 },
-					640: { slidesPerView: 5 },
-					1024: { slidesPerView: 6 }
-				}" class="overflow-x-auto">
-					<template #image-thumbnail="{ image, index }">
-						<div
-							class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
-							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
-								class="block w-full h-full object-cover" />
-							<ModalConfirmationDelete :routeDelete="{
-								name: props.data.deleteImageRoute.name,
-								parameters: {
-									...props.data.deleteImageRoute.parameters,
-									media: image.id,
-								}
-							}" :title="trans('Are you sure you want to delete the image?')"
-								:description="trans('This action cannot be undone.')" isFullLoading noLabel="Delete"
-								noIcon="fal fa-times">
-								<template #default="{ changeModel }">
-									<div @click="changeModel"
-										class="absolute top-2 right-2 bg-white shadow-md rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition cursor-pointer hover:bg-red-500 hover:text-white text-red-500">
-										<FontAwesomeIcon icon="fal fa-times" fixed-width />
-									</div>
-								</template>
-							</ModalConfirmationDelete>
-						</div>
-					</template>
-				</ImageProducts>
-				-->
-				
+
 				<div v-else>
-					<div class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+					<div
+						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
 						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
 						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 					</div>
 					<div class="mt-2 text-sm italic text-gray-500">
-						Manage images in tab <span @click="() => handleTabUpdate('images')" class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
+						Manage images in tab <span @click="() => handleTabUpdate('images')"
+							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<!-- Product Summary -->
-		<ProductSummary
-			:data="data.product.data"
-			:gpsr="data.gpsr"
-			:properties="data.properties"
-			:parts="data.parts"
-			:video="videoSetup.url"
-			:hide="['price', 'rrp', 'stock']"
-			:public-attachment="data.attachment_box.public"
+		<ProductSummary 
+			 :data="{...data.product.data, tags : tradeUnitTags, brands : tradeUnitBrands}" 
+			 :properties="data.properties" 
+			 :parts="data.parts"
+			 :public-attachment="data.attachment_box.public" 
+			 :gpsr="data.gpsr"
 		/>
-
-
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
 				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
@@ -219,14 +180,8 @@ const validImages = computed(() =>
 					}}
 				</span>
 			</div>
-
 			<!-- Section: Price -->
-			<ProductPriceGrp
-				:product="data?.product?.data"
-				:currency_code="data.product.data?.currency_code"
-			/>
-
-			
+			<ProductPriceGrp :product="data?.product?.data" :currency_code="data.product.data?.currency_code" />
 			<div>
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
 			</div>

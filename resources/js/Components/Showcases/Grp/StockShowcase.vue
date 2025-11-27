@@ -22,6 +22,7 @@ import { faExclamationTriangle } from "@fad"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
 import { Icon } from "@/types/Utils/Icon"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { StocksManagementTS } from "@/types/Inventory/StocksManagement"
 library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{
@@ -74,21 +75,7 @@ const props = defineProps<{
             tags: {}[]
             tags_selected_id: number[]
         }[]
-        stocks_management: {
-            summary: {
-                [key: string]: {
-                    icon_state: Icon
-                    value: number
-                }
-            }
-            part_locations: {
-                id: number
-                name: string
-                slug: string
-                stock: number
-                isAudited: boolean
-            }[]
-        }
+        stocks_management: StocksManagementTS
     }
 }>()
 
@@ -227,12 +214,12 @@ const compSelectedTradeUnit = computed(() => {
                 :stocks_management="data.stocks_management"
             />
 
-            <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management }}</pre>
+            <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management?.locations }}</pre>
         </div>
 
 
         <!-- Revenue Stats -->
-        <div v-if="false && data.stats" class="pt-8 p-4 md:col-span-3">
+        <div v-if="true && data.stats" class="pt-8 p-4 md:col-span-3">
             <h3 class="text-lg font-semibold">
                 {{ trans("All Sales") }}:
                 {{ useLocaleStore().currencyFormat(data.product.data.currency_code || "usd", data?.stats?.[0]?.amount ??

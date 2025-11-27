@@ -51,11 +51,12 @@ const props = defineProps<{
     product: ProductResource
     productHasPortfolio: Array<Number> | undefined
     bestSeller: any
-    buttonStyle?:object | undefined
+    buttonStyle?: object | undefined
     currency?: {
         code: string
         name: string
     }
+    buttonStyleLogin?: object | undefined
 }>()
 
 
@@ -213,28 +214,13 @@ const profitMargin = computed(() => {
         <!-- Top Section -->
         <div>
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
-            <!-- Favorite Icon -->
-            <template v-if="layout?.retina?.type != 'dropshipping' && layout?.iris?.is_logged_in">
-
-                <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl">
-                    <LoadingIcon />
-                </div>
-                <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
-                    class="cursor-pointer absolute top-2 right-2 group text-xl ">
-
-                    <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
-                    <div v-else class="relative">
-                        <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400" fixed-width />
-                        <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300" fixed-width />
-                    </div>
-
-                </div>
-            </template>
 
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
-                class="block w-full mb-1 rounded sm:h-[305px] h-[180px]">
-                <Image :src="product?.web_images?.main?.gallery" alt="product image"
+                class="block w-full mb-1 rounded sm:h-[305px] h-[180px]"
+                :class="product.is_coming_soon || product.stock > 0 ? '' : 'grayscale hover:grayscale-0'"
+            >
+                <Image :src="product?.web_images?.main?.gallery" :alt="product.name"
                     :style="{ objectFit: 'contain' }" />
             </component>
 
@@ -250,20 +236,27 @@ const profitMargin = computed(() => {
                 <span class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
             </div>
 
-            <!-- SKU and RRP -->
-            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                <span>{{ product?.code }}</span>
-                <span v-if="product.rpp">
-                    RRP: {{ locale.currencyFormat((currency.code, product.rpp || 0)) }}/ {{ product.unit }}
-                </span>
+            <!-- code and stock -->
+            <div class="text-xs text-gray-600 mb-1 w-full grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1 items-center">
+                <!-- Product Code -->
+                <div class="flex items-center">
+                    {{ product?.code }}
+                </div>
 
-                <div class="flex justify-between items-center text-xs mb-2">
-                    <!-- Stock indicator -->
+                <!-- Stock Info -->
+                <div v-if="!product.is_coming_soon" class="flex items-center md:justify-end justify-start">
                     <div v-if="layout?.iris?.is_logged_in"
-                        class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
-                        :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
-                        <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
-                        <span>{{ product.stock > 0 ? product.stock : 0 }} {{ trans("available") }}</span>
+                        class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
+                        :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+
+                        <FontAwesomeIcon :icon="faCircle" class="text-[6px] mt-[6px]" />
+
+                        <span class="text-xs">
+                            {{ product.stock > 10000
+                                ? trans("Unlimited quantity available")
+                                : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' + trans('available'))
+                            }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -273,10 +266,12 @@ const profitMargin = computed(() => {
         <div class="mt-auto">
             <Prices :product="product" :currency="currency" />
         </div>
-        <ButtonAddPortfolio 
-            :product="product" 
-            :productHasPortfolio="productHasPortfolio" 
+
+        <ButtonAddPortfolio
+            :product="product"
+            :productHasPortfolio="productHasPortfolio"
             :buttonStyle="buttonStyle"
+            :buttonStyleLogin
         />
     </div>
 </template>

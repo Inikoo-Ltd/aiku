@@ -87,10 +87,10 @@ beforeEach(function () {
         use WithGetRecurringBillEndDate;
     };
 
-    $stocks          = createStocks($this->group);
-    $orgStocks       = createOrgStocks($this->organisation, $stocks);
-    $this->orgStock1 = $orgStocks[0];
-    $this->orgStock2 = $orgStocks[1];
+
+    $tradeUnits       = createTradeUnits($this->group);
+    $this->tradeUnit1 = $tradeUnits[0];
+
 
     $location = $this->warehouse->locations()->first();
     if (!$location) {
@@ -164,8 +164,8 @@ test('create fulfilment shop', function () {
 });
 
 test('create product in fulfilment shop', function (Fulfilment $fulfilment) {
-    $orgStocks = [
-        $this->orgStock1->id => [
+    $tradeUnits = [
+        $this->tradeUnit1->id => [
             'quantity' => 1,
         ]
     ];
@@ -173,7 +173,7 @@ test('create product in fulfilment shop', function (Fulfilment $fulfilment) {
     $productData = array_merge(
         Product::factory()->definition(),
         [
-            'org_stocks' => $orgStocks,
+            'trade_units' => $tradeUnits,
             'price'      => 100,
             'unit'       => 'unit'
         ]

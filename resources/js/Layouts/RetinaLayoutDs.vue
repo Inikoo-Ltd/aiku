@@ -21,6 +21,7 @@ import {
 	faFolder,
 	faBuilding,
 	faCreditCard,
+	faLifeRing,
 	faEllipsisV,
 } from "@fal"
 import { faArrowRight, faExclamationCircle, faCheckCircle } from "@fas"
@@ -34,6 +35,7 @@ library.add(
 	faFolder,
 	faBuilding,
 	faCreditCard,
+	faLifeRing,
 	faExclamationCircle,
 	faCheckCircle,
 	faArrowRight,
@@ -43,7 +45,12 @@ import { faListUl, faEye } from "@far"
 
 import { trans } from "laravel-vue-i18n"
 import BreadcrumbsIris from "@/Components/Navigation/BreadcrumbsIris.vue"
-import RetinaBottomNavigation from "./Retina/RetinaBottomNavigation.vue"
+import RetinaBottomNavigationOnMobile from "./Retina/RetinaBottomNavigationOnMobile.vue"
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";
+import Modal from "@/Components/Utils/Modal.vue";
+import PureInputNumber from "@/Components/Pure/PureInputNumber.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
 const layout = useLayoutStore()
@@ -53,6 +60,7 @@ provide("layout", layout)
 provide("locale", locale)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 const { props } = usePage()
+const isOpenModalCreditCard = ref(props.retina.show_cards_modal)
 const irisTheme = props?.iris?.theme ?? { color: [...useColorTheme[2]] }
 
 const sidebarOpen = ref(false)
@@ -114,19 +122,40 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 							/>
 						</div>
 
-						<Link
-							v-if="layout.iris?.is_logged_in"
-							:href="route('retina.top_up.dashboard')"
-							class="place-self-end bg-pink-100 border border-pink-300 text-sm px-3 md:px-4 md:py-0.5 rounded-full w-fit flex items-center gap-x-2 xtext-indigo-600"
-						>
-							<!-- <FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" /> -->
-							{{ trans("My balance") }}:
-							<span class="font-semibold tabular-nums">
-								{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0)}}
-							</span>
-						</Link>
+						<div class="flex justify-between">
+							<!-- Customer Reference (mobile only) -->
+							<div class="md:hidden">
+								<div
+									class="bottom-full left-3"
+									:class="layout.leftSidebar.show ? '' : 'px-2'"
+									v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.iris?.customer?.reference}`"
+								>
+									<div class="text-xxs text-gray-500 -mb-1 italic">
+										{{ trans("Customer reference:") }}
+									</div>
+
+									<div class="text-xl text-[#1d252e] font-semibold flex items-center gap-2">
+										<Transition name="slide-to-left">
+											<span>#{{ layout?.iris?.customer?.reference ?? '-' }}</span>
+										</Transition>
+									</div>
+								</div>
+							</div>
+
+							<!-- My Balance -->
+							<Link
+								v-if="layout.iris?.is_logged_in"
+								:href="route('retina.top_up.dashboard')"
+								class="place-self-end bg-pink-100 border border-pink-300 text-sm px-3 md:px-4 md:py-0.5 rounded-full w-fit flex items-center gap-x-2"
+							>
+								{{ trans("My balance") }}:
+								<span class="font-semibold tabular-nums">
+									{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0) }}
+								</span>
+							</Link>
+						</div>
 					</div>
-					
+
 					<div
 						class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
 						<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 overflow-x-auto" />
@@ -138,18 +167,49 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 			</main>
 		</div>
 
+
+        <Modal :isOpen="isOpenModalCreditCard" @onClose="isOpenModalCreditCard = false" width="w-[600px]">
+            <div class="isolate bg-white px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl mb-2">{{ trans("Add Credit Card") }}</h2>
+                    <p class="text-sm leading-5 text-gray-400">
+                        {{ trans("Important Update: To ensure the fastest and most seamless experience with our fully automated order processing system via our sales channels, we strongly recommend saving your payment card in your account. This allows your future orders to be processed instantly and without any manual delays") }}
+                    </p>
+                </div>
+
+                <div class="mt-6 mb-4 relative">
+                    <ButtonWithLink @click="isOpenModalCreditCard = false" :url="route('retina.dropshipping.mit_saved_cards.dashboard')" label="Add Credit Card" full />
+                </div>
+            </div>
+        </Modal>
+
 		<IrisFooter
 			v-if="layout.iris?.footer && !isArray(layout.iris.footer)"
 			:data="layout.iris.footer"
 			:colorThemed="irisTheme"
 		/>
 
-			
+
 		<!-- Section: bottom navigation -->
 		<div v-if="layout.user && screenType === 'mobile'" class="bg-[rgb(20,20,20)] text-white fixed bottom-0 w-full z-10">
-			<RetinaBottomNavigation
-				
-			/>
+			<RetinaBottomNavigationOnMobile>
+				<template #default>
+					<a
+                        v-if="layout.retina.portal_link"
+                        :href="layout.retina.portal_link"
+                        class="relative group flex items-center px-2 text-[20px] gap-x-2 navigation"
+                        v-tooltip="{ content: trans('Open help portal'), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
+                        :style="{
+                            color: layout?.app?.theme[1],
+                        }"
+                        target="_blank"
+                    >
+                        <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0" fixed-width icon="fal fa-life-ring" />
+
+                        <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-80 absolute right-0 top-0 text-xxs text-[var(--theme-color-1)]" fixed-width aria-hidden="true" />
+                    </a>
+				</template>
+			</RetinaBottomNavigationOnMobile>
 		</div>
 	</div>
 </template>

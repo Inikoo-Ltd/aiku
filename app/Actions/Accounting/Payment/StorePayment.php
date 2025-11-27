@@ -83,14 +83,14 @@ class StorePayment extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'           => ['nullable', 'string', 'max:255'],
-            'amount'              => ['required', 'decimal:0,2'],
-            'data'                => ['sometimes', 'array'],
-            'date'                => ['sometimes', 'date'],
-            'status'              => ['sometimes', 'required', Rule::enum(PaymentStatusEnum::class)],
-            'state'               => ['sometimes', 'required', Rule::enum(PaymentStateEnum::class)],
-            'type'                => ['sometimes', 'required', Rule::enum(PaymentTypeEnum::class)],
-            'original_payment_id' => [
+            'reference'               => ['nullable', 'string', 'max:255'],
+            'amount'                  => ['required', 'decimal:0,2'],
+            'data'                    => ['sometimes', 'array'],
+            'date'                    => ['sometimes', 'date'],
+            'status'                  => ['sometimes', 'required', Rule::enum(PaymentStatusEnum::class)],
+            'state'                   => ['sometimes', 'required', Rule::enum(PaymentStateEnum::class)],
+            'type'                    => ['sometimes', 'required', Rule::enum(PaymentTypeEnum::class)],
+            'original_payment_id'     => [
                 'sometimes',
                 'nullable',
                 'integer',
@@ -100,13 +100,28 @@ class StorePayment extends OrgAction
                 'sometimes',
                 'integer',
             ],
-            'api_point_type' => [
+            'api_point_type'          => [
                 'sometimes',
                 'string',
             ],
-            'api_point_id' => [
+            'api_point_id'            => [
                 'sometimes',
                 'integer',
+            ],
+            'is_mit'                  => [
+                'sometimes',
+                'nullable',
+                'boolean',
+            ],
+            'debug_mit_status'        => [
+                'sometimes',
+                'nullable',
+                'string',
+            ],
+            'debug_mit_is_approved'   => [
+                'sometimes',
+                'nullable',
+                'boolean',
             ],
         ];
 

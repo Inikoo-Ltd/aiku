@@ -102,7 +102,6 @@ const onPublish = async (action: routeType, popover: Funcition) => {
 }
 
 const sendToIframe = (data: any) => {
-	console.log(data)
 	_iframe.value?.contentWindow.postMessage(data, "*")
 }
 

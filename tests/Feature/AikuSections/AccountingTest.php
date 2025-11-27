@@ -87,10 +87,14 @@ beforeEach(function () {
     $this->group        = $this->organisation->group;
     $this->adminGuest   = createAdminGuest($this->organisation->group);
 
-    $stocks          = createStocks($this->group);
-    $orgStocks       = createOrgStocks($this->organisation, $stocks);
-    $this->orgStock1 = $orgStocks[0];
-    $this->orgStock2 = $orgStocks[1];
+    //    $stocks          = createStocks($this->group);
+    //    $orgStocks       = createOrgStocks($this->organisation, $stocks);
+    //    $this->orgStock1 = $orgStocks[0];
+    //    $this->orgStock2 = $orgStocks[1];
+
+    $tradeUnits = createTradeUnits($this->group);
+    $this->tradeUnit1 = $tradeUnits[0];
+    $this->tradeUnit2 = $tradeUnits[1];
 
     $this->adminGuest->refresh();
 
@@ -1382,8 +1386,10 @@ test('Store invoice refund', function () {
     $shop     = $this->shop;
     $customer = createCustomer($shop);
 
-    $orgStocks = [
-        $this->orgStock1->id => [
+
+
+    $tradeUnits = [
+        $this->tradeUnit1->id => [
             'quantity' => 1,
         ]
     ];
@@ -1391,7 +1397,7 @@ test('Store invoice refund', function () {
     $productData        = array_merge(
         Product::factory()->definition(),
         [
-            'org_stocks' => $orgStocks,
+            'trade_units' => $tradeUnits,
             'price'      => 100,
             'unit'       => 'unit'
         ]

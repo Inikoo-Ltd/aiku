@@ -45,6 +45,9 @@ export const layoutStructure = {
         },
         language: {
             show: false
+        },
+        message: {
+            show: false
         }
     },
     root_active: null as string | null,

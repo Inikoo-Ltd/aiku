@@ -10,7 +10,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
 use ZipArchive;

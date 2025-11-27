@@ -15,7 +15,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome } from '@fal'
+import { faHome, faImage } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
@@ -26,7 +26,9 @@ import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
 import IrisRightsideBasket from '@/Components/Iris/Layout/IrisRightsideBasket.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
-library.add(faHome, faExclamationTriangle, faWhatsapp)
+import ChatButton from '@/Components/Chat/ChatButton.vue'
+
+library.add(faHome, faImage, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
 
@@ -193,7 +195,7 @@ console.log('handle', usePage().props)
 
                 <!-- Layout: SideBasket (right) -->
                 <div
-                    v-if="layout?.iris?.is_logged_in"
+                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile'"
                     class="sticky border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
                     :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-lg' : 'border-transparent max-w-0'"
                 >
@@ -221,6 +223,7 @@ console.log('handle', usePage().props)
     </notifications>
 
 
+    <ChatButton data="null" v-if="layout?.app?.environment === 'local'"/>
 
 
 </template>

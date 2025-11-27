@@ -73,6 +73,25 @@ class EditShop extends OrgAction
             ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();
 
+        $helpPortalFields = [
+            'portal_link'  => [
+                'type'          => 'input',
+                'placeholder'   => 'https://example.com',
+                'label'         => __('Portal Link'),
+                'value'         => Arr::get($shop->settings, 'portal.link', ''),
+            ]
+        ];
+
+        // Disable Widget_Key input if shop doesn't have any related website
+        if ($shop->website) {
+            $helpPortalFields['widget_key'] = [
+                'type'          => 'input',
+                'placeholder'   => 'keyExample',
+                'label'         => __('Widget Key'),
+                'value'         => Arr::get($shop->website->settings, 'jira_help_desk_widget'),
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -373,6 +392,11 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ] : [],
+                        [
+                            'label'  => __('HELP Portal'),
+                            'icon'   => 'fal fa-life-ring',
+                            'fields' => $helpPortalFields,
+                        ]
                     ],
                     'args'      => [
                         'updateRoute' => [

@@ -122,6 +122,7 @@ class IndexMasterProducts extends GrpAction
                 'master_assets.status',
                 'master_assets.price',
                 'master_assets.unit',
+                'master_assets.units',
                 'master_assets.rrp',
                 'master_asset_stats.number_current_assets as used_in',
                 'currencies.code as currency_code',
@@ -182,7 +183,7 @@ class IndexMasterProducts extends GrpAction
 
         return $queryBuilder
             ->defaultSort('master_assets.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'used_in'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

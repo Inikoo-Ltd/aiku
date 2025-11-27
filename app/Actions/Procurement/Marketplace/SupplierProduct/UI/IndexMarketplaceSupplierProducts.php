@@ -144,9 +144,9 @@ class IndexMarketplaceSupplierProducts extends InertiaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("supplier product's marketplaces "),
+                'title'       => __("supplier product's marketplaces"),
                 'pageHead'    => [
-                    'title'  => __("supplier product's marketplaces "),
+                    'title'  => __("supplier product's marketplaces"),
                     'create' => $this->canEdit && $request->route()->getName() == 'grp.org.procurement.marketplace.org_supplier_products.index' ? [
                         'route' => [
                             'name'       => 'grp.org.procurement.marketplace.org_supplier_products.create',

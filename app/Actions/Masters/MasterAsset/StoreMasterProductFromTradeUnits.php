@@ -17,7 +17,6 @@ use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
-use App\Models\Goods\TradeUnit;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -50,16 +49,6 @@ class StoreMasterProductFromTradeUnits extends GrpAction
         if ($hasOneTradeUnit) {
             $arrKeyFirst = array_key_first($tradeUnits);
             $qtyFinal = $tradeUnits[$arrKeyFirst]['quantity'];
-        }
-
-        if ($masterShop == 'ds') {
-            foreach ($tradeUnits as $key => $value) {
-                $qtyPerOuter = TradeUnit::find($tradeUnits[$key]['id'])->stocks->pluck('pivot.quantity')->first();
-                if ($hasOneTradeUnit) {
-                    $qtyFinal *= $qtyPerOuter;
-                }
-                $tradeUnits[$key]['quantity'] *= $qtyPerOuter;
-            }
         }
 
         data_set($modelData, 'units', $qtyFinal);

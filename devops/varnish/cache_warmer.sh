@@ -10,7 +10,7 @@ VERSION='0.3'
 USER_AGENT="cache-warmer/$VERSION (warming cache for varnish)"
 # We want to warm the cache twice: as logged in and logged out
 STATUSES=("In" "Out")
-
+STATUSES=("Out")
 # Warm cache for a given host using a plain-text URL list at /<warming_list_url>
 # Each line in the list must be a full URL. Lines starting with '#' or blank lines are ignored.
 # Usage: warm_varnish <host> <warming_list_url>
@@ -37,17 +37,20 @@ warm_varnish() {
         echo "  -> $trimmed"
         # For each URL, request both logged-in and logged-out variants
         for STATUS in "${STATUSES[@]}"; do
+            
             local HEADER="X-Warm-Logged-Status: ${STATUS}"
             #echo "  -> [$STATUS] $trimmed  $HEADER "
             # First request: only X-Warm-Logged-Status
-            curl -sS --retry 2 --retry-delay 1 \
+            # Delay 100ms before the first request to avoid bursting
+            sleep 0.1
+            curl -sS --retry 1 --retry-delay 1 \
                  -A "$USER_AGENT" -H "$HEADER" \
                  "$trimmed" -o /dev/null 2>&1
 
             # Second request: add X-Inertia: true header
-            curl -sS --retry 2 --retry-delay 1 \
-                 -A "$USER_AGENT" -H "$HEADER" -H "X-Inertia: true" \
-                 "$trimmed" -o /dev/null 2>&1
+#            curl -sS --retry 1 --retry-delay 1 \
+#                 -A "$USER_AGENT" -H "$HEADER" -H "X-Inertia: true" \
+#                 "$trimmed" -o /dev/null 2>&1
 
         done
     done

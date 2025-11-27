@@ -170,6 +170,11 @@ class UpdateProductCategory extends OrgAction
 
     public function prepareForValidation(): void
     {
+        if ($this->has('vol_gr')) {
+            $offersData = $this->productCategory->offers_data ?? [];
+            $offersData['vol_gr'] = $this->attributes['vol_gr'][0];
+            $this->set('offers_data', $offersData);
+        }
         if ($this->has('department_or_sub_department_id')) {
             $parent = ProductCategory::find($this->get('department_or_sub_department_id'));
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -220,7 +225,7 @@ class UpdateProductCategory extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
-
+            'offers_data'                => ['sometimes', 'array'],
             'follow_master'              => ['sometimes', 'boolean'],
             'image'                      => [
                 'sometimes',

@@ -8,6 +8,7 @@ import { inject, ref } from "vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
 const props = defineProps<{
     summary: {
@@ -34,9 +35,17 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', {})
+const layout = inject('layout', retinaLayoutStructure)
 
 const isModalShippingAddress = ref(false)
 
+
+// Method: convert "15.26" to 15.26
+const convertToFloat2 = (val: any) => {
+    const num = parseFloat(val)
+    if (isNaN(num)) return 0.00
+    return parseFloat(num.toFixed(2))
+}
 </script>
 
 <template>
@@ -49,7 +58,7 @@ const isModalShippingAddress = ref(false)
                         <FontAwesomeIcon :icon="faWeight" fixed-width aria-hidden="true" class="text-gray-500" />
                     </dt>
                     <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
-                        {{ summary?.order_properties.weight || 0 }}
+                        {{ summary?.order_properties?.weight || 0 }}
                     </dd>
                 </dl>
 
@@ -97,7 +106,40 @@ const isModalShippingAddress = ref(false)
                 </div>
             
                 <div v-if="is_unable_dispatch" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
-                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :country, please update the address or contact support.", { country: summary?.customer?.addresses?.delivery?.country?.name }) }}
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
+                </div>
+            </div>
+
+            <!-- Section: Offer meters -->
+            <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
+                <div v-for="offer in layout?.offer_meters" class="grid grid-cols-2 mb-3">
+                    <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                        class="flex items-center whitespace-nowrap"
+                    >
+                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" class="text-base">
+                            {{ offer.label}}
+                        </div>
+                        <div v-else class="text-base text-green-600">
+                            {{ offer.label_got ?? offer.label}}
+                        </div>
+
+                        <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
+                        <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" />
+                    </div>
+                    
+                    <!-- Section: meter -->
+                    <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
+                        ? trans(`:xcurrentx of :xtargetx products gross amount`, { xcurrentx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtargetx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
+                        : trans('Bonus secured')" class="w-full flex items-center">
+                        <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
+                            <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
+                                :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
+                                :style="{
+                                    width: convertToFloat2(offer.metadata?.target) ? convertToFloat2(offer.metadata?.current)/convertToFloat2(offer.metadata?.target) * 100 + '%' : '100%'
+                                }"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

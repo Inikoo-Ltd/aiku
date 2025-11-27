@@ -8,14 +8,12 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
-use App\Actions\Dropshipping\Ebay\UpdateShippingPolicyEbayUser;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewChannels;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -31,37 +29,6 @@ class UpdateCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
-        if (Arr::has($modelData, 'is_vat_adjustment')) {
-            data_set($modelData, 'settings.tax_category.checked', Arr::get($modelData, 'is_vat_adjustment'));
-        }
-
-        if (Arr::has($modelData, 'tax_category_id')) {
-            data_set($modelData, 'settings.tax_category.id', Arr::get($modelData, 'tax_category_id'));
-        }
-
-        if (Arr::has($modelData, 'shipping_service')) {
-            data_set($modelData, 'settings.shipping.service', Arr::get($modelData, 'shipping_service'));
-        }
-        if (Arr::has($modelData, 'shipping_price')) {
-            data_set($modelData, 'settings.shipping.price', Arr::get($modelData, 'shipping_price'));
-        }
-        if (Arr::has($modelData, 'shipping_max_dispatch_time')) {
-            data_set($modelData, 'settings.shipping.max_dispatch_time', Arr::get($modelData, 'shipping_max_dispatch_time'));
-        }
-
-        data_forget($modelData, 'tax_category_id');
-        data_forget($modelData, 'is_vat_adjustment');
-
-        if ($customerSalesChannel->platform->type === PlatformTypeEnum::EBAY) {
-            if (Arr::has($modelData, 'shipping_service') || Arr::has($modelData, 'shipping_price') || Arr::has($modelData, 'shipping_max_dispatch_time')) {
-                data_forget($modelData, 'shipping_service');
-                data_forget($modelData, 'shipping_price');
-                data_forget($modelData, 'shipping_max_dispatch_time');
-
-                UpdateShippingPolicyEbayUser::run($customerSalesChannel->user, $modelData);
-            }
-        }
-
         $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
         $changes = Arr::except($customerSalesChannel->getChanges(), ['updated_at', 'last_fetched_at']);
 
@@ -72,9 +39,6 @@ class UpdateCustomerSalesChannel extends OrgAction
         }
 
         return $customerSalesChannel;
-
-
-
     }
 
     public function rules(): array
@@ -97,6 +61,7 @@ class UpdateCustomerSalesChannel extends OrgAction
                     ]
                 ),
             ],
+            'is_vat_adjustment' => ['sometimes', 'boolean'],
             'tax_category_id'   => ['sometimes', 'integer', Rule::exists('tax_categories', 'id')],
             'status'            => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'state'             => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],
@@ -104,7 +69,17 @@ class UpdateCustomerSalesChannel extends OrgAction
             'shipping_service'              => ['sometimes', 'string', 'max:255'],
             'shipping_price'              => ['sometimes', 'string', 'max:255'],
             'shipping_max_dispatch_time'              => ['sometimes', 'string', 'max:255'],
-            'closed_at'         => ['sometimes', 'date'],
+
+            'return_policy_id' => ['sometimes', 'string'],
+            'payment_policy_id' => ['sometimes', 'string'],
+            'fulfillment_policy_id' => ['sometimes', 'string'],
+
+            'return_accepted' => ['sometimes', 'boolean'],
+            'return_payer' => ['sometimes', 'string'],
+            'return_within' => ['sometimes', 'integer'],
+            'return_description' => ['sometimes', 'string'],
+
+            'closed_at'         => ['sometimes', 'date']
         ];
     }
 

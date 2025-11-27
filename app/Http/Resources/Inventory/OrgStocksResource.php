@@ -27,6 +27,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
  * @property mixed $warehouse_slug
+ * @property mixed $packed_in
  */
 class OrgStocksResource extends JsonResource
 {
@@ -51,6 +52,7 @@ class OrgStocksResource extends JsonResource
             'organisation_name'               => $this->organisation_name,
             'organisation_slug'               => $this->organisation_slug,
             'warehouse_slug'                  => $this->warehouse_slug,
+            'pick_fractional'                 => ($this->quantity && $this->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity)), $this->packed_in) : [],
         ];
     }
 }

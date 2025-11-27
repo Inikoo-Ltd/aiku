@@ -35,6 +35,7 @@ import { Action } from "@/types/Action"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import { notify } from "@kyvg/vue3-notification"
 import OrderProductTable from "@/Components/Dropshipping/Orders/OrderProductTable.vue"
+import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatchedEmailsInOrder.vue"
 import NeedToPay from "@/Components/Utils/NeedToPay.vue"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
@@ -233,6 +234,7 @@ const props = defineProps<{
         }[]
         route_download_pdf: routeType
     }
+    dispatched_emails?: {}
 }>()
 
 
@@ -243,6 +245,7 @@ const confirm = useConfirm();
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
+console.log("dispatched_emails", props.dispatched_emails)
 
 const component = computed(() => {
     const components: Component = {
@@ -251,7 +254,8 @@ const component = computed(() => {
         attachments: TableAttachments,
         invoices: TableInvoices,
         products: TableProductList,
-        payments: TablePayments
+        payments: TablePayments,
+        dispatched_emails: TableDispatchedEmailsInOrder
     }
 
     return components[currentTab.value]
@@ -1076,7 +1080,7 @@ const copyToClipboard = async (text: string, label: string) => {
                             {{ box_stats?.products.estimated_weight || 0 }} kilograms
                         </dd>
                     </dl>
-                    
+
                     <!-- Field: number of order -->
                     <!-- <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
                         <dt zv-tooltip="trans('Weight')" class="flex-none pl-1">
@@ -1268,7 +1272,7 @@ const copyToClipboard = async (text: string, label: string) => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to pay")
                             }}: {{
-                            locale.currencyFormat(box_stats.order_summary.currency.code,
+                            locale.currencyFormat(box_stats.currency.code,
                             box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
@@ -1329,7 +1333,7 @@ const copyToClipboard = async (text: string, label: string) => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to refund")
                             }}: {{
-                            locale.currencyFormat(box_stats.order_summary.currency.code,
+                            locale.currencyFormat(box_stats.currency.code,
                             box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"

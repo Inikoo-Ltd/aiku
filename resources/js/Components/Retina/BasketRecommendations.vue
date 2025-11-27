@@ -44,6 +44,7 @@ const emit = defineEmits<{
     'add-to-basket': [productId: string, productCode: string, product?: ProductHits]
 }>()
 
+const screenType: string = inject('screenType', 'desktop')
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -181,7 +182,7 @@ onBeforeUnmount(() => {
             <template v-if="listProducts?.length">
                 <SwiperSlide v-for="(product, index) in listProducts"
                     :key="index"
-                    class="w-full cursor-grab relative px-4 py-3 rounded !flex !flex-col !justify-between gap-y-4 min-h-full"
+                    class="w-full cursor-grab relative px-2 md:px-4 py-3 rounded !flex !flex-col !justify-between gap-y-4 min-h-full"
                     :class="Number(product.attributes?.stock_qty?.[0]) > 0 ? 'hover:bg-gray-500/10' : 'opacity-75'"
                 >
                     <div class="">
@@ -192,32 +193,34 @@ onBeforeUnmount(() => {
                             <img :src="product.attributes.image_link" :alt="product.attributes.title"
                                 class="w-full h-full object-contain">
                         </component>
+                        
                         <!-- Title - Always a link -->
                         <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
                             :href="product.attributes.web_url?.[0]"
-                            class="font-bold text-sm mt-2 mb-1">
+                            class="font-bold text-xxs md:text-sm !mt-2 md:mt-2 md:mb-1 text-justify md:text-left inline-block">
                             {{ product.attributes.title }}
                         </component>
                         
                         <!-- SKU and RRP -->
-                        <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <div class="flex justify-between text-xxs md:text-xs text-gray-500 mb-1">
                             <span>{{ product.attributes.product_code?.[0] }}</span>
                         </div>
+
                         <!-- Rating and Stock G -->
-                        <div class="flex justify-between items-center text-xs mb-2">
+                        <div class="flex justify-between items-center text-xxs md:text-xs mb-2">
                             <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')"
                                 class="flex items-center gap-1"
                                 :class="Number(product.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
-                                <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
+                                <FontAwesomeIcon :icon="faCircle" class="md:text-[8px]" />
                                 <span>{{ Number(product.attributes?.stock_qty?.[0]) > 0 ?
                                     locale.number(Number(product.attributes?.stock_qty?.[0])) : 0 }} {{ trans('available') }}</span>
                             </div>
                         </div>
+
                         <!-- Prices -->
                         <div v-if="layout?.iris?.is_logged_in" class="">
-                            <div class="flex justify-between text-sm ">
-                                <span>{{ trans('Price') }}: <span class="font-semibold">{{
-                                        product.attributes.formatted_price }}</span></span>
+                            <div class="flex justify-between text-xs md:text-sm ">
+                                <span>{{ trans('Price') }}: <span class="font-semibold">{{ product.attributes.formatted_price }}</span></span>
                                 <!-- <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(layout.iris.currency.code,product.rrp) }}</span></span> -->
                             </div>
                         </div>
@@ -226,14 +229,21 @@ onBeforeUnmount(() => {
                     <!-- Add to Basket Button -->
                     <div v-if="product.attributes.product_id?.[0]" class="">
                         <Button v-if="Number(product.attributes?.stock_qty?.[0]) > 0" @click="handleProductClick(product)"
-                            :disabled="isProductLoading(product.attributes.product_id[0])" :label="isProductLoading(product.attributes.product_id[0]) ? trans('Adding...') :
-                            trans('Add to Basket')" class="w-full justify-center" :loading="isProductLoading(product.attributes.product_id[0])"
-                        />
+                            :disabled="isProductLoading(product.attributes.product_id[0])"
+                            class="w-full justify-center"
+                            :loading="isProductLoading(product.attributes.product_id[0])"
+                            :size="screenType === 'mobile' ? 'sm' : 'md'"
+                        >
+                            <template #label>
+                                <span class="text-xxs md:text-sm">{{ isProductLoading(product.attributes.product_id[0]) ? trans('Adding...') : trans('Add to Basket') }}</span>
+                            </template>
+                        </Button>
+
                         <Button v-else
                             disabled
                             :label="trans('Out of Stock')"
                             type="tertiary"
-                            key="1"
+                            :size="screenType === 'mobile' ? 'sm' : 'md'"
                             class="w-full justify-center"
                             :loading="isProductLoading(product.attributes.product_id[0])"
                         />

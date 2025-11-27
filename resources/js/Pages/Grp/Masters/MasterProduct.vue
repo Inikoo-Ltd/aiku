@@ -26,6 +26,8 @@ import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
 import { cloneDeep } from "lodash-es";
 import { trans } from "laravel-vue-i18n"
 import axios from "axios";
+import TradeUnit from "../Goods/TradeUnit.vue"
+import ProductSales from "@/Components/Product/ProductSales.vue"
 
 library.add(
     faChartLine, faCheckCircle, faFolderTree, faFolder, faCube,
@@ -44,13 +46,15 @@ const props = defineProps<{
     language?: {}
     products?: {}
     trade_units?: {}
+    sales: {}
     images?: {}
     mini_breadcrumbs?: any[]
     attachments?: {}
     shopsData: any[]
-    masterAsset: {} 
+    masterAsset: {}
+    tradeUnit : {}
 }>()
-
+console.log('sdsjkh',props.trade_units)
 const layout = inject('layout', {});
 let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
@@ -65,18 +69,19 @@ const form = useForm({
 });
 
 const component = computed(() => {
-    const components = {
+    const components: Record<string, any> ={
         showcase: MasterProductShowcase,
         history: TableHistories,
         products: TableProducts,
         images: TradeUnitImagesManagement,
         trade_units: TableTradeUnits,
         attachments: AttachmentManagement,
+        sales: ProductSales,
     }
     return components[currentTab.value]
 })
 
-function openModal(){
+function openModal() {
     showDialog.value = true;
 }
 
@@ -91,14 +96,14 @@ const submitForm = async (redirect = true) => {
         let price = tableDataItem.product.price
         let rrp = tableDataItem.product.rrp
 
-        if(!create_in_shop){
+        if (!create_in_shop) {
             rrp = 1;
             price = 1;
         }
 
         finalDataTable[tableDataItem.id] = {
             price: price,
-            create_in_shop : create_in_shop ? 'Yes' : 'No',
+            create_in_shop: create_in_shop ? 'Yes' : 'No',
             rrp: rrp
         }
     }
@@ -119,25 +124,25 @@ const submitForm = async (redirect = true) => {
         loading.value = false;
         console.error(error);
     })
-    .then((response) => {
-        loading.value = false;
-        router.reload();
-        showDialog.value = false;
-        refreshModalData();
-    });
-    
+        .then((response) => {
+            loading.value = false;
+            router.reload();
+            showDialog.value = false;
+            refreshModalData();
+        });
+
 }
 
-function refreshModalData(){
+function refreshModalData() {
     let productCodes = new Set(props.products?.data?.map(p => p.shop_code));
     tableData.value.data = tableData.value.data.filter(item => !productCodes.has(item.code));
-    if(tableData.value.data.length > 0) {
+    if (tableData.value.data.length > 0) {
         disableClone.value = false;
     }
 }
 
 watch(() => currentTab.value, (value) => {
-    if(value === "products"){
+    if (value === "products") {
         refreshModalData()
     }
 })
@@ -145,25 +150,45 @@ watch(() => currentTab.value, (value) => {
 onMounted(() => {
     refreshModalData();
 })
+
+
 </script>
 
 <template>
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #afterTitle="{data}">
+            <component v-if="data.iconRight || data.titleRight || data.afterTitle"
+                :is="data?.iconRight?.url ? 'a' : 'div'"
+                :href="data?.iconRight?.url ? route(data?.iconRight?.url.name, data?.iconRight?.url.parameters) : ''">
+                <div class="flex gap-x-2 items-center">
+                    <FontAwesomeIcon v-if="data.iconRight" v-tooltip="data.iconRight.tooltip || ''"
+                        :icon="data.iconRight?.icon || data.iconRight" class="align-top" :class="data.iconRight.class"
+                        aria-hidden="true" :color="data.iconRight.color" :rotation="data?.iconRight?.icon_rotation" />
+                    <span v-if="data.titleRight" class="text-lg">{{ data.titleRight }}</span>
+                    <div v-if="data.afterTitle" class="font-normal text-lg leading-none">
+                        {{ data.afterTitle.label }}
+                    </div>
+                </div>
+            </component>
+          <!--   <Link :href="route('grp.trade_units.units.show',[])" class="flex gap-x-2 items-center">
+                <FontAwesomeIcon v-tooltip="'trade unit'" :icon="faAtom" class="align-top" :class="'text-gray-300'"  aria-hidden="true" />
+            </Link> -->
+        </template>
+
         <template #button-assign="{ action }">
-            <Button v-if="currentTab === 'products'" :icon="action.icon" :label="action.label" @click="openModal()" :style="action.style"/>
+            <Button v-if="currentTab === 'products'" :icon="action.icon" :label="action.label" @click="openModal()"
+                :style="action.style" />
             <div v-else></div>
         </template>
     </PageHeading>
-
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-
     <div v-if="mini_breadcrumbs.length" class="bg-white px-4 py-2 w-full border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
-                    <component :is="item.to ? Link : 'span'"  :handleTabUpdate="handleTabUpdate"
+                    <component :is="item.to ? Link : 'span'" :handleTabUpdate="handleTabUpdate"
                         :href="item.to ? route(item.to.name, item.to.parameters) : undefined" :title="item.title"
                         class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to ? 'text-gray-500' : 'text-gray-500 cursor-default'">
@@ -179,13 +204,14 @@ onMounted(() => {
 
     <!-- ✅ PrimeVue Dialog -->
     <Dialog v-model:visible="showDialog" modal header="Add Item to Other Shop" :style="{ width: '60vw' }">
-        <TableSetPriceProduct v-model="tableData" :key="key"  :currency="currency.code" :form="form" :disable-exist="true"/>
+        <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form"
+            :disable-exist="true" />
         <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
             {{ form.errors.shop_products.join(", ") }}
         </small>
         <div class="pt-5 flex items-end w-full">
             <Button :class="'ms-auto'" :disabled="disableClone" v-on:click="submitForm(true)" :loading="loading">
-                <FontAwesomeIcon :icon="faSave"/>
+                <FontAwesomeIcon :icon="faSave" />
                 {{ trans("Save") }}
             </Button>
         </div>

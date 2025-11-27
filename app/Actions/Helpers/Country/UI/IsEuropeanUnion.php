@@ -20,7 +20,7 @@ class IsEuropeanUnion
     }
 
 
-    public function getEUCountryCodes(): array
+    public static function getEUCountryCodes(): array
     {
         return [
             'AT',

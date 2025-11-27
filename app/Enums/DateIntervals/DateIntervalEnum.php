@@ -28,21 +28,21 @@ enum DateIntervalEnum: string
     case LAST_MONTH = 'lm';
     case LAST_WEEK = 'lw';
     case YESTERDAY = 'ld';
-
+    case CUSTOM = 'ctm';
 
     public static function labels(): array
     {
         return [
             'all' => __('All'),
             '1y'  => __('1 Year'),
-            '1q'  => __('1 Quarter'),
+            '1q'  => __('Last 90 Days'),
             '1m'  => __('1 Month'),
             '1w'  => __('1 Week'),
             '3d'  => __('3 Days'),
-            'ytd' => __('Year to Day'),
-            'qtd' => __('Quarter to Day'),
-            'mtd' => __('Month to Day'),
-            'wtd' => __('Week to Day'),
+            'ytd' => __('Year to Date'),
+            'qtd' => __('Quarter to Date'),
+            'mtd' => __('Month to Date'),
+            'wtd' => __('Week to Date'),
             'tdy' => __('Today'),
             'lm'  => __('Last Month'),
             'lw'  => __('Last Week'),
@@ -59,27 +59,35 @@ enum DateIntervalEnum: string
             '1m'  => '1m',
             '1w'  => '1w',
             '3d'  => '3d',
-            'ytd' => 'YTD',
-            'qtd' => 'QTD',
-            'mtd' => 'MTD',
-            'wtd' => 'WTD',
+            'ytd' => 'YtD',
+            'qtd' => 'QtD',
+            'mtd' => 'MtD',
+            'wtd' => 'WtD',
             'tdy' => 'Today',
             'lm'  => 'LM',
             'lw'  => 'LW',
-            'ld'  => 'YDAY',
-
+            'ld'  => 'YDay',
         ];
     }
 
+    public static function casesWithoutCustom(): array
+    {
+        return array_filter(self::cases(), fn ($case) => $case !== self::CUSTOM);
+    }
+
+    public static function valuesWithoutCustom(): array
+    {
+        return array_column(self::casesWithoutCustom(), 'value');
+    }
 
     public static function lastYearValues(): array
     {
-        $intervals = self::values();
+        $intervals = self::valuesWithoutCustom();
+
         unset($intervals[0]); // This only works if all is the first value
 
         return $intervals;
     }
-
 
     public function wherePeriod($query, $column)
     {
@@ -123,14 +131,9 @@ enum DateIntervalEnum: string
 
     public static function allExceptHistorical(): array
     {
-        return array_map(
-            fn ($case) => $case->value,
-            array_values(array_filter(
-                self::cases(),
-                fn ($case) => !in_array($case, [self::YESTERDAY, self::LAST_WEEK, self::LAST_MONTH])
-            ))
-        );
+        return array_values(array_filter(
+            self::casesWithoutCustom(),
+            fn ($case) => !in_array($case, [self::YESTERDAY, self::LAST_WEEK, self::LAST_MONTH])
+        ));
     }
-
-
 }

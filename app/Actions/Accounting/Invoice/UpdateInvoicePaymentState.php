@@ -54,7 +54,9 @@ class UpdateInvoicePaymentState extends OrgAction
             }
         }
 
+        $runningPaymentsAmount = round($runningPaymentsAmount, 2);
         if ($invoice->type == InvoiceTypeEnum::INVOICE) {
+
             if ($runningPaymentsAmount > $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::OVERPAID;
                 $payStatus = InvoicePayStatusEnum::PAID;

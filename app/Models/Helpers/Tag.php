@@ -33,6 +33,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $image_id
+ * @property array<array-key, mixed>|null $web_image
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Customer> $customers
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -48,15 +49,18 @@ class Tag extends Model implements HasMedia
 {
     use HasSlug;
     use HasImage;
+
     protected $guarded = [];
 
     protected $casts = [
-        'data'     => 'array',
-        'scope'    => TagScopeEnum::class,
+        'data'      => 'array',
+        'web_image' => 'array',
+        'scope'     => TagScopeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data'      => '{}',
+        'web_image' => '[]',
     ];
 
     public function getRouteKeyName(): string
