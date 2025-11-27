@@ -55,3 +55,7 @@ Route::middleware(['auth:sanctum', 'treblle'])->group(function () {
         });
     });
 });
+
+Route::prefix("chats")
+        ->name("chats.")
+        ->group(__DIR__ . "/chat_api.php");
