@@ -44,7 +44,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import {routeType} from "@/types/route";
-import {InputText, Message} from "primevue"
+import { InputNumber, InputText, Message } from "primevue"
 import { EditorContent } from "@tiptap/vue-3";
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue";
 
@@ -927,12 +927,15 @@ const calculateVat = (price: number) => {
 
             <div class="mb-3">
                 <label for="edit-product-rrp" class="block text-sm font-semibold">{{ trans("Selling Price") }}</label>
-                <InputText
-                    type="number"
-                    v-model="selectedEditProduct.customer_price"
-                    fluid
+                <InputNumber
+                    :modelValue="selectedEditProduct?.customer_price"
+                    @update:modelValue="(value) => set(selectedEditProduct, ['customer_price'], value)"
                     inputId="edit-product-rrp"
+                    mode="currency"
+                    fluid
                     size="small"
+                    :currency="layout?.iris?.currency?.code"
+                    :locale="layout.locale"
                     :disabled="isLoadingSubmitErrorTitle"
                 />
             </div>
