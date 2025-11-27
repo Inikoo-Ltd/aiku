@@ -6,7 +6,7 @@ use App\Enums\EnumHelperTrait;
 
 enum ChatAgentSpecializationEnum: string
 {
-     use EnumHelperTrait;
+    use EnumHelperTrait;
     case BILLING = 'billing';
     case TECHNICAL = 'technical';
     case SALES = 'sales';

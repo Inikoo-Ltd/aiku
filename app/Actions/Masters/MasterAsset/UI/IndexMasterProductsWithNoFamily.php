@@ -11,12 +11,9 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
-use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
-use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterProductsResource;
@@ -250,7 +247,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
         $iconRight     = null;
         $subNavigation = null;
         $familyId      = null;
-        
+
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
             $title         = $this->parent->name;
@@ -349,7 +346,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
 
         return $this->handle($group);
     }
-    
+
     public function inMasterShop(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
     {
         $group        = group();

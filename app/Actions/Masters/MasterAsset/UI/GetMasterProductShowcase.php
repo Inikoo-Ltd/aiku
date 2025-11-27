@@ -68,7 +68,7 @@ class GetMasterProductShowcase
             'masterProduct'         => MasterProductResource::make($masterAsset)->toArray(request()),
             'properties'            => $properties,
             'trade_units'           => $dataTradeUnits,
-            'gpsr'                  => $gpsr,  
+            'gpsr'                  => $gpsr,
             'attachment_box'        => [
                 'public'      => []
             ]

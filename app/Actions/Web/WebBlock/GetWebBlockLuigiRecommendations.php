@@ -9,7 +9,6 @@
 
 namespace App\Actions\Web\WebBlock;
 
-use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;

@@ -20,7 +20,7 @@ enum FamilyTabsEnum: string
     case CONTENT = 'content';
     case IMAGES = 'images';
     case SALES = 'sales';
-    
+
     case OFFERS = 'offers';
     case HISTORY = 'history';
     case CUSTOMERS = 'customers';

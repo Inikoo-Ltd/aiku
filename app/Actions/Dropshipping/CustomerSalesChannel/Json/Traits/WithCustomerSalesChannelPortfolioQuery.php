@@ -75,7 +75,8 @@ trait WithCustomerSalesChannelPortfolioQuery
      */
     protected function getProductIdsFromCollection(Collection $collection): array
     {
-        return $collection->products()->pluck('id')->map(fn ($id) => (int)$id)->all();
+
+        return $collection->products()->pluck('products.id')->map(fn ($id) => (int)$id)->all();
     }
 
     /**

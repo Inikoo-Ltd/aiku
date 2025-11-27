@@ -200,7 +200,7 @@ Route::name("master_shops")->prefix('master-shops')
             });
 
             Route::get('/master-products-orphan', [IndexMasterProductsWithNoFamily::class, 'inMasterShop'])->name('.master_products_orphan');
-            
+
             Route::prefix('master-collections')->as('.master_collections.')->group(function () {
                 Route::get('', IndexMasterCollections::class)->name('index');
                 Route::get('create', CreateMasterCollection::class)->name('create');

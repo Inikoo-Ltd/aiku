@@ -10,6 +10,7 @@ namespace App\Actions\Maintenance\Masters;
 
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -34,7 +35,8 @@ class AddMissingFamiliesToMaster
             ->get();
 
         foreach ($categoriesToAdd as $categoryToAdd) {
-            $this->upsertMasterFamily($shop, $categoryToAdd);
+            // Create/Find Master Family using Family Data
+            $masterFamily = $this->upsertMasterFamily($shop, $categoryToAdd);
         }
     }
 
@@ -50,7 +52,6 @@ class AddMissingFamiliesToMaster
             ->where('type', MasterProductCategoryTypeEnum::FAMILY->value)
             ->where('deleted_at', null)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
-
 
         if (!$foundMasterFamilyData) {
             $masterParent = $this->getMasterParent($masterShop, $family);
@@ -70,6 +71,14 @@ class AddMissingFamiliesToMaster
                 ],
                 createChildren: false
             );
+
+            // if(!$family->master_product_category_id){
+            //     // Link Product Category with Master
+            //     UpdateProductCategory::make()->action(
+            //         $family,
+            //         ['master_product_category_id' => $foundMasterFamily->id]
+            //     );
+            // }
         } else {
             $foundMasterFamily = MasterProductCategory::find($foundMasterFamilyData->id);
 
@@ -163,7 +172,7 @@ class AddMissingFamiliesToMaster
 
     public function getCommandSignature(): string
     {
-        return 'repair:add_missing_families_to_master {from} {to}';
+        return 'repair:add_missing_families_to_master {from?} {to?}';
     }
 
     /**
@@ -171,10 +180,17 @@ class AddMissingFamiliesToMaster
      */
     public function asCommand(Command $command): int
     {
-        $toShop   = MasterShop::where('slug', $command->argument('to'))->firstOrFail();
-        $fromShop = Shop::where('slug', $command->argument('from'))->firstOrFail();
+        if ($command->argument('to') && $command->argument('from')) {
+            $fromShop = Shop::where('slug', $command->argument('from'))->firstOrFail();
+            $toShop   = MasterShop::where('slug', $command->argument('to'))->firstOrFail();
 
-        $this->handle($fromShop, $toShop);
+            $this->handle($fromShop, $toShop);
+        } else {
+            $shops = Shop::whereNotNull('master_shop_id')->get();
+            foreach ($shops as $shop) {
+                $this->handle($shop, $shop->masterShop);
+            }
+        }
 
         return 0;
     }

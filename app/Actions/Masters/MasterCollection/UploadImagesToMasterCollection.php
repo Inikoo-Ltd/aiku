@@ -16,10 +16,10 @@ use App\Actions\Traits\WithUploadModelImages;
 
 class UploadImagesToMasterCollection extends GrpAction
 {
-   use WithAttachMediaToModel;
-   use WithUploadModelImages;
+    use WithAttachMediaToModel;
+    use WithUploadModelImages;
 
-  public function handle(MasterCollection $model, string $scope, array $modelData, bool $updateDependants = false): array
+    public function handle(MasterCollection $model, string $scope, array $modelData, bool $updateDependants = false): array
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
         if ($updateDependants) {
@@ -31,7 +31,7 @@ class UploadImagesToMasterCollection extends GrpAction
 
     public function updateDependants(MasterCollection $seedMasterCollection, array $medias, string $scope): void
     {
-       foreach ($seedMasterCollection->childrenCollections as $collection) {
+        foreach ($seedMasterCollection->childrenCollections as $collection) {
             foreach ($medias as $media) {
                 $this->attachMediaToModel($collection, $media, $scope);
             }

@@ -110,7 +110,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             $finalData['trade_units'][] = [
                 'id'     => $tradeUnit['id'],
                 'images' => $tradeUnit['images'],
-                'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit['quantity']/$packedIn->quantity)), $packedIn->quantity),
+                'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit['quantity'] / $packedIn->quantity)), $packedIn->quantity),
             ];
         }
 
