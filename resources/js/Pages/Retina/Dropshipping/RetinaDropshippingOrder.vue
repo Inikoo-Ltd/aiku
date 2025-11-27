@@ -231,6 +231,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
     <DropshippingSummaryOrder
         :address_management
         :summary="box_stats"
+        :order
     />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
