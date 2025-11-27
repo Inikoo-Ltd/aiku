@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\Ebay;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\EbayUserStepEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\EbayUser;
@@ -33,6 +34,8 @@ class StoreEbayUser extends OrgAction
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'platform_id', $platform->id);
+        data_set($modelData, 'marketplace', Arr::get($customer->shop->settings, 'ebay.marketplace_id'));
+        data_set($modelData, 'step', EbayUserStepEnum::MARKETPLACE);
 
         /** @var EbayUser $ebayUser */
         $ebayUser = $customer->ebayUser()->create($modelData);

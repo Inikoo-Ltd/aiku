@@ -11,6 +11,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { ref } from "vue";
 
 const props = defineProps<{
+    platform: any
     customer_sales_channel: CustomerSalesChannel
     error_captcha: any
 }>()

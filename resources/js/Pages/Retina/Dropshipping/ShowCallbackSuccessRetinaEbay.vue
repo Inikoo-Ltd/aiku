@@ -22,6 +22,16 @@ import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { onMounted } from "vue"
+
+library.add(faCheckCircle, faUnlink, faExclamationTriangle, faClock)
+
+onMounted(() => {
+    setTimeout(() => {
+        window.close()
+    }, 1000)
+})
+
 
 </script>
 

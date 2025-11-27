@@ -42,6 +42,8 @@ class StoreEbayProduct extends RetinaAction
         try {
             /** @var Product $product */
             $product = $portfolio->item;
+            $includeVat = Arr::get($ebayUser->customerSalesChannel->settings, 'tax_category.checked', false);
+            $customerPrice = $includeVat ? $portfolio->customer_price : $portfolio->customer_price * 0.8;
 
             $handleError = function ($result) use ($portfolio, $ebayUser, $logs) {
                 if (isset($result['error']) || isset($result['errors'])) {
@@ -201,7 +203,7 @@ class StoreEbayProduct extends RetinaAction
                         'sku' => Arr::get($inventoryItem, 'sku'),
                         'description' => Arr::get($inventoryItem, 'product.description'),
                         'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
-                        'price' => $portfolio->customer_price,
+                        'price' => $customerPrice,
                         'currency' => $portfolio->shop->currency->code,
                         'category_id' => $categoryId
                     ]
@@ -211,7 +213,7 @@ class StoreEbayProduct extends RetinaAction
                     'sku' => Arr::get($inventoryItem, 'sku'),
                     'description' => Arr::get($inventoryItem, 'product.description'),
                     'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
-                    'price' => $portfolio->customer_price,
+                    'price' => $customerPrice,
                     'currency' => $portfolio->shop->currency->code,
                     'category_id' => $categoryId
                 ]);

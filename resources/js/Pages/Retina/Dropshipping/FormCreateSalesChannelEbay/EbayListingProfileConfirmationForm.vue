@@ -20,6 +20,7 @@ import { inject, onMounted, ref } from "vue";
     import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
     import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
     library.add(faInfoCircle);
 
@@ -126,11 +127,16 @@ import { notify } from "@kyvg/vue3-notification";
         if(data?.tax_categories?.length > 0) {
             taxCategories.value = data?.tax_categories;
         }
+
+        isLoadingFirstHit.value = false
     })
 </script>
 
 <template>
-    <form @submit.prevent="submitForm" class="flex flex-col gap-6">
+    <form @submit.prevent="submitForm" class="flex flex-col gap-6 relative">
+        <div v-if="isLoadingFirstHit" class="absolute flex pt-32 justify-center text-6xl text-white inset-0 w-full h-full bg-black/50 z-20">
+            <LoadingIcon />
+        </div>
         <hr class="w-full border-t" />
 
         <div class="flex flex-col w-full border rounded-xl">
