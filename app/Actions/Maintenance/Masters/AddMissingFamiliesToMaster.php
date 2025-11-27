@@ -29,11 +29,19 @@ class AddMissingFamiliesToMaster
     /**
      * @throws \Throwable
      */
-    public function handle(Shop $fromShop, MasterShop $shop): void
+    public function handle(Shop $fromShop, MasterShop $shop, bool $missingOnly = false): void
     {
-        $categoriesToAdd = $fromShop->productCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)
-            ->where('state', ProductCategoryStateEnum::ACTIVE)
-            ->get();
+        $categoriesToAdd = $fromShop->productCategories()->where('product_categories.type', MasterProductCategoryTypeEnum::FAMILY)
+            ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE);
+        if($missingOnly){
+            $categoriesToAdd->leftJoin('master_product_categories as mpc', 'mpc.id', '=', 'product_categories.master_product_category_id')
+                ->whereNull('mpc.id')
+                ->select(
+                    'product_categories.*',
+                    DB::raw('mpc.id IS NULL as no_master')
+            );
+        }
+        $categoriesToAdd = $categoriesToAdd->get();
 
         foreach ($categoriesToAdd as $categoryToAdd) {
             // Create/Find Master Family using Family Data
@@ -72,14 +80,6 @@ class AddMissingFamiliesToMaster
                 ],
                 createChildren: false
             );
-
-            // if(!$family->master_product_category_id){
-            //     // Link Product Category with Master
-            //     UpdateProductCategory::make()->action(
-            //         $family,
-            //         ['master_product_category_id' => $foundMasterFamily->id]
-            //     );
-            // }
         } else {
             $foundMasterFamily = MasterProductCategory::find($foundMasterFamilyData->id);
 
@@ -124,6 +124,14 @@ class AddMissingFamiliesToMaster
                     'mark_for_discontinued_at' => $discontinuingAt,
                     'discontinued_at'          => $discontinuedAt,
                 ]
+            );
+        }
+
+        if($family->no_master){
+            // Link Product Category with Master
+            UpdateProductCategory::make()->action(
+                $family,
+                ['master_product_category_id' => $foundMasterFamily->id]
             );
         }
 
@@ -173,7 +181,8 @@ class AddMissingFamiliesToMaster
 
     public function getCommandSignature(): string
     {
-        return 'repair:add_missing_families_to_master {from?} {to?}';
+        // --missing to search for family with no master
+        return 'repair:add_missing_families_to_master {from?} {to?} {--missing}';
     }
 
     /**
@@ -185,11 +194,11 @@ class AddMissingFamiliesToMaster
             $fromShop = Shop::where('slug', $command->argument('from'))->firstOrFail();
             $toShop   = MasterShop::where('slug', $command->argument('to'))->firstOrFail();
     
-            $this->handle($fromShop, $toShop);
+            $this->handle($fromShop, $toShop, $command->option('missing'));
         }else{
             $shops = Shop::whereNotNull('master_shop_id')->get();
             foreach($shops as $shop){
-                $this->handle($shop, $shop->masterShop);
+                $this->handle($shop, $shop->masterShop, $command->option('missing'));
             }
         }
 
