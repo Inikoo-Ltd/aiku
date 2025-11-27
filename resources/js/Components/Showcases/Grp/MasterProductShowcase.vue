@@ -22,7 +22,7 @@ import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
-import TradeUnitSummary from "@/Components/Goods/TradeUnitSummary.vue"
+import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterProductSummary.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
 
 
@@ -182,7 +182,7 @@ const tradeUnitBrands = computed(() => {
 			</div>
 		</div>
 
-		<TradeUnitSummary
+		<TradeUnitMasterProductSummary
 			:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}" 
 			:gpsr="data.gpsr" 
 			:properties="data.properties"

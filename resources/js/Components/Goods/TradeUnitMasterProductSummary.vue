@@ -1,26 +1,12 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
-import { ProductShowcase } from "@/types/product-showcase"
-import FractionDisplay from "../DataDisplay/FractionDisplay.vue"
-import { Link } from "@inertiajs/vue3"
-import {
-	faLock,
-	faGlobe,
-	faFile,
-	faCheckCircle,
-	faFileCheck,
-	faFilePdf,
-	faFileWord,
-} from "@fal"
-import ProductResource from "../Goods/ProductResource.vue"
-
-library.add(faLock, faGlobe, faFile, faCheckCircle, faFileCheck, faFilePdf, faFileWord)
+import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
+import ProductResource from "./ProductResource.vue"
 
 interface Stats {
 	amount: number | null
@@ -94,17 +80,18 @@ interface PropsData {
 
 const props = withDefaults(
 	defineProps<{
-		data: ProductShowcase
-		video?: string
+		data: PropsData
+		gpsr?: Gpsr
 		hide?: string[]
-		gpsr?:object
 		publicAttachment: array<any>
 		properties?: {
 			country_of_origin?: { code: string; name: string }
 			tariff_code?: string
 			duty_rate?: string
 		}
-	}>(),{}
+	}>(),
+	{
+	}
 )
 
 library.add(
@@ -125,13 +112,13 @@ library.add(
 	faVideo
 )
 
-
 </script>
 
 
 <template>
 	<div>
 		<div class="bg-white rounded-xl px-4 lg:px-5">
+
 			<dl class="mt-4 space-y-6 text-sm">
 				<div class="space-y-3">
 					<!-- Section: Since -->
@@ -141,9 +128,15 @@ library.add(
 					</div>
 
 					<!-- Section: Units -->
-					<div class="flex justify-between flex-wrap gap-1">
+					<div class="flex justify-between flex-wrap gap-1" v-if="data.unit && data.unit">
 						<dt class="text-gray-500">{{ trans("Units") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }} ({{ data.unit }}) </dd>
+					</div>
+
+
+					<div class="flex justify-between flex-wrap gap-1" v-else>
+						<dt class="text-gray-500">{{ trans("Units label") }}</dt>
+						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }} </dd>
 					</div>
 
 					<!-- Section: Weight marketing -->
@@ -181,37 +174,15 @@ library.add(
 							{{ data?.barcode }}
 						</dd>
 					</div>
-
-					<!-- Section: Picking -->
-					<div class="flex justify-between flex-wrap gap-0.5" v-if="!hide?.includes('picking')">
-						<dt class="text-gray-500">{{ trans("Picking") }}</dt>
-						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded">
-							<template v-if="data?.picking_factor?.length">
-								<div v-for="pick in data.picking_factor" class="grid grid-cols-4">
-									<div class="col-span-3">
-										<div class="w-fit">
-											<Link :href="route('grp.helpers.redirect_org_stock', pick.org_stock_id)"
-												class="primaryLink -ml-1">{{ pick.org_stock_code }}</Link>
-											<span class="italic opacity-60">({{ pick.org_stock_id }})</span>
-										</div>
-										<div v-tooltip="trans('Note')" class="text-gray-400 text-xs w-fit">
-											{{ pick.note || '-' }}
-										</div>
-									</div>
-
-									<div class=" text-right">
-										<FractionDisplay v-tooltip="trans('Number of packed in')"
-											:fractionData="pick.picking_factor" />
-									</div>
-								</div>
-							</template>
-							<div v-else class="text-center text-gray-400 italic text-xs">
-								{{ trans("No data available") }}
-							</div>
-						</dd>
-					</div>
 				</div>
-				<ProductResource :publicAttachment :data :gpsr :properties />
+
+
+			  <ProductResource 
+				:publicAttachment 
+				:data
+				:gpsr
+				:properties
+			  />
 			</dl>
 		</div>
 	</div>

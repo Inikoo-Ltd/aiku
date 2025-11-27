@@ -48,7 +48,7 @@ class GetProductShowcase
         ];
 
         $gpsr = [
-            'manufacturer'               => $product->gpsr_manufacturer,
+           'manufacturer'               => $product->gpsr_manufacturer,
             'eu_responsible'             => $product->gpsr_eu_responsible,
             'warnings'                   => $product->gpsr_warnings,
             'how_to_use'                 => $product->gpsr_manual,
@@ -62,7 +62,6 @@ class GetProductShowcase
             'hazard_environment'         => $product->pictogram_environment,
             'health_hazard'              => $product->pictogram_health,
             'oxidising'                  => $product->pictogram_oxidising,
-
         ];
 
         $dataTradeUnits = [];
