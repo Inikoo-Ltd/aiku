@@ -614,8 +614,10 @@ const calculateVat = (price: number) => {
         </template>
 
         <template #cell(message)="{item}">
-            <FontAwesomeIcon v-tooltip="item.message" v-if="item.message === 'OK'" icon='fal fa-check-circle' class="text-green-500 text-xl" fixed-width aria-hidden='true' />
-            <FontAwesomeIcon v-tooltip="item.message" v-else icon='fal fa-exclamation-circle' class="text-red-500 text-xl" fixed-width aria-hidden='true' />
+            <div v-if="item.message">
+                <FontAwesomeIcon v-tooltip="item.message" v-if="item.message === 'OK'" icon='fal fa-check-circle' class="text-green-500 text-xl" fixed-width aria-hidden='true' />
+                <FontAwesomeIcon v-tooltip="item.message" v-else icon='fal fa-exclamation-circle' class="text-red-500 text-xl" fixed-width aria-hidden='true' />
+            </div>
         </template>
 
         <!-- Column: Actions (connect) -->

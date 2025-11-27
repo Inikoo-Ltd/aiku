@@ -180,8 +180,8 @@ const layout = inject('layout', layoutStructure)
                     </ModalConfirmationDelete>
                 </div>
 
-                <div>
-                    <Link :href="route(route().current().split('.').slice(0, -1).join('.') + '.edit', layout.currentParams)">
+                <div v-if="route().params?.['customerSalesChannel']">
+                    <Link :href="route('retina.dropshipping.customer_sales_channels.edit', route().params)">
                         <FontAwesomeIcon icon="fal fa-pencil" />
                     </Link>
                 </div>
