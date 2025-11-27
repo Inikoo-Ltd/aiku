@@ -21,7 +21,6 @@ class GetIrisProductsInProductCategory extends IrisAction
 
     public function handle(ProductCategory $productCategory, $stockMode = 'all', bool $topSeller = false): LengthAwarePaginator
     {
-        $customer     = request()->user()?->customer;
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
 
         $queryBuilder->select($this->getSelect());
@@ -37,14 +36,6 @@ class GetIrisProductsInProductCategory extends IrisAction
         $baseUrl = $productCategory->url ?? '';
         $queryBuilder->selectRaw('\''.$baseUrl.'\' as parent_url');
 
-        $groupByColumns = ['products.id', 'webpages.id', 'webpages.url'];
-        if ($customer) {
-            $basket = $customer->orderInBasket;
-            if ($basket) {
-                $groupByColumns[] = 'transactions.id';
-            }
-        }
-        $queryBuilder->groupBy($groupByColumns);
 
         // Section: Sort
         $orderBy = request()->query('order_by');

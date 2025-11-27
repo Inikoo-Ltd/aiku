@@ -45,9 +45,9 @@ const props = withDefaults(defineProps<{
     categoryHasChannels?: number[]
     routeAddPortfolios?: routeType
     routeGetCategoryChannels?: routeType
-
 }>(), {
     categoryHasChannels: () => [],
+
     routeAddPortfolios : {
         name: 'iris.models.multi_channels.product_category.portfolio.store',
         parameters: {}
@@ -146,11 +146,11 @@ const onAddCategoryToChannel = (channel: {}) => {
             },
             onError: (errors) => {
                 console.error(errors)
-                notify({
+/*                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to add to portfolio"),
                     type: "error"
-                })
+                }) */
             },
             onFinish: () => {
                 const idx = isLoadingSpecificChannel.value.indexOf(channelId)
@@ -197,7 +197,6 @@ const fetchProductExistInChannel = async () => {
                 {
                     ...props.routeGetCategoryChannels.parameters,
                     customer: layout.iris?.customer?.id,
-                    productCategory: props.categoryId,
                 }
             )
         )
@@ -209,6 +208,7 @@ const fetchProductExistInChannel = async () => {
         console.log('Xxx product exist in channel response:', response.data)
         categoryHasChannelsList.value = response.data || []
     } catch (error: any) {
+        console.error(error)
         notify({
             title: trans('Something went wrong'),
             text: error.message,

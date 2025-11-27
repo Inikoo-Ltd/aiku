@@ -11,8 +11,10 @@ namespace App\Actions\Masters\MasterAsset\UI;
 use App\Actions\GrpAction;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -79,7 +81,8 @@ class EditMasterProduct extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'   => $masterAsset->code,
+                    'title'   => __('Edit master product'),
+                    'model'   => $masterAsset->code,
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
@@ -119,6 +122,21 @@ class EditMasterProduct extends GrpAction
     public function getBlueprint(MasterAsset $masterProduct): array
     {
         $barcodes = $masterProduct->tradeUnits->pluck('barcode')->filter()->unique();
+        $packedIn = DB::table('model_has_trade_units')
+                ->where('model_type', 'Stock')
+                ->whereIn('trade_unit_id', $masterProduct->tradeUnits->pluck('id'))
+                ->pluck('quantity', 'trade_unit_id')
+                ->toArray();
+
+        $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
+            return array_merge(
+                ['quantity' => (int) $t->pivot->quantity],
+                ['fraction'   =>  $t->pivot->quantity /  $packedIn[$t->id]],
+                ['packed_in'   =>  $packedIn[$t->id]],
+                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity /  $packedIn[$t->id])), $packedIn[$t->id])],
+                $t->toArray()
+            );
+        });
 
         return [
             [
@@ -213,23 +231,6 @@ class EditMasterProduct extends GrpAction
                 ]
             ],
             [
-                'label'  => __('Pricing'),
-                'icon'   => 'fa-light fa-money-bill',
-                'fields' => [
-                    'cost_price_ratio' => [
-                        'type'          => 'input_number',
-                        'bind' => [
-                            'maxFractionDigits' => 3
-                        ],
-                        'label'         => __('pricing ratio'),
-                        'placeholder'   => __('Cost price ratio'),
-                        'required'      => true,
-                        'value'         => $masterProduct->cost_price_ratio,
-                        'min'           => 0
-                    ],
-                ]
-            ],
-            [
                 'label'  => __('Properties'),
                 'title'  => __('id'),
                 'icon'   => 'fa-light fa-fingerprint',
@@ -238,11 +239,6 @@ class EditMasterProduct extends GrpAction
                         'type'  => 'input',
                         'label' => __('unit'),
                         'value' => $masterProduct->unit,
-                    ],
-                    'units'       => [
-                        'type'  => 'input',
-                        'label' => __('units'),
-                        'value' => $masterProduct->units,
                     ],
                     'barcode'       => [
                         'type'  => 'select',
@@ -253,65 +249,91 @@ class EditMasterProduct extends GrpAction
                             return [$barcode => $barcode];
                         })->toArray()
                     ],
-                    'price'       => [
-                        'type'     => 'input',
-                        'label'    => __('price'),
-                        'required' => true,
-                        'value'    => $masterProduct->price
-                    ],
-                    'marketing_weight'       => [
+                   /*  'marketing_weight'       => [
                         'type'     => 'input_number',
                         'label'    => __('marketing weight'),
                         'value'    => $masterProduct->marketing_weight,
                         'bind'     => [
                                 'suffix' => 'g'
                         ]
-                    ],
+                    ], */
                 ]
             ],
             [
-                    'label' => __('Trade unit'),
-                    'icon'  => 'fa-light fa-atom',
-                    'fields' => [
-                        'trade_units' => [
-                            'label'        => __('Trade Units'),
-                            'type'         => 'list-selector',
-                            'value'        => $masterProduct->tradeUnits,
-                            'key_quantity' => 'quantity',
-                            'withQuantity' => true,
-                            'tabs' => [
+                'label'  => __('Master Family'),
+                'icon'   => 'fal fa-folder',
+                'fields' => [
+                    'master_family_id'   => [
+                        'type'        => 'select_infinite',
+                        'label'       => __('Master Family'),
+                        'value'       => $masterProduct->masterFamily->id ?? null,
+                        'options'   => [
                                 [
-                                    'label' => __('To do'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.recommended-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $masterProduct->masterFamily->slug,
-                                        ],
+                                    'code' =>  $masterProduct->masterFamily->code ?? null,
+                                    'name' =>  $masterProduct->masterFamily->name ?? null,
+                                    'number_current_products' =>  $masterProduct->masterFamily->stats->number_current_master_assets ?? 0
+                                ]
+                        ],
+                        'fetchRoute'    => [
+                            'name' => 'grp.json.master-family.all-master-family',
+                            'parameters' => [
+                                'masterShop' => $this->masterShop->slug,
+                                'withMasterProductCategoryStat' => true,
+                            ]
+                        ],
+                        'required' => true,
+                        'type_label' => 'families',
+                        'valueProp' => 'id',
+                        'labelProp' => 'code',
+                        'value'   => $masterProduct->masterFamily->id ?? null,
+                    ]
+                ]
+            ],
+            $masterProduct->masterFamily ? [
+                'label' => __('Trade unit'),
+                'icon'  => 'fa-light fa-atom',
+                'fields' => [
+                    'trade_units' => [
+                        'label'        => __('Trade Units'),
+                        'type'         => 'list-selector-trade-unit',
+                        'key_quantity' => 'quantity',
+                        'withQuantity' => true,
+                        'full'         => true,
+                        'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
+                        'tabs' => [
+                            [
+                                'label' => __('To do'),
+                                'routeFetch' => [
+                                    'name'       => 'grp.json.master-product-category.recommended-trade-units',
+                                    'parameters' => [
+                                        'masterProductCategory' => $masterProduct->masterFamily->slug,
                                     ],
                                 ],
-                                [
-                                    'label' => __('Done'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.taken-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $masterProduct->masterFamily->slug,
-                                        ],
+                            ],
+                            [
+                                'label' => __('Done'),
+                                'routeFetch' => [
+                                    'name'       => 'grp.json.master-product-category.taken-trade-units',
+                                    'parameters' => [
+                                        'masterProductCategory' => $masterProduct->masterFamily->slug,
                                     ],
                                 ],
-                                [
-                                    'label'   => __('All'),
-                                    'search'  => true,
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.all-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $masterProduct->masterFamily->slug,
-                                        ],
+                            ],
+                            [
+                                'label'   => __('All'),
+                                'search'  => true,
+                                'routeFetch' => [
+                                    'name'       => 'grp.json.master-product-category.all-trade-units',
+                                    'parameters' => [
+                                        'masterProductCategory' => $masterProduct->masterFamily->slug,
                                     ],
                                 ],
                             ],
                         ],
+                        'value'        => $tradeUnits,
                     ],
                 ],
+            ] : [],
         ];
     }
 

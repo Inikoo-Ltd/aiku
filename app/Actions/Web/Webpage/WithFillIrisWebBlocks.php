@@ -48,7 +48,7 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
         } elseif ($webBlockType == 'blog') {
             $parsedWebBlocks[$key] = GetWebBlockBlog::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['luigi-trends-1', 'luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
+        } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;

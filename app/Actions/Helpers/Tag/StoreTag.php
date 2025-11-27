@@ -46,8 +46,8 @@ class StoreTag extends OrgAction
     public function htmlResponse(): void
     {
         request()->session()->flash('notification', [
-            'status'  => 'success',
-            'title'   => __('Success!'),
+            'status'      => 'success',
+            'title'       => __('Success!'),
             'description' => __('Tag successfully created.'),
         ]);
     }
@@ -74,7 +74,7 @@ class StoreTag extends OrgAction
                 'originalName' => $image->getClientOriginalName(),
                 'extension'    => $image->getClientOriginalExtension(),
             ];
-            $tag     = SaveModelImage::run(
+            $tag       = SaveModelImage::run(
                 model: $tag,
                 imageData: $imageData,
                 scope: 'image',
@@ -83,6 +83,14 @@ class StoreTag extends OrgAction
 
         if ($parent instanceof TradeUnit || $parent instanceof Customer) {
             AttachTagsToModel::make()->handle($parent, ['tags_id' => [$tag->id]]);
+        }
+
+        if ($tag->image) {
+            $tag->update(
+                [
+                    'web_image' => $tag->imageSources(30, 30)
+                ]
+            );
         }
 
         return $tag;
@@ -96,7 +104,7 @@ class StoreTag extends OrgAction
                 'sometimes',
                 'nullable',
                 'string',
-                'in:' . implode(',', array_column(TagScopeEnum::cases(), 'value')),
+                'in:'.implode(',', array_column(TagScopeEnum::cases(), 'value')),
                 function ($attribute, $value, $fail) {
                     if ($value === TagScopeEnum::SYSTEM_CUSTOMER->value) {
                         $fail(__("You can't create tag with system scope."));

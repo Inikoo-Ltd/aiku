@@ -159,7 +159,7 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                 'sales_org_currency_delta' => [
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $labelDelta,
-                    'currency_type'     => 'always',
+                    'currency_type'     => 'org',
                     'data_display_type' => 'always',
                     'sortable'          => true,
                     'align'             => 'right',
@@ -188,7 +188,7 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                 'sales_grp_currency_delta' => [
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $labelDelta,
-                    'currency_type'     => 'always',
+                    'currency_type'     => 'grp',
                     'data_display_type' => 'always',
                     'sortable'          => true,
                     'align'             => 'right',
@@ -197,12 +197,9 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
             ],
         );
 
-
         return [
             'slug'    => $organisation->slug,
             'columns' => $columns
-
-
         ];
     }
 }

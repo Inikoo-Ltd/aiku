@@ -14,11 +14,14 @@ use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Brand;
 use App\Models\Helpers\Media;
+use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
+use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -96,12 +99,41 @@ use Spatie\Translatable\HasTranslations;
  * @property MasterAssetStocksStatusEnum|null $stocks_status
  * @property MasterAssetProductsStatusEnum|null $products_status
  * @property array<array-key, mixed>|null $offers_data
+ * @property string|null $un_number
+ * @property string|null $un_class
+ * @property string|null $packing_group
+ * @property string|null $proper_shipping_name
+ * @property string|null $hazard_identification_number
+ * @property string|null $gpsr_manufacturer
+ * @property string|null $gpsr_eu_responsible
+ * @property string|null $gpsr_warnings
+ * @property string|null $gpsr_manual
+ * @property string|null $gpsr_class_category_danger
+ * @property string|null $gpsr_class_languages
+ * @property bool $pictogram_toxic
+ * @property bool $pictogram_corrosive
+ * @property bool $pictogram_explosive
+ * @property bool $pictogram_flammable
+ * @property bool $pictogram_gas
+ * @property bool $pictogram_environment
+ * @property bool $pictogram_health
+ * @property bool $pictogram_oxidising
+ * @property bool $pictogram_danger
+ * @property string|null $cpnp_number
+ * @property string|null $scpn_number
+ * @property string|null $ufi_number
+ * @property string|null $country_of_origin
+ * @property string|null $tariff_code
+ * @property string|null $duty_rate
+ * @property string|null $hts_us
+ * @property string|null $marketing_ingredients
+ * @property int|null $origin_country_id
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
  * @property-read Media|null $art4Image
  * @property-read Media|null $art5Image
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
  * @property-read Media|null $bottomImage
  * @property-read Media|null $frontImage
@@ -113,23 +145,24 @@ use Spatie\Translatable\HasTranslations;
  * @property-read MasterAsset|null $mainMasterProduct
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterDepartment
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterFamily
- * @property-read \Illuminate\Database\Eloquent\Collection<int, MasterAsset> $masterProductVariants
+ * @property-read LaravelCollection<int, MasterAsset> $masterProductVariants
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
+ * @property-read LaravelCollection<int, Product> $products
  * @property-read Media|null $rightImage
  * @property-read \App\Models\Masters\MasterAssetSalesIntervals|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Stock> $stocks
+ * @property-read LaravelCollection<int, Stock> $stocks
+ * @property-read LaravelCollection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAssetTimeSeries> $timeSeries
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterAssetTimeSeries> $timeSeries
  * @property-read Media|null $topImage
- * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
+ * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newModelQuery()
@@ -366,5 +399,26 @@ class MasterAsset extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(Media::class, 'id', 'art5_image_id');
     }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
+    }
+
+
+    public function tradeUnitTagsViaTradeUnits(): LaravelCollection
+    {
+        return Tag::whereHas('tradeUnits', function ($query) {
+            $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
+        })->get();
+    }
+
+    public function getBrand(): ?Brand
+    {
+        return Brand::whereHas('tradeUnits', function ($query) {
+            $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
+        })->first();
+    }
+
 
 }

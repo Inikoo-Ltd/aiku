@@ -61,6 +61,7 @@ class IndexBasketTransactions extends OrgAction
                 'assets.type as asset_type',
                 'products.id as product_id',
                 'products.price as price',
+                'products.units as units',
                 'products.slug as product_slug',
                 'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',

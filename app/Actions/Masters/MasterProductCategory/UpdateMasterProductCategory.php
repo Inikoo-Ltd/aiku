@@ -29,6 +29,7 @@ class UpdateMasterProductCategory extends OrgAction
     use WithMasterProductCategoryAction;
     use WithImageCatalogue;
 
+    private $offersData;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
@@ -96,11 +97,16 @@ class UpdateMasterProductCategory extends OrgAction
             ]);
         }
 
+        $modelData['offers_data'] = $masterProductCategory->offers_data;
+        if (Arr::has($modelData, 'vol_gr')) {
+            $modelData['vol_gr'] = $modelData['vol_gr'][0];
+            $modelData['offers_data']['vol_gr'] = Arr::pull($modelData, 'vol_gr');
+        }
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if (Arr::hasAny($changed, ['code', 'name', 'description', 'description_title', 'description_extra', 'rrp'])) {
+        if (Arr::hasAny($changed, ['code', 'name', 'description', 'description_title', 'description_extra', 'rrp', 'offers_data'])) {
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 UpdateProductCategory::make()->action($productCategory, [
                     'code'              => $masterProductCategory->code,
@@ -108,7 +114,8 @@ class UpdateMasterProductCategory extends OrgAction
                     'description'       => $masterProductCategory->description,
                     'description_title' => $masterProductCategory->description_title,
                     'description_extra' => $masterProductCategory->description_extra,
-                    'rrp'               => $masterProductCategory->rrp
+                    'rrp'               => $masterProductCategory->rrp,
+                    'offers_data'       => $masterProductCategory->offers_data
                 ]);
             }
         }
@@ -173,6 +180,7 @@ class UpdateMasterProductCategory extends OrgAction
             'description_title_i8n'    => ['sometimes', 'array'],
             'description_i8n'          => ['sometimes', 'array'],
             'description_extra_i8n'    => ['sometimes', 'array'],
+            'vol_gr'                   => ['sometimes', 'array'],
             'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0']
         ];
 

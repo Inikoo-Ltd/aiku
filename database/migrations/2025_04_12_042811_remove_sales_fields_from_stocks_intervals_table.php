@@ -40,7 +40,7 @@ return new class () extends Migration {
             foreach ($subjects as $subject) {
                 $subject = $subject ? $subject . '_' : '';
 
-                foreach (DateIntervalEnum::values() as $col) {
+                foreach (DateIntervalEnum::valuesWithoutCustom() as $col) {
                     $table->dropColumn($subject . $col);
                 }
                 foreach (DateIntervalEnum::lastYearValues() as $col) {

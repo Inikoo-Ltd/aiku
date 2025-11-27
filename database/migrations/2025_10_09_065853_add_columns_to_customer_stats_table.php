@@ -24,7 +24,7 @@ return new class () extends Migration {
             $table->float('churn_risk_prediction')->nullable();
 
             $table->float('average_time_between_orders')->nullable();
-            $table->decimal('average_order_value')->nullable();
+            $table->decimal('average_order_value', 16)->nullable();
             $table->dateTimeTz('expected_date_of_next_order')->nullable();
 
 

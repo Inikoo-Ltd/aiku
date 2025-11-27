@@ -194,7 +194,7 @@ sub vcl_hash {
     # Categorize requests into two hash buckets based on X-Inertia header
     # If X-Inertia exists and equals "true" (case-insensitive) → bucket "Inertia"
     # otherwise → bucket "Direct"
-    if (req.http.X-Inertia && std.tolower(req.http.X-Inertia) == "true") {
+    if (req.http.X-Inertia) {
         hash_data("Inertia");
     } else {
         hash_data("Direct");

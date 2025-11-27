@@ -11,7 +11,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faTrash } from "@fas";
 import { useConfirm } from "primevue/useconfirm"
 import ConfirmPopup from "primevue/confirmpopup"
-import { faExclamationTriangle } from "@far";
+import { faCopy, faExclamationTriangle } from "@far";
+import { faEye, faEyeSlash } from "@fal";
 
 const props = defineProps<{
     data: {
@@ -68,6 +69,26 @@ const deleteNavigation = (index: Number) => {
     debouncedSendUpdate()
 }
 
+const hiddenNavigation = (index: number) => {
+    const nav = props.data.data.fieldValue?.navigation
+    if (!nav || !nav[index]) return
+
+    nav[index].hidden = !Boolean(nav[index].hidden)
+
+    debouncedSendUpdate()
+}
+
+const copyNavigation = (index: number) => {
+    const nav = props.data.data.fieldValue?.navigation
+    if (!nav || !nav[index]) return
+
+    const duplicated = { ...nav[index] }  // copy new object
+
+    nav.splice(index + 1, 0, duplicated)  // insert without deleting anything
+
+    debouncedSendUpdate()
+}
+
 
 
 
@@ -113,9 +134,21 @@ const autoSave = async (event) => {
                     <div class="text-sm font-semibold text-gray-700">{{ element.label }}</div>
                 </div>
 
+                <button  @click.stop="() => hiddenNavigation(index)"
+                    class="px-3 py-2 transition duration-150"
+                    title="hidden menu">
+                    <FontAwesomeIcon :icon="element.hidden ?  faEyeSlash : faEye" />
+                </button>
+
+                 <button  @click.stop="() => copyNavigation(index)"
+                    class="px-3 py-2 transition duration-150"
+                    title="hidden menu">
+                    <FontAwesomeIcon :icon="faCopy" />
+                </button>
+
                 <!-- Delete Button -->
                 <button :ref="el => deleteButtonRefs[index] = el" @click.stop="() => deleteNavigation(index)"
-                    class="opacity-0 group-hover:opacity-100 px-3 py-2 text-red-500 hover:text-red-700 transition duration-150"
+                    class="px-3 py-2 text-red-500 hover:text-red-700 transition duration-150"
                     title="Delete menu">
                     <FontAwesomeIcon :icon="faTrash" />
                 </button>

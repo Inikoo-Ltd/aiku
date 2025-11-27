@@ -9,29 +9,31 @@
 namespace App\Actions\Helpers\Dashboard;
 
 use App\Enums\DateIntervals\DateIntervalEnum;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class DashboardIntervalFilters
 {
     use asObject;
 
-    public function handle(DateIntervalEnum $interval): string
+    public function handle(DateIntervalEnum $interval, array $userSettings = []): string
     {
         $startDate = match($interval->value) {
-            '1y' => now()->subYear(),
-            '1q' => now()->subQuarter(),
-            '1m' => now()->subMonth(),
-            '1w' => now()->subWeek(),
-            '3d' => now()->subDays(3),
-            '1d' => now()->subDay(),
-            'ytd' => now()->startOfYear(),
-            'tdy' => now()->startOfDay(),
-            'qtd' => now()->startOfQuarter(),
-            'mtd' => now()->startOfMonth(),
-            'wtd' => now()->startOfWeek(),
-            'lm' => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
-            'lw' => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
-            'ld' => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
+            '1y'    => now()->subYear(),
+            '1q'    => now()->subQuarter(),
+            '1m'    => now()->subMonth(),
+            '1w'    => now()->subWeek(),
+            '3d'    => now()->subDays(3),
+            '1d'    => now()->subDay(),
+            'ytd'   => now()->startOfYear(),
+            'tdy'   => now()->startOfDay(),
+            'qtd'   => now()->startOfQuarter(),
+            'mtd'   => now()->startOfMonth(),
+            'wtd'   => now()->startOfWeek(),
+            'lm'    => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
+            'lw'    => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
+            'ld'    => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
+            'ctm'   => 'ctm',
             default => null
         };
 
@@ -39,13 +41,13 @@ class DashboardIntervalFilters
             return '';
         }
 
+        if ($startDate == 'ctm') {
+            return Arr::get($userSettings, 'range_interval', '');
+        }
+
         $start = is_array($startDate) ? $startDate[0] : $startDate;
         $end = is_array($startDate) ? $startDate[1] : now();
 
         return str_replace('-', '', $start->toDateString()) . '-' . str_replace('-', '', $end->toDateString());
-
     }
-
-
-
 }

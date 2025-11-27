@@ -10,7 +10,7 @@ import ProductRender from "./ProductRender.vue";
 import FilterProducts from "./FilterProduct.vue";
 import Drawer from "primevue/drawer";
 import Skeleton from "primevue/skeleton";
-import { debounce } from "lodash-es";
+import { debounce, get } from "lodash-es";
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import PureInput from "@/Components/Pure/PureInput.vue";
@@ -21,6 +21,7 @@ import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCa
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import Collection from "@/Pages/Grp/Org/Catalogue/Collection.vue";
 
 library.add(faFileDownload)
 
@@ -55,6 +56,7 @@ const props = defineProps<{
 
 const categoryId = props.fieldValue.model_id
 const layout = inject("layout", retinaLayoutStructure);
+const firstLoad = ref(null)
 const products = ref<any[]>(
     props.fieldValue?.products?.meta?.last_page == 1
         ? [
@@ -63,7 +65,6 @@ const products = ref<any[]>(
         ]
         : [...(props.fieldValue?.products?.data ?? [])]
 );
-
 const loadingInitial = ref(false);
 const loadingMore = ref(false);
 const q = ref("");
@@ -73,7 +74,11 @@ const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page));
 const filter = ref({ data: {} });
 const showFilters = ref(false);
 const showAside = ref(false);
-const totalProducts = ref(props.fieldValue?.products?.meta?.last_page == 1 ? props.fieldValue.products.meta.total + props.fieldValue?.products_out_of_stock?.meta?.total : props.fieldValue.products.meta.total)
+const totalProducts = ref(
+    props.fieldValue?.products?.meta?.last_page == 1 ? 
+    props.fieldValue.products.meta.total + get(props.fieldValue,['products_out_of_stock','meta','total'],0) : 
+    props.fieldValue.products.meta.total
+)
 const settingPortfolio = ref(false);
 const isFetchingOutOfStock = ref(true);
 // const confirm = useConfirm();
@@ -165,6 +170,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
     if (isLoadMore) {
         loadingMore.value = true;
     } else {
+        if(firstLoad.value == 1)
         loadingInitial.value = true;
     }
 
@@ -183,7 +189,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
             ...filters,
             "filter[global]": q.value,
             sort: orderBy.value,
-            index_perPage: 25,
+            index_perPage: 50,
             page: page.value
         }));
 
@@ -217,6 +223,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
     } finally {
         loadingInitial.value = false;
         loadingMore.value = false;
+        firstLoad.value++;
     }
 };
 
@@ -290,8 +297,9 @@ onMounted(() => {
     }
 
     if (layout?.iris?.is_logged_in) {
+        firstLoad.value = 1
         fetchProductHasPortfolio();
-        /* fetchProducts() */
+        fetchProducts() // break chace from product dont deleted
     }
 
 
@@ -489,8 +497,9 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                         </template>
                         <div class="w-full">
                             <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
-                                placeholder="Search products..." :clear="true" :isLoading="loadingInitial"
-                                :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
+                                :placeholder="trans('Search products') + '...'" :clear="true"
+                                :isLoading="loadingInitial" :prefix="{ icon: faSearch, label: '' }"
+                                class="search-input ring-0">
                                 <template #prefix>
                                     <div class="pl-3 whitespace-nowrap text-gray-400">
                                         <FontAwesomeIcon :icon='faSearch' class="icon-search" fixed-width
@@ -506,7 +515,8 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                     <div class="flex items-center space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
-                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1 sort-button" :class="[
+                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1 sort-button"
+                            :class="[
                                 'pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1',
                                 sortKey === option.value
                                     ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
@@ -532,7 +542,11 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                     </div>
 
                     <div v-if="layout?.iris?.customer?.id">
-                        <ButtonAddCategoryToPortfolio :products :categoryId  />
+                        <ButtonAddCategoryToPortfolio :products :categoryId 
+                            :routeGetCategoryChannels="{
+                                name: props.fieldValue.model_type == 'ProductCategory' ? 'iris.json.customer.product_category.channel_ids.index' : 'iris.json.customer.collection.channel_ids.index',
+                                parameters: props.fieldValue.model_type == 'ProductCategory' ? { productCategory : categoryId } : { collection : categoryId }
+                            }" />
                     </div>
                 </div>
 
@@ -553,7 +567,9 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border p-3 relative rounded bg-white">
                             <ProductRender :product="product" :key="index" :bestSeller="fieldValue.bestseller"
-                                :productHasPortfolio="productHasPortfolio.list[product.id]" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
+                                :productHasPortfolio="productHasPortfolio.list[product.id]"
+                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
                         </div>
                     </template>
 

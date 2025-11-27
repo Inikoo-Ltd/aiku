@@ -27,6 +27,7 @@ enum OrderTabsEnum: string
     case ATTACHMENTS                 = 'attachments';
 
     // case SENT_EMAILS                 = 'sent_emails';
+    case DISPATCHED_EMAILS           = 'dispatched_emails';
 
 
 
@@ -48,13 +49,13 @@ enum OrderTabsEnum: string
                 'icon'  => 'fal fa-dollar-sign',
             ],
 
-            // OrderTabsEnum::SENT_EMAILS => [
-            //     'title' => __('Sent emails'),
-            //     'icon'  => 'fal fa-envelope',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
+            OrderTabsEnum::DISPATCHED_EMAILS => [
+                'title' => __('Dispatched emails'),
+                'icon'  => 'fal fa-envelope',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
 
-            // ],
             // OrderTabsEnum::DISCOUNTS => [
             //     'title' => __('Discounts'),
             //     'icon'  => 'fal fa-tag',

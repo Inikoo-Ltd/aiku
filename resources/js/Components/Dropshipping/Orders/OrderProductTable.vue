@@ -342,7 +342,10 @@ defineExpose({
             </div>
           </div>
           <div v-else>
-            {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
+              <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
+                  <span v-if="item.gross_amount != item.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
+                  <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
+              </p>
           </div>
         </div>
       </template>

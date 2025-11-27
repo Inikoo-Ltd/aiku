@@ -12,10 +12,10 @@ use App\Actions\Utils\Abbreviate;
 use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
-use App\Models\Dropshipping\CustomerSalesChannelDownloadPortfolio;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -74,6 +75,7 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @property int $ping_error_count
  * @property \Illuminate\Support\Carbon|null $ban_stock_update_util
  * @property array<array-key, mixed>|null $settings
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders
@@ -93,12 +95,13 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withoutTrashed()
  * @mixin \Eloquent
  */
-class CustomerSalesChannel extends Model implements Authenticatable
+class CustomerSalesChannel extends Model implements Authenticatable, Auditable
 {
     use InShop;
     use HasSlug;
     use HasApiTokens;
     use SoftDeletes;
+    use HasHistory;
     use AuthenticatableTrait;
 
     protected $table = 'customer_sales_channels';
@@ -108,6 +111,7 @@ class CustomerSalesChannel extends Model implements Authenticatable
     protected $casts = [
         'data'                  => 'array',
         'settings'              => 'array',
+        'audited_at'            => 'datetime',
         'status'                => CustomerSalesChannelStatusEnum::class,
         'state'                 => CustomerSalesChannelStateEnum::class,
         'connection_status'     => CustomerSalesChannelConnectionStatusEnum::class,

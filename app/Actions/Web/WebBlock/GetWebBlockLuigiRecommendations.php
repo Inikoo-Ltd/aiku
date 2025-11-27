@@ -9,7 +9,6 @@
 
 namespace App\Actions\Web\WebBlock;
 
-use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -21,8 +20,7 @@ class GetWebBlockLuigiRecommendations
     public function handle(Webpage $webpage, array $webBlock): array
     {
         if ($webpage->model instanceof Product) {
-            $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
-            data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
+            data_set($webBlock, 'web_block.layout.data.fieldValue.product.luigi_identity', $webpage->model->getLuigiIdentity());
         }
 
         return $webBlock;

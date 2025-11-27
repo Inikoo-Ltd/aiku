@@ -68,6 +68,7 @@ class UpdateShipper extends OrgAction
                 ),
             ],
             'name'         => ['sometimes', 'required', 'max:255', 'string'],
+            'trade_as'     => ['sometimes', 'required', 'max:255', 'string'],
             'api_shipper'  => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],

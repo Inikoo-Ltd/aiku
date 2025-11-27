@@ -216,7 +216,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, WebpageHasProduct> $webpageHasProducts
- * @property mixed $gpsr_product_languages
  * @method static \Database\Factories\Catalogue\ProductFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newQuery()

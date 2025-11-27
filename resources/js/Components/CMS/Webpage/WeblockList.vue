@@ -4,6 +4,10 @@ import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import Image from '@/Components/Image.vue'
 import { Root, Daum } from '@/types/webBlockTypes'
 import { useLayoutStore } from '@/Stores/layout'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faImage } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faImage)
 
 const props = withDefaults(
 	defineProps<{
@@ -77,12 +81,15 @@ onMounted(() => {
 							class="relative h-36 w-52 border rounded-xl cursor-pointer bg-white shadow-sm hover:shadow-md hover:scale-[1.02] transition-transform"
 							@click="onPickBlock(block)"
 						>
-							<div class="h-3/4 flex items-center justify-center bg-gray-100">
+							<div class="h-3/4 flex items-center justify-center bg-gray-100 text-center text-sm text-gray-400">
 								<Image
+									v-if="block.screenshot"
 									:src="block.screenshot"
 									class="max-h-full max-w-full object-contain"
 									:alt="`Screenshot of ${block.name}`"
 								/>
+
+								<FontAwesomeIcon v-else icon="fal fa-image" class="text-4xl opacity-40" fixed-width aria-hidden="true" />
 							</div>
 							<div
 								class="h-1/4 flex items-center justify-center text-sm font-semibold px-2 truncate"

@@ -80,11 +80,11 @@ class IndexTradeUnitsInProduct extends OrgAction
                     'description' => __("You can create a new trade unit by clicking the button below."),
                 ]
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: false, searchable: false);
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 }

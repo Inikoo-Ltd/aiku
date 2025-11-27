@@ -446,6 +446,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
                 $table->column(key: 'status', label: __('Status'));
+                $table->column(key: 'message', label: '', canBeHidden: false);
 
                 $matchesLabel = __($this->customerSalesChannel->platform->name . ' product');
 
@@ -455,7 +456,6 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
             $table->column(key: 'delete', label: '', canBeHidden: false);
-            $table->column(key: 'message', label: 'Response', canBeHidden: false);
         };
     }
 

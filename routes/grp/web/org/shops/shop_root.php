@@ -9,7 +9,7 @@
 use App\Actions\Catalogue\Shop\UI\CreateShop;
 use App\Actions\Catalogue\Shop\UI\IndexShops;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Stubs\UIDummies\ShowDummyDashboard;
+use App\Actions\CRM\UI\ShowCrmDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', IndexShops::class)->name('index');
@@ -37,7 +37,7 @@ Route::prefix('{shop}')->name('show.')
 
         Route::name("crm.")->prefix('crm')->group(
             function () {
-                Route::get('', ShowDummyDashboard::class)->name('dashboard');
+                Route::get('', ShowCrmDashboard::class)->name('dashboard');
                 Route::prefix("customers")
                     ->name("customers.")
                     ->group(__DIR__ . "/customers.php");

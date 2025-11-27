@@ -74,13 +74,12 @@ export default defineConfig(
     },
     build  : {
       sourcemap    : true,
-      // transpile: ["@fortawesome/vue-fontawesome", "@fortawesome/fontawesome-svg-core"],        
+      // transpile: ["@fortawesome/vue-fontawesome", "@fortawesome/fontawesome-svg-core"],
       devSourcemap : true,
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes("node_modules") &&
-              !id.includes("sentry")) {
+            if (id.includes("node_modules")) {
               return id.toString().
                 split("node_modules/")[1].split(
                 "/")[0].toString();

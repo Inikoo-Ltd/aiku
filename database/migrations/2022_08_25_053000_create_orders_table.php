@@ -47,8 +47,8 @@ return new class () extends Migration {
             $table->boolean('billing_locked')->default(false);
             $table->boolean('delivery_locked')->default(false);
 
-            $table->unsignedInteger('estimated_weight')->nullable()->comment('grams');
-            $table->unsignedInteger('weight')->nullable()->comment('actual weight, grams');
+            $table->unsignedBigInteger('estimated_weight')->nullable()->comment('grams');
+            $table->unsignedBigInteger('weight')->nullable()->comment('actual weight, grams');
             $table->jsonb('payment_data');
 
             $table->unsignedInteger('billing_address_id')->index()->nullable();

@@ -49,7 +49,7 @@ return new class () extends Migration {
             foreach ($subjects as $subject) {
                 $subject = $subject ? $subject.'_' : '';
 
-                foreach (DateIntervalEnum::values() as $col) {
+                foreach (DateIntervalEnum::valuesWithoutCustom() as $col) {
                     if (Schema::hasColumn('org_stock_family_intervals', $subject.$col)) {
                         $table->dropColumn($subject.$col);
                     }

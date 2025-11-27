@@ -69,6 +69,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $api_point_id
  * @property string $total_refund
  * @property PaymentClassEnum $class
+ * @property bool|null $is_mit
+ * @property string|null $debug_mit_status
+ * @property bool|null $debug_mit_is_approved
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Accounting\CreditTransaction|null $creditTransaction
  * @property-read Currency $currency

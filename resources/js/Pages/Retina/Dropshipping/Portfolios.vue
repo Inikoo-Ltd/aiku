@@ -640,20 +640,12 @@ onBeforeUnmount(() => {
 
 
                 <div v-if="selectedProducts.length > 0" class="space-x-2 border-r border-gray-400 pr-2">
-                    <!--   <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
-                          :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
-                          :loading="loadingAction.includes('bulk-match')" @click="() => submitPortfolioAction({
-                              label : 'bulk-match',
-                              name : 'retina.models.dropshipping.shopify.batch_match',
-                              parameters: { customerSalesChannel: customer_sales_channel.id },
-                              method: 'post',
-                          })" size="xs" /> -->
 
                     <Button
                         v-if="selectedProducts.length > 0"
                         v-tooltip="trans('Unlink & Delete Product :platform', { platform: props.platform_data?.name })"
                         :type="'delete'"
-                        :label="trans('Unlink & Delete Product (:count)', { count: selectedProducts?.length })"
+                        :label="trans('Unlink & Delete Product (:_count)', { _count: selectedProducts?.length })"
                         :loading="loadingAction.includes('bulk-unlink')"
                         @click="() => submitPortfolioAction({
                             label : 'bulk-unlink',
@@ -668,7 +660,7 @@ onBeforeUnmount(() => {
                         v-if="selectedProducts.length > 0"
                         v-tooltip="trans('Upload as new product to the :platform', { platform: props.platform_data?.name })"
                         :type="'create'"
-                        :label="trans('Create New Product (:count)', { count: selectedProducts?.length })"
+                        :label="trans('Create New Product (:_count)', { _count: selectedProducts?.length })"
                         :loading="loadingAction.includes('bulk-create')"
                         @click="() => submitPortfolioAction({
                             label : 'bulk-create',

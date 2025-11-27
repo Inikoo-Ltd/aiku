@@ -28,7 +28,7 @@ class StoreRetinaProductManual extends RetinaAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
-    if ($customerSalesChannel) {
+        if ($customerSalesChannel) {
             $downloadPortfolioCustomerSalesChannels = DownloadPortfolioCustomerSalesChannel::where('customer_sales_channel_id', $customerSalesChannel->id)->whereNull('deleted_at')->get();
 
             $file_paths = $downloadPortfolioCustomerSalesChannels->pluck('file_path')->filter()->values()->toArray();

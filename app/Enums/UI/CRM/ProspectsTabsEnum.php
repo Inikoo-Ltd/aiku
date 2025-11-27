@@ -16,59 +16,52 @@ enum ProspectsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case DASHBOARD = 'dashboard';
     case PROSPECTS = 'prospects';
-    case OPT_IN = 'opt_in';
-    case OPT_OUT = 'opt_out';
+    case OPT_IN    = 'opt_in';
+    case OPT_OUT   = 'opt_out';
     case CONTACTED = 'contacted';
     case FAILED    = 'failed';
     case SUCCESS   = 'success';
-
-
     case HISTORY   = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
-            ProspectsTabsEnum::DASHBOARD => [
-                'title' => __('Dashboard'),
-                'icon'  => 'fal fa-tachometer-alt',
-            ],
-
-            ProspectsTabsEnum::PROSPECTS => [
+            self::PROSPECTS => [
                 'title' => __('Prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
 
-            ProspectsTabsEnum::OPT_IN => [
+            self::OPT_IN => [
                 'title' => __('Opted in prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
 
-            ProspectsTabsEnum::OPT_OUT => [
+            self::OPT_OUT => [
                 'title' => __('Opted out prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
 
-            ProspectsTabsEnum::CONTACTED => [
+            self::CONTACTED => [
                 'title' => __('Contacted prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
 
-            ProspectsTabsEnum::FAILED => [
+            self::FAILED => [
                 'title' => __('Fail prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
 
-            ProspectsTabsEnum::SUCCESS => [
+            self::SUCCESS => [
                 'title' => __('Success prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
-            ProspectsTabsEnum::HISTORY => [
+
+            self::HISTORY => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
-                'align' => 'right'
+                'align' => 'right',
             ]
         };
     }

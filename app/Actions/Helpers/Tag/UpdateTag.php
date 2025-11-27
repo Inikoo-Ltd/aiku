@@ -74,6 +74,14 @@ class UpdateTag extends OrgAction
                 imageData: $imageData,
                 scope: 'image',
             );
+
+            if ($tag->image) {
+                $tag->update(
+                    [
+                        'web_image' => $tag->imageSources(30, 30)
+                    ]
+                );
+            }
         }
 
         $tag->update($modelData);

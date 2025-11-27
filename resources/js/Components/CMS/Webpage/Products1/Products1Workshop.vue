@@ -157,6 +157,7 @@ watch(
               :product="product" 
               :bestSeller="modelValue.bestseller"
               :buttonStyle="getStyles(modelValue?.button?.properties, screenType)"
+              :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
             />
             <ProductRenderEcom 
               v-else
@@ -164,7 +165,8 @@ watch(
               :buttonStyle="getStyles(modelValue?.button?.properties, screenType, false)"
               :hasInBasket="[]" 
               :bestSeller="modelValue.bestseller" 
-              :buttonStyleHover="getStyles(modelValue?.buttonHover?.properties, screenType, false)"
+              :buttonStyleHover="getStyles(modelValue?.buttonHover?.properties, screenType)"
+              :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
              />
           </div>
         </div>

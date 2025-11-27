@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
 

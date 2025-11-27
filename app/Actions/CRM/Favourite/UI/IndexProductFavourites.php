@@ -89,10 +89,10 @@ class IndexProductFavourites extends OrgAction
                 );
 
 
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
-            $table->column(key: 'contact_name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'email', label: __('email'), canBeHidden: false, sortable: false, searchable: true);
-            $table->column(key: 'phone', label: __('phone'), canBeHidden: false, sortable: false, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, searchable: true);
+            $table->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: false, searchable: true);
+            $table->column(key: 'phone', label: __('Phone'), canBeHidden: false, sortable: false, searchable: true);
         };
     }
 

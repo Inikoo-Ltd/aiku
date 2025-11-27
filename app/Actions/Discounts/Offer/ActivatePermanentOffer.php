@@ -43,8 +43,8 @@ class ActivatePermanentOffer extends OrgAction
             }
         }
 
-
         $offer->update($modelData);
+        UpdateOfferAllowanceSignature::run($offer);
 
         return $offer;
     }

@@ -32,6 +32,7 @@ use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
+use App\Http\Resources\Ordering\DispatchedEmailsInOrderResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
@@ -470,6 +471,10 @@ class ShowOrder extends OrgAction
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
+                OrderTabsEnum::DISPATCHED_EMAILS->value => $this->tab == OrderTabsEnum::DISPATCHED_EMAILS->value ?
+                    fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $order, prefix: OrderTabsEnum::DISPATCHED_EMAILS->value))
+                    : Inertia::lazy(fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $order, prefix: OrderTabsEnum::DISPATCHED_EMAILS->value))),
+
                 OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
                     fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
@@ -493,6 +498,11 @@ class ShowOrder extends OrgAction
                     parent: $order,
                     tableRows: $nonProductItems,
                     prefix: OrderTabsEnum::TRANSACTIONS->value
+                )
+            )
+            ->table(
+                IndexDispatchedEmailsInOrder::make()->tableStructure(
+                    prefix: OrderTabsEnum::DISPATCHED_EMAILS->value
                 )
             )
             ->table(

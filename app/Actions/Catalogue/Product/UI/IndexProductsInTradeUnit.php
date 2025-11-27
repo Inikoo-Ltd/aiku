@@ -66,7 +66,7 @@ class IndexProductsInTradeUnit extends OrgAction
                 'organisations.slug as organisation_slug',
             ]);
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'price'])
+        return $queryBuilder->allowedSorts(['code', 'name', 'sales_all'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -90,12 +90,12 @@ class IndexProductsInTradeUnit extends OrgAction
                 );
 
 
-            $table->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'organisation_code', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sales_all', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'state', label: __('State'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'organisation_code', label: __('Organisation'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'sales_all', label: __('Total Sales'), canBeHidden: false, sortable: true, searchable: false);
         };
     }
 

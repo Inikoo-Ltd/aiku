@@ -108,9 +108,9 @@ return [
         'recent'        => (int)env('HORIZON_RECENT_TRIM', 60),
         'pending'       => (int)env('HORIZON_RECENT_TRIM', 60),
         'completed'     => (int)env('HORIZON_RECENT_TRIM', 60),
-        'recent_failed' => (int)env('HORIZON_FAILED_TRIM', 480),
+        'recent_failed' => (int)env('HORIZON_FAILED_TRIM', 1440),
         'failed'        => (int)env('HORIZON_FAILED_TRIM', 10080),
-        'monitored'     => (int)env('HORIZON_FAILED_TRIM', 480),
+        'monitored'     => (int)env('HORIZON_FAILED_TRIM', 1440),
     ],
 
     /*

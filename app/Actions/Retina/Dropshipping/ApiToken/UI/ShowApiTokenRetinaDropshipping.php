@@ -48,7 +48,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                     'api_base_url' => $baseUrl,
 
                     'redirect_link' => [
-                        'message' => __('Generate API token in ') . $env ,
+                        'message' => __('Generate API token in') . " " . $env ,
                         'link' => $baseUrl .  '/app/dropshipping/platforms/manual/api/',
                     ],
 

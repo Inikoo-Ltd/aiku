@@ -19,8 +19,8 @@ class FixedAddressGarbageCollection
     public function handle(int $addressID): ?bool
     {
 
-        $address=Address::find($addressID);
-        if(!$address){
+        $address = Address::find($addressID);
+        if (!$address) {
             DB::table('model_has_fixed_addresses')->where('address_id', $addressID)->delete();
             DB::table('addresses')->where('id', $addressID)->delete();
             return null;

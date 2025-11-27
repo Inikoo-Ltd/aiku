@@ -7,36 +7,47 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
-import {useLocaleStore} from '@/Stores/locale';
 import {library} from '@fortawesome/fontawesome-svg-core';
 import { capitalize } from "@/Composables/capitalize"
-import {
-   faShoppingCart,faStoreAlt
-} from '@fal';
-import Stats from "@/Components/DataDisplay/Stats.vue";
+import { faShoppingCart,faStoreAlt } from '@fal';
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { computed, ref } from "vue";
+import CustomersDashboard from "@/Pages/Grp/Org/Shop/CRM/CustomerDashboard.vue";
+import Tabs from "@/Components/Navigation/Tabs.vue";
+import { useTabChange } from "@/Composables/tab-change";
+import ProspectsDashboard from "@/Pages/Grp/Org/Shop/CRM/ProspectsDashboard.vue";
 
 library.add(
     faShoppingCart,faStoreAlt
 );
 
-
-const locale = useLocaleStore();
-
-
 const props = defineProps<{
-    title: string,
-    pageHead: object,
-    stats: object
+    title: string;
+    pageHead: PageHeadingTypes;
+    tabs: {
+        current: string;
+        navigation: {};
+    };
+    customers?: {};
+    prospects?: {};
+}>();
 
-}>()
+const currentTab = ref<string>(props.tabs.current);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
+const component = computed(() => {
+    const components: any = {
+        customers: CustomersDashboard,
+        prospects: ProspectsDashboard
+    }
 
+    return components[currentTab.value];
+});
 </script>
-
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
-    <stats class="p-4" :stats="stats"/>
-
+    <PageHeading :data="pageHead" />
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+    <component :is="component" :key="currentTab" :tab="currentTab" :data="props[currentTab]"></component>
 </template>

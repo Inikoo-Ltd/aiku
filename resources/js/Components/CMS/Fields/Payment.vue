@@ -34,6 +34,10 @@ import MasterCard from '@/../art/payment_service_providers/mastercard.png'
 import Paypal from '@/../art/payment_service_providers/PayPal.png'
 import SecureCheckout from '@/../art/payment_service_providers/SecureCheckout.png'
 import VisaBrandMarlBlue from '@/../art/payment_service_providers/VisaBrandmarkBlueRGB2021.png'
+import KarnaPaymentBadge from '@/../art/payment_service_providers/Klarna_Payment_Badge.png'
+import KarnaLogo from '@/../art/payment_service_providers/Klarna-Logo.wine.png'
+/* import KarnaWhiteLogo from '@/../art/payment_service_providers/png-clipart-klarna-white-logo-tech-companies.png' */
+import KarnaPaylater from '@/../art/payment_service_providers/png-clipart-pay-later-with-klarna-logo-tech-companies.png'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faTimes, faTrash);
 
@@ -78,8 +82,11 @@ const payments = ref<PaymentItem[]>([
   { name: 'Paypal', value: 'Paypal', image: Paypal },
   { name: 'Secure Checkout', value: 'Secure Checkout', image: SecureCheckout },
   { name: 'Visa Brandmark Blue', value: 'Visa Brandmark Blue', image: VisaBrandMarlBlue },
-]);
-
+  { name: 'Karna Badge', value: 'Karna Badge', image: KarnaPaymentBadge },
+  { name: 'Karna', value: 'Karna', image: KarnaLogo },
+/*   { name: 'Karna White logo', value: 'Karna White logo', image: KarnaWhiteLogo }, */
+  { name: 'Karna Paylater', value: 'Karna Paylater', image: KarnaPaylater },
+])
 
 const _addop = ref<any>(null);
 const _editop = ref<any[]>([]);

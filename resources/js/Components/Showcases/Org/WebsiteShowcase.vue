@@ -64,32 +64,7 @@ const links = computed(() => {
     }
 
     return baseLinks;
-});
-
-window.reindexwebsite = async () => {
-    try {
-        const response = await axios.post(
-            route(
-                'grp.models.website_luigi.reindex',
-                {
-                    website: props.data?.id
-                }
-            ),
-            {}
-        )
-
-        console.log('success reindex website', response.data)
-        if (response.status !== 200) {
-
-        }
-    } catch (error: any) {
-        notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
-            type: 'error'
-        })
-    }
-}
+})
 
 // Section: Button reindex website search
 const isAbleReindex = computed(() => {

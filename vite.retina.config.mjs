@@ -11,6 +11,8 @@ import i18n from "laravel-vue-i18n/vite";
 import { fileURLToPath, URL } from "node:url";
 import { codecovVitePlugin } from "@codecov/vite-plugin";
 import path from "node:path";
+import { analyzer } from 'vite-bundle-analyzer'
+
 
 export default defineConfig(
   {
@@ -43,6 +45,7 @@ export default defineConfig(
                           bundleName          : "retina",
                           uploadToken         : process.env.CODECOV_TOKEN
                         })
+       //, analyzer()
     ],
     ssr    : {
       noExternal: ["@inertiajs/server"]

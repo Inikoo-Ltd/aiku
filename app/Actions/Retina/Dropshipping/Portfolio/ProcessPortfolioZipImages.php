@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\RetinaAction;
 use App\Events\UploadPortfolioToR2Event;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Facades\Log;
 
 class ProcessPortfolioZipImages extends RetinaAction
 {

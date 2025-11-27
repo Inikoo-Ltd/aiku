@@ -62,7 +62,7 @@ class ShowSnapshot extends OrgAction
                 ),
                 'title'       => __('snapshot'),
                 'pageHead'    => [
-                    'title'         => $snapshot->label ?? __('Snapshot ').$snapshot->parent->code,
+                    'title'         => $snapshot->label ?? __('Snapshot') . ' ' .$snapshot->parent->code,
                     'afterTitle'    => [
                         'label' => '../'.$snapshot->parent->url,
                     ],

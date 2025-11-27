@@ -8,6 +8,7 @@
 
 use App\Actions\Catalogue\Product\Json\GetRetinaPortfoliosInProduct;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductCategorySalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
@@ -38,6 +39,7 @@ Route::get('dropshipping/{customerSalesChannel:id}/upload-portfolio-zip-images',
 Route::get('dropshipping/{product:id}/channels_list', GetRetinaPortfoliosInProduct::class)->name('dropshipping.product.channels_list');
 
 Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerProductCategorySalesChannelIds::class)->name('product_category.channel_ids.index');
+Route::get('collection/{collection:id}/channels', GetRetinaCustomerCollectionSalesChannelIds::class)->name('collection.channel_ids.index');
 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');

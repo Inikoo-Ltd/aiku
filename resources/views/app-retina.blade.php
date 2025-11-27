@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html class="h-full text-[14px] lg:text-[16px]"  lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
+
+
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title inertia></title>
@@ -44,6 +46,13 @@
         @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', ''))
             <script async src="https://scripts.luigisbox.com/{{ Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script> 
         @endif
+
+
+        <!-- Jira -->
+        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'jira_help_desk_widget', ''))
+            <script data-jsd-embedded data-key="{{Arr::get(request()->get('website')->settings, 'jira_help_desk_widget', '')}}" data-base-url="https://jsd-widget.atlassian.com" src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
+        @endif
+
     </head>
     <body class="font-sans antialiased h-full text-slate-700">
         @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))

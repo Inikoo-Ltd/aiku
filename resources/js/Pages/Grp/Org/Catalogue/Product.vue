@@ -105,6 +105,8 @@ const props = defineProps<{
     }
     webpage_canonical_url?: string
     sales: {}
+    is_single_trade_unit?: boolean
+    trade_unit_slug?: string
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -134,15 +136,10 @@ const component = computed(() => {
     return components[currentTab.value]
 })
 
-
-
 // Warning flag
 const showMissingTaxonomyMessage = computed(() => {
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
-
-
-
 
 
 </script>
@@ -153,18 +150,20 @@ const showMissingTaxonomyMessage = computed(() => {
 
     <PageHeading :data="pageHead" >
         <template #afterTitle>
-             <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="trans('Go to Master')"   class="mr-1">
+             <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="trans('Go to Master')">
                 <FontAwesomeIcon
                     icon="fab fa-octopus-deploy"
                     color="#4B0082"
                 />
             </Link>
+            <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
+                <FontAwesomeIcon
+                    icon="fal fa-atom"
+                />
+            </Link>
         </template>
 
         <template #other>
-            <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="-ml-4 text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
-                <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
-            </a>
         </template>
     </PageHeading>
 

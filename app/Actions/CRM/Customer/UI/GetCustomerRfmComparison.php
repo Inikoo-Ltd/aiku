@@ -11,21 +11,32 @@ class GetCustomerRfmComparison
 
     public function handle(int $shopId): ?array
     {
-        $snapshots = CustomerRfmSnapshot::where('shop_id', $shopId)
+        $current = CustomerRfmSnapshot::where('shop_id', $shopId)
             ->orderBy('snapshot_date', 'desc')
-            ->take(2)
-            ->get();
+            ->first();
 
-        if ($snapshots->isEmpty()) {
+        if (!$current) {
             return null;
         }
 
-        $current = $snapshots[0];
+        $previousTargetDate = $current->snapshot_date->copy()->subMonth();
 
-        if ($snapshots->count() == 1) {
+        $previous = CustomerRfmSnapshot::where('shop_id', $shopId)
+            ->whereDate('snapshot_date', $previousTargetDate->format('Y-m-d'))
+            ->first();
+
+        if (!$previous) {
+            $previous = CustomerRfmSnapshot::where('shop_id', $shopId)
+                ->orderBy('snapshot_date', 'asc')
+                ->first();
+
+            if ($previous && $previous->id === $current->id) {
+                $previous = $this->createEmptyPreviousData($current->rfm_data());
+            }
+        }
+
+        if (!$previous) {
             $previous = $this->createEmptyPreviousData($current->rfm_data());
-        } else {
-            $previous = $snapshots[1];
         }
 
         return [

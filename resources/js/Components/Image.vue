@@ -33,7 +33,7 @@ const avif: Ref<string | undefined> = ref(get(imageSrc, ['value', 'avif'], fallb
 const webp: Ref<string | undefined> = ref(get(imageSrc, ['value', 'webp'], fallbackPath))
 const original = ref(get(imageSrc, ['value', 'original'], fallbackPath))
 
-watch(() => src.value, (newValue) => {
+watch(() => props.src, (newValue) => {
     if(!newValue) {
         
     }

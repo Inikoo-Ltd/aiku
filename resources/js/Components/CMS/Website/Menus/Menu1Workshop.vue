@@ -139,7 +139,7 @@ const computedSelectedSidebarData = computed(() => {
     return productCategoriesAuto
 })
 
-const selectedMenu = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation
+const selectedMenu = ref(get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item)=>!item.hidden))
 
 const navHoverClass = ref(getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false))
 
@@ -147,6 +147,15 @@ watch(
   () => props.fieldValue?.hover,
   () => {
     navHoverClass.value = getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false)
+  },
+  { deep: true }
+)
+
+
+watch(
+  () => props.fieldValue.navigation,
+  () => {
+    selectedMenu.value = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item)=>!item.hidden)
   },
   { deep: true }
 )
@@ -173,6 +182,15 @@ const compIndexStyling1 = computed(() => {
     return vvvvv
 })
 
+// Watcher: if finish visit link, close the Collapsed
+watch(loadingItem, (newVal) => {
+    if (newVal) {
+        
+    } else {
+        isCollapsedOpen.value = false
+        debSetCollapsedTrue.cancel()
+    }
+})
 </script>
 
 <template>
@@ -315,7 +333,7 @@ const compIndexStyling1 = computed(() => {
                 :style="getStyles(fieldValue?.container?.properties, screenType)"
             >
                 <div class="grid grid-cols-4 gap-8 p-6">
-                    <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="">
+                    <div v-for="(subnav, idxSub) in hoveredNavigation?.subnavs" :key="subnav.title" class="">
                         <component
                             :is="subnav?.link?.href ? LinkIris : 'div'"
                             :href="internalHref(subnav?.link?.href)"
@@ -344,7 +362,8 @@ const compIndexStyling1 = computed(() => {
                             <!-- Spinner / Icon -->
                         </component>
 
-                        <div v-for="linkData in subnav?.links"
+                        <!-- Section: list links Family -->
+                        <div v-for="(linkData, idxFam) in subnav?.links"
                             :key="subnav.title"
                             class="navigation"
                             :style="{
@@ -356,10 +375,19 @@ const compIndexStyling1 = computed(() => {
                                 ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
                             }"
                         >
-                            <LinkIris v-if="linkData.link?.href" class=""   :id="linkData.id" :href="internalHref(linkData.link.href)"
-                                :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
+                            <LinkIris v-if="linkData.link?.href" class="" :id="linkData.id" :href="internalHref(linkData.link.href)"
+                                :canonical_url="linkData.link.canonical_url" :type="linkData.link.type"
+                                @start="() => loadingItem = `${idxSub}_${idxFam}`"
+                                @finish="() => loadingItem = null"
+                            >
                                 <template #default>
-                                    <div class="py-1">{{ linkData.label }}</div>
+                                    <div class="py-1 relative">
+                                        <div class="top-1/2 -translate-y-1/2 absolute -left-6">
+                                            <LoadingIcon v-if="loadingItem == `${idxSub}_${idxFam}`" />
+                                            <FontAwesomeIcon v-else-if="subnav.icon" :icon="subnav.icon" fixed-width class="text-[10px] text-gray-400" />
+                                        </div>
+                                        {{ linkData.label }}
+                                    </div>
                                 </template>
                             </LinkIris>
                             <div v-else class="py-1">{{ linkData.label }}</div>
@@ -367,7 +395,7 @@ const compIndexStyling1 = computed(() => {
 
                         <!-- Section: Sub Department - Collections -->
                         <template v-if="subnav?.collections?.length">
-                            <div v-for="linkData in subnav?.collections"
+                            <div v-for="(linkData, idxCollection) in subnav?.collections"
                                 :key="subnav.title"
                                 class="navigation"
                                 :style="{
@@ -384,9 +412,11 @@ const compIndexStyling1 = computed(() => {
                                     :href="internalHref(linkData.url)"
                                     type="internal"
                                     :id="linkData.id"
+                                    @start="() => loadingItem = `${idxSub}_col${idxCollection}`"
+                                    @finish="() => loadingItem = null"
                                 >
                                     <template #default>
-                                        <div class="py-1">
+                                        <div class="py-1 relative">
                                             {{ linkData.name }}
                                             <FontAwesomeIcon v-tooltip="trans('Collection')" icon="fal fa-album-collection" class="opacity-60" fixed-width aria-hidden="true" />
                                         </div>
@@ -399,9 +429,6 @@ const compIndexStyling1 = computed(() => {
                     <!-- Section: Department - Collection -->
                     <div v-if="hoveredNavigation?.collections?.length" class="">
                         <div
-                            ahref="/collection"
-                            xtype="internal"
-                            xtarget="subnav?.link?.target"
                             :style="{
                                 ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
                                 margin: 0,
@@ -411,8 +438,6 @@ const compIndexStyling1 = computed(() => {
                                 ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
                             }"
                             class="font-semibold text-gray-700 transition flex items-center gap-x-3"
-                            @start="() => onClickSubnav(subnav)"
-                            @finish="() => loadingItem = null"
                         >
                             <span>
                                 {{ trans('Collection') }}
@@ -420,7 +445,8 @@ const compIndexStyling1 = computed(() => {
                             </span>
                         </div>
 
-                        <div v-for="linkData in hoveredNavigation.collections"
+                        <!-- Section: Collections in Department -->
+                        <div v-for="(linkData, idxCollection) in hoveredNavigation.collections"
                             :key="linkData.id"
                             zclass="navigation"
                             :style="{
@@ -436,9 +462,15 @@ const compIndexStyling1 = computed(() => {
                                 class=""
                                 :id="linkData.id"
                                 :href="internalHref(linkData.url)"
-                                type="internal">
+                                type="internal"
+                                @start="() => loadingItem = `depcol_${idxCollection}`"
+                                @finish="() => loadingItem = null"
+                            >
                                 <template #default>
-                                    <div class="py-1">
+                                    <div class="py-1 relative">
+                                        <div class="top-1/2 -translate-y-1/2 absolute -left-6">
+                                            <LoadingIcon v-if="loadingItem == `depcol_${idxCollection}`" />
+                                        </div>
                                         {{ linkData.name }}
                                     </div>
                                 </template>

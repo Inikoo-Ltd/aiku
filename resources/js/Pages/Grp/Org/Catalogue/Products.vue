@@ -187,7 +187,7 @@ const onCancelEditBulkProduct = () => {
                 <!-- Grid for Price & RRP -->
                 <div class="grid grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1">
-                        <label class="text-sm" for="price">Price</label>
+                        <label class="text-sm" for="price">Price/outer</label>
                         <InputNumber v-model="form.price" mode="currency" :currency="currencies?.code" :step="0.25" showButtons
                             button-layout="horizontal" inputClass="w-full text-xs">
                             <template #incrementbuttonicon>
@@ -200,7 +200,7 @@ const onCancelEditBulkProduct = () => {
                     </div>
 
                     <div class="flex flex-col gap-1">
-                        <label class="text-sm" for="rrp">RRP</label>
+                        <label class="text-sm" for="rrp">RRP/unit</label>
                         <InputNumber v-model="form.rrp" mode="currency" :currency="currencies?.code" :step="0.25" showButtons
                             button-layout="horizontal" inputClass="w-full text-xs">
                             <template #incrementbuttonicon>
@@ -214,7 +214,7 @@ const onCancelEditBulkProduct = () => {
                 </div>
 
                 <div class="flex flex-col gap-1">
-                    <label class="text-sm" for="unit">Unit</label>
+                    <label class="text-sm" for="unit">Unit label</label>
                     <PureInput v-model="form.unit" />
                 </div>
 

@@ -5,23 +5,41 @@
   -->
 
 <script setup lang="ts">
-    import { inject } from "vue";
-    import { useForm } from "@inertiajs/vue3";
-    import PureInput from "@/Components/Pure/PureInput.vue";
-    import Button from "@/Components/Elements/Buttons/Button.vue";
-    import { trans } from "laravel-vue-i18n";
+import { inject, ref, watch, onMounted, provide } from "vue";
+import { router, useForm } from "@inertiajs/vue3";
+import PureInput from "@/Components/Pure/PureInput.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import { trans } from "laravel-vue-i18n";
+import { notify } from "@kyvg/vue3-notification";
+import axios from "axios";
 
-    const goNext = inject("goNext");
-    const closeCreateEbayModal = inject("closeCreateEbayModal");
+const goNext = inject("goNext");
+const ebayId = inject("ebayId");
+const customerSalesChannelId = inject("customerSalesChannelId");
+const ebayName = inject("ebayName");
+const closeCreateEbayModal = inject("closeCreateEbayModal");
 
-    const form = useForm({
-        name: ""
-    });
+const isLoadingStep = ref(false)
+const errors = ref({})
 
-    const submitForm = async () => {
-        console.log(form.data());
+const form = useForm({
+    name: ""
+});
+
+const submitForm = async () => {
+    isLoadingStep.value = true
+    try {
+        const {data} = await axios.post(route('retina.dropshipping.customer_sales_channels.ebay.store'), form.data());
+        ebayId.value = data.id;
+        customerSalesChannelId.value = data.customer_sales_channel_id;
+        ebayName.value = data.name;
         goNext();
+        isLoadingStep.value = false
+    } catch (err) {
+        isLoadingStep.value = false;
+        errors.value = err.response?.data?.errors;
     }
+}
 </script>
 
 <template>
@@ -29,17 +47,19 @@
         <div class="flex flex-col gap-2 w-full md:w-80">
             <label class="font-semibold">{{ trans("ebay Account Name") }}</label>
             <PureInput
+                :is-error="errors.name"
                 type="text"
                 v-model="form.name"
-                @update:model-value="form.errors.name = null"
+                @update:model-value="errors.name = null"
             />
+            <p v-if="errors.name" class="text-sm text-red-600 mt-1">{{ errors.name?.[0] }}</p>
         </div>
 
-        <hr class="w-full border-t" />
+        <hr class="w-full border-t"/>
 
         <div class="flex md:justify-end gap-4">
             <Button type="secondary" size="sm" @click="closeCreateEbayModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
         </div>
     </form>
 </template>

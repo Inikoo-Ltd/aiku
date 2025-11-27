@@ -52,6 +52,12 @@ export default {
 					},
 					type: "text",
 				},
+				{
+					key: ["is_box_full_width"],
+					label: "Full width search box?",
+					information: "If enabled, the search box will take the full width available.",
+					type: "switch",
+				},
 			],
 		},
 		{

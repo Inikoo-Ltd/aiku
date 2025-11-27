@@ -31,7 +31,7 @@ class ShopHydrateBrands implements ShouldBeUnique
             'number_current_brands' => $shop->brands()->where('is_for_sale', true)->count()
         ];
 
-        $shopStats=$shop->stats;
+        $shopStats = $shop->stats;
 
         // Capture previous values to detect changes
         $oldNumberBrands = $shopStats->number_brands ?? null;

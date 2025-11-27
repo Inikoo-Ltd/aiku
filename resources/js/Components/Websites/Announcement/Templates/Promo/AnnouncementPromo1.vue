@@ -370,7 +370,7 @@ const onClickClose = () => {
 
 
 
-const openFieldWorkshop = inject('openFieldWorkshop')
+const openFieldWorkshop = inject('openFieldWorkshop', ref<number | null>(null))
 const onClickOpenFieldWorkshop = (index?: number) => {
     if(openFieldWorkshop && index) {
         openFieldWorkshop.value = index

@@ -145,7 +145,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
             <div v-if="layout.retina.type !== 'b2b'" class="border border-gray-300 p-5 rounded mb-4 ">
                 <p>  {{ trans('Hey, as you notice we just got a brand new system for our website.') }} </p>
                 <p class="py-3"> {{ trans('You can log in with your old username and password or use your google account to login (if the emails match)') }}.</p>
-                <p>{{ trans(' if the password is not working, you can reset it from the forgot password page and all will be ok.') }}</p>
+                <p>{{ trans('if the password is not working, you can reset it from the forgot password page and all will be ok.') }}</p>
             </div>
 
 

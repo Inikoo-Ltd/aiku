@@ -570,6 +570,7 @@ const onChangeInsurance = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
             
+            <!-- Section: Charge Premium Dispatch -->
             <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                     <InformationIcon :information="charges.premium_dispatch?.description" />
@@ -720,7 +721,7 @@ const onChangeInsurance = async (val: boolean) => {
                     />
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
-                    <div class="text-red-500">*{{ trans("We cannot deliver to :country. Please update the address or contact support.", { country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
+                    <div class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
                 </div>
             </div>
         </div>

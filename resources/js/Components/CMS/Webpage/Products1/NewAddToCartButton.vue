@@ -49,14 +49,16 @@ const currentQuantity = computed(() => {
     const quantityNew = get(props.hasInBasket, ['quantity_ordered_new'])
     const quantity = get(props.hasInBasket, ['quantity_ordered'])
 
-    // Normalize null/undefined to 0
-    const safeQuantityNew = Number(quantityNew ?? 0)
     const safeQuantity = Number(quantity ?? 0)
+    const safeQuantityNew = Number(quantityNew ?? 0)
 
-    // Use new quantity if set, otherwise fallback
-    // return safeQuantityNew > 0 ? safeQuantityNew : safeQuantity
+    if (safeQuantity !== 0 && (quantityNew === 0 || quantityNew === undefined)) {
+        return safeQuantity
+    }
+
     return safeQuantityNew
 })
+
 
 
 // Check if value is dirty (changed) - dari ButtonAddToBasketInFamily
@@ -100,7 +102,7 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
             quantity_ordered: response.data?.quantity_ordered,
             quantity_ordered_new: response.data?.quantity_ordered,
         }
-        
+
         // Check the product in Basket, if exist: replace, not exist: push
         const products = layout.rightbasket?.products
         if (products) {
@@ -266,7 +268,7 @@ const showChartButton = computed(() => {
     return !quantityOrdered && currentQuantity.value === 0
 })
 
-
+const isHovered = ref(false)
 
 </script>
 
@@ -278,12 +280,12 @@ const showChartButton = computed(() => {
             class="rounded-full button-cart hover:bg-green-700 bg-gray-800 text-gray-300 mr-4 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             v-tooltip="trans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />
-            <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width  />
+            <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width />
         </button>
 
         <!-- State: qty > 0, tampilkan quantity dan expand saat hover -->
-        <div v-else @click.stop :style="buttonStyle"
-            class="rounded-full  button-cart  bg-gray-200 h-10 transition-all flex items-center justify-center group-hover:justify-between  group-hover:bg-gray-300 overflow-hidden relative shadow-lg"
+        <div v-else @click.stop :style="buttonStyleHover"
+            class="rounded-full button-cart bg-gray-200 h-10 transition-all flex items-center justify-center group-hover:justify-between  group-hover:bg-gray-300 overflow-hidden relative shadow-lg"
             :class="[
                 'group-hover:w-24 w-10',
                 { 'opacity-50': isLoadingSubmitQuantityProduct }
@@ -296,22 +298,27 @@ const showChartButton = computed(() => {
             </div>
 
             <!-- Minus button (visible on hover) -->
-            <button @click.stop.prevent="decrement" :disabled="isLoadingSubmitQuantityProduct || currentQuantity <= 0"
-                class="hidden group-hover:flex w-6 h-6  items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
-                <FontAwesomeIcon :icon="faMinus" class="text-gray-600 text-xs" />
+            <button @click.stop.prevent="decrement" :disabled="isLoadingSubmitQuantityProduct || currentQuantity <= 0" @mouseenter="isHovered = true" @mouseleave="isHovered = false"
+                class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
+                <FontAwesomeIcon :icon="faMinus" :style="{
+                    color: isHovered ? 'black' : buttonStyleHover?.color
+                }"  />
+
             </button>
 
             <!-- Quantity display (always visible) -->
-            <span @click.stop.prevent 
+            <span @click.stop.prevent
                 class="text-sm font-medium  min-w-[1rem] cursor-default relative z-10 px-1 text-center self-center">
                 {{ currentQuantity }}
             </span>
 
             <!-- Plus button (visible on hover) -->
             <button @click.stop.prevent="increment"
-                :disabled="isLoadingSubmitQuantityProduct || currentQuantity >= props.product.stock"
-                class="hidden group-hover:flex w-6 h-6  items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
-                <FontAwesomeIcon :icon="faPlus" class="text-gray-600 text-xs" />
+                :disabled="isLoadingSubmitQuantityProduct || currentQuantity >= props.product.stock" @mouseenter="isHovered = true" @mouseleave="isHovered = false"
+                class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
+                <FontAwesomeIcon :icon="faPlus" :style="{
+                    color: isHovered ? 'black' : buttonStyleHover?.color
+                }" />
             </button>
         </div>
 

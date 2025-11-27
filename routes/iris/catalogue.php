@@ -8,6 +8,9 @@
 
 
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
+use App\Actions\Iris\Catalogue\GetProductDetail;
+
+Route::get('product/{product}', GetProductDetail::class)->name('product.resource');
 
 Route::prefix('feeds')->as('feeds.')->group(function () {
     Route::get('product-category/{productCategory}/download.csv', [DownloadIrisProduct::class, 'inProductCategory'])->name('product_category.download');

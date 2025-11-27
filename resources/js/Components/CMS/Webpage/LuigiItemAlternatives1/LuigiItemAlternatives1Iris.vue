@@ -2,7 +2,6 @@
 import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
 import Cookies from 'js-cookie';
@@ -15,17 +14,12 @@ import 'swiper/css/pagination'
 import { Autoplay, Navigation, Pagination } from 'swiper/modules'
 
 // Font Awesome
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from "laravel-vue-i18n"
-import { faCircle } from "@fas"
-import { Link } from "@inertiajs/vue3"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
-// import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
@@ -49,7 +43,6 @@ const slidesPerView = computed(() => {
     }[props.screenType] ?? 5
 })
 
-const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
 const listProducts = ref<ProductHit[] | null>()

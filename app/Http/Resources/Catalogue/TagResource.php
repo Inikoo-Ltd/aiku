@@ -12,6 +12,12 @@ namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $id
+ * @property mixed $slug
+ * @property mixed $name
+ * @property mixed $web_image
+ */
 class TagResource extends JsonResource
 {
     public function toArray($request): array
@@ -20,7 +26,7 @@ class TagResource extends JsonResource
             'id'                        => $this->id,
             'slug'                      => $this->slug,
             'name'                      => $this->name,
-            'image'                     => $this->imageSources(200, 200),
+            'image'                     => $this->web_image
         ];
     }
 }

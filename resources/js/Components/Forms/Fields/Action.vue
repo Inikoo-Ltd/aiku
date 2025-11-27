@@ -17,7 +17,11 @@ const props = defineProps<{
 
 const isLoading = ref(false)
 
-const handleClick = (action: Action) => {
+const handleClick = (action: Action|any) => {
+    if(action.route?.url){
+        window.open(action.route?.url, action.route?.openBlank ? "_blank" : "_self")
+        return;
+    }
     const href = action.route?.name ? route(action.route?.name, action.route?.parameters) : action.route?.name ? route(action.route?.name, action.route?.parameters) : '#'
     const method = action.route?.method || 'get'
     const data = action.route?.method !== 'get' ? action.route?.body: props.dataToSubmit
@@ -93,7 +97,6 @@ const handleClick = (action: Action) => {
                 :loading="isLoading"
             />
         </a>
-
         <Button v-else
             @click="handleClick(action)"
             :style="action.style"

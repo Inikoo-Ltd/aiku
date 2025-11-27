@@ -25,8 +25,8 @@ enum ProductStateEnum: string
 
     case IN_PROCESS    = 'in_process';
     case ACTIVE        = 'active';
-    case DISCONTINUING = 'discontinuing';
-    case DISCONTINUED  = 'discontinued';
+    case DISCONTINUING = 'discontinuing'; // Product has been discontinued, but stock still exists on warehouse
+    case DISCONTINUED  = 'discontinued'; // Product has been discontinued completely (Will not be used anymore)
 
 
     public static function labels($bucket = null): array

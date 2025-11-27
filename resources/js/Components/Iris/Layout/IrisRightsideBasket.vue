@@ -5,12 +5,13 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { debounce, get, set } from 'lodash-es'
 import { faChevronRight, faTrashAlt } from "@fal"
-import { faMinus, faArrowRight, faPlus } from "@far"
+import { faCheckCircle } from "@fas"
+import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LinkIris from '../LinkIris.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { InputNumber } from 'primevue'
+import { InputNumber, ToggleSwitch } from 'primevue'
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { ProductResource } from '@/types/Iris/Products'
@@ -23,7 +24,9 @@ import Image from '@/Components/Image.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
 import { computed } from 'vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
-library.add(faMinus, faArrowRight, faPlus, faChevronRight, faTrashAlt)
+import { notify } from '@kyvg/vue3-notification'
+import { routeType } from '@/types/route'
+library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle)
 // import { XMarkIcon } from '@heroicons/vue/24/outline'
 
 interface DataSideBasket {
@@ -66,12 +69,12 @@ const handleToggleLeftBar = () => {
 const dataSideBasket = ref<DataSideBasket | null>(null)
 const isLoadingFetch = ref(false)
 const isLoadingProducts = ref(false)
-const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
-    if (!isWithoutSetProduct) {
+const fetchDataSideBasket = async (isWithoutSkeleton?: boolean) => {
+    if (!isWithoutSkeleton) {
         isLoadingProducts.value = true
+        isLoadingFetch.value = true
     }
     try {
-        isLoadingFetch.value = true
         const response = await axios.get(
             route('iris.json.fetch_basket')
         )
@@ -79,15 +82,15 @@ const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
             
         }
         
-        console.log('Response axios:', response.data)
+        console.log('fetchDataSideBasket:', response.data)
 
-        if (isWithoutSetProduct) {
-            set(dataSideBasket.value, 'order_summary', response.data.order_summary)
-            set(dataSideBasket.value, 'order_data', response.data.order_data)
-        } else {
+        // if (isWithoutSkeleton) {
+            // } else {
+                //     set(dataSideBasket.value, 'order_summary', response.data.order_summary)
+                //     set(dataSideBasket.value, 'order_data', response.data.order_data)
             dataSideBasket.value = response.data
             set(layout, 'rightbasket.products', response.data?.products || [])
-        }
+        // }
     } catch (error: any) {
         console.log('errorzzzzz', error)
         // notify({
@@ -96,16 +99,16 @@ const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
         //     type: 'error'
         // })
     } finally {
-        isLoadingFetch.value = false
+        if (!isWithoutSkeleton) {
+            isLoadingFetch.value = false
+            isLoadingProducts.value = false
+        }
     }
 
-    if (!isWithoutSetProduct) {
-        isLoadingProducts.value = false
-    }
 }
 
-const debFetchDataSideBasket = debounce((isWithoutSetProduct?: boolean) => {
-    fetchDataSideBasket(isWithoutSetProduct)
+const debFetchDataSideBasket = debounce((isWithoutSkeleton?: boolean) => {
+    fetchDataSideBasket(isWithoutSkeleton)
 }, 250)
 
 watch(() => [layout.iris_variables?.cart_amount, layout.iris_variables?.cart_count], (newValue) => {
@@ -198,15 +201,47 @@ const convertToFloat2 = (val: any) => {
     if (isNaN(num)) return 0.00
     return parseFloat(num.toFixed(2))
 }
+
+
+// Section: Charge
+const listLoadingCharges = ref<string[]>([])
+const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeType) => {
+    try {
+        listLoadingCharges.value.push(key_db)
+        const response = await axios.patch(
+            route(
+                routeUpdate.name,
+                routeUpdate.parameters
+            ),
+            { [key_db]: val }
+        )
+
+        if (response.status === 200) {
+            debFetchDataSideBasket(true)
+        }
+        
+    } catch (error: any) {
+        console.log('eerr charge', error)
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to update, try again."),
+            type: "error"
+        })
+    } finally {
+        listLoadingCharges.value = listLoadingCharges.value.filter(item => item !== key_db)
+    }
+}
+
+const idxProductLoading = ref<number | null>(null)
 </script>
 
 <template>
     <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">
         <!-- Toggle: collapse-expand rightbasket -->
         <div @click="handleToggleLeftBar"
-            class="absolute z-10  top-2/4 -translate-y-full w-8 lg:w-8 aspect-square xborder xborder-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
+            class="absolute z-10  top-2/4 -translate-y-full w-8 lg:w-8 aspect-square xborder xborder-gray-300 rounded-full flex justify-center items-center cursor-pointer"
             :class="layout.rightbasket?.show ? 'left-0 -translate-x-1/2' : '-left-12'"
-            :title="layout.rightbasket?.show ? 'Collapse the bar' : 'Expand the bar'"
+            v-tooltip="layout.rightbasket?.show ? trans('Collapse the bar') : trans('Expand the bar')"
             :style="{
                 'background-color':  `color-mix(in srgb, ${layout.app.theme[0]} 85%, black)`,
                 'color': layout.app.theme[1]
@@ -227,7 +262,7 @@ const convertToFloat2 = (val: any) => {
         <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">
-                    {{ trans("Your Basket (:items items)", { items: layout.iris_variables?.cart_count ?? 0 }) }}
+                    {{ trans("Your Basket (:xxx items)", { xxx: layout.iris_variables?.cart_count ?? 0 }) }}
                 </div>
                 
                 <div class="relative overflow-hidden">
@@ -302,74 +337,76 @@ const convertToFloat2 = (val: any) => {
             </div>
 
             <!-- Section: Products List -->
-            <div class="mt-8">
-                <div class="flow-root">
-                    <ul role="list" class="!mx-0 -my-6">
-                        <template v-if="!isLoadingProducts">
-                            <li v-for="product in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-2 relative">
-                                <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
-                                <div class="relative">
-                                    <div
-                                        class="size-20 shrink-0 overflow-hidden rounded-md border border-gray-200">
-                                        <!-- <img :src="product.image" :alt="product.imageAlt"
-                                            class="size-full object-cover" /> -->
-                                        <Image
-                                            :src="product?.web_image_thumbnail"
-                                        />
+            <div class="mt-8 flow-root">
+                <ul role="list" class="!mx-0 mt-6 mb-0">
+                    <template v-if="!isLoadingProducts">
+                        <li v-for="(product, idxProd) in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-1 relative">
+                            <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
+
+                            <!-- Product: Image -->
+                            <div class="relative group">
+                                <LinkIris :href="product.canonical_url" class="block font-medium hover:underline size-14 shrink-0 overflow-hidden rounded-md border border-gray-200"
+                                    @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
+                                    <Image
+                                        :src="product?.web_image_thumbnail"
+                                        class="w-full h-full flex justify-center items-center group-hover:scale-110 transition-all"
+                                    />
+                                </LinkIris>
+                                
+                                <div v-if="idxProductLoading === idxProd"
+                                    class="absolute inset-0 grid justify-center rounded items-center bg-black/50 text-white text-2xl">
+                                    <LoadingIcon />
+                                </div>
+                            </div>
+                            
+                            <div class="ml-4 flex justify-between gap-x-4 w-full text-xs">
+                                <!-- Section: label Discount, product name, product price -->
+                                <div class="flex flex-1 flex-col">
+                                    <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs" />
+                        
+                                    <div class="flex justify-between font-medium">
+                                        <div v-tooltip="product.code" class="">
+                                            <LinkIris :href="product.canonical_url" class="font-medium hover:underline truncate block w-52" @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
+                                                <span v-if="product.units > 1" class="mr-1">{{ product.units }}x</span>{{ product.name }}
+                                            </LinkIris>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-1 items-end justify-between">
+                                        <p class="" :class="product.gross_amount != product?.net_amount ? 'text-green-500' : ''">
+                                            <span v-if="product.gross_amount != product?.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(layout.iris?.currency?.code, product.gross_amount) }}</span>
+                                            <span>{{ locale.currencyFormat(layout.iris?.currency?.code || '', product.net_amount) }}</span>
+                                        </p>
                                     </div>
                                 </div>
                                 
-                                <div class="ml-4 flex justify-between gap-x-4 w-full">
-                                    <!-- Section: label Discount, product name, product price -->
-                                    <div class="flex flex-1 flex-col">
-                                        <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" />
-                            
-                                        <div class="flex justify-between font-medium">
-                                            <h4 v-tooltip="product.name">
-                                                <LinkIris :href="product.canonical_url" class="font-medium hover:underline">{{ product.code }}</LinkIris>
-                                            </h4>
+                                <!-- Section: input quantity -->
+                                <div class="flex flex-col justify-between items-end pt-7">
+                                    <div class="max-w-32 flex gap-x-2 h-fit items-center">
+                                        <InputQuantitySideBasket
+                                            :product
+                                            @productRemoved="() => onRemoveProductWhenQuantityZero(product)"
+                                        />
+                        
+                                        <div @click="() => onRemoveFromBasket(product)">
+                                            <LoadingIcon v-if="product?.isLoadingRemove" />
+                                            <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
                                         </div>
-
-                                        <!-- <div class="flex flex-1 items-end justify-between">
-                                            <p class=" text-lg" :class="product.gross_amount != product?.net_amount ? 'text-green-500' : ''">
-                                                <span v-if="product.gross_amount != product?.net_amount" class="text-gray-500 line-through">{{ product.gross_amount }}</span>
-                                                {{ product?.net_amount ? locale.currencyFormat(layout.iris?.currency?.code || '', product.net_amount) : '' }}
-                                            </p>
-                                        </div> -->
                                     </div>
-                                    
-                                    <!-- Section: input quantity -->
-                                    <div class="flex flex-col justify-between items-end pt-7">
-                                        <div class="max-w-32 flex gap-x-2 h-fit items-center">
-                                            <div>
-                                                {{ Number(product.quantity_ordered) }}
-                                            </div>
-                                            
-                                            <!-- <InputQuantitySideBasket
-                                                :product
-                                                @productRemoved="() => onRemoveProductWhenQuantityZero(product)"
-                                            /> -->
-                            
-                                            <div @click="() => onRemoveFromBasket(product)">
-                                                <LoadingIcon v-if="product?.isLoadingRemove" />
-                                                <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
-                                            </div>
-                                        </div>
-                                        <!-- <div class="text-xs underline">
-                                            Save for later
-                                        </div> -->
-                                    </div>
+                                    <!-- <div class="text-xs underline">
+                                        Save for later
+                                    </div> -->
                                 </div>
-                            </li>
-                        </template>
+                            </div>
+                        </li>
+                    </template>
 
-                        <template v-else>
-                            <li class="h-24 w-full skeleton"></li>
-                            <li class="h-24 w-full skeleton"></li>
-                            <li class="h-24 w-full skeleton"></li>
-                        </template>
-                    </ul>
-                </div>
+                    <template v-else>
+                        <li class="h-24 w-full skeleton"></li>
+                        <li class="h-24 w-full skeleton"></li>
+                        <li class="h-24 w-full skeleton"></li>
+                    </template>
+                </ul>
             </div>
         </div>
 
@@ -394,28 +431,51 @@ const convertToFloat2 = (val: any) => {
         </div>
         
         <!-- Section: Order Summary -->
-        <div class="border-t border-gray-200 px-4 py-6 sm:px-6">
+        <div class="border-t border-gray-200 px-4 pt-3 pb-6 sm:px-6">
             <div class="relative isolate">
                 <OrderSummary
                     :order_summary="dataSideBasket?.order_summary"
                     :currency_code="layout.iris?.currency?.code"
+                    size="sm"
                 />
 
-                <div v-if="isLoadingFetch" class="absolute inset-0">
+                <!-- Section: Charge Premium Dispatch -->
+                <div class="pt-3 border-t border-gray-200 space-y-2.5">
+                    <template v-for="charge in dataSideBasket?.charges">
+                        <div v-if="charge?.id" class="flex gap-4 justify-between">
+                            <div class="text-xs flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                                <InformationIcon :information="charge?.description" />
+                                {{ charge?.label ?? charge?.name }}
+                                <span class="text-gray-400">({{ locale.currencyFormat(layout.iris?.currency?.code, charge?.amount) }})</span>
+                            </div>
+
+                            <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                                <ToggleSwitch
+                                    :modelValue="dataSideBasket?.order_data?.[charge.key_db]"
+                                    @update:modelValue="(e) => onChangeCharge(charge.key_db, e, charge.route_update)"
+                                    xdisabled="isLoadingPriorityDispatch"
+                                    size="small"
+                                >
+                                    <template #handle="{ checked }">
+                                        <LoadingIcon v-if="listLoadingCharges.includes(charge.key_db)" xclass="text-xs text-gray-500" />
+                                        <template v-else>
+                                            <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-xs text-green-500" fixed-width aria-hidden="true" />
+                                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-xs text-red-500" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </template>
+                                </ToggleSwitch>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+
+                <div v-if="isLoadingFetch" class="absolute inset-0 h-52">
                     <div class="inset-0 h-full w-full skeleton z-10" />
                 </div>
             </div>
 
-            <!-- <div class="flex justify-between  font-medium">
-                <p>Subtotal</p>
-                <p>$262.00</p>
-            </div>
-
-            <p class="mt-0.5 text-sm text-gray-500">
-                Shipping and taxes calculated at checkout.
-            </p> -->
-
-            <div class="mt-12">
+            <div class="mt-4">
                 <LinkIris href="/app/checkout">
                     <Button
                         full
@@ -426,7 +486,7 @@ const convertToFloat2 = (val: any) => {
                 </LinkIris>
             </div>
             
-            <div class="mt-6 flex justify-start text-center text-sm text-gray-500">
+            <div class="mt-2 flex justify-start text-center text-sm text-gray-500">
                 <p>
                     or{{ ' ' }}
                     <LinkIris

@@ -48,6 +48,7 @@ const isPreviewMode = ref(mode != 'iris' ? false : true)
 const isInWorkshop = route().params.isInWorkshop || false
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const active_language = ref<string|null>(null)
+const keyHeader = ref(1)
 const defaultCurrency = {
   code: "GBP",
   symbol: "£",
@@ -88,6 +89,7 @@ onMounted(() => {
             router.reload({
                 only: ['footer', 'header', 'webpage', 'navigation', 'sidebar'],
             });
+            keyHeader.value++
         }
     });
     checkScreenType()
@@ -135,6 +137,7 @@ watch(isPreviewLoggedIn, (value) => {
         <div class="shadow-xl" :class="props.layout?.layout == 'fullscreen' ? 'w-full' : 'container max-w-7xl mx-auto'">
             <div>
                 <RenderHeaderMenu
+                    :key="keyHeader"
                     v-if="header?.data"
                     :data="header.data"
                     :menu="navigation"

@@ -46,7 +46,6 @@ use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -93,6 +92,10 @@ beforeEach(function () {
     $orgStocks       = createOrgStocks($this->organisation, $stocks);
     $this->orgStock1 = $orgStocks[0];
     $this->orgStock2 = $orgStocks[1];
+
+    $tradeUnits = createTradeUnits($this->group);
+    $this->tradeUnit1 = $tradeUnits[0];
+    $this->tradeUnit2 = $tradeUnits[1];
 
 
     Config::set(
@@ -283,8 +286,8 @@ test('create family', function ($department) {
 
 
 test('create product', function (ProductCategory $family) {
-    $orgStocks = [
-        $this->orgStock1->id => [
+    $tradeUnits = [
+        $this->tradeUnit1->id => [
             'quantity' => 1,
         ]
     ];
@@ -292,7 +295,7 @@ test('create product', function (ProductCategory $family) {
     $productData = array_merge(
         Product::factory()->definition(),
         [
-            'org_stocks' => $orgStocks,
+            'trade_units' => $tradeUnits,
             'price'      => 100,
             'unit'       => 'unit'
         ]
@@ -353,11 +356,11 @@ test('update product state to active', function (Product $product) {
 
 
 test('create product with many org stocks', function ($shop) {
-    $orgStocks = [
-        $this->orgStock1->id  => [
+    $tradeUnits = [
+        $this->tradeUnit1->id  => [
             'quantity' => 1,
         ],
-        $this->orgStock2->id => [
+        $this->tradeUnit2->id => [
             'quantity' => 1,
         ]
     ];
@@ -366,7 +369,7 @@ test('create product with many org stocks', function ($shop) {
     $productData = array_merge(
         Product::factory()->definition(),
         [
-            'org_stocks'  => $orgStocks,
+            'trade_units'  => $tradeUnits,
             'price'       => 99,
             'unit'        => 'pack'
         ]
@@ -377,7 +380,6 @@ test('create product with many org stocks', function ($shop) {
     $shop->refresh();
 
     expect($product)->toBeInstanceOf(Product::class)
-        ->and($product->unit_relationship_type)->toBe(ProductUnitRelationshipType::MULTIPLE)
         ->and($product->tradeUnits()->count())->toBe(2)
         ->and($shop->stats->number_products)->toBe(2)
         ->and($product->asset->stats->number_historic_assets)->toBe(1)

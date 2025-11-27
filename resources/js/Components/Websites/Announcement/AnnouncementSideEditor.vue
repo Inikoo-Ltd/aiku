@@ -10,6 +10,7 @@ import { inject, onMounted } from 'vue'
 import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faChevronDown, faCaretDown, faCaretLeft } from '@fal'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import { routeType } from '@/types/route'
+import { ref } from 'vue'
 
 library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faChevronDown)
 
@@ -30,7 +31,7 @@ const emits = defineEmits<{
     (e: 'update:modelValue'): void
 }>()
 
-const openFieldWorkshop = inject('openFieldWorkshop')
+const openFieldWorkshop = inject('openFieldWorkshop', ref<number | null>(null))
 const announcementData = inject('announcementData', {})
 
 onMounted(() => {
