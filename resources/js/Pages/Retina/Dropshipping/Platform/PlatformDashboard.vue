@@ -14,6 +14,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
+import PlatformEbayWarningNotComplete from "@/Components/Retina/Platform/PlatformEbayWarningNotComplete.vue"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
@@ -180,7 +181,7 @@ const layout = inject('layout', layoutStructure)
                     </ModalConfirmationDelete>
                 </div>
 
-                <div v-if="route().params?.['customerSalesChannel']">
+                <div v-if="route().params?.['customerSalesChannel'] && platform_status">
                     <Link :href="route('retina.dropshipping.customer_sales_channels.edit', route().params)">
                         <FontAwesomeIcon icon="fal fa-pencil" />
                     </Link>
@@ -195,6 +196,12 @@ const layout = inject('layout', layoutStructure)
                 />
 
                 <PlatformWarningNotConnected
+                    v-else-if="platform.type !== 'ebay'"
+                    :customer_sales_channel="customer_sales_channel"
+                    :error_captcha="error_captcha"
+                />
+
+                <PlatformEbayWarningNotComplete
                     v-else
                     :customer_sales_channel="customer_sales_channel"
                     :error_captcha="error_captcha"
