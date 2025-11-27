@@ -149,12 +149,21 @@ const onSaveChangeParent = async () => {
 };
 
 
+const onCheckedAll = (handle: { allChecked: boolean, data: Array<{id: number}> }) => {
+    if (handle.allChecked) {
+        // Set selectedFamily with all data.id values
+        selectedFamily.value = handle.data.map(item => item.id);
+    } else {
+        // Clear selectedFamily
+        selectedFamily.value = [];
+    }
+}
 
 
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true" :key="tableKey"
+    <Table @onCheckedAll="onCheckedAll" :resource="data" :name="tab" class="mt-5" :isCheckBox="true" :key="tableKey"
         @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
         checkboxKey='id' :isChecked="(item) => selectedFamily.includes(item.id)" ref="_table">
         <template #add-on-button>
