@@ -1,5 +1,14 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 27 Nov 2025 13:05:00 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
+
+/** @noinspection PhpUnhandledExceptionInspection */
+
+use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
 use App\Models\CRM\Customer;
@@ -21,7 +30,35 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
+
+    $web = Website::first();
+    if (!$web) {
+        list(
+            $this->organisation,
+            $this->user,
+            $this->shop
+            ) = createShop();
+        $web = createWebsite($this->shop);
+    } else {
+        $this->organisation = $web->organisation;
+        $this->user         = createAdminGuest($this->organisation->group)->getUser();
+        $this->shop         = $web->shop;
+    }
+    $web->refresh();
+    $this->web       = $web;
+    $this->warehouse = createWarehouse();
+
+    $customer = Customer::first();
+
+    if(!$customer){
+        $customer = createCustomer($this->shop);
+    }
+
+    $this->customer = $customer;
+
     $this->action = new StoreChatSession();
+
+
 
 });
 
@@ -58,18 +95,11 @@ test('can create chat session for guest with custom guest identifier', function 
 });
 
 test('can create chat session for authenticated web user', function () {
-    $organisation = Organisation::first() ?? Organisation::factory()->create();
-    $website = Website::first() ?? Website::factory()->create();
-    $customer = Customer::first() ?? Customer::factory()->create();
-    $group = Group::first() ?? Group::factory()->create();
 
-    $webUser = WebUser::factory()->create([
-        'organisation_id' => $organisation->id,
-        'group_id' => $group->id,
-        'website_id' => $website->id,
-        'customer_id' => $customer->id,
-        'type' => WebUserTypeEnum::WEB->value,
-    ]);
+
+
+    $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+
 
     $modelData = [
         'web_user_id' => $webUser->id,
