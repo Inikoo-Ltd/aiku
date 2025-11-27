@@ -12,6 +12,10 @@ import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFilePdf, faIdCardAlt, faTruck, faWeight, faMapPin } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { notify } from "@kyvg/vue3-notification"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faIdCardAlt, faWeight, faMapPin)
 
@@ -50,29 +54,49 @@ const props = defineProps<{
             }
         }
     }
-    balance?: string
     address_management: AddressManagement
-    dataPalletReturn?: {
-        is_collection: boolean
-    }
-    boxStats?: {
-        fulfilment_customer?: {
-            address?: {
-                value?: {
-                    formatted_address: string
-                }
-            }
-        }
-    }
-    listError?: {
-        box_stats_delivery_address?: boolean
-    }
+    order: {}
 }>()
 
 const locale = inject('locale', {})
+const layout = inject('layout', retinaLayoutStructure)
 const isModalShippingAddress = ref(false)
 
 
+const isLoadingPayWithBalance = ref(false)
+const onPayWithBalance = () => {
+    // Section: Submit
+    router.post(
+        route('retina.models.order.pay_with_balance_after_submitted', { order: props.order?.data.id }),
+        {
+            data: 'qqq'
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingPayWithBalance.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Order paid with customer balance"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to pay order with customer balance"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingPayWithBalance.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -143,8 +167,7 @@ const isModalShippingAddress = ref(false)
             <!-- Collection Options -->
             <div class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
 
-                <div class="w-full text-xs text-gray-500"
-                    :class="listError?.box_stats_delivery_address ? 'errorShake' : ''">
+                <div class="w-full text-xs text-gray-500">
                     <dd
                         class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                         <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
@@ -169,6 +192,27 @@ const isModalShippingAddress = ref(false)
                     {{ summary.order_properties?.weight ?? '-' }}
                 </dd>
             </dl>
+
+            <!-- Section: pay with balance (if order Submit without paid) -->
+            <div v-if="
+                summary.products.payment.pay_amount > 0
+                && summary.products.payment.pay_amount <= summary?.customer?.balance
+                && props.order?.data?.state === 'submitted'
+            " class="mt-1 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded px-2">
+                <div class="text-yellow-700">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                    {{ trans("Order :xorder is not paid yet", { xorder: order?.data?.reference }) }}
+                </div>
+                <div class="mt-1 whitespace-nowrap text-xs xtext-center">{{ trans("Your balance") }}: <span class="font-bold text-xs">{{ locale.currencyFormat(layout.iris?.currency?.code, Number(summary?.customer?.balance)) }}</span></div>
+                <div class="">
+                    <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(layout.iris?.currency?.code, Number(summary.products.payment.pay_amount)) })" size="xxs" type="primary" :loading="isLoadingPayWithBalance" />
+                </div>
+
+                <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
+                    <LoadingIcon />
+                </div>
+            </div>
+
 
             <div v-if="summary?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                 <!-- Section Title -->
@@ -255,15 +299,7 @@ const isModalShippingAddress = ref(false)
         </div>
 
         <div class="col-span-2 md:col-span-3 pt-3 md:pt-0 md:pl-3">
-            <div v-if="balance"
-                class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5 xtext-amber-600">
-                <div class="">{{ trans("Current balance") }}:</div>
-                <div class="">
-                    {{ locale.currencyFormat(summary.order_summary?.currency?.data?.code, balance ?? 0) }}
-                </div>
-            </div>
-
-            <div class="border border-gray-200 p-2 rounded">
+            <div class="p-2 rounded">
                 <OrderSummary :order_summary="summary.order_summary"
                     :currency_code="summary.order_summary?.currency?.data?.code" />
             </div>
