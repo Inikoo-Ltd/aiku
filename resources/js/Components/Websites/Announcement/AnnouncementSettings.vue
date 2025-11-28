@@ -565,9 +565,9 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                 </div>
 
                 <ul class="list-disc list-inside">
-                    <li class="group w-fit " v-for="announcement in listActiveAnnouncements" :key="announcement.id">
-                        <Link :href="routeAnnouncement(announcement)">
-                            <span class="underline cursor-pointer">{{ announcement.name }}</span>
+                    <li class="group w-fit ">
+                        <Link :href="routeAnnouncement(canPublish)">
+                            <span class="underline cursor-pointer">{{ canPublish.name }}</span>
                             <FontAwesomeIcon icon="fal fa-external-link-alt" class="ml-1 opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
                         </Link>
                     </li>

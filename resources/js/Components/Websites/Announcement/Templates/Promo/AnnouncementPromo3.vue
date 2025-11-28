@@ -298,7 +298,7 @@ const checkMobile = () => {
     isMobile.value = window.innerWidth <= 768
 }
 
-watch(props.announcementData.fields.countdown,(newValue)=>{
+watch(props.announcementData?.fields?.countdown,(newValue)=>{
     updateCountdown()
 })
 
@@ -391,7 +391,7 @@ defineExpose({ fieldSideEditor })
 </div>
 
 
-    <div  v-else="!isToSelectOnly" class="w-full flex items-center justify-between px-4 py-2"
+    <div v-else-if="!isToSelectOnly" class="w-full flex items-center justify-between px-4 py-2"
         :style="getStyles(announcementData?.container_properties)">
 
         <!-- LEFT -->
@@ -404,7 +404,7 @@ defineExpose({ fieldSideEditor })
                 :style="getStyles(announcementData?.fields?.text_2.block_properties)" />
 
             <!-- COUNTDOWN -->
-            <div class="flex items-center gap-1 font-sans shrink-0">
+            <div v-if="announcementData?.fields?.countdown" class="flex items-center gap-1 font-sans shrink-0">
                  <div class="flex flex-col items-center">
                     <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
                         {{ days }}
@@ -462,6 +462,9 @@ defineExpose({ fieldSideEditor })
                 </div>
             </div>
         </div>
+    </div>
+
+    <div v-else @click="() => emits('templateClicked', componentDefaultData)" class="inset-0 absolute">
     </div>
 </template>
 
