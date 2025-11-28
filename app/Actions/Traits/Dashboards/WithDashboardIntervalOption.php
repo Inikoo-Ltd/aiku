@@ -15,13 +15,15 @@ trait WithDashboardIntervalOption
 {
     public function dashboardIntervalOption(): array
     {
-        return collect(DateIntervalEnum::cases())->map(function ($interval) {
-            return [
-                'label'               => $interval->labels()[$interval->value],
-                'labelShort'          => $interval->shortLabels()[$interval->value],
-                'value'               => $interval->value,
-                'route_interval_args' => DashboardIntervalFilters::run($interval)
-            ];
-        })->toArray();
+        return collect(DateIntervalEnum::casesWithoutCustom())
+            ->map(function ($interval) {
+                return [
+                    'label'               => $interval->labels()[$interval->value],
+                    'labelShort'          => $interval->shortLabels()[$interval->value],
+                    'value'               => $interval->value,
+                    'route_interval_args' => DashboardIntervalFilters::run($interval)
+                ];
+            })
+            ->toArray();
     }
 }

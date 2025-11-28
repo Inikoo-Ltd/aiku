@@ -10,7 +10,6 @@ use App\Actions\Catalogue\Shop\UI\CreateShop;
 use App\Actions\Catalogue\Shop\UI\IndexShops;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\UI\ShowCrmDashboard;
-use App\Stubs\UIDummies\ShowDummyDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', IndexShops::class)->name('index');

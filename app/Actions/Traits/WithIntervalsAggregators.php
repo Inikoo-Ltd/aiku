@@ -41,7 +41,7 @@ trait WithIntervalsAggregators
         $stats = [];
 
 
-        foreach (DateIntervalEnum::cases() as $interval) {
+        foreach (DateIntervalEnum::casesWithoutCustom() as $interval) {
 
             if ($intervals !== null && !in_array($interval, $intervals)) {
                 continue;
@@ -65,7 +65,7 @@ trait WithIntervalsAggregators
         ?array $intervals = null
     ): array {
         $stats = [];
-        foreach (DateIntervalEnum::cases() as $interval) {
+        foreach (DateIntervalEnum::casesWithoutCustom() as $interval) {
             if ($interval == DateIntervalEnum::ALL) {
                 continue;
             }

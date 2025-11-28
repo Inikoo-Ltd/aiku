@@ -81,7 +81,8 @@ class EditMasterProduct extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'   => $masterAsset->code,
+                    'title'   => __('Edit master product'),
+                    'model'   => $masterAsset->code,
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
@@ -128,14 +129,14 @@ class EditMasterProduct extends GrpAction
                 ->toArray();
 
         $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
-                return array_merge(
+            return array_merge(
                 ['quantity' => (int) $t->pivot->quantity],
                 ['fraction'   =>  $t->pivot->quantity /  $packedIn[$t->id]],
                 ['packed_in'   =>  $packedIn[$t->id]],
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity /  $packedIn[$t->id])), $packedIn[$t->id])],
-                    $t->toArray()
-                );
-            });
+                $t->toArray()
+            );
+        });
 
         return [
             [
@@ -230,20 +231,32 @@ class EditMasterProduct extends GrpAction
                 ]
             ],
             [
-                'label'  => __('Pricing'),
-                'icon'   => 'fa-light fa-money-bill',
+                'label'  => __('Properties'),
+                'title'  => __('id'),
+                'icon'   => 'fa-light fa-fingerprint',
                 'fields' => [
-                    'cost_price_ratio' => [
-                        'type'          => 'input_number',
-                        'bind' => [
-                            'maxFractionDigits' => 3
-                        ],
-                        'label'         => __('pricing ratio'),
-                        'placeholder'   => __('Cost price ratio'),
-                        'required'      => true,
-                        'value'         => $masterProduct->cost_price_ratio,
-                        'min'           => 0
+                    'unit'        => [
+                        'type'  => 'input',
+                        'label' => __('unit'),
+                        'value' => $masterProduct->unit,
                     ],
+                    'barcode'       => [
+                        'type'  => 'select',
+                        'label' => __('barcode'),
+                        'value' => $masterProduct->barcode,
+                        'readonly' => $masterProduct->tradeUnits->count() == 1,
+                        'options' => $barcodes->mapWithKeys(function ($barcode) {
+                            return [$barcode => $barcode];
+                        })->toArray()
+                    ],
+                   /*  'marketing_weight'       => [
+                        'type'     => 'input_number',
+                        'label'    => __('marketing weight'),
+                        'value'    => $masterProduct->marketing_weight,
+                        'bind'     => [
+                                'suffix' => 'g'
+                        ]
+                    ], */
                 ]
             ],
             [
@@ -253,7 +266,7 @@ class EditMasterProduct extends GrpAction
                     'master_family_id'   => [
                         'type'        => 'select_infinite',
                         'label'       => __('Master Family'),
-                        'value'       => $masterProduct->masterFamily->id,
+                        'value'       => $masterProduct->masterFamily->id ?? null,
                         'options'   => [
                                 [
                                     'code' =>  $masterProduct->masterFamily->code ?? null,
@@ -274,41 +287,6 @@ class EditMasterProduct extends GrpAction
                         'labelProp' => 'code',
                         'value'   => $masterProduct->masterFamily->id ?? null,
                     ]
-                ]
-            ],
-            [
-                'label'  => __('Properties'),
-                'title'  => __('id'),
-                'icon'   => 'fa-light fa-fingerprint',
-                'fields' => [
-                    'unit'        => [
-                        'type'  => 'input',
-                        'label' => __('unit'),
-                        'value' => $masterProduct->unit,
-                    ],
-                    'barcode'       => [
-                        'type'  => 'select',
-                        'label' => __('barcode'),
-                        'value' => $masterProduct->barcode,
-                        'readonly' => $masterProduct->tradeUnits->count() == 1,
-                        'options' => $barcodes->mapWithKeys(function ($barcode) {
-                            return [$barcode => $barcode];
-                        })->toArray()
-                    ],
-                    'price'       => [
-                        'type'     => 'input',
-                        'label'    => __('price'),
-                        'required' => true,
-                        'value'    => $masterProduct->price
-                    ],
-                    'marketing_weight'       => [
-                        'type'     => 'input_number',
-                        'label'    => __('marketing weight'),
-                        'value'    => $masterProduct->marketing_weight,
-                        'bind'     => [
-                                'suffix' => 'g'
-                        ]
-                    ],
                 ]
             ],
             $masterProduct->masterFamily ? [

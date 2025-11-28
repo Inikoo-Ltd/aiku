@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
 use App\Actions\Dispatching\Picking\AssignPackerToPicking;
 use App\Actions\Dispatching\Picking\AssignPickerToPicking;
@@ -43,6 +44,8 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
 
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
+    Route::post('pay-with-balance', PayOrderWithCustomerBalance::class)->name('pay_order_with_balance');
+
     Route::patch('update', UpdateOrder::class)->name('update');
     Route::patch('rollback-dispatch', RollbackDispatchedOrder::class)->name('rollback_dispatch');
     Route::patch('delivery-address-update', UpdateOrderDeliveryAddress::class)->name('delivery_address_update');

@@ -73,6 +73,13 @@ class ShowCustomerSalesChannel extends OrgAction
             }
         }
 
+        $fulfilmentPolicies = null;
+        if ($customerSalesChannel->platform->type === PlatformTypeEnum::EBAY) {
+            /** @var \App\Models\Dropshipping\EbayUser $ebay */
+            $ebay = $customerSalesChannel->user;
+            $fulfilmentPolicies = $ebay->getFulfilmentPolicies();
+        }
+
 
         return Inertia::render(
             'Org/Dropshipping/CustomerSalesChannel',
@@ -103,6 +110,7 @@ class ShowCustomerSalesChannel extends OrgAction
                     'platform'               => $customerSalesChannel->platform,
                     'customer_sales_channel' => $customerSalesChannel,
                     'platform_user'          => $customerSalesChannel->user,
+                    'fulfilment_policies'    => $fulfilmentPolicies
                 ],
                 'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($customerSalesChannel))
             ]

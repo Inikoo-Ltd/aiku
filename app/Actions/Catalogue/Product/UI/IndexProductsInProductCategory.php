@@ -127,6 +127,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'products.asset_id',
                 'invoices_all',
                 'sales_all',
+                'products.units',
                 'customers_invoiced_all',
                 'currencies.code as currency_code',
             ])
@@ -165,11 +166,11 @@ class IndexProductsInProductCategory extends OrgAction
                     ]
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'unit', label: __('unit'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'rrp', label: __('rrp'), canBeHidden: false, sortable: true, searchable: true)
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unit', label: __('Unit label'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'rrp', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: true);
         };
     }

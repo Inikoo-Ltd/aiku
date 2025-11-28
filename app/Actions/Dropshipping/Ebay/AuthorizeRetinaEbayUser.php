@@ -44,6 +44,12 @@ class AuthorizeRetinaEbayUser extends RetinaAction
         return $this->handle();
     }
 
+    public function action(ActionRequest $request): string
+    {
+        $this->initialisation($request);
+        return $this->handle();
+    }
+
     /**
      * @throws \Exception
      */

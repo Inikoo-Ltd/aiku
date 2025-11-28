@@ -1,10 +1,10 @@
 <?php
 
-use App\Enums\CRM\Livechat\ChatAssigmentAssignedByEnum;
-use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 
 return new class () extends Migration {
     public function up(): void
@@ -18,7 +18,7 @@ return new class () extends Migration {
             $table->foreign('chat_agent_id')->references('id')->on('chat_agents')->nullOnDelete();
 
             $table->string('status')->index()->default(ChatAssignmentStatusEnum::PENDING->value);
-            $table->string('assigned_by')->index()->default(ChatAssigmentAssignedByEnum::SYSTEM->value);
+            $table->string('assigned_by')->index()->default(ChatAssignmentAssignedByEnum::SYSTEM->value);
             $table->timestamp('assigned_at');
             $table->timestamp('resolved_at')->nullable();
             $table->text('note')->nullable();

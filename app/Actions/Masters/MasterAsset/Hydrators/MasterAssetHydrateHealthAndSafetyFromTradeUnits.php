@@ -1,67 +1,68 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 07 Jul 2025 20:10:13 British Summer Time, Sheffield, UK
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
+ * author Louis Perez
+ * created on 26-11-2025-14h-53m
+ * github: https://github.com/louis-perez
+ * copyright 2025
+*/
 
-namespace App\Actions\Catalogue\Product\Hydrators;
+namespace App\Actions\Masters\MasterAsset\Hydrators;
 
-use App\Models\Catalogue\Product;
+use App\Models\Masters\MasterAsset;
 use App\Models\Goods\TradeUnit;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Stubs\Migrations\HasProductInformation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductHydrateTradeUnitsFields implements ShouldBeUnique
+class MasterAssetHydrateHealthAndSafetyFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
     use HasDangerousGoodsFields;
     use HasProductInformation;
 
-    public function getJobUniqueId(Product $product): string
+    public function getJobUniqueId(MasterAsset $masterAsset): string
     {
-        return $product->id;
+        return $masterAsset->id;
     }
 
-    public function handle(Product $product): void
+    public function handle(MasterAsset $masterAsset): void
     {
-        $tradeUnits = $product->tradeUnits;
+        $tradeUnits = $masterAsset->tradeUnits;
         if ($tradeUnits->count() == 1) {
-            $this->updateFromASingleTradeUnit($tradeUnits->first(), $product);
+            $this->updateFromASingleTradeUnit($tradeUnits->first(), $masterAsset);
         } else {
-            $this->updateFromMultipleTradeUnits($tradeUnits, $product);
+            $this->updateFromMultipleTradeUnits($tradeUnits, $masterAsset);
         }
     }
 
-    public function updateFromASingleTradeUnit(TradeUnit $tradeUnit, Product $product): void
+    public function updateFromASingleTradeUnit(TradeUnit $tradeUnit, MasterAsset $masterAsset): void
     {
         $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
-        $productInformationFields = $this->getProductInformationFieldNames();
+        $masterAssetInformationFields = $this->getProductInformationFieldNames();
 
         $dataToUpdate = [];
 
-        foreach (array_merge($dangerousGoodsFields, $productInformationFields) as $field) {
+        foreach (array_merge($dangerousGoodsFields, $masterAssetInformationFields) as $field) {
             if ($tradeUnit->$field !== null) {
                 $dataToUpdate[$field] = $tradeUnit->$field;
             }
         }
 
         if (!empty($dataToUpdate)) {
-            $product->updateQuietly($dataToUpdate);
+            $masterAsset->updateQuietly($dataToUpdate);
         }
     }
 
-    public function updateFromMultipleTradeUnits($tradeUnits, Product $product): void
+    public function updateFromMultipleTradeUnits($tradeUnits, MasterAsset $masterAsset): void
     {
         $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
-        $productInformationFields = $this->getProductInformationFieldNames();
+        $masterAssetInformationFields = $this->getProductInformationFieldNames();
 
         $dataToUpdate = [];
 
-        foreach (array_merge($dangerousGoodsFields, $productInformationFields) as $field) {
+        foreach (array_merge($dangerousGoodsFields, $masterAssetInformationFields) as $field) {
             $values  = [];
             $hasTrue = false;
 
@@ -89,7 +90,7 @@ class ProductHydrateTradeUnitsFields implements ShouldBeUnique
         }
 
         if (!empty($dataToUpdate)) {
-            $product->updateQuietly($dataToUpdate);
+            $masterAsset->updateQuietly($dataToUpdate);
         }
     }
 

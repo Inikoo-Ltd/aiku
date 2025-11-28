@@ -87,6 +87,7 @@ const props = defineProps<{
 const layout = inject("layout", layoutStructure);
 
 const isModalOpen = ref<string | boolean>(false);
+const isPlatformCreateLoading = ref<string | boolean>(false);
 const websiteInput = ref<string | null>(null);
 const isLoading = ref<string | boolean>(false);
 const errorShopify = ref('')
@@ -263,6 +264,10 @@ const isModalEbayDuplicate = ref(false)
             isModalEbayDuplicate.value = true
             // router.get(window.location.origin + window.location.pathname)
         }
+
+        if(route().params?.['continueEbayRegistration']) {
+            openCreateEbayModal();
+        }
     })
 
 const isModalCreateEbay = ref(false);
@@ -281,8 +286,9 @@ const closeCreateEbayModal = () => {
 }
 
 const openCreateEbayModal = async () => {
+    isPlatformCreateLoading.value = true;
     const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.creating_check'));
-    console.log(data)
+
     if(data) {
         ebayId.value = data.id;
         customerSalesChannelId.value = data.customer_sales_channel_id;
@@ -293,31 +299,28 @@ const openCreateEbayModal = async () => {
                 steps.value[0].status = "complete";
                 steps.value[1].status = "current";
                 steps.value[2].status = "upcoming";
-                steps.value[3].status = "upcoming";
                 break
             case 'marketplace':
+                currentStep.value = 1
+                steps.value[0].status = "complete";
+                steps.value[1].status = "current";
+                steps.value[2].status = "upcoming";
+                break
+            case 'auth':
                 currentStep.value = 2
                 steps.value[0].status = "complete";
                 steps.value[1].status = "complete";
                 steps.value[2].status = "current";
-                steps.value[3].status = "upcoming";
-                break
-            case 'auth':
-                currentStep.value = 3
-                steps.value[0].status = "complete";
-                steps.value[1].status = "complete";
-                steps.value[2].status = "complete";
-                steps.value[3].status = "current";
                 break
             default:
                 currentStep.value = 0
                 steps.value[0].status = "current";
                 steps.value[1].status = "upcoming";
                 steps.value[2].status = "upcoming";
-                steps.value[3].status = "upcoming";
         }
     }
 
+    isPlatformCreateLoading.value = false;
     isModalCreateEbay.value = true;
 }
 
@@ -328,7 +331,7 @@ provide("customerSalesChannelId", customerSalesChannelId);
 
 const steps = ref([
     { name: "Ebay Account Name", status: "current" },
-    { name: "Ebay Site", status: "upcoming" },
+    // { name: "Ebay Site", status: "upcoming" },
     { name: "Ebay Auth Key", status: "upcoming" },
     // { name: "Ebay Listing Profile Name", status: "upcoming" },
     { name: "Ebay Listing Profile Confirmation", status: "upcoming" }
@@ -338,7 +341,7 @@ provide("steps", steps);
 
 const stepComponents = [
     EbayAccountNameForm,
-    EbaySiteForm,
+    // EbaySiteForm,
     EbayAuthKeyForm,
     // EbayListingProfileNameForm,
     EbayListingProfileConfirmationForm
@@ -408,7 +411,7 @@ provide("goNext", goNext);
             </div>
 
             <!-- Section: Tiktok -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                     <img
@@ -438,7 +441,7 @@ provide("goNext", goNext);
                     </a>
 
                 </div>
-            </div>
+            </div>-->
 
             <!-- Section: Woocommerce -->
             <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
@@ -497,21 +500,21 @@ provide("goNext", goNext);
 <!--                    />-->
 
                     <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        :loading="isPlatformCreateLoading"
+                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         xtype="primary"
                         type="primary"
                         full
-                        iconRight="fal fa-external-link-alt"
                         @click="openCreateEbayModal"
                     />
 
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
+<!--                    <Button xv-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
                 </div>
             </div>
 
             <!-- Section: Amazon -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                     <img
@@ -543,10 +546,10 @@ provide("goNext", goNext);
                     <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
 
                 </div>
-            </div>
+            </div>-->
 
             <!-- Section: Magento -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                      <img src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
@@ -572,7 +575,7 @@ provide("goNext", goNext);
                     />
                     <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
-            </div>
+            </div>-->
         </div>
     </div>
 
@@ -690,7 +693,6 @@ provide("goNext", goNext);
                     @click="() => onSubmitEbay()"
                     :label="trans('Connect')"
                     full
-                    iconRight="fas fa-arrow-right"
                 />
             </div>
         </div>

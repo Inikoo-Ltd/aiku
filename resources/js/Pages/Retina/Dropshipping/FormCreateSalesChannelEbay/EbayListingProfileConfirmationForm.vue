@@ -20,6 +20,7 @@ import { inject, onMounted, ref } from "vue";
     import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
     import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
     library.add(faInfoCircle);
 
@@ -50,6 +51,7 @@ import { notify } from "@kyvg/vue3-notification";
     ]);
 
     const isLoadingStep = ref(false)
+    const isLoadingFirstHit = ref(false)
     const errors = ref({})
 
     const form = useForm({
@@ -84,6 +86,7 @@ import { notify } from "@kyvg/vue3-notification";
     }
 
     onMounted(async () => {
+        isLoadingFirstHit.value = true;
         const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay_policies.index', {
             ebayUser: ebayId.value
         }));
@@ -124,11 +127,16 @@ import { notify } from "@kyvg/vue3-notification";
         if(data?.tax_categories?.length > 0) {
             taxCategories.value = data?.tax_categories;
         }
+
+        isLoadingFirstHit.value = false
     })
 </script>
 
 <template>
-    <form @submit.prevent="submitForm" class="flex flex-col gap-6">
+    <form @submit.prevent="submitForm" class="flex flex-col gap-6 relative">
+        <div v-if="isLoadingFirstHit" class="absolute flex pt-32 justify-center text-6xl text-white inset-0 w-full h-full bg-black/50 z-20">
+            <LoadingIcon />
+        </div>
         <hr class="w-full border-t" />
 
         <div class="flex flex-col w-full border rounded-xl">
@@ -262,14 +270,14 @@ import { notify } from "@kyvg/vue3-notification";
                                 <Select v-model="form.fulfillment_policy_id"
                                         @update:model-value="errors.fulfillment_policy_id = null "
                                         :options="shippingProfiles" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select ebay shipping policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('A fulfillment policy is a reusable template that sets a listing’s shipping services, costs, delivery options, and handling time so you don’t need to configure them manually for each item.')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                             <p v-if="errors.fulfillment_policy_id" class="text-sm text-red-600 mt-1">{{ errors.fulfillment_policy_id?.[0] }}</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex flex-col w-full border rounded-xl">
+<!--                <div class="flex flex-col w-full border rounded-xl">
                     <div class="bg-gray-100 px-4 py-2">
                         <span class="font-semibold">{{ trans("Shipping Settings") }}</span>
                     </div>
@@ -299,7 +307,7 @@ import { notify } from "@kyvg/vue3-notification";
                             <p v-if="errors.shipping_max_dispatch_time" class="text-sm text-red-600 mt-1">{{ errors.shipping_max_dispatch_time?.[0] }}</p>
                         </div>
                     </div>
-                </div>
+                </div>-->
             </div>
         </div>
 

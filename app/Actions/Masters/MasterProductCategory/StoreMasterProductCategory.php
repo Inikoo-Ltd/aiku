@@ -146,6 +146,7 @@ class StoreMasterProductCategory extends GrpAction
                 new IUnique(
                     table: 'master_product_categories',
                     extraConditions: [
+                        ['column' => 'type', 'value' => $this->attributes['type']->value],
                         ['column' => 'master_shop_id', 'value' => $this->masterShop->id],
                         ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
