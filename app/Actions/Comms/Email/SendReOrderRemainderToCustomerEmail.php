@@ -27,8 +27,6 @@ class SendReOrderRemainderToCustomerEmail extends OrgAction
 
     public function handle(Customer $customer, EmailBulkRun $emailBulkRun): DispatchedEmail
     {
-        Log::info('SendReOrderRemainderToCustomerEmail');
-        Log::info($customer->id);
         return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::REORDER_REMINDER, [], '', null, null, null, $emailBulkRun);
     }
 }

@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Outbox\ReorderRemainder\Hydrators;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\EmailBulkRun;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\Customer;
@@ -24,18 +25,12 @@ use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\DispatchedEmail\App\Enums\Comms\DispatchedEmailEvent\DispatchedEmailEventTypeEnum;
 use App\Actions\Comms\Outbox\ReorderRemainder\WithGenerateEmailBulkRuns;
 
-class ReorderRemainderHydrateEmailBulkRuns
-// implements ShouldBeUnique
+class ReorderRemainderHydrateEmailBulkRuns implements ShouldQueue
 {
     use AsAction;
     use WithGenerateEmailBulkRuns;
-    public string $commandSignature = 'hydrate:reorder-reminder-bulk-runs';
-    // public string $jobQueue = 'low-priority';
-
-    // public function getJobUniqueId(EmailBulkRun $emailBulkRun): string
-    // {
-    //     return $emailBulkRun->id;
-    // }
+    public string $commandSignature = 'hydrate:reorder-reminder-email-bulk-runs';
+    public string $jobQueue = 'low-priority';
 
     /**
      * @return void
@@ -59,6 +54,7 @@ class ReorderRemainderHydrateEmailBulkRuns
      */
     public function handle(): void
     {
+        // TODO: update from setting
         $defaultDays = 20;
 
         // get the customers
@@ -67,17 +63,11 @@ class ReorderRemainderHydrateEmailBulkRuns
             ->whereNotNull('email')
             ->where('email', '!=', '')
             ->whereNotNull('shop_id')
-            ->take(2)
             ->get();
-
-            \Log::info('customers', ['customers' => $customers]);
 
             // New Function to generate and make sure EmailBulkRun for each customer
             $customers->each(function ($customer) {
                 $generateEmailBulkRun = $this->generateEmailBulkRuns($customer, OutboxCodeEnum::REORDER_REMINDER, now()->toDateString());
-            // make sure not generate the same email bulk run for the same day
-            \Log::info('generateEmailBulkRun: '.$generateEmailBulkRun);
-
             // next Step make sure  Dispatched_emails
             SendReOrderRemainderToCustomerEmail::run($customer, $generateEmailBulkRun);
             });
