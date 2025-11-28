@@ -7,6 +7,7 @@ use App\Actions\CRM\ChatSession\GetChatMessages;
 use App\Actions\CRM\ChatSession\GetChatSessions;
 use App\Actions\CRM\ChatSession\SendChatMessage;
 use App\Actions\CRM\ChatSession\UpdateChatAgent;
+use App\Actions\CRM\ChatSession\CloseChatSession;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Actions\CRM\ChatSession\AssignChatToAgent;
 use App\Actions\CRM\ChatSession\UpdateChatSession;
@@ -18,6 +19,10 @@ Route::get('/ping', function () {
 Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
 Route::post('/sessions', StoreChatSession::class)->name('sessions.store');
 Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
+Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
+->name('sessions.update');
+Route::put('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
+
 Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages');
 
 Route::post('/sessions/{chatSession:ulid}/assign', AssignChatToAgent::class)
@@ -25,9 +30,6 @@ Route::post('/sessions/{chatSession:ulid}/assign', AssignChatToAgent::class)
 
 Route::post('/sessions/{chatSession:ulid}/assign-to-self', [AssignChatToAgent::class, 'assignToSelf'])
     ->name('sessions.assign.self');
-
-Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
-    ->name('sessions.update');
 
 Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
     ->name('agents.store');

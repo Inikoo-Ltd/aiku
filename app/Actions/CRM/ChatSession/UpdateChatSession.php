@@ -90,8 +90,7 @@ class UpdateChatSession
         string $actorType,
         ?int $actorId,
         array $updatedFields
-        ): void {
-
+    ): void {
 
         $actorType = match ($actorType) {
             'agent', ChatActorTypeEnum::AGENT->value => ChatActorTypeEnum::AGENT,
@@ -114,10 +113,7 @@ class UpdateChatSession
             'updated_by_type'  => $actorType->value,
             'updated_by_id'    => $actorId,
             'updated_fields'   => array_keys($updatedFields),
-
-            'old_values' => array_map(fn($v) => $this->extractOldValue($v), $updatedFields),
-            'new_values' => array_map(fn($v) => $this->extractNewValue($v), $updatedFields),
-
+            'values'           => $updatedFields,
             'timestamp'        => now()->toISOString(),
         ];
 
@@ -130,30 +126,5 @@ class UpdateChatSession
         );
     }
 
-    protected function extractOldValue($value): string|int|null
-    {
-        if (is_array($value) && array_key_exists('old', $value)) {
-            return $value['old'];
-        }
-
-        if (is_array($value) && count($value) === 2) {
-            return $value[0];
-        }
-
-        return null;
-    }
-
-    protected function extractNewValue($value): string|int|null
-    {
-        if (is_array($value) && array_key_exists('new', $value)) {
-            return $value['new'];
-        }
-
-        if (is_array($value) && count($value) === 2) {
-            return $value[1];
-        }
-
-        return $value;
-    }
 
 }
