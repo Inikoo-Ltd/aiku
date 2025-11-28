@@ -114,19 +114,18 @@ trait WithDashboardIntervalValues
             $options['currency'] = $invoiceCategoryCurrencyCode ?? 'GBP';
             $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_invoice_category_currency'));
         } elseif (str_ends_with($columnFingerprint, '_org_currency')) {
-            $organisationCurrencyCode = $intervalsModel->organisationCurrencyCode;
-            if (!$organisationCurrencyCode && $intervalsModel->organisation) {
-                $organisationCurrencyCode = $intervalsModel->organisation->currency->code;
-            }
+            $organisationCurrencyCode = data_get($intervalsModel, 'organisationCurrencyCode')
+                ?? data_get($intervalsModel, 'organisation_currency_code')
+                ?? data_get($intervalsModel, 'organisation.currency.code')
+                ?? 'GBP';
 
-            $options['currency'] = $organisationCurrencyCode ?? 'GBP';
+            $options['currency'] = $organisationCurrencyCode;
         } elseif (str_ends_with($columnFingerprint, '_grp_currency')) {
-            $groupCurrencyCode = $intervalsModel->group_currency_code;
-            if (!$groupCurrencyCode && $intervalsModel->group) {
-                $groupCurrencyCode = $intervalsModel->group->currency->code;
-            }
+            $groupCurrencyCode = data_get($intervalsModel, 'group_currency_code')
+                ?? data_get($intervalsModel, 'group.currency.code')
+                ?? 'GBP';
 
-            $options['currency'] = $groupCurrencyCode ?? 'GBP';
+            $options['currency'] = $groupCurrencyCode;
         } elseif (str_ends_with($columnFingerprint, '_inverse')) {
             $options['inverse_delta'] = true;
             $columnFingerprint        = substr($columnFingerprint, 0, -strlen('_inverse'));
@@ -148,13 +147,14 @@ trait WithDashboardIntervalValues
         ];
     }
 
-    private function sumIntervalValues($models, string $field): array
+    private function sumIntervalValues($models, string $field, bool $isLy = false): array
     {
+        $suffix = $isLy ? '_ly' : '';
         $sums = [];
 
         foreach ($models as $model) {
             foreach (DateIntervalEnum::cases() as $interval) {
-                $key = $field.'_'.$interval->value;
+                $key = $field.'_'.$interval->value.$suffix;
                 $sums[$key] = ($sums[$key] ?? 0) + ($model->{$key} ?? 0);
             }
         }

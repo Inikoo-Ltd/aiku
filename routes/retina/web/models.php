@@ -55,6 +55,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaEbayCustome
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
+use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalanceAfterSubmitted;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
@@ -246,6 +247,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::delete('delete-basket', DeleteRetinaBasket::class)->name('delete_basket');
     Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
     Route::patch('pay-with-balance', PayRetinaOrderWithBalance::class)->name('pay_with_balance');
+    Route::post('pay-with-balance-after-submitted', PayRetinaOrderWithBalanceAfterSubmitted::class)->name('pay_with_balance_after_submitted');
 
     Route::patch('delivery-address-update', UpdateRetinaOrderDeliveryAddress::class)->name('delivery_address_update');
 
