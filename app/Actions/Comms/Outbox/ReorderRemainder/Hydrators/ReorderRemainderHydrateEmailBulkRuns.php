@@ -22,11 +22,13 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\DispatchedEmail\App\Enums\Comms\DispatchedEmailEvent\DispatchedEmailEventTypeEnum;
+use App\Actions\Comms\Outbox\ReorderRemainder\WithGenerateEmailBulkRuns;
 
 class ReorderRemainderHydrateEmailBulkRuns
 // implements ShouldBeUnique
 {
     use AsAction;
+    use WithGenerateEmailBulkRuns;
     public string $commandSignature = 'hydrate:reorder-reminder-bulk-runs';
     // public string $jobQueue = 'low-priority';
 
@@ -60,102 +62,29 @@ class ReorderRemainderHydrateEmailBulkRuns
         $defaultDays = 20;
 
         // get the customers
-        // TODO: confirm more conditions for the customers like
+        // TODO: confirm to raul more conditions for the customers like last_invoiced_at, status, state
         $customers = Customer::where('last_invoiced_at', '<', now()->subDays($defaultDays))
             ->whereNotNull('email')
             ->where('email', '!=', '')
             ->whereNotNull('shop_id')
+            ->take(2)
             ->get();
 
+            \Log::info('customers', ['customers' => $customers]);
 
-            //  TODO: check if has group, organitation , and shop difference
+            // New Function to generate and make sure EmailBulkRun for each customer
+            $customers->each(function ($customer) {
+                $generateEmailBulkRun = $this->generateEmailBulkRuns($customer, OutboxCodeEnum::REORDER_REMINDER, now()->toDateString());
+            // make sure not generate the same email bulk run for the same day
+            \Log::info('generateEmailBulkRun: '.$generateEmailBulkRun);
 
-                // Find or create outbox (use first customer's shop as reference)
-                //  TODO: need to update query for grouping the customer
-                $firstCustomer = $customers->first();
-
-                $outbox = $firstCustomer->shop->outboxes()->where('code', OutboxCodeEnum::REORDER_REMINDER)->first();
-
-                // TODO: get the Email Ongoing Run
-                $emailOngoingRun = $outbox->emailOngoingRun;
-                // Log::info('outbox', ['outbox' => $outbox]);
-                // Log::info('emailOngoingRun', ['emailOngoingRun' => $emailOngoingRun]);
-
-                // TODO: create EmailBulkRun
-                // the data need to adding to modelData
-              $storeEmailBulkRun =  StoreEmailBulkRun::make()->action(
-                    emailOngoingRun: $emailOngoingRun,
-                    modelData: [
-                        'subject' => now()->format('Y-m-d'),
-                        'state' => EmailBulkRunStateEnum::SENDING,
-                        'scheduled_at' => now(),
-                        'data' => [
-                            'customer_count' => $customers->count(),
-                            'reminder_days' => config('aiku.reorder_reminder_days', 20),
-                            'created_by' => 'ReorderRemainderHydrateEmailBulkRunsEnhanced'
-                        ]
-                        ],
-                        hydratorsDelay: true,
-                        strict: false,
-                );
-                Log::info('storeEmailBulkRun', ['storeEmailBulkRun' => $storeEmailBulkRun]);
-
-        // TODO: Create bulk for the recipients using dispatched email
-        $customers->each(function ($customer) use ($storeEmailBulkRun) {
-            // Example can be found here : app/Actions/Transfers/Aurora/FetchAuroraDispatchedEmails.php
-            $dispatchedEmail = StoreDispatchedEmail::make()->action(
-                parent: $storeEmailBulkRun,
-                recipient: $customer,
-                modelData: [
-                    'is_test'       => true,
-                    'provider'      => DispatchedEmailProviderEnum::SES,
-                    'email_address' => $customer->email,
-                    'state' => DispatchedEmailStateEnum::READY,
-                ],
-                strict: false,
-            );
-            Log::info('dispatchedEmail', ['dispatchedEmail' => $dispatchedEmail]);
-        });
-
-
-        // $customers->each(function ($customer) {
-        //     SendReOrderRemainderToCustomerEmail::run($customer);
-        // });
+            // next Step make sure  Dispatched_emails
+            SendReOrderRemainderToCustomerEmail::run($customer, $generateEmailBulkRun);
+            });
     }
 
     public function asCommand(): void
     {
         $this->run();
     }
-
-    //  TODO: Trigger email delivery
-    // private function triggerEmailDelivery(EmailBulkRun $emailBulkRun): void
-    // {
-    //     try {
-    //         // Create delivery channel
-    //         $channelData = [
-    //             'code' => 'ses-main',
-    //             'data' => [
-    //                 'auto_created' => true,
-    //                 'provider' => 'ses'
-    //             ]
-    //         ];
-
-    //         $emailDeliveryChannel = StoreEmailDeliveryChannel::make()->action($emailBulkRun, $channelData);
-
-    //         // Dispatch SendEmailDeliveryChannel job
-    //         \App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
-
-    //         Log::info('Triggered email delivery for EmailBulkRun', [
-    //             'bulk_run_id' => $emailBulkRun->id,
-    //             'channel_id' => $emailDeliveryChannel->id
-    //         ]);
-
-    //     } catch (\Exception $e) {
-    //         Log::error('Failed to trigger email delivery', [
-    //             'bulk_run_id' => $emailBulkRun->id,
-    //             'error' => $e->getMessage()
-    //         ]);
-    //     }
-    // }
 }

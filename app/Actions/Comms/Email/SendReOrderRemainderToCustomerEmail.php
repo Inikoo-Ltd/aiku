@@ -16,6 +16,7 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\Log;
+use App\Models\Comms\EmailBulkRun;
 
 class SendReOrderRemainderToCustomerEmail extends OrgAction
 {
@@ -24,10 +25,10 @@ class SendReOrderRemainderToCustomerEmail extends OrgAction
     use WithSendCustomerOutboxEmail;
 
 
-    public function handle(Customer $customer): DispatchedEmail
+    public function handle(Customer $customer, EmailBulkRun $emailBulkRun): DispatchedEmail
     {
         Log::info('SendReOrderRemainderToCustomerEmail');
         Log::info($customer->id);
-        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::REORDER_REMINDER);
+        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::REORDER_REMINDER, [], '', null, null, null, $emailBulkRun);
     }
 }
