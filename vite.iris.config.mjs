@@ -74,7 +74,7 @@ export default defineConfig(
     },
     build  : {
       sourcemap    : true,
-      // transpile: ["@fortawesome/vue-fontawesome", "@fortawesome/fontawesome-svg-core"],        
+      // transpile: ["@fortawesome/vue-fontawesome", "@fortawesome/fontawesome-svg-core"],
       devSourcemap : true,
       rollupOptions: {
         output: {
