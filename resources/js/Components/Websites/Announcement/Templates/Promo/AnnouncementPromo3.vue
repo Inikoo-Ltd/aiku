@@ -391,7 +391,7 @@ defineExpose({ fieldSideEditor })
 </div>
 
 
-    <div  v-else="!isToSelectOnly" class="w-full flex items-center justify-between px-4 py-2"
+    <div v-else-if="!isToSelectOnly" class="w-full flex items-center justify-between px-4 py-2"
         :style="getStyles(announcementData?.container_properties)">
 
         <!-- LEFT -->
@@ -462,6 +462,9 @@ defineExpose({ fieldSideEditor })
                 </div>
             </div>
         </div>
+    </div>
+
+    <div v-else @click="() => emits('templateClicked', componentDefaultData)" class="inset-0 absolute">
     </div>
 </template>
 
