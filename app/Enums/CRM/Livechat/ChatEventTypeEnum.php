@@ -21,6 +21,7 @@ enum ChatEventTypeEnum: string
 
     case CLOSE = 'close';
     case RATING = 'rating';
+    case PRIORITY = 'priority';
     case NOTE = 'note';
     case REPLY = 'reply';
     case SEND = 'send';
@@ -41,6 +42,7 @@ enum ChatEventTypeEnum: string
             'send'=> __('Send'),
             'transfer_to_agent'=> __('Transfer to Agent'),
             'Assignment_to_self'=> __('Assignment to Self'),
+            'priority'=> __('Priority Updated'),
         ];
     }
 

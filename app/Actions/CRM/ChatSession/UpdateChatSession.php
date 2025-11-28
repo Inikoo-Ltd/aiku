@@ -9,6 +9,8 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 
 class UpdateChatSession
 {
@@ -44,7 +46,7 @@ class UpdateChatSession
                 $chatSession,
                 'system',
                 null,
-                null
+                $updatedFields
             );
         }
 
@@ -83,23 +85,75 @@ class UpdateChatSession
     }
 
 
-    protected function logUpdateChatSessionEvent(ChatSession $chatSession, string $senderType, ?int $senderId, ChatMessage $message): void
-    {
-        $actorType = match($senderType) {
-            ChatActorTypeEnum::AGENT->value => ChatActorTypeEnum::AGENT,
-            ChatSenderTypeEnum::USER->value => ChatActorTypeEnum::USER,
+    protected function logUpdateChatSessionEvent(
+        ChatSession $chatSession,
+        string $actorType,
+        ?int $actorId,
+        array $updatedFields
+        ): void {
+
+
+        $actorType = match ($actorType) {
+            'agent', ChatActorTypeEnum::AGENT->value => ChatActorTypeEnum::AGENT,
+            'user', ChatActorTypeEnum::USER->value => ChatActorTypeEnum::USER,
             default => ChatActorTypeEnum::GUEST
         };
 
-        $isGuestMessage = in_array($senderType, [ChatActorTypeEnum::GUEST->value, ChatActorTypeEnum::USER->value]);
+        $eventType = match (true) {
+            isset($updatedFields['priority']) => ChatEventTypeEnum::PRIORITY,
+            isset($updatedFields['rating'])   => ChatEventTypeEnum::RATING,
+            default => null
+        };
 
-        StoreChatEvent::make()->messageSent(
+        if ($eventType === null) {
+            return;
+        }
+
+        $payload = [
+            'chat_session_id'  => $chatSession->id,
+            'updated_by_type'  => $actorType->value,
+            'updated_by_id'    => $actorId,
+            'updated_fields'   => array_keys($updatedFields),
+
+            'old_values' => array_map(fn($v) => $this->extractOldValue($v), $updatedFields),
+            'new_values' => array_map(fn($v) => $this->extractNewValue($v), $updatedFields),
+
+            'timestamp'        => now()->toISOString(),
+        ];
+
+        StoreChatEvent::make()->customEvent(
             $chatSession,
+            $eventType,
             $actorType,
-            $senderId,
-            $message->id,
-            $message->message_type->value,
-            $isGuestMessage
+            $actorId,
+            $payload
         );
     }
+
+    protected function extractOldValue($value): string|int|null
+    {
+        if (is_array($value) && array_key_exists('old', $value)) {
+            return $value['old'];
+        }
+
+        if (is_array($value) && count($value) === 2) {
+            return $value[0];
+        }
+
+        return null;
+    }
+
+    protected function extractNewValue($value): string|int|null
+    {
+        if (is_array($value) && array_key_exists('new', $value)) {
+            return $value['new'];
+        }
+
+        if (is_array($value) && count($value) === 2) {
+            return $value[1];
+        }
+
+        return $value;
+    }
+
 }
