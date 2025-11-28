@@ -22,7 +22,7 @@ const locale = inject('locale', aikuLocaleStructure)
 <template>
     <dd class="relative w-full flex flex-col border px-2.5 py-1 rounded-md  overflow-hidden"
         :class="[
-            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300' : 'bg-white border-gray-300',
+            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 pr-5' : 'bg-white border-gray-300',
         ]"
     >
         <!-- Block: Corner label (fully paid) -->
@@ -46,7 +46,7 @@ const locale = inject('locale', aikuLocaleStructure)
             {{ trans('Paid') }}: {{ locale.currencyFormat(currencyCode, Number(paidAmount)) }}
         </div>
         
-        <div v-if="paidAmount !== undefined && payAmount > 0" class="text-xs text-gray-500 font-light">
+        <div v-if="paidAmount !== undefined && payAmount > 0" class="text-xs text-gray-500 font-light whitespace-nowrap">
             {{ trans('Need to pay') }}: {{ locale.currencyFormat(currencyCode, Number(payAmount)) }}
         </div>
 
