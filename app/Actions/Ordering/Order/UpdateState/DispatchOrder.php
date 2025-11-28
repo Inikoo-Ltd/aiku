@@ -65,7 +65,7 @@ class DispatchOrder extends OrgAction
             $order->refresh();
 
 
-            if ($order->customerSalesChannel?->user) {
+            if ($order->customerSalesChannel?->user && app()->isProduction()) {
                 match ($order->customerSalesChannel->platform->type) {
                     PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
                     PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
