@@ -30,7 +30,7 @@ enum RetinaPalletDeliveryTabsEnum: string
     {
         return match ($this) {
             RetinaPalletDeliveryTabsEnum::HISTORY => [
-                'title' => __('History '),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

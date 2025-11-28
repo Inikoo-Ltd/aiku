@@ -63,50 +63,23 @@ const props = defineProps<{
     }
     is_notes_editable: boolean
     summary: {
-        net_amount: string
-        gross_amount: string
-        tax_amount: string
-        goods_amount: string
-        services_amount: string
-        charges_amount: string
+        order_summary: {
+            net_amount: string
+            gross_amount: string
+            tax_amount: string
+            goods_amount: string
+            services_amount: string
+            charges_amount: string
+        }
+        order_properties: {
+            weight: number
+            customer_order_number: number
+            customer_order_ordinal: string
+            customer_order_ordinal_tooltip: string
+        }
     }
     balance: string
     address_management: AddressManagement
-    box_stats: {
-        customer: {
-            reference: string
-            contact_name: string
-            company_name: string
-            email: string
-            phone: string
-            addresses: {
-                delivery: Address
-                billing: Address
-            }
-        }
-        customer_channel: {
-            status: boolean
-            platform: {
-                name: string
-                image: string
-            }
-        }
-        products: {
-            payment: {
-                routes?: {
-                    fetch_payment_accounts: routeType
-                    submit_payment: routeType
-                }
-                total_amount: number
-                paid_amount: number
-                pay_amount: number
-            }
-            estimated_weight: number
-        }
-        order_summary: {
-
-        }
-    }
     currency: Currency
     data?: {
         data: {
@@ -123,8 +96,6 @@ const props = defineProps<{
         }
     }
 
-
-
     transactions: {}
     invoices?: {}
     delivery_notes: {
@@ -133,7 +104,6 @@ const props = defineProps<{
     attachments?: {}
 
 }>()
-
 
 const isModalUploadOpen = ref(false)
 

@@ -1,0 +1,59 @@
+<?php
+
+/*
+ * Author: Steven Wicca stewicalf@gmail.com
+ * Created: Wed, 19 Nov 2025 16:09:04 Central Indonesia Time, Lembeng Beach, Bali, Indonesia
+ * Copyright (c) 2025, Steven Wicca Alfredo
+ */
+
+namespace App\Actions\Maintenance\Discounts;
+
+use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Shop;
+use App\Models\Discounts\OfferCampaign;
+
+class RepairOfferCampaignBracket
+{
+    use WithActionUpdate;
+
+    public string $commandSignature = 'repair:offer-campaign-bracket';
+
+    public function asCommand(): void
+    {
+        $shops = Shop::all();
+
+        foreach ($shops as $shop) {
+            $this->handle($shop);
+        }
+    }
+
+    public function handle(Shop $shop): void
+    {
+        $campaigns = OfferCampaign::where('shop_id', $shop->id)->get();
+
+        foreach ($campaigns as $campaign) {
+            $bracket = $this->determineBracket($campaign->code);
+            $this->update($campaign, ['bracket' => $bracket]);
+        }
+    }
+
+    private function determineBracket(?string $code): string
+    {
+        if (empty($code)) {
+            return 'Temporal';
+        }
+
+        $ongoingCodes = ['OR', 'VL', 'FO'];
+        $discretionaryCodes = ['DI'];
+
+        if (in_array($code, $ongoingCodes)) {
+            return 'Ongoing';
+        }
+
+        if (in_array($code, $discretionaryCodes)) {
+            return 'Discretionary';
+        }
+
+        return 'Temporal';
+    }
+}

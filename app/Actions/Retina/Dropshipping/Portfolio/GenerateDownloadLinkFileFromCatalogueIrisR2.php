@@ -29,9 +29,8 @@ class GenerateDownloadLinkFileFromCatalogueIrisR2
 
             // Build URL manually using your R2 public domain
             $publicDomain = config('filesystems.disks.catalogue-iris-r2.url');
-            $url = rtrim($publicDomain, '/') . '/' . ltrim($filePath, '/');
+            return rtrim($publicDomain, '/') . '/' . ltrim($filePath, '/');
 
-            return $url;
 
         } catch (Exception $e) {
             Log::error('R2 Generate Download Link Error: ' . $e->getMessage());
@@ -63,8 +62,3 @@ class GenerateDownloadLinkFileFromCatalogueIrisR2
     }
 
 }
-
-
-
-
-

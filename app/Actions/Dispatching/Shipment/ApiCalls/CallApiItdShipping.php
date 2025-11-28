@@ -71,7 +71,8 @@ class CallApiItdShipping extends OrgAction
 
 
         if (app()->environment('production')) {
-            $serviceId = 'YODEL_XPECT_MINI_48_M_S_POD_137954';
+            $serviceId = 'ROYAL_MAIL_TRACKED_48_151495';
+            // old 48 hrs YODEL_XPECT_MINI_48_M_S_POD_137954
             // for premium fast shipping use 'YODEL_XPECT_MINI_48_M_S_POD_137954';
         } else {
             $serviceId = 'YODEL_XPECT_48_P_136240';

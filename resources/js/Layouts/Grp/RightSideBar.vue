@@ -16,6 +16,7 @@ import { useTruncate } from '@/Composables/useTruncate'
 import { Link } from '@inertiajs/vue3'
 import { useIsFutureIsAPast } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
+import ContactList from "@/Components/Chat/ContactList.vue"
 library.add(faTimes, faPencil)
 
 const layout = useLayoutStore()
@@ -43,7 +44,8 @@ const onClickRemoveBar = (tabName: 'activeUsers') => {
     <div class="text-xs h-full border-l border-gray-200 space-y-4">
         <TransitionGroup name="list" tag="ul">
             <!-- Online Users -->
-            <li v-if="layout.rightSidebar.activeUsers.show" class="px-2 py-2" key="1">
+            <li v-if="layout.rightSidebar.activeUsers.show" class="" key="1">
+                
                 <div class="pl-2 pr-1.5 bg-slate-300/80 text-slate-700 text-xs font-semibold rounded flex justify-between leading-none">
                     <span class="py-1">{{( trans('Active Users'))}}</span>
                     <div @click="onClickRemoveBar('activeUsers')" class="flex justify-center items-center cursor-pointer px-1.5 text-slate-400 hover:text-slate-600">
@@ -51,7 +53,7 @@ const onClickRemoveBar = (tabName: 'activeUsers') => {
                     </div>
                 </div>
 
-                <!-- Looping: User online list -->
+
                 <template v-for="(user, index) in useLiveUsers().liveUsers" :key="`${user?.id}` + user?.action + index">
                     <template v-if="!(
                         (user.action === 'leave' && useIsFutureIsAPast(user?.last_active, 300)) ||
@@ -78,7 +80,14 @@ const onClickRemoveBar = (tabName: 'activeUsers') => {
                     </template>
                 </template>
             </li>
+
+
+           
         </TransitionGroup>
+
+         <div v-if="layout?.rightSidebar?.message?.show">
+                    <ContactList />
+            </div>
 
         <!-- Add new here -->
     </div>

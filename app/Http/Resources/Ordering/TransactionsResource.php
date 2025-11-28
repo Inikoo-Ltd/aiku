@@ -41,6 +41,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $currency_code
  * @property mixed $order_id
  * @property mixed $price
+ * @property mixed $offers_data
+ * @property mixed $product_image_id
+ * @property mixed $model_type
+ * @property mixed $product_id
  */
 class TransactionsResource extends JsonResource
 {
@@ -54,7 +58,7 @@ class TransactionsResource extends JsonResource
         $webpageUrl = null;
         if ($this->model_type === class_basename(Product::class)) {
             $webpage = Webpage::where('model_id', $this->product_id)
-            ->where('model_type', class_basename(Product::class))->first();
+                ->where('model_type', class_basename(Product::class))->first();
 
             $webpageUrl = $webpage?->getUrl();
         }
@@ -79,7 +83,9 @@ class TransactionsResource extends JsonResource
             'created_at'          => $this->created_at,
             'currency_code'       => $this->currency_code,
             'available_quantity'  => $this->available_quantity ?? 0,
-            'webpage_url'         => $webpageUrl,  // this is 'domain/aisb-06', should be 'domain/incense/resin-powders/aisb/aisb-06'
+            'webpage_url'         => $webpageUrl,
+            'offers_data'         => $this->offers_data,
+
 
             'deleteRoute' => $request->user() instanceof User
                 ? [

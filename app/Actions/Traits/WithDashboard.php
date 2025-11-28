@@ -22,7 +22,7 @@ trait WithDashboard
 
     public function getIntervalOptions(): array
     {
-        return collect(DateIntervalEnum::cases())->map(function ($interval) {
+        return collect(DateIntervalEnum::casesWithoutCustom())->map(function ($interval) {
             return [
                 'label'      => __(strtolower(str_replace('_', ' ', $interval->name))),
                 'labelShort' => __($interval->value),
@@ -102,7 +102,7 @@ trait WithDashboard
     {
         $result = [];
 
-        foreach (DateIntervalEnum::cases() as $interval) {
+        foreach (DateIntervalEnum::casesWithoutCustom() as $interval) {
             $key = $interval->value;
             if ($key == 'all') {
                 $result[] = [

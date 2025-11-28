@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref } from "vue"
+import { inject, onMounted, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -21,8 +21,6 @@ const props = defineProps<{
 	currentTab: string
 }>()
 
-
-
 const layout = inject("layout", layoutStructure)
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 const isSectionVisible = ref(false)
@@ -38,13 +36,16 @@ const storeIntervalCode = debounce((interval_code) => {
 		}
 	)
 }, 1500)
+
 const isLoadingInterval = ref<string | null>(null)
+
 const updateInterval = (interval_code: string) => {
 	props.intervals.value = interval_code
 	storeIntervalCode(interval_code)
 }
 
 const isLoadingToggle = ref<string | null>(null)
+
 const updateToggle = async (key: string, value: string, valLoading: string, isAxios?: boolean) => {
 	if (isAxios) {  // use Axios ()
 		isLoadingToggle.value = valLoading
@@ -92,6 +93,7 @@ const debStoreCurrencyType = debounce((value: string) => {
 		},
 	})
 }, 1500)
+
 const updateCurrencyType = (value: string) => {
 	props.settings.currency_type.value = value
 	debStoreCurrencyType(value)
@@ -105,22 +107,24 @@ const debStoreDataDisplayType = debounce((value: string) => {
 		},
 	})
 }, 1500)
+
 const updateDataDisplayType = (value: string) => {
 	props.settings.data_display_type.value = value
 	debStoreDataDisplayType(value)
 }
+
+// onMounted(() => {
+// 	updateInterval('all');
+// })
 </script>
 
 <template>
 	<div class="relative px-1 md:px-4 md:mt-4">
 		<div class="mb-2 flex justify-between gap-x-2">
 			<!-- Section: Period options list -->
-			<nav class="isolate rounded border p-1 flex flex-wrap items-center w-full" aria-label="Tabs">
-				<div v-if="layout.app.environment === 'local'" class="mr-1">
-					<DashboardCustomDateRange
-						:interval="intervals"
-						:updateInterval
-					/>
+			<nav class="isolate rounded border py-1 px-2 flex flex-wrap gap-1 items-center w-full" aria-label="Tabs">
+				<div v-if="layout.currentRoute === 'grp.dashboard.show'">
+					<DashboardCustomDateRange :intervals="intervals" />
 				</div>
 
 				<div
@@ -133,9 +137,9 @@ const updateDataDisplayType = (value: string) => {
 							: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
 					]"
 					v-tooltip="interval.label"
-					class="relative flex-1 rounded py-1 md:py-1.5 px-2 md:px-4 text-center w-fit text-sm cursor-pointer select-none">
-					<span :class="isLoadingInterval === interval.value ? 'opacity-0' : ''">
-						{{ interval.value }}
+					class="relative flex-grow rounded py-1 md:py-1.5 px-2 md:px-4 text-center w-fit text-sm cursor-pointer select-none">
+					<span :class="isLoadingInterval === interval.value ? 'opacity-0 truncate' : ''">
+						{{ interval.label }}
 					</span>
 					<span
 						class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -154,7 +158,7 @@ const updateDataDisplayType = (value: string) => {
 				<FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-2xl" />
 			</div>
 		</div>
-		
+
 		<transition name="slide-to-right">
 			<div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-wrap justify-between items-center gap-4 lg:gap-8 mb-2">
 
@@ -209,7 +213,7 @@ const updateDataDisplayType = (value: string) => {
 							<RadioGroupLabel class="sr-only">Choose the radio</RadioGroupLabel>
 							<div class="flex gap-y-1 flex-wrap border border-gray-300 rounded-md overflow-hidden">
 								<RadioGroupOption
-									as="template" v-for="(option, index) in settings.currency_type.options"
+									as="template" v-for="(option) in settings.currency_type.options"
 									:key="option.value"
 									:value="option.value"
 									v-slot="{ active, checked }"

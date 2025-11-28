@@ -50,7 +50,7 @@ const openDisclosureId = ref<number | null>(null)
                         class="w-full mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer"
                         :class="'w-full'"
                         >
-                        <div class="text-base font-semibold">{{ trans("Product Specifications & Documentations") }}</div>
+                        <h2 class="!text-base !font-semibold">{{ trans("Product Specifications & Documentations") }}</h2>
                         <FontAwesomeIcon :icon="faChevronDown"
                             class="text-sm text-gray-500 transform transition-transform duration-200"
                             :class="{ 'rotate-180': openDisclosureId === 'spec-1' }" />

@@ -13,6 +13,7 @@ import debounce from "lodash/debounce"
 import ScreenView from "@/Components/ScreenView.vue";
 import { cloneDeep } from "lodash-es"
 import "@/../css/Iris/editor.css"
+import ToggleSwitch from 'primevue/toggleswitch';
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
@@ -33,6 +34,10 @@ const props = defineProps<{
 const reload = inject('reload') as () => void
 const isModalOpen = ref(false)
 const isLoadingSave = ref(false)
+const layout = inject("layout", {});
+layout.iris = {
+  is_logged_in: true
+}
 
 const currentView = ref("desktop");
 provide("currentView", currentView);
@@ -99,27 +104,31 @@ const setIframeView = (view: string) => {
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
-      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
-        <div class="flex items-center gap-2 py-1 px-2 cursor-pointer lg:flex hidden selected-bg"
-          v-tooltip="'Desktop view'">
-          <div class="py-1 px-2 cursor-pointer lg:block hidden selected-bg" v-tooltip="'Desktop view'">
-            <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
-          </div>
+      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b shrink-0">
+        <div class="py-1 px-2 cursor-pointer lg:block hidden" v-tooltip="'Desktop view'">
+          <ScreenView @screenView="(e) => (currentView = e)" v-model="currentView" />
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium">Login</span>
+          <ToggleSwitch v-model="layout.iris.is_logged_in" />
         </div>
       </div>
 
-    <div v-if="props.data.layout?.data?.fieldValue?.product" class="editor-class">
-      <div  class="relative flex-1 overflow-auto " :class="['border-2 border-t-0 overflow-auto ', iframeClass]">
-        <component class="w-full" :is="getComponent(props.data.layout.code)" :screenType="currentView"
-          :modelValue="props.data.layout.data.fieldValue" :templateEdit="'template'" :currency />
+
+      <div class="flex-1 overflow-auto">
+        <div v-if="props.data.layout?.data?.fieldValue?.product" class="editor-class">
+          <div class="relative flex-1 overflow-auto border-2 border-t-0" :class="iframeClass">
+            <component class="w-full pointer-events-none" :is="getComponent(props.data.layout.code)"
+              :screenType="currentView" :modelValue="props.data.layout.data.fieldValue" templateEdit="template"
+              :currency />
+          </div>
+        </div>
+
+        <div v-else>
+          <EmptyState />
+        </div>
       </div>
 
-    </div>
-      
-
-      <div v-else>
-        <EmptyState />
-      </div>
     </div>
   </div>
 </template>

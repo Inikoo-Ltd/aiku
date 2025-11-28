@@ -332,7 +332,7 @@ onUnmounted(() => {
 				<div>
 					<!-- Title -->
 					<div class="flex justify-center py-2 text-gray-600 font-medium mb-3">
-						<h2>Product List</h2>
+						<h2>{{trans('Products')}}</h2>
 					</div>
 
 					<!-- Search and Table -->
@@ -407,7 +407,7 @@ onUnmounted(() => {
 
 								<template #footer>
 									<div class="text-center">
-										In total there are
+										Showing
 										{{ products ? products.length : 0 }} products.
 									</div>
 								</template>

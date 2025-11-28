@@ -29,12 +29,12 @@ class EditShipper extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New shipper'),
+                'title'       => __('Edit shipper').' '.$shipper->name,
                 'pageHead'    => [
-                    'title'   => __('New shipper'),
+                    'title'   => __('Edit shipper').' '.$shipper->name,
                     'icon'    => [
                         'icon'  => ['fal', 'fa-shipping-fast'],
-                        'title' => __('Shipper')
+                        'title' => __('Edit shipper').' '.$shipper->name,
                     ],
                     'actions' => [
                         [
@@ -47,23 +47,17 @@ class EditShipper extends OrgAction
                         ]
                     ]
                 ],
-
-                'formData' => [
+                'formData'    => [
                     'blueprint' => [
                         [
-                            'title'  => __('contact'),
+                            'title'  => __('Properties'),
                             'fields' => [
-                                'code'         => [
-                                    'type'  => 'input',
-                                    'label' => __('code'),
-                                    'value' => $shipper->code,
-                                ],
                                 'name'         => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $shipper->name,
                                 ],
-                                'trade_as' => [
+                                'trade_as'     => [
                                     'type'  => 'input',
                                     'label' => __('Trade as'),
                                     'value' => $shipper->trade_as,

@@ -37,10 +37,10 @@ class IndexTradeUnitsInMasterProduct extends OrgAction
             ->where('model_has_trade_units.model_type', class_basename(MasterAsset::class))
             ->where('model_has_trade_units.model_id', $masterAsset->id);
 
-
         $queryBuilder
             ->defaultSort('trade_units.code')
             ->select([
+                'trade_units.id',
                 'trade_units.code',
                 'trade_units.slug',
                 'trade_units.name',
@@ -49,8 +49,9 @@ class IndexTradeUnitsInMasterProduct extends OrgAction
                 'trade_units.net_weight',
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
-                'trade_units.type'
-            ]);
+                'trade_units.type',
+                'model_has_trade_units.quantity as quantity'
+        ]);
 
 
         return $queryBuilder->allowedSorts(['code', 'type', 'name'])
@@ -81,7 +82,8 @@ class IndexTradeUnitsInMasterProduct extends OrgAction
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 }

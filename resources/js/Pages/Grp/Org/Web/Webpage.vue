@@ -46,7 +46,7 @@ const props = defineProps<{
     external_links?: {}
     labeled_snapshots?: {}
     analytics:any
-    webpage_url?: string
+    webpage_canonical_url?: string
 
 }>()
 
@@ -88,7 +88,7 @@ onUnmounted(() => {
 
     <PageHeading :data="pageHead">
         <template #other>
-            <a :href="webpage_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
+            <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
                 <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
             </a>
         </template>

@@ -104,12 +104,12 @@ class IndexStoredItemsInReturn extends OrgAction
                 ->withModelOperations($modelOperations);
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'total_quantity', label: __('Current stock'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'pallet_stored_items', label: __('Pallets [location]'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'total_quantity_ordered', label: __('requested quantity'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'pallet_stored_items', label: __('Pallets [Location]'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'total_quantity_ordered', label: __('Requested quantity'), canBeHidden: false, sortable: true, searchable: true);
             if ($palletReturn->state === PalletReturnStateEnum::PICKING) {
-                $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             $table->defaultSort('reference');

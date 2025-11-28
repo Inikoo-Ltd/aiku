@@ -84,4 +84,16 @@ trait HasStockLocationsFetch
         return $stockLocations;
     }
 
+    public function getStockData($sourceId): \Illuminate\Support\Collection
+    {
+        $sourceData = explode(':', $sourceId);
+
+
+        return DB::connection('aurora')
+            ->table('Part Dimension')
+            ->select('Part Current Stock Ordered Paid', 'Part Current Stock In Process', 'Part On Demand')
+            ->where('Part SKU', $sourceData[1])
+            ->get();
+    }
+
 }

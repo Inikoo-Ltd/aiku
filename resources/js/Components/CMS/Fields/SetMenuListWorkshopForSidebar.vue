@@ -220,7 +220,7 @@ const autoSave = async (event?) => {
             <template #fallback>
                 <div class="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
                     <div class="text-sm">{{ trans("Drop top navigation items here") }}</div>
-                    <div class="text-xs mt-1">{{ trans("or click \"Add Top Navigation\" to create new item") }}</div>
+                    <div class="text-xs mt-1">{{ trans('or click "Add Top Navigation" to create new item') }}</div>
                 </div>
             </template>
         </draggable>

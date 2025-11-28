@@ -84,7 +84,7 @@ const getIntervalStateColor = (state?: string) => {
         :is="cell?.route_target?.name ? Link : 'div'"
         :href="cell?.route_target?.name ? route(cell?.route_target.name, cell?.route_target.key_date_filter ? {
             ...cell?.route_target?.parameters,
-            [cell?.route_target?.key_date_filter]: getDashboardDateRange(props.interval.value)
+            [cell?.route_target?.key_date_filter]: getDashboardDateRange(props.interval.value, props.interval.range_interval)
         } : cell?.route_target.parameters) : '#'"
     >
         <img

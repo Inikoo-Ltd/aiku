@@ -3,18 +3,15 @@ import { faCube, faLink } from "@fal"
 import { faCircle, faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, inject, onMounted, computed } from "vue"
+import { ref, inject, onMounted, computed, watch } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import { useLocaleStore } from "@/Stores/locale"
 import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
-import { notify } from "@kyvg/vue3-notification"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { trans } from "laravel-vue-i18n"
-import { router } from "@inertiajs/vue3"
 import { Image as ImageTS } from "@/types/Image"
-import { set, isArray } from "lodash-es"
+import { isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import axios from "axios"
 import ProductPrices from "./ProductPrices.vue"
@@ -50,137 +47,48 @@ const props = withDefaults(defineProps<{
 }>(), {})
 
 const layout = inject("layout", {})
-const currency = layout?.iris?.currency
-const locale = useLocaleStore()
-const isFavorite = ref(false)
 const contentRef = ref(null)
 const expanded = ref(false)
-const showButton = ref(false)
-
-
-function formatNumber(value: Number) {
-    return Number.parseFloat(value).toString()
-}
-
-
-// Section: Add to Favourites
-const isLoadingFavourite = ref(false)
-const onAddFavourite = (product: ProductResource) => {
-    router.post(
-        route("iris.models.favourites.store", {
-            product: product.id
-        }),
-        {
-            // item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingFavourite.value = true
-            },
-            onSuccess: () => {
-                set(props.fieldValue.product, "is_favourite", true)
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to favourites"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-            }
-        }
-    )
-}
-const onUnselectFavourite = (product: ProductResource) => {
-    router.delete(
-        route("iris.models.favourites.delete", {
-            product: product.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingFavourite.value = true
-            },
-            onSuccess: () => {
-                set(props.fieldValue.product, "is_favourite", false)
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from favourites"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-            }
-        }
-    )
-}
-
-// Method: to fetch the product existence in channels
+const product = ref(props.fieldValue.product)
 const isLoadingFetchExistenceChannels = ref(false)
 const productExistenceInChannels = ref<number[]>([])
 const fetchProductExistInChannel = async () => {
-    isLoadingFetchExistenceChannels.value = true
-    try {
-        const response = await axios.get(
-            route(
-                "iris.json.customer.product.channel_ids.index",
-                {
-                    customer: layout.iris?.customer?.id,
-                    product: props.fieldValue.product.id
-                }
-            )
-        )
-
-        if (response.status !== 200) {
-            throw new Error("Failed to fetch product existence in channel")
-        }
-
-        // console.log('Product exist in channel response:', response.data)
-        productExistenceInChannels.value = response.data || []
-    } catch (error: any) {
-        notify({
-            title: trans("Something went wrong"),
-            text: error.message,
-            type: "error"
-        })
-    } finally {
-        isLoadingFetchExistenceChannels.value = false
-    }
-}
-
-
-onMounted(() => {
-    if (layout.iris?.customer && layout?.iris?.is_logged_in) {
-        fetchProductExistInChannel()
-    }
-    if (props.fieldValue?.product?.luigi_identity) {
-        window?.dataLayer?.push({
-            event: "view_item",
-            ecommerce: {
-                items: [
+    
+    if(layout.iris?.customer?.id){
+        try {
+            isLoadingFetchExistenceChannels.value = true
+            const response = await axios.get(
+                route(
+                    "iris.json.customer.product.channel_ids.index",
                     {
-                        item_id: props.fieldValue?.product?.luigi_identity
+                        customer: layout.iris?.customer?.id,
+                        product: product.value.id
                     }
-                ]
+                )
+            )
+
+            if (response.status !== 200) {
+                throw new Error("Failed to fetch product existence in channel")
             }
-        })
+
+            // console.log('Product exist in channel response:', response.data)
+            productExistenceInChannels.value = response.data || []
+        } catch (error: any) {
+            console.error('Error fetching product existence in channel:', error.message)
+        } finally {
+            isLoadingFetchExistenceChannels.value = false
+        }
     }
-})
+
+
+}
 
 const toggleExpanded = () => {
     expanded.value = !expanded.value
 }
 
-const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldValue.product.images :
-    props.fieldValue.product.images
+const imagesSetup = ref(isArray(product.value.images) ? product.value.images :
+    product.value.images
         .filter(item => item.type == "image")
         .map(item => ({
             label: item.label,
@@ -190,7 +98,7 @@ const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldVa
 )
 
 const videoSetup = ref(
-    props.fieldValue.product.images.find(item => item.type === "video") || null
+    product.value.images.find(item => item.type === "video") || null
 )
 
 
@@ -210,12 +118,61 @@ const validImages = computed(() => {
                 }))
             })
     }
-
-    // berarti array of string/url
     return imagesSetup.value
+})
+ 
+const fetchData = async () => {
+  try {
+    const response = await axios.get(
+      route("iris.catalogue.product.resource", {
+        product: product.value.slug
+      })
+    )
+    product.value = {...product.value, ...response.data}
+  } catch (error: any) {
+    console.error("cannot break cached cuz", error)
+  }
+}
+
+
+
+onMounted(() => {
+    if (layout.iris?.customer && layout?.iris?.is_logged_in) {
+        fetchProductExistInChannel()
+        fetchData() // break chaced
+    }
+    if (props.fieldValue?.product?.luigi_identity) {
+        window?.dataLayer?.push({
+            event: "view_item",
+            ecommerce: {
+                items: [
+                    {
+                        item_id: props.fieldValue?.product?.luigi_identity
+                    }
+                ]
+            }
+        })
+    }
 })
 
 
+
+watch(
+  () => props.fieldValue.product,
+  newVal => {
+    product.value = { ...newVal }
+  },
+  { deep: true }
+)
+
+watch(
+  () => layout.iris.customer,
+  newVal => {
+    fetchProductExistInChannel()
+    fetchData()
+  },
+  { deep: true }
+)
 
 
 </script>
@@ -232,8 +189,8 @@ const validImages = computed(() => {
                     <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
                 </div>
 
-                <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="fieldValue?.product?.tags?.length">
-                    <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
+                <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="product?.tags?.length">
+                    <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in product.tags"
                         :key="index">
                         <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
                         <div v-else class="aspect-square w-full h-[15px]">
@@ -249,24 +206,24 @@ const validImages = computed(() => {
                 <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
                         <h1 class="text-2xl font-bold text-gray-900">
-                            <span class="text-indigo-900">{{ fieldValue.product.units }}x</span>
-                            {{ fieldValue.product.name }}
+                            <span class="text-indigo-900">{{ product?.units }}x</span>
+                            {{ product.name }}
                         </h1>
 
                         <div
                             class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
-                            <div>Product code: {{ fieldValue.product.code }}</div>
+                            <div>Product code: {{ product.code }}</div>
                             <div class="flex items-center gap-[1px]"></div>
                         </div>
 
                         <div v-if="layout?.iris?.is_logged_in"
                             class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                                :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
                                 {{
-                                fieldValue.product.stock > 0
-                                ? trans("In stock") + ` (${fieldValue.product.stock} ` + trans("available") + `)`
+                                product.stock > 0
+                                ? trans("In stock") + ` (${product.stock} ` + trans("available") + `)`
                                 : trans("Out Of Stock")
                                 }}
                             </span>
@@ -280,8 +237,8 @@ const validImages = computed(() => {
 
                 <!-- Button existence on all channels -->
                 <div class="relative flex gap-2 mb-6">
-                    <ButtonAddPortfolio :product="fieldValue.product" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
-                        :productHasPortfolio="productExistenceInChannels" 
+                    <ButtonAddPortfolio :product="product" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
+                        :productHasPortfolio="productExistenceInChannels" :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                         />
                     <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
                         <div class="h-full w-full skeleton rounded" />
@@ -290,23 +247,23 @@ const validImages = computed(() => {
 
                 <div class="text-xs font-medium text-gray-800"
                     :style="getStyles(fieldValue?.description?.description_content, screenType)">
-                    <div v-html="fieldValue.product.description"></div>
+                    <div v-html="product.description"></div>
 
                     <div class="text-xs font-normal text-gray-700 my-1" v-if="expanded"
                         :style="getStyles(fieldValue?.description?.description_extra, screenType)">
                         <div ref="contentRef"
                             class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
-                            v-html="fieldValue.product.description_extra"></div>
+                            v-html="product.description_extra"></div>
                     </div>
 
-                    <button v-if="fieldValue.product.description_extra" @click="toggleExpanded"
+                    <button v-if="product.description_extra" @click="toggleExpanded"
                         class="mt-1 text-gray-900 text-xs underline focus:outline-none">
                         {{ expanded ? trans("Show Less") : trans("Read More") }}
                     </button>
                 </div>
 
                 <div v-if="fieldValue.setting?.information" class="my-4 space-y-2">
-                    <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
+                    <ProductContentsIris :product="product" :setting="fieldValue.setting"
                         :styleData="fieldValue?.information_style" />
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
                         :informations="fieldValue?.information" :styleData="fieldValue?.information_style" />
@@ -326,15 +283,15 @@ const validImages = computed(() => {
 
     <!-- Mobile Layout -->
     <div class="block sm:hidden px-4 py-6 text-gray-800">
-        <h2 class="text-xl font-bold mb-2">{{ fieldValue.product.name }}</h2>
+        <h2 class="text-xl font-bold mb-2">{{ product.name }}</h2>
         <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
 
         <div class="items-start gap-4 mt-4">
             <ProductPrices :field-value="fieldValue" />
         </div>
 
-        <div class="flex flex-wrap gap-2 mt-4" v-if="fieldValue?.product?.tags?.length">
-            <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in fieldValue.product.tags"
+        <div class="flex flex-wrap gap-2 mt-4" v-if="product?.tags?.length">
+            <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in product.tags"
                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
                 <div v-else class="aspect-square w-full h-[15px]">
@@ -345,18 +302,22 @@ const validImages = computed(() => {
         </div>
 
         <div class="mt-6 flex flex-col gap-2">
-            <ButtonAddPortfolio :product="fieldValue.product" :productHasPortfolio="productExistenceInChannels" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+            <ButtonAddPortfolio 
+            :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)" 
+            :product="product"
+            :productHasPortfolio="productExistenceInChannels" 
+            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
         </div>
 
         <div class="text-xs font-medium py-3">
-            <div v-html="fieldValue.product.description"></div>
+            <div v-html="product.description"></div>
              <div class="text-xs font-normal text-gray-700 my-1">
-            <div class="prose prose-sm text-gray-700 max-w-none" v-html="fieldValue.product.description_extra"></div>
+            <div class="prose prose-sm text-gray-700 max-w-none" v-html="product.description_extra"></div>
         </div>
         </div>
 
         <div class="mt-4">
-            <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
+            <ProductContentsIris :product="product" :setting="fieldValue.setting"
                 :styleData="fieldValue?.information_style" />
             <InformationSideProduct v-if="fieldValue?.information?.length > 0" :informations="fieldValue?.information"
                 :styleData="fieldValue?.information_style" />
@@ -366,9 +327,5 @@ const validImages = computed(() => {
                     :alt="logo.code" class="h-4 px-1" />
             </div>
         </div>
-
-       
-
-
     </div>
 </template>

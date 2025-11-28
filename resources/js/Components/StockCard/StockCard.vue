@@ -81,7 +81,7 @@ watch(() => props.data?.locations?.data?.length, (newLength) => {
 <template>
     <div class="flex justify-between border-b border-gray-300 p-2">
         <div class="font-semibold flex gap-3">
-            <span v-if="!activeMenu">{{ trans("Total Quantity : ") }} {{ parseInt(data?.quantity_locations) }}</span>
+            <span v-if="!activeMenu">{{ trans("Total Quantity:") }} {{ parseInt(data?.quantity_locations) }}</span>
             <div class="text-xs my-auto" v-if="activeMenu">
                 <FontAwesomeIcon :icon="activeMenu.icon" class="mr-2" aria-hidden="true" />
                 <span>{{ activeMenu.label }}</span>

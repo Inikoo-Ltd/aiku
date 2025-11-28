@@ -29,8 +29,7 @@ class UpdateCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
-
-        $customerSalesChannel = $this->update($customerSalesChannel, $modelData);
+        $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
         $changes = Arr::except($customerSalesChannel->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (Arr::has($changes, 'status')) {
@@ -40,9 +39,6 @@ class UpdateCustomerSalesChannel extends OrgAction
         }
 
         return $customerSalesChannel;
-
-
-
     }
 
     public function rules(): array
@@ -65,10 +61,25 @@ class UpdateCustomerSalesChannel extends OrgAction
                     ]
                 ),
             ],
+            'is_vat_adjustment' => ['sometimes', 'boolean'],
+            'tax_category_id'   => ['sometimes', 'integer', Rule::exists('tax_categories', 'id')],
             'status'            => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'state'             => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],
             'name'              => ['sometimes', 'string', 'max:255'],
-            'closed_at'         => ['sometimes', 'date'],
+            'shipping_service'              => ['sometimes', 'string', 'max:255'],
+            'shipping_price'              => ['sometimes', 'string', 'max:255'],
+            'shipping_max_dispatch_time'              => ['sometimes', 'string', 'max:255'],
+
+            'return_policy_id' => ['sometimes', 'string'],
+            'payment_policy_id' => ['sometimes', 'string'],
+            'fulfillment_policy_id' => ['sometimes', 'string'],
+
+            'return_accepted' => ['sometimes', 'boolean'],
+            'return_payer' => ['sometimes', 'string'],
+            'return_within' => ['sometimes', 'integer'],
+            'return_description' => ['sometimes', 'string'],
+
+            'closed_at'         => ['sometimes', 'date']
         ];
     }
 

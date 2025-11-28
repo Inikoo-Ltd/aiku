@@ -42,6 +42,7 @@ import CtaCarousel from '@/Components/CMS/Webpage/CarouselCta/Blueprint'
 import CarouselImageBackgroundIrisBlueprint from "@/Components/CMS/Webpage/CarouselImageBackground/Blueprint"
 import BluprintBestseller from "@/Components/CMS/Webpage/Products1/BluprintBestseller"
 import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/Blueprint"
+import TimelineIris2 from "@/Components/CMS/Webpage/Step2/Blueprint"
 
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
@@ -129,7 +130,8 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"user-subscribe": UserSubscribe.blueprint,
 		"cta4": Cta4Blueprint.blueprint,
 		'carousel-cta' : CtaCarousel.blueprint,
-		'carousel-image-background' : CarouselImageBackgroundIrisBlueprint.blueprint
+		'carousel-image-background' : CarouselImageBackgroundIrisBlueprint.blueprint,
+		'step-2' : TimelineIris2.blueprint
 	}
 
 	const blueprint = components[componentName]

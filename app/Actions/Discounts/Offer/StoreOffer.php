@@ -49,6 +49,7 @@ class StoreOffer extends OrgAction
                 data_set($allowanceData, 'duration', $offer->duration);
                 StoreOfferAllowance::run($offer, $allowanceData);
             }
+            UpdateOfferAllowanceSignature::run($offer);
 
             return $offer;
         });

@@ -17,7 +17,7 @@ const props = defineProps<{
   };
 }>();
 
-console.log(props)
+// console.log(props)
 
 // Status mapping based on actual boolean values
 const status = computed(() => ({
@@ -53,10 +53,10 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
             'flex items-center justify-center w-7 h-7 rounded-full',
             dotClass(status.name),
           ]"
+          v-tooltip="'Review name'"
         >
           <FontAwesomeIcon
             :icon="statusIcon(status.name)"
-            v-tooltip="'Review name'"
           />
         </div>
 
@@ -66,10 +66,10 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
             'flex items-center justify-center w-7 h-7 rounded-full',
             dotClass(status.title),
           ]"
+          v-tooltip="'Review description title'"
         >
           <FontAwesomeIcon
             :icon="statusIcon(status.title)"
-            v-tooltip="'Review description title'"
           />
         </div>
 
@@ -79,10 +79,10 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
             'flex items-center justify-center w-7 h-7 rounded-full',
             dotClass(status.description),
           ]"
+          v-tooltip="'Review description'"
         >
           <FontAwesomeIcon
             :icon="statusIcon(status.description)"
-            v-tooltip="'Review description'"
           />
         </div>
 
@@ -92,10 +92,10 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
             'flex items-center justify-center w-7 h-7 rounded-full',
             dotClass(status.extra),
           ]"
+          v-tooltip="'Review description extra'"
         >
           <FontAwesomeIcon
             :icon="statusIcon(status.extra)"
-            v-tooltip="'Review description extra'"
           />
         </div>
       </div>

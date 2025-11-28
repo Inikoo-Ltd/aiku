@@ -45,7 +45,7 @@ class UpdateDeliveryNoteFixedAddress extends OrgAction
         );
 
         if ($oldAddress) {
-            FixedAddressGarbageCollection::dispatch($oldAddress)->delay($this->hydratorsDelay);
+            FixedAddressGarbageCollection::dispatch($oldAddress->id)->delay($this->hydratorsDelay);
         }
 
 

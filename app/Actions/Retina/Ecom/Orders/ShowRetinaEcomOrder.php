@@ -29,6 +29,8 @@ use App\Models\Ordering\Order;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use Illuminate\Support\Facades\DB;
 
 class ShowRetinaEcomOrder extends RetinaAction
 {
@@ -114,7 +116,6 @@ class ShowRetinaEcomOrder extends RetinaAction
                 'summary'            => $this->getOrderBoxStats($order),
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
                 'timelines'          => $finalTimeline,
-                'box_stats'          => $this->getOrderBoxStats($order),
                 'balance'            => $this->customer->balance,
                 'currency'           => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'               => OrderResource::make($order),
@@ -212,6 +213,14 @@ class ShowRetinaEcomOrder extends RetinaAction
         }
 
 
+
+        $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
+            ->whereNotIn('state', [
+                OrderStateEnum::CANCELLED->value,
+                OrderStateEnum::CREATING->value,
+            ])->count();
+        $numberOrders = $numberOrders + 1;
+
         return [
             'customer'         => array_merge(
                 CustomerResource::make($order->customer)->getArray(),
@@ -232,7 +241,10 @@ class ShowRetinaEcomOrder extends RetinaAction
             ),
             'invoices'         => $invoicesData,
             'order_properties' => [
-                'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
+                'weight'                 => NaturalLanguage::make()->weight($order->estimated_weight),
+                'customer_order_number'  => $numberOrders,
+                'customer_order_ordinal' => ordinal($numberOrders)." ".__('order'),
+                'customer_order_ordinal_tooltip' => __('This is the nth order this customer has placed with this shop.')
             ],
             'delivery_notes'   => $deliveryNotesData,
             'products'         => [

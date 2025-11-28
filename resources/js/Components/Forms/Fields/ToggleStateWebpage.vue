@@ -140,7 +140,7 @@ const xxx = ref('')
                 </PureMultiselectInfiniteScroll>
 
                 <div v-if="fieldData?.default_storefront?.id" @click="form[fieldName].redirect_webpage_id = fieldData?.default_storefront?.id" class="text-xs text-gray-400 hover:text-gray-700 cursor-pointer mt-2 underline w-fit">
-                    {{ trans("Click to set redirect to ") }} 
+                    {{ trans("Click to set redirect to") + " " }} 
                     <Icon :data="fieldData?.default_storefront?.typeIcon" />
                     {{ fieldData?.default_storefront?.code }}
                     <span class="text-gray-400">({{ fieldData?.default_storefront?.href }})</span>

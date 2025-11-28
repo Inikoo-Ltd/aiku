@@ -12,9 +12,13 @@ import { RouteParams } from "@/types/route-params"
 import { CreditTransaction } from "@/types/credit-transaction"
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import RefundModal from "@/Components/RefundModal.vue";
-import { faUndo } from "@fal";
+import { faStickyNote, faUndo } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { ref, inject } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { useBasicColor } from '@/Composables/useColors'
+// Import the new NotesDisplay component
+import NotesDisplay from "@/Components/NotesDisplay.vue"
 
 library.add(faUndo)
 
@@ -114,6 +118,14 @@ function createRefundRoute(transaction: CreditTransaction) {
             </Link>
             <div v-else>
               {{ credit_transaction.payment_reference }}
+            </div>
+        </template>
+        <template #cell(type)="{ item: credit_transaction }">
+            <div class="flex">
+                <div class="pr-2" style="max-width:90%; width:100%">
+                    {{ credit_transaction.type }}
+                </div>
+                <NotesDisplay v-if="credit_transaction.notes" :item="credit_transaction" reference-field="type" :class="'ml-3'"/>
             </div>
         </template>
         <template #cell(order_reference)="{ item: credit_transaction }">

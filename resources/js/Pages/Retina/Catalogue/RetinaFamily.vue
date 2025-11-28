@@ -22,7 +22,6 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
 import RetinaFamilyShowcase from "@/Components/Showcases/Retina/Catalouge/RetinaFamilyShowcase.vue"
 import RetinaTableProducts from "@/Components/Tables/Retina/RetinaTableProducts.vue"
-import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
 library.add(
     faFolder,

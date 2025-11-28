@@ -14,6 +14,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -62,7 +63,23 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     {
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('woo_commerce_users', 'name')],
-            'url' => ['required', 'string', 'url', 'regex:/^https:\/\//']
+            'url' => [
+                'required',
+                'string',
+                'url',
+                'regex:/^https:\/\//',
+                function ($attribute, $value, $fail) {
+                    $testUrl = rtrim($value, '/') . '/wp-json/wc/v3';
+                    try {
+                        $response = Http::get($testUrl);
+                        if ($response->status() !== 200) {
+                            $fail(__('Your WooCommerce API endpoint is not accessible.'));
+                        }
+                    } catch (\Exception $e) {
+                        $fail(__('Unable to connect to the WooCommerce store.'));
+                    }
+                }
+            ]
         ];
     }
 

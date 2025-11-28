@@ -17,10 +17,11 @@ import { RouteParams } from "@/types/route-params"
 import { trans } from "laravel-vue-i18n"
 import { remove as loRemove } from 'lodash-es'
 import { ref } from 'vue'
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { faTrash, faEdit } from "@fal"
 
-
-library.add(fasCheckCircle,faTimesCircle,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree)
+library.add(fasCheckCircle,faTimesCircle,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree, faTrash, faEdit)
 
 defineProps<{
     data: {}
@@ -46,11 +47,11 @@ function collectionRoute(collection: {}) {
                 (route().params as RouteParams).masterShop,
                 collection.slug
             ]);
-    } 
+    }
 }
 
 function parentRoute(slug: string, type: string) {
-    if(inMasterCollection && type) 
+    if(inMasterCollection && type)
     {
         const routeLink = type === 'department' ? 'grp.masters.master_shops.show.master_departments.show' : 'grp.masters.master_shops.show.master_sub_departments.show';
         return route(
@@ -68,6 +69,17 @@ function parentRoute(slug: string, type: string) {
         ]
     )
 
+}
+
+// edit route
+function editRoute(collection: {}) {
+    return route(
+        "grp.masters.master_shops.show.master_collections.edit",
+        [
+            (route().params as RouteParams).masterShop,
+            collection.slug
+        ]
+    )
 }
 
 const isLoadingDetach = ref<string[]>([])
@@ -112,13 +124,50 @@ const isLoadingDetach = ref<string[]>([])
         </template>
 
          <template #cell(actions)="{ item }">
-            <Link v-if="routes?.detach?.name" as="button"
+            <div class="flex items-center gap-2">
+            <!--  <Link v-if="routes?.detach?.name" as="button"
                 :href="route(routes.detach.name, { ...routes.detach.parameters, collection : item.id })"
                 :method="routes.detach.method" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
                 @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
             <Button icon="fal fa-times" type="negative" size="xs"
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
+
+            <Link :href="editRoute(item)">
+             <Button
+                        type="tertiary"
+                        icon="fal fa-edit"
+                        size="s"
+                    />
+            </Link> -->
+
+            <ModalConfirmationDelete
+                :routeDelete="item.delete_route"
+                :title="trans('Are you sure you want to delete this master collection?')"
+                isFullLoading
+                :noLabel="trans('Delete')"
+                :noIcon="'fal fa-store-alt-slash'"
+            >
+                <template #beforeTitle>
+                    <div class="text-center font-semibold text-xl mb-4">
+                        {{ `${item.name} (${item.code})` }}
+                    </div>
+                </template>
+
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button
+                        v-tooltip="item.has_active_webpage ? trans('Cannot delete: Active webpage exists') : trans('Delete master collection')"
+                        @click="!item.has_active_webpage && changeModel()"
+                        :type="item.has_active_webpage ? 'disabled' : 'negative'"
+                        icon="fal fa-trash"
+                        size="s"
+                        :key="1"
+                        :class="{'opacity-50 cursor-not-allowed': item.has_active_webpage}"
+                    />
+                </template>
+            </ModalConfirmationDelete>
+
+            </div>
         </template>
     </Table>
 </template>

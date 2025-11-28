@@ -58,6 +58,7 @@ import LuigiItemAlternatives1Workshop from '@/Components/CMS/Webpage/LuigiItemAl
 
 import RecommendationCustomerRecentlyBought1Workshop from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Workshop.vue'
 import CtaImageBackroundWorkshop from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'
+import TimelineWorkshop2 from '@/Components/CMS/Webpage/Step2/Step2Workshop.vue'
 
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -134,7 +135,8 @@ export const getComponent = (componentName: string) => {
         'cta4' :Cta4,
         'blog' : BlogWorkshop,
         'carousel-cta' : CarouselCtaWorkshop,
-        'carousel-image-background' : CarouselImageBackground
+        'carousel-image-background' : CarouselImageBackground,
+        'step-2' : TimelineWorkshop2
     }
 
     return components[componentName] ?? NotFoundComponents

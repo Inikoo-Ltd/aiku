@@ -22,9 +22,12 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -55,16 +58,6 @@ class SendOrderToWarehouse extends OrgAction
             data_set($modelData, 'in_warehouse_at', $date);
         }
 
-        /** @var Transaction $transactions */
-        $transactions = $order->transactions()->where('state', TransactionStateEnum::SUBMITTED)->get();
-        foreach ($transactions as $transaction) {
-            $transactionData = ['state' => TransactionStateEnum::IN_WAREHOUSE];
-            if ($transaction->in_warehouse_at == null) {
-                data_set($transactionData, 'in_warehouse_at', $date);
-            }
-            $transaction->update($transactionData);
-        }
-
 
         $deliveryNoteData = [
             'delivery_address'          => $order->deliveryAddress,
@@ -85,24 +78,43 @@ class SendOrderToWarehouse extends OrgAction
 
         ];
 
-        $deliveryNote = StoreDeliveryNote::make()->action($order, $deliveryNoteData);
-
-        $transactions = $order->transactions()->where('model_type', 'Product')->get();
-
-        /** @var Transaction $transaction */
-        foreach ($transactions as $transaction) {
-            $product = Product::find($transaction->model_id);
-            foreach ($product->orgStocks as $orgStock) {
-                $quantity             = $orgStock->pivot->quantity * $transaction->quantity_ordered;
-                $deliveryNoteItemData = [
-                    'org_stock_id'               => $orgStock->id,
-                    'transaction_id'             => $transaction->id,
-                    'quantity_required'          => $quantity,
-                    'original_quantity_required' => $quantity
-                ];
-                StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
+        $deliveryNote = DB::transaction(function () use ($order, $deliveryNoteData, $date) {
+            /** @var Transaction $transactions */
+            $transactions = $order->transactions()->where('state', TransactionStateEnum::SUBMITTED)->get();
+            foreach ($transactions as $transaction) {
+                $transactionData = ['state' => TransactionStateEnum::IN_WAREHOUSE];
+                if ($transaction->in_warehouse_at == null) {
+                    data_set($transactionData, 'in_warehouse_at', $date);
+                }
+                $transaction->update($transactionData);
             }
-        }
+
+            $deliveryNote = StoreDeliveryNote::make()->action($order, $deliveryNoteData);
+
+            $transactions = $order->transactions()->where('model_type', 'Product')->get();
+
+
+            /** @var Transaction $transaction */
+            foreach ($transactions as $transaction) {
+                $product = Product::find($transaction->model_id);
+
+
+                foreach ($product->orgStocks as $orgStock) {
+                    $quantity             = $orgStock->pivot->quantity * $transaction->quantity_ordered;
+                    $deliveryNoteItemData = [
+                        'org_stock_id'               => $orgStock->id,
+                        'transaction_id'             => $transaction->id,
+                        'quantity_required'          => $quantity,
+                        'original_quantity_required' => $quantity,
+                        'xx'                         => $orgStock->organisation_id
+                    ];
+
+                    StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
+                }
+            }
+
+            return $deliveryNote;
+        });
 
         DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
         UpdateOrder::make()->action($order, $modelData);
@@ -215,5 +227,30 @@ class SendOrderToWarehouse extends OrgAction
 
         return $this->handle($order, $this->validatedData);
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'order:send-to-warehouse {order}';
+    }
+
+    public function getCommandDescription(): string
+    {
+        return 'Send order to warehouse';
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): int
+    {
+        $order = Order::where('slug', $command->argument('order'))->firstOrFail();
+
+        $this->handle($order, [
+            'warehouse_id' => $order->organisation->warehouses()->first()->id
+        ]);
+
+        return 0;
+    }
+
 
 }

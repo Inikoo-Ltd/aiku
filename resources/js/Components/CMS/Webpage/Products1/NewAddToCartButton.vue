@@ -14,24 +14,29 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { useLayoutStore } from "@/Stores/retinaLayout"
+import { faCartShopping } from '@fortawesome/free-solid-svg-icons'
+import { faShoppingCart } from '@far'
+import { ButtonStyle } from 'primevue'
 
 library.add(faPlus, faMinus, faCartPlus)
 
 const props = withDefaults(
-  defineProps<{
-    product: ProductResource
-    addToBasketRoute: routeType
-    updateBasketQuantityRoute: routeType
-    hasInBasket?: any
-  }>(),
-  {
-    hasInBasket: {
-        id: null,
-        quantity_ordered: 0,
-        quantity_ordered_new: 0,
-        asset_id: null
+    defineProps<{
+        product: ProductResource
+        addToBasketRoute: routeType
+        updateBasketQuantityRoute: routeType
+        hasInBasket?: any
+        buttonStyle?: any
+        buttonStyleHover?: any
+    }>(),
+    {
+        hasInBasket: {
+            id: null,
+            quantity_ordered: 0,
+            quantity_ordered_new: 0,
+            asset_id: null
+        }
     }
-  }
 )
 
 
@@ -44,13 +49,16 @@ const currentQuantity = computed(() => {
     const quantityNew = get(props.hasInBasket, ['quantity_ordered_new'])
     const quantity = get(props.hasInBasket, ['quantity_ordered'])
 
-    // Normalize null/undefined to 0
-    const safeQuantityNew = Number(quantityNew ?? 0)
     const safeQuantity = Number(quantity ?? 0)
+    const safeQuantityNew = Number(quantityNew ?? 0)
 
-    // Use new quantity if set, otherwise fallback
-    return safeQuantityNew > 0 ? safeQuantityNew : safeQuantity
+    if (safeQuantity !== 0 && (quantityNew === 0 || quantityNew === undefined)) {
+        return safeQuantity
+    }
+
+    return safeQuantityNew
 })
+
 
 
 // Check if value is dirty (changed) - dari ButtonAddToBasketInFamily
@@ -71,7 +79,7 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
 }
 
 // Add to basket function - exact copy dari ButtonAddToBasketInFamily
-const onAddToBasket = async (product: ProductResource, basket : any) => {
+const onAddToBasket = async (product: ProductResource, basket: any) => {
     try {
         setStatus('loading')
         isLoadingSubmitQuantityProduct.value = true
@@ -88,9 +96,27 @@ const onAddToBasket = async (product: ProductResource, basket : any) => {
             throw new Error('Failed to add to basket')
         }
 
+        const productToAddToBasket = {
+            ...product,
+            transaction_id: response.data?.transaction_id,
+            quantity_ordered: response.data?.quantity_ordered,
+            quantity_ordered_new: response.data?.quantity_ordered,
+        }
+
+        // Check the product in Basket, if exist: replace, not exist: push
+        const products = layout.rightbasket?.products
+        if (products) {
+            const index = products.findIndex((p: any) => p.transaction_id === productToAddToBasket.transaction_id)
+            if (index !== -1) {
+                products[index] = productToAddToBasket
+            } else {
+                products.push(productToAddToBasket)
+            }
+        }
+
         layout.reload_handle()
         router.reload({
-            only: ['iris','data'],
+            only: ['iris', 'data'],
         })
 
         product.transaction_id = response.data?.transaction_id
@@ -124,7 +150,9 @@ const onAddToBasket = async (product: ProductResource, basket : any) => {
 }
 
 // Update quantity function - exact copy dari ButtonAddToBasketInFamily
-const onUpdateQuantity = (product: ProductResource, basket : any) => {
+const onUpdateQuantity = (product: ProductResource, basket: any) => {
+    const isWillRemoveFrombasket = get(basket, ['quantity_ordered_new'], 0) === 0
+    const productTransactionId = product.transaction_id
     router[props.updateBasketQuantityRoute.method || 'post'](
         route(props.updateBasketQuantityRoute.name, {
             transaction: product.transaction_id
@@ -143,7 +171,27 @@ const onUpdateQuantity = (product: ProductResource, basket : any) => {
             onSuccess: () => {
                 setStatus('success')
                 layout.reload_handle()
-                basket.quantity_ordered = product.quantity_ordered_new
+                basket.quantity_ordered = basket.quantity_ordered_new
+                if (isWillRemoveFrombasket) {
+                    // Remove product from layout basket
+                    const products = layout.rightbasket?.products
+                    if (products) {
+                        const index = products.findIndex((p: any) => p.transaction_id === productTransactionId)
+                        if (index !== -1) {
+                            products.splice(index, 1)
+                        }
+                    }
+                } else {
+                    // Update product quantity in layout basket
+                    const products = layout.rightbasket?.products
+                    if (products) {
+                        const index = products.findIndex((p: any) => p.transaction_id === productTransactionId)
+                        if (index !== -1) {
+                            products[index].quantity_ordered = basket.quantity_ordered_new
+                            products[index].quantity_ordered_new = basket.quantity_ordered_new
+                        }
+                    }
+                }
             },
             onError: errors => {
                 setStatus('error')
@@ -163,11 +211,11 @@ const onUpdateQuantity = (product: ProductResource, basket : any) => {
 // Main function to add/update product - dari ButtonAddToBasketInFamily
 const addAndUpdateProduct = () => {
     if (!props.hasInBasket.quantity_ordered) {
-        onAddToBasket(props.product,props.hasInBasket)
+        onAddToBasket(props.product, props.hasInBasket)
     } else if (props.hasInBasket.quantity_ordered_new === 0) {
-        onUpdateQuantity(props.product,props.hasInBasket)
+        onUpdateQuantity(props.product, props.hasInBasket)
     } else {
-        onUpdateQuantity(props.product,props.hasInBasket)
+        onUpdateQuantity(props.product, props.hasInBasket)
     }
 }
 
@@ -212,31 +260,32 @@ const handleInitialAdd = () => {
 
 const instantAddToBasket = () => {
     set(props.hasInBasket, ['quantity_ordered_new'], 1)
-    onAddToBasket(props.product,props.hasInBasket)
+    onAddToBasket(props.product, props.hasInBasket)
 }
 
 const showChartButton = computed(() => {
-  const quantityOrdered = get(props.hasInBasket, ['quantity_ordered'], 0)
-  return !quantityOrdered && currentQuantity.value === 0
+    const quantityOrdered = get(props.hasInBasket, ['quantity_ordered'], 0)
+    return !quantityOrdered && currentQuantity.value === 0
 })
 
+const isHovered = ref(false)
 
 </script>
 
 <template>
     <div class="group relative">
         <!-- State awal: qty 0, tampilkan icon + -->
-        <button v-if="showChartButton"
-            @click.stop.prevent="instantAddToBasket"
+        <button v-if="showChartButton" @click.stop.prevent="instantAddToBasket" :style="buttonStyle"
             :disabled="isLoadingSubmitQuantityProduct || props.product.stock === 0"
-            class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg" v-tooltip="trans('Add to basket')">
+            class="rounded-full button-cart hover:bg-green-700 bg-gray-800 text-gray-300 mr-4 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            v-tooltip="trans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />
-            <FontAwesomeIcon v-else :icon="faCartPlus" fixed-width class="text-gray-600" />
+            <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width />
         </button>
 
         <!-- State: qty > 0, tampilkan quantity dan expand saat hover -->
-        <div v-else @click.stop
-            class="rounded-full bg-gray-200 h-10 transition-all flex items-center justify-center group-hover:justify-between  group-hover:bg-gray-300 overflow-hidden relative shadow-lg"
+        <div v-else @click.stop :style="buttonStyleHover"
+            class="rounded-full button-cart bg-gray-200 h-10 transition-all flex items-center justify-center group-hover:justify-between  group-hover:bg-gray-300 overflow-hidden relative shadow-lg"
             :class="[
                 'group-hover:w-24 w-10',
                 { 'opacity-50': isLoadingSubmitQuantityProduct }
@@ -249,22 +298,27 @@ const showChartButton = computed(() => {
             </div>
 
             <!-- Minus button (visible on hover) -->
-            <button @click.stop.prevent="decrement" :disabled="isLoadingSubmitQuantityProduct || currentQuantity <= 0"
-                class="hidden group-hover:flex w-6 h-6  items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
-                <FontAwesomeIcon :icon="faMinus" class="text-gray-600 text-xs" />
+            <button @click.stop.prevent="decrement" :disabled="isLoadingSubmitQuantityProduct || currentQuantity <= 0" @mouseenter="isHovered = true" @mouseleave="isHovered = false"
+                class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
+                <FontAwesomeIcon :icon="faMinus" :style="{
+                    color: isHovered ? 'black' : buttonStyleHover?.color
+                }"  />
+
             </button>
 
             <!-- Quantity display (always visible) -->
             <span @click.stop.prevent
-                class="text-sm font-medium text-gray-700 min-w-[1rem] cursor-default relative z-10 px-1 text-center self-center">
+                class="text-sm font-medium  min-w-[1rem] cursor-default relative z-10 px-1 text-center self-center">
                 {{ currentQuantity }}
             </span>
 
             <!-- Plus button (visible on hover) -->
             <button @click.stop.prevent="increment"
-                :disabled="isLoadingSubmitQuantityProduct || currentQuantity >= props.product.stock"
-                class="hidden group-hover:flex w-6 h-6  items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
-                <FontAwesomeIcon :icon="faPlus" class="text-gray-600 text-xs" />
+                :disabled="isLoadingSubmitQuantityProduct || currentQuantity >= props.product.stock" @mouseenter="isHovered = true" @mouseleave="isHovered = false"
+                class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
+                <FontAwesomeIcon :icon="faPlus" :style="{
+                    color: isHovered ? 'black' : buttonStyleHover?.color
+                }" />
             </button>
         </div>
 
@@ -307,5 +361,16 @@ button {
 
 .group * {
     pointer-events: auto;
+}
+
+
+.button-cart {
+    &:hover {
+        background: v-bind(buttonStyleHover?.background) !important;
+        color: v-bind(buttonStyleHover?.color) !important;
+        font-family: v-bind(buttonStyleHover?.fontFamily) !important;
+        font-size: v-bind(buttonStyleHover?.fontSize) !important;
+        font-style: v-bind(buttonStyleHover?.fontStyle) !important;
+    }
 }
 </style>

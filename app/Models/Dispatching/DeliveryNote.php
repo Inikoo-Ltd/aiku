@@ -141,7 +141,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress

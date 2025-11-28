@@ -125,8 +125,48 @@ export default {
             ],
         },
         {
-            name: "Button",
+            name: "Button add to basket",
             key: ["button", "properties"],
+            replaceForm: [
+                    {
+                        key: ["background"],
+                        label : "Background",
+                        type: "background",
+                    },
+                    {
+                        key: ["text"],
+                        type: "textProperty",
+                    },
+                    {
+                        key: ["border"],
+                        label : "Border",
+                        type: "border",
+                    },
+                ],
+        },
+        {
+            name: "Button Hover / Has order",
+            key: ["buttonHover", "properties"],
+            replaceForm: [
+                    {
+                        key: ["background"],
+                        label : "Background",
+                        type: "background",
+                    },
+                    {
+                        key: ["text"],
+                        type: "textProperty",
+                    },
+                    {
+                        key: ["border"],
+                        label : "Border",
+                        type: "border",
+                    },
+                ],
+        },
+        {
+            name: "Button ask to login",
+            key: ["buttonLogin", "properties"],
             replaceForm: [
                     {
                         key: ["background"],

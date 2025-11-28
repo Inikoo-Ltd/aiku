@@ -12,6 +12,7 @@ namespace App\Models\Inventory;
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -49,6 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $picking_percentage
  * @property string $packing_percentage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNote> $deliveryNotes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNotesItems
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\PickingSessionItem> $pickingSessionItem
@@ -111,6 +113,11 @@ class PickingSession extends Model
             'picking_session_id',
             'delivery_note_id'
         );
+    }
+
+    public function deliveryNotesItems(): HasMany
+    {
+        return $this->hasMany(DeliveryNoteItem::class);
     }
 
     public function trolleys(): HasMany

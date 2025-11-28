@@ -473,7 +473,7 @@ class ShowPalletDelivery extends OrgAction
                     'preview_template'    => [
                         'unique_column' => [
                             'type'  => [
-                                'label' => __('The valid type is ') . PalletTypeEnum::PALLET->value . ', ' . PalletTypeEnum::BOX->value . ', or ' . PalletTypeEnum::OVERSIZE->value . '. By default is ' . PalletTypeEnum::PALLET->value . '.'
+                                'label' => __('The valid type is') . ' ' . PalletTypeEnum::PALLET->value . ', ' . PalletTypeEnum::BOX->value . ', or ' . PalletTypeEnum::OVERSIZE->value . '. By default is ' . PalletTypeEnum::PALLET->value . '.'
                             ]
                         ],
                         'header' => ['pallet_type', 'pallet_customer_reference', 'pallet_notes'],
@@ -526,7 +526,7 @@ class ShowPalletDelivery extends OrgAction
                     'preview_template'    => [
                         'unique_column' => [
                             'type'  => [
-                                'label' => __('The valid type is ') . PalletTypeEnum::PALLET->value . ', ' . PalletTypeEnum::BOX->value . ', or ' . PalletTypeEnum::OVERSIZE->value . '. By default is ' . PalletTypeEnum::PALLET->value . '.'
+                                'label' => __('The valid type is') . ' ' . PalletTypeEnum::PALLET->value . ', ' . PalletTypeEnum::BOX->value . ', or ' . PalletTypeEnum::OVERSIZE->value . '. By default is ' . PalletTypeEnum::PALLET->value . '.'
                             ]
                         ],
                         'header' => ['pallet_type', 'pallet_customer_reference', 'pallet_notes', 'sku_reference', 'sku_quantity', 'sku_name'],

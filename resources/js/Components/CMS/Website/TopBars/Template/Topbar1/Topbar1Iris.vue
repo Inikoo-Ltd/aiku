@@ -222,7 +222,7 @@ watch(
                         <FontAwesomeIcon v-else icon="fal fa-shopping-cart" class="button" fixed-width
                             aria-hidden="true" />
                         <span class="button" 
-                            v-html="textReplaceVariables(`{{ cart_amount }}`, layout.iris_variables)">
+                            v-html="textReplaceVariables(`{{ cart_amount }} <span class='opacity-70'>({{ cart_products_amount }})</span>`, layout.iris_variables)">
                         </span>
                     </template>
                 </Button>

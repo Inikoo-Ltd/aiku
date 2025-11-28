@@ -79,8 +79,7 @@ export default defineConfig(
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes("node_modules") &&
-              !id.includes("sentry")) {
+            if (id.includes("node_modules")) {
               return id.toString().
                 split("node_modules/")[1].split(
                 "/")[0].toString();

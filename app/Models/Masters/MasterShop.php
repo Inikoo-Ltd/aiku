@@ -39,6 +39,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string $cost_price_ratio
  * @property string $price_rrp_ratio
+ * @property array<array-key, mixed>|null $offers_data
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
@@ -69,10 +70,12 @@ class MasterShop extends Model implements Auditable
         'data'            => 'array',
         'type'            => ShopTypeEnum::class,
         'status'           => 'boolean',
+        'offers_data'      => 'array',
     ];
 
     protected $attributes = [
         'data'     => '{}',
+        'offers_data'   => '{}',
     ];
 
     protected $guarded = [];

@@ -125,7 +125,7 @@ class GetTradeUnitShowcase
             'warnings' => $tradeUnit->gpsr_warnings,
             'how_to_use' => $tradeUnit->gpsr_manual,
             'gpsr_class_category_danger' => $tradeUnit->gpsr_class_category_danger,
-            'trad$tradeUnit_languages' => $tradeUnit->gpsr_class_languages,
+            'tradeUnit_languages' => $tradeUnit->gpsr_class_languages,
             'acute_toxicity' => $tradeUnit->pictogram_toxic,
             'corrosive' => $tradeUnit->pictogram_corrosive,
             'explosive' => $tradeUnit->pictogram_explosive,
@@ -143,6 +143,7 @@ class GetTradeUnitShowcase
             'brand_routes' => $brandRoute,
             'brand' => $tradeUnit->brand(),
             'tag_routes' => $tagRoute,
+            'main_image'      => $tradeUnit->imageSources(),
             'tags_selected_id' => $tradeUnit->tags->pluck('id')->toArray(),
             'tags' =>  TagsResource::collection($tradeUnit->tags)->toArray(request()),
             'translation_box' => [

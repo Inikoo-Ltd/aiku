@@ -668,7 +668,7 @@ const isModalConfirmationOrder = ref(false)
                     </div>
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{ trans('Need to pay') }}: {{
-                            locale.currencyFormat(box_stats.order_summary.currency.code || 'usd',
+                            locale.currencyFormat(box_stats.currency.code || 'usd',
                                 box_stats.products.payment.pay_amount) }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
                             :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"

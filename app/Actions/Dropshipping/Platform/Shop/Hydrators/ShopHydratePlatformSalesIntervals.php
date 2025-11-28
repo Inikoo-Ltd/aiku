@@ -8,7 +8,6 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-// Note: Experimental Data (Need to be checked)
 class ShopHydratePlatformSalesIntervals implements ShouldBeUnique
 {
     use AsAction;
@@ -27,21 +26,22 @@ class ShopHydratePlatformSalesIntervals implements ShouldBeUnique
 
         if (!$shop) {
             $command->error("Shop not found.");
+
             return;
         }
 
         $this->handle($shop);
     }
 
-    public function handle(Shop $shop): void
+    public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-        ShopHydrateAllPlatformsSalesIntervalsInvoices::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsNewChannels::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsNewCustomers::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsNewPortfolios::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsNewCustomerClient::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsSales::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsSalesOrgCurrency::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsSalesGrpCurrency::run($shop);
+        ShopHydrateAllPlatformsSalesIntervalsInvoices::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsNewChannels::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsNewCustomers::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsNewPortfolios::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsNewCustomerClient::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsSales::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsSalesOrgCurrency::run($shop, $intervals, $doPreviousPeriods);
+        ShopHydrateAllPlatformsSalesIntervalsSalesGrpCurrency::run($shop, $intervals, $doPreviousPeriods);
     }
 }

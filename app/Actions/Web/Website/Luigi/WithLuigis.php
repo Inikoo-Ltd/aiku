@@ -382,7 +382,7 @@ trait WithLuigis
                 "slug"            => $this->getIdentity($webpage),
                 "title"           => $webpage->title,
                 "web_url"         => $webpage->getCanonicalUrl(),
-                "availability"    => intval($product->state == ProductStateEnum::ACTIVE),
+                "availability"    => intval($product->state == ProductStateEnum::ACTIVE) && $product->available_quantity > 0,
                 "stock_qty"       => $product->available_quantity ?? 0,
                 "price"           => (float)$product->price ?? 0,
                 "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,

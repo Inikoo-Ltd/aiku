@@ -29,7 +29,8 @@ class AnnouncementsResource extends JsonResource
             'status'                         => AnnouncementStatusenum::statusIcon()[$announcement->status->value],
             'show_pages'                     => $extractedSettings['show_pages'],
             'hide_pages'                     => $extractedSettings['hide_pages'],
-            'publisher_name'                 => $announcement->liveSnapshot?->publisher?->contact_name
+            'publisher_name'                 => $announcement->liveSnapshot?->publisher?->contact_name,
+            'position'                       => $announcement->settings['position'] ?? 'top-bar'
         ];
     }
 }

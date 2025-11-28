@@ -45,6 +45,7 @@ class MasterSubDepartmentsResource extends JsonResource
             'number_products' => $this->number_products,
             'description_title' => $this->description_title,
             'description_extra' => $this->description_extra,
+            'image'        => $this ->imageSources(720, 480),
             'status_icon'       => $this->status ? [
                 'tooltip' => __('Active'),
                 'icon'    => 'fas fa-check-circle',

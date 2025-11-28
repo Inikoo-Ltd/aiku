@@ -3,30 +3,26 @@ import { faCube, faLink, faHeart } from "@fal"
 import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, inject, onMounted, computed } from "vue"
+import { ref, inject, onMounted, computed, watch, onUnmounted } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import { useLocaleStore } from "@/Stores/locale"
 import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { router, Link } from "@inertiajs/vue3"
+import { router } from "@inertiajs/vue3"
 import { Image as ImageTS } from "@/types/Image"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
-import ButtonAddToBasket from "@/Components/Iris/Products/ButtonAddToBasket.vue"
 import { faEnvelope } from "@far"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import axios from "axios"
 import { ulid } from "ulid"
-import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
-import Product from "@/Pages/Grp/Org/Catalogue/Product.vue"
 import ProductPrices from "./ProductPrices.vue"
 
 library.add(faCube, faLink, faPlus, faMinus)
@@ -60,12 +56,10 @@ const props = withDefaults(defineProps<{
 }>(), {})
 
 const layout = inject("layout", {})
-const currency = layout?.iris?.currency
-const locale = useLocaleStore()
 const isFavorite = ref(false)
+const product = ref(props.fieldValue.product)
 const contentRef = ref<Element | null>(null)
 const expanded = ref(false)
-const showButton = ref(false)
 const isLoadingRemindBackInStock = ref(false)
 const customerData = ref(null)
 const keyCustomer = ref(ulid())
@@ -136,10 +130,10 @@ const onUnselectFavourite = (product: ProductResource) => {
     )
 }
 
-const onAddBackInStock = (product: ProductResource) => {
+const onAddBackInStock = (productData: ProductResource) => {
     router.post(
         route("iris.models.remind_back_in_stock.store", {
-            product: product.id
+            product: productData.id
         }),
         {
             // item_id: [product.id]
@@ -152,7 +146,7 @@ const onAddBackInStock = (product: ProductResource) => {
                 isLoadingRemindBackInStock.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, "is_back_in_stock", true)
+                set(product.value, "is_back_in_stock", true)
             },
             onError: errors => {
                 notify({
@@ -168,10 +162,10 @@ const onAddBackInStock = (product: ProductResource) => {
     )
 }
 
-const onUnselectBackInStock = (product: ProductResource) => {
+const onUnselectBackInStock = (productData: ProductResource) => {
     router.delete(
         route("iris.models.remind_back_in_stock.delete", {
-            product: product.id
+            product: productData.id
         }),
         {
             preserveScroll: true,
@@ -181,7 +175,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 isLoadingRemindBackInStock.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, "is_back_in_stock", false)
+                set(product.value, "is_back_in_stock", false)
             },
             onError: errors => {
                 notify({
@@ -201,7 +195,7 @@ const getOrderingProduct = async () => {
     isLoadingRemindBackInStock.value = true
 
     try {
-        const url = route("iris.json.product.ecom_ordering_data", { product: props.fieldValue.product.id })
+        const url = route("iris.json.product.ecom_ordering_data", { product: product.value.id })
         const response = await axios.get(url, {
             params: {},
         })
@@ -223,23 +217,14 @@ const getOrderingProduct = async () => {
 }
 
 
-onMounted(() => {
-    if (layout?.iris?.is_logged_in) getOrderingProduct()
-
-    // Luigi: last_seen recommendations
-    if (props.fieldValue?.product?.luigi_identity) {
-        window?.dataLayer?.push({
-            event: "view_item",
-            ecommerce: {
-                items: [
-                    {
-                        item_id: props.fieldValue?.product?.luigi_identity
-                    }
-                ]
-            }
-        })
+watch(() => layout?.iris?.is_logged_in, (newVal) => {
+    if (newVal) {
+        getOrderingProduct()
     }
+}, {
+    immediate: true
 })
+
 
 
 const toggleExpanded = () => {
@@ -249,8 +234,8 @@ const toggleExpanded = () => {
 
 
 
-const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldValue.product.images :
-    props.fieldValue.product.images
+const imagesSetup = ref(isArray(product.value.images) ? product.value.images :
+    product.value.images
         .filter(item => item.type == "image")
         .map(item => ({
             label: item.label,
@@ -260,7 +245,7 @@ const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldVa
 )
 
 const videoSetup = ref(
-    props.fieldValue.product.images.find(item => item.type === "video") || null
+    product.value.images.find(item => item.type === "video") || null
 )
 
 
@@ -281,14 +266,63 @@ const validImages = computed(() => {
             })
     }
 
-    // berarti array of string/url
     return imagesSetup.value
 })
+
+const fetchData = async () => {
+  try {
+    const response = await axios.get(
+      route("iris.catalogue.product.resource", {
+        product: product.value.slug
+      })
+    )
+    product.value = {...product.value, ...response.data}
+  } catch (error: any) {
+    console.error("cannot break cached cuz", error)
+  }
+}
+
+
+
+watch(
+  () => props.fieldValue.product,
+  newVal => {
+    product.value = { ...newVal }
+  },
+  { deep: true }
+)
+
+
+onMounted(() => {
+    set(layout, "temp.fetchIrisProductCustomerData", getOrderingProduct)
+    if (props.fieldValue?.product?.luigi_identity) {
+        window?.dataLayer?.push({
+            event: "view_item",
+            ecommerce: {
+                items: [
+                    {
+                        item_id: props.fieldValue?.product?.luigi_identity
+                    }
+                ]
+            }
+        })
+    }
+    if (layout?.iris?.is_logged_in) {
+        fetchData()
+    }
+})
+
+onUnmounted(() => {
+    if (layout?.temp?.fetchIrisProductCustomerData) {
+        delete layout.temp.fetchIrisProductCustomerData
+    }
+})
+
 
 </script>
 
 <template>
-    <div id="product-1" :style="{
+    <div v-if="screenType !== 'mobile'" id="product-1" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         marginLeft: 'auto', marginRight: 'auto'
     }" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
@@ -298,7 +332,7 @@ const validImages = computed(() => {
                     <ImageProducts :images="validImages" :video="videoSetup?.url" />
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
-                    <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
+                    <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in product.tags"
                         :key="index">
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <div v-else class="aspect-square w-full h-[15px]">
@@ -315,12 +349,12 @@ const validImages = computed(() => {
                 <div class="relative flex justify-between mb-4 items-start">
                     <div class="w-full">
                         <h1 class="!text-3xl font-bold">
-                            <span v-if="Number(fieldValue.product.units) > 1">{{ Number(fieldValue.product.units)
-                                }}x</span> {{ fieldValue.product.name }}
+                            <span v-if="Number(product.units) > 1">{{ Number(product.units)
+                                }}x</span> {{ product.name }}
                         </h1>
 
                         <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
-                            <div>{{ trans("Product code") }}: {{ fieldValue.product.code }}</div>
+                            <div>{{ trans("Product code") }}: {{ product.code }}</div>
                             <!-- <div class="flex items-center gap-[1px]">
                             </div> -->
                         </div>
@@ -329,7 +363,7 @@ const validImages = computed(() => {
                             <!-- Stock info -->
                             <div class="flex items-center gap-2 text-sm">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                                 <span>
                                     {{
                                     customerData?.stock > 0
@@ -343,14 +377,14 @@ const validImages = computed(() => {
                             </div>
 
                             <!-- Remind me button absolute -->
-                            <button v-if="fieldValue.product.stock <= 0 && layout?.app?.environment === 'local'"
-                                @click="() => fieldValue.product.is_back_in_stock ? onUnselectBackInStock(fieldValue.product) : onAddBackInStock(fieldValue.product)"
+                            <button v-if="product.stock <= 0 && layout?.app?.environment === 'local'"
+                                @click="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                                 class="absolute right-0 bottom-2 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
-                                    :icon="fieldValue.product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="[fieldValue.product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
-                                <span>{{ fieldValue.product.is_back_in_stock ? trans("will be notified when in Stock") :
+                                    :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                                    :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
+                                <span>{{ product.is_back_in_stock ? trans("will be notified when in Stock") :
                                     trans("Remind me") }}</span>
                             </button>
                         </div>
@@ -364,7 +398,7 @@ const validImages = computed(() => {
                                 <LoadingIcon />
                             </div>
                             <div v-else
-                                @click="() => customerData?.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
+                                @click="() => customerData?.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
                                 class="cursor-pointer top-2 right-2 group text-2xl ">
                                 <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" fixed-width
                                     class="text-pink-500" />
@@ -386,61 +420,89 @@ const validImages = computed(() => {
                 <div class="relative flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in && customerData" class="w-full">
                         <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
-                        <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product"
-                            :customerData="customerData" :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"/>
+                        <EcomAddToBasketv2
+                            v-if="product.stock > 0"
+                            :product="product"
+                            :customerData="customerData"
+                            :key="keyCustomer"
+                            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
+                        />
 
                         <div v-else>
                             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
                         </div>
                     </div>
 
-                    <LinkIris v-else :href="urlLoginWithRedirect()" :style="getStyles(fieldValue?.button?.properties, screenType)"
+                    <LinkIris v-else :href="urlLoginWithRedirect()" :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                         class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
                 </div>
 
+                <!-- <pre>customerData: {{ customerData }}</pre>
+                <pre>layout?.temp_irisProduct: {{ layout?.temp_irisProduct }}</pre> -->
 
+                <!-- Section: Product Description -->
                 <div class="text-xs font-medium text-gray-800"
                     :style="getStyles(fieldValue?.description?.description_content, screenType)">
-                    <div v-html="fieldValue.product.description"></div>
+                    <div v-html="product.description" />
 
-                    <div class="text-xs font-normal text-gray-700 my-1" v-if="expanded"
+                    <div v-if="expanded" class="text-xs font-normal text-gray-700 my-1"
                         :style="getStyles(fieldValue?.description?.description_extra, screenType)">
                         <div ref="contentRef"
                             class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
-                            v-html="fieldValue.product.description_extra"></div>
+                            v-html="product.description_extra"
+                        />
                     </div>
 
-                    <button v-if="fieldValue.product.description_extra" @click="toggleExpanded"
-                        class="mt-1 text-gray-900 text-xs underline focus:outline-none">
+                    <button v-if="product.description_extra" @click="toggleExpanded"
+                        class="mt-1 text-xs underline focus:outline-none">
                         {{ expanded ? trans("Show Less") : trans("Read More") }}
                     </button>
                 </div>
 
-                <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
-                    :styleData="fieldValue?.information_style" :fullWidth="true" />
-                <div v-if="fieldValue.setting?.information" class="">
-                    <InformationSideProduct v-if="fieldValue?.information?.length > 0"
-                        :informations="fieldValue?.information" :styleData="fieldValue?.information_style" />
-                    <div v-if="fieldValue?.paymentData?.length > 0"
-                        class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2"
+                <!-- Section: Product Specifications & Documentations -->
+                <ProductContentsIris
+                    class="mt-6"
+                    :product="product"
+                    :setting="fieldValue.setting"
+                    :styleData="fieldValue?.information_style"
+                    :fullWidth="true"
+                />
+                
+                <div v-if="fieldValue.setting?.information" class="mt-2">
+                    <InformationSideProduct
+                        v-if="fieldValue?.information?.length > 0"
+                        :informations="fieldValue?.information"
+                        :styleData="fieldValue?.information_style"
+                    />
+
+                    <!-- Section: Secure Payments -->
+                    <h2 v-if="fieldValue?.paymentData?.length > 0"
+                        class="!text-base !font-semibold items-center gap-3 text-gray-800"
                         :style="getStyles(fieldValue?.information_style?.title)">
                         {{ trans("Secure Payments") }}:
-                        <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
-                            <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
-                                :src="logo.image" :alt="logo.code" class="h-4 px-1" />
-                        </div>
+                    </h2>
+                    <div class="flex flex-wrap items-center gap-6 font-bold text-gray-800 py-2">
+                        <img
+                            v-for="logo in fieldValue?.paymentData"
+                            :key="logo.code"
+                            v-tooltip="logo.code"
+                            :src="logo.image"
+                            :alt="logo.code"
+                            class="h-4 px-1"
+                        />
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- Mobile Layout -->
-    <div class="block sm:hidden px-4 py-6 text-gray-800">
-        <h2 class="text-xl font-bold mb-2">{{ fieldValue.product.name }}</h2>
+    <div v-else class="block sm:hidden px-4 py-6 text-gray-800">
+        <h1 class="text-xl font-bold mb-2">
+            <span v-if="Number(product.units) > 1">{{ Number(product.units) }}x</span> {{ product.name }}
+        </h1>
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
@@ -452,13 +514,13 @@ const validImages = computed(() => {
             <div v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in" class="mt-1">
                 <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer transition-colors duration-300"
                     :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
-                    @click="() => customerData?.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
+                    @click="() => customerData?.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)" />
             </div>
         </div>
 
 
         <div class="flex flex-wrap gap-2 mt-4">
-            <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in fieldValue.product.tags"
+            <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in product.tags"
                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                 <div v-else class="aspect-square w-full h-[15px]">
@@ -473,10 +535,10 @@ const validImages = computed(() => {
             <!-- <ButtonAddToBasket :product="fieldValue.product" /> -->
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
                 <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
-                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product"  :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+                <EcomAddToBasketv2 v-if="product.stock > 0" :customerData="customerData" :product="product"  :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                 <div v-else>
-                    <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+                    <Button :label="trans('Out of stock')" type="tertiary" disabled full  :inject-style="getStyles(fieldValue?.buttonLogin?.properties, screenType)"/>
                 </div>
             </div>
 
@@ -487,20 +549,20 @@ const validImages = computed(() => {
         </div>
 
         <div class="mt-4 text-xs font-medium py-3">
-            <div v-html="fieldValue.product.description"></div>
+            <div v-html="product.description"></div>
             <div class="text-xs font-normal text-gray-700 my-1">
-                <div class="prose prose-sm text-gray-700 max-w-none" v-html="fieldValue.product.description_extra">
+                <div class="prose prose-sm text-gray-700 max-w-none" v-html="product.description_extra">
                 </div>
             </div>
         </div>
 
 
         <div class="mt-4">
-            <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
+            <ProductContentsIris :product="product" :setting="fieldValue.setting"
                 :styleData="fieldValue?.information_style" />
             <InformationSideProduct v-if="fieldValue?.information?.length > 0" :informations="fieldValue?.information"
                 :styleData="fieldValue?.information_style" />
-            <div class="text-sm font-semibold mb-2">Secure Payments:</div>
+            <h2 class="!text-base !font-semibold !mb-2">{{ trans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" />

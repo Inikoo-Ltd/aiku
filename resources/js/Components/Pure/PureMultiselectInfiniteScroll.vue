@@ -59,7 +59,8 @@ const getUrlFetch = (additionalParams: {}) => {
 const optionsList = ref<any[]>([])
 const optionsMeta = ref<Meta | null>(null)
 const optionsLinks = ref<Links | null>(null)
-const fetchProductList = async (url?: string) => {
+const fetchProductList = async (url?: string, ccc) => {
+    // console.log('ewqewqewq', ccc)
     isComponentLoading.value = 'fetchProduct'
 
     const urlToFetch = url || route(props.fetchRoute.name, props.fetchRoute.parameters)
@@ -85,7 +86,7 @@ const fetchProductList = async (url?: string) => {
     
 const onSearchQuery = debounce(async (query: string) => {
     optionsList.value = []
-    fetchProductList(getUrlFetch({'filter[global]': query}))
+    fetchProductList(getUrlFetch({'filter[global]': query}), 'qqqqqq')
 }, 500)
 
 
@@ -97,12 +98,12 @@ const onFetchNext = () => {
     const bottomReached = (dropdown?.scrollTop || 0) + (dropdown?.clientHeight || 0) >= (dropdown?.scrollHeight || 10) - 10
     if (bottomReached && optionsLinks.value?.next && isComponentLoading.value != 'fetchProduct') {
         // console.log(dropdown?.scrollTop, dropdown?.clientHeight, dropdown?.scrollHeight)
-        fetchProductList(optionsLinks.value.next)
+        fetchProductList(optionsLinks.value.next, 'www')
     }
 }
 
 onMounted(() => {
-    fetchProductList(getUrlFetch({'filter[global]': ''}))
+    // fetchProductList(getUrlFetch({'filter[global]': ''}), 'eee')
     const dropdown = document.querySelector('.multiselect-dropdown')
     // console.log('bb', dropdown, dropdown?.scrollTop)
     if (dropdown) {
@@ -166,7 +167,8 @@ defineExpose({
         clearOnSearch autofocus :caret="isComponentLoading ? false : true"
         :loading="isLoading || isComponentLoading === 'fetchProduct'"
         :placeholder="placeholder || trans('Select option')" :resolve-on-load="true" :min-chars="1"
-        @open="() => onOpen()" @search-change="(ee) => onSearchQuery(ee)"
+        @open="() => onOpen()"
+        @search-change="(val: string) => val ? onSearchQuery(val) : (onSearchQuery.cancel(), fetchProductList(getUrlFetch({'filter[global]': ''}), 'search')) "
     >
 
         <template #singlelabel="{ value }">

@@ -9,12 +9,12 @@
 
 namespace App\Actions\Helpers\Tag;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
 use App\Actions\Helpers\Tag\Hydrators\TagHydrateModels;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
-use App\Models\Helpers\Tag;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -118,6 +118,16 @@ class AttachTagsToModel extends OrgAction
     {
         if ($replace) {
             $model->tags()->sync($modelData['tags_id']);
+            if ($model instanceof TradeUnit) {
+                foreach ($model->products as $product) {
+                    ProductHydrateTagsFromTradeUnits::run($product);
+                }
+                foreach ($model->masterAssets as $masterAsset) {
+                    MasterAssetHydrateTagsFromTradeUnits::run($masterAsset);
+                }
+            }
+
+
         } else {
             $model->tags()->syncWithoutDetaching($modelData['tags_id']);
         }
@@ -125,11 +135,7 @@ class AttachTagsToModel extends OrgAction
         $model->refresh();
 
         foreach ($modelData['tags_id'] as $tagId) {
-            $tag = Tag::find($tagId);
-
-            if ($tag) {
-                TagHydrateModels::dispatch($tag);
-            }
+            TagHydrateModels::dispatch($tagId)->delay(300);
         }
     }
 

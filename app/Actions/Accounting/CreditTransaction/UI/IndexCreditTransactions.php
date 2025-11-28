@@ -68,6 +68,7 @@ class IndexCreditTransactions extends OrgAction
                 'currencies.code as currency_code',
                 'orders.slug as order_slug',
                 'orders.reference as order_reference',
+                'credit_transactions.notes'
             ])
             ->allowedSorts(['amount', 'running_amount', 'type', 'created_at','payment_reference'])
             ->allowedFilters([$globalSearch])

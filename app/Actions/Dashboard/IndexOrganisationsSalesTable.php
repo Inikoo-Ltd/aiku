@@ -13,6 +13,7 @@ use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Http\Resources\Dashboards\DashboardOrganisationSalesResource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Services\CustomRangeDataService;
 use App\Services\QueryBuilder;
 
 class IndexOrganisationsSalesTable extends OrgAction
@@ -23,7 +24,6 @@ class IndexOrganisationsSalesTable extends OrgAction
         $queryBuilder->leftJoin('organisation_sales_intervals', 'organisations.id', 'organisation_sales_intervals.organisation_id');
         $queryBuilder->leftJoin('organisation_ordering_intervals', 'organisations.id', 'organisation_ordering_intervals.organisation_id');
         $queryBuilder->where('group_id', $group->id)->where('type', OrganisationTypeEnum::SHOP->value);
-
 
         return $queryBuilder
             ->defaultSort('organisations.code')
@@ -44,13 +44,19 @@ class IndexOrganisationsSalesTable extends OrgAction
             ->withQueryString();
     }
 
-
-    public function action(Group $group): array
+    public function action(Group $group, array $customRangeData = []): array
     {
         $this->initialisationFromGroup($group, []);
-        $shops = $this->handle($group);
+        $organisations = $this->handle($group);
 
-        return json_decode(DashboardOrganisationSalesResource::collection($shops)->toJson(), true);
+        if (!empty($customRangeData) && !empty($customRangeData['organisations'])) {
+            $customRangeService = app(CustomRangeDataService::class);
+
+            $organisations->setCollection(
+                $customRangeService->injectCustomRangeData($organisations->getCollection(), $customRangeData, 'organisations')
+            );
+        }
+
+        return json_decode(DashboardOrganisationSalesResource::collection($organisations)->toJson(), true);
     }
-
 }

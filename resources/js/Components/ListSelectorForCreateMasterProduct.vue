@@ -13,14 +13,15 @@ import Image from '@/Components/Image.vue'
 import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
-import { faPlus, faTimes } from "@fal"
+import { faPlus, faTimes, faBoxUp } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { faTrashAlt } from '@far'
-import Toggle from './Pure/Toggle.vue'
+import { faForklift, faTrashAlt } from '@far'
+import Toggle from '@/Components/Pure/Toggle.vue'
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 
-library.add(faCheckCircle, faTimes)
+library.add(faCheckCircle, faTimes, faBoxUp)
 
 const props = withDefaults(defineProps<{
     modelValue?: Portfolio[]
@@ -35,6 +36,7 @@ const props = withDefaults(defineProps<{
     head_label?: string
     no_data_label?: string
     tabs?: Array<{ label: string, routeFetch: routeType }>
+    is_dropship?:boolean
 }>(), {
     key_quantity: 'quantity_selected',
     head_label: 'Selected Products',
@@ -102,7 +104,6 @@ const getPortfoliosList = async (url?: string) => {
     try {
         const tabRoute = props.tabs?.[activeTab.value]?.routeFetch || props.routeFetch
         const currentTab = props.tabs?.[activeTab.value]
-        console.log('sdsd', props.routeFetch)
         const params: Record<string, any> = { ...tabRoute.parameters }
 
         // ✅ Only append search if tab has "search: true"
@@ -128,7 +129,6 @@ const getPortfoliosList = async (url?: string) => {
     }
 }
 
-
 const debounceGetPortfoliosList = debounce(() => (getPortfoliosList()), 500)
 
 const compSelectedProduct = computed(() =>
@@ -148,9 +148,6 @@ const selectProduct = (item: Portfolio) => {
     }
 }
 
-const deleteProduct = (id: number) => {
-    selectedProduct.value = selectedProduct.value.filter(p => p.id !== id)
-}
 
 const isAllSelected = computed(() => {
     if (list.value.length === 0) return false
@@ -198,7 +195,6 @@ const deleteFormCommited = (item) => {
 }
 
 const updateProduct = (updated: Portfolio) => {
-    console.log('sss', updated, committedProducts.value)
     committedProducts.value = committedProducts.value.map(p => {
         if (p.id === updated.id) {
             console.log("✅ Match found:", p);
@@ -228,6 +224,25 @@ const listData = computed(() => {
     }
     return list.value
 })
+
+console.log(route().params)
+
+const updatePickFractional = async (item: any) => {
+    await axios.get(route('grp.json.product.get-pick-fractional', {
+        numerator: (Number(item.quantity) / Number(item.packed_in)),
+        denominator: item.packed_in,
+    })).then((result) => {
+        const index = committedProducts.value.findIndex(
+            (p: any) => p.id === item.id
+        );
+
+        if (index !== -1) {
+            committedProducts.value[index].pick_fractional = result.data;
+        }
+    })
+}
+
+const debounceUpdatePickFractional = debounce((item: any) => updatePickFractional(item), 500)
 
 
 defineExpose({
@@ -284,9 +299,22 @@ defineExpose({
                         <div class="flex items-center gap-2">
                             <NumberWithButtonSave v-if="withQuantity"
                                 :key="item.id + '-' + (item[props.key_quantity] || 1)"
-                                :modelValue="item[props.key_quantity] || 1" :bindToTarget="{ min: 1 }"
-                                @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
-                                noUndoButton noSaveButton parentClass="w-min" />
+                                :modelValue="item[props.key_quantity]" :bindToTarget="{ min: 1 }"
+                                @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]); debounceUpdatePickFractional(item) }"
+                                noUndoButton noSaveButton parentClass="w-min" >
+                                <template #suffix>
+                                   <div class="text-sm text-gray-700 px-3 font-bold">{{ item.type }}</div>
+                                </template>
+                                 <template #prefix>
+                                <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap w-full">
+                                    <span class=""> &#8623; SKU </span>
+                                    <span class="font-bold">
+                                        <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
+                                    </span>
+                                </div>
+                                  
+                                </template>
+                            </NumberWithButtonSave>
                             <button class="text-red-500 hover:text-red-700 px-4"
                                 @click="() => deleteFormCommited(item)">
                                 <FontAwesomeIcon :icon="faTrashAlt" />
@@ -380,14 +408,11 @@ defineExpose({
                                 <template v-if="!isLoadingFetch">
                                     <template v-if="list.length > 0">
                                         <div v-for="(item, index) in listData" :key="index" @click="selectProduct(item)"
-                                            class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                            class="relative h-full rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                             :class="[
                                                 compSelectedProduct.includes(item.id)
                                                     ? 'bg-indigo-100 border-indigo-300'
                                                     : 'bg-white hover:bg-gray-200 border-gray-300',
-                                                !item.stock_available
-                                                    ? 'opacity-50 pointer-events-none cursor-not-allowed hover:bg-white'
-                                                    : ''
                                             ]">
 
                                             <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)"
@@ -396,44 +421,38 @@ defineExpose({
                                                 aria-hidden="true" />
 
                                             <slot name="product" :item="item">
-                                                <Image v-if="item.image" :src="item.image?.thumbnail"
-                                                    class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0"
-                                                    imageCover :alt="item.name" />
+                                                <div class="w-16 h-16 border border-gray-500/20 rounded aspect-square overflow-y-clip text-xxs flex items-center justify-center">
+                                                    <Image
+                                                        v-if="item.image"
+                                                        :src="item.image?.thumbnail"
+                                                        imageCover
+                                                        :alt="item.name"
+                                                    />
+                                                    <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="opacity-70 text-xl" fixed-width aria-hidden="true" />
+
+                                                </div>
+                                                
                                                 <div class="flex flex-col justify-between w-full">
-                                                    <div class="flex items-center gap-2">
-                                                        <div class="font-semibold leading-none mb-1">{{ item.name || 'noname' }}</div>
-                                                    </div>
-                                                    <div v-if="!item.no_code" class="text-xs text-gray-400 italic">
+                                                    <div v-if="!item.no_code" class="font-semibold">
                                                         {{ item.code || 'no code' }}
+                                                    </div>
+                                                    <div class="flex items-center gap-2 text-xs">
+                                                        <div class="leading-none mb-1">{{ item.name || 'noname' }}</div>
                                                     </div>
                                                     <div v-if="item.reference" class="text-xs text-gray-400 italic">
                                                         {{ item.reference }}
                                                     </div>
-                                                    <div v-if="item.gross_weight" class="text-xs text-gray-400 italic">
-                                                        {{ item.gross_weight }}
-                                                    </div>
+
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
-                                                        {{ locale?.currencyFormat(item.currency_code || 'usd',
-                                                            item.price || 0) }}
+                                                        {{ locale?.currencyFormat(item.currency_code || 'usd',  item.price || 0) }}
                                                     </div>
-                                                    <template v-if="item.stock_available">
-                                                        <NumberWithButtonSave
-                                                            :modelValue="selectedProduct.find(p => p.id === item.id)?.[props.key_quantity] || 1"
-                                                            :bindToTarget="{ min: 1 }" @update:modelValue="(val: number) => {
-                                                                const target = selectedProduct.find(p => p.id === item.id)
-                                                                if (target) {
-                                                                    target[props.key_quantity] = val
-                                                                } else {
-                                                                    const newItem: any = { ...item, [props.key_quantity]: val }
-                                                                    selectedProduct.push(newItem)
-                                                                }
-                                                            }" noUndoButton noSaveButton parentClass="w-min" />
-                                                    </template>
-                                                    <template v-else>
-                                                        <span class="text-xs text-red-500 italic">Don't have
-                                                            stock</span>
-                                                    </template>
+
+                                                    
+                                                    <div v-tooltip="trans('Packed in :qty', { qty: item.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
+                                                        <FontAwesomeIcon icon="fas fa-box-up" class="mr-1" fixed-width aria-hidden="true" />
+                                                        {{ item.packed_in }} [{{ item.type }}]
+                                                    </div>
                                                 </div>
                                             </slot>
                                         </div>

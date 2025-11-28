@@ -31,7 +31,6 @@ import Topbar3FulfilmentIris from "@/Components/CMS/Website/TopBars/Template/Top
 import ButtonIris from '@/Components/CMS/Webpage/Button/ButtonIris.vue'
 import ColumnIris from '@/Components/CMS/Webpage/Column/ColumnIris.vue'
 import DisclosureIris from '@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue'
-import Step2Iris from '@/Components/CMS/Webpage/Step1/Step1Iris.vue'
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Iris.vue'
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
@@ -52,7 +51,7 @@ import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
 
 import SeeAlso1WorkshopIris from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue'
 import LuigiTrends1Iris from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Iris.vue'
-
+import Step2Iris from '@/Components/CMS/Webpage/Step2/Step2Iris.vue'
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
 import LuigiLastSeen1Iris from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Iris.vue'
@@ -61,6 +60,7 @@ import AnnouncementInformation1 from '@/Components/Websites/Announcement/Templat
 import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo1.vue'
 import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
 import AnnouncementInformation2TransitionText from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue'
+import AnnouncemenPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3.vue'
 
 import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
 import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
@@ -147,6 +147,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         "blog" : BlogIris,
         'carousel-cta' : CarouselCtaIris,
         'carousel-image-background' : CarouselImageBackgroundIris,
+        'step-2' : Step2Iris
     }
 }
 
@@ -162,6 +163,7 @@ const announcementComponent = (shop_type?: string): Record<string, Component> =>
     return {
         'announcement-information-1': AnnouncementInformation1,
         'announcement-promo-1': AnnouncementPromo1,
+        'announcement-promo-3': AnnouncemenPromo3,
         'announcement-promo-2-countdown': AnnouncementPromo2Countdown,
         'announcement-information-2-transition-text': AnnouncementInformation2TransitionText,
 

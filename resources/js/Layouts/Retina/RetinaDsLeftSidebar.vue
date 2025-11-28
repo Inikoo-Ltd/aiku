@@ -109,24 +109,30 @@ const handleToggleLeftBar = () => {
             
             <RetinaLeftSidebarNavigation>
                 <template #default>
-                    <div class="md:hidden mt-2 pt-6 border-t border-gray-300/40">
-                        <ButtonWithLink
-                            url="/app/logout"
-                            method="post"
-                            :data="{}"
-                            type="negative"
-                            :noHover="true"
-                            full
-                            @success="() => (set(layout, ['iris', 'is_logged_in'], false))"
-                        >
-                            <template #label="{ isLoadingVisit }">
-                                <span class="w-full text-left">
-                                    <FontAwesomeIcon v-if="!isLoadingVisit" icon="fal fa-sign-out" fixed-width aria-hidden="true" />
-                                    {{ trans("Logout") }}
-                                </span>
-                            </template>
-                        </ButtonWithLink>
-                    </div>
+                    <a
+                        v-if="layout.retina.portal_link"
+                        :href="layout.retina.portal_link"
+                        class="relative group hover:underline rounded-md py-2 w-full group flex items-center text-sm gap-x-2" xclass="[open ? 'bg-black/25' : '']"
+                        :class="
+                            layout.leftSidebar.show ? 'px-2' : 'px-3'
+                        "
+                        v-tooltip="{ content: trans('Open help portal'), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
+                        :style="{
+                            color: layout?.app?.theme[1],
+                        }"
+                        target="_blank"
+                    >
+                        <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width icon="fal fa-life-ring" />
+                        
+                        <Transition name="slide-to-left">
+                            <span v-if="layout.leftSidebar.show" class="py-0.5 leading-none whitespace-nowrap "
+                                :class="[layout.leftSidebar.show ? 'truncate block md:block' : 'block md:hidden']">
+                                {{ trans('Help') }}
+                            </span>
+                        </Transition>
+
+                        <FontAwesomeIcon v-if="layout.leftSidebar.show" icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100 absolute right-4 text-[var(--theme-color-1)]" fixed-width aria-hidden="true" />
+                    </a>
                 </template>
             </RetinaLeftSidebarNavigation>
             

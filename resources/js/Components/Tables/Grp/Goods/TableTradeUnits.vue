@@ -9,7 +9,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { TradeUnit } from "@/types/trade-unit"
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
 }>()
@@ -37,6 +37,10 @@ function tradeUnitRoute(tradeUnit: TradeUnit) {
         </template>
         <template #cell(type)="{ item: tradeUnit }">
             {{ tradeUnit["type"] }}
+        </template>
+        <template #cell(units)="{ item: tradeUnit }">
+            asdasd
+            {{ tradeUnit["units"] }}
         </template>
     </Table>
 </template>

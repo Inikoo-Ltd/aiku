@@ -16,6 +16,7 @@ enum CreditTransactionReasonEnum: string
     use EnumHelperTrait;
 
     case PAY_FOR_SHIPPING = 'pay_for_shipping';
+    case PAY_FOR_PRODUCT = 'pay_for_product';
     case COMPENSATE_CUSTOMER = 'compensate_customer';
     case TRANSFER = 'transfer';
     case MONEY_BACK = 'money_back';
@@ -25,10 +26,23 @@ enum CreditTransactionReasonEnum: string
     {
         return match ($this) {
             CreditTransactionReasonEnum::PAY_FOR_SHIPPING => 'Pay for the shipping of a return',
+            CreditTransactionReasonEnum::PAY_FOR_PRODUCT => 'Pay for the product cost of a return',
             CreditTransactionReasonEnum::COMPENSATE_CUSTOMER => 'Compensate customer',
             CreditTransactionReasonEnum::TRANSFER => 'Transfer from other customer account',
             CreditTransactionReasonEnum::MONEY_BACK => 'Customer want money back',
             CreditTransactionReasonEnum::OTHER => 'Other reason',
+        };
+    }
+
+    public static function getStaticLabel(string $str): string
+    {
+        return match ($str) {
+            CreditTransactionReasonEnum::PAY_FOR_SHIPPING->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
+            CreditTransactionReasonEnum::PAY_FOR_PRODUCT->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
+            CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
+            CreditTransactionReasonEnum::TRANSFER->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
+            CreditTransactionReasonEnum::MONEY_BACK->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
+            CreditTransactionReasonEnum::OTHER->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
         };
     }
 
@@ -56,6 +70,10 @@ enum CreditTransactionReasonEnum: string
             [
                 'value' => self::PAY_FOR_SHIPPING->value,
                 'label' => self::PAY_FOR_SHIPPING->label(),
+            ],
+            [
+                'value' => self::PAY_FOR_PRODUCT->value,
+                'label' => self::PAY_FOR_PRODUCT->label(),
             ],
             [
                 'value' => self::COMPENSATE_CUSTOMER->value,

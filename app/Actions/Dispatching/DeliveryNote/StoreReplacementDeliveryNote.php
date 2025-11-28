@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
@@ -48,13 +49,23 @@ class StoreReplacementDeliveryNote extends OrgAction
         $deliveryAddress = Arr::pull($modelData, 'delivery_address');
 
         data_set($modelData, 'date', now());
-
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);
+        data_set($modelData, 'customer_client_id', $order->customer_client_id);
+        data_set($modelData, 'platform_id', $order->platform_id);
+        data_set($modelData, 'customer_sales_channel_id', $order->customer_sales_channel_id);
+
         data_set($modelData, 'group_id', $order->group_id);
         data_set($modelData, 'organisation_id', $order->organisation_id);
         data_set($modelData, 'type', DeliveryNoteTypeEnum::REPLACEMENT);
         data_set($modelData, 'shop_type', $order->shop->type);
+
+
+        data_set($modelData, 'email', SendOrderToWarehouse::make()->getEmail($order));
+        data_set($modelData, 'phone', SendOrderToWarehouse::make()->getPhone($order));
+        data_set($modelData, 'company_name', SendOrderToWarehouse::make()->getCompanyName($order));
+        data_set($modelData, 'contact_name', SendOrderToWarehouse::make()->getContactName($order));
+
 
         $items = Arr::pull($modelData, 'delivery_note_items');
 

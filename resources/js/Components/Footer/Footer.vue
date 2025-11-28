@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { inject } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import FooterMessage from '@/Components/Footer/FooterMessage.vue'
 
 
 const layout = inject('layout', layoutStructure)
@@ -48,6 +49,7 @@ library.add(faHeart, faComputerClassic, faDiscord)
                 </div>
                <!--  <FooterCurrency /> -->
                 <FooterLanguage />
+                <FooterMessage v-if="layout?.app?.environment === 'local'" />
                 <FooterActiveUsers />
             </div>
         </div>

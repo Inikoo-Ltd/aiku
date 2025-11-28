@@ -41,17 +41,18 @@ trait WithIntervalsAggregators
         $stats = [];
 
 
-        foreach (DateIntervalEnum::cases() as $interval) {
+        foreach (DateIntervalEnum::casesWithoutCustom() as $interval) {
+
             if ($intervals !== null && !in_array($interval, $intervals)) {
                 continue;
             }
 
             $query = $queryBase->clone();
             $query = $interval->wherePeriod($query, $dateField);
-
             $res                                = $query->first();
             $stats[$statField.$interval->value] = $res->{$sumField} ?? 0;
         }
+
 
         return $stats;
     }
@@ -64,7 +65,7 @@ trait WithIntervalsAggregators
         ?array $intervals = null
     ): array {
         $stats = [];
-        foreach (DateIntervalEnum::cases() as $interval) {
+        foreach (DateIntervalEnum::casesWithoutCustom() as $interval) {
             if ($interval == DateIntervalEnum::ALL) {
                 continue;
             }

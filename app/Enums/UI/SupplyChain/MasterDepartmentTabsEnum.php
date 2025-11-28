@@ -17,6 +17,7 @@ enum MasterDepartmentTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    /*     case CONTENT = 'content'; */
     case DEPARTMENTS = 'departments';
     case SALES = 'sales';
     case HISTORY = 'history';
@@ -52,6 +53,10 @@ enum MasterDepartmentTabsEnum: string
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
+            /*   MasterDepartmentTabsEnum::CONTENT => [
+                  'title' => __('Content'),
+                  'icon'  => 'fal fa-quote-left',
+              ], */
         };
     }
 }

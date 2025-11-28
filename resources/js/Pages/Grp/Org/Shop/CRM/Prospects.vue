@@ -34,7 +34,6 @@ const props = defineProps<{
           current: string
           navigation: {}
       }
-      dashboard : {}
       history : {}
       lists : {}
       prospects : {}
@@ -61,7 +60,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
       const components: {[key: string]: Component} = {
-        dashboard: ProspectsDashboard,
         prospects: TableProspects,
         opt_in: TableProspects,
         opt_out: TableProspects,
@@ -72,7 +70,7 @@ const component = computed(() => {
         history: TableHistories,
        /*  lists: TableProspectLists */
       }
-  
+
       return components[currentTab.value]
   })
 
@@ -100,7 +98,7 @@ const downloadUrl = (type: string) => {
                   <Button :icon="faDownload" label="xlsx" type="tertiary" class="border-l-0  rounded-l-none"/>
               </a>
             </div>
-            
+
           <Button
               v-if="upload_spreadsheet"
               @click="() => isModalUploadOpen = true"
@@ -119,11 +117,11 @@ const downloadUrl = (type: string) => {
             information: 'The list of column file: customer_reference, notes, stored_items'
         }"
         v-if="upload_spreadsheet"
-        progressDescription="Adding Prospects to Shop"        
+        progressDescription="Adding Prospects to Shop"
         :upload_spreadsheet="upload_spreadsheet"
-        
+
     />
-    
+
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 </template>

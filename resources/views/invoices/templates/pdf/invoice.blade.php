@@ -13,8 +13,8 @@
             margin-header: 1mm; /* <any of the usual CSS values for margins> */
             margin-footer: 5mm; /* <any of the usual CSS values for margins> */
             marks: 'cross'; /*crop | cross | none*/
-            header: myheader;
-            footer: myfooter;
+            header: myHeader;
+            footer: myFooter;
             /* background: ...
             background-image: ...
             background-position ...
@@ -29,7 +29,7 @@
         }
 
         p {
-            margin: 0pt;
+            margin: 0;
         }
 
         h1 {
@@ -79,9 +79,9 @@
             border: 0.1mm solid #000000;
         }
 
-        .items td.blanktotal {
+        .items td.blank_total {
             background-color: #FFFFFF;
-            border: 0mm none #000000;
+            border: 0 none #000000;
             border-top: 0.1mm solid #000000;
             border-right: 0.1mm solid #000000;
         }
@@ -101,7 +101,7 @@
     </style>
 </head>
 <body>
-<htmlpageheader name="myheader">
+<htmlpageheader name="myHeader">
     <br><br>
     <table width="100%" style="font-size: 9pt;">
         <tr>
@@ -132,8 +132,8 @@
     </table>
 </htmlpageheader>
 
-<sethtmlpageheader name="myheader" value="on" show-this-page="1"/>
-<sethtmlpagefooter name="myfooter" value="on"/>
+<sethtmlpageheader name="myHeader" value="on" show-this-page="1"/>
+<sethtmlpagefooter name="myFooter" value="on"/>
 
 <table width="100%" style="margin-top: 40px">
     <tr>
@@ -157,7 +157,7 @@
 </table>
 <table width="100%" style="font-family: sans-serif; margin-top: 20px" cellpadding="0">
     <tr>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;">
+        <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;">
             <div>
                 <div>
                     {{ __('Payment State') }}: <b>{{ $invoice->pay_status->labels()[$invoice->pay_status->value] }}</b>
@@ -183,11 +183,11 @@
                     </div>
                 @endif
                 @if($invoice->identity_document_number)
-                    {{__('Registration Number')}}: {{$shop->identity_document_number}}
+                    {{__('Registration Number')}}: {{$invoice->identity_document_number}}
                 @endif
             </div>
         </td>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
+        <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
             @if($deliveryNote?->estimated_weight)
                 <div style="text-align: right">Weight: <b>{{ $deliveryNote?->estimated_weight }} g</b></div>
             @endif
@@ -272,7 +272,7 @@
 
             <td style="text-align:left" colspan="2">
                 @if($transaction->historicAsset)
-                    {{ $transaction->historicAsset?->name }}
+                    {{ $transaction->historicAsset->name }}
                     @if(isset($transaction->pallet))
                         <br>
                         {{ __('Pallet') }}: {{$transaction->customerPallet}} ({{ $transaction->pallet }})
@@ -415,7 +415,7 @@
     </div>
 @endif
 
-<htmlpagefooter name="myfooter">
+<htmlpagefooter name="myFooter">
     <div
         style="border-top: 1px solid #000000; font-size: 9pt; text-align: center; padding-top: 5mm; margin-top: 5mm;"></div>
     <table width="100%">
@@ -425,7 +425,7 @@
                 <small>
                     {{$shop->name}}<br>
                     @if($shop->taxNumber)
-                        {{__('VAT Number')}}:<b>{{$shop->taxNumber?->getFormattedTaxNumber()}}</b><br>
+                        {{__('VAT Number')}}:<b>{{$shop->taxNumber->getFormattedTaxNumber()}}</b><br>
                     @endif
                     @if($shop->identity_document_number)
                         {{__('Registration Number')}}: {{$shop->identity_document_number}}

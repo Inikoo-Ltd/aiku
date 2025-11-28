@@ -412,10 +412,10 @@ const getValueColumn4Transleted = (value: string) => {
         <div
             class="mt-8 w-full border-0 border-t border-solid border-white/10 flex flex-col md:flex-row-reverse justify-between pt-6 items-center gap-y-8">
             <div class="grid gap-y-2 text-center md:text-left">
-                <h2 style="margin-bottom: 0; font-size: inherit; font-weight: inherit"
+                <!-- <h2 style="margin-bottom: 0; font-size: inherit; font-weight: inherit"
                     class="hidden text-center tracking-wider">
                     <div v-html="modelValue?.columns.column_4.data.textBox4"></div>
-                </h2>
+                </h2> -->
 
                 <div v-if="modelValue?.socialMedia?.length" class="flex gap-x-6 justify-center">
                     <a v-for="socmed of modelValue?.socialMedia" target="_blank" :href="socmed.link">

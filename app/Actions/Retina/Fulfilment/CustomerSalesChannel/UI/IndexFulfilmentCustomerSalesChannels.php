@@ -15,6 +15,7 @@ use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -100,6 +101,11 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
                 'data'        => CustomerSalesChannelsResourceTOFIX::collection($platforms),
             ]
         )->table($this->tableStructure());
+    }
+
+    public function jsonResponse(Platform $platforms)
+    {
+        return CustomerSalesChannelsResourceTOFIX::collection($platforms);
     }
 
 

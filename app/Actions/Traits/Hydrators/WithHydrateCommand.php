@@ -26,6 +26,8 @@ trait WithHydrateCommand
 
     private string $model;
     private ?string $restriction = null;
+    private ?array $evadeState = null;
+    protected bool $modelAsHandleArg = true;
 
     protected function getOrganisationsIds(Command $command): array
     {
@@ -61,12 +63,18 @@ trait WithHydrateCommand
             1000,
             function (Collection $modelsData) use ($bar, $command) {
                 foreach ($modelsData as $modelId) {
-                    $model = (new $this->model());
-                    if ($this->hasSoftDeletes($model)) {
-                        $instance = $model->withTrashed()->find($modelId->id);
+
+                    if ($this->modelAsHandleArg) {
+                        $model = (new $this->model());
+                        if ($this->hasSoftDeletes($model)) {
+                            $instance = $model->withTrashed()->find($modelId->id);
+                        } else {
+                            $instance = $model->find($modelId->id);
+                        }
                     } else {
-                        $instance = $model->find($modelId->id);
+                        $instance = $modelId->id;
                     }
+
                     try {
                         $this->handle($instance);
                     } catch (Exception $e) {
@@ -109,6 +117,10 @@ trait WithHydrateCommand
             $query->where('type', ProductCategoryTypeEnum::FAMILY);
         } elseif ($this->restriction == 'sub_department') {
             $query->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
+        }
+
+        if ($this->evadeState && count($this->evadeState) > 0) {
+            $query->whereNotIn('state', $this->evadeState);
         }
 
         return $query;

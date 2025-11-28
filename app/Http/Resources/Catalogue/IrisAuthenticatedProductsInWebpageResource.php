@@ -12,6 +12,7 @@ use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Traits\HasPriceMetrics;
 
 /**
  * @property string $slug
@@ -39,10 +40,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $webpage_id
  * @property mixed $website_id
  * @property mixed $shop_id
+ * @property mixed $quantity_ordered
  */
 class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
+    use HasPriceMetrics;
+
 
     public function toArray($request): array
     {
@@ -84,17 +88,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 
         $oldLuigiIdentity = $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->website_id . ':' . $this->webpage_id;
 
-        $margin     = '';
-        $rrpPerUnit = '';
-        $profit     = '';
-        if ($this->rrp > 0) {
-            $margin     = percentage(round((($this->rrp - $this->price) / $this->rrp) * 100, 1), 100);
-            $rrpPerUnit = round($this->rrp / $this->units, 2);
-            // $profit     = round(($this->price - $this->rrp) / $this->units, 2);
-            $profit     = round($this->rrp - $this->price, 2);
-        }
-
-        $units = (int) $this->units;
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
         return [
             'id'                   => $this->id,
@@ -123,7 +117,11 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'quantity_ordered_new' => (int)$this->quantity_ordered ?? 0,  // To editable in Frontend
             'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
             'is_back_in_stock'     => $back_in_stock,
-            'back_in_stock_id'     => $back_in_stock_id
+            'back_in_stock_id'     => $back_in_stock_id,
+            'profit_per_unit'      => $profitPerUnit,
+            'price_per_unit'       => $pricePerUnit,
+            'available_quantity'      => $this->available_quantity,
+            'is_coming_soon'       => false,  // TODO: INI-373 (Raul)
         ];
     }
 

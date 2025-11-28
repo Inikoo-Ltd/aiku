@@ -65,6 +65,12 @@ export interface PageHeading {
     subNavigation?: any
     wrapped_actions: Action[]
     parentTag?: ParentTag[]
+    iconLinks?: {
+        icon: string | string[]
+        tooltip: string
+        route: routeType
+        color?: string  // rgb(75, 0, 130)
+    }[]
 }
 
 

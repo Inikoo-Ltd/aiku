@@ -29,7 +29,7 @@ enum PalletDeliveryTabsEnum: string
     {
         return match ($this) {
             PalletDeliveryTabsEnum::HISTORY => [
-                'title' => __('History '),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

@@ -23,7 +23,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFr
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Catalogue\Product;
@@ -59,7 +59,7 @@ class HydrateProducts
         ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
         ProductHydrateBarcodeFromTradeUnit::run($product);
         ProductHydrateImages::run($product);
-        ProductHydrateTradeUnitsFields::run($product);
+        ProductHydrateHeathAndSafetyFromTradeUnits::run($product);
         ModelHydrateSingleTradeUnits::run($product);
         ProductHydrateBrandsFromTradeUnits::run($product);
         ProductHydrateTagsFromTradeUnits::run($product);

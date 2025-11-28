@@ -36,16 +36,17 @@ import {
     faXmark,
     faCamera
 } from "@fortawesome/free-solid-svg-icons";
-import { faChevronUp, faChevronDown } from "@far";
+import { faChevronUp, faChevronDown, faInfo, faInfoCircle } from "@far";
 import { ulid } from "ulid";
 import { notify } from "@kyvg/vue3-notification";
 import { cloneDeep } from "lodash";
 import PureInputNumber from "./Pure/PureInputNumber.vue";
 import Image from "./Image.vue";
-import { faPencil } from "@fal";
+import { faPencil, faImage } from "@fal";
+import { faBoxUp } from "@fas";
 
 library.add(
-    faShapes,
+    faShapes, faBoxUp,
     faSortAmountDownAlt,
     faSortAmountDown,
     faHome,
@@ -58,7 +59,7 @@ library.add(
     faMinimize,
     faExpand,
     faXmark,
-    faCamera
+    faCamera, faImage
 );
 
 const props = defineProps<{
@@ -67,6 +68,7 @@ const props = defineProps<{
     masterCurrency?: string
     shopsData?: any
     masterProductCategory: string | number
+    is_dropship: boolean
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
@@ -84,14 +86,15 @@ const modalTradeUnit = ref(false)
 const dataTradeUnitEdit = ref(null)
 const listSelectorRef = ref<InstanceType<typeof ListSelector> | null>(null)
 
-
 // Inertia form
 const form = useForm({
     code: "",
     name: "",
     unit: '',
-    units: null,
-    trade_units: [],
+   /*  units: null, */
+    trade_units: [
+
+    ],
     image: null,
     shop_products: null,
     marketing_weight: 0,
@@ -143,7 +146,13 @@ const getTableData = (data) => {
             finalDataTable[tableDataItem.id] = {
                 price: tableDataItem.product.price || null,
                 create_in_shop: tableDataItem.product.create_in_shop,
-                rrp: tableDataItem.product.rrp || null
+                rrp: tableDataItem.product.rrp || null,
+            }
+        }
+
+        if (props.is_dropship) {
+            for (const item of form.trade_units) {
+                item.quantity = item.ds_quantity;
             }
         }
 
@@ -163,9 +172,20 @@ const getTableData = (data) => {
                     tableData.value.data[index].product = {
                         ...tableData.value.data[index].product,
                         ...item,
+                        pick_fractional: item.pick_fractional,
+                        rrp : item.rrp / (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1)
                     }
                 }
             }
+
+            // Section: Modify pick_fractional from response to form.trade_units
+            for (const trade_unit of response.data.trade_units) {
+                const target = form.trade_units.find((item) => item.id === trade_unit.id)
+                if (target) {
+                    target.pick_fractional = trade_unit.pick_fractional
+                }
+            }
+            
         } catch (error: any) {
             if (!(axios.isCancel(error) || error.name === "CanceledError")) {
                 console.error("Terjadi error:", error)
@@ -175,7 +195,7 @@ const getTableData = (data) => {
 }
 
 const ListSelectorChange = (value) => {
-    console.log('selector', value)
+    console.log('selector:', value)
     if (value.length >= 1) {
         form.name = value[0].name
         form.code = value[0].code
@@ -185,11 +205,15 @@ const ListSelectorChange = (value) => {
         form.net_weight = value[0].net_weight
         form.description = value[0].description
         form.description_extra = value[0].description_extra
-        form.units = value.length > 1 ? 1 : value[0]?.quantity || 1
+       /*  form.units = value.length > 1 ? 1 : (value[0]?.quantity * value[0]?.units) || 1 */
         form.gross_weight = value[0]?.gross_weight || 0
         form.marketing_dimensions = value[0]?.dimensions || null     
     }
     getTableData(tableData.value)
+}
+
+function roundDown2(num: number) {
+    return Math.floor(num * 100) / 100;
 }
 
 const submitForm = async (redirect = true) => {
@@ -204,7 +228,8 @@ const submitForm = async (redirect = true) => {
 
         let create_in_shop = tableDataItem.product.create_in_shop
         let price = tableDataItem.product.price
-        let rrp = tableDataItem.product.rrp
+        let rrp = roundDown2(tableDataItem.product.rrp * (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1))
+        let rrp_per_unit = tableDataItem.product.rrp
 
         if(!create_in_shop){
             rrp=1;
@@ -213,20 +238,29 @@ const submitForm = async (redirect = true) => {
 
         finalDataTable[tableDataItem.id] = {
             price: price,
-            create_in_shop : create_in_shop?'Yes':'No',
-            rrp: rrp
+            create_in_shop : create_in_shop? 'Yes':'No',
+            rrp: rrp,
+            rrp_per_unit : rrp_per_unit
         }
     }
 
     // Build payload manual
     const payload: any = {
         ...form.data(),
-        shop_products: finalDataTable
+        shop_products: finalDataTable,
+        masterShop: route().params['masterShop']
     }
 
     // Hapus image kalau tidak diganti user
     if (!(form.image instanceof File)) {
         delete payload.image
+    }
+
+    if(props.is_dropship){
+        for(const item of payload.trade_units){
+            // item.quantity = item.ds_quantity
+            item.packed_in = item.ds_quantity
+        }
     }
 
     console.log("Payload to submit:", payload)
@@ -357,17 +391,28 @@ const successEditTradeUnit = (data) => {
         <div class="p-4 pt-0 space-y-6 overflow-y-auto">
             <!-- Trade Unit Selector -->
             <div>
-                <ListSelector :key="key" ref="listSelectorRef" no_data_label="Select Trade Unit" v-model="form.trade_units" :withQuantity="true"
-                    :tabs="selectorTab" head_label="Select Trade Units" @update:model-value="ListSelectorChange"
-                    key_quantity="quantity" :routeFetch="{
+                <ListSelector 
+                    :is_dropship
+                    :key="key" 
+                    ref="listSelectorRef" 
+                    no_data_label="Select Trade Unit" 
+                    v-model="form.trade_units" 
+                    :withQuantity="true"
+                    :tabs="selectorTab" 
+                    head_label="Select Trade Units" 
+                    @update:model-value="ListSelectorChange"
+                    :key_quantity="is_dropship ? 'ds_quantity' : 'quantity'" 
+                    :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }
                     }">
                     <template #info="{ data }">
                         <div class="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition">
                             <!-- Product Image -->
-                            <Image v-if="data.image" :src="data.image.thumbnail" alt="Product image"
-                                class="w-12 h-12 rounded-lg object-cover border border-gray-200 shadow-sm" />
+                            <div class="w-12 h-12 rounded-lg border border-gray-200 shadow-sm flex items-center justify-center ">
+                                <Image v-if="data.image" :src="data.image.thumbnail" alt="Product image" object-cover />
+                                <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="opacity-70" fixed-width aria-hidden="true" />
+                            </div>
 
                             <!-- Product Details -->
                             <div class="flex flex-col flex-1 min-w-0">
@@ -381,6 +426,12 @@ const successEditTradeUnit = (data) => {
                                         title="Edit" @click="() => openModalTradeUnit(data)">
                                         <FontAwesomeIcon :icon="faPencil" class="w-3.5 h-3.5 text-blue-500" />
                                     </button>
+                                </div>
+
+                                <!-- Quantity -->
+                                <div v-tooltip="trans('Packed in :qty', { qty: data.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
+                                    <FontAwesomeIcon icon="fas fa-box-up" class="mr-1" fixed-width aria-hidden="true" />
+                                    {{ data.packed_in }} [{{ data.type }}]
                                 </div>
 
                                 <!-- Price -->
@@ -411,6 +462,11 @@ const successEditTradeUnit = (data) => {
                     <FontAwesomeIcon :icon="faCircleExclamation" />
                     {{ form.errors.trade_units }}
                 </small>
+                <small class="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                    <FontAwesomeIcon :icon="faInfoCircle" class="text-sm" />
+                    {{ trans('When multiple trade units are selected, it will automatically be set as the outer unit (value: 1).') }}
+                </small>
+
             </div>
 
             <!-- Product Details & Price -->
@@ -458,7 +514,7 @@ const successEditTradeUnit = (data) => {
 
                     <!-- Form Fields -->
                     <div class="grid grid-cols-2 gap-5">
-                        <div>
+                        <div class="col-span-2">
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Code')}}</label>
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
                                 class="w-full" />
@@ -479,7 +535,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Unit')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Unit label')}}</label>
                             <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
                                 class="w-full" />
                             <small v-if="form.errors.unit" class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -488,7 +544,7 @@ const successEditTradeUnit = (data) => {
                             </small>
                         </div>
 
-                        <div>
+                       <!--  <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Units')}}</label>
                             <PureInputNumber v-model="form.units" @update:model-value="form.errors.units = null"
                                 class="w-full" />
@@ -496,7 +552,7 @@ const successEditTradeUnit = (data) => {
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.units.join(", ") }}
                             </small>
-                        </div>
+                        </div> -->
 
                         <div v-if="form.trade_units.length > 1">
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Marketing Weight')}}</label>
@@ -601,7 +657,7 @@ const successEditTradeUnit = (data) => {
 
 
     <!-- Add after Drawer in your <template> -->
-    <Dialog v-model:visible="modalTradeUnit" modal header="Edit Trade Unit" :style="{ width: '500px' }">
+    <Dialog v-model:visible="modalTradeUnit" modal header="Edit Trade Unit" :style="{ width: '700px' }">
         <EditTradeUnit :data="dataTradeUnitEdit" @cancel="onCanceleditTradeUnit" @save-success="successEditTradeUnit" />
     </Dialog>
 

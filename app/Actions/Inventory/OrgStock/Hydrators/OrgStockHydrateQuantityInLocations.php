@@ -29,16 +29,20 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
 
         $quantityAvailable = $quantityInLocations - $orgStock->quantity_in_submitted_orders - $orgStock->quantity_to_be_picked;
 
+        $quantityAvailable = $quantityAvailable - $orgStock->source_quantity_in_submitted_orders - $orgStock->source_quantity_to_be_picked;
+
+
         if ($quantityAvailable < 0) {
             $quantityAvailable = 0;
         }
+
 
         $orgStock->update([
             'quantity_in_locations' => $quantityInLocations,
             'quantity_available'    => $quantityAvailable,
         ]);
 
-        if ($orgStock->wasChanged('quantity_in_locations')) {
+        if ($orgStock->wasChanged('quantity_available')) {
             foreach ($orgStock->products as $product) {
                 ProductHydrateAvailableQuantity::run($product);
             }

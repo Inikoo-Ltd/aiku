@@ -17,7 +17,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUn
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
@@ -64,10 +64,17 @@ class StoreProduct extends OrgAction
             data_set($modelData, 'unit_price', Arr::get($modelData, 'price') / Arr::get($modelData, 'units', 1));
         }
 
-        $orgStocks = Arr::pull($modelData, 'org_stocks', []);
+        $orgStocks = null;
+        $tradeUnits = null;
+        if ($this->strict) {
+            $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+        } else {
+            //todo: remove this when total migration from aurora
+            $orgStocks = Arr::pull($modelData, 'org_stocks', []);
+        }
 
 
-        data_set($modelData, 'unit_relationship_type', $this->getUnitRelationshipType($orgStocks));
+
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'group_id', $parent->group_id);
 
@@ -99,11 +106,21 @@ class StoreProduct extends OrgAction
             data_set($modelData, 'is_description_extra_reviewed', true);
         }
 
-        $product = DB::transaction(function () use ($shop, $modelData, $orgStocks) {
+        $product = DB::transaction(function () use ($shop, $modelData, $orgStocks, $tradeUnits) {
             /** @var Product $product */
             $product = $shop->products()->create($modelData);
-            $product = $this->syncOrgStocks($product, $orgStocks);
-            ProductHydrateTradeUnitsFields::run($product);
+
+            if ($tradeUnits) {
+                $product = SyncProductTradeUnits::run($product, $tradeUnits);
+            } else {
+                //todo: remove this when total migration from aurora
+                $product = $this->syncOrgStocksToBeDeleted($product, $orgStocks);
+
+            }
+
+
+
+            ProductHydrateHeathAndSafetyFromTradeUnits::run($product);
             $product = ModelHydrateSingleTradeUnits::run($product);
             $product = ProductHydrateForSale::run($product);
             ProductHydrateGrossWeightFromTradeUnits::run($product);
@@ -184,6 +201,7 @@ class StoreProduct extends OrgAction
         return $product;
     }
 
+    // todo: delete this asap is not used
     public function getUnitRelationshipType(array $orgStocks): ?ProductUnitRelationshipType
     {
         if (count($orgStocks) == 1) {
@@ -269,9 +287,10 @@ class StoreProduct extends OrgAction
         }
 
 
-        $rules['org_stocks'] = ['present', 'array'];
 
         if (!$this->strict) {
+            $rules['org_stocks'] = ['present', 'array'];
+
             $rules                              = $this->noStrictStoreRules($rules);
             $rules['historic_source_id']        = ['sometimes', 'required', 'string', 'max:255'];
             $rules['state']                     = ['required', Rule::enum(ProductStateEnum::class)];
@@ -279,6 +298,8 @@ class StoreProduct extends OrgAction
             $rules['trade_config']              = ['required', Rule::enum(ProductTradeConfigEnum::class)];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
+        } else {
+            $rules['trade_units'] = ['present', 'array'];
         }
 
         return $rules;

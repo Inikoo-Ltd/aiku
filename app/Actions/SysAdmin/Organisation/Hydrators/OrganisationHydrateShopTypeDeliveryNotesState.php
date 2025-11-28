@@ -37,9 +37,11 @@ class OrganisationHydrateShopTypeDeliveryNotesState implements ShouldBeUnique
         }
 
         $count = DeliveryNote::where('delivery_notes.shop_type', $shopTypeEnum->value)
+            ->leftJoin('shops', 'shops.id', '=', 'delivery_notes.shop_id') // Todo: this hacks has to be deleted after we migrate from aurora
             ->where('delivery_notes.organisation_id', $organisation->id)
+            ->where('shops.is_aiku', true) // Todo: this hacks has to be deleted after we migrate from aurora
             ->whereNull('delivery_notes.deleted_at')
-           ->where('delivery_notes.state', $state)->count();
+            ->where('delivery_notes.state', $state)->count();
 
         $organisation->orderingStats()->update(
             [

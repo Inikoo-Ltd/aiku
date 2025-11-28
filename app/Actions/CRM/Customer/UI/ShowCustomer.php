@@ -191,8 +191,6 @@ class ShowCustomer extends OrgAction
                 $tabs::SHOWCASE->value => $this->tab == $tabs::SHOWCASE->value ?
                     fn () => GetCustomerShowcase::run($customer)
                     : Inertia::lazy(fn () => GetCustomerShowcase::run($customer)),
-
-
                 $tabs::CREDIT_TRANSACTIONS->value => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
                     fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
                     : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),

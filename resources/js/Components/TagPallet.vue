@@ -22,7 +22,9 @@ defineProps<{
         background: stateIcon.color ? stateIcon.color + '19' : '',
         border: `1px solid ${stateIcon.color ? stateIcon.color + 'AA' : ''}`,
         color: stateIcon.color ? `color-mix(in srgb, ${stateIcon.color} 90%, black)` : ''
-    }">
+    }"
+        noHoverColor
+    >
         <template #label>
             <div class="whitespace-nowrap space-x-1.5">
                 <FontAwesomeIcon :icon='stateIcon.icon' class='' fixed-width aria-hidden='true' />

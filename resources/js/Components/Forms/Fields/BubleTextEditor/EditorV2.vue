@@ -100,7 +100,6 @@ const props = withDefaults(defineProps<{
 }>(), {
     editable: true,
     type: 'Bubble',
-    placeholder: '',
     toogle: () => [
         'heading', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'query', "fontFamily",
         'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
@@ -373,7 +372,7 @@ function updateLinkCustom(value) {
         const attrs = {
             type: value.type,
             workshop: value.workshop,
-            id: value.type === 'internal' ? value.id?.id : null,
+            id: value.type === 'internal' ? value.id : null,
             href: value.href,
             target: value.target ? value.target : '_self'
         };
@@ -495,6 +494,7 @@ onMounted(async () => {
   setTimeout(() => {
     contentResult.value = editorInstance.value?.getHTML()
   }, 250)
+
 
   /* tippyOptions.value = {
     boundary: 'viewport',
@@ -1168,5 +1168,13 @@ onMounted(async () => {
 
 :deep(.ProseMirror-focused .ProseMirror-gapcursor) {
     @apply block;
+}
+
+:deep(p.is-editor-empty:first-child::before){
+    color: gray;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
 }
 </style>

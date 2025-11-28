@@ -33,11 +33,20 @@ export const aikuLocaleStructure = {
 			currencyDisplay: 'symbol'
 		}).formatToParts(123).find(part => part.type === 'currency')?.value ?? '';
 	},
-    currencyFormat: (currencyCode: string | null, amount: number):string => {
-        return new Intl.NumberFormat(aikuLocaleStructure.language.code, {
-            style: "currency",
-            // currency: currencyCode || "usd",
-            currency: currencyCode || '',
-        }).format(amount || 0)
+    currencyFormat: (currencyCode: string | null, amount: number): string | number => {
+
+        if (!amount) return 0
+		if (!currencyCode) {
+			return amount || 0
+		}
+
+        try {
+            return new Intl.NumberFormat(aikuLocaleStructure.language.code, {
+                style: "currency",
+                currency: currencyCode,
+            }).format(amount || 0)
+        } catch (e) {
+            return amount || 0
+        }
     }
 }

@@ -58,7 +58,9 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopUps;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVariants;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateWebUsers;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervals;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -129,6 +131,10 @@ class HydrateShops
         ShopHydrateProspects::run($shop);
         ShopHydrateTags::run($shop);
         ShopHydrateBrands::run($shop);
+
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
+            ShopHydratePlatformSalesIntervals::run($shop);
+        }
 
         foreach (DeliveryNoteStateEnum::cases() as $case) {
             ShopHydrateDeliveryNotesState::run($shop->id, $case);

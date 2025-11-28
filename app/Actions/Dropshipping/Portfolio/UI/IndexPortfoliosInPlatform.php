@@ -60,6 +60,7 @@ class IndexPortfoliosInPlatform extends OrgAction
             ->defaultSort('portfolios.reference')
             ->allowedSorts(['reference', 'created_at'])
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['created_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -73,6 +74,7 @@ class IndexPortfoliosInPlatform extends OrgAction
                     ->pageName($prefix.'Page');
             }
             $table
+                ->betweenDates(['created_at'])
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'item_code', label: __('Product'), canBeHidden: false, searchable: true)

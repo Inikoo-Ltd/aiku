@@ -150,7 +150,7 @@ class IndexOutboxes extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Outboxes '),
+                'title'       => __('Outboxes'),
                 'pageHead'    => [
                     'title'         => __('Outboxes'),
                     'subNavigation' => $subNavigation,

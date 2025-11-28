@@ -36,7 +36,6 @@ class ProductsWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
-
         if (!is_array($this->web_images)) {
             $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
         } else {
@@ -44,31 +43,31 @@ class ProductsWebpageResource extends JsonResource
         }
 
 
-        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
         return [
-            'id'          => $this->id,
-            'slug'        => $this->slug,
-            'image_id'    => $this->image_id,
-            'code'        => $this->code,
-            'name'        => $this->name,
-            'stock'       => $this->available_quantity,
-            'price'       => $this->price,
-            'description' => $this->description,
-            'state'       => $this->state,
-            'created_at'  => $this->created_at,
-            'updated_at'  => $this->updated_at,
-            'units'       => $this->units,
-            'unit'        => $this->unit,
-            'status'      => $this->status,
-            'rrp'         => $this->rrp,
-            'web_images'  => $webImages,
-            'url'         => $this->webpage?->url,
-            'margin'         => $margin,
-            'profit'         => $profit,
+            'id'              => $this->id,
+            'slug'            => $this->slug,
+            'image_id'        => $this->image_id,
+            'code'            => $this->code,
+            'name'            => $this->name,
+            'stock'           => $this->available_quantity,
+            'price'           => $this->price,
+            'price_per_unit'  => $pricePerUnit,
+            'description'     => $this->description,
+            'state'           => $this->state,
+            'created_at'      => $this->created_at,
+            'updated_at'      => $this->updated_at,
+            'unit'            => $this->unit,
+            'status'          => $this->status,
+            'rrp'             => $this->rrp,
+            'web_images'      => $webImages,
+            'url'             => $this->webpage?->url,
+            'margin'          => $margin,
+            'profit'          => $profit,
             'profit_per_unit' => $profitPerUnit,
-            'rrp_per_unit'   => $rrpPerUnit,
-            'units'          => $units,
+            'rrp_per_unit'    => $rrpPerUnit,
+            'units'           => $units,
         ];
     }
 }

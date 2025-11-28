@@ -157,7 +157,7 @@ onMounted(async () => {
                 <div v-if="retryCount > 0"
                     class="mt-4 px-4 py-2 rounded-lg bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm font-medium flex items-center gap-2 animate-pulse">
                     <FontAwesomeIcon :icon="faSpinner" class="animate-spin" />
-                    {{ trans("Retrying payment... Attempt :retryCount of :max_retries ", { retryCount: retryCount, max_retries: MAX_RETRIES }) }}
+                    {{ trans("Retrying payment... Attempt :retryCount of :max_retries", { retryCount: retryCount, max_retries: MAX_RETRIES }) }}
                 </div>
             </Transition>
 

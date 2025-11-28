@@ -8,9 +8,9 @@
 import {Head} from '@inertiajs/vue3';
 import {library} from '@fortawesome/fontawesome-svg-core';
 import {
-    faCoins, faUndo
+    faCoins, faFilePdf, faUndo
 } from '@fal';
-
+import { trans } from "laravel-vue-i18n"
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import {computed, defineAsyncComponent, ref, inject} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
@@ -172,6 +172,13 @@ interface Props {
             payment: number
         }
     }
+    topup_receipt_route?: {
+        show: boolean
+        name: string
+        parameters: {
+            topUp: string
+        }
+    }
 }
 
 const props = defineProps<Props>()
@@ -197,6 +204,12 @@ const canRefund = computed(() => {
 const showRefundButton = computed(() => {
     // Show refund button only in showcase tab and when conditions are met
     return props.tabs.current === 'showcase' && canRefund.value
+})
+
+const showReceiptButton = computed(() => {
+    const validParams = route().params['organisation'] && route().params['payment'] && props.topup_receipt_route?.parameters.topUp;
+    // Show receipt button only if payment is done for top up and in showcase tab (Need to have valid params too)
+    return props.tabs.current === 'showcase' && props.topup_receipt_route?.show && validParams
 })
 
 let currentTab = ref(props.tabs.current);
@@ -225,6 +238,15 @@ const closeRefundModal = () => {
     showRefundModal.value = false
 }
 
+const openSingleTopUpReceipt = () => {
+    const url = route(props.topup_receipt_route?.name, {
+        organisation: route().params['organisation'],
+        payment: route().params['payment'],
+        topUp: props.topup_receipt_route?.parameters.topUp,
+    });
+    window.open(url, '_blank')
+}
+
 </script>
 
 
@@ -233,13 +255,13 @@ const closeRefundModal = () => {
     <PageHeading :data="pageHead">
         <template #other>
             <Button v-if="showRefundButton && layout?.app?.environment !== 'production'" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
-
+            </Button>
+            <Button v-if="showReceiptButton" :type="'tertiary'" @click="openSingleTopUpReceipt" :icon="faFilePdf" :label="trans('Download Receipt')">
             </Button>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
-    <RefundModal :showcase="showcase" :refund-route="refund_route" :is-visible="showRefundModal"
-                 @close="closeRefundModal"/>
+    <RefundModal :showcase="showcase" :refund-route="refund_route" :is-visible="showRefundModal" @close="closeRefundModal"/>
 </template>
 

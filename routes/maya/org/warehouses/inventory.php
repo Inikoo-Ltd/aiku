@@ -15,12 +15,14 @@ use App\Actions\Fulfilment\StoredItem\UI\ShowStoredItem;
 use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAuditFromPalletInWarehouse;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
+use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
 use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
     Route::get('/', IndexOrgStocks::class)->name('index');
     Route::get('{orgStock:id}', ShowOrgStock::class)->name('show')->withoutScopedBindings();
+    Route::get('{orgStock:id}/edit', EditOrgStock::class)->name('edit')->withoutScopedBindings();
 });
 
 Route::prefix('locations')->as('locations.')->group(function () {

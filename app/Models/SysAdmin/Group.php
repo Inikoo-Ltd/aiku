@@ -133,6 +133,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property array<array-key, mixed>|null $extra_languages
+ * @property string|null $ping
  * @property-read \App\Models\SysAdmin\GroupAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Adjustment> $adjustments
  * @property-read LaravelCollection<int, Agent> $agents

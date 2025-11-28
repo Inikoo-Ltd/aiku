@@ -41,24 +41,20 @@ class ShowIrisWebpage
             ];
         }
 
-
-        $webPageLayout = $webpage->published_layout;
-
-
         $webBlocks  = $this->getIrisWebBlocks(
             webpage: $webpage,
-            webBlocks: Arr::get($webPageLayout, 'web_blocks', []),
+            webBlocks: Arr::get($webpage->published_layout, 'web_blocks', []),
             isLoggedIn: $loggedIn
         );
+
+
+
         $webpageImg = [];
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
 
-
-        return [
-            'status'       => 'ok',
-            'webpage_id'   => $webpage->id,
+        $baseWebpageData = [
             'breadcrumbs'  => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
@@ -71,8 +67,13 @@ class ShowIrisWebpage
 
             ],
             'webpage_img'  => $webpageImg,
-            'web_blocks'   => $webBlocks,
         ];
+
+        return array_merge($baseWebpageData, [
+            'status'     => 'ok',
+            'webpage_id' => $webpageID,
+            'web_blocks' => $webBlocks,
+        ]);
     }
 
 
@@ -145,7 +146,7 @@ class ShowIrisWebpage
     public function getEnvironmentUrl($url)
     {
         $environment = app()->environment();
-        $website = request()->website ?? null;
+        $website     = request()->website ?? null;
 
         if ($environment === 'local') {
             $shopType = $website?->shop?->type ?? null;
@@ -203,7 +204,7 @@ class ShowIrisWebpage
             $queryString     = http_build_query($queryParameters);
 
             if ($queryString) {
-                $webpageData = $webpageData . '?' . $queryString;
+                $webpageData = $webpageData.'?'.$queryString;
             }
 
             return redirect()->to($webpageData, 301)
@@ -233,7 +234,7 @@ class ShowIrisWebpage
             $webpageID = $website->storefront_id;
         } else {
             $webpageID = DB::table('webpages')->where('website_id', $website->id)
-                ->whereRaw("lower(url) = lower(?)", [$path])
+                ->where('url', strtolower($path))
                 ->where('state', '=', WebpageStateEnum::LIVE)
                 ->whereNull('deleted_at')
                 ->value('id');

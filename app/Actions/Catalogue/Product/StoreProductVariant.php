@@ -27,15 +27,15 @@ class StoreProductVariant extends OrgAction
     {
 
 
-        $orgStocksData = [];
-        foreach ($product->orgStocks as $orgStock) {
-            $orgStocksData[$orgStock->id] =
+        $tradeUnitsData = [];
+        foreach ($product->tradeUnits as $tradeUnit) {
+            $tradeUnitsData[$tradeUnit->id] =
                 [
-                    'quantity' => $orgStock->pivot->units * $modelData['ratio'],
-                    'notes'    => Arr::get($modelData, 'is_main') ? $orgStock->pivot->notes : null
+                    'quantity' => $tradeUnit->pivot->units * $modelData['ratio'],
+                    'notes'    => Arr::get($modelData, 'is_main') ? $tradeUnit->pivot->notes : null
                 ];
         }
-        data_set($modelData, 'org_stocks', $orgStocksData);
+        data_set($modelData, 'trade_units', $tradeUnitsData);
         data_set($modelData, 'organisation_id', $product->organisation_id);
         data_set($modelData, 'group_id', $product->group_id);
         data_set($modelData, 'shop_id', $product->shop_id);
@@ -93,6 +93,9 @@ class StoreProductVariant extends OrgAction
     }
 
 
+    /**
+     * @throws \Throwable
+     */
     public function inShop(Product $product, ActionRequest $request): RedirectResponse
     {
         $this->initialisationFromShop($product->shop, $request);
@@ -101,6 +104,9 @@ class StoreProductVariant extends OrgAction
         return Redirect::route('grp.org.shops.show.catalogue.products.index', $product->shop);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Product $product, array $modelData, int $hydratorsDelay = 0, $strict = true): Product
     {
         $this->hydratorsDelay = $hydratorsDelay;

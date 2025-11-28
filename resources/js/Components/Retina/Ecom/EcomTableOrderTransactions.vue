@@ -5,6 +5,7 @@ import LinkIris from '@/Components/Iris/LinkIris.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
+import Discount from '@/Components/Utils/Label/Discount.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { routeType } from '@/types/route'
 import { Table as TableTS} from '@/types/Table'
@@ -87,17 +88,18 @@ const debounceUpdateQuantity = debounce(
             </LinkIris>
         </template>
 
-        <!-- Column: Net -->
+        <!-- Column: Asset Name -->
         <template #cell(asset_name)="{ item }">
             <div>
                 <div>{{ item.asset_name }}</div>
                 <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
-                    <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
+                    <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
                 </div>
                 <div v-else class="text-gray-500 italic text-xs">
-                    {{ trans('Stock :quantity available', { quantity: locale.number(item.available_quantity || 0) }) }}
+                    {{ trans('Stock :xquantityx available', { xquantityx: locale.number(item.available_quantity || 0) }) }}
                 </div>
                 
+                <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
             </div>
         </template>
 
@@ -145,6 +147,17 @@ const debounceUpdateQuantity = debounce(
             </div>
 
             <!-- <div v-else>{{ item.quantity }}</div> -->
+        </template>
+
+        
+        <!-- Column: Net Amount -->
+        <template #cell(net_amount)="{ item }">
+            <div class="text-right">
+                <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
+                    <span v-if="item.gross_amount != item.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
+                    <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
+                </p>
+            </div>
         </template>
 
         <!-- Column: Action -->

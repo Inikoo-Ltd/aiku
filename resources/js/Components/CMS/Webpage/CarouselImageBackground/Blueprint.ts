@@ -13,6 +13,19 @@ export default {
 					type: "number",
 				},
 				{
+					label: "Space Between",
+					key: ["carousel_setting", "spaceBetween"],
+					type: "number",
+				},
+				{
+					label: "Duration",
+					key: ["carousel_setting", "duration"],
+					type: "number",
+					props_data: {
+						suffix : 's'
+					}
+				},
+				{
 					label: "Autoplay",
 					key: ["carousel_setting", "autoplay"],
 					type: "switch",

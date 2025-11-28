@@ -148,7 +148,7 @@ class IndexFamilyWebpages extends OrgAction
                 'websites.slug as website_slug',
                 'product_category_stats.number_current_products',
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url', 'title'])
+            ->allowedSorts(['code', 'type', 'level', 'url', 'title', 'number_current_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -188,7 +188,7 @@ class IndexFamilyWebpages extends OrgAction
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'title', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false);
             $table->defaultSort('level');
         };
     }

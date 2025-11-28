@@ -155,7 +155,7 @@ function customerRoute(invoice: Invoice) {
     <!-- Column: Date -->
     <template #cell(date)="{ item }">
       <div class="text-gray-500 text-right">
-        {{ useFormatTime(item.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
+        {{ useFormatTime(item.date, { localeCode: locale.language.code, formatTime: "hms" }) }}
       </div>
     </template>
 

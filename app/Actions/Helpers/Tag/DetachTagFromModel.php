@@ -45,6 +45,6 @@ class DetachTagFromModel extends OrgAction
 
         $tag->refresh();
 
-        TagHydrateModels::dispatch($tag);
+        TagHydrateModels::dispatch($tag->id)->delay(300);
     }
 }

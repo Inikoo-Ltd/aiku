@@ -13,6 +13,7 @@ use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Ordering\Order\PdfProformaInvoice;
+use App\Actions\Ordering\Order\UI\EditOrder;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Purge\UI\CreatePurge;
@@ -38,6 +39,7 @@ Route::get('/orders/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'i
 
 Route::prefix('orders/{order}')->group(function () {
     Route::get('', ShowOrder::class)->name('orders.show');
+    Route::get('edit', EditOrder::class)->name('orders.edit');
     Route::get('invoices/{invoice}', [ShowInvoice::class, 'inOrderShop'])->name('orders.show.invoices.show');
     Route::get('invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceInOrderInShop'])->name('orders.show.invoices.show.refunds.show');
     Route::get('delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInShop'])->name('orders.show.delivery-note');

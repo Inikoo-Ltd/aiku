@@ -11,6 +11,7 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { Tooltip } from 'floating-vue'
+import Modal from "@/Components/Utils/Modal.vue"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
@@ -126,6 +127,7 @@ const isFormDirty = ref(false)
 const statusPopover = ref()
 const countryPopover = ref()
 const datePopover = ref()
+const isModalOpen = ref(false)
 
 // Computed properties for validation status display
 const validationStatus = computed(() => {
@@ -264,6 +266,10 @@ watch(
     <div class="relative">
         <div class="relative">
             <PureInput :model-value="getActualValue(value)" @update:model-value="updateVat" />
+            <span class="italic text-xs" v-if="fieldData?.europeanUnion">
+                <span style="color: red">*</span> {{ trans("This will affect your VAT Rate") }}
+                <FontAwesomeIcon v-on:click="isModalOpen = true" v-tooltip="'Click to view detailed explanation'" icon='fal fa-info-circle' class="opacity-60 hover:opacity-100 cursor-pointer" fixed-width aria-hidden='true' />
+            </span>
         </div>
 
         <!-- Validation Status Display -->
@@ -310,6 +316,29 @@ watch(
             </div>
         </div>
     </div>
+
+    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-[500px]">
+        <slot name="modal" :closeModal="() => isModalOpen = false" >
+            <div class="font-bold">
+                <FontAwesomeIcon icon='fal fa-info-circle' class="opacity-100 text-red-500" fixed-width aria-hidden='true'/> {{ trans("VAT Information") }}
+            </div>
+            <div class="text-sm mt-3">
+                {{ trans('In order to benefit from VAT-Free purchases, you are required to enter a VALID Tax Number, using certain country code (Matching with the Country that issued your Tax Number) as prefix.') }}
+                <br>
+                <br>
+                {{ trans('Example') }}:
+                <br>- BG12345678 <FontAwesomeIcon icon='fas fa-check-circle' v-tooltip="trans('Benefit from VAT-Free purchase')" class="opacity-100 text-green-500" fixed-width aria-hidden='true'/>
+                <br>- UK12345678 <FontAwesomeIcon icon='fas fa-times-circle' v-tooltip="trans('Did not benefit from VAT-Free purchase')" class="opacity-100 text-red-500" fixed-width aria-hidden='true'/>
+                <br>
+                <br>
+                    {{ trans('List of Valid Country Codes') }}:
+                <br>
+                <span class="font-semibold">
+                    {{fieldData?.europeanUnion}}
+                </span>
+            </div>
+        </slot>
+    </Modal>
 
     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
         {{ form.errors[fieldName] }}

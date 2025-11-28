@@ -198,7 +198,7 @@ onMounted(() => {
                         </div>
                     </dd>
                     <div v-if="is_unable_dispatch" class="text-red-500 mt-2 text-xs">
-                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :country, please update the address or contact support.", { country: summary?.customer?.addresses?.delivery?.country?.name }) }}
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
                     </div>
                 </div>
             </div>

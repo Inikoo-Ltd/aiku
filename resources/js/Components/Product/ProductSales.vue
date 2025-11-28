@@ -15,12 +15,20 @@
 
     library.add(faCircle, faCheckCircle, faQuestionCircle);
 
-    defineProps<{
+    const props = defineProps<{
         data: object;
         tab?: string;
     }>()
 
     const locale = useLocaleStore();
+    
+    function productRoute(asset_id: string) {
+        if (!asset_id) {
+            return ""
+        }
+
+        return route("grp.helpers.redirect_asset", [asset_id])
+    }
 </script>
 
 <template>
@@ -28,6 +36,12 @@
         <template #cell(reference)="{ item }">
             <Link :href="route('grp.org.shops.show.dashboard.invoices.show', { organisation: item.organisation_slug, shop: item.shop_slug, invoice: item.slug })" class="primaryLink">
                 {{ item.reference }}
+            </Link>
+        </template>
+
+        <template #cell(product_asset)="{ item }">
+            <Link :href="productRoute(item.product_asset)" class="primaryLink">
+                {{ item.product_code }} [<span class="font-bold">{{(item.shop_slug).toUpperCase()}}</span>]
             </Link>
         </template>
 

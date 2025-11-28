@@ -115,12 +115,19 @@ class ShowPayment extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => PaymentTabsEnum::navigation()
                 ],
-
                 'refund_route' => [
                     'name' => 'grp.models.org.payment_refund.store',
                     'parameters' => [
                         'organisation' => $payment->organisation_id,
                         'payment' => $payment->id
+                    ]
+                ],
+                // Only enable receipt download if user have accounting authorization
+                'topup_receipt_route' => [
+                    'show' => $this->authorize($request) && $payment->topUp ? true : false,
+                    'name' => 'grp.org.accounting.payments.topUp.pdf',
+                    'parameters' => [
+                        'topUp' => $payment->topUp ? $payment->topUp->reference : null,
                     ]
                 ],
 

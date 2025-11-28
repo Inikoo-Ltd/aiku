@@ -53,7 +53,7 @@ class MasterFamiliesResource extends JsonResource
                 'icon'    => 'fas fa-times-circle',
                 'class'   => 'text-red-400'
             ],
-
+            'number_current_products' => $this->current_master_assets,
         ];
     }
 }

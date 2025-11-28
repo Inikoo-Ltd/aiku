@@ -169,7 +169,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $lost_revenue_other_amount
  * @property string $lost_revenue_other_amount_org_currency
  * @property string $lost_revenue_other_amount_grp_currency
- * @property-read \App\Models\CRM\Customer|null $customer
+ * @property string $predicted_clv_amount_next_year
+ * @property string $predicted_clv_amount_next_year_org_currency
+ * @property string $predicted_clv_amount_next_year_grp_currency
+ * @property string|null $first_order_date
+ * @property int $expected_remaining_lifespan_months
+ * @property string $today_timeline_position
+ * @property string|null $next_order_timeline_position
+ * @property-read \App\Models\CRM\Customer $customer
  * @method static Builder<static>|CustomerStats newModelQuery()
  * @method static Builder<static>|CustomerStats newQuery()
  * @method static Builder<static>|CustomerStats query()

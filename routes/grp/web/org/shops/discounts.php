@@ -7,12 +7,14 @@
  */
 
 use App\Actions\Discounts\Offer\UI\IndexOffers;
+use App\Actions\Discounts\Offer\UI\ShowOffer;
+use App\Actions\Discounts\Offer\UI\EditOffer;
+use App\Actions\Discounts\Offer\UpdateOffer;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
 use App\Actions\Discounts\UI\ShowDiscountsDashboard;
 use App\Stubs\UIDummies\CreateDummy;
 use App\Stubs\UIDummies\EditDummy;
-use App\Stubs\UIDummies\ShowDummy;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
@@ -27,6 +29,7 @@ Route::name("offers.")->prefix('offers')
     ->group(function () {
         Route::get('', IndexOffers::class)->name('index');
         Route::get('create', CreateDummy::class)->name('create');
-        Route::get('{offer}', ShowDummy::class)->name('show');
-        Route::get('{offer}/edit', EditDummy::class)->name('edit');
+        Route::get('{offer}', ShowOffer::class)->name('show');
+        Route::get('{offer}/edit', EditOffer::class)->name('edit');
+        Route::patch('{offer}/update', [UpdateOffer::class, 'inShop'])->name('update');
     });

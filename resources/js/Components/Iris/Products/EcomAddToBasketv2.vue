@@ -4,7 +4,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { InputNumber } from 'primevue'
 import { router } from '@inertiajs/vue3'
-import { inject, ref, computed } from 'vue'
+import { inject, ref, computed, watch } from 'vue'
 import { debounce, get, set } from 'lodash-es'
 import { ProductResource } from '@/types/Iris/Products'
 import axios from 'axios'
@@ -60,6 +60,24 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
             
         }
 
+        const productToAddToBasket = {
+            ...product,
+            transaction_id: response.data?.transaction_id,
+            quantity_ordered: response.data?.quantity_ordered,
+            quantity_ordered_new: response.data?.quantity_ordered,
+        }
+        
+        // Check the product in Basket, if exist: replace, not exist: push
+        const products = layout.rightbasket?.products
+        if (products) {
+            const index = products.findIndex((p: any) => p.transaction_id === productToAddToBasket.transaction_id)
+            if (index !== -1) {
+                products[index] = productToAddToBasket
+            } else {
+                products.push(productToAddToBasket)
+            }
+        }
+
         router.reload({
             only: ['iris'],
         })
@@ -102,6 +120,9 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
 
 const onUpdateQuantity = (product: ProductResource) => {
     // console.log('stock in', stockInBasket)
+    const isWillRemoveFrombasket = get(product, ['quantity_ordered_new'], 0) === 0
+    const productTransactionId = product.transaction_id
+
     router.post(
         route('iris.models.transaction.update', {
             transaction: customer.value.transaction_id 
@@ -121,6 +142,28 @@ const onUpdateQuantity = (product: ProductResource) => {
                 setStatus('success')
                 // product.quantity_ordered = product.quantity_ordered_new
                 customer.value.quantity_ordered = product.quantity_ordered_new
+
+                if (isWillRemoveFrombasket) {
+                    // Remove product from layout basket
+                    const products = layout.rightbasket?.products
+                    if (products) {
+                        const index = products.findIndex((p: any) => p.transaction_id === productTransactionId)
+                        if (index !== -1) {
+                            products.splice(index, 1)
+                        }
+                    }
+                } else {
+                    // Update product quantity in layout basket
+                    const products = layout.rightbasket?.products
+                    if (products) {
+                        const index = products.findIndex((p: any) => p.transaction_id === productTransactionId)
+                        if (index !== -1) {
+                            products[index].quantity_ordered = product.quantity_ordered_new
+                            products[index].quantity_ordered_new = product.quantity_ordered_new
+                        }
+                    }
+                }
+
                 set(props, ['product', 'quantity_ordered'], get(product, ['quantity_ordered_new'], null))
                 layout.reload_handle()
             },
@@ -176,6 +219,12 @@ const showWarning = () => {
     })
 }
 
+// Watch: if parent refetch the Customer Data (maybe RightSideBasket have update the quantity)
+watch(() => props.customerData, (newVal) => {
+    customer.value = {...newVal}
+}, {
+    deep: true
+})
 </script>
 
 <template>

@@ -50,7 +50,7 @@ const getIcon = (type?: string) => {
 <template>
   <div class="flex flex-col gap-6 py-3">
     <!-- Public Attachments -->
-    <div class="bg-white  shadow-sm border border-gray-200 overflow-hidden">
+  <!--   <div class="bg-white  shadow-sm border border-gray-200 overflow-hidden">
       <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
         <FontAwesomeIcon :icon="faGlobe" class="text-blue-500 text-base" />
         <h3 class="text-sm font-semibold text-gray-700 uppercase">Public Attachments</h3>
@@ -63,7 +63,6 @@ const getIcon = (type?: string) => {
           class="flex items-center justify-between px-4 py-3 text-sm hover:bg-blue-50 transition"
         >
           <div class="flex items-center gap-2">
-            <!-- Dynamic icon color -->
             <FontAwesomeIcon
               :icon="getIcon(item.attachment?.type)"
               :class="[
@@ -91,7 +90,7 @@ const getIcon = (type?: string) => {
       </ul>
 
       <p v-else class="text-xs text-gray-400 italic px-4 py-3">No public attachments available</p>
-    </div>
+    </div> -->
 
     <!-- Private Attachments -->
     <div class="bg-white  shadow-sm border border-gray-200 overflow-hidden">

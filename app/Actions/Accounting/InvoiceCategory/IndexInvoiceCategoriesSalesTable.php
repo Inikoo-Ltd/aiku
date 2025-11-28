@@ -15,17 +15,17 @@ use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInOrganisationSalesR
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Services\CustomRangeDataService;
 use App\Services\QueryBuilder;
 
 class IndexInvoiceCategoriesSalesTable extends OrgAction
 {
-    public function handle(Group|Organisation $parent): \Illuminate\Contracts\Pagination\Paginator|\Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function handle(Group|Organisation $parent)
     {
         $queryBuilder = QueryBuilder::for(InvoiceCategory::class);
         $queryBuilder->leftJoin('invoice_category_sales_intervals', 'invoice_categories.id', 'invoice_category_sales_intervals.invoice_category_id');
         $queryBuilder->leftJoin('invoice_category_ordering_intervals', 'invoice_categories.id', 'invoice_category_ordering_intervals.invoice_category_id');
         $queryBuilder->leftJoin('organisations', 'invoice_categories.organisation_id', 'organisations.id');
-
 
         if (class_basename($parent) == 'Organisation') {
             $queryBuilder->where('invoice_categories.organisation_id', $parent->id);
@@ -63,20 +63,28 @@ class IndexInvoiceCategoriesSalesTable extends OrgAction
             ->withQueryString();
     }
 
-
-    public function action(Group|Organisation $parent): array
+    public function action(Group|Organisation $parent, array $customRangeData = []): array
     {
         if ($parent instanceof Group) {
             $this->initialisationFromGroup($parent, []);
         } else {
             $this->initialisation($parent, []);
         }
+
         $invoiceCategories = $this->handle($parent);
+
+        // Inject custom range data if available
+        if (!empty($customRangeData) && !empty($customRangeData['invoice_categories'])) {
+            $customRangeService = app(CustomRangeDataService::class);
+            $invoiceCategories->setCollection(
+                $customRangeService->injectCustomRangeData($invoiceCategories->getCollection(), $customRangeData, 'invoice_categories')
+            );
+        }
+
         if ($parent instanceof Group) {
             return json_decode(DashboardInvoiceCategoriesInGroupSalesResource::collection($invoiceCategories)->toJson(), true);
         } else {
             return json_decode(DashboardInvoiceCategoriesInOrganisationSalesResource::collection($invoiceCategories)->toJson(), true);
         }
     }
-
 }

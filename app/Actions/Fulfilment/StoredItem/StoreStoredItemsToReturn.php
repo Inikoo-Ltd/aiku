@@ -11,7 +11,6 @@ namespace App\Actions\Fulfilment\StoredItem;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydrateStoredItems;
 use App\Actions\OrgAction;
-use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
@@ -37,6 +36,7 @@ class StoreStoredItemsToReturn extends OrgAction
 
         if (blank($storedItemModels)) {
             PalletReturnItem::where('pallet_return_id', $palletReturn->id)->delete();
+
             return $palletReturn;
         }
 
@@ -47,16 +47,17 @@ class StoreStoredItemsToReturn extends OrgAction
             ->whereIn('stored_items.id', array_keys($storedItemModels))
             ->get();
 
+        /** @var StoredItem $storedItem */
         foreach ($storedItems as $storedItem) {
             $pallets                   = $storedItem->pallets;
             $requiredQuantity          = Arr::get($storedItemModels, $storedItem->id)['quantity'];
             $allocatedQuantity         = 0;
             $existingPalletReturnItems = PalletReturnItem::where('pallet_return_id', $palletReturn->id)
-            ->where('stored_item_id', $storedItem->id)
-            ->exists();
+                ->where('stored_item_id', $storedItem->id)
+                ->exists();
 
             if ($existingPalletReturnItems) {
-                $this->deleteItems($palletReturn, $storedItem, $allocatedQuantity);
+                $this->deleteItems($palletReturn, $storedItem);
             }
 
             foreach ($pallets as $pallet) {
@@ -70,7 +71,6 @@ class StoreStoredItemsToReturn extends OrgAction
                     $allocatedQuantity += $quantityToUse;
                 }
             }
-
         }
 
         $palletReturn->refresh();
@@ -84,16 +84,15 @@ class StoreStoredItemsToReturn extends OrgAction
     public function attach(PalletReturn $palletReturn, Pallet $pallet, StoredItem $storedItem, $quantityToUse): void
     {
         $storedItem->palletReturns()->attach($palletReturn->id, [
-            'stored_item_id'       => $storedItem->id,
-            'pallet_id'            => $pallet->id,
+            'stored_item_id'        => $storedItem->id,
+            'pallet_id'             => $pallet->id,
             'pallet_stored_item_id' => $pallet->pivot->id,
-            'quantity_ordered'     => $quantityToUse,
-            'type'                 => 'StoredItem'
+            'quantity_ordered'      => $quantityToUse,
+            'type'                  => 'StoredItem'
         ]);
-
     }
 
-    protected function deleteItems(PalletReturn $palletReturn, StoredItem $storedItem, $allocatedQuantity): void
+    protected function deleteItems(PalletReturn $palletReturn, StoredItem $storedItem): void
     {
         $existingPivotItems = PalletReturnItem::where('pallet_return_id', $palletReturn->id)
             ->where('stored_item_id', $storedItem->id)
@@ -104,19 +103,7 @@ class StoreStoredItemsToReturn extends OrgAction
         }
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
 
-        if ($request->user() instanceof WebUser) {
-            // TODO: Raul please do the permission for the web user
-            return true;
-        }
-
-        return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.edit");
-    }
 
     public function rules(): array
     {
@@ -142,6 +129,7 @@ class StoreStoredItemsToReturn extends OrgAction
         $this->fulfilment   = $fulfilmentCustomer->fulfilment;
 
         $this->initialisation($request->get('website')->organisation, $request->except(['domain', 'website']));
+
         return $this->handle($palletReturn, $this->validatedData);
     }
 
@@ -181,13 +169,13 @@ class StoreStoredItemsToReturn extends OrgAction
 
         return match ($routeName) {
             'grp.models.pallet-return.stored_item.store' => Redirect::route('grp.org.fulfilments.show.crm.customers.show.pallet_returns.show', [
-                'organisation'           => $palletReturn->organisation->slug,
-                'fulfilment'             => $palletReturn->fulfilment->slug,
-                'fulfilmentCustomer'     => $palletReturn->fulfilmentCustomer->slug,
-                'palletReturn'           => $palletReturn->slug
+                'organisation'       => $palletReturn->organisation->slug,
+                'fulfilment'         => $palletReturn->fulfilment->slug,
+                'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
+                'palletReturn'       => $palletReturn->slug
             ]),
             default => Redirect::route('retina.fulfilment.storage.pallet_returns.show', [
-                'palletReturn'     => $palletReturn->slug
+                'palletReturn' => $palletReturn->slug
             ])
         };
     }

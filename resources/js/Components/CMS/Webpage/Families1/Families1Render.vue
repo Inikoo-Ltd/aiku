@@ -5,6 +5,7 @@ import { faChevronCircleLeft, faChevronCircleRight, faImage } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 defineProps<{
@@ -19,10 +20,13 @@ defineProps<{
 <template>
   <div>
     <!-- Image Card with fixed 4:3 aspect ratio -->
-    <div class="relative w-full bg-white rounded-2xl shadow-md overflow-hidden">
+    <div class="relative w-full bg-white rounded-md shadow-md overflow-hidden">
       <div class="relative aspect-[1/1] w-full">
         <template v-if="data?.web_images">
-          <Image :src="data?.web_images?.main?.gallery" :alt="data?.name" class="absolute inset-0 w-full h-full object-cover" />
+          <Image v-if="data?.web_images?.main?.gallery" :src="data?.web_images?.main?.gallery" :alt="data?.name" class="absolute inset-0 w-full h-full object-cover" />
+          <div v-else :src="data?.web_images?.main?.gallery" :alt="data?.name" class="absolute inset-0 flex items-center justify-center">
+            <FontAwesomeIcon icon="fal fa-image" class="text-4xl text-gray-400" fixed-width aria-hidden="true" />
+          </div>
         </template>
         <template v-else>
           <div class="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-100">

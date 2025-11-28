@@ -33,6 +33,7 @@ class ShowRetinaEcomBasket extends RetinaAction
 
     public function handle(Customer $customer): Order|null
     {
+        // dd($customer);
         if (!$customer->current_order_in_basket_id) {
             return null;
         }

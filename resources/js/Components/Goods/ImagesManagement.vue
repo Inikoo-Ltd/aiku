@@ -40,7 +40,7 @@ const props = defineProps<{
 }>()
 
 // State
-const editable = ref(props.data.editable ?? true)
+const editable = ref(props?.data?.editable ?? true)
 const selectedDragImage = ref<ImageTS | null>(null)
 const loadingSubmit = ref<null | number | string>(null)
 const isModalEditVideo = ref(false)

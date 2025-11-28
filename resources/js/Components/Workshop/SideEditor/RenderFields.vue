@@ -124,7 +124,7 @@ const keyRender = ref(1)
 
   <component
     :key="keyRender + currentView"
-    :is="modelType == 'edit' ? getComponent(blueprint.type) : getFilterComponent(blueprint.type)"
+    :is="getComponent(blueprint.type)"
     :uploadRoutes="uploadImageRoute"
     v-bind="blueprint?.props_data"
     :modelValue="valueForField"

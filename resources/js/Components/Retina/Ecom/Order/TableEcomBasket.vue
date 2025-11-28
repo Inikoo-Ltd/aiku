@@ -15,6 +15,7 @@ import { debounce, get, set } from "lodash-es"
 import { inject, ref } from "vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
+import Discount from "@/Components/Utils/Label/Discount.vue"
 
 const props = defineProps<{
     data: any[] | TableTS
@@ -96,24 +97,34 @@ const debounceUpdateQuantity = debounce(
             </span>
         </template>
 
-        <!-- Column: Net -->
+        <!-- Column: Net Amount -->
+        <template #cell(net_amount)="{ item }">
+            <div class="text-right">
+                <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
+                    <span v-if="item.gross_amount != item.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
+                    <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
+                </p>
+            </div>
+        </template>
+
+        <!-- Column: Name -->
         <template #cell(asset_name)="{ item }">
             <div>
-                <div>{{ item.asset_name }}</div>
+                <div><span v-if="Number(item.units) > 1" class="mr-1">{{ Number(item.units) }}x</span>{{ item.asset_name }}</div>
                 <div v-if="!item.available_quantity">
                     <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                 </div>
                 <div v-else class="text-gray-500 italic text-xs">
-                    Stock: {{ locale.number(item.available_quantity || 0) }} available
+                    {{ trans('Stock :xquantityx available', { xquantityx: locale.number(item.available_quantity || 0) }) }}
                 </div>
-
+                
+                <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
             </div>
         </template>
 
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">
             <div class="px-2 relative text-right w-full">
-                <!-- <pre>{{ item }}</pre> -->
                 <div class="w-fit ml-auto">
                     <NumberWithButtonSave
                         v-model="item.quantity_ordered"
@@ -126,6 +137,7 @@ const debounceUpdateQuantity = debounce(
                         noSaveButton
                         noUndoButton
                         :min="1"
+                        :max="item.available_quantity"
                     />
                 </div>
 
@@ -133,7 +145,6 @@ const debounceUpdateQuantity = debounce(
                     class="absolute ml-2 top-1/2 -translate-y-1/2 text-base"
                     :state="get(listState, [item.id, 'quantity'], null)"
                 />
-
             </div>
         </template>
 

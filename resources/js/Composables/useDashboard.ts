@@ -7,7 +7,7 @@
 
 import { subYears, subMonths, subWeeks, subDays, startOfYear, startOfDay, startOfQuarter, startOfMonth, startOfWeek, endOfMonth, endOfWeek, endOfDay, format } from 'date-fns'
 
-export const getDashboardDateRange = (intervalValue?: string) => {
+export const getDashboardDateRange = (intervalValue?: string, rangeInterval?: string) => {
     if (!intervalValue) {
         return ''
     }
@@ -59,12 +59,19 @@ export const getDashboardDateRange = (intervalValue?: string) => {
         case 'ld':
             startDate = [startOfDay(subDays(now, 1)), endOfDay(subDays(now, 1))]
             break
+        case 'ctm':
+            startDate = 'ctm'
+            break
         default:
             return '' // Return empty string for unknown intervals
     }
 
     if (startDate === null) {
         return ''
+    }
+
+    if (startDate === 'ctm') {
+        return rangeInterval ?? ''
     }
 
     // Check if startDate is an array (for ranges like lm, lw, ld)

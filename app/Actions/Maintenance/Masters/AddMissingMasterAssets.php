@@ -39,6 +39,7 @@ class AddMissingMasterAssets
         $seederShop = $this->getSeederShop($masterShop);
 
         Product::where('shop_id', $seederShop->id)->orderBy('id')
+            //->where('code', 'like', 'ULFO-%')
             ->chunk(1000, function ($models) use ($command, $masterShop) {
                 foreach ($models as $product) {
                     $asset   = MatchAssetsToMaster::run($product->asset, $masterShop);
@@ -76,8 +77,20 @@ class AddMissingMasterAssets
 
             if (!$masterFamily) {
                 print "Skipping Product $product->code has no master family in shop $masterShop->slug \n";
+
                 return null;
             }
+
+            $masterTradeUnits = [];
+            $unitLabel        = 'piece';
+            foreach ($product->tradeUnits as $tradeUnit) {
+                $masterTradeUnits[$tradeUnit->id] = [
+                    'id'       => $tradeUnit->id,
+                    'quantity' => $tradeUnit->pivot->quantity,
+                ];
+                $unitLabel                        = $tradeUnit->type;
+            }
+
 
             $foundMasterProduct = StoreMasterAsset::make()->action(
                 $masterFamily,
@@ -86,7 +99,9 @@ class AddMissingMasterAssets
                     'name'        => $product->name,
                     'description' => $product->description,
                     'type'        => MasterAssetTypeEnum::PRODUCT,
-                    'price'       => $price
+                    'price'       => $price,
+                    'trade_units' => $masterTradeUnits,
+                    'unit'        => (string)$unitLabel
                 ]
             );
 
@@ -95,10 +110,7 @@ class AddMissingMasterAssets
             /** @var Product $relatedProduct */
             foreach ($relatedProducts as $relatedProduct) {
                 MatchAssetsToMaster::run($relatedProduct->asset);
-
             }
-
-
         } else {
             $foundMasterProduct = MasterAsset::find($foundMasterAssetData->id);
 
@@ -188,10 +200,10 @@ class AddMissingMasterAssets
      */
     public function asCommand(Command $command): int
     {
-
         if ($command->argument('master')) {
             $masterShop = MasterShop::where('slug', $command->argument('master'))->firstOrFail();
             $this->handle($masterShop, $command);
+
             return 0;
         }
 

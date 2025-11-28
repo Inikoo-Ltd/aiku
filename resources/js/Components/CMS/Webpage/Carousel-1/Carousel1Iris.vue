@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage } from '@fal'
 import { getStyles } from '@/Composables/styles'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 const props = defineProps<{
   fieldValue: {
@@ -119,6 +120,8 @@ watch(
   { deep: true }
 )
 
+const idxSlideLoading = ref<number | null>(null)
+
 </script>
 
 <template>
@@ -141,7 +144,10 @@ watch(
           <div class="space-card">
              <div class="card flex flex-col h-full ">
                 <component :is="data?.link?.href != '/' ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
-                  :href="data?.link?.href" :target="data?.link?.target" class="flex flex-1 flex-col" :type="data?.link?.type">
+                  :href="data?.link?.href" :target="data?.link?.target" class="relative flex flex-1 flex-col" :type="data?.link?.type"
+                  @start="() => idxSlideLoading = index"
+                  @finish="() => idxSlideLoading = null"
+                >
                   <!-- Image Container -->
                   <div class="flex justify-center overflow-visible"
                     :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)" >
@@ -159,6 +165,10 @@ watch(
                   <div v-if="fieldValue.carousel_data.carousel_setting?.use_text"
                     class="p-4 flex flex-col flex-1 justify-between">
                     <div v-html="data.text" class="text-center leading-relaxed" />
+                  </div>
+
+                  <div v-if="idxSlideLoading == index" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
+                    <LoadingIcon />
                   </div>
                 </component>
               </div>

@@ -15,6 +15,7 @@ import { notify } from '@kyvg/vue3-notification'
 import InputNumber from 'primevue/inputnumber'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import FlashNotification from "@/Components/UI/FlashNotification.vue"
+import { template } from "lodash"
 
 library.add(faCheckCircle, faInfoCircle, faExclamationTriangle, faSeedling, faShare, faSpellCheck, faCheck, faTimes, faSignOutAlt, faTruck, faCheckDouble, faCross)
 
@@ -90,7 +91,15 @@ const isCustom = ref(false)
         </template>
     </PageHeading>
     
-    <FlashNotification :notification="usePage().props.flash.notification" />
+    <FlashNotification :notification="usePage().props.flash.notification">
+        <template #messageExtra>
+            <a :href="route('retina.top_up.single_top_up_pdf.export', {
+                topUp: usePage().props.flash.notification.top_up.data.reference
+            })" target="_blank" class="mt-3" style="text-decoration: underline; font-weight: 700;">
+                Click Here to Download Receipt
+            </a>
+        </template>
+    </FlashNotification>
 
     <div class="px-4 py-5 md:px-6 lg:px-8 ">
 

@@ -11,32 +11,34 @@ namespace App\Actions\Dispatching\PickingSession;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Inventory\PickingSession;
+use Illuminate\Console\Command;
 
 class CalculatePickingSessionPicks extends OrgAction
 {
     use WithActionUpdate;
+
     public function handle(PickingSession $pickingSession): PickingSession
     {
         $pickingPercentage = 0;
         $packingPercentage = 0;
 
-        $itemsRequired = $pickingSession->deliveryNotes()
-            ->with('deliveryNoteItems')
-            ->get()
-            ->flatMap(function ($deliveryNote) {
-                return $deliveryNote->deliveryNoteItems;
-            })
-            ->sum('quantity_required');
-        $itemsPicked = $pickingSession->deliveryNotes()->sum('quantity_picked');
-        $itemsPacked = $pickingSession->deliveryNotes()->sum('quantity_packed');
+        // Sum of required minus not picked, guarding nulls and negatives
+        $itemsRequired = (int)($pickingSession->deliveryNotesItems()
+            ->where('delivery_note_items.state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
+            ->selectRaw('SUM(GREATEST((quantity_required - COALESCE(quantity_not_picked, 0)), 0)) as total')
+            ->value('total') ?? 0);
 
-        // Picking percentage: picked vs required
+        $itemsPicked = $pickingSession->deliveryNotesItems()->sum('quantity_picked');
+        $itemsPacked = $pickingSession->deliveryNotesItems()->sum('quantity_packed');
+
+        // Picking percentage: picked vs. required
         if ($itemsRequired > 0) {
             $pickingPercentage = min(($itemsPicked / $itemsRequired) * 100, 100);
         }
 
-        // Packing percentage: packed vs picked
+        // Packing percentage: packed vs. picked
         if ($itemsPicked > 0) {
             $packingPercentage = min(($itemsPacked / $itemsPicked) * 100, 100);
         }
@@ -45,9 +47,10 @@ class CalculatePickingSessionPicks extends OrgAction
         $pickingPercentage = round($pickingPercentage, 2);
         $packingPercentage = round($packingPercentage, 2);
 
+
         $pickingSession = $this->update($pickingSession, [
-            'quantity_picked'       => $itemsPicked,
-            'quantity_packed'       => $itemsPacked,
+            'quantity_picked'    => $itemsPicked,
+            'quantity_packed'    => $itemsPacked,
             'picking_percentage' => $pickingPercentage,
             'packing_percentage' => $packingPercentage
         ]);
@@ -63,4 +66,25 @@ class CalculatePickingSessionPicks extends OrgAction
 
         return $this->handle($pickingSession);
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'picking_session:calculate {picking_session}';
+    }
+
+    public function getCommandDescription(): string
+    {
+        return 'Calculate picking session picks';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $pickingSession = PickingSession::where('slug', $command->argument('picking_session'))->firstOrFail();
+
+        $this->handle($pickingSession);
+
+        return 0;
+    }
+
+
 }

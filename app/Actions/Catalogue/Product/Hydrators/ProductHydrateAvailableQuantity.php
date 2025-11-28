@@ -13,6 +13,7 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -29,7 +30,6 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
-
         if ($product->state == ProductStateEnum::DISCONTINUED) {
             UpdateProduct::run($product, [
                 'available_quantity' => null,
@@ -39,12 +39,18 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
             return;
         }
-        $currentQuantity = $product->available_quantity;
+        $currentQuantity   = $product->available_quantity;
         $availableQuantity = 0;
 
         $numberOrgStocksChecked = 0;
         foreach ($product->orgStocks as $orgStock) {
-            $quantityInStock = $orgStock->quantity_in_locations;
+
+            if ($orgStock->is_on_demand) {
+                $quantityInStock = 10000;
+            } else {
+                $quantityInStock = $orgStock->quantity_available;
+            }
+
 
             $productToOrgStockRatio = $orgStock->pivot->quantity;
             if (!$productToOrgStockRatio || $productToOrgStockRatio == 0) {
@@ -67,7 +73,6 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         }
 
 
-
         $dataToUpdate = [
             'available_quantity' => $availableQuantity,
         ];
@@ -78,14 +83,13 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
         if (in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK])) {
             if ($availableQuantity == 0) {
-                $status = ProductStatusEnum::OUT_OF_STOCK;
+                $status                             = ProductStatusEnum::OUT_OF_STOCK;
                 $dataToUpdate['out_of_stock_since'] = now();
             } else {
                 $status = ProductStatusEnum::FOR_SALE;
             }
             $dataToUpdate['status'] = $status;
         }
-
 
 
         UpdateProduct::run($product, $dataToUpdate);
@@ -95,18 +99,20 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
     public function asCommand(Command $command): void
     {
-
         if ($command->argument('id')) {
             $product = Product::findOrFail($command->argument('id'));
             $this->handle($product);
+
             return;
         }
 
         $chunkSize = 100; // Process 100 products at a time to save memory
         $count     = 0;
 
+        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
+
         // Get total count for progress bar
-        $total = Product::count();
+        $total = Product::whereIn('shop_id', $aikuShops)->count();
 
         if ($total === 0) {
             $command->info("No products found.");
@@ -119,7 +125,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $progressBar->start();
 
-        Product::chunk($chunkSize, function ($products) use (&$count, $progressBar) {
+        Product::whereIn('shop_id', $aikuShops)->chunk($chunkSize, function ($products) use (&$count, $progressBar) {
             foreach ($products as $product) {
                 $this->handle($product);
                 $count++;

@@ -24,6 +24,7 @@ const props = defineProps<{
         customer?: string
         internal?: string
         public?: string
+        credit_transaction_note?: string
     }
     referenceField?: string // Field name for the reference/identifier
     customNoteTypes?: Array<{
@@ -42,7 +43,8 @@ const defaultNoteFields = {
     shipping: 'shipping_notes',
     customer: 'customer_notes',
     internal: 'internal_notes',
-    public: 'public_notes'
+    public: 'public_notes',
+    credit_transaction_note: 'notes',
 }
 
 // Merge default with custom note fields
@@ -69,22 +71,32 @@ const defaultNoteTypeConfigs = {
     shipping: {
         bgColor: '#38bdf8',
         textColor: '#38bdf8',
-        title: 'Delivery Instructions'
+        title: 'Delivery Instructions',
+        disableTitle: false
     },
     customer: {
         bgColor: '#ff7dbd',
         textColor: '#ff7dbd',
-        title: 'Customer Notes'
+        title: 'Customer Notes',
+        disableTitle: false
     },
     internal: {
         bgColor: '#fcf4a3',
         textColor: '#fcf4a3',
-        title: 'Private Notes'
+        title: 'Private Notes',
+        disableTitle: false
     },
     public: {
         bgColor: '#94db84',
         textColor: '#94db84',
-        title: 'Public Notes'
+        title: 'Public Notes',
+        disableTitle: false
+    },
+    credit_transaction_note: {
+        bgColor: '#b873f5',
+        textColor: '#b873f5',
+        title: 'Transaction Notes',
+        disableTitle: true
     }
 }
 
@@ -93,6 +105,7 @@ const getAvailableNoteTypes = computed(() => {
     const noteTypes = []
 
     // Use custom note types if provided, otherwise use default ones
+    console.log(props);
     if (props.customNoteTypes) {
         props.customNoteTypes.forEach(customType => {
             const noteContent = props.item[customType.field]
@@ -110,12 +123,13 @@ const getAvailableNoteTypes = computed(() => {
     } else {
         // Default note types
         Object.entries(noteFields.value).forEach(([key, fieldName]) => {
-            const noteContent = props.item[fieldName]
+            const noteContent = props.item[fieldName];
+            console.log(key);
             if (hasNote(noteContent)) {
                 const config = defaultNoteTypeConfigs[key] || {
                     bgColor: fallbackBgColor,
                     textColor: fallbackColor,
-                    title: `${key.charAt(0).toUpperCase() + key.slice(1)} Notes`
+                    title: `${key.charAt(0).toUpperCase() + key.slice(1)} Notes`,
                 }
 
                 noteTypes.push({

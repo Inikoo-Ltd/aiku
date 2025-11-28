@@ -19,23 +19,29 @@ class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
 {
     use AsAction;
 
-    public function handle(Portfolio $portfolio, array $modelData): void
+    public function handle(Portfolio $portfolio, array $modelData, $isDraft = false): void
     {
         $portfolio = UpdatePortfolio::run($portfolio, $modelData);
 
-        StoreNewProductToCurrentEbay::run($portfolio->customerSalesChannel->user, $portfolio);
+        if (! $isDraft) {
+            StoreNewProductToCurrentEbay::run($portfolio->customerSalesChannel->user, $portfolio);
+        }
     }
 
     public function rules(): array
     {
         return [
-            'customer_product_name' => ['sometimes', 'string']
+            'customer_product_name' => ['sometimes', 'string'],
+            'customer_price' => ['sometimes', 'string'],
+            'customer_description' => ['sometimes', 'string'],
         ];
     }
 
     public function prepareForValidation(ActionRequest $request): void
     {
         $this->set('customer_product_name', $request->input('title'));
+        $this->set('customer_price', $request->input('price'));
+        $this->set('customer_description', $request->input('description'));
     }
 
     public function asController(Portfolio $portfolio, ActionRequest $request): void
@@ -43,6 +49,12 @@ class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
 
         $this->initialisation($request);
         $this->handle($portfolio, $this->validatedData);
+    }
+
+    public function asDraft(Portfolio $portfolio, ActionRequest $request): void
+    {
+        $this->initialisation($request);
+        $this->handle($portfolio, $this->validatedData, true);
     }
 
 }

@@ -92,3 +92,7 @@ Broadcast::channel("grp.dn.{deliveryNoteId}", function () {
 Broadcast::channel("translate.{randomString}.channel", function () {
     return true;
 });
+
+Broadcast::channel("upload-portfolio-to-r2.{randomString}", function () {
+    return true;
+});

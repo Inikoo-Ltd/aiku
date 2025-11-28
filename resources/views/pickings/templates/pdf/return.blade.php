@@ -11,23 +11,16 @@
     <style>
         @page {
             size: 8.27in 11.69in; /* <length>{1,2} | auto | portrait | landscape */
-            /* 'em' 'ex' and % are not allowed; length values are width height */
             margin-top: 15%; /* <any of the usual CSS values for margins> */
-            /*(% of page-box width for LR, of height for TB) */
             margin-bottom: 13%;
             margin-right: 8%;
             margin-left: 8%;
             margin-header: 1mm; /* <any of the usual CSS values for margins> */
             margin-footer: 5mm; /* <any of the usual CSS values for margins> */
             marks: 'cross'; /*crop | cross | none*/
-            header: myheader;
-            footer: myfooter;
-            /* background: ...
-            background-image: ...
-            background-position ...
-            background-repeat ...
-            background-color ...
-            background-gradient: ... */
+            header: myHeader;
+            footer: myFooter;
+
         }
 
         body {
@@ -36,7 +29,7 @@
         }
 
         p {
-            margin: 0pt;
+            margin: 0;
         }
 
         h1 {
@@ -86,9 +79,9 @@
             border: 0.1mm solid #000000;
         }
 
-        .items td.blanktotal {
+        .items td.blank_total {
             background-color: #FFFFFF;
-            border: 0mm none #000000;
+            border: 0 none #000000;
             border-top: 0.1mm solid #000000;
             border-right: 0.1mm solid #000000;
         }
@@ -108,7 +101,7 @@
     </style>
 </head>
 <body>
-<htmlpageheader name="myheader">
+<htmlpageheader name="myHeader">
     <br><br>
     <table width="100%" style="font-size: 9pt;">
         <tr>
@@ -147,8 +140,8 @@
     </table>
 </htmlpageheader>
 
-<sethtmlpageheader name="myheader" value="on" show-this-page="1"/>
-<sethtmlpagefooter name="myfooter" value="on"/>
+<sethtmlpageheader name="myHeader" value="on" show-this-page="1"/>
+<sethtmlpagefooter name="myFooter" value="on"/>
 
 <table width="100%" style="margin-top: 40px">
     <tr>
@@ -172,7 +165,7 @@
 </table>
 <table width="100%" style="font-family: sans-serif; margin-top: 20px" cellpadding="0">
     <tr>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;">
+        <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;">
             <div>
                 <div>
                     {{ __('Customer') }}: <b>{{ $customer->name }}</b>
@@ -186,7 +179,7 @@
                 @endif
             </div>
         </td>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
+        <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
             <div style="text-align:right;">
                 {{ __('State') }}: <b>{{ $return->state->labels()[$return->state->value] }}</b>
             </div>
@@ -197,19 +190,24 @@
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
     <tr>
         <td width="45%" style="border: 0.1mm solid #888888;">
-            <span style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
-            <div>
-                {{ $return->deliveryAddress?->address_line_1 }}
-            </div>
-            <div>
-                {{ $return->deliveryAddress?->address_line }}
-            </div>
-            <div>
-                {{ $return->deliveryAddress?->locality }}
-            </div>
-            <div>
-                {{ $return->deliveryAddress?->country->name }}
-            </div>
+
+            @if($return->is_collection)
+                <span style="font-size: 12pt; color: #555555; font-family: sans-serif;">{{ __('For collection') }}</span>
+            @else
+                <span style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
+                <div>
+                    {{ $return->deliveryAddress?->address_line_1 }}
+                </div>
+                <div>
+                    {{ $return->deliveryAddress?->address_line }}
+                </div>
+                <div>
+                    {{ $return->deliveryAddress?->locality }}
+                </div>
+                <div>
+                    {{ $return->deliveryAddress?->country->name }}
+                </div>
+            @endif
         </td>
         <td width="10%">&nbsp;</td>
         <td width="45%">&nbsp;</td>
@@ -240,22 +238,24 @@
         </tbody>
     </table>
 @else
-    <p>{{ __("Customer's SKU") }}</p>
+    <p>{{ __("Customer's SKUs") }}</p>
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
         <thead>
         <tr>
-            <td style="width:20%; text-align:left">{{ __('Name') }}</td>
-            <td style="width:50%; text-align:left">{{ __('Reference') }}</td>
-            <td style="text-align:right">{{ __('Quantity') }}</td>
+            <td style="width:50%; text-align:left">{{ __('SKU Reference') }}</td>
+            <td style="text-align:right">{{ __('Quantity requested') }}</td>
         </tr>
         </thead>
         <tbody>
 
         @foreach($return->storedItems as $storedItem)
             <tr class="@if($loop->last) last @endif">
-                <td style="text-align:left">{{ $storedItem->name }}</td>
                 <td style="text-align:left">{{ $storedItem->reference }}</td>
-                <td style="text-align:left">{{ $storedItem->quantity }}</td>
+                <td style="text-align:right">
+                    {{ preg_match('/^\s*\d+(?:\.0+)?\s*$/', (string) $storedItem->pivot->quantity_ordered)
+                        ? (int) $storedItem->pivot->quantity_ordered
+                        : $storedItem->pivot->quantity_ordered }}
+                </td>
             </tr>
         @endforeach
 
@@ -263,7 +263,7 @@
     </table>
 @endif
 
-<htmlpagefooter name="myfooter">
+<htmlpagefooter name="myFooter">
     <div
         style="border-top: 1px solid #000000; font-size: 9pt; text-align: center; padding-top: 3mm; margin-top: 120px"></div>
     <table width="100%">

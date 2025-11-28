@@ -1,25 +1,18 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3'
-import { inject, ref, watch, computed, onMounted, onUnmounted } from 'vue'
+
+import { inject, ref, watch, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
-// import Button from '@/Components/Elements/Buttons/Button.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
-// import Tag from '@/Components/Tag.vue'
 import { trans } from 'laravel-vue-i18n'
 import { debounce, get, set } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from '@/Components/Image.vue'
-// import { RouteParams } from '@/types/route-params'
 import { routeType } from '@/types/route'
-
-// import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
-// import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '../NumberWithButtonSave.vue'
-// import ToggleSwitch from "primevue/toggleswitch"
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import ConditionIcon from '../Utils/ConditionIcon.vue'
 library.add(faCheckCircle)
@@ -131,10 +124,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                 </slot>
             </div>
             <div class="h-full md:h-[500px] text-base font-normal">
-                <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
-                    <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
-                    <div class="border-t border-gray-300 mb-1"></div>
-                </div> -->
+
                 <div class="col-span-4 pb-2 h-fit overflow-auto flex flex-col">
                     <div class="flex justify-between items-center">
                         <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
@@ -215,16 +205,6 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                         />
                     </div>
                     <div class="mt-4">
-                        <!-- <Button
-                            xclick="() => emits('submit', selectedProduct)"
-                            xdisabled="selectedProduct.length < 1"
-                            xv-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                            xlabel="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
-                            type="primary"
-                            full
-                            icon="fas fa-plus"
-                            xloading="isLoadingSubmit"
-                        /> -->
                     </div>
                 </div>
             </div>
