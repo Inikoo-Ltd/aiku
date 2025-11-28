@@ -39,10 +39,13 @@ class InvoiceCategoryCalculateCustomRangeSales
         $stats['invoices_ctm'] = $metrics->sum('invoices');
         $stats['refunds_ctm'] = $metrics->sum('refunds');
         $stats['sales_grp_currency_ctm'] = $metrics->sum('sales_grp_currency');
+        $stats['sales_org_currency_ctm'] = $metrics->sum('sales_org_currency');
         $stats['sales_invoice_category_currency_ctm'] = $metrics->sum('sales_invoice_category_currency');
         $stats['revenue_grp_currency_ctm'] = $metrics->sum('revenue_grp_currency');
+        $stats['revenue_org_currency_ctm'] = $metrics->sum('revenue_org_currency');
         $stats['revenue_invoice_category_currency_ctm'] = $metrics->sum('revenue_invoice_category_currency');
         $stats['lost_revenue_grp_currency_ctm'] = $metrics->sum('lost_revenue_grp_currency');
+        $stats['lost_revenue_org_currency_ctm'] = $metrics->sum('lost_revenue_org_currency');
         $stats['lost_revenue_invoice_category_currency_ctm'] = $metrics->sum('lost_revenue_invoice_category_currency');
 
         return $stats;
@@ -61,10 +64,13 @@ class InvoiceCategoryCalculateCustomRangeSales
         $stats['invoices_ctm_ly'] = $metrics->sum('invoices');
         $stats['refunds_ctm_ly'] = $metrics->sum('refunds');
         $stats['sales_grp_currency_ctm_ly'] = $metrics->sum('sales_grp_currency');
+        $stats['sales_org_currency_ctm_ly'] = $metrics->sum('sales_org_currency');
         $stats['sales_invoice_category_currency_ctm_ly'] = $metrics->sum('sales_invoice_category_currency');
         $stats['revenue_grp_currency_ctm_ly'] = $metrics->sum('revenue_grp_currency');
+        $stats['revenue_org_currency_ctm_ly'] = $metrics->sum('revenue_org_currency');
         $stats['revenue_invoice_category_currency_ctm_ly'] = $metrics->sum('revenue_invoice_category_currency');
         $stats['lost_revenue_grp_currency_ctm_ly'] = $metrics->sum('lost_revenue_grp_currency');
+        $stats['lost_revenue_org_currency_ctm_ly'] = $metrics->sum('lost_revenue_org_currency');
         $stats['lost_revenue_invoice_category_currency_ctm_ly'] = $metrics->sum('lost_revenue_invoice_category_currency');
 
         return $stats;
