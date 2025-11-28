@@ -27,6 +27,7 @@ import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
 import IrisRightsideBasket from '@/Components/Iris/Layout/IrisRightsideBasket.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/ChatButton.vue'
+import axios from 'axios'
 
 library.add(faHome, faImage, faExclamationTriangle, faWhatsapp)
 
@@ -38,10 +39,9 @@ provide('layout', layout)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
 
-const propsAnnouncements = usePage().props?.iris?.announcements
-const propsAnnouncementsTopbar = usePage().props?.iris?.announcementsTopBar
-const propsAnnouncementsBottomMenu = usePage().props?.iris?.announcementsBottomMenu
-const propsAnnouncementsTopFooter = usePage().props?.iris?.announcementsTopFooter
+const propsAnnouncementsTopbar = ref([])
+const propsAnnouncementsBottomMenu =  ref([])
+const propsAnnouncementsTopFooter =  ref([])
 
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
@@ -84,6 +84,18 @@ const checkScreenType = () => {
     else screenType.value = 'desktop'
 }
 
+
+const getAnnouncements = async () => {
+    try {
+    const response = await axios.get(route("iris.json.announcements.index"))
+    propsAnnouncementsTopbar.value = response.data.top_bar
+    propsAnnouncementsBottomMenu.value = response.data.bottom_menu
+    propsAnnouncementsTopFooter.value = response.data.top_footer
+  } catch (error: any) {
+    console.error(error)
+  }
+} 
+
 provide('screenType', screenType)
 
 onMounted(() => {
@@ -107,6 +119,7 @@ onBeforeUnmount(() => {
 
 onBeforeMount(()=>{
 initialiseIrisVarnish(useIrisLayoutStore)
+getAnnouncements()
 })
 
 // Watch: open Side Basket if cart have any changes
