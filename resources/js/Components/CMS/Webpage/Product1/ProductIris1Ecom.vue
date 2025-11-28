@@ -500,7 +500,9 @@ onUnmounted(() => {
 
     <!-- Mobile Layout -->
     <div v-else class="block sm:hidden px-4 py-6 text-gray-800">
-        <h1 class="text-xl font-bold mb-2">{{ product.name }}</h1>
+        <h1 class="text-xl font-bold mb-2">
+            <span v-if="Number(product.units) > 1">{{ Number(product.units) }}x</span> {{ product.name }}
+        </h1>
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
@@ -560,7 +562,7 @@ onUnmounted(() => {
                 :styleData="fieldValue?.information_style" />
             <InformationSideProduct v-if="fieldValue?.information?.length > 0" :informations="fieldValue?.information"
                 :styleData="fieldValue?.information_style" />
-            <h2 class="!text-sm !font-semibold !mb-2">{{ trans("Secure Payments") }}:</h2>
+            <h2 class="!text-base !font-semibold !mb-2">{{ trans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" />
