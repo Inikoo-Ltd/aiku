@@ -21,8 +21,6 @@ enum MasterFamilyTabsEnum: string
     case IMAGES    = 'images';
     case SALES     = 'sales';
 
-
-
     case HISTORY   = 'history';
 
 

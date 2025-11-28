@@ -61,7 +61,7 @@ class DashboardPlatformSalesResource extends JsonResource
                             'platform'     => $this->resource->slug,
                             'tab'          => PlatformTabsEnum::CHANNELS->value
                         ],
-                        'key_date_filter' => 'between[date]'
+                        'key_date_filter' => 'between[created_at]'
                     ],
                 ],
                 'new_customers' => [
@@ -73,7 +73,7 @@ class DashboardPlatformSalesResource extends JsonResource
                             'platform'     => $this->resource->slug,
                             'tab'          => PlatformTabsEnum::CUSTOMERS->value
                         ],
-                        'key_date_filter' => 'between[date]'
+                        'key_date_filter' => 'between[registered_at]'
                     ],
                 ],
                 'new_portfolios' => [
@@ -85,7 +85,7 @@ class DashboardPlatformSalesResource extends JsonResource
                             'platform'     => $this->resource->slug,
                             'tab'          => PlatformTabsEnum::PRODUCTS->value
                         ],
-                        'key_date_filter' => 'between[date]'
+                        'key_date_filter' => 'between[created_at]'
                     ],
                 ],
             ];
