@@ -134,7 +134,7 @@ const tradeUnitBrands = computed(() => {
 			<span 
 			v-tooltip="trans('Product State: ') + data.availability_status.product_state_icon['tooltip'] "
 			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help me-2"
-			:class="data.availability_status.product_state_icon['class'].replace('text', 'border')">
+			:class="data.availability_status.product_state_icon['class'].replace('text', 'border').replace('500', '300')">
 				{{ data.availability_status.product_state_icon['tooltip'] }} 
 				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']"/>
 			</span>
