@@ -49,7 +49,7 @@ const createSession = async () => {
   loading.value = true
   try {
     const response = await axios.post(
-      "http://aiku.test/app/api/chats/sessions",
+      "https://aiku.test/app/api/chats/sessions",
       {
         language_id: 64,
         priority: "normal",
