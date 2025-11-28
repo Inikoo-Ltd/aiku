@@ -22,6 +22,8 @@ use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
+use App\Http\Resources\Masters\MasterFamiliesSalesResource;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterFamilySales;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -207,6 +209,10 @@ class ShowMasterFamily extends GrpAction
                 ],
                 'masterProductCategory' => $masterFamily->id,
                 'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
+                
+                MasterFamilyTabsEnum::SALES->value => $this->tab == MasterFamilyTabsEnum::SALES->value ?
+                    fn () => MasterFamiliesSalesResource::collection(IndexMasterFamilySales::run($masterFamily))
+                    : Inertia::lazy(fn () => MasterFamiliesSalesResource::collection(IndexMasterFamilySales::run($masterFamily))),
 
                 MasterFamilyTabsEnum::SHOWCASE->value => $this->tab == MasterFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryShowcase::run($masterFamily)
@@ -232,7 +238,8 @@ class ShowMasterFamily extends GrpAction
         )
             // ->table(IndexCustomers::make()->tableStructure(parent: $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
             ->table(IndexMailshots::make()->tableStructure($masterFamily))
-            ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false));
+            ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
+            ->table(IndexMasterFamilySales::make()->tableStructure(prefix: MasterFamilyTabsEnum::SALES->value));
     }
 
 

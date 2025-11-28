@@ -13,6 +13,7 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Catalogue\ProductCategory\UI\GetProductCategoryContent;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -241,6 +242,10 @@ class ShowFamily extends OrgAction
                 FamilyTabsEnum::IMAGES->value => $this->tab == FamilyTabsEnum::IMAGES->value ?
                     fn () => GetProductCategoryImages::run($family)
                     : Inertia::lazy(fn () => GetProductCategoryImages::run($family)),
+
+                FamilyTabsEnum::CONTENT->value => $this->tab == FamilyTabsEnum::CONTENT->value ?
+                    fn () => GetProductCategoryContent::run($family)
+                    : Inertia::lazy(fn () => GetProductCategoryContent::run($family)),
 
 
             ]

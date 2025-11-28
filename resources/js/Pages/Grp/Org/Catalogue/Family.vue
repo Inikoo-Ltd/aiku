@@ -23,6 +23,7 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from "primevue/breadcrumb"
 import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue"
+import ProductCategoryContent from "@/Components/Showcases/Grp/ProductCategoryContent.vue"
 
 library.add(
     faFolder,
@@ -61,10 +62,10 @@ const props = defineProps<{
     masterProductCategory?: number
     images?: object
     sales: any
+    content?: {}
 }>()
 console.log("family", props)
 const currentTab = ref(props.tabs.current)
-
 
 const handleTabUpdate = (tabSlug: string) => {
     useTabChange(tabSlug, currentTab)
@@ -78,7 +79,8 @@ const component = computed(() => {
         details: ModelDetails,
         history: TableHistories,
         images: ImagesManagement,
-        sales: ProductCategorySales
+        sales: ProductCategorySales,
+        content: ProductCategoryContent,
     }
     return components[currentTab.value] ?? ModelDetails
 })

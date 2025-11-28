@@ -22,7 +22,7 @@ use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
-use App\Http\Resources\Catalogue\MasterProductSalesResource;
+use App\Http\Resources\Masters\MasterProductSalesResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
