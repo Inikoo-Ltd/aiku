@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Http\Resources\Catalogue;
+namespace App\Http\Resources\Masters;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;

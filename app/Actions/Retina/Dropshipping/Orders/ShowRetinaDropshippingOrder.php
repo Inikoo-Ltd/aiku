@@ -121,7 +121,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
                 'box_stats' => $this->getOrderBoxStats($order),
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
-                'data'      => OrderResource::make($order),
+                'order'      => OrderResource::make($order),
                 'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state
 
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?

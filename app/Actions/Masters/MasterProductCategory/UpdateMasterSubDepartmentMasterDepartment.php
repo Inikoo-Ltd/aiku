@@ -30,49 +30,50 @@ class UpdateMasterSubDepartmentMasterDepartment extends GrpAction
     use WithActionUpdate;
     private MasterShop $masterShop;
 
-    public function handle(MasterProductCategory $subDepartment, array $modelData): MasterProductCategory
+    public function handle(MasterProductCategory $masterSubDepartment, array $modelData): MasterProductCategory
     {
-        $oldDepartment    = $subDepartment->masterDepartment ?? null;
+        $oldDepartment    = $masterSubDepartment->masterDepartment ?? null;
 
         data_set($modelData, 'master_parent_id', Arr::get($modelData, 'master_department_id'));
         data_set($modelData, 'master_department_id', Arr::get($modelData, 'master_department_id'));
-
-        $subDepartment  = $this->update($subDepartment, $modelData);
-        $changes = $subDepartment->getChanges();
-        $subDepartment->refresh();
-
+        
+        /** @var MasterProductCategory $masterSubDepartment */
+        $masterSubDepartment = $this->update($masterSubDepartment, $modelData);
+        $changes             = $masterSubDepartment->getChanges();
+        $masterSubDepartment->refresh();
         DB::table('master_product_categories')
-            ->where('master_sub_department_id', $subDepartment->id)
+            ->where('master_sub_department_id', $masterSubDepartment->id)
             ->update([
-                'master_department_id'     => $subDepartment->master_department_id,
+                'master_department_id'     => $masterSubDepartment->master_department_id,
             ]);
 
         DB::table('master_assets')
-            ->where('master_sub_department_id', $subDepartment->id)
+            ->where('master_sub_department_id', $masterSubDepartment->id)
             ->update([
-                'master_department_id'     => $subDepartment->master_department_id,
+                'master_department_id'     => $masterSubDepartment->master_department_id,
             ]);
 
-        foreach (ProductCategory::where('master_product_category_id', $subDepartment->id)->get() as $subDepartment) {
+        foreach (ProductCategory::where('master_product_category_id', $masterSubDepartment->id)->get() as $subDepartment) {
             CloneProductCategoryParentsFromMaster::run($subDepartment);
         }
 
 
         if (Arr::has($changes, 'master_department_id')) {
-            MasterDepartmentHydrateMasterAssets::dispatch($subDepartment->masterDepartment);
-            MasterDepartmentHydrateMasterSubDepartments::dispatch($subDepartment->masterDepartment);
-            MasterProductCategoryHydrateMasterFamilies::dispatch($subDepartment->masterDepartment);
+            MasterDepartmentHydrateMasterAssets::dispatch($masterSubDepartment->masterDepartment);
+            MasterDepartmentHydrateMasterSubDepartments::dispatch($masterSubDepartment->masterDepartment);
+            MasterProductCategoryHydrateMasterFamilies::dispatch($masterSubDepartment->masterDepartment);
             if ($oldDepartment) {
                 MasterDepartmentHydrateMasterAssets::dispatch($oldDepartment);
                 MasterProductCategoryHydrateMasterFamilies::dispatch($oldDepartment);
                 MasterDepartmentHydrateMasterSubDepartments::dispatch($oldDepartment);
             } else {
-                MasterShopHydrateMasterFamiliesWithNoDepartment::dispatch($subDepartment->masterShop);
-                GroupHydrateMasterFamiliesWithNoDepartment::dispatch($subDepartment->group);
+                MasterShopHydrateMasterFamiliesWithNoDepartment::dispatch($masterSubDepartment->masterShop);
+                GroupHydrateMasterFamiliesWithNoDepartment::dispatch($masterSubDepartment->group);
             }
         }
 
-        return $subDepartment;
+
+        return $masterSubDepartment;
     }
 
 

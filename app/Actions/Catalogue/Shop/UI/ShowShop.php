@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Dashboard\IndexPlatformSalesTable;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
@@ -18,8 +19,6 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
-use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
-use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalShopInvoiceCategoriesSalesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -52,18 +51,18 @@ class ShowShop extends OrgAction
                     'intervals' => [
                         'options'        => $this->dashboardIntervalOption(),
                         'value'          => $saved_interval,
-                        'range_interval' => DashboardIntervalFilters::run($saved_interval),
+                        'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
                     ],
                     'settings'  => [
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'   => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
+                        'currency_type'     => $this->dashboardCurrencyTypeSettings($this->group, $userSettings)
                     ],
                     'shop_blocks' => array_merge(
                         [
-                        'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
-                        'currency_code' => $shop->currency->code,
-                    ],
+                            'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
+                            'currency_code' => $shop->currency->code,
+                        ],
                         $this->getAverageClv($shop)
                     ),
                     'tabs_box' => [
@@ -83,14 +82,15 @@ class ShowShop extends OrgAction
                     'current_tab' => 'dropship',
                     'tabs'        => [
                         'dropship' => [
-                            'title' => 'Dropship',
+                            'title' => __('DS Platforms'),
+                            'icon'  => 'fal fa-code-branch'
                         ],
                     ],
                     'tables'      => [
                         'dropship' => [
                             'header' => json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true),
-                            'body'   => json_decode(DashboardPlatformSalesResource::collection($shop->platformSalesIntervals()->get())->toJson(), true),
-                            'totals' => json_decode(DashboardTotalPlatformSalesResource::make($shop->platformSalesIntervals()->get())->toJson(), true),
+                            'body'   => IndexPlatformSalesTable::make()->action($shop),
+                            'totals' => IndexPlatformSalesTable::make()->total($shop)
                         ],
                     ],
                 ],
