@@ -5,7 +5,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { Links, Meta, Table } from '@/types/Table'
-import { inject, onMounted, onUnmounted, ref, difine } from "vue"
+import { inject, onMounted, onUnmounted, ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
