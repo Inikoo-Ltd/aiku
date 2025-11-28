@@ -17,6 +17,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
+import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -148,14 +149,15 @@ const isAbleReindex = computed(() => {
             </ModalConfirmationDelete>
 
             <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id" s
-              v-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
-              :disabled="!isAbleReindex" :routeTarget="{
+              xv-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
+              xdisabled="!isAbleReindex"
+              :routeTarget="{
                 name: 'grp.models.webpage_luigi.reindex',
                 parameters: {
                   webpage: data?.id
                 }
               }" icon="fal fa-search" method="post"
-              :type="!isAbleReindex || data?.luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'" full>
+              :type="data?.luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'" full>
               <template #label>
                 <span class="text-xs">
                   {{ trans('Reindex Webpage Search') }}

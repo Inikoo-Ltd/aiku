@@ -276,8 +276,9 @@ const getQuestionTooltip = (locationId: number) => {
 
                 <template v-else-if="isEditLocations">
                     <EditLocations
-                        :part_locations="props.stocks_management.locations"
+                        :locations="props.stocks_management.locations"
                         @onClickBackground="isEditLocations = false"
+                        :routes="props.stocks_management?.routes"
                     />
                 </template>
 
@@ -390,14 +391,19 @@ const getQuestionTooltip = (locationId: number) => {
                             </Popover>
                         </div>
 
-                        <div v-tooltip="trans('Last audit :xdate', { xdate: useFormatTime(new Date(loc.audited_at)) })"
+                        <div v-if="loc.audited_at"
+                            v-tooltip="trans('Last audit :xdate', { xdate: useFormatTime(new Date(loc.audited_at)) })"
                             class="col-span-2 text-right text-sm whitespace-nowrap">
                             {{ formatDistanceStrict(new Date(loc.audited_at), new Date()) }}
                             <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400 ml-1" fixed-width aria-hidden="true" />
                         </div>
+                        <div v-else
+                            class="col-span-2 text-right text-sm italic opacity-60 whitespace-nowrap">
+                            {{ trans("Never audited") }}
+                        </div>
                         
                         <div class="text-right font-semibold">
-                            <span v-tooltip="trans('Stock quantity')">{{ Number(loc.quantity) }}</span>
+                            <span v-tooltip="trans('Stock quantity')">{{ Number(loc.quantity) }} qty</span>
                         </div>
                     </div>
                 </div>

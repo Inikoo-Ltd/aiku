@@ -7,6 +7,7 @@
  * copyright 2025
 */
 
+use App\Actions\Catalogue\Product\Json\GetIrisAnnouncements;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProduct;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategory;
@@ -75,4 +76,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('channels', IndexRetinaDropshippingCustomerSalesChannels::class)->name('channels.index');
     Route::get('product/{product:id}', GetIrisProductEcomOrdering::class)->name('product.ecom_ordering_data');
+
+    Route::get('announcements', GetIrisAnnouncements::class)->name('announcements.index');
 });
