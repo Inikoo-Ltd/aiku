@@ -593,10 +593,7 @@ onBeforeUnmount(() => {
                 <div :class="'flex gap-3 items-center'">
                     <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
                     <div>
-                        {{trans("Sorry, your account is temporarily restricted until")}}
-                        <span class="font-semibold">
-                            {{ useFormatTime(customer_sales_channel.ban_stock_update_until, { formatTime: 'MMM dd, yyyy' }) }}
-                        </span>
+                        {{ trans("We're having trouble connecting to your site. Could you please confirm whether the site URL is correct? The URL we tried to access is ")}} <span class="underline">{{ customer_sales_channel?.store_url }}</span> {{ trans(". If correct, please feel free to ignore this message and we will try again shortly.") }}
                     </div>
                 </div>
                     <ButtonWithLink type="tertiary" @click="isOpenModalSuspended = true" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
@@ -819,4 +816,28 @@ onBeforeUnmount(() => {
         </div>
     </Modal>
 
+    <Modal :isOpen="isOpenModalSuspended" @onClose="isOpenModalSuspended = false"
+           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
+        <div class="mb-8">
+            <h3 class="text-center">{{ trans('If you experience an issue when clicking Unsuspend, your store might be down. You can check it by clicking Test Connection.')}}</h3>
+            <div class="mt-8 flex justify-center items-center gap-2 font-light text-sm" v-if="isTestConnectionSuccess">
+                <Icon class="text-green-500" :data="{
+                icon: 'fas fa-check'
+            }" /> {{ trans('Great! your store can connect, now click unsuspend') }}
+            </div>
+        </div>
+
+        <div class="flex justify-center gap-2">
+            <ButtonWithLink type="tertiary" :routeTarget="{
+                            name: 'retina.models.customer_sales_channel.test_connection',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'patch',
+                        }" @success="data => isTestConnectionSuccess = true" @error="data => isTestConnectionSuccess = data.status" icon="fas fa-check" :label="trans('Test Connection')" />
+            <ButtonWithLink type="tertiary" :routeTarget="{
+                            name: 'retina.models.customer_sales_channel.unsuspend',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'patch'
+                        }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
+        </div>
+    </Modal>
 </template>

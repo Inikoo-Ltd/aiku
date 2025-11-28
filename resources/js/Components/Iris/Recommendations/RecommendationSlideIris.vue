@@ -45,16 +45,18 @@ const isLoadingVisit = ref(false)
         <div class="flex-1 flex flex-col">
 
             <!-- Title -->
-            <component
-                :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
-                :href="product.attributes.web_url?.[0]"
-                class="font-bold text-sm leading-tight hover:!underline !cursor-pointer mb-2"
-                @success="() => SelectItemCollector(product)"
-                @start="() => isLoadingVisit = true"
-                @finish="() => isLoadingVisit = false"
-            >
-                {{ product.attributes.title }}
-            </component>
+            <h3>
+                <component
+                    :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
+                    :href="product.attributes.web_url?.[0]"
+                    class="!font-bold !text-sm !leading-tight hover:!underline !cursor-pointer !mb-2 inline-block text-justify"
+                    @success="() => SelectItemCollector(product)"
+                    @start="() => isLoadingVisit = true"
+                    @finish="() => isLoadingVisit = false"
+                >
+                    {{ product.attributes.title }}
+                </component>
+            </h3>
 
             <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize">
                 <div>{{ product.attributes.product_code?.[0] }}</div>

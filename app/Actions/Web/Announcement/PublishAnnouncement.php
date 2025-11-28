@@ -35,9 +35,11 @@ class PublishAnnouncement extends OrgAction
 
     public function handle(Announcement $announcement, array $modelData): void
     {
+        $position = $announcement->settings['position'] ?? null;
         Announcement::where('website_id', $announcement->website_id)
-            ->whereNot('id', $announcement->id)
+            ->where('id', '!=', $announcement->id)
             ->where('status', AnnouncementStatusEnum::ACTIVE)
+            ->whereRaw("settings->>'position' = ?", [$position])
             ->update([
                 'status' => AnnouncementStatusEnum::INACTIVE
             ]);

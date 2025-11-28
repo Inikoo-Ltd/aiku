@@ -73,7 +73,7 @@ class ShopHydrateSalesMetrics implements ShouldBeUnique
         ShopSalesMetrics::updateOrCreate(
             [
                 'group_id'        => $shop->group_id,
-                'organization_id' => $shop->organisation_id,
+                'organisation_id' => $shop->organisation_id,
                 'shop_id'         => $shop->id,
                 'date'            => $dayStart
             ],
