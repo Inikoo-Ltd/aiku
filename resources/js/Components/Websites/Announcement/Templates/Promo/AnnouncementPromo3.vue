@@ -298,7 +298,7 @@ const checkMobile = () => {
     isMobile.value = window.innerWidth <= 768
 }
 
-watch(props.announcementData.fields.countdown,(newValue)=>{
+watch(props.announcementData?.fields?.countdown,(newValue)=>{
     updateCountdown()
 })
 
@@ -404,7 +404,7 @@ defineExpose({ fieldSideEditor })
                 :style="getStyles(announcementData?.fields?.text_2.block_properties)" />
 
             <!-- COUNTDOWN -->
-            <div class="flex items-center gap-1 font-sans shrink-0">
+            <div v-if="announcementData?.fields?.countdown" class="flex items-center gap-1 font-sans shrink-0">
                  <div class="flex flex-col items-center">
                     <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
                         {{ days }}
