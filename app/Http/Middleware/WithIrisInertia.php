@@ -41,6 +41,35 @@ trait WithIrisInertia
             $sidebarLayout   = Arr::get($website->published_layout, 'menu');
             $isSidebarActive = Arr::get($sidebarLayout, 'status');
 
+            $announcementsTopBar = AnnouncementResource::collection(
+                $website->announcements()
+                    ->where('status', AnnouncementStatusEnum::ACTIVE)
+                    ->where(function ($q) {
+                        $q->where('settings->position', 'top-bar')
+                            ->orWhereNull('settings')
+                            ->orWhereRaw("NOT jsonb_exists(settings, 'position')");
+                    })
+                    ->get()
+            )->toArray(request());
+
+
+
+            $announcementsBottomMenu = AnnouncementResource::collection(
+                $website->announcements()
+                    ->where('status', AnnouncementStatusEnum::ACTIVE)
+                    ->where('settings->position', 'bottom-menu')
+                    ->get()
+            )->toArray(request());
+
+
+
+            $announcementsTopFooter = AnnouncementResource::collection(
+                $website->announcements()
+                    ->where('status', AnnouncementStatusEnum::ACTIVE)
+                    ->where('settings->position', 'top-footer')
+                    ->get()
+            )->toArray(request());
+
 
             $migrationRedirect = null;
             if ($website->is_migrating) {
@@ -59,7 +88,6 @@ trait WithIrisInertia
 
 
             $irisProductCategoryNavigation = GetIrisProductCategoryNavigation::run($website);
-
 
             return [
                 'header'               => array_merge(
@@ -95,7 +123,10 @@ trait WithIrisInertia
                     'symbol' => $shop->currency->symbol,
                     'name'   => $shop->currency->name,
                 ],
-                'announcements'        => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get())->toArray(request()),
+               /*  'announcements'        => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get())->toArray(request()), */
+                'announcementsTopBar'     => $announcementsTopBar,
+                'announcementsBottomMenu' => $announcementsBottomMenu,
+                'announcementsTopFooter'  => $announcementsTopFooter,
                 'locale'               => $locale,
                 'website_i18n'         => [
                     'current_language' => LanguageResource::make($currentLanguage)->getArray(),
