@@ -2,7 +2,7 @@
 import { getStyles } from "@/Composables/styles"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed, ref, onMounted, onUnmounted, inject } from "vue"
+import { computed, ref, onMounted, onUnmounted, inject, watch } from "vue"
 import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 import { trans } from "laravel-vue-i18n"
 import { uniqueId } from "lodash"
@@ -298,7 +298,9 @@ const checkMobile = () => {
     isMobile.value = window.innerWidth <= 768
 }
 
-
+watch(props.announcementData?.fields?.countdown,(newValue)=>{
+    updateCountdown()
+})
 
 onMounted(() => {
     updateCountdown()
@@ -345,6 +347,12 @@ defineExpose({ fieldSideEditor })
 
     <!-- SLIDE 2: COUNTDOWN -->
     <div v-show="mobileIndex === 1" class="flex justify-center items-center gap-3 font-sans">
+        <div class="flex flex-col items-center">
+            <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
+                {{ days }}
+            </div>
+            <span class="text-[9px] text-purple-800 opacity-70">DAY</span>
+        </div>
         <div class="flex flex-col items-center">
             <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
                 {{ hours }}
@@ -396,7 +404,13 @@ defineExpose({ fieldSideEditor })
                 :style="getStyles(announcementData?.fields?.text_2.block_properties)" />
 
             <!-- COUNTDOWN -->
-            <div class="flex items-center gap-1 font-sans shrink-0">
+            <div v-if="announcementData?.fields?.countdown" class="flex items-center gap-1 font-sans shrink-0">
+                 <div class="flex flex-col items-center">
+                    <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
+                        {{ days }}
+                    </div>
+                    <span class="text-[9px] text-purple-800 opacity-70">DAY</span>
+                </div>
                 <div class="flex flex-col items-center">
                     <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
                         {{ hours }}
