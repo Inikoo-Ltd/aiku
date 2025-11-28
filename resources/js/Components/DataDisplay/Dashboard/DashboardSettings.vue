@@ -21,8 +21,6 @@ const props = defineProps<{
 	currentTab: string
 }>()
 
-
-
 const layout = inject("layout", layoutStructure)
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 const isSectionVisible = ref(false)
@@ -38,13 +36,16 @@ const storeIntervalCode = debounce((interval_code) => {
 		}
 	)
 }, 1500)
+
 const isLoadingInterval = ref<string | null>(null)
+
 const updateInterval = (interval_code: string) => {
 	props.intervals.value = interval_code
 	storeIntervalCode(interval_code)
 }
 
 const isLoadingToggle = ref<string | null>(null)
+
 const updateToggle = async (key: string, value: string, valLoading: string, isAxios?: boolean) => {
 	if (isAxios) {  // use Axios ()
 		isLoadingToggle.value = valLoading
@@ -92,6 +93,7 @@ const debStoreCurrencyType = debounce((value: string) => {
 		},
 	})
 }, 1500)
+
 const updateCurrencyType = (value: string) => {
 	props.settings.currency_type.value = value
 	debStoreCurrencyType(value)
@@ -105,6 +107,7 @@ const debStoreDataDisplayType = debounce((value: string) => {
 		},
 	})
 }, 1500)
+
 const updateDataDisplayType = (value: string) => {
 	props.settings.data_display_type.value = value
 	debStoreDataDisplayType(value)
@@ -120,7 +123,7 @@ const updateDataDisplayType = (value: string) => {
 		<div class="mb-2 flex justify-between gap-x-2">
 			<!-- Section: Period options list -->
 			<nav class="isolate rounded border py-1 px-2 flex flex-wrap gap-1 items-center w-full" aria-label="Tabs">
-				<div v-if="layout.app.environment === 'local'">
+				<div v-if="layout.currentRoute === 'grp.dashboard.show'">
 					<DashboardCustomDateRange :intervals="intervals" />
 				</div>
 

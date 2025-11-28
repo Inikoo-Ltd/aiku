@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
 use App\Actions\Dropshipping\WooCommerce\Orders\FulfillOrderToWooCommerce;
 use App\Actions\Ordering\Order\HasOrderHydrators;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -64,7 +65,7 @@ class DispatchOrder extends OrgAction
             $order->refresh();
 
 
-            if ($order->customerSalesChannel) {
+            if ($order->customerSalesChannel?->user) {
                 match ($order->customerSalesChannel->platform->type) {
                     PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
                     PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
@@ -73,6 +74,10 @@ class DispatchOrder extends OrgAction
                     PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order),
                     default => null,
                 };
+            } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {
+                UpdateOrder::run($order, [
+                    'shipping_notes' => __('We\'re unable update shipping to customer\'s sales channel due to their sales channel are not found or already deleted.')
+                ]);
             }
 
             return $order;

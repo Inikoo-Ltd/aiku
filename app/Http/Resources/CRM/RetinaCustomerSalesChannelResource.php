@@ -43,6 +43,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
 
         $reconnectRoute = null;
         $testRoute      = null;
+        $siteUrl      = null;
 
         if (in_array($customerSalesChannels->platform->type, [
             PlatformTypeEnum::SHOPIFY,
@@ -68,6 +69,11 @@ class RetinaCustomerSalesChannelResource extends JsonResource
                 ],
                 'method'     => 'post',
             ];
+
+            /** @var \App\Models\Dropshipping\WooCommerceUser $wooUser */
+            $wooUser = $customerSalesChannels->user;
+
+            $siteUrl = Arr::get($wooUser->settings, 'credentials.store_url');
         }
 
         $taxCategory = null;
@@ -93,7 +99,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'ban_stock_update_until' => $this->ban_stock_update_util,
             'include_vat'            => Arr::get($this->settings, 'tax_category.checked'),
             'vat_rate'               => $taxCategory?->rate,
-
+            'store_url' => $siteUrl,
             'reconnect_route' => $reconnectRoute,
             'test_route'      => $testRoute,
             'delete_route'    => [

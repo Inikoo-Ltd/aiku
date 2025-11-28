@@ -42,6 +42,10 @@ class ShowShop extends OrgAction
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
+        if ($saved_interval === DateIntervalEnum::CUSTOM) {
+            $saved_interval = DateIntervalEnum::ALL;
+        }
+
         $tabsBox = $this->getTabsBox($shop);
 
         $dashboard = [
@@ -73,7 +77,6 @@ class ShowShop extends OrgAction
             ],
         ];
 
-        // Experimental
         if ($shop->type->value === 'dropshipping') {
             $dashboard['super_blocks'][0]['blocks'] = [
                 [
