@@ -39,6 +39,10 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 
 
 const propsAnnouncements = usePage().props?.iris?.announcements
+const propsAnnouncementsTopbar = usePage().props?.iris?.announcementsTopBar
+const propsAnnouncementsBottomMenu = usePage().props?.iris?.announcementsBottomMenu
+const propsAnnouncementsTopFooter = usePage().props?.iris?.announcementsTopFooter
+
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const footer = usePage().props?.iris?.footer
@@ -146,8 +150,8 @@ console.log('handle', usePage().props)
         </Modal>
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
-            <template v-if="propsAnnouncements?.length">
-                <template v-for="announcement in propsAnnouncements">
+            <template v-if="propsAnnouncementsTopbar?.length">
+                <template v-for="announcement in propsAnnouncementsTopbar">
                     <IrisAnnouncement
                         :data="announcement"
                     />
@@ -163,6 +167,14 @@ console.log('handle', usePage().props)
                 :screen-type="screenType"
                 :custom-sidebar="customSidebar"
             />
+
+            <template v-if="propsAnnouncementsBottomMenu?.length">
+                <template v-for="announcement in propsAnnouncementsBottomMenu">
+                    <IrisAnnouncement
+                        :data="announcement"
+                    />
+                </template>
+            </template>
 
             <div class="border-b border-gray-200 ">
                 <div
@@ -205,6 +217,15 @@ console.log('handle', usePage().props)
                     />
                 </div>
             </main>
+
+
+            <template v-if="propsAnnouncementsTopFooter?.length">
+                <template v-for="announcement in propsAnnouncementsTopFooter">
+                    <IrisAnnouncement
+                        :data="announcement"
+                    />
+                </template>
+            </template>
 
             <Footer
                 v-if="footer && !isArray(footer)"
