@@ -42,11 +42,16 @@ class ShowOrganisationDashboard extends OrgAction
         $userSettings = $request->user()->settings;
 
         $currentTab = Arr::get($userSettings, 'organisation_dashboard_tab', Arr::first(OrganisationDashboardSalesTableTabsEnum::values()));
+
         if (!in_array($currentTab, OrganisationDashboardSalesTableTabsEnum::values())) {
             $currentTab = Arr::first(OrganisationDashboardSalesTableTabsEnum::values());
         }
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+
+        if ($saved_interval === DateIntervalEnum::CUSTOM) {
+            $saved_interval = DateIntervalEnum::ALL;
+        }
 
         $tabsBox = $this->getTabsBox($organisation);
 
@@ -57,7 +62,7 @@ class ShowOrganisationDashboard extends OrgAction
                     'intervals' => [
                         'options'           => $this->dashboardIntervalOption(),
                         'value'             => $saved_interval,
-                        'range_interval'    => DashboardIntervalFilters::run($saved_interval)
+                        'range_interval'    => DashboardIntervalFilters::run($saved_interval, $userSettings)
                     ],
                     'settings'  => [
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
@@ -79,7 +84,6 @@ class ShowOrganisationDashboard extends OrgAction
                         'navigation' => $tabsBox
                     ],
                 ]
-
             ]
         ];
 
@@ -92,7 +96,6 @@ class ShowOrganisationDashboard extends OrgAction
         );
     }
 
-
     public function asController(Organisation $organisation, ActionRequest $request): Response
     {
         $this->initialisation($organisation, $request)->withTabDashboardInterval(OrgDashboardIntervalTabsEnum::values());
@@ -104,7 +107,6 @@ class ShowOrganisationDashboard extends OrgAction
     {
         return [
             [
-
                 'type'   => 'simple',
                 'simple' => [
                     'icon'  => 'fal fa-tachometer-alt-fast',

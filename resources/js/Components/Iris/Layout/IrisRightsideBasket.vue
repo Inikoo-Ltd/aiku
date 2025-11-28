@@ -307,7 +307,7 @@ const idxProductLoading = ref<number | null>(null)
                     
                     <!-- Section: meter -->
                     <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
-                        ? trans(`:current of :target products gross amount`, { current: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), target: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
+                        ? trans(`:xcurrent of :xtarget products gross amount`, { xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
                         : trans('Bonus secured')" class="w-full flex items-center">
                         <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"

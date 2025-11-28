@@ -69,7 +69,7 @@ class OrganisationHydrateSalesMetrics implements ShouldBeUnique
         OrganisationSalesMetrics::updateOrCreate(
             [
                 'group_id'        => $organisation->group_id,
-                'organization_id' => $organisation->id,
+                'organisation_id' => $organisation->id,
                 'date'            => $dayStart
             ],
             $metrics
