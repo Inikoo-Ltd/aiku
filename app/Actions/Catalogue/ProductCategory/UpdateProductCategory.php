@@ -242,6 +242,10 @@ class UpdateProductCategory extends OrgAction
             'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n' => ['sometimes', 'array'],
             'description_extra_i8n' => ['sometimes', 'array'],
+            'is_name_reviewed' => ['sometimes', 'boolean'],
+            'is_description_title_reviewed' => ['sometimes', 'boolean'],
+            'is_description_reviewed' => ['sometimes', 'boolean'],
+            'is_description_extra_reviewed' => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {
