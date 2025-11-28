@@ -8,8 +8,8 @@
 
 namespace App\Actions\Dropshipping\Platform;
 
+use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateSalesMetrics;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\PlatformSalesMetrics;
 use App\Models\Ordering\Order;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -54,7 +54,7 @@ class RepairPlatformSalesMetrics
 
         foreach ($platforms as $platform) {
             foreach ($period as $date) {
-                PlatformSalesMetrics::run($platform, $date);
+                PlatformHydrateSalesMetrics::run($platform, $date);
                 $bar->advance();
             }
         }
