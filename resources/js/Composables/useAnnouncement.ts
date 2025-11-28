@@ -10,7 +10,7 @@ import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Pro
 import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
 import AnnouncementInformation1 from "@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation1.vue"
 import AnnouncementInformation2TransitionText from "@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue"
-import AnnouncemenPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncemenPromo3.vue'
+import AnnouncemenPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3.vue'
 import type { Component } from "vue"
 
 
