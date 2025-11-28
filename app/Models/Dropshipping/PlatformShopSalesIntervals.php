@@ -4,7 +4,6 @@ namespace App\Models\Dropshipping;
 
 use App\Models\Catalogue\Shop;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -318,14 +317,4 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PlatformShopSalesIntervals extends Model
 {
     protected $guarded = [];
-
-    public function platform(): BelongsTo
-    {
-        return $this->belongsTo(Platform::class);
-    }
-
-    public function shop(): BelongsTo
-    {
-        return $this->belongsTo(Shop::class);
-    }
 }
