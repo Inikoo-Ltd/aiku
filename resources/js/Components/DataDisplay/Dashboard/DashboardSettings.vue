@@ -123,7 +123,7 @@ const updateDataDisplayType = (value: string) => {
 		<div class="mb-2 flex justify-between gap-x-2">
 			<!-- Section: Period options list -->
 			<nav class="isolate rounded border py-1 px-2 flex flex-wrap gap-1 items-center w-full" aria-label="Tabs">
-				<div v-if="layout.currentRoute === 'grp.dashboard.show'">
+				<div v-if="layout.currentRoute === 'grp.dashboard.show' || 'grp.dashboard.show'">
 					<DashboardCustomDateRange :intervals="intervals" />
 				</div>
 
