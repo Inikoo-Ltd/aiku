@@ -52,6 +52,10 @@ class ShowDiscountsDashboard extends OrgAction
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
+        if ($saved_interval === DateIntervalEnum::CUSTOM) {
+            $saved_interval = DateIntervalEnum::ALL;
+        }
+
         return Inertia::render(
             'Org/Discounts/DiscountsDashboard',
             [
@@ -70,8 +74,8 @@ class ShowDiscountsDashboard extends OrgAction
                 ],
                 'intervals' => [
                     'options'        => $this->dashboardIntervalOption(),
-                    'value'          => Arr::get($userSettings, 'selected_interval', 'all'),
-                    'range_interval' => DashboardIntervalFilters::run($saved_interval),
+                    'value'          => $saved_interval,
+                    'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings),
                 ],
                 'settings'  => [
                     'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),

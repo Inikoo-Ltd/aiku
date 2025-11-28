@@ -442,36 +442,56 @@ onUnmounted(() => {
                 <!-- <pre>customerData: {{ customerData }}</pre>
                 <pre>layout?.temp_irisProduct: {{ layout?.temp_irisProduct }}</pre> -->
 
+                <!-- Section: Product Description -->
                 <div class="text-xs font-medium text-gray-800"
                     :style="getStyles(fieldValue?.description?.description_content, screenType)">
-                    <div v-html="product.description"></div>
+                    <div v-html="product.description" />
 
-                    <div class="text-xs font-normal text-gray-700 my-1" v-if="expanded"
+                    <div v-if="expanded" class="text-xs font-normal text-gray-700 my-1"
                         :style="getStyles(fieldValue?.description?.description_extra, screenType)">
                         <div ref="contentRef"
                             class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
-                            v-html="product.description_extra"></div>
+                            v-html="product.description_extra"
+                        />
                     </div>
 
                     <button v-if="product.description_extra" @click="toggleExpanded"
-                        class="mt-1 text-gray-900 text-xs underline focus:outline-none">
+                        class="mt-1 text-xs underline focus:outline-none">
                         {{ expanded ? trans("Show Less") : trans("Read More") }}
                     </button>
                 </div>
 
-                <ProductContentsIris :product="product" :setting="fieldValue.setting"
-                    :styleData="fieldValue?.information_style" :fullWidth="true" />
-                <div v-if="fieldValue.setting?.information" class="">
-                    <InformationSideProduct v-if="fieldValue?.information?.length > 0"
-                        :informations="fieldValue?.information" :styleData="fieldValue?.information_style" />
-                    <div v-if="fieldValue?.paymentData?.length > 0"
-                        class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2"
+                <!-- Section: Product Specifications & Documentations -->
+                <ProductContentsIris
+                    class="mt-6"
+                    :product="product"
+                    :setting="fieldValue.setting"
+                    :styleData="fieldValue?.information_style"
+                    :fullWidth="true"
+                />
+                
+                <div v-if="fieldValue.setting?.information" class="mt-2">
+                    <InformationSideProduct
+                        v-if="fieldValue?.information?.length > 0"
+                        :informations="fieldValue?.information"
+                        :styleData="fieldValue?.information_style"
+                    />
+
+                    <!-- Section: Secure Payments -->
+                    <h2 v-if="fieldValue?.paymentData?.length > 0"
+                        class="!text-base !font-semibold items-center gap-3 text-gray-800"
                         :style="getStyles(fieldValue?.information_style?.title)">
                         {{ trans("Secure Payments") }}:
-                        <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
-                            <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
-                                :src="logo.image" :alt="logo.code" class="h-4 px-1" />
-                        </div>
+                    </h2>
+                    <div class="flex flex-wrap items-center gap-6 font-bold text-gray-800 py-2">
+                        <img
+                            v-for="logo in fieldValue?.paymentData"
+                            :key="logo.code"
+                            v-tooltip="logo.code"
+                            :src="logo.image"
+                            :alt="logo.code"
+                            class="h-4 px-1"
+                        />
                     </div>
                 </div>
             </div>
@@ -481,7 +501,7 @@ onUnmounted(() => {
 
     <!-- Mobile Layout -->
     <div class="block sm:hidden px-4 py-6 text-gray-800">
-        <h2 class="text-xl font-bold mb-2">{{ product.name }}</h2>
+        <p class="text-xl font-bold mb-2">{{ product.name }}</p>
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
@@ -541,7 +561,7 @@ onUnmounted(() => {
                 :styleData="fieldValue?.information_style" />
             <InformationSideProduct v-if="fieldValue?.information?.length > 0" :informations="fieldValue?.information"
                 :styleData="fieldValue?.information_style" />
-            <div class="text-sm font-semibold mb-2">Secure Payments:</div>
+            <h2 class="!text-sm !font-semibold !mb-2">{{ trans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" />

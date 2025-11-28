@@ -95,6 +95,7 @@ class IndexCustomers extends OrgAction
             ->defaultSort('-created_at')
             ->allowedSorts($allowedSorts)
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['customers.registered_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
