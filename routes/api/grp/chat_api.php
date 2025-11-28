@@ -2,9 +2,11 @@
 
 
 use Illuminate\Support\Facades\Route;
+use App\Actions\CRM\ChatSession\StoreChatAgent;
 use App\Actions\CRM\ChatSession\GetChatMessages;
 use App\Actions\CRM\ChatSession\GetChatSessions;
 use App\Actions\CRM\ChatSession\SendChatMessage;
+use App\Actions\CRM\ChatSession\UpdateChatAgent;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Actions\CRM\ChatSession\AssignChatToAgent;
 use App\Actions\CRM\ChatSession\UpdateChatSession;
@@ -26,3 +28,9 @@ Route::post('/sessions/{chatSession:ulid}/assign-to-self', [AssignChatToAgent::c
 
 Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
     ->name('sessions.update');
+
+Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
+    ->name('agents.store');
+
+Route::put('/agents/{chatAgent:id}/update', UpdateChatAgent::class, 'agents.update')
+    ->name('agents.update');

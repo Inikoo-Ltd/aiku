@@ -23,7 +23,6 @@ enum ChatEventTypeEnum: string
     case RATING = 'rating';
     case NOTE = 'note';
     case REPLY = 'reply';
-
     case SEND = 'send';
 
     public static function labels(): array

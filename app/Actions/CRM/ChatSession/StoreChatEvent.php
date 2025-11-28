@@ -14,9 +14,6 @@ class StoreChatEvent
 {
     use AsAction;
 
-    /**
-     * Handle creating chat event
-     */
     public function handle(
         ChatSession $chatSession,
         ChatEventTypeEnum $eventType,
@@ -42,9 +39,6 @@ class StoreChatEvent
         }
     }
 
-    /**
-     * Create OPEN event for session
-     */
     public function openSession(
         ChatSession $chatSession,
         ChatActorTypeEnum $actorType,

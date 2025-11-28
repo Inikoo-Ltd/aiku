@@ -5,6 +5,7 @@ namespace App\Actions\CRM\ChatSession;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
+use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -13,13 +14,14 @@ class UpdateChatSession
 {
     use AsAction;
 
-      public function rules(): array
+    public function rules(): array
     {
         return [
             'priority' => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'rating'   => ['sometimes', 'numeric', 'min:1', 'max:5'],
         ];
     }
+
 
     public function handle(ChatSession $chatSession, array $data): array
     {
@@ -37,15 +39,23 @@ class UpdateChatSession
 
         if (!empty($updatedFields)) {
             $chatSession->save();
+
+            $this->logUpdateChatSessionEvent(
+                $chatSession,
+                'system',
+                null,
+                null
+            );
         }
 
         return $updatedFields;
     }
 
-    public function asController(ChatSession $chatSession, Request $request): JsonResponse
+
+    public function asController(ChatSession $chatSession, ActionRequest $request): JsonResponse
     {
-         $this->validateUlid($chatSession->ulid);
-        $validated = $request->validate($this->rules());
+        $validated = $request->validated();
+
         $updatedFields = $this->handle($chatSession, $validated);
 
         if (empty($updatedFields)) {
@@ -69,27 +79,27 @@ class UpdateChatSession
             'data' => [
                 'updated_fields' => $updatedFields
             ]
-        ], 200);
+        ]);
     }
 
-    protected function validateUlid($ulid): void
+
+    protected function logUpdateChatSessionEvent(ChatSession $chatSession, string $senderType, ?int $senderId, ChatMessage $message): void
     {
-        validator(
-            ['session_ulid' => $ulid],
-            [
-                'session_ulid' => [
-                    'required',
-                    'string',
-                    'ulid',
-                    'exists:chat_sessions,ulid'
-                ]
-            ],
-            [
-                'session_ulid.required' => 'Session ULID is required',
-                'session_ulid.ulid' => 'Invalid ULID format',
-                'session_ulid.exists' => 'Chat session not found',
-            ]
-        )->validate();
-    }
+        $actorType = match($senderType) {
+            ChatActorTypeEnum::AGENT->value => ChatActorTypeEnum::AGENT,
+            ChatSenderTypeEnum::USER->value => ChatActorTypeEnum::USER,
+            default => ChatActorTypeEnum::GUEST
+        };
 
+        $isGuestMessage = in_array($senderType, [ChatActorTypeEnum::GUEST->value, ChatActorTypeEnum::USER->value]);
+
+        StoreChatEvent::make()->messageSent(
+            $chatSession,
+            $actorType,
+            $senderId,
+            $message->id,
+            $message->message_type->value,
+            $isGuestMessage
+        );
+    }
 }
