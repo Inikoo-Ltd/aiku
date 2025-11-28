@@ -7,28 +7,19 @@
  * copyright 2025
 */
 
-use Illuminate\Support\Facades\Route;
-use App\Actions\Iris\IrisLogWebUserRequest;
-use App\Actions\Helpers\Tag\Json\GetIrisTags;
-use App\Actions\Iris\Json\GetIrisFirstHitData;
-use App\Actions\Iris\Basket\FetchIrisEcomBasket;
-use App\Actions\Helpers\Brand\Json\GetIrisBrands;
-use App\Actions\Helpers\Tag\Json\GetIrisShopTags;
-use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
-use App\Actions\Helpers\Brand\Json\GetIrisShopBrands;
-use App\Actions\CRM\WebUser\Retina\Json\GetRedirectUrl;
+use App\Actions\Catalogue\Product\Json\GetIrisAnnouncements;
+use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProduct;
+use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisLastOrderedProducts;
 use App\Actions\Catalogue\Product\Json\GetIrisProductEcomOrdering;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProduct;
-use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInCollection;
-use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
@@ -75,4 +66,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('channels', IndexRetinaDropshippingCustomerSalesChannels::class)->name('channels.index');
     Route::get('product/{product:id}', GetIrisProductEcomOrdering::class)->name('product.ecom_ordering_data');
+
+    Route::get('announcements', GetIrisAnnouncements::class)->name('announcements.index');
 });

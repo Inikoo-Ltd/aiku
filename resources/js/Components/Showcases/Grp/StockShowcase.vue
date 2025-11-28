@@ -27,33 +27,28 @@ library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket
 
 const props = defineProps<{
     data: {
-        stockImagesRoute: routeType
-        uploadImageRoute: routeType
-        attachImageRoute: routeType
-        deleteImageRoute: routeType
-        imagesUploadedRoutes: routeType
-        product: {
-            data: {
-                id: number
-                slug: string
-                image_id: number
-                code: string
-                name: string
-                price: string
-                description?: string
-                state: string
-                created_at: string
-                updated_at: string
-                images: Images[]
-                currency_code: string
-            }
-        }
-        stats: {
-            amount: number | null
-            amount_ly: number | null
-            name: string
-            percentage: number | null
-        }[] | null
+        // product: {
+        //     data: {
+        //         id: number
+        //         slug: string
+        //         image_id: number
+        //         code: string
+        //         name: string
+        //         price: string
+        //         description?: string
+        //         state: string
+        //         created_at: string
+        //         updated_at: string
+        //         images: Images[]
+        //         currency_code: string
+        //     }
+        // }
+        // stats: {
+        //     amount: number | null
+        //     amount_ly: number | null
+        //     name: string
+        //     percentage: number | null
+        // }[] | null
         trade_units: {
             brand: {}
             brand_routes: {
@@ -84,7 +79,7 @@ const locale = inject("locale", aikuLocaleStructure)
 const selectedImage = ref(0)
 const showAllStats = ref(false)
 
-const images = computed(() => props.data?.product?.data?.images ?? [])
+// const images = computed(() => props.data?.product?.data?.images ?? [])
 
 
 const displayedStats = computed(() => {
@@ -94,11 +89,11 @@ const displayedStats = computed(() => {
 })
 
 
-watch(images, (newVal) => {
-    if (!newVal?.length || selectedImage.value > newVal.length - 1) {
-        selectedImage.value = 0
-    }
-}, { immediate: true })
+// watch(images, (newVal) => {
+//     if (!newVal?.length || selectedImage.value > newVal.length - 1) {
+//         selectedImage.value = 0
+//     }
+// }, { immediate: true })
 
 
 
@@ -170,6 +165,7 @@ const compSelectedTradeUnit = computed(() => {
             </section>
         </div> -->
 
+        <!-- Section: Trade Units -->
         <div class="md:col-span-2 pr-6">
             <Fieldset class="p-5 space-y-5 h-fit w-full max-w-lg" legend="Trade units" xtoggleable xcollapsed>
                 <template #legend>
@@ -209,6 +205,7 @@ const compSelectedTradeUnit = computed(() => {
             </Fieldset>
         </div>
 
+        <!-- Section: Stocks Management -->
         <div class="md:col-span-2">
             <StocksManagement
                 :stocks_management="data.stocks_management"
@@ -219,7 +216,7 @@ const compSelectedTradeUnit = computed(() => {
 
 
         <!-- Revenue Stats -->
-        <div v-if="true && data.stats" class="pt-8 p-4 md:col-span-3">
+        <!-- <div v-if="true && data.stats" class="pt-8 p-4 md:col-span-3">
             <h3 class="text-lg font-semibold">
                 {{ trans("All Sales") }}:
                 {{ useLocaleStore().currencyFormat(data.product.data.currency_code || "usd", data?.stats?.[0]?.amount ??
@@ -263,12 +260,11 @@ const compSelectedTradeUnit = computed(() => {
                 </div>
             </dl>
 
-            <!-- Show more stats -->
             <div v-if="props.data?.stats?.length > 6 && !showAllStats" @click="showAllStats = true"
                 class="cursor-pointer border border-dashed border-gray-300 rounded-md mt-3 flex justify-center items-center p-4 w-full sm:w-40 mx-auto">
                 <span class="text-sm font-medium">{{ trans("Show more") }}</span>
             </div>
-        </div>
+        </div> -->
         
     </div>
 </template>

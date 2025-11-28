@@ -33,6 +33,8 @@ class UpdateMasterProductCategory extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
+        $oldData = $masterProductCategory;
+
         $originalImageId = $masterProductCategory->image_id;
         if (Arr::has($modelData, 'master_department_id')) {
             $departmentId = Arr::pull($modelData, 'master_department_id');
@@ -106,17 +108,39 @@ class UpdateMasterProductCategory extends OrgAction
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if (Arr::hasAny($changed, ['code', 'name', 'description', 'description_title', 'description_extra', 'rrp', 'offers_data'])) {
+        if(Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'rrp', 'offers_data'])){
             foreach ($masterProductCategory->productCategories as $productCategory) {
-                UpdateProductCategory::make()->action($productCategory, [
-                    'code'              => $masterProductCategory->code,
-                    'name'              => $masterProductCategory->name,
-                    'description'       => $masterProductCategory->description,
-                    'description_title' => $masterProductCategory->description_title,
-                    'description_extra' => $masterProductCategory->description_extra,
-                    'rrp'               => $masterProductCategory->rrp,
-                    'offers_data'       => $masterProductCategory->offers_data
-                ]);
+                $dataToBeUpdated = [];
+                // If name/description/description_title/description_extra is already reviewed / modified, ignore the changes, but change the status back to false
+                // Moved everything to singular check. Just becase name is changed, 
+                // doesn't mean everything else should be updated at the same time if it doesn't present
+                // Should Family RRP / Offers Data blindly follow master? Even if it has been modified? 
+                // And RRP is not included in UpdateProductCategory rules, so it will be ignored. Please delete if not used
+                if (Arr::has($changed, 'name')) {
+                    $dataToBeUpdated['is_name_reviewed'] = false;
+                }
+                if (Arr::has($changed, 'description_title')) {
+                    $dataToBeUpdated['is_description_title_reviewed'] = false;
+                }
+                if (Arr::has($changed, 'description')) {
+                    $dataToBeUpdated['is_description_reviewed'] = false;
+                }
+                if (Arr::has($changed, 'description_extra')) {
+                    $dataToBeUpdated['is_description_extra_reviewed'] = false;
+                }
+                if (Arr::has($changed, 'code')) {
+                    $dataToBeUpdated['code'] = $masterProductCategory->code;
+                }
+                if (Arr::has($changed, 'rrp')) {
+                    $dataToBeUpdated['rrp'] = $masterProductCategory->rrp;
+                }
+                if (Arr::has($changed, 'offers_data')) {
+                    $dataToBeUpdated['offers_data'] = $masterProductCategory->offers_data;
+                }
+
+                if($dataToBeUpdated){
+                    UpdateProductCategory::make()->action($productCategory, $dataToBeUpdated);
+                }
             }
         }
 

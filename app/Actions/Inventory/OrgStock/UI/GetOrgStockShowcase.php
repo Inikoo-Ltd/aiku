@@ -31,8 +31,8 @@ class GetOrgStockShowcase
         // dd($orgStock);
         return collect(
             [
+                // 'stock_data'                => $this->orgStockData($orgStock),
                 'trade_units'               => $dataTradeUnits,
-                'stock_data'                => $this->orgStockData($orgStock),
                 'stocks_management'         => [
                     'routes'         => [
                         'location_route'             => [
@@ -109,8 +109,6 @@ class GetOrgStockShowcase
                         ],
                     ],
                     'locations'      => LocationOrgStocksResource::collection($orgStock->locationOrgStocks)->toArray(request()),
-
-
                 ]
             ]
         );

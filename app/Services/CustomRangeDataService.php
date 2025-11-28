@@ -12,6 +12,7 @@ use App\Actions\Accounting\InvoiceCategory\InvoiceCategoryCalculateCustomRangeSa
 use App\Actions\Catalogue\Shop\ShopCalculateCustomRangeSales;
 use App\Actions\SysAdmin\Organisation\OrganisationCalculateCustomRangeSales;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Collection;
 
 class CustomRangeDataService
@@ -29,6 +30,21 @@ class CustomRangeDataService
         }
 
         foreach ($group->invoiceCategories as $invoiceCategory) {
+            $data['invoice_categories'][$invoiceCategory->id] = InvoiceCategoryCalculateCustomRangeSales::run($invoiceCategory, $startDate, $endDate);
+        }
+
+        return $data;
+    }
+
+    public function getOrganisationCustomRangeData(Organisation $organisation, string $startDate, string $endDate): array
+    {
+        $data = [];
+
+        foreach ($organisation->shops as $shop) {
+            $data['shops'][$shop->id] = ShopCalculateCustomRangeSales::run($shop, $startDate, $endDate);
+        }
+
+        foreach ($organisation->invoiceCategories as $invoiceCategory) {
             $data['invoice_categories'][$invoiceCategory->id] = InvoiceCategoryCalculateCustomRangeSales::run($invoiceCategory, $startDate, $endDate);
         }
 

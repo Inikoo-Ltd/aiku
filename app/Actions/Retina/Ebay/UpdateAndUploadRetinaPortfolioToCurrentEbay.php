@@ -32,7 +32,7 @@ class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
     {
         return [
             'customer_product_name' => ['sometimes', 'string'],
-            'customer_price' => ['sometimes', 'string'],
+            'customer_price' => ['sometimes', 'string', 'numeric'],
             'customer_description' => ['sometimes', 'string'],
         ];
     }

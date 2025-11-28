@@ -98,7 +98,6 @@ const onSubmitTemplate = (template) => {
     isLoadingSubmit.value = true
 
     if (isSelectFullTemplate.value || !announcementData?.template_code) {
-        console.log('sdsdsd')
         announcementData.template_code = template.code
         announcementData.fields = template.fields
         announcementData.container_properties = template?.container_properties
