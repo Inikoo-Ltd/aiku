@@ -26,7 +26,6 @@ enum OrganisationDashboardSalesTableTabsEnum: string
     case SHOPS = 'shops';
     case INVOICE_CATEGORIES = 'invoice_categories';
 
-
     public function blueprint(): array
     {
         return match ($this) {
@@ -41,25 +40,21 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         };
     }
 
-
-
-    public function table(Organisation $organisation): array
+    public function table(Organisation $organisation, array $customRangeData = []): array
     {
-
-
         $header = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($organisation)->toJson(), true),
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderInvoiceCategoriesInOrganisationSalesResource::make($organisation)->toJson(), true)
         };
 
         $body = match ($this) {
-            OrganisationDashboardSalesTableTabsEnum::SHOPS => IndexShopsSalesTable::make()->action($organisation),
-            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => IndexInvoiceCategoriesSalesTable::make()->action($organisation),
+            OrganisationDashboardSalesTableTabsEnum::SHOPS => IndexShopsSalesTable::make()->action($organisation, $customRangeData),
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => IndexInvoiceCategoriesSalesTable::make()->action($organisation, $customRangeData),
         };
 
         $totals = match ($this) {
-            OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardTotalShopsSalesResource::make($organisation)->toJson(), true),
-            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalInvoiceCategoriesSalesResource::make($organisation)->toJson(), true)
+            OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardTotalShopsSalesResource::make($organisation)->setCustomRangeData($customRangeData)->toJson(), true),
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalInvoiceCategoriesSalesResource::make($organisation)->setCustomRangeData($customRangeData)->toJson(), true)
         };
 
         return [
@@ -69,12 +64,10 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         ];
     }
 
-    public static function tables(Organisation $organisation): array
+    public static function tables(Organisation $organisation, array $customRangeData = []): array
     {
-        return collect(self::cases())->mapWithKeys(function ($case) use ($organisation) {
-            return [$case->value => $case->table($organisation)];
+        return collect(self::cases())->mapWithKeys(function ($case) use ($organisation, $customRangeData) {
+            return [$case->value => $case->table($organisation, $customRangeData)];
         })->all();
     }
-
-
 }

@@ -11,6 +11,7 @@ namespace App\Actions\Dashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
+use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -31,6 +32,7 @@ class ShowOrganisationDashboard extends OrgAction
     use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
     use WithTabsBox;
+    use WithCustomRangeDashboard;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -47,11 +49,8 @@ class ShowOrganisationDashboard extends OrgAction
             $currentTab = Arr::first(OrganisationDashboardSalesTableTabsEnum::values());
         }
 
+        $customRangeData = $this->setupCustomRange($userSettings, $organisation);
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $saved_interval = DateIntervalEnum::ALL;
-        }
 
         $tabsBox = $this->getTabsBox($organisation);
 
@@ -75,7 +74,7 @@ class ShowOrganisationDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => OrganisationDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation),
+                            'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation, $customRangeData),
                             'charts'      => []
                         ],
                     ],

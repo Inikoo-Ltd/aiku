@@ -54,10 +54,13 @@ class InvoiceCategoryHydrateSalesMetrics implements ShouldBeUnique
                 'invoices',
                 'refunds',
                 'sales_grp_currency',
+                'sales_org_currency',
                 'sales_invoice_category_currency',
                 'revenue_grp_currency',
+                'revenue_org_currency',
                 'revenue_invoice_category_currency',
                 'lost_revenue_grp_currency',
+                'lost_revenue_org_currency',
                 'lost_revenue_invoice_category_currency'
             ]
         ]);

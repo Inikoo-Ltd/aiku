@@ -27,9 +27,9 @@ class CheckCustomerSalesChannel extends OrgAction
     public function handle(CustomerSalesChannel $customerSalesChannel): CustomerSalesChannel
     {
         return match ($customerSalesChannel->platform->type) {
-            PlatformTypeEnum::EBAY => CheckEbayChannel::run($customerSalesChannel),
+            PlatformTypeEnum::EBAY => CheckEbayChannel::run($customerSalesChannel->user),
             PlatformTypeEnum::SHOPIFY => CheckShopifyChannel::run($customerSalesChannel),
-            PlatformTypeEnum::WOOCOMMERCE => CheckWooChannel::run($customerSalesChannel),
+            PlatformTypeEnum::WOOCOMMERCE => CheckWooChannel::run($customerSalesChannel->user),
             default => $customerSalesChannel
         };
     }
