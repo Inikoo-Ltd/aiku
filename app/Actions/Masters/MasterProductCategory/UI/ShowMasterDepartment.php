@@ -124,23 +124,6 @@ class ShowMasterDepartment extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        /* [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => 'blueprint',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ], */
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'shops.show.departments.remove',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false
                     ],
                     'subNavigation' => $subNavigation,
                 ],
@@ -148,7 +131,17 @@ class ShowMasterDepartment extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => MasterDepartmentTabsEnum::navigation()
                 ],
-
+                'delete_route' => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.masters.master_departments.delete',
+                    'parameters' => [
+                        'masterProductCategory' => $masterDepartment->slug
+                    ]
+                ],
+                'delete_condition' => [
+                    'can_delete' => $masterDepartment->children()->exists() === false,
+                    'master_shop_slug' => $masterDepartment->masterShop->slug,
+                ],
                 MasterDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryShowcase::run($masterDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterDepartment)),
