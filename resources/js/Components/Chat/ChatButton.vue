@@ -3,15 +3,105 @@ import { ref, inject, onMounted, onBeforeUnmount } from "vue"
 import MessageArea from "@/Components/Chat/MessageArea.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMessage } from "@fortawesome/free-solid-svg-icons"
+import axios from "axios"
 
 const layout: any = inject("layout", {})
 
 const open = ref(false)
 const buttonRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
+const loading = ref(false)
+
+const chatSession = ref<string | null>(null)
+const messages = ref([])
+
+/**
+ * Save chat session into localStorage
+ */
+const saveChatSession = (sessionId: string) => {
+  const data = {
+    session: sessionId,
+    language: layout.iris.website.website_i18n.current_language.id,
+    priority: "normal",
+  }
+
+  localStorage.setItem("chat", JSON.stringify(data))
+}
+
+/**
+ * Load chat info from localStorage
+ */
+const loadChatSession = () => {
+  const raw = localStorage.getItem("chat")
+  if (!raw) return null
+
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Create a new chat session
+ */
+const createSession = async () => {
+  loading.value = true
+  try {
+    const response = await axios.post(
+      "http://aiku.test/app/api/chats/sessions",
+      {
+        language_id: 64,
+        priority: "normal",
+      }
+    )
+
+    console.log('sdsd',response)
+
+   /*  const id = response.data?.id
+    chatSession.value = id
+    saveChatSession(id) */
+
+    return id
+  } catch (e) {
+    console.error("Error creating session", e)
+    return null
+  } finally {
+    loading.value = false
+  }
+}
+
+/**
+ * Fetch messages for current session
+ */
+const getMessages = async (sessionId: string) => {
+  try {
+    const response = await axios.get(
+      `/app/api/chats/sessions/${sessionId}/messages`
+    )
+    messages.value = response.data || []
+  } catch (e) {
+    console.error("Error loading messages", e)
+  }
+}
+
+const initChat = async () => {
+  const saved = loadChatSession()
+
+  if (saved?.session) {
+    chatSession.value = saved.session
+    await getMessages(saved.session)
+  } else {
+    const newId = await createSession()
+    if (newId) {
+      await getMessages(newId)
+    }
+  }
+}
 
 const toggle = () => {
   open.value = !open.value
+  if (open.value) initChat()
 }
 
 const handleClickOutside = (e: MouseEvent) => {
@@ -38,6 +128,7 @@ onBeforeUnmount(() => {
   document.removeEventListener("mousedown", handleClickOutside)
 })
 </script>
+
 
 <template>
   <div>
