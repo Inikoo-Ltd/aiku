@@ -78,7 +78,7 @@ const onSaveChangeParent = async () => {
                     masterProductCategory: selectedParentId.value
                 }),
                 {
-                    sub_department_ids : selectedSubDepartment.value,
+                    master_sub_department_ids : selectedSubDepartment.value,
                 }
             );
 
@@ -130,7 +130,7 @@ const onCheckedAll = (handle: { allChecked: boolean, data: Array<{id: number}> }
         checkboxKey='id' :isChecked="(item) => selectedSubDepartment.includes(item.id)" ref="_table">
            <template #add-on-button>
             <div v-if="selectedSubDepartment.length != 0">
-                <Button :icon="faFolderTree" label="Assign to another" @click="visibleDialog = true" :size="'xs'"
+                <Button :icon="faFolderTree" :label="trans('Assign to another department')" @click="visibleDialog = true" :size="'xs'"
                     type="secondary" />
             </div>
         </template>
