@@ -99,10 +99,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'ban_stock_update_until' => $this->ban_stock_update_util,
             'include_vat'            => Arr::get($this->settings, 'tax_category.checked'),
             'vat_rate'               => $taxCategory?->rate,
-
-            'site_url' => $taxCategory?->rate,
             'store_url' => $siteUrl,
-
             'reconnect_route' => $reconnectRoute,
             'test_route'      => $testRoute,
             'delete_route'    => [
