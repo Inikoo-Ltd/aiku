@@ -406,30 +406,30 @@ class EditProduct extends OrgAction
                         ]
                     ],
 
-                [
-                    'label'  => __('Family'),
-                    'icon'   => 'fa-light fa-folder',
-                    'fields' => [
-                        'family_id' => [
-                            'type'       => 'select_infinite',
-                            'label'      => __('Family'),
-                            'options'    => [
-                                $familyOptions
-                            ],
-                            'fetchRoute' => [
-                                'name'       => 'grp.json.shop.families',
-                                'parameters' => [
-                                    'shop' => $product->shop->id
-                                ]
-                            ],
-                            'valueProp'  => 'id',
-                            'labelProp'  => 'code',
-                            'required'   => true,
-                            'value'      => $product->family->id ?? null,
-                            'type_label' => 'families'
-                        ]
-                    ],
-                ],
+                // [
+                //     'label'  => __('Family'),
+                //     'icon'   => 'fa-light fa-folder',
+                //     'fields' => [
+                //         'family_id' => [
+                //             'type'       => 'select_infinite',
+                //             'label'      => __('Family'),
+                //             'options'    => [
+                //                 $familyOptions
+                //             ],
+                //             'fetchRoute' => [
+                //                 'name'       => 'grp.json.shop.families',
+                //                 'parameters' => [
+                //                     'shop' => $product->shop->id
+                //                 ]
+                //             ],
+                //             'valueProp'  => 'id',
+                //             'labelProp'  => 'code',
+                //             'required'   => true,
+                //             'value'      => $product->family->id ?? null,
+                //             'type_label' => 'families'
+                //         ]
+                //     ],
+                // ],
             ]
         );
     }

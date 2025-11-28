@@ -55,7 +55,7 @@ class ShowGroupDashboard extends OrgAction
                     'intervals' => [
                         'options'        => $this->dashboardIntervalOption(),
                         'value'          => $saved_interval,
-                        'range_interval' => DashboardIntervalFilters::run($saved_interval)
+                        'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
                     ],
                     'settings'  => [
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
