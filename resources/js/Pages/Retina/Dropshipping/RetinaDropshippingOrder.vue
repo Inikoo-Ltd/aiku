@@ -61,7 +61,22 @@ const props = defineProps<{
     title: string
     tabs: TSTabs
     pageHead: PageHeadingTypes
-    order: {}
+    order: {
+        data: {
+            is_fully_paid: boolean
+            unpaid_amount: number
+            has_insurance: boolean
+            is_premium_dispatch: boolean
+            has_extra_packing: boolean
+            route_to_pay_unpaid?: routeType
+            state: string
+            state_label: string
+            state_icon: string
+            public_notes?: string
+            customer_notes?: string
+            shipping_notes?: string
+        }
+    }
 
 
     routes: {
@@ -151,11 +166,10 @@ const component = computed(() => {
 })
 
 const locale = inject('locale', aikuLocaleStructure)
-console.log('DS Orders', props)
 
 
-const noteToSubmit = ref(props?.data?.data?.customer_notes || '')
-const deliveryInstructions = ref(props?.data?.data?.shipping_notes || '')
+const noteToSubmit = ref(props?.order?.data?.customer_notes || '')
+const deliveryInstructions = ref(props?.order?.data?.shipping_notes || '')
 const recentlySuccessNote = ref<string[]>([])
 const recentlyErrorNote = ref(false)
 const isLoadingNote = ref<string[]>([])
@@ -197,15 +211,16 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
     <PageHeading :data="pageHead">
     </PageHeading>
 
-    <div v-if="data?.data?.has_insurance || data?.data?.is_premium_dispatch || data?.data?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
-        <FontAwesomeIcon v-if="data?.data?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="data?.data?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="data?.data?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+    <div v-if="order?.data?.has_insurance || order?.data?.is_premium_dispatch || order?.data?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
+        <FontAwesomeIcon v-if="order?.data?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.data?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.data?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
     </div>
 
     <div class="mt-4 sm:mt-0 border-b border-gray-200 pb-2 max-w-5xl">
-        <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6"/>
+        <Timeline v-if="timelines" :options="timelines" :state="props.order?.data?.state" :slidesPerView="6"/>
     </div>
+    
 
     <!-- Section: Alert if unpaid -->
     <Message v-if="false" severity="error" class="mx-4 mt-4 ">
@@ -216,7 +231,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
         <div class="ml-2 font-normal flex justify-between w-full">
             <div class="flex items-center gap-x-2">
                 {{ trans("You have unpaid amount of the order") }}: <span class="font-bold">{{
-                    locale.currencyFormat(locale.currencyInertia?.code, data?.data.unpaid_amount)
+                    locale.currencyFormat(locale.currencyInertia?.code, order?.data.unpaid_amount)
                 }}</span>
             </div>
             <ButtonWithLink
@@ -239,7 +254,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
 
     <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200 overflow-x-auto">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
-                   :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state" :modalOpen="isModalUploadOpen"
+                   :updateRoute="routes?.updateOrderRoute" :state="order?.data?.state" :modalOpen="isModalUploadOpen"
                    @update:tab="handleTabUpdate"/>
     </div>
 
@@ -254,8 +269,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
                     :
                 </div>
                 <PureTextarea
-                    :modelValue="props.data?.data?.public_notes || ''"
-                    @update:modelValue="() => debounceDeliveryInstructions()"
+                    :modelValue="props.order?.data?.public_notes || ''"
                     :placeholder="trans('No notes from staff')"
                     rows="4"
                     disabled
