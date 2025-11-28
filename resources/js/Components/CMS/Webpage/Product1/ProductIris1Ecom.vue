@@ -322,7 +322,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div id="product-1" :style="{
+    <div v-if="screenType !== 'mobile'" id="product-1" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         marginLeft: 'auto', marginRight: 'auto'
     }" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
@@ -496,12 +496,11 @@ onUnmounted(() => {
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- Mobile Layout -->
-    <div class="block sm:hidden px-4 py-6 text-gray-800">
-        <p class="text-xl font-bold mb-2">{{ product.name }}</p>
+    <div v-else class="block sm:hidden px-4 py-6 text-gray-800">
+        <h1 class="text-xl font-bold mb-2">{{ product.name }}</h1>
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
