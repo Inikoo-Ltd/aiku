@@ -298,7 +298,7 @@ const checkMobile = () => {
     isMobile.value = window.innerWidth <= 768
 }
 
-watch(props.announcementData?.fields?.countdown,(newValue)=>{
+watch(props.announcementData?.fields?.countdown, (newValue) => {
     updateCountdown()
 })
 
@@ -335,63 +335,77 @@ defineExpose({ fieldSideEditor })
 
 
 <template>
- <div v-if="isMobile && !isToSelectOnly" class="w-full px-4 py-2 h-16 item-center"
-     :style="getStyles(announcementData?.container_properties)">
+    <div v-if="isMobile && !isToSelectOnly" class="w-full px-4 py-2 h-16 flex items-center justify-center"
+        :style="getStyles(announcementData?.container_properties)">
 
-    <!-- SLIDE 1: TEXT_2 -->
-    <div v-show="mobileIndex === 0" class="flex justify-center items-center">
-        <div v-html="announcementData?.fields.text_2.text"
-             :style="getStyles(announcementData?.fields?.text_2.block_properties)"
-             class="announcement-component-editable text-center" />
+        <!-- SLIDE 1: TEXT_2 -->
+        <div v-show="mobileIndex === 0" class="w-full h-full flex items-center justify-between w-full">
+
+            <!-- TEXT_2 -->
+            <div v-html="announcementData?.fields.text_2.text"
+                :style="getStyles(announcementData?.fields?.text_2.block_properties)"
+                class="announcement-component-editable text-center" />
+
+            <!-- COUNTDOWN KECIL -->
+            <div class="w-fit h-full flex items-center justify-center mt-1">
+                <div class="flex items-center justify-center gap-2 font-sans">
+
+                    <div class="flex flex-col items-center">
+                        <div
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none">
+                            {{ days }}
+                        </div>
+                        <span class="text-[8px] text-purple-800 opacity-70 leading-none mt-[1px]">DAY</span>
+                    </div>
+
+                    <div class="flex flex-col items-center">
+                        <div
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none">
+                            {{ hours }}
+                        </div>
+                        <span class="text-[8px] text-purple-800 opacity-70 leading-none mt-[1px]">HRS</span>
+                    </div>
+
+                    <div class="flex flex-col items-center">
+                        <div
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none">
+                            {{ minutes }}
+                        </div>
+                        <span class="text-[8px] text-purple-800 opacity-70 leading-none mt-[1px]">MINS</span>
+                    </div>
+
+                    <div class="flex flex-col items-center">
+                        <div
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none">
+                            {{ seconds }}
+                        </div>
+                        <span class="text-[8px] text-purple-800 opacity-70 leading-none mt-[1px]">SECS</span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- SLIDE 2: TEXT_1 -->
+        <div v-show="mobileIndex === 1" class="w-full h-full flex items-center justify-center">
+            <div v-html="announcementData?.fields.text_1.text"
+                :style="getStyles(announcementData?.fields?.text_1.block_properties)"
+                class="announcement-component-editable text-center text-sm" />
+        </div>
+
+        <!-- SLIDE 3: MULTI TEXT -->
+        <div v-show="mobileIndex === 2" class="w-full h-full flex items-center justify-center overflow-hidden">
+            <p id="aiku_sentence_multi_text" :class="isAnimating ? 'aiku-multitext-leave' : 'aiku-multitext-enter'"
+                v-html="announcementData?.fields?.text_transition_data?.multi_text?.[activeMultiIndex]?.text"
+                class="whitespace-nowrap overflow-hidden block w-full text-center" />
+        </div>
+
     </div>
 
-    <!-- SLIDE 2: COUNTDOWN -->
-    <div v-show="mobileIndex === 1" class="flex justify-center items-center gap-3 font-sans">
-        <div class="flex flex-col items-center">
-            <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
-                {{ days }}
-            </div>
-            <span class="text-[9px] text-purple-800 opacity-70">DAY</span>
-        </div>
-        <div class="flex flex-col items-center">
-            <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
-                {{ hours }}
-            </div>
-            <span class="text-[9px] text-purple-800 opacity-70">HRS</span>
-        </div>
-        <div class="flex flex-col items-center">
-            <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
-                {{ minutes }}
-            </div>
-            <span class="text-[9px] text-purple-800 opacity-70">MINS</span>
-        </div>
-        <div class="flex flex-col items-center">
-            <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
-                {{ seconds }}
-            </div>
-            <span class="text-[9px] text-purple-800 opacity-70">SECS</span>
-        </div>
-    </div>
-
-    <!-- SLIDE 3: TEXT_1 -->
-    <div v-show="mobileIndex === 2" class="flex justify-center items-center">
-        <div v-html="announcementData?.fields.text_1.text"
-             :style="getStyles(announcementData?.fields?.text_1.block_properties)"
-             class="announcement-component-editable text-center text-sm" />
-    </div>
-
-    <!-- SLIDE 4: MULTI TEXT -->
-    <div v-show="mobileIndex === 3" class="flex justify-center items-center overflow-hidden h-full">
-        <p id="aiku_sentence_multi_text"
-           :class="isAnimating ? 'aiku-multitext-leave' : 'aiku-multitext-enter'"
-           v-html="announcementData?.fields?.text_transition_data?.multi_text?.[activeMultiIndex]?.text"
-           class="whitespace-nowrap overflow-hidden block w-full text-center" />
-    </div>
-
-</div>
 
 
-    <div  v-else="!isToSelectOnly" class="w-full flex items-center justify-between px-4 py-2"
+    <div v-else-if="!isToSelectOnly" class="w-full flex items-center justify-between px-4 py-2"
         :style="getStyles(announcementData?.container_properties)">
 
         <!-- LEFT -->
@@ -405,7 +419,7 @@ defineExpose({ fieldSideEditor })
 
             <!-- COUNTDOWN -->
             <div v-if="announcementData?.fields?.countdown" class="flex items-center gap-1 font-sans shrink-0">
-                 <div class="flex flex-col items-center">
+                <div class="flex flex-col items-center">
                     <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
                         {{ days }}
                     </div>
@@ -462,6 +476,9 @@ defineExpose({ fieldSideEditor })
                 </div>
             </div>
         </div>
+    </div>
+
+    <div v-else @click="() => emits('templateClicked', componentDefaultData)" class="inset-0 absolute">
     </div>
 </template>
 

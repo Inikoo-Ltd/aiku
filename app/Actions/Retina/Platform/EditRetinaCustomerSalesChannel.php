@@ -88,7 +88,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                         ],
                         'return_payer' => [
                             'type'     => 'select',
-                            'label'    => __('Vat Category'),
+                            'label'    => __('Return Payer'),
                             'required' => true,
                             'hidden' => ! Arr::get($customerSalesChannel->settings, 'return.accepted'),
                             'options' => Options::forArray([
