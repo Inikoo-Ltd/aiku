@@ -46,17 +46,16 @@ export interface StockLocation {
     location: Location
 }
 
+export interface StockManagementRoutes {
+    location_route: routeType
+    associate_location_route: routeType
+    disassociate_location_route: routeType
+    audit_route: routeType
+    move_location_route: routeType
+}
+
 export interface StocksManagementTS {
-    routes: {
-        location_route: routeType
-        associate_location_route: routeType
-        disassociate_location_route: routeType
-        audit_route: routeType
-        move_location_route: routeType
-        // fetch_locations: routeType
-        // submit_audit_stocks: routeType
-        // update_stocks_locations: routeType
-    }
+    routes: StockManagementRoutes
     summary: {
         [key: string]: {
             icon_state: IconTS

@@ -276,8 +276,9 @@ const getQuestionTooltip = (locationId: number) => {
 
                 <template v-else-if="isEditLocations">
                     <EditLocations
-                        :part_locations="props.stocks_management.locations"
+                        :locations="props.stocks_management.locations"
                         @onClickBackground="isEditLocations = false"
+                        :routes="props.stocks_management?.routes"
                     />
                 </template>
 

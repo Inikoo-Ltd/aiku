@@ -53,6 +53,8 @@ const onClickDelete = () => {
             route(
                 props.routeDelete.name, props.routeDelete.parameters),
                 {
+                    preserveScroll: true,
+                    preserveState: true,
                     onStart: () => {
                         isLoadingdelete.value = true
                     },
@@ -75,6 +77,8 @@ const onClickDelete = () => {
                 props.routeDelete.name, props.routeDelete.parameters),
                 body,
                 {
+                    preserveScroll: true,
+                    preserveState: true,
                     onStart: () => {
                         isLoadingdelete.value = true
                     },
