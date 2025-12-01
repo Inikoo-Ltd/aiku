@@ -1,16 +1,11 @@
 <?php
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 01 Dec 2025 10:05:42 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Created: Mon, 01 Dec 2025 11:02:01 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-/*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 01 Dec 2025 09:45:00 Central European Time
- */
-
-namespace App\Actions\Maintenance\Dispatching;
+namespace App\Actions\Maintenance\Inventory\OrgStock;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationSource;
