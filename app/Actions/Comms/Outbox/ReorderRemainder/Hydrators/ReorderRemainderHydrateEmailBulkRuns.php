@@ -24,6 +24,7 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\DispatchedEmail\App\Enums\Comms\DispatchedEmailEvent\DispatchedEmailEventTypeEnum;
 use App\Actions\Comms\Outbox\ReorderRemainder\WithGenerateEmailBulkRuns;
+use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
 
 class ReorderRemainderHydrateEmailBulkRuns implements ShouldQueue
 {
@@ -70,7 +71,10 @@ class ReorderRemainderHydrateEmailBulkRuns implements ShouldQueue
                 $generateEmailBulkRun = $this->generateEmailBulkRuns($customer, OutboxCodeEnum::REORDER_REMINDER, now()->toDateString());
             // next Step make sure  Dispatched_emails
             SendReOrderRemainderToCustomerEmail::run($customer, $generateEmailBulkRun);
+            // update email bulk run state to sent
+            EmailBulkRunHydrateDispatchedEmails::dispatch($generateEmailBulkRun);
             });
+
     }
 
     public function asCommand(): void

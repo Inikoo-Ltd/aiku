@@ -28,7 +28,7 @@ class IndexReorderEmailBulkRuns extends OrgAction
         $queryBuilder->leftJoin('email_bulk_run_stats', 'email_bulk_runs.id', '=', 'email_bulk_run_stats.email_bulk_run_id');
         $queryBuilder->where('email_bulk_runs.outbox_id', $parent->id);
 
-        $testQuery =  $queryBuilder
+       return $queryBuilder
             ->defaultSort('email_bulk_runs.id')
             ->select([
                 'email_bulk_runs.id',
@@ -49,8 +49,6 @@ class IndexReorderEmailBulkRuns extends OrgAction
              'number_dispatched_emails_state_spam'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
-
-        return $testQuery;
     }
 
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure

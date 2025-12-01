@@ -41,7 +41,7 @@ trait WithGenerateEmailBulkRuns
 
         $emailBulkRun = StoreEmailBulkRun::run($outbox->emailOngoingRun, [
             'scheduled_at' => $date,
-            'subject'      => now()->toDateString(),
+            'subject'      => now()->format('Y.m.d'),
             'state'        => EmailBulkRunStateEnum::SENDING,
         ]);
 
