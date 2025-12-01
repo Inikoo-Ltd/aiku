@@ -130,8 +130,8 @@ class IndexAnnouncements extends OrgAction
             [
                 'type'  => 'button',
                 'style' => 'primary',
-                'label' => __('Create'),
-                'icon'  => ["fal", "fa-drafting-compass"],
+                'label' => __('Create New'),
+                'icon'  => ["fas", "fa-plus"],
                 'route' => [
                     'name'       => 'grp.org.shops.show.web.announcements.create',
                     'parameters' => array_values($request->route()->originalParameters())

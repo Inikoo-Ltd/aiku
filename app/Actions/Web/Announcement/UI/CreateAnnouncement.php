@@ -40,7 +40,7 @@ class CreateAnnouncement extends OrgAction
             'fields' => [
                 'name' => [
                     'type'        => 'input',
-                    'label'       => __('name'),
+                    'label'       => __('Name'),
                     'placeholder' => __('Name for new announcement'),
                     'required'    => true,
                     'value'       => '',
@@ -57,7 +57,9 @@ class CreateAnnouncement extends OrgAction
                 ),
                 'title'       => __('new announcement'),
                 'pageHead'    => [
-                    'title'   => __('announcement'),
+                    'model'   => __('Announcement'),
+                    'icon'    => ['fal', 'fa-megaphone'],
+                    'title'   => __('Create'),
                     'actions' => [
                         [
                             'type'  => 'button',
