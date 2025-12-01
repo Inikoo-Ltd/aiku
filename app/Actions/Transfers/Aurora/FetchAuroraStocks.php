@@ -17,7 +17,6 @@ use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreOrgStockHasOrgSuppl
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockHasSupplierProduct;
-use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Transfers\Aurora\WithAuroraAttachments;
 use App\Transfers\SourceOrganisationService;
@@ -158,6 +157,7 @@ class FetchAuroraStocks extends FetchAuroraAction
                 ]);
             }
 
+
             if ($stock->state == StockStateEnum::IN_PROCESS and $stockData['org_stock']['state'] != StockStateEnum::IN_PROCESS) {
                 $stock = UpdateStock::make()->action(
                     stock: $stock,
@@ -222,6 +222,11 @@ class FetchAuroraStocks extends FetchAuroraAction
                 }
             }
 
+
+            $sourceData = explode(':', $stockData['stock']['source_id']);
+            DB::connection('aurora')->table('Part Dimension')
+                ->where('Part SKU', $sourceData[1])
+                ->update(['aiku_id' => $stock->id]);
 
             return [
                 'stock'    => $stock,
