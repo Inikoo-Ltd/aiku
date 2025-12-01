@@ -6,6 +6,7 @@ import { computed, ref, onMounted, onUnmounted, inject, watch } from "vue"
 import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 import { trans } from "laravel-vue-i18n"
 import { uniqueId } from "lodash"
+import { get } from "lodash-es"
 library.add(faTimes)
 
 
@@ -101,26 +102,51 @@ const fieldSideEditor = [
                     noToday: true,
                     toogle: textBlueprint[0].props_data.toogle
                 }
+            },
+            {
+                key: ['countdown_style',"container",'properties','background'],
+                label: "Background",
+				type: "background",
+            },
+            {
+                key: ['countdown_style',"container",'properties','text'],
+                label: "text",
+				type: "textProperty",
             }
         ]
     },
     {
         name: "Multi text",
         icon: { icon: "fal fa-text", tooltip: "Multi text" },
-        key: ["fields", "text_transition_data", "multi_text"],
-        type: "array-data",
-        props_data: {
-            blueprint: textBlueprint,
-            order_name: "Text",
-            can_drag: true,
-            can_delete: true,
-            can_add: true,
-            new_value_data: {
-                text: "<h3>Lorem Ipsum</h3><p>description from the product</p>",
-                id: uniqueId()
-            }
-        }
-    }
+        key: ["fields", "text_transition_data"],
+        replaceForm: [
+            {
+                name: "Multi text",
+                icon: { icon: "fal fa-text", tooltip: "Multi text" },
+                key: ["multi_text"],
+                type: "array-data",
+                props_data: {
+                    blueprint: textBlueprint,
+                    order_name: "Text",
+                    can_drag: true,
+                    can_delete: true,
+                    can_add: true,
+                    new_value_data: {
+                        text: "<h3>Lorem Ipsum</h3><p>description from the product</p>",
+                        id: uniqueId()
+                    }
+                }
+            },
+            {
+					label: "Time text changed",
+					key: ["duration"],
+					type: "number",
+                    props_data : {
+                        suffix : 'ms'
+                    }
+			},
+        ]
+    },
 ]
 
 
@@ -211,6 +237,7 @@ const defaultFieldsData = {
     countdown: {
         date: new Date(Date.now() + 2 * 86400000),
         expired_text: `<p><em>Countdown expired</em></p>`
+
     }
 }
 
@@ -286,7 +313,7 @@ const playMultiText = () => {
     setTimeout(() => {
         activeMultiIndex.value = (activeMultiIndex.value + 1) % list.length
         isAnimating.value = false
-    }, 10000)
+    }, get(props.announcementData,["fields", "text_transition_data",'duration',1000]))
 }
 
 const mobileIndex = ref(0)
@@ -301,6 +328,17 @@ const checkMobile = () => {
 watch(props.announcementData?.fields?.countdown, (newValue) => {
     updateCountdown()
 })
+
+
+const textCountdown = ref(getStyles(props.announcementData?.fields?.countdown_style?.container?.properties,'desktop',false))
+
+watch(
+  () => props.announcementData?.fields?.countdown_style,
+  () => {
+    textCountdown.value = getStyles(props.announcementData?.fields?.countdown_style?.container?.properties,'desktop',false)
+  },
+  { deep: true }
+)
 
 onMounted(() => {
     updateCountdown()
@@ -350,36 +388,36 @@ defineExpose({ fieldSideEditor })
             <div class="w-fit h-full flex items-center justify-center mt-1">
                 <div class="flex items-center justify-center gap-2 font-sans">
 
-                    <div class="flex flex-col items-center">
+                    <div class="flex flex-col items-center" >
                         <div
-                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none">
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none"  :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
                             {{ days }}
                         </div>
-                        <span class="text-[8px] text-purple-800 opacity-70 leading-none mt-[1px]">DAY</span>
+                        <span class="text-[8px]   leading-none mt-[1px]  text-gray-100  text-countdown">DAY</span>
                     </div>
 
                     <div class="flex flex-col items-center">
                         <div
-                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none">
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
                             {{ hours }}
                         </div>
-                        <span class="text-[8px] text-purple-800 opacity-70 leading-none mt-[1px]">HRS</span>
+                        <span class="text-[8px]   leading-none mt-[1px]  text-gray-100  text-countdown">HRS</span>
                     </div>
 
                     <div class="flex flex-col items-center">
                         <div
-                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none">
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
                             {{ minutes }}
                         </div>
-                        <span class="text-[8px] text-purple-800 opacity-70 leading-none mt-[1px]">MINS</span>
+                        <span class="text-[8px]   leading-none mt-[1px]  text-gray-100  text-countdown">MINS</span>
                     </div>
 
                     <div class="flex flex-col items-center">
                         <div
-                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none">
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)"> 
                             {{ seconds }}
                         </div>
-                        <span class="text-[8px] text-purple-800 opacity-70 leading-none mt-[1px]">SECS</span>
+                        <span class="text-[8px]   leading-none mt-[1px]  text-gray-100  text-countdown">SECS</span>
                     </div>
 
                 </div>
@@ -400,7 +438,6 @@ defineExpose({ fieldSideEditor })
                 v-html="announcementData?.fields?.text_transition_data?.multi_text?.[activeMultiIndex]?.text"
                 class="whitespace-nowrap overflow-hidden block w-full text-center" />
         </div>
-
     </div>
 
 
@@ -420,28 +457,28 @@ defineExpose({ fieldSideEditor })
             <!-- COUNTDOWN -->
             <div v-if="announcementData?.fields?.countdown" class="flex items-center gap-1 font-sans shrink-0">
                 <div class="flex flex-col items-center">
-                    <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
+                    <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
                         {{ days }}
                     </div>
-                    <span class="text-[9px] text-purple-800 opacity-70">DAY</span>
+                    <span class="text-[9px] text-gray-100  text-countdown">DAY</span>
                 </div>
                 <div class="flex flex-col items-center">
-                    <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
+                    <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
                         {{ hours }}
                     </div>
-                    <span class="text-[9px] text-purple-800 opacity-70">HRS</span>
+                    <span class="text-[9px]  text-gray-100  text-countdown">HRS</span>
                 </div>
                 <div class="flex flex-col items-center">
-                    <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
+                    <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
                         {{ minutes }}
                     </div>
-                    <span class="text-[9px] text-purple-800 opacity-70">MINS</span>
+                    <span class="text-[9px]   text-gray-100  text-countdown">MINS</span>
                 </div>
                 <div class="flex flex-col items-center">
-                    <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums">
+                    <div class="px-2 py-1 bg-purple-700 text-white rounded-md text-xs tabular-nums" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
                         {{ seconds }}
                     </div>
-                    <span class="text-[9px] text-purple-800 opacity-70">SECS</span>
+                    <span class="text-[9px]  text-gray-100  text-countdown">SECS</span>
                 </div>
             </div>
         </div>
@@ -489,5 +526,13 @@ defineExpose({ fieldSideEditor })
 
 .aiku-multitext-enter {
     animation: key-multitext-leave 0.3s forwards;
+}
+
+
+.text-countdown { 
+        color: v-bind('textCountdown?.color || null') !important;
+        font-family: v-bind('textCountdown?.fontFamily || null') !important;
+        font-size: v-bind('textCountdown?.fontSize || null') !important;
+        font-style: v-bind('textCountdown?.fontStyle || null') !important;;
 }
 </style>

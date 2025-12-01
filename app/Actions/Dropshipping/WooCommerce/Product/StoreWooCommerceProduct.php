@@ -72,6 +72,17 @@ class StoreWooCommerceProduct extends RetinaAction
                 'status'            => $this->mapProductStateToWooCommerce($product->status->value)
             ];
 
+            $isOnDemand = false;
+            foreach ($product->orgStocks as $orgStock) {
+                if ($orgStock->is_on_demand) {
+                    $isOnDemand = true;
+                }
+            }
+
+            if ($isOnDemand) {
+                data_set($wooCommerceProduct, 'backorders', 'yes');
+            }
+
             $availableSku = $wooCommerceUser->getWooCommerceProducts([
                 'sku' => $portfolio->sku
             ]);

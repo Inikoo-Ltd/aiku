@@ -161,7 +161,7 @@ class StoreEbayProduct extends RetinaAction
                 ],
                 'condition' => 'NEW',
                 'product' => [
-                    'title' => $portfolio->customer_product_name,
+                    'title' => mb_substr($portfolio->customer_product_name, 0, 80),
                     'description' => $descriptions,
                     ...$aspects,
                     'brand' => 'Ancient Wisdom',

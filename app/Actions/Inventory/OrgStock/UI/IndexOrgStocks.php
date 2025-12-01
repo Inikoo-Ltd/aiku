@@ -284,8 +284,7 @@ class IndexOrgStocks extends OrgAction
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if (!$bucket || in_array($bucket, ['active', 'discontinuing'])) {
-                $table->column(key: 'unit_value', label: __('Unit value'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'stock', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             if ($bucket == 'discontinued' || $bucket == 'abnormality') {
