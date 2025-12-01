@@ -1038,7 +1038,7 @@ test('UI show list payments', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'payments')
+                    ->where('title', 'Payments')
                     ->etc()
             )
             ->has('data');
