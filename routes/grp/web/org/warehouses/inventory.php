@@ -18,7 +18,6 @@ use App\Actions\Fulfilment\StoredItem\UI\ShowStoredItem;
 use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAuditFromPalletInWarehouse;
 use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
 use App\Actions\Goods\Stock\UI\CreateStock;
-use App\Actions\Goods\Stock\UI\ShowStock;
 use App\Actions\Goods\StockFamily\ExportStockFamilies;
 use App\Actions\Goods\StockFamily\UI\CreateStockFamily;
 use App\Actions\Goods\StockFamily\UI\EditStockFamily;
@@ -118,7 +117,7 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
                 Route::get('/create', [CreateStock::class, 'inStockFamily'])->name('create');
 
                 Route::prefix('{orgStock}')->group(function () {
-                    Route::get('', [ShowStock::class, 'inStockFamily'])->name('show');
+                    Route::get('', [ShowOrgStock::class, 'inStockFamily'])->name('show');
                 });
             });
         });

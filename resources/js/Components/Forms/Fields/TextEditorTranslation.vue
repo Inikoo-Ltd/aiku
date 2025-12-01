@@ -262,8 +262,8 @@ onMounted(() => {
           <EditorV2 v-model="langBuffers[selectedLang]" :key="selectedLang + key">
             <template #editor-content="{ editor }">
               <div
-                class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all"
-                :class="{ 'opacity-50 pointer-events-none': isDisabled }">
+                class="editor-wrapper border border-gray-300 rounded-md p-3 focus-within:border-blue-400 transition-all"
+                :class="{ 'opacity-50 pointer-events-none bg-gray-500/20': isDisabled }">
                 <EditorContent :key="key" :editor="editor"
                   class="editor-content focus:outline-none leading-6 min-h-[6rem]" />
               </div>

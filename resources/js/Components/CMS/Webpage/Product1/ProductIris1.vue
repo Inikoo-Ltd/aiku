@@ -43,10 +43,11 @@ const props = withDefaults(defineProps<{
     fieldValue: any
     webpageData?: any
     blockData?: object
-    screenType: "mobile" | "tablet" | "desktop"
+    // screenType: "mobile" | "tablet" | "desktop"
 }>(), {})
 
 const layout = inject("layout", {})
+const screenType = inject("screenType", ref('desktop'))
 const contentRef = ref(null)
 const expanded = ref(false)
 const product = ref(props.fieldValue.product)
@@ -178,11 +179,11 @@ watch(
 </script>
 
 <template>
-    <div id="product-1" :style="{
+    <div v-if="screenType != 'mobile'" id="product-1" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         marginLeft: 'auto',
         marginRight: 'auto'
-    }" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
+    }" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 block">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="py-1 w-full">
@@ -206,7 +207,7 @@ watch(
                 <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
                         <h1 class="text-2xl font-bold text-gray-900">
-                            <span class="text-indigo-900">{{ product?.units }}x</span>
+                            <span class="">{{ product?.units }}x</span>
                             {{ product.name }}
                         </h1>
 
@@ -268,9 +269,9 @@ watch(
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
                         :informations="fieldValue?.information" :styleData="fieldValue?.information_style" />
                     <div v-if="fieldValue?.paymentData?.length > 0"
-                        class="items-center gap-3 border-gray-400 font-bold text-gray-800 py-2"
+                        class="items-center gap-3 border-gray-400 font-bold text-gray-800 xpy-2"
                         :style="getStyles(fieldValue?.information_style?.title)">
-                        {{ trans("Secure Payments") }}:
+                        <h2 class="!text-base font-bold">{{ trans("Secure Payments") }}:</h2>
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
                                 :src="logo.image" :alt="logo.code" class="h-4 px-1" />
@@ -282,8 +283,8 @@ watch(
     </div>
 
     <!-- Mobile Layout -->
-    <div class="block sm:hidden px-4 py-6 text-gray-800">
-        <h2 class="text-xl font-bold mb-2">{{ product.name }}</h2>
+    <div v-else class="block px-4 py-6 text-gray-800">
+        <h1 class="text-xl font-bold mb-2">{{ product.name }}</h1>
         <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
 
         <div class="items-start gap-4 mt-4">
@@ -321,7 +322,7 @@ watch(
                 :styleData="fieldValue?.information_style" />
             <InformationSideProduct v-if="fieldValue?.information?.length > 0" :informations="fieldValue?.information"
                 :styleData="fieldValue?.information_style" />
-            <div class="text-sm font-semibold mb-2">Secure Payments:</div>
+            <h2 class="!text-sm !font-semibold mb-2">{{ trans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" />

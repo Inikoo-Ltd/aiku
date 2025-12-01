@@ -9,7 +9,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
-import {useLocaleStore} from '@/Stores/locale';
 
 
 import {library} from '@fortawesome/fontawesome-svg-core';
@@ -22,7 +21,7 @@ import {
     faCube,
     faCameraRetro
 } from '@fal';
-import { computed, defineAsyncComponent, ref } from "vue";
+import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -30,6 +29,8 @@ import { faX } from "@fortawesome/free-solid-svg-icons";
 import { capitalize } from "@/Composables/capitalize"
 import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { Tabs as TSTabs } from "@/types/Tabs"
 
 library.add(
     faInventory,
@@ -42,17 +43,11 @@ library.add(
     faX
 );
 
-const locale = useLocaleStore();
-
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 const props = defineProps<{
     title: string,
-    pageHead: object,
-    tabs: {
-        current: string;
-        navigation: object;
-    }
+    pageHead: PageHeadingTypes
+    tabs: TSTabs
     showcase?: object
     org_stocks?: object
     history?: object

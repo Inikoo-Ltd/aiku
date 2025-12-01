@@ -111,6 +111,17 @@ class StoreShopifyProductVariant extends RetinaAction
                 data_set($variants[0], 'compareAtPrice', $product->rrp);
             }
 
+            $isOnDemand = false;
+            foreach ($product->orgStocks as $orgStock) {
+                if ($orgStock->is_on_demand) {
+                    $isOnDemand = true;
+                }
+            }
+
+            if ($isOnDemand) {
+                data_set($variants[0], 'inventoryPolicy', 'CONTINUE');
+            }
+
             $variables = [
                 'productId' => $productID,
                 'variants'  => $variants,
