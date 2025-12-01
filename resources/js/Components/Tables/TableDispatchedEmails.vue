@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
-import { DispatchedEmail } from "@/types/dispatched-email";
+import { DispatchedEmailResource } from "@/types/dispatched-email"
 import {
     faCheck,
     faDumpster,
@@ -52,8 +52,7 @@ defineProps<{
 }>();
 
 
-function dispatchedEmailRoute(dispatchedEmail: DispatchedEmail) {
-    console.log(route().current());
+function dispatchedEmailRoute(dispatchedEmail: DispatchedEmailResource) {
     switch (route().current()) {
         case "grp.org.fulfilments.show.operations.comms.outboxes.show":
             return route(
@@ -69,7 +68,7 @@ function dispatchedEmailRoute(dispatchedEmail: DispatchedEmail) {
                 "grp.org.shops.show.dashboard.comms.outboxes.dispatched-email.show",
                 [
                     (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).fulfilment,
+                    dispatchedEmail.shop_slug,
                     (route().params as RouteParams).outbox,
                     dispatchedEmail.id]);
         default:

@@ -49,6 +49,7 @@ class IndexDispatchedEmails extends OrgAction
 
         $queryBuilder = QueryBuilder::for(DispatchedEmail::class);
         $queryBuilder->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id');
+        $queryBuilder->leftJoin('shops', 'dispatched_emails.shop_id', '=', 'shops.id');
 
 
         switch (class_basename($parent)) {
@@ -93,6 +94,8 @@ class IndexDispatchedEmails extends OrgAction
                 'dispatched_emails.number_email_tracking_events',
                 'email_addresses.email as email_address',
                 'dispatched_emails.sent_at as sent_at',
+                'shops.code as shop_code',
+                'shops.slug as shop_slug',
                 'dispatched_emails.number_reads',
                 'dispatched_emails.number_clicks',
             ])
