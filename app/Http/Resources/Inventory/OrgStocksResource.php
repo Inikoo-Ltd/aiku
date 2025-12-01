@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Inventory;
 
-use App\Models\Inventory\OrgStock;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -28,21 +27,22 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_slug
  * @property mixed $warehouse_slug
  * @property mixed $packed_in
+ * @property mixed $quantity_available
+ * @property mixed $id
  */
 class OrgStocksResource extends JsonResource
 {
     public function toArray($request): array
     {
-        /** @var OrgStock $orgStock */
-        $orgStock = $this;
 
         return [
-            'id'                              => $orgStock->id,
-            'slug'                            => $orgStock->slug,
+            'id'                              => $this->id,
+            'slug'                            => $this->slug,
             'code'                            => $this->code,
             'state'                           => $this->state->stateIcon()[$this->state->value],
             'name'                            => $this->name,
             'quantity'                        => $this->quantity,
+            'quantity_available'              => $this->quantity_available,
             'unit_value'                      => $this->unit_value,
             'number_locations'                => $this->number_location,
             'quantity_locations'              => $this->quantity_in_locations,

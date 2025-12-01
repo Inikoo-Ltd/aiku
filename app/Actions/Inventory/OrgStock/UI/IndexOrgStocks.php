@@ -232,6 +232,7 @@ class IndexOrgStocks extends OrgAction
                 'org_stocks.slug',
                 'org_stocks.state',
                 'org_stocks.unit_value',
+                'org_stocks.quantity_available',
                 'number_locations',
                 'quantity_in_locations',
                 'org_stocks.discontinued_in_organisation_at',
@@ -275,16 +276,16 @@ class IndexOrgStocks extends OrgAction
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
-                ->column(key: 'code', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Organisation && $bucket != 'abnormality') {
-                $table->column(key: 'family_code', label: __('family'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'family_code', label: __('Family'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            if (in_array($bucket, ['active', 'discontinuing'])) {
-                $table->column(key: 'unit_value', label: __('unit value'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'stock', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            if (!$bucket || in_array($bucket, ['active', 'discontinuing'])) {
+                $table->column(key: 'unit_value', label: __('Unit value'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'stock', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             if ($bucket == 'discontinued' || $bucket == 'abnormality') {
