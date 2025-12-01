@@ -39,6 +39,7 @@ import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
+import Families2Blueprint from '@/Components/CMS/Webpage/Families2/Blueprint'
 import CtaCarousel from '@/Components/CMS/Webpage/CarouselCta/Blueprint'
 import CarouselImageBackgroundIrisBlueprint from "@/Components/CMS/Webpage/CarouselImageBackground/Blueprint"
 import BluprintBestseller from "@/Components/CMS/Webpage/Products1/BluprintBestseller"
@@ -84,6 +85,7 @@ export const getBlueprint = (componentName: string, data?: object) => {
 
 		// families list
 		"families-1": Families1Blueprint.blueprint,
+		"families-2": Families2Blueprint.blueprint,
 
 		// products list
 		"products-1": ProductsList1Blueprint.blueprint,
