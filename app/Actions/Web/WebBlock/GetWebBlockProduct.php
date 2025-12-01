@@ -11,6 +11,7 @@ namespace App\Actions\Web\WebBlock;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
 use App\Http\Resources\Web\WebBlockProductResource;
+use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -21,6 +22,14 @@ class GetWebBlockProduct
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
+
+        /** @var Product $product */
+        $product = $webpage->model;
+
+        if(!$product->is_for_sale){
+            abort(404);
+        }
+
 
         $permissions =  [];
         $attachments = DB::table('media')

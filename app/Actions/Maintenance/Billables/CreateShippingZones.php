@@ -41,7 +41,7 @@ class CreateShippingZones
         $data['bg'] = [
             [
                 'code'        => 'Z1',
-                'name'        => 'Zone 1',
+                'name'        => __('Zone 1'),
                 'status'      => true,
                 'price'       => [
                     'type'  => 'Step Order Items Net Amount',
@@ -68,7 +68,7 @@ class CreateShippingZones
             ],
             [
                 'code'        => 'Z2',
-                'name'        => 'Zone 2',
+                'name'        => __('Zone 2'),
                 'status'      => true,
                 'price'       => [
                     'type'  => 'Step Order Items Net Amount',
@@ -100,7 +100,7 @@ class CreateShippingZones
             ],
             [
                 'code'        => 'Z3',
-                'name'        => 'Zone 3',
+                'name'        => __('Zone 3'),
                 'status'      => true,
                 'price'       => [
                     'type'  => 'Step Order Items Net Amount',
@@ -134,7 +134,7 @@ class CreateShippingZones
             ],
             [
                 'code'        => 'Z4',
-                'name'        => 'Zone 4',
+                'name'        => __('Zone 4'),
                 'status'      => true,
                 'price'       => [
                     'type'  => 'Step Order Items Net Amount',
@@ -161,7 +161,7 @@ class CreateShippingZones
             ],
             [
                 'code'        => 'Other',
-                'name'        => 'Rest of the world',
+                'name'        => __('Rest of the world'),
                 'status'      => true,
                 'price'       => [
                     'type' => 'TBC',
@@ -175,7 +175,7 @@ class CreateShippingZones
         $data['bg-1'] = [
             [
                 'code'        => 'Z1',
-                'name'        => 'Zone 1',
+                'name'        => __('Zone 1'),
                 'status'      => true,
                 'price'       => [
                     'type'  => 'Step Order Items Net Amount',
@@ -202,7 +202,7 @@ class CreateShippingZones
             ],
             [
                 'code'        => 'Z2',
-                'name'        => 'Zone 2',
+                'name'        => __('Zone 2'),
                 'status'      => true,
                 'price'       => [
                     'type'  => 'Step Order Items Net Amount',
@@ -234,7 +234,7 @@ class CreateShippingZones
             ],
             [
                 'code'        => 'Z3',
-                'name'        => 'Zone 3',
+                'name'        => __('Zone 3'),
                 'status'      => true,
                 'price'       => [
                     'type'  => 'Step Order Items Net Amount',
@@ -268,7 +268,7 @@ class CreateShippingZones
             ],
             [
                 'code'        => 'Z4',
-                'name'        => 'Zone 4',
+                'name'        => __('Zone 4'),
                 'status'      => true,
                 'price'       => [
                     'type'  => 'Step Order Items Net Amount',
@@ -295,7 +295,7 @@ class CreateShippingZones
             ],
             [
                 'code'        => 'Other',
-                'name'        => 'Rest of the world',
+                'name'        => __('Rest of the world'),
                 'status'      => true,
                 'price'       => [
                     'type' => 'TBC',

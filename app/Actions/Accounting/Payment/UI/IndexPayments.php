@@ -68,7 +68,7 @@ class IndexPayments extends OrgAction
         } elseif (class_basename($parent) == 'PaymentAccount') {
             $queryBuilder->where('payments.payment_account_id', $parent->id);
         } elseif (class_basename($parent) == 'Shop') {
-            $queryBuilder->where('payments.payment_account_id', $parent->id);
+            $queryBuilder->where('payments.shop_id', $parent->id);
         } elseif (class_basename($parent) == 'Customer') {
             $queryBuilder->where('payments.customer_id', $parent->id);
         } elseif (class_basename($parent) == 'Group') {
@@ -301,11 +301,11 @@ class IndexPayments extends OrgAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('payments'),
+                'title'       => __('Payments'),
                 'pageHead'    => [
                     'subNavigation' => $subNavigation,
                     'icon'      => ['fal', 'fa-coins'],
-                    'title'     => __('payments'),
+                    'title'     => __('Payments'),
                     'container' => match ($routeName) {
                         'grp.org.accounting.shops.show.payments.index' => [
                             'icon'    => ['fal', 'fa-store-alt'],

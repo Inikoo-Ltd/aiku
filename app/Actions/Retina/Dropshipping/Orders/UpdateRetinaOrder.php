@@ -26,9 +26,7 @@ class UpdateRetinaOrder extends RetinaAction
 
     public function handle(Order $order, array $modelData): Order
     {
-        $order = UpdateOrder::make()->action($order, $modelData);
-
-        return $order;
+        return UpdateOrder::make()->action($order, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool

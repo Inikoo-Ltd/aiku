@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
-import { DispatchedEmail } from "@/types/dispatched-email";
+import { DispatchedEmailResource } from "@/types/dispatched-email"
 import {
     faCheck,
     faDumpster,
@@ -60,13 +60,13 @@ defineProps<{
 
 
 const showEmailPreview = ref(false);
-const selectedEmail = ref<DispatchedEmail | null>(null);
+const selectedEmail = ref<DispatchedEmailResource | null>(null);
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleString();
 }
 
-function dispatchedEmailRoute(dispatchedEmail: DispatchedEmail) {
+function dispatchedEmailRoute(dispatchedEmail: DispatchedEmailResource) {
   selectedEmail.value = dispatchedEmail;
   showEmailPreview.value = true;
 }

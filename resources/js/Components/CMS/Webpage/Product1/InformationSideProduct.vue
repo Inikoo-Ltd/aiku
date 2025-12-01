@@ -39,13 +39,14 @@ function toggleDisclosure(index: number) {
             :aria-controls="'disclosure-' + content.id"
             :style="getStyles(styleData?.title)"
           >
-            {{ content.title }}
+            <h2 class="!text-base">{{ content.title }}</h2>
             <FontAwesomeIcon
               :icon="faChevronDown"
               class="text-sm text-gray-500 transform transition-transform duration-200"
               :class="{ 'rotate-180': openDisclosureId === index }"
             />
           </button>
+
           <transition name="fade">
             <div
               v-if="openDisclosureId === index"
