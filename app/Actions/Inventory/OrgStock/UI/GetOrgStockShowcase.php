@@ -64,18 +64,8 @@ class GetOrgStockShowcase
                             'method' => 'patch',
                             'name'   => 'grp.models.location_org_stock.move',
                         ],
-                        // 'fetch_locations'         => [
-                        //     'name'       => 'xxxxxxxxxxxxxxxxxx',
-                        //     'parameters' => []
-                        // ],  // TODO: Artha, fetch locations list in the warehouse
-                        // 'submit_audit_stocks'     => [
-                        //     'name'       => 'xxxxxxxxxxxxxxxxxx',
-                        //     'parameters' => []
-                        // ],  // TODO: Artha, submit audit stocks
-                        // 'update_stocks_locations' => [
-                        //     'name'       => 'xxxxxxxxxxxxxxxxxx',
-                        //     'parameters' => []
-                        // ],  // TODO: Artha, attach and detach the stocks to locations
+                        'set_location_as_picking_priority_route'      => [],  // TODO
+                        'add_parts_location_note'      => [],  // TODO
                     ],
                     'summary'        => [
                         'quantity_in_locations'        => [

@@ -261,7 +261,7 @@ const getQuestionTooltip = (locationId: number) => {
             <KeepAlive>
                 <template v-if="isStockCheck">
                     <StockCheck
-                        :stock_locations="props.stocks_management.locations"
+                        :locations="props.stocks_management.locations"
                         @onClickBackground="isStockCheck = false"
                         :auditRoute="props.stocks_management?.routes?.audit_route"
                     />

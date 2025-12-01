@@ -469,7 +469,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                         <label for="inp-publish-now" class="block text-sm/6 cursor-pointer ">Publish now</label>
                     </div>
                     
-                    <div v-if="false" class="flex items-center gap-x-3">
+                    <div  class="flex items-center gap-x-3">
                         <input
                             value="scheduled"
                             @input="(val: string) => announcementData.schedule_at = new Date(nexterday)"
@@ -516,7 +516,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                         <label for="inp-finish-unlimited" class="block text-sm/6 font-medium cursor-pointer ">{{ trans("Until deactivated") }}</label>
                     </div>
                     
-                    <div v-if="false" class="flex items-center gap-x-3">
+                    <div class="flex items-center gap-x-3">
                         <input
                             value="scheduled"
                             @input="(val: string) => announcementData.schedule_finish_at = new Date(nexterday)"
