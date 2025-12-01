@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
+ * Author: Eka Yudinata <eka@inikoo.com>
  * Created: Thu, 19 Dec 2024 18:08:10 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Copyright (c) 2024, Eka Yudinata
  */
 
 namespace App\Actions\Comms\Outbox\ReorderRemainder\Hydrators;
@@ -26,11 +26,11 @@ use App\Enums\Comms\DispatchedEmail\App\Enums\Comms\DispatchedEmailEvent\Dispatc
 use App\Actions\Comms\Outbox\ReorderRemainder\WithGenerateEmailBulkRuns;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
 
-class ReorderRemainderHydrateEmailBulkRuns implements ShouldQueue
+class CustomersHydrateReorderRemainderEmails implements ShouldQueue
 {
     use AsAction;
     use WithGenerateEmailBulkRuns;
-    public string $commandSignature = 'hydrate:reorder-reminder-email-bulk-runs';
+    public string $commandSignature = 'hydrate:reorder-reminder-customers';
     public string $jobQueue = 'low-priority';
 
     /**
@@ -56,10 +56,11 @@ class ReorderRemainderHydrateEmailBulkRuns implements ShouldQueue
     public function handle(): void
     {
         // TODO: update from setting
-        $defaultDays = 20;
+        $defaultDays =  env('REORDER_REMINDER_DAYS', 20);
 
         // get the customers
         // TODO: confirm to raul more conditions for the customers like last_invoiced_at, status, state
+        // make optimize the quiery for fetch
         $customers = Customer::where('last_invoiced_at', '<', now()->subDays($defaultDays))
             ->whereNotNull('email')
             ->where('email', '!=', '')

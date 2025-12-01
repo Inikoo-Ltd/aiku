@@ -22,7 +22,7 @@ use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
-use App\Actions\Comms\Outbox\ReorderRemainder\Hydrators\ReorderRemainderHydrateEmailBulkRuns;
+use App\Actions\Comms\Outbox\ReorderRemainder\Hydrators\CustomersHydrateReorderRemainderEmails;
 use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -365,10 +365,10 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(ReorderRemainderHydrateEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ReorderReminderEmailBulkRuns',
+            $schedule->job(CustomersHydrateReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CustomersHydrateReorderRemainderEmails',
             ),
-            name: 'ReorderReminderEmailBulkRuns',
+            name: 'CustomersHydrateReorderRemainderEmails',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
