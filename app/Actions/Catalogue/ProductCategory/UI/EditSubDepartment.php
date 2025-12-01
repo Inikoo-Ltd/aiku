@@ -123,7 +123,7 @@ class EditSubDepartment extends OrgAction
                                 'fields' => [
                                     'name' =>  $subDepartment->masterProductCategory ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('name'),
+                                        'label' => __('Name'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $subDepartment->masterProductCategory->name,
@@ -132,12 +132,12 @@ class EditSubDepartment extends OrgAction
                                         'value' => $subDepartment->getTranslations('name_i8n')
                                     ] : [
                                         'type'  => 'input',
-                                        'label' => __('name'),
+                                        'label' => __('Name'),
                                         'value' => $subDepartment->name
                                     ],
                                     'description_title' => $subDepartment->masterProductCategory ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('description title'),
+                                        'label' => __('Description Title'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $subDepartment->masterProductCategory->description_title,
@@ -146,12 +146,12 @@ class EditSubDepartment extends OrgAction
                                         'value' => $subDepartment->getTranslations('description_title_i8n')
                                     ] : [
                                         'type'  => 'input',
-                                        'label' => __('description title'),
+                                        'label' => __('Description Title'),
                                         'value' => $subDepartment->description_title
                                     ],
                                     'description' => $subDepartment->masterProductCategory ? [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __(key: 'description'),
+                                        'label' => __('Description'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $subDepartment->masterProductCategory->description,
@@ -160,12 +160,12 @@ class EditSubDepartment extends OrgAction
                                         'value' => $subDepartment->getTranslations('description_i8n')
                                     ] : [
                                         'type'  => 'textEditor',
-                                        'label' => __(key: 'description'),
+                                        'label' => __('Description'),
                                         'value' => $subDepartment->description
                                     ],
                                     'description_extra' => $subDepartment->masterProductCategory ? [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('Extra description'),
+                                        'label' => __('Extra Description'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $subDepartment->masterProductCategory->description_extra,
@@ -174,7 +174,7 @@ class EditSubDepartment extends OrgAction
                                         'value' => $subDepartment->getTranslations('description_extra_i8n')
                                     ] : [
                                          'type'  => 'textEditor',
-                                        'label' => __('Extra description'),
+                                        'label' => __('Extra Description'),
                                         'value' => $subDepartment->description_extra
                                     ],
                                 ]
