@@ -93,11 +93,7 @@ function stockFamilyRoute(stock: Stock) {
     )
 }
 
-const displayFraction = (stock: Stock) => {
-    let reminder = 0;
-    // let text = `${number}`
-    return stock.product_units % stock.packed_in;
-}
+
 
 </script>
 
