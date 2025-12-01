@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 01 Dec 2025 11:02:01 Malaysia Time, Kuala Lumpur, Malaysia
@@ -44,12 +45,12 @@ class RepairMissingOrgSockSourceId
 
             $command->line("Match with aurora $orgStock->slug: A: ".$auroraRow->{"Part Reference"});
 
-            if(!$dryRun) {
+            if (!$dryRun) {
                 $orgStock->update([
                     'source_id' => $orgStock->organisation_id.':'.$sku,
                 ]);
             }
-        }else{
+        } else {
             $command->line("No match with aurora $orgStock->code");
         }
 
@@ -64,7 +65,7 @@ class RepairMissingOrgSockSourceId
         $organisationId = (int)$command->argument('organisation_id');
         $dryRun         = (bool)$command->option('dry-run');
 
-        $organisation= Organisation::find($organisationId);
+        $organisation = Organisation::find($organisationId);
         $organisationSource = $this->getOrganisationSource($organisation);
         $organisationSource->initialisation($organisation);
 
@@ -73,12 +74,8 @@ class RepairMissingOrgSockSourceId
             ->whereNull('source_id');
 
 
-
-
-
-
         $query->orderBy('id')
-            ->chunk(100, function (Collection $models) use ( $command,$dryRun) {
+            ->chunk(100, function (Collection $models) use ($command, $dryRun) {
                 foreach ($models as $model) {
                     $this->handle($model, $command, $dryRun);
 

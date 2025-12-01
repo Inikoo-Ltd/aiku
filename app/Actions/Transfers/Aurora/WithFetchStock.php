@@ -16,6 +16,7 @@ use App\Models\Inventory\OrgStock;
 use App\Transfers\SourceOrganisationService;
 use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 trait WithFetchStock
@@ -28,7 +29,7 @@ trait WithFetchStock
         $orgStock = $organisation->orgStocks()->where('source_id', $stockData['stock']['source_id'])->first();
 
         if (!$orgStock) {
-            $code = $stockData['stock']['code'];
+            $code     = $stockData['stock']['code'];
             $orgStock = OrgStock::where('organisation_id', $organisation->id)
                 ->whereRaw('LOWER(code) = LOWER(?)', [$code])
                 ->first();
@@ -87,7 +88,6 @@ trait WithFetchStock
 
     protected function processAbnormalOrgStock(SourceOrganisationService $organisationSource, array $stockData): OrgStock|null
     {
-
         $orgStockData = $stockData['org_stock'];
         data_set($orgStockData, 'code', $stockData['stock']['code']);
         data_set($orgStockData, 'name', $stockData['stock']['name']);
@@ -96,21 +96,26 @@ trait WithFetchStock
         /** @var OrgStock $orgStock */
         if ($orgStock = $organisation->orgStocks()->where('source_id', $stockData['stock']['source_id'])->first()) {
             try {
-                return UpdateOrgStock::make()->action(
+                $orgStock = UpdateOrgStock::make()->action(
                     orgStock: $orgStock,
                     modelData: $orgStockData,
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
+
+                $sourceData = explode(':', $stockData['stock']['source_id']);
+                DB::connection('aurora')->table('Part Dimension')
+                    ->where('Part SKU', $sourceData[1])
+                    ->update(['aiku_unit_id' => $orgStock->id]);
+
+                return $orgStock;
             } catch (Exception $e) {
                 $this->recordError($organisationSource, $e, $orgStockData, 'OrgStock', 'update');
 
                 return null;
             }
         } else {
-
-
             try {
                 $orgStock = StoreAbnormalOrgStock::make()->action(
                     parent: $organisation,
@@ -124,6 +129,11 @@ trait WithFetchStock
                     $orgStock,
                     Arr::except($orgStockData, ['fetched_at', 'last_fetched_at', 'source_id'])
                 );
+
+                $sourceData = explode(':', $stockData['stock']['source_id']);
+                DB::connection('aurora')->table('Part Dimension')
+                    ->where('Part SKU', $sourceData[1])
+                    ->update(['aiku_unit_id' => $orgStock->id]);
 
                 return $orgStock;
             } catch (Exception|Throwable $e) {
