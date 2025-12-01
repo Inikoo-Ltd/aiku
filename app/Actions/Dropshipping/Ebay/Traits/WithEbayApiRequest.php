@@ -448,10 +448,10 @@ trait WithEbayApiRequest
     {
         return [
             'EBAY_GB' => [
-                'service_code' => 'UK_OtherCourier',
-                'service_name' => 'Yodel',
-                'carrier_code' => 'Yodel',
-                'carrier_name' => 'Yodel',
+                'service_code' => 'UK_RoyalMailNextDay',
+                'service_name' => 'UK Royal Mail Next Day',
+                'carrier_code' => 'RoyalMail',
+                'carrier_name' => 'Royal Mail',
             ],
             'EBAY_DE' => [
                 'service_code' => 'DE_Sonstige',
