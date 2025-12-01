@@ -105,11 +105,6 @@ const onPickTemplate = (template: any) => {
     ...template,
     data: {
       ...template.data,
-      fieldValue: {
-        container : {
-          properties : null
-        }
-      }
     }
   }
   autosave()

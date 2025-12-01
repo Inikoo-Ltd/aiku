@@ -36,7 +36,7 @@ import Department1Iris from '@/Components/CMS/Webpage/Department1/Department1Iri
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
 import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop.vue'
-import SubDepartmentWorkshop from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'
+import SubDepartmentWorkshop1 from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
 import Products1Workshop from '@/Components/CMS/Webpage/Products1/Products1Workshop.vue'
 import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
@@ -49,6 +49,7 @@ import BlogWorkshop from '@/Components/CMS/Webpage/Blog/BlogWorkshop.vue'
 import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme1/EditFooter1Translation.vue'
 import CarouselCtaWorkshop from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaWorkshop.vue'
 import CarouselImageBackground from '@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundWorkshop.vue'
+import SubDepartmentWorkshop2 from '@/Components/CMS/Webpage/SubDepartment2/SubDepartmentWorkshop.vue'
 
 
 
@@ -84,7 +85,8 @@ export const getComponent = (componentName: string) => {
         'department' : Department1Iris,
 
         //sub-department
-        'sub-departments-1' : SubDepartmentWorkshop,
+        'sub-departments-1' : SubDepartmentWorkshop1,
+        'sub-departments-2' : SubDepartmentWorkshop2,
 
         //family
         'families-1' : Families1Workshop,

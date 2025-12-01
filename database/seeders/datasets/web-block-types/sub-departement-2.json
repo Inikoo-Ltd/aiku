@@ -1,0 +1,26 @@
+{
+	"slug": "sub-departments-2",
+	"code": "sub-departments-2",
+	"name": "Sub-Departments-2",
+	"scope": "webpage",
+	"category": "sub_department",
+	"website_type": ["b2b", "b2", "dropshipping"],
+	"icon": ["fal", "building"],
+	"fixed": true,
+	"data": {
+		"fieldValue": {
+			"card": {
+				"container": {
+					"properties": {
+						"text": {
+							"color": "#000000",
+							"fontSize": null,
+							"fontStyle": null,
+							"fontFamily": "'Shoemaker', sans-serif"
+						}
+					}
+				}
+			}
+		}
+	}
+}
