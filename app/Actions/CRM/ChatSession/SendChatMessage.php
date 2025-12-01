@@ -2,6 +2,7 @@
 
 namespace App\Actions\CRM\ChatSession;
 
+use App\Events\BroadcastRealtimeChat;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use App\Models\SysAdmin\User;
@@ -41,6 +42,8 @@ class SendChatMessage
         $this->updateSessionTimestamps($chatSession, $modelData['sender_type']);
 
         $this->logMessageEvent($chatSession, $modelData['sender_type'], $modelData['sender_id'] ?? null, $chatMessage);
+
+        broadcast(new BroadcastRealtimeChat($chatMessage));
 
         return $chatMessage;
     }

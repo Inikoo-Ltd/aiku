@@ -7,9 +7,11 @@
  */
 
 use App\Models\CRM\WebUser;
-use App\Models\Dropshipping\ShopifyUser;
 use App\Models\SysAdmin\User;
+use App\Models\CRM\Livechat\ChatAgent;
+use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Facades\Broadcast;
+use App\Models\CRM\Livechat\ChatAssignment;
 
 Broadcast::channel('shopify.upload-product.{shopifyUserId}', function (WebUser|ShopifyUser $user, int|string $shopifyUserId) {
     return true;
@@ -94,5 +96,34 @@ Broadcast::channel("translate.{randomString}.channel", function () {
 });
 
 Broadcast::channel("upload-portfolio-to-r2.{randomString}", function () {
+    return true;
+});
+
+
+Broadcast::channel('chat-session.{ulid}', function (User|WebUser $user, string $ulid) {
+
+    // $session = ChatSession::where('ulid', $ulid)->first();
+    // if (! $session) return false;
+
+    // if ($user instanceof User) {
+
+    //     $agent = ChatAgent::where('user_id', $user->id)->first();
+    //     if (!$agent) return false;
+
+    //     return ChatAssignment::where('chat_session_id', $session->id)
+    //         ->where('chat_agent_id', $agent->id)
+    //         ->exists();
+    // }
+
+    // $guestIdentifier = request()->header('X-Guest-Identifier');
+
+    // if (!$session->web_user_id && $session->guest_identifier) {
+    //     return $session->guest_identifier === $guestIdentifier;
+    // }
+
+    // if ($user instanceof WebUser) {
+    //     return $session->web_user_id === $user->id;
+    // }
+
     return true;
 });
