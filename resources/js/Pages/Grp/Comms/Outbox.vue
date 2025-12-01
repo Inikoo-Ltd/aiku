@@ -14,6 +14,7 @@ import { faBars, faInboxOut, faMailBulk, faRabbitFast, faSeedling, faSquare, faE
 import TableMailshots from "@/Components/Tables/TableMailshots.vue"
 import OutboxShowcase from "@/Components/Showcases/Grp/OutboxShowcase.vue"
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue"
+import TableReorderRemainderEmailBulkRuns from "@/Components/Tables/TableReorderRemainderEmailBulkRuns.vue"
 import Mailshots from "./Mailshots.vue"
 import { faPaperPlane } from "@far"
 import { faSave } from "@fas"
@@ -43,7 +44,7 @@ const component = computed(() => {
         mailshots: TableMailshots,
         showcase: OutboxShowcase,
         dispatched_emails: TableDispatchedEmails,
-        email_runs: Mailshots
+        email_runs: TableReorderRemainderEmailBulkRuns
     }
 
     return components[currentTab.value]

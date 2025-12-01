@@ -10,59 +10,51 @@ namespace App\Actions\Comms\Outbox\ReorderRemainder\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\EmailBulkRun;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
-use Illuminate\Support\Facades\Log;
 
 class IndexReorderEmailBulkRuns extends OrgAction
 {
-    private Shop|Outbox $parent;
-
-    public function handle(Shop|Outbox $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Outbox $parent, $prefix = null): LengthAwarePaginator
     {
-        Log::info("handle ".get_class($parent));
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
         $queryBuilder = QueryBuilder::for(EmailBulkRun::class);
-        $queryBuilder->leftJoin('organisations', 'email_bulk_runs.organisation_id', '=', 'organisations.id')
-            ->leftJoin('shops', 'email_bulk_runs.shop_id', '=', 'shops.id');
-        if ($parent instanceof Outbox) {
-            $queryBuilder->where('email_bulk_runs.outbox_id', $parent->id);
-        } elseif ($parent instanceof Shop) {
-            $queryBuilder->where('email_bulk_runs.shop_id', $parent->id);
-        }
+        $queryBuilder->leftJoin('email_bulk_run_stats', 'email_bulk_runs.id', '=', 'email_bulk_run_stats.email_bulk_run_id');
+        $queryBuilder->where('email_bulk_runs.outbox_id', $parent->id);
 
-        return $queryBuilder
+        $testQuery =  $queryBuilder
             ->defaultSort('email_bulk_runs.id')
             ->select([
                 'email_bulk_runs.id',
                 'email_bulk_runs.subject',
                 'email_bulk_runs.state',
-                'shops.name as shop_name',
-                'shops.slug as shop_slug',
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
+                'email_bulk_run_stats.number_dispatched_emails',
+                'email_bulk_run_stats.number_dispatched_emails_state_sent',
+                'email_bulk_run_stats.number_dispatched_emails_state_delivered',
+                'email_bulk_run_stats.number_dispatched_emails_state_hard_bounce',
+                'email_bulk_run_stats.number_dispatched_emails_state_soft_bounce',
+                'email_bulk_run_stats.number_dispatched_emails_state_opened',
+                'email_bulk_run_stats.number_dispatched_emails_state_clicked',
+                'email_bulk_run_stats.number_dispatched_emails_state_spam',
             ])
-            ->allowedSorts(['email_bulk_runs.subject', 'email_bulk_runs.state', 'shop_name', 'organisation_name'])
+            ->allowedSorts(['email_bulk_runs.subject', 'email_bulk_runs.state','number_dispatched_emails',
+             'number_dispatched_emails_state_sent', 'number_dispatched_emails_state_delivered', 'number_dispatched_emails_state_hard_bounce',
+             'number_dispatched_emails_state_soft_bounce', 'number_dispatched_emails_state_opened', 'number_dispatched_emails_state_clicked',
+             'number_dispatched_emails_state_spam'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        return $testQuery;
     }
 
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        Log::info("tableStructure ".get_class($parent));
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
                 $table
@@ -73,7 +65,15 @@ class IndexReorderEmailBulkRuns extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->column(key: 'state', label: '', type: 'icon')
-                ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_dispatched_emails', label: __('dispatched'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_dispatched_emails_state_sent', label: __('sent'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_dispatched_emails_state_delivered', label: __('delivered'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_dispatched_emails_state_hard_bounce', label: __('hard bounce'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_dispatched_emails_state_soft_bounce', label: __('soft bounce'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_dispatched_emails_state_opened', label: __('opened'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_dispatched_emails_state_clicked', label: __('clicked'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_dispatched_emails_state_spam', label: __('spam'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
