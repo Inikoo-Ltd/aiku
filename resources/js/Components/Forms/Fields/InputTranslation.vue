@@ -5,6 +5,7 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { faRobot, faCircle, faCheckCircle } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import PureInput from "@/Components/Pure/PureInput.vue"
 
 const props = defineProps<{
   form: any
@@ -267,11 +268,18 @@ onBeforeUnmount(() => {
             />
           </div>
 
-          <input
+          <!-- <input
             type="text"
             v-model="langBuffers[selectedLang]"
             class="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             :disabled="isDisabled"
+            placeholder="Enter translation..."
+          /> -->
+
+          <PureInput
+            v-model="langBuffers[selectedLang]"
+            :disabled="isDisabled"
+            class="mt-2"
             placeholder="Enter translation..."
           />
         </div>

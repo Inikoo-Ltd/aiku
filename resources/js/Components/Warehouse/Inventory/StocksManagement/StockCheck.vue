@@ -7,7 +7,7 @@ import { faDotCircle, faSave } from "@fal"
 import { faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber } from 'primevue'
-import { inject, ref } from 'vue'
+import { inject, ref, watch } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -20,7 +20,7 @@ import { StockLocation } from '@/types/Inventory/StocksManagement'
 library.add(faDotCircle, fasDotCircle, faSave)
 
 const props = defineProps<{
-    stock_locations: StockLocation[]
+    locations: StockLocation[]
     auditRoute?: routeType
 }>()
 
@@ -30,7 +30,7 @@ const emits = defineEmits<{
 
 const layout = inject('layout', layoutStructure)
 
-const cloneLocations = ref(cloneDeep(props.stock_locations))
+const cloneLocations = ref(cloneDeep(props.locations))
 
 const listLoadingLocations = ref<number[]>([])
 const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
@@ -69,6 +69,10 @@ const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
         }
     )
 }
+
+watch(() => props.locations, (newValue) => {
+    cloneLocations.value = cloneDeep(newValue)
+})
 </script>
 
 <template>
@@ -87,12 +91,12 @@ const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
                 </div>
 
                 <div class="col-span-2 text-right flex items-center justify-end gap-x-1">
-                    <div v-if="location.quantity != stock_locations[idx].quantity">
-                        <span v-if="location.quantity > stock_locations[idx].quantity" class="text-green-600">
-                            +{{ location.quantity - stock_locations[idx].quantity }}
+                    <div v-if="location.quantity != props.locations.find(l => l.id === location.id)?.quantity">
+                        <span v-if="location.quantity > props.locations.find(l => l.id === location.id)?.quantity" class="text-green-600">
+                            +{{ location.quantity - (props.locations.find(l => l.id === location.id)?.quantity ?? 0) }}
                         </span>
                         <span v-else class="text-red-500">
-                            -{{ stock_locations[idx].quantity - location.quantity }}
+                            -{{ (props.locations.find(l => l.id === location.id)?.quantity ?? 0) - location.quantity }}
                         </span>
                     </div>
                     
@@ -102,7 +106,7 @@ const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
                         class="cursor-pointer text-gray-400 hover:text-green-500"
                     >
                         <FontAwesomeIcon
-                            :icon="location.quantity != !stock_locations[idx].quantity ? 'fas fa-dot-circle' : 'fal fa-dot-circle'"
+                            :icon="location.quantity != !props.locations[idx].quantity ? 'fas fa-dot-circle' : 'fal fa-dot-circle'"
                             fixed-width
                             aria-hidden="true"
                         />
@@ -124,7 +128,7 @@ const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
                     <div class="">
                         <LoadingIcon v-if="listLoadingLocations.includes(location.id)" class="text-2xl" />
                         <template v-else>
-                            <FontAwesomeIcon v-if="location.quantity != stock_locations[idx].quantity" @click="() => submitCheckStock(location)" icon="fad fa-save" class="text-2xl cursor-pointer" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-if="location.quantity != props.locations[idx].quantity" @click="() => submitCheckStock(location)" icon="fad fa-save" class="text-2xl cursor-pointer" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
                             <FontAwesomeIcon v-else icon="fal fa-save" class="text-2xl text-gray-300" fixed-width aria-hidden="true" />
                         </template>
                     </div>
@@ -145,7 +149,7 @@ const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
 
         </div>
         <div v-if="layout.app.environment === 'local'">
-            <pre>{{ stock_locations }}</pre>
+            <pre>{{ props.locations }}</pre>
         </div>
     </div>
 </template>
