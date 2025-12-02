@@ -4,7 +4,7 @@
 	"name": "Sub-Departments-2",
 	"scope": "webpage",
 	"category": "sub_department",
-	"website_type": ["b2b", "b2", "dropshipping"],
+	"website_type" : ["b2b","b2c","dropshipping"],
 	"icon": ["fal", "building"],
 	"fixed": true,
 	"data": {
