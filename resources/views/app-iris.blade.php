@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title inertia></title>
+    <title inertia>{{ $browserTitle ?? config('app.name') }}</title>
+
 
     <link rel="preload" as="style" href="https://fonts.bunny.net/css?family=fira-sans:200,400,500,700,900&display=swap"
           onload="this.onload=null;this.rel='stylesheet'">
@@ -27,6 +28,8 @@
             @endif
         @endif
     @endif
+
+
 
     @if(request()->get('favicons'))
         <link rel="icon" type="image/png" sizes="16x16" href="{{ request()->get('favicons')['16']}}">
@@ -77,6 +80,7 @@
 
 </head>
 <body class="font-sans antialiased h-full">
+
 @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
     <!-- Google Tag Manager (noscript) -->
     <noscript>

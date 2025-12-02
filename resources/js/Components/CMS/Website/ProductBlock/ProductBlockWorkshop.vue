@@ -118,7 +118,7 @@ const setIframeView = (view: string) => {
       <div class="flex-1 overflow-auto">
         <div v-if="props.data.layout?.data?.fieldValue?.product" class="editor-class">
           <div class="relative flex-1 overflow-auto border-2 border-t-0" :class="iframeClass">
-            <component class="w-full pointer-events-none" :is="getComponent(props.data.layout.code)"
+            <component class="w-full pointer-events-none" :is="getComponent(props.data.layout.code, { shop_type: layout?.shopState?.type })" :code="props.data.layout.code"
               :screenType="currentView" :modelValue="props.data.layout.data.fieldValue" templateEdit="template"
               :currency />
           </div>

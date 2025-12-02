@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { faFilter, faSearch, faLayerGroup } from "@fas";
 import { ref, computed, inject, watch } from "vue";
-import ProductRender from "./ProductRender.vue";
-import FilterProducts from "./FilterProduct.vue";
+import FilterProducts from "@/Components/CMS/Webpage/Products1/FilterProduct.vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
@@ -12,13 +11,15 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
-import ProductRenderEcom from "./ProductRenderEcom.vue"
+import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
+import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents";
 
 library.add(faFileDownload)
 
 const props = defineProps<{
   modelValue: any
   screenType: "mobile" | "tablet" | "desktop";
+  code : string
 }>();
 
 const layout: any = inject("layout", {});
@@ -152,15 +153,8 @@ watch(
           <div v-for="product in dummyProducts" :key="product.id"
             :style="getStyles(modelValue?.card_product?.properties, screenType)"
             class="border p-3 relative rounded  bg-white">
-            <ProductRender 
-              v-if="['awd', 'dssk', 'dse'].includes(route().params.shop)"
-              :product="product" 
-              :bestSeller="modelValue.bestseller"
-              :buttonStyle="getStyles(modelValue?.button?.properties, screenType)"
-              :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
-            />
-            <ProductRenderEcom 
-              v-else
+            <component
+              :is="getProductsRenderB2bComponent(code)" 
               :product="product" 
               :buttonStyle="getStyles(modelValue?.button?.properties, screenType, false)"
               :hasInBasket="[]" 
