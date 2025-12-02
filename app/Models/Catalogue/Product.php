@@ -48,6 +48,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
+use App\Models\Catalogue\Shop;
 
 /**
  * @property int $id
@@ -369,6 +370,16 @@ class Product extends Model implements Auditable, HasMedia
     public function department(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'department_id');
+    }
+
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
+    }
+
+    public function organisation(): BelongsTo
+    {
+        return $this->belongsTo(Organisation::class, 'organisation_id');
     }
 
     public function subDepartment(): BelongsTo
