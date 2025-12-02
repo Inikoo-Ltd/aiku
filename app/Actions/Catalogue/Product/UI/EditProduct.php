@@ -11,14 +11,11 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Web\Webpage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -287,30 +284,6 @@ class EditProduct extends OrgAction
                 'value' => $product->is_for_sale,
             ],
         ];
-        // Only show if product webpage is available previously
-        if(!$product->is_for_sale && ($product->webpage?->state != WebpageStateEnum::CLOSED)){
-            $saleStatusFields['webpage_state_data'] = [
-                'type'               => 'toggle_state_webpage',
-                'label'              => __('Website State'),
-                'placeholder'        => __('Select webpage state'),
-                'information'        => __('This would affect the product webpage viewability'),
-                'options'            => Options::forEnum(WebpageStateEnum::class),
-                'searchable'         => true,
-                'default_storefront' => getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $product->webpage->shop_id)->first()),
-                'init_options'       => $product->webpage->redirectWebpage ? [
-                    getFieldWebpageData($product->webpage->redirectWebpage)
-                ] : null,
-                'value'              => [
-                    'state'               => $product->webpage->state,
-                    'redirect_webpage_id' => $product->webpage->redirect_webpage_id,
-                ],
-                'fetch_params'       => [
-                    'organisation' => $product->organisation->slug,
-                    'shop' => $product->shop->slug,
-                    'website' => $product->shop->website->slug,
-                ]
-            ];
-        }
 
         return array_filter(
             [

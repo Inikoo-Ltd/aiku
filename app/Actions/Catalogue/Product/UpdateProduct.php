@@ -53,14 +53,6 @@ class UpdateProduct extends OrgAction
         $newData = [];
         $oldData = $product->toArray();
 
-        if (Arr::has($modelData, 'webpage_state_data')) {
-            // Old webpage state data for auditing
-            $oldData = array_merge($oldData, ['web_state' => $product->webpage->state]);
-            $newData['web_state'] = data_get($modelData, 'webpage_state_data.state');
-            
-            $webpageData['state_data'] = Arr::pull($modelData, 'webpage_state_data');
-        }
-
         if (Arr::has($modelData, 'webpage_title')) {
             $webpageData['title'] = Arr::pull($modelData, 'webpage_title');
         }
@@ -150,11 +142,11 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if(Arr::hasAny($modelData, ['is_for_sale'])) {
+        if (Arr::hasAny($modelData, ['is_for_sale'])) {
             data_set($modelData, 'not_for_sale_since', $modelData['is_for_sale'] ? null : Carbon::now('UTC'));
-            if(!$modelData['is_for_sale']){
+            if (!$modelData['is_for_sale']) {
                 data_set($modelData, 'status', ProductStatusEnum::NOT_FOR_SALE);
-            }else{
+            } else {
                 $modelData = array_merge($modelData, $this->getProductStatus($product));
             }
             // For auditing | Ignore not_for_sale_since
@@ -180,7 +172,8 @@ class UpdateProduct extends OrgAction
             $product->auditEvent    = 'update';
             $product->isCustomEvent = true;
 
-            $product->auditCustomOld = array_intersect_key($oldData, $newData);;
+            $product->auditCustomOld = array_intersect_key($oldData, $newData);
+            ;
             $product->auditCustomNew = $newData;
 
             Event::dispatch(new AuditCustom($product));
@@ -307,7 +300,7 @@ class UpdateProduct extends OrgAction
         return $product;
     }
 
-    public function getProductStatus(Product $product): Array
+    public function getProductStatus(Product $product): array
     {
         // Moved function here, since ProductHydrateAvailableQuantity will call this action making it redundant, and some logic needs to be modified
         $dataToUpdate = [];
@@ -465,7 +458,6 @@ class UpdateProduct extends OrgAction
             'webpage_breadcrumb_label' => ['sometimes', 'string', 'max:40'],
 
             // Sale Status & Webpage
-            'webpage_state_data'        => ['sometimes', 'array'],
             'is_for_sale'               => ['sometimes', 'boolean'],
 
         ];
