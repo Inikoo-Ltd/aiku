@@ -30,7 +30,7 @@ class ConsolidateRecurringBills
             $today   = now()->startOfDay();
             $endDate = $recurringBill->end_date->startOfDay();
 
-            if ($endDate->eq($today)) {
+            if ($endDate->lte($today)) {
 
                 $command->info('Consolidating recurring bill '.$recurringBill->id.' '.$recurringBill->reference);
                 $invoice = ConsolidateRecurringBill::make()->action($recurringBill);

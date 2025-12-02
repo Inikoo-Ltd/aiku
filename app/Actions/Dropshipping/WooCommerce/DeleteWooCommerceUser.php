@@ -32,7 +32,7 @@ class DeleteWooCommerceUser extends OrgAction
             ]);
         }
 
-        $wooCommerceUser->forceDelete();
+        $wooCommerceUser->delete();
     }
 
     public function authorize(ActionRequest $request): bool
