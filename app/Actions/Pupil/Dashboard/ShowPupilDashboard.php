@@ -59,7 +59,7 @@ class ShowPupilDashboard
             ];
         }
 
-        $query = Shop::where('slug', 'awd')
+        $query = Shop::where('type', ShopTypeEnum::DROPSHIPPING)
             ->where('state', ShopStateEnum::OPEN)
             ->get();
 
