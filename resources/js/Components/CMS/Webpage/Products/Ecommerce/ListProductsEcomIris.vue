@@ -1,33 +1,30 @@
 <script setup lang="ts">
-import { faFilter } from "@fas";
-import { getStyles } from "@/Composables/styles";
-import { ref, onMounted, watch, computed, toRaw, inject } from "vue";
-import axios from "axios";
-import Button from "@/Components/Elements/Buttons/Button.vue";
-import { notify } from "@kyvg/vue3-notification";
-import { routeType } from "@/types/route";
-import ProductRender from "./ProductRender.vue";
-import FilterProducts from "./FilterProduct.vue";
-import Drawer from "primevue/drawer";
-import Skeleton from "primevue/skeleton";
-import { debounce, get } from "lodash-es";
-import LoadingText from "@/Components/Utils/LoadingText.vue";
-import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
-import PureInput from "@/Components/Pure/PureInput.vue";
-import { faSearch } from "@fal";
-import { trans } from "laravel-vue-i18n"
-import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
-
+import { faFilter } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faFileDownload } from "@fas"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import Collection from "@/Pages/Grp/Org/Catalogue/Collection.vue";
+import { getStyles } from "@/Composables/styles"
+import { ref, onMounted, watch, computed, toRaw, inject } from "vue"
+import axios from "axios"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { notify } from "@kyvg/vue3-notification"
+import { routeType } from "@/types/route"
+import FilterProducts from "@/Components/CMS/Webpage/Products1/FilterProduct.vue"
+import Drawer from "primevue/drawer"
+import Skeleton from "primevue/skeleton"
+import { debounce, get } from "lodash-es"
+import LoadingText from "@/Components/Utils/LoadingText.vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import PureInput from "@/Components/Pure/PureInput.vue"
+import { faSearch } from "@fal"
+import { faExclamationTriangle } from "@far"
+import ConfirmDialog from "primevue/confirmdialog"
+import { trans } from "laravel-vue-i18n"
+import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
+import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents"
 
-library.add(faFileDownload)
 
 const props = defineProps<{
     fieldValue: {
-        card_product: { properties: object }
+        card_product: { properties: {} }
         products_route: {
             iris: {
                 route_products: routeType,
@@ -36,26 +33,25 @@ const props = defineProps<{
             workshop: routeType
         }
         products: {
-            data: object,
-            links: object,
+            data: {},
+            links: {},
             meta: {
-                current_page: Number,
-                last_page: Number,
-                total: Number
+                current_page: number,
+                last_page: number,
+                total: number
             }
         }
         container?: any
         model_type: string
         model_id: number
-        model_slug: string
     }
     webpageData?: any
-    blockData?: Object
+    blockData?: {}
     screenType: "mobile" | "tablet" | "desktop"
-}>();
+    code:string
+}>()
 
-const categoryId = props.fieldValue.model_id
-const layout = inject("layout", retinaLayoutStructure);
+const layout = inject("layout", retinaLayoutStructure)
 const firstLoad = ref(null)
 const products = ref<any[]>(
     props.fieldValue?.products?.meta?.last_page == 1
@@ -65,30 +61,24 @@ const products = ref<any[]>(
         ]
         : [...(props.fieldValue?.products?.data ?? [])]
 );
-const loadingInitial = ref(false);
-const loadingMore = ref(false);
-const q = ref("");
-const orderBy = ref("");
-const page = ref(toRaw(props.fieldValue.products.meta.current_page));
-const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page));
-const filter = ref({ data: {} });
-const showFilters = ref(false);
-const showAside = ref(false);
+
+const q = ref("")
+const orderBy = ref(layout.params?.order_by)
+const page = ref(toRaw(props.fieldValue.products.meta.current_page))
+const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
+const filter = ref({ data: {} })
 const totalProducts = ref(
     props.fieldValue?.products?.meta?.last_page == 1 ? 
     props.fieldValue.products.meta.total + get(props.fieldValue,['products_out_of_stock','meta','total'],0) : 
     props.fieldValue.products.meta.total
 )
-const settingPortfolio = ref(false);
-const isFetchingOutOfStock = ref(true);
-// const confirm = useConfirm();
-const isNewArrivals = ref(false);
+const isShowFilters = ref(false)
+const isShowAside = ref(false)
+const isFetchingOutOfStock = ref(false)
+const isNewArrivals = ref(false)
+const isLoadingInitial = ref(false)
+const isLoadingMore = ref(false)
 
-// Add page initiation check whether products_out_of_stock is fetched or not
-isFetchingOutOfStock.value = props.fieldValue.products_out_of_stock?.length > 0;
-if(isFetchingOutOfStock){
-    totalProducts.value = props.fieldValue.products.meta.total + (props.fieldValue.products_out_of_stock?.meta.total ?? 0);
-}
 
 const getRoutes = () => {
     if (props.fieldValue.model_type === "ProductCategory") {
@@ -123,55 +113,55 @@ const getRoutes = () => {
 };
 
 function buildFilters(): Record<string, any> {
-    const filters: Record<string, any> = {};
-    const raw = filter.value.data || {};
+    const filters: Record<string, any> = {}
+    const raw = filter.value.data || {}
 
     for (const [key, val] of Object.entries(raw)) {
-        if (val === null || val === undefined || val === '') continue;
+        if (val === null || val === undefined || val === '') continue
 
         if (key === 'price_range') {
-            const rawMin = val['between[price_min]'];
-            const rawMax = val['between[price_max]'];
+            const rawMin = val['between[price_min]']
+            const rawMax = val['between[price_max]']
 
-            const hasMin = rawMin !== '' && rawMin != null && !isNaN(rawMin);
-            const hasMax = rawMax !== '' && rawMax != null && !isNaN(rawMax);
+            const hasMin = rawMin !== '' && rawMin != null && !isNaN(rawMin)
+            const hasMax = rawMax !== '' && rawMax != null && !isNaN(rawMax)
 
             if (hasMin || hasMax) {
-                const min = hasMin ? Number(rawMin) : 0;
-                const max = hasMax ? Number(rawMax) : 0;
+                const min = hasMin ? Number(rawMin) : 0
+                const max = hasMax ? Number(rawMax) : 0
 
                 if (!(min === 0 && max === 0)) {
-                    filters[`filter[${key}]`] = `${min},${max}`; // ← no brackets
+                    filters[`filter[${key}]`] = `${min},${max}` // ← no brackets
                 }
             }
         } else if (typeof val === 'object' && !Array.isArray(val)) {
             for (const [subKey, subVal] of Object.entries(val)) {
-                if (subVal === null || subVal === undefined || subVal === '') continue;
-                filters[subKey] = subVal;
+                if (subVal === null || subVal === undefined || subVal === '') continue
+                filters[subKey] = subVal
             }
         } else if (Array.isArray(val)) {
-            filters[`filter[${key}]`] = val.join(',');
+            filters[`filter[${key}]`] = val.join(',')
         } else {
-            filters[`filter[${key}]`] = val;
+            filters[`filter[${key}]`] = val
         }
     }
 
     if (isNewArrivals.value) {
-        filters[`filter[new_arrivals]`] = 3;
+        filters[`filter[new_arrivals]`] = 3
     }
 
-    console.log("Filters sent to URL:", filters);
-    return filters;
+    console.log("Filters sent to URL:", filters)
+    return filters
 }
 
 
 
 const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false) => {
     if (isLoadMore) {
-        loadingMore.value = true;
+        isLoadingMore.value = true;
     } else {
         if(firstLoad.value == 1)
-        loadingInitial.value = true;
+        isLoadingInitial.value = true;
     }
 
     const filters = buildFilters();
@@ -189,15 +179,16 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
             ...filters,
             "filter[global]": q.value,
             sort: orderBy.value,
-            index_perPage: 50,
+            index_perPage: 25,
             page: page.value
         }));
 
         const data = response.data;
 
         lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1;
+    
 
-         if (useOutOfStock) {
+        if (useOutOfStock) {
             totalProducts.value =
                 totalProducts.value +
                 (data?.meta?.total ?? data?.total ?? 0)
@@ -221,107 +212,103 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         console.log(error);
         notify({ title: "Error", text: "Failed to load products.", type: "error" });
     } finally {
-        loadingInitial.value = false;
-        loadingMore.value = false;
+        isLoadingInitial.value = false;
+        isLoadingMore.value = false;
         firstLoad.value++;
     }
 };
 
-
-const debFetchProducts = debounce(fetchProducts, 300);
+const debFetchProducts = debounce(fetchProducts, 300)
 
 const handleSearch = () => {
-    page.value = 1;
-    isFetchingOutOfStock.value = false;
-    updateQueryParams();
-    debFetchProducts(false, true);
-};
+    page.value = 1
+    isFetchingOutOfStock.value = false
+    updateQueryParams()
+    debFetchProducts(false, true)
+}
 
 
 watch([q, orderBy], () => {
-    page.value = 1;
-    isFetchingOutOfStock.value = false;
-    updateQueryParams();
-    debFetchProducts(false, true);
-}, { deep: true });
+    page.value = 1
+    isFetchingOutOfStock.value = false
+    updateQueryParams()
+    debFetchProducts(false, true)
+}, { deep: true })
 
 watch(filter, () => {
-    page.value = 1;
-    isFetchingOutOfStock.value = false;
+    page.value = 1
+    isFetchingOutOfStock.value = false
     /* updateQueryParams(); */
-    debFetchProducts(false, true);
-}, { deep: true });
+    debFetchProducts(false, true)
+}, { deep: true })
 
 
 const loadMore = () => {
-    if (page.value < lastPage.value && !loadingMore.value) {
-        page.value += 1;
-        debFetchProducts(true);
+    if (page.value < lastPage.value && !isLoadingMore.value) {
+        page.value += 1
+        debFetchProducts(true)
     }
-};
+}
 
 const sortOptions = computed(() => {
     const baseOptions = [
         /* { label: "Latest Arrivals", value: "created_at" }, */
-        { label: "Product Code", value: "code" },
-        { label: "Name", value: "name" }
-    ];
+        { label: trans("New arrivals"), value: "created_at" },
+        { label: trans("Product Code"), value: "code" },
+        { label: trans("Name"), value: "name" }
+    ]
     if (layout?.iris?.is_logged_in) {
-        baseOptions.splice(1, 0, { label: "Price", value: "price" });
-        baseOptions.splice(1, 0, { label: "Rrp", value: "rrp" });
+        baseOptions.splice(1, 0, { label: trans("Price"), value: "price" })
+        baseOptions.splice(1, 0, { label: trans("RRP"), value: "rrp" })
     }
-    return baseOptions;
-});
+    return baseOptions
+})
 
-const sortKey = ref("created_at");
-const isAscending = ref(true);
+const sortKey = ref("created_at")
+const isAscending = ref(true)
 
 
 const getArrow = (key: typeof sortKey.value) => {
-    if (sortKey.value !== key) return "";
-    return isAscending.value ? "↑" : "↓";
-};
+    if (sortKey.value !== key) return ""
+    return isAscending.value ? "↑" : "↓"
+}
 
 
-const isMobile = computed(() => props.screenType === "mobile");
+const isMobile = computed(() => props.screenType === "mobile")
 
 onMounted(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sortParam = urlParams.get("order_by");
+    const urlParams = new URLSearchParams(window.location.search)
+    const sortParam = urlParams.get("order_by")
 
     if (sortParam) {
-        orderBy.value = sortParam;
-        const key = sortParam.replace("-", "");
-        sortKey.value = key as typeof sortKey.value;
-        isAscending.value = !sortParam.startsWith("-");
+        orderBy.value = sortParam
+        const key = sortParam.replace("-", "")
+        sortKey.value = key as typeof sortKey.value
+        isAscending.value = !sortParam.startsWith("-")
     }
 
     if (layout?.iris?.is_logged_in) {
         firstLoad.value = 1
-        fetchProductHasPortfolio();
-        fetchProducts() // break chace from product dont deleted
+        fetchProducts(); // break chace from product dont deleted
+        fetchHasInBasket();
     }
-
-
-
-    /* debFetchProducts() */
-});
+})
 
 const updateQueryParams = () => {
-    const url = new URL(window.location.href);
+    const url = new URL(window.location.href)
 
     // Reset existing filter params
     Array.from(url.searchParams.keys()).forEach(key => {
         if (key.startsWith("filter[")) {
-            url.searchParams.delete(key);
+            url.searchParams.delete(key)
         }
-    });
+    })
 
     // Update sorting
     if (orderBy.value) {
-        url.searchParams.set("order_by", orderBy.value);
+        url.searchParams.set("order_by", orderBy.value)
     } else {
-        url.searchParams.delete("order_by");
+        url.searchParams.delete("order_by")
     }
 
     // Update filters
@@ -330,141 +317,105 @@ const updateQueryParams = () => {
         url.searchParams.set(`filter[${key}]`, val);
     } */
 
-    window.history.replaceState({}, "", url.toString());
-};
+    window.history.replaceState({}, "", url.toString())
+}
 
 const toggleSort = (key: string) => {
     if (sortKey.value === key) {
-        isAscending.value = !isAscending.value;
+        isAscending.value = !isAscending.value
     } else {
-        sortKey.value = key;
-        isAscending.value = true;
+        sortKey.value = key
+        isAscending.value = true
     }
 
-    orderBy.value = isAscending.value ? key : `-${key}`;
-    updateQueryParams();
-    handleSearch();
-};
+    orderBy.value = isAscending.value ? key : `-${key}`
+    updateQueryParams()
+    handleSearch()
+}
 
 
-const productHasPortfolio = ref({
+const productInBasket = ref({
     isLoading: false,
     list: []
-});
+})
 
-
-const getRouteForProductPortfolio = () => {
+const getRouteForProductInBasket = () => {
     const { model_type, model_id } = props.fieldValue;
     if (model_type == "ProductCategory") {
-        return route("iris.json.product_category.portfolio_data", {
-            productCategory: model_id
-        });
+        return `/json/product-category/${model_id}/transaction-data`
+        // return route("iris.json.product_category.transaction_data", {
+        //     productCategory: model_id
+        // });
     } else if (model_type == "Collection") {
-        return route("iris.json.collection.portfolio_data", {
-            collection: model_id
-        });
+        return `/json/collection/${model_id}/transaction-data`
+        // return route("iris.json.collection.transaction_data", {
+        //     collection: model_id
+        // });
     }
 };
 
-const fetchProductHasPortfolio = async () => {
-    productHasPortfolio.value.isLoading = true;
+const fetchHasInBasket = async () => {
+    productInBasket.value.isLoading = true;
     try {
-        const apiUrl = getRouteForProductPortfolio();
+        const apiUrl = getRouteForProductInBasket();
 
         if (!apiUrl) {
             throw new Error("Invalid model_type or missing route configuration");
         }
 
         const response = await axios.get(apiUrl);
-        productHasPortfolio.value.list = response.data || [];
+        productInBasket.value.list = response.data || [];
     } catch (error) {
-        console.error(error);
-        notify({
-            title: "Error",
-            text: "Failed to load product portfolio.",
-            type: "error"
-        });
+        console.error('Failed to load product portfolio', error);
+        // notify({
+        //     title: "Error",
+        //     text: "Failed to load product portfolio.",
+        //     type: "error"
+        // });
     } finally {
-        productHasPortfolio.value.isLoading = false;
+        productInBasket.value.isLoading = false;
     }
 };
 
 
+
 const responsiveGridClass = computed(() => {
-    const perRow = props.fieldValue?.settings?.per_row ?? {};
+    const perRow = props.fieldValue?.settings?.per_row ?? {}
 
     const columnCount = {
         desktop: perRow.desktop ?? 4,
-        tablet: perRow.tablet ?? 4,
+        tablet: perRow.tablet ?? 3,
         mobile: perRow.mobile ?? 2
-    };
+    }
 
-    const count = columnCount[props.screenType] ?? 1;
-    return `grid-cols-${count}`;
-});
-
-
-// const toggleNewArrivals = () => {
-//     isNewArrivals.value = !isNewArrivals.value;
-//     page.value = 1;
-//     isFetchingOutOfStock.value = false;
-//     updateQueryParams();
-//     debFetchProducts(false, true);
-// };
-
-
-// const handleSetAllToPortfolio = () => {
-//     confirm.require({
-//         message: "Are you sure you want to set all products to portfolio?",
-//         header: "Confirmation",
-//         icon: "pi pi-exclamation-triangle",
-//         acceptLabel: "Yes",
-//         rejectLabel: "Cancel",
-//         acceptClass: "p-button-primary",
-//         accept: async () => {
-//             /* settingPortfolio.value = true
-//             try {
-//               const apiUrl = route('iris.json.portfolio.set_all', {
-//                 model_type: props.fieldValue.model_type,
-//                 model_id: props.fieldValue.model_id,
-//               })
-
-//               await axios.post(apiUrl)
-
-//               notify({
-//                 title: 'Success',
-//                 text: 'All products have been added to the portfolio.',
-//                 type: 'success',
-//               })
-
-//               fetchProductHasPortfolio()
-//             } catch (error) {
-//               console.error(error)
-//               notify({
-//                 title: 'Error',
-//                 text: 'Failed to update portfolio status.',
-//                 type: 'error',
-//               })
-//             } finally {
-//               settingPortfolio.value = false
-//             } */
-//         }
-//     });
-// };
+    const count = columnCount[props.screenType] ?? 1
+    return `grid-cols-${count}`
+})
 
 
 const search_sort_class = ref(getStyles(props.fieldValue?.search_sort?.sort?.properties, props.screenType, false))
 const placeholder_class = ref(getStyles(props.fieldValue?.search_sort?.search?.placeholder?.properties, props.screenType, false))
 const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false))
+
+watch(
+    () => props.fieldValue?.search_sort,
+    () => {
+        search_sort_class.value = getStyles(props.fieldValue?.search_sort?.sort?.properties, props.screenType, false)
+        placeholder_class.value = getStyles(props.fieldValue?.search_sort?.search?.placeholder?.properties, props.screenType, false)
+        search_class.value = getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false)
+    },
+    { deep: true }
+)
 </script>
 
 <template>
-    <div id="products-1">
-        <!-- <ConfirmDialog>
+    
+    <div id="products-1-ecom">
+        <ConfirmDialog>
             <template #icon>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
             </template>
-</ConfirmDialog> -->
+        </ConfirmDialog>
         <div class="flex flex-col lg:flex-row" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)
@@ -472,34 +423,31 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
 
             <!-- Sidebar Filters for Desktop -->
             <transition v-if="!props.fieldValue?.settings?.is_hide_filter" name="slide-fade">
-                <aside v-show="!isMobile && showAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
+                <aside v-show="!isMobile && isShowAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
                     <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
                 </aside>
             </transition>
 
             <!-- Main Content -->
-            <main class="flex-1 mt-4">
-
+            <div class="flex-1">
                 <!-- Search & Sort -->
-                <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
-
                         <template v-if="!props.fieldValue?.settings?.is_hide_filter">
-                            <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
+                            <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-3 !w-auto"
                                 aria-label="Open Filters"
                                 :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             <!-- Sidebar Toggle for Desktop -->
-                            <div v-else class="">
-                                <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
+                            <div v-else class="py-4">
+                                <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-3 !w-auto"
                                     aria-label="Open Filters"
                                     :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             </div>
                         </template>
-                        <div class="w-full">
+                        <div class=" w-full" >
                             <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
-                                :placeholder="trans('Search products') + '...'" :clear="true"
-                                :isLoading="loadingInitial" :prefix="{ icon: faSearch, label: '' }"
-                                class="search-input ring-0">
+                                :placeholder="trans('Search products...')" :clear="true" :isLoading="isLoadingInitial"
+                                :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
                                 <template #prefix>
                                     <div class="pl-3 whitespace-nowrap text-gray-400">
                                         <FontAwesomeIcon :icon='faSearch' class="icon-search" fixed-width
@@ -512,48 +460,55 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex items-center space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
+                    <div class="flex xspace-x-6 w-full md:w-fit overflow-x-auto mt-2 md:mt-0">
+                        <!-- <button @click="toggleNewArrivals"
+                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
+                            isNewArrivals
+                                ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
+                                : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
+                        ]">
+                            New Arrivals
+                        </button> -->
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
-                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1 sort-button"
+                            class="pb-2 px-4 text-sm font-medium whitespace-nowrap flex items-center border-b-2 gap-1 sort-button"
                             :class="[
-                                'pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1',
                                 sortKey === option.value
-                                    ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                                    : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                            ]" :disabled="loadingInitial || loadingMore">
+                                    ? `border-[var(--iris-color-0)] text-[var(--iris-color-0)]`
+                                    : `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
+                            ]" :disabled="isLoadingInitial || isLoadingMore">
                             {{ option.label }} {{ getArrow(option.value) }}
                         </button>
                     </div>
                 </div>
 
-                <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
+                <!-- Section: Results  -->
+                <div class="px-4 mb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
-                        <span class="text-gray-700 font-medium">
-                            Showing
-                            <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
-                                products.length }}</span>
-                            of
-                            <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
-                                totalProducts }}</span>
-                            {{ products.length === 1 ? "product" : "products" }}
+                        <span class="font-medium">
+                            {{ trans("Showing") }}
+                            <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                {{ products.length }}
+                            </span>
+                            {{ trans("of") }}
+                            <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                {{ totalProducts }}
+                            </span>
+                            {{ products.length === 1 ? trans("product") : trans("products") }}
                         </span>
                     </div>
 
-                    <div v-if="layout?.iris?.customer?.id">
-                        <ButtonAddCategoryToPortfolio :products :categoryId 
-                            :routeGetCategoryChannels="{
-                                name: props.fieldValue.model_type == 'ProductCategory' ? 'iris.json.customer.product_category.channel_ids.index' : 'iris.json.customer.collection.channel_ids.index',
-                                parameters: props.fieldValue.model_type == 'ProductCategory' ? { productCategory : categoryId } : { collection : categoryId }
-                            }" />
+                    <div>
+                        <!-- <ButtonAddCategoryToPortfolio xproduct="fieldValue.product" :products :categoryId
+                            xproductHasPortfolio="productExistenceInChannels" /> -->
                     </div>
                 </div>
 
                 <!-- Product Grid -->
                 <div :class="responsiveGridClass" class="grid gap-6 p-4"
                     :style="getStyles(fieldValue?.container?.properties, screenType)">
-                    <template v-if="loadingInitial">
+                    <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
                             <Skeleton height="200px" class="mb-3" />
                             <Skeleton width="80%" class="mb-2" />
@@ -562,14 +517,15 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                         </div>
                     </template>
 
+                    
+
                     <template v-else-if="products.length">
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border p-3 relative rounded bg-white">
-                            <ProductRender :product="product" :key="index" :bestSeller="fieldValue.bestseller"
-                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                                :productHasPortfolio="productHasPortfolio.list[product.id]"
-                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+                            class="border relative rounded" :class="product.stock ? '' : 'bg-red-100'">
+                            <component :is="getProductsRenderB2bComponent(code)" 
+                                :product="product" :key="index" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)" :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
+                                :hasInBasket="productInBasket.list[product.id]" :bestSeller="fieldValue.bestseller" :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"/>
                         </div>
                     </template>
 
@@ -580,19 +536,20 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                 </div>
 
                 <!-- Load More -->
-                <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4  mb-12">
-                    <Button @click="loadMore" type="tertiary" :disabled="loadingMore"
+                <!--  {{ page   }}{{ lastPage }} -->
+                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12">
+                    <Button @click="loadMore" type="tertiary" :disabled="isLoadingMore"
                         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
-                        <template v-if="loadingMore">
+                        <template v-if="isLoadingMore">
                             <LoadingText />
                         </template>
                         <template v-else>{{ trans("Load More") }}</template>
                     </Button>
                 </div>
-            </main>
+            </div>
 
             <!-- Mobile Filters Drawer -->
-            <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true"
+            <Drawer v-model:visible="isShowFilters" position="left" :modal="true" :dismissable="true"
                 :closeOnEscape="true" :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
                 <div class="p-4">
                     <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
@@ -618,7 +575,6 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
 aside {
     transition: all 0.3s ease;
 }
-
 
 
 .sort-button{
