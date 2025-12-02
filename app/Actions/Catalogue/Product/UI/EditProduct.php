@@ -254,7 +254,7 @@ class EditProduct extends OrgAction
         $saleStatusFields = [
             'is_for_sale' => [
                 'type'  => 'toggle',
-                'label' => __('Is For Sale'),
+                'label' => __('For Sale'),
                 'value' => $product->is_for_sale,
             ],
         ];
