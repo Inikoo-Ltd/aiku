@@ -154,7 +154,7 @@ const debouncedAutosave = debounce(autosave)
         <div v-if="data.layout?.code" :class="['border-2 border-t-0 overflow-auto', iframeClass]">
           <component
             class="flex-1 active-block"
-            :is="getComponent(data.layout.code)"
+            :is="getComponent(data.layout.code, { shop_type: layoutTheme?.shopState?.type })"
             :screenType="currentView"
             :modelValue="{
               ...data.layout.data.fieldValue,

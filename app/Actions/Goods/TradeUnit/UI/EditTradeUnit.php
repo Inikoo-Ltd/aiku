@@ -486,6 +486,9 @@ class EditTradeUnit extends OrgAction
                             'icon'   => 'fal fa-cart-arrow-down',
                             'fields' => [
                                 'is_for_sale' => [
+                                    'confirmation' => [
+                                        'description' => __('Changing the sale status of a Trade Unit will affect all products linked to it in all shops.'),
+                                    ],
                                     'type'  => 'toggle',
                                     'label' => __('For Sale'),
                                     'value' => $tradeUnit->is_for_sale,

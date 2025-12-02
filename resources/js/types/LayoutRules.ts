@@ -11,15 +11,7 @@ export interface OrganisationsData {
     logo: Image
     route: routeType
     currency: Currency
-    authorised_shops: {
-        id: number
-        slug: string
-        code: string
-        label: string
-        state: string
-        type: string
-        route: routeType
-    }[]
+    authorised_shops: Shop[]
     authorised_warehouses: {
         id: number
         slug: string
@@ -76,4 +68,14 @@ export interface StackedComponent {
     data?: {
         currentTab?: string
     }
+}
+
+export interface Shop {
+	id: number
+	slug: string
+	code: string
+	label: string
+	state: string
+	type: string
+	route: routeType
 }
