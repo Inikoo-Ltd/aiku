@@ -119,21 +119,18 @@ class IndexPaymentAccountShops extends OrgAction
                 $table->column(key: 'payment_account_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-
             $table
                 ->column(key: 'activated_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
-                ->column(key: 'number_payments', label: __('Payments'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'amount_successfully_paid', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
+                ->column(key: 'number_payments', label: __('Payments'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'amount_successfully_paid', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number', align: 'right')
                 ->defaultSort('id');
         };
     }
-
 
     public function jsonResponse(LengthAwarePaginator $paymentAccounts): AnonymousResourceCollection
     {
         return PaymentAccountShopsResource::collection($paymentAccounts);
     }
-
 
     public function htmlResponse(LengthAwarePaginator $paymentAccountShops, ActionRequest $request): Response
     {
@@ -160,8 +157,6 @@ class IndexPaymentAccountShops extends OrgAction
                     'title'         => __('Payment Account Shops'),
                 ],
                 'data'        => PaymentAccountShopsResource::collection($paymentAccountShops)
-
-
             ]
         )->table($this->tableStructure($this->parent));
     }
@@ -183,7 +178,6 @@ class IndexPaymentAccountShops extends OrgAction
 
         return $this->handle($fulfilment);
     }
-
 
     public function asController(Organisation $organisation, PaymentAccount $paymentAccount, ActionRequest $request): LengthAwarePaginator
     {

@@ -134,6 +134,11 @@ class StoreEbayProduct extends RetinaAction
                 $categoryName = Arr::get($categories, 'itemSummaries.0.categories.0.categoryName');
             }
 
+            if ($categoryId == '261186') {
+                // This force not to use book category
+                $categoryId = '29511';
+            }
+
             if ($handleError($categories)) {
                 return;
             }
@@ -161,7 +166,7 @@ class StoreEbayProduct extends RetinaAction
                 ],
                 'condition' => 'NEW',
                 'product' => [
-                    'title' => $portfolio->customer_product_name,
+                    'title' => mb_substr($portfolio->customer_product_name, 0, 80),
                     'description' => $descriptions,
                     ...$aspects,
                     'brand' => 'Ancient Wisdom',
