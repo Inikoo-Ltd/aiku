@@ -48,7 +48,6 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
-use App\Models\Catalogue\Shop;
 
 /**
  * @property int $id
@@ -208,7 +207,7 @@ use App\Models\Catalogue\Shop;
  * @property-read LaravelCollection<int, Product> $productVariants
  * @property-read Media|null $rightImage
  * @property-read Media|null $seoImage
- * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Shop|null $shop
  * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
