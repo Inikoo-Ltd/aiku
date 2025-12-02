@@ -409,7 +409,7 @@ watch(
 </script>
 
 <template>
-    
+    {{ code }}
     <div id="products-1-ecom">
         <ConfirmDialog>
             <template #icon>
