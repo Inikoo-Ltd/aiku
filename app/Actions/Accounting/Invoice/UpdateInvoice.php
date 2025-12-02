@@ -57,7 +57,10 @@ class UpdateInvoice extends OrgAction
         $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
 
 
+
         $invoice = $this->update($invoice, $modelData, ['data']);
+
+
 
         if ($billingAddressData) {
             $this->updateFixedAddress(
@@ -91,6 +94,10 @@ class UpdateInvoice extends OrgAction
 
 
         $changes = Arr::except($invoice->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if (Arr::has($modelData, 'date')) {
+            $invoice->invoiceTransactions()->update(['date' => $invoice->date]);
+        }
 
 
         if (count($changes) > 0) {
