@@ -64,6 +64,7 @@ import AnnouncemenPromo3 from '@/Components/Websites/Announcement/Templates/Prom
 
 import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
 import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
+import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
 
 
 const components = (shop_type?: string): Record<string, Component> => {
@@ -162,6 +163,7 @@ export const getIrisComponent = (componentName: string, options?: {
 const announcementComponent = (shop_type?: string): Record<string, Component> => {
     return {
         'announcement-information-1': AnnouncementInformation1,
+        'announcement-informational-1': AnnouncementInformational1,
         'announcement-promo-1': AnnouncementPromo1,
         'announcement-promo-3': AnnouncemenPromo3,
         'announcement-promo-2-countdown': AnnouncementPromo2Countdown,
