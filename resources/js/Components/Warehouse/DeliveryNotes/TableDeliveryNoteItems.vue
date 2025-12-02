@@ -458,6 +458,8 @@ onMounted(() => {
                 <ButtonWithLink v-if="!itemValue.is_handled" type="negative" tooltip="Set as not picked"
                     icon="fal fa-debug" :size="innerWidth > 768 ? undefined : 'lg'"
                     :routeTarget="itemValue.not_picking_route" :bindToLink="{preserveScroll: true}" />
+                
+                <span v-else class="text-gray-400 italic text-xs">{{ trans("No quantity to pick") }}</span>
             </div>
 
 
