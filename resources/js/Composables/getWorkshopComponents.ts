@@ -61,6 +61,7 @@ import RecommendationCustomerRecentlyBought1Workshop from '@/Components/CMS/Webp
 import CtaImageBackroundWorkshop from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'
 import TimelineWorkshop2 from '@/Components/CMS/Webpage/Step2/Step2Workshop.vue'
 import ListProductWorkshop from '@/Components/CMS/Webpage/Products/Dropshipping/ListProductsWorkshop.vue'
+import ListProductsEcomWorkshop from '@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomWorkshop.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -99,7 +100,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 
         //product list
-        'products-1' : shop_type == 'b2b' ? Products1EcommerceWorkshop : ListProductWorkshop,
+        'products-1' : shop_type == 'b2b' ? ListProductsEcomWorkshop : ListProductWorkshop,
 
         //see-also
         'see-also-1' : SeeAlso1Workshop,
