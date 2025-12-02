@@ -335,6 +335,9 @@ class EditMasterProduct extends GrpAction
                 'icon'   => 'fal fa-cart-arrow-down',
                 'fields' => [
                     'is_for_sale' => [
+                        'confirmation' => [
+                            'description' => __('Changing the sale status of a master product will affect all products linked to it in all shops.'),
+                        ],
                         'type'  => 'toggle',
                         'label' => __('For Sale'),
                         'value' => $masterProduct->is_for_sale,

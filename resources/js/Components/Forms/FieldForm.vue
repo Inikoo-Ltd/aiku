@@ -57,8 +57,21 @@ const form = useForm(formFields)
 form['fieldType'] = 'edit'
 
 const submit = () => {
-    // PreserveScroll affect error in EpmloyeePosition (can't access layout)
-    form.post(route(updateRoute.name, updateRoute.parameters), { preserveScroll: true })
+    if (props.fieldData?.confirmation?.description) {
+        const confirmed = confirm(props.fieldData.confirmation.description)
+
+        if (confirmed) {
+            form.post(route(updateRoute.name, updateRoute.parameters), { preserveScroll: true })
+        } else {
+            return
+        }
+    }
+
+    else {
+        form.post(route(updateRoute.name, updateRoute.parameters), { preserveScroll: true })
+    }
+
+
 }
 
 
