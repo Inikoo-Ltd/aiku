@@ -1,30 +1,23 @@
 <?php
 
 /*
- * Author: Eka Yudinata <eka@inikoo.com>
+ * Author: Eka Yudinata <ekayudinata@gmail.com>
  * Created: Thu, 19 Dec 2024 18:08:10 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Eka Yudinata
  */
 
 namespace App\Actions\Comms\Outbox\ReorderRemainder\Hydrators;
 
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\EmailBulkRun;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\Customer;
-use Illuminate\Support\Facades\Log;
 use App\Actions\Comms\Email\SendReOrderRemainderToCustomerEmail;
-use App\Actions\Comms\EmailBulkRun\StoreEmailBulkRun;
-use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
-use App\Enums\Comms\DispatchedEmail\App\Enums\Comms\DispatchedEmailEvent\DispatchedEmailEventTypeEnum;
 use App\Actions\Comms\Outbox\ReorderRemainder\WithGenerateEmailBulkRuns;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
+use App\Enums\CRM\Customer\CustomerStateEnum;
+use App\Enums\CRM\Customer\CustomerStatusEnum;
 
 class CustomersHydrateReorderRemainderEmails implements ShouldQueue
 {
@@ -33,49 +26,72 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
     public string $commandSignature = 'hydrate:reorder-reminder-customers';
     public string $jobQueue = 'low-priority';
 
-    /**
-     * @return void
-     *
-     *
-     * flow explanation:
-     * 1. get the customers need to sending ReOrder Notification default 20 days after last invoice
-     * 2. create email bulk run for current day
-     * 3. day can be configurable
-     * 4. get the customers email address
-     * 5. send email
-     * 6. update dispatched email
-     * 7. specify the email bulk run state to sent
-     *
-     *
-     * Check if EmailBulkRun already exists for today
-     * Find eligible customers (20+ days since last invoice)
-     * Create EmailBulkRun if not exists
-     * Process recipients in bulk
-     * Trigger email delivery channels
-     */
+
     public function handle(): void
     {
         // TODO: update from setting
         $defaultDays =  env('REORDER_REMINDER_DAYS', 20);
 
         // get the customers
-        // TODO: confirm to raul more conditions for the customers like last_invoiced_at, status, state
-        // make optimize the quiery for fetch
-        $customers = Customer::where('last_invoiced_at', '<', now()->subDays($defaultDays))
+        // TODO: confirm to raul more conditions for the customers like last_invoiced_at, status, state and etc.
+        $baseCustomersQuery = Customer::where('last_invoiced_at', '<', now()->subDays($defaultDays))
             ->whereNotNull('email')
             ->where('email', '!=', '')
             ->whereNotNull('shop_id')
-            ->get();
+            ->where('state', CustomerStateEnum::ACTIVE->value)
+            ->where('status', CustomerStatusEnum::APPROVED->value)
+            ->select('id', 'shop_id')
+            ->orderBy('shop_id')
+            ->orderBy('id');
 
-            // New Function to generate and make sure EmailBulkRun for each customer
-            $customers->each(function ($customer) {
-                $generateEmailBulkRun = $this->generateEmailBulkRuns($customer, OutboxCodeEnum::REORDER_REMINDER, now()->toDateString());
-            // next Step make sure  Dispatched_emails
-            SendReOrderRemainderToCustomerEmail::run($customer, $generateEmailBulkRun);
-            // update email bulk run state to sent
-            EmailBulkRunHydrateDispatchedEmails::dispatch($generateEmailBulkRun);
-            });
+        $currentShopId = null;
+        $currentBulkRun = null;
+        $buffer = [];
+        $today = now()->toDateString();
 
+        foreach ($baseCustomersQuery->cursor() as $row) {
+            $customer = (object) $row;
+
+            // New shop → finalize previous bulk run and start new one
+            if ($currentShopId !== $customer->shop_id) {
+                // Process remaining customers from previous shop
+                if ($currentBulkRun && !empty($buffer)) {
+                    $this->dispatchEmailsForBulkRun($currentBulkRun, $buffer);
+                    EmailBulkRunHydrateDispatchedEmails::dispatch($currentBulkRun);
+                    $buffer = [];
+                }
+
+                $currentShopId = $customer->shop_id;
+                $currentBulkRun = $this->generateEmailBulkRuns(
+                    $customer,
+                    OutboxCodeEnum::REORDER_REMINDER,
+                    $today
+                );
+            }
+
+            $buffer[] = $customer;
+
+            // Flush buffer every 1000 customers to prevent memory creep
+            if (count($buffer) >= 1000) {
+                $this->dispatchEmailsForBulkRun($currentBulkRun, $buffer);
+                $buffer = [];
+            }
+
+
+        }
+
+        // Don't forget the last shop's customers
+        if ($currentBulkRun && !empty($buffer)) {
+            $this->dispatchEmailsForBulkRun($currentBulkRun, $buffer);
+            EmailBulkRunHydrateDispatchedEmails::dispatch($currentBulkRun);
+        }
+    }
+
+    private function dispatchEmailsForBulkRun(EmailBulkRun $bulkRun, array $customers): void
+    {
+        foreach ($customers as $customer) {
+            SendReOrderRemainderToCustomerEmail::dispatch($customer, $bulkRun);
+        }
     }
 
     public function asCommand(): void
