@@ -39,7 +39,8 @@ import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop
 import SubDepartmentWorkshop1 from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
 import Families2Workshop from '@/Components/CMS/Webpage/Families2/Families2Workshop.vue'
-import Products1Workshop from '@/Components/CMS/Webpage/Products1/Products1Workshop.vue'
+import Products1EcommerceWorkshop from '@/Components/CMS/Webpage/Products1/Ecommerce/Products1Workshop.vue'
+import Product1DropshippingWorkshop from '@/Components/CMS/Webpage/Products1/Droppshiping/Products1Workshop.vue'
 import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
 import CTAVideo1Workshop from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue'
 import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
@@ -62,8 +63,8 @@ import RecommendationCustomerRecentlyBought1Workshop from '@/Components/CMS/Webp
 import CtaImageBackroundWorkshop from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'
 import TimelineWorkshop2 from '@/Components/CMS/Webpage/Step2/Step2Workshop.vue'
 
-export const getComponent = (componentName: string) => {
-    const components: Component = {
+const components = (shop_type?: string): Record<string, Component> => {
+    return {
         //topbar
         'top-bar-1': Topbar1,
         'top-bar-2': Topbar2,
@@ -96,10 +97,10 @@ export const getComponent = (componentName: string) => {
 
         //product
         'product-1': ProductWorkshop1,
-        'product': ProductWorkshop1,
+
 
         //product list
-        'products-1' : Products1Workshop,
+        'products-1' : shop_type == 'b2b' ? Products1EcommerceWorkshop : Product1DropshippingWorkshop,
 
         //see-also
         'see-also-1' : SeeAlso1Workshop,
@@ -142,11 +143,13 @@ export const getComponent = (componentName: string) => {
         'carousel-image-background' : CarouselImageBackground,
         'step-2' : TimelineWorkshop2
     }
-
-    return components[componentName] ?? NotFoundComponents
 }
 
-
+export const getComponent = (componentName: string, options?: {
+    shop_type?: string // 'b2b' | 'dropshipping'
+}) => {
+    return components(options?.shop_type)[componentName] ?? NotFoundComponents
+}
 
 export const getTranslationComponent = (componentName: string) => {
     const components: Component = {

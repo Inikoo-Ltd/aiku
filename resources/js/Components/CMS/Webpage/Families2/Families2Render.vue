@@ -21,7 +21,7 @@ defineProps<{
 
 <template>
   <div
-    class="w-full bg-black rounded-3xl py-3 px-5 border border-white/10 shadow-[0_0_12px_rgba(0,0,0,0.4)]"
+    class="w-full bg-black rounded-3xl py-3 px-5 border border-white/10"
     :style="style"
   >
     <div

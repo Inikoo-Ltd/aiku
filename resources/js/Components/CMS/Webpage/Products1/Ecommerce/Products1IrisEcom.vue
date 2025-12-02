@@ -7,7 +7,7 @@ import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
-import FilterProducts from "./FilterProduct.vue"
+import FilterProducts from "@/Components/CMS/Webpage/Products1/FilterProduct.vue"
 import Drawer from "primevue/drawer"
 import Skeleton from "primevue/skeleton"
 import { debounce, get } from "lodash-es"
@@ -18,7 +18,7 @@ import { faSearch } from "@fal"
 import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
-import ProductRenderEcom from "./ProductRenderEcom.vue"
+import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 
 
 const props = defineProps<{

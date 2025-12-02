@@ -90,6 +90,9 @@ const handleMessage = (event: MessageEvent) => {
   }
   if (key === "reload") reloadPage()
   if (key === "setWebpage") debouncedSetWebpage(value)
+  if (key === "layoutSetup") {
+     layout = {...layout, ...value}
+  }
 }
 
 const reloadPage = (withkey = false) => {
@@ -159,7 +162,7 @@ watch(filterBlock, () => {
                 </div>
 
                 <!-- Dynamic Block -->
-                <component :is="getComponent(block.type)" class="w-full" :webpageData="data" :blockData="block"
+                <component :is="getComponent(block.type,  { shop_type: layout?.retina?.type })" class="w-full" :webpageData="data" :blockData="block"
                   :index-block="idx" :key="key" v-model="block.web_block.layout.data.fieldValue"
                   :screenType="screenType" @autoSave="() => updateData(block)"/>
               </section>

@@ -6,8 +6,8 @@ import axios from "axios";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from "@kyvg/vue3-notification";
 import { routeType } from "@/types/route";
-import ProductRender from "./ProductRender.vue";
-import FilterProducts from "./FilterProduct.vue";
+import ProductRender from "@/Components/CMS/Webpage/Products1/Droppshiping/ProductRender.vue";
+import FilterProducts from "@/Components/CMS/Webpage/Products1/FilterProduct.vue";
 import Drawer from "primevue/drawer";
 import Skeleton from "primevue/skeleton";
 import { debounce, get } from "lodash-es";
@@ -21,7 +21,6 @@ import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCa
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Collection from "@/Pages/Grp/Org/Catalogue/Collection.vue";
 
 library.add(faFileDownload)
 
@@ -164,8 +163,6 @@ function buildFilters(): Record<string, any> {
     return filters;
 }
 
-
-
 const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false) => {
     if (isLoadMore) {
         loadingMore.value = true;
@@ -226,7 +223,6 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         firstLoad.value++;
     }
 };
-
 
 const debFetchProducts = debounce(fetchProducts, 300);
 
@@ -301,8 +297,6 @@ onMounted(() => {
         fetchProductHasPortfolio();
         fetchProducts() // break chace from product dont deleted
     }
-
-
 
     /* debFetchProducts() */
 });

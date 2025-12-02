@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref, computed } from 'vue'
+import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { Link, router } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faEnvelope, faHeart } from '@far'
-import { faCircle, faHeart as fasHeart, faMedal } from '@fas'
+import { faCircle, faHeart as fasHeart } from '@fas'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
@@ -17,12 +17,12 @@ import { faQuestionCircle } from "@fal"
 import { faStarHalfAlt } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ProductResource } from '@/types/Iris/Products'
-import NewAddToCartButton from './NewAddToCartButton.vue' // Import button baru
+import NewAddToCartButton from '@/Components/CMS/Webpage/Products1/NewAddToCartButton.vue' 
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { routeType } from '@/types/route'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products1/BestsellerBadge.vue'
-import Prices from './Prices.vue'
+import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
-import ProductRender from '@/Components/CMS/Webpage/Products1/ProductRender.vue'
+import ProductRender from '@/Components/CMS/Webpage/Products1/Droppshiping/ProductRender.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from './Blueprint'
 
@@ -16,7 +16,7 @@ import { Navigation, Pagination } from 'swiper/modules'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
+import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
 

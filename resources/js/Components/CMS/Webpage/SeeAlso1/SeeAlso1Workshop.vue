@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted } from "vue"
+import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
-import ProductRender from '@/Components/CMS/Webpage/Products1/ProductRender.vue'
+import ProductRender from '@/Components/CMS/Webpage/Products1/Droppshiping/ProductRender.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from './Blueprint'
 
@@ -10,19 +10,17 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
-import { Navigation, Pagination } from 'swiper/modules'
+import { Navigation } from 'swiper/modules'
 
 // Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import RecommendersLuigi1Workshop from "./RecommendersLuigi1Workshop.vue"
-import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
+import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 import { trans } from "laravel-vue-i18n"
 library.add(faChevronLeft, faChevronRight)
 
-const dummyProductImage = '/product/product_dummy.jpeg'
 
 const props = defineProps<{
   modelValue: any

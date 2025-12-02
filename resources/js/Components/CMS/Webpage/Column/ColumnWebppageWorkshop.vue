@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { faCube, faLink, faImage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { trans } from 'laravel-vue-i18n'
 import { getStyles } from "@/Composables/styles"
+import { inject } from "vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure";
 
 library.add(faCube, faLink, faImage)
 
@@ -14,6 +15,9 @@ const props = defineProps<{
 	blockData: Object
 	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
+
+
+const layout = inject('layout', layoutStructure);
 
 const emits = defineEmits<{
 	(e: "update:modelValue", value: string): void
@@ -42,7 +46,7 @@ const updateData = (newVal: any) => {
 		<component
 			v-else
 			class="w-full"
-			:is="getComponent(modelValue.code)"
+			:is="getComponent(modelValue.code, { shop_type: layout?.shopState?.type })"
 			:webpageData="webpageData"
 			:blockData="{...modelValue, id : blockData.id }"
 			@autoSave="() => updateData(modelValue)"

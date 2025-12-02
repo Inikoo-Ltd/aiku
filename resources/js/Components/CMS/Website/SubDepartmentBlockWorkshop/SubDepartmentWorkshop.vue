@@ -138,7 +138,7 @@ const onPickTemplate = (template: any) => {
           </div>
         </div>
         <div v-if="props.data.layout?.code" :class="['border-2 border-t-0', iframeClass]">
-          <component class="flex-1 overflow-auto active-block" :is="getComponent(props.data.layout.code)"
+          <component class="flex-1 overflow-auto active-block" :is="getComponent(props.data.layout.code,  { shop_type: layout?.shopState?.type })"
             :screenType="currentView"
             :modelValue="{
               ...props.data.layout.data.fieldValue,
