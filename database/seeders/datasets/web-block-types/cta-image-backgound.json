@@ -5,7 +5,7 @@
 	"name": "CTA Image Background",
 	"icon": ["fal", "rectangle-wide"],
 	"category": "block",
-	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
+	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
 	"data": {
 		"fieldValue": {
 			"text": "<h3>Ut dolorem reprehenderit</h3><p><span style=\"font-size: 1.0000rem\">In natus quas aut dolores vero et voluptatum </span></p><p><span style=\"font-size: 1.0000rem\">esse et culpa voluptas aut fugit ipsa.</span></p>",

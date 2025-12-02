@@ -41,6 +41,7 @@ export const initialiseApp = () => {
             layout.currentParams = route().routeParams  // current params
             layout.currentQuery = route().queryParams  // current query
             layout.currentRoute = route().current() || ''  // current route
+            layout.shopState =   null// current route
 
             const currentRouteSplit = layout.currentRoute.split('.')  // to handle grp with route grp.xxx.zzz with org with route grp.org.xxx.zzz
             layout.currentModule = currentRouteSplit[1] == 'org' ? layout.currentRoute.split('.')[2] : layout.currentRoute.split('.')[1]  // grp.org.xxx.yyy.zzz to xxx
@@ -68,6 +69,15 @@ export const initialiseApp = () => {
                         }
                     }))
                 }
+
+               if(layout.currentParams.shop){
+                  let organisation = layout?.organisations?.data.find((item)=> item.slug == layout.currentParams?.organisation)
+                  if(organisation) {
+                      console.log('sdsdsd',organisation)
+                      let shop = organisation?.authorised_shops.find((item) => item.slug == layout.currentParams.shop)
+                      layout.shopState = shop
+                  }
+               }
             }
 
             if (layout.currentParams?.agent) {
