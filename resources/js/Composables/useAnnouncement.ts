@@ -12,11 +12,13 @@ import AnnouncementInformation1 from "@/Components/Websites/Announcement/Templat
 import AnnouncementInformation2TransitionText from "@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue"
 import AnnouncemenPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3.vue'
 import type { Component } from "vue"
+import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
 
 
 // Get the component based on code
 export const getAnnouncementComponent = (code: string) => {
     const componentsList: Component = {
+        'announcement-informational-1': AnnouncementInformational1,
         'announcement-information-1': AnnouncementInformation1,
         'announcement-promo-1': AnnouncementPromo1,
         'announcement-promo-3': AnnouncemenPromo3,
