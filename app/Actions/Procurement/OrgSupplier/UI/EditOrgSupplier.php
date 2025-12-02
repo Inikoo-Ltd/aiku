@@ -12,8 +12,10 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\OrgAction;
+use App\Enums\UI\SupplyChain\SupplierTabsEnum;
 use App\Http\Resources\Helpers\AddressResource;
-use App\Models\SupplyChain\Agent;
+use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -22,42 +24,36 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditOrgSupplier extends OrgAction
 {
-    public function handle(Supplier $supplier): Supplier
+
+    // todo: authorisation
+
+    public function handle(OrgSupplier $orgSupplier): OrgSupplier
     {
-        return $supplier;
+        return $orgSupplier;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('procurement.edit');
 
-        return $request->user()->authTo("procurement.view");
+    public function asController(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
+    {
+
+        $this->initialisation($organisation, $request);
+        return $this->handle($orgSupplier);
     }
 
-    public function asController(Supplier $supplier, ActionRequest $request): Supplier
-    {
-        $organisationParameter = $request->route('organisation');
 
-        $organisation = Organisation::where('slug', $organisationParameter)->first();
-
-        if ($organisation) {
-            $this->initialisation($organisation, $request);
-        } else {
-            abort(404, 'Organisation not found.');
-        }
-
-        return $this->handle($supplier);
-    }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inAgent(Agent $agent, Supplier $supplier, ActionRequest $request): Supplier
+    public function inOrgAgent(Organisation $organisation, OrgAgent $agent, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {
-        $this->initialisation($request);
-        return $this->handle($supplier);
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($orgSupplier);
     }
 
-    public function htmlResponse(Supplier $supplier, ActionRequest $request): Response
+    public function htmlResponse(OrgSupplier $orgSupplier, ActionRequest $request): Response
     {
+        $supplier = $orgSupplier->supplier;
+
         return Inertia::render(
             'EditModel',
             [
@@ -66,13 +62,14 @@ class EditOrgSupplier extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                              => [
-                    'previous' => $this->getPrevious($supplier, $request),
-                    'next'     => $this->getNext($supplier, $request),
-                ],
+// todo: fix this navigation
+//                'navigation'  => [
+//                    'previous' => $this->getPrevious($orgSupplier, $request),
+//                    'next'     => $this->getNext($orgSupplier, $request),
+//                ],
                 'pageHead'    => [
-                    'title'     => $supplier->code,
-                    'actions'   => [
+                    'title'   => $orgSupplier->supplier->code,
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -84,7 +81,7 @@ class EditOrgSupplier extends OrgAction
                     ]
                 ],
 
-                'formData'    => [
+                'formData' => [
                     'blueprint' => [
                         [
                             'title'  => __('ID/contact details '),
@@ -116,14 +113,14 @@ class EditOrgSupplier extends OrgAction
                                     ]
                                 ],
                                 'phone'        => [
-                                    'type'    => 'phone',
-                                    'label'   => __('phone'),
-                                    'value'   => $supplier->phone,
+                                    'type'  => 'phone',
+                                    'label' => __('phone'),
+                                    'value' => $supplier->phone,
                                 ],
                                 'address'      => [
                                     'type'    => 'address',
                                     'label'   => __('Address'),
-                                    'value'   => AddressResource::make($supplier->getAddress())->getArray(),
+                                    'value'   => AddressResource::make($supplier->getAddress('contact'))->getArray(),
                                     'options' => [
                                         'countriesAddressData' => GetAddressData::run()
 
@@ -135,7 +132,7 @@ class EditOrgSupplier extends OrgAction
 
                         /*
                         [
-                            'title'  => __("supplier's products settings"),
+                            'title' => __("supplier's products settings"),
                             'fields' => [
 
                                 'allow on demand'              => [
@@ -212,7 +209,7 @@ class EditOrgSupplier extends OrgAction
                                     'value' => ''
                                 ],
 
-                                'order number format'           => [
+                                'order number format'=> [
                                     'type'  => 'input',
                                     'label' => __('order number format'),
                                     'value' => ''
@@ -269,10 +266,10 @@ class EditOrgSupplier extends OrgAction
 
 
                     ],
-                    'args' => [
+                    'args'      => [
                         'updateRoute' => [
-                            'name'      => 'grp.models.supplier.update',
-                            'parameters' => $supplier->slug
+                            'name'       => 'grp.models.org_supplier.update',
+                            'parameters' => $orgSupplier->id
 
                         ],
                     ]
@@ -284,29 +281,29 @@ class EditOrgSupplier extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return ShowSupplier::make()->getBreadcrumbs(
+        return ShowOrgSupplier::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '(' . __('Editing') . ')'
+            suffix: '('.__('Editing').')'
         );
     }
 
-    public function getPrevious(Supplier $supplier, ActionRequest $request): ?array
+    public function getPrevious(OrgSupplier $orgSupplier, ActionRequest $request): ?array
     {
-        $previous = Supplier::where('code', '<', $supplier->code)->when(true, function ($query) use ($supplier, $request) {
+        $previous = OrgSupplier::where('code', '<', $orgSupplier->supplier->code)->when(true, function ($query) use ($orgSupplier, $request) {
             if ($request->route()->getName() == 'grp.org.procurement.marketplace.org_agents.show.org_suppliers.show') {
-                $query->where('suppliers.agent_id', $supplier->agent_id);
+                $query->where('suppliers.agent_id', $orgSupplier->agent_id);
             }
         })->orderBy('code', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
-    public function getNext(Supplier $supplier, ActionRequest $request): ?array
+    public function getNext(OrgSupplier $orgSupplier, ActionRequest $request): ?array
     {
-        $next = Supplier::where('code', '>', $supplier->code)->when(true, function ($query) use ($supplier, $request) {
+        $next = Supplier::where('code', '>', $orgSupplier->supplier->code)->when(true, function ($query) use ($orgSupplier, $request) {
             if ($request->route()->getName() == 'grp.org.procurement.org_agents.show.org_suppliers.show') {
-                $query->where('suppliers.agent_id', $supplier->agent_id);
+                $query->where('suppliers.agent_id', $orgSupplier->agent_id);
             }
         })->orderBy('code')->first();
 
@@ -323,9 +320,9 @@ class EditOrgSupplier extends OrgAction
             'grp.org.procurement.org_suppliers.edit' => [
                 'label' => $supplier->name,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
-                        'supplier'  => $supplier->slug
+                        'supplier' => $supplier->slug
                     ]
 
                 ]
@@ -333,10 +330,10 @@ class EditOrgSupplier extends OrgAction
             'grp.org.procurement.org_agents.show.org_suppliers.edit' => [
                 'label' => $supplier->name,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
-                        'agent'     => $supplier->agent->slug,
-                        'supplier'  => $supplier->slug
+                        'agent'    => $supplier->agent->slug,
+                        'supplier' => $supplier->slug
                     ]
 
                 ]
