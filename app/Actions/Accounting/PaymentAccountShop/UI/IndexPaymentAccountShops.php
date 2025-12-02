@@ -67,6 +67,10 @@ class IndexPaymentAccountShops extends OrgAction
         $queryBuilder->leftJoin('payment_accounts', 'payment_account_shop.payment_account_id', 'payment_accounts.id');
         $queryBuilder->leftJoin('payment_account_shop_stats', 'payment_account_shop_stats.payment_account_shop_id', 'payment_account_shop.id');
         $queryBuilder->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
+        $queryBuilder->leftJoin('payments', function ($join) {
+            $join->on('payments.payment_account_id', '=', 'payment_accounts.id')
+                ->on('payments.shop_id', '=', 'shops.id');
+        }); // Todo: remove this if payment_account_shop_stats.number_payments have a data
 
         return $queryBuilder
             ->defaultSort('payment_account_shop.id')
@@ -83,9 +87,26 @@ class IndexPaymentAccountShops extends OrgAction
                 'payment_account_shop.activated_at',
                 'payment_account_shop.state as state',
                 'payment_account_shop.show_in_checkout',
-                'payment_account_shop_stats.number_payments',
-                'payment_account_shop_stats.amount_successfully_paid',
+                // 'payment_account_shop_stats.number_payments',
+                \DB::raw('COUNT(payments.id) as number_payments'), // Todo: remove this if payment_account_shop_stats.number_payments have a data
+                // 'payment_account_shop_stats.amount_successfully_paid',
+                \DB::raw('SUM(payments.amount) as amount_successfully_paid') // Todo: remove this if payment_account_shop_stats.amount_successfully_paid have a data
             ])
+            ->groupBy([
+                'payment_account_shop.id',
+                'currencies.code',
+                'shops.id',
+                'shops.code',
+                'shops.name',
+                'shops.slug',
+                'payment_accounts.slug',
+                'payment_accounts.code',
+                'payment_accounts.name',
+                'payment_account_shop.activated_at',
+                'payment_account_shop.state',
+                'payment_account_shop.show_in_checkout',
+                'payment_account_shop_stats.amount_successfully_paid',
+            ]) // Todo: remove this if payment_account_shop_stats.number_payments have a data
             ->allowedSorts(['shop_code', 'shop_name', 'number_payments', 'amount_successfully_paid', 'payment_account_code', 'payment_account_name','activated_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -119,21 +140,18 @@ class IndexPaymentAccountShops extends OrgAction
                 $table->column(key: 'payment_account_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-
             $table
                 ->column(key: 'activated_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
-                ->column(key: 'number_payments', label: __('Payments'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'amount_successfully_paid', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
+                ->column(key: 'number_payments', label: __('Payments'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'amount_successfully_paid', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number', align: 'right')
                 ->defaultSort('id');
         };
     }
-
 
     public function jsonResponse(LengthAwarePaginator $paymentAccounts): AnonymousResourceCollection
     {
         return PaymentAccountShopsResource::collection($paymentAccounts);
     }
-
 
     public function htmlResponse(LengthAwarePaginator $paymentAccountShops, ActionRequest $request): Response
     {
@@ -160,8 +178,6 @@ class IndexPaymentAccountShops extends OrgAction
                     'title'         => __('Payment Account Shops'),
                 ],
                 'data'        => PaymentAccountShopsResource::collection($paymentAccountShops)
-
-
             ]
         )->table($this->tableStructure($this->parent));
     }
@@ -183,7 +199,6 @@ class IndexPaymentAccountShops extends OrgAction
 
         return $this->handle($fulfilment);
     }
-
 
     public function asController(Organisation $organisation, PaymentAccount $paymentAccount, ActionRequest $request): LengthAwarePaginator
     {

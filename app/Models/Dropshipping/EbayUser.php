@@ -17,6 +17,7 @@ use App\Models\CRM\Customer;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -57,6 +58,7 @@ class EbayUser extends Model
     use InCustomer;
     use HasSlug;
     use WithEbayApiRequest;
+    use SoftDeletes;
 
     protected $guarded = [];
 

@@ -17,6 +17,7 @@ use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -53,6 +54,7 @@ class WooCommerceUser extends Model
     use InCustomer;
     use HasSlug;
     use WithWooCommerceApiRequest;
+    use SoftDeletes;
 
     protected $guarded = [];
 

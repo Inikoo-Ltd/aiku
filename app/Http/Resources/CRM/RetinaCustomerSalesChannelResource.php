@@ -73,7 +73,9 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             /** @var \App\Models\Dropshipping\WooCommerceUser $wooUser */
             $wooUser = $customerSalesChannels->user;
 
-            $siteUrl = Arr::get($wooUser->settings, 'credentials.store_url');
+            if ($wooUser) {
+                $siteUrl = Arr::get($wooUser->settings, 'credentials.store_url');
+            }
         }
 
         $taxCategory = null;

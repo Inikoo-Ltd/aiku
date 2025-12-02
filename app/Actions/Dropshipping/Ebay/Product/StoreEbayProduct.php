@@ -134,6 +134,11 @@ class StoreEbayProduct extends RetinaAction
                 $categoryName = Arr::get($categories, 'itemSummaries.0.categories.0.categoryName');
             }
 
+            if ($categoryId == '261186') {
+                // This force not to use book category
+                $categoryId = '29511';
+            }
+
             if ($handleError($categories)) {
                 return;
             }
