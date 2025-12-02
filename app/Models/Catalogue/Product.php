@@ -166,6 +166,9 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $ufi_number
  * @property string|null $scpn_number
  * @property array<array-key, mixed>|null $offers_data
+ * @property \Illuminate\Support\Carbon|null $not_for_sale_since
+ * @property bool $not_for_sale_from_master
+ * @property bool $not_for_sale_from_trade_unit
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -266,6 +269,7 @@ class Product extends Model implements Auditable, HasMedia
         'ufi_number'                    => 'string',
         'scpn_number'                   => 'string',
         'offers_data'                   => 'array',
+        'not_for_sale_since'            => 'datetime',
     ];
 
     protected $attributes = [

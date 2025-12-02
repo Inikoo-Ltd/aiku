@@ -2,10 +2,11 @@
 
 namespace App\Models\CRM\Livechat;
 
-use App\Enums\CRM\Livechat\ChatEventActorTypeEnum;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use App\Enums\CRM\Livechat\ChatEventActorTypeEnum;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property array<array-key, mixed>|null $payload
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Model|\Eloquent|null $actor
  * @property-read \App\Models\CRM\Livechat\ChatSession $chatSession
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent fromActor(\App\Enums\CRM\Livechat\ChatActorTypeEnum $actorType, ?int $actorId = null)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent newModelQuery()
