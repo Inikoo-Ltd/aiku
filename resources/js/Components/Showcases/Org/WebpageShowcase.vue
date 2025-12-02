@@ -31,6 +31,8 @@ const props = defineProps<{
     domain: string
     code: string
     typeIcon: string
+    canonical_url_without_domain: string
+    canonical_url: string
     url: string
     layout: {
       web_blocks?: any[]
@@ -113,14 +115,14 @@ const isAbleReindex = computed(() => {
         </div>
 
         <!-- Browser View -->
-        <BrowserView :screenMode="screenMode" :tab="{ icon: data.typeIcon, label: data.code }"
-          :url="{ domain: data.domain, page: data.url }">
+        <BrowserView :screenMode="screenMode" :tab="{ icon: data.typeIcon, label: data.title }"
+          :url="{ domain: data.domain, page: data.canonical_url_without_domain }">
           <template #page v-if="data.layout.web_blocks?.length">
             <div class="relative w-full h-full">
               <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
                 <LoadingIcon class="w-24 h-24 text-6xl" />
               </div>
-              <iframe ref="_iframe" :src="iframeSrc" :title="props.title" class="w-full h-full"
+              <iframe ref="_iframe" :src="iframeSrc" :title="'props.title'" class="w-full h-full"
                 @load="isIframeLoading = false" />
             </div>
           </template>
