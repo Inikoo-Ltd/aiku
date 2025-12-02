@@ -10,9 +10,9 @@ namespace App\Http\Resources\Catalogue;
 
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
+use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Traits\HasPriceMetrics;
 
 /**
  * @property string $slug
@@ -44,9 +44,8 @@ use App\Http\Resources\Traits\HasPriceMetrics;
  */
 class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
-    use HasSelfCall;
     use HasPriceMetrics;
-
+    use HasSelfCall;
 
     public function toArray($request): array
     {
@@ -65,7 +64,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
         }
 
         $back_in_stock_id = null;
-        $back_in_stock    = false;
+        $back_in_stock = false;
 
         if ($request->user()) {
             $customer = $request->user()->customer;
@@ -75,7 +74,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
                     ->first();
 
                 if ($set_data_back_in_stock) {
-                    $back_in_stock    = true;
+                    $back_in_stock = true;
                     $back_in_stock_id = $set_data_back_in_stock->id;
                 }
             }
@@ -86,44 +85,42 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             $media = Media::find($this->image_id);
         }
 
-        $oldLuigiIdentity = $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->website_id . ':' . $this->webpage_id;
+        $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
         return [
-            'id'                   => $this->id,
-            'image_id'             => $this->image_id,
-            'image'                => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'code'                 => $this->code,
-            'luigi_identity'       => $oldLuigiIdentity,
-            'name'                 => $this->name,
-            'stock'                => $this->available_quantity,
-            'price'                => $this->price,
-            'rrp'                  => $this->rrp,
-            'rrp_per_unit'         => $rrpPerUnit,
-            'margin'               => $margin,
-            'profit'               => $profit,
-            'state'                => $this->state,
-            'status'               => $this->status,
-            'created_at'           => $this->created_at,
-            'updated_at'           => $this->updated_at,
-            'units'                => $units,
-            'unit'                 => $this->unit,
-            'url'                  => $url,
-            'top_seller'           => $this->top_seller,
-            'web_images'           => $this->web_images,
-            'transaction_id'       => $this->transaction_id ?? null,
-            'quantity_ordered'     => (int)$this->quantity_ordered ?? 0,
-            'quantity_ordered_new' => (int)$this->quantity_ordered ?? 0,  // To editable in Frontend
-            'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
-            'is_back_in_stock'     => $back_in_stock,
-            'back_in_stock_id'     => $back_in_stock_id,
-            'profit_per_unit'      => $profitPerUnit,
-            'price_per_unit'       => $pricePerUnit,
-            'available_quantity'      => $this->available_quantity,
-            'is_coming_soon'       => false,  // TODO: INI-373 (Raul)
+            'id' => $this->id,
+            'image_id' => $this->image_id,
+            'image' => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'code' => $this->code,
+            'luigi_identity' => $oldLuigiIdentity,
+            'name' => $this->name,
+            'stock' => $this->available_quantity,
+            'price' => $this->price,
+            'rrp' => $this->rrp,
+            'rrp_per_unit' => $rrpPerUnit,
+            'margin' => $margin,
+            'profit' => $profit,
+            'state' => $this->state,
+            'status' => $this->status,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'units' => $units,
+            'unit' => $this->unit,
+            'url' => $url,
+            'top_seller' => $this->top_seller,
+            'web_images' => $this->web_images,
+            'transaction_id' => $this->transaction_id ?? null,
+            'quantity_ordered' => (int) $this->quantity_ordered ?? 0,
+            'quantity_ordered_new' => (int) $this->quantity_ordered ?? 0,  // To editable in Frontend
+            'is_favourite' => $favourite && ! $favourite->unfavourited_at ?? false,
+            'is_back_in_stock' => $back_in_stock,
+            'back_in_stock_id' => $back_in_stock_id,
+            'profit_per_unit' => $profitPerUnit,
+            'price_per_unit' => $pricePerUnit,
+            'available_quantity' => $this->available_quantity,
+            'is_coming_soon' => true,
         ];
     }
-
-
 }
