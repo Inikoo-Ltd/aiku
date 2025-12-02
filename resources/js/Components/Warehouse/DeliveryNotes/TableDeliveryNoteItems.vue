@@ -277,7 +277,7 @@ onMounted(() => {
                     </div>
 
                     <div class="hidden lg:block">
-                        <ButtonWithLink v-if="!item.is_packed" v-tooltip="trans('Undo')" type="negative" size="xxs"
+                        <ButtonWithLink v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0" v-tooltip="trans('Undo pick')" type="negative" size="xxs"
                             icon="fal fa-undo-alt" :routeTarget="picking.undo_picking_route"
                             :bindToLink="{ preserveScroll: true }"
                             @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
@@ -285,7 +285,7 @@ onMounted(() => {
                     </div>
 
                     <div class="lg:hidden">
-                        <ButtonWithLink v-if="!item.is_packed" v-tooltip="trans('Undo')" type="negative" size="sm"
+                        <ButtonWithLink v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0" v-tooltip="trans('Undo pick')" type="negative" size="sm"
                             icon="fal fa-undo-alt" :routeTarget="picking.undo_picking_route"
                             :bindToLink="{ preserveScroll: true }"
                             @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
