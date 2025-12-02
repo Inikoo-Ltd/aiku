@@ -2,10 +2,11 @@
 
 namespace App\Models\CRM\Livechat;
 
-use App\Enums\CRM\Livechat\ChatEventActorTypeEnum;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use App\Enums\CRM\Livechat\ChatEventActorTypeEnum;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 

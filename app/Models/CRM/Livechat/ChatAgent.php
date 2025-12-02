@@ -2,7 +2,6 @@
 
 namespace App\Models\CRM\Livechat;
 
-
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;

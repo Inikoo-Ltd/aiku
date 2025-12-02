@@ -131,18 +131,17 @@ const tradeUnitBrands = computed(() => {
 			</span>
 		</div>
 		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center">
-			<span 
-			v-tooltip="trans('Product State: ') + data.availability_status.product_state_icon['tooltip'] "
+			<span
 			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help me-2"
 			:class="data.availability_status.product_state_icon['class'].replace('text', 'border').replace('500', '300')">
-				{{ data.availability_status.product_state_icon['tooltip'] }} 
+                <span class="opacity-50"> {{trans('Procurement')}}:</span>	 {{ data.availability_status.product_state}}
 				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']"/>
 			</span>
 			<span 
 			v-tooltip="data.availability_status.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
 			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
 			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
-				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
+			{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
 				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
 			</span>
 		</div>
