@@ -39,8 +39,8 @@ import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop
 import SubDepartmentWorkshop1 from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
 import Families2Workshop from '@/Components/CMS/Webpage/Families2/Families2Workshop.vue'
-import Products1EcommerceWorkshop from '@/Components/CMS/Webpage/Products1/Ecommerce/Products1Workshop.vue'
-import Product1DropshippingWorkshop from '@/Components/CMS/Webpage/Products1/Dropshipping/Products1Workshop.vue'
+
+
 import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
 import CTAVideo1Workshop from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue'
 import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
