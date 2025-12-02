@@ -85,6 +85,8 @@ export const resolveResponsiveValue = (
 			color: getVal(properties?.text, ["color"]) || null,
 			fontFamily: getVal(properties?.text, ["fontFamily"]) || null,
 			fontStyle: getVal(properties?.text, ["fontStyle"]) || null,
+			textDecoration: getVal(properties?.text, ["textDecoration"]) || null,
+			textTransform: getVal(properties?.text, ["textTransform"]) || null,
 			fontSize: getVal(properties?.text, ["fontSize"])
 				? getVal(properties?.text, ["fontSize"]) + "px"
 				: null,
