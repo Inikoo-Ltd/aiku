@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 19 Nov 2024 11:08:59 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Author: Eka Yudinata <ekayudinata@gmail.com>
+ * Created: Tue, 19 Nov 2024 11:08:59 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2024, Eka Yudinata
  */
 
 namespace App\Actions\Comms\Outbox\ReorderRemainder\UI;

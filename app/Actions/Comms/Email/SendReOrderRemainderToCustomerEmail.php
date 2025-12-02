@@ -16,7 +16,7 @@ use App\Models\Comms\EmailBulkRun;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SendReOrderRemainderToCustomerEmail extends ShouldQueue
+class SendReOrderRemainderToCustomerEmail implements ShouldQueue
 {
     use AsAction;
     use WithSendCustomerOutboxEmail;
