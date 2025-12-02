@@ -85,8 +85,8 @@ class EditMasterProduct extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'   => __('Edit master product'),
-                    'model'   => $masterAsset->code,
+                    'model'   => __('Editing master product'),
+                    'title'   => $masterAsset->code,
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
@@ -330,6 +330,18 @@ class EditMasterProduct extends GrpAction
                     ],
                 ],
             ] : [],
+            [
+                'label'  => __('Sale Status'),
+                'icon'   => 'fal fa-cart-arrow-down',
+                'fields' => [
+                    'is_for_sale' => [
+                        'type'  => 'toggle',
+                        'label' => __('For Sale'),
+                        'value' => $masterProduct->is_for_sale,
+                    ],
+                ],
+            ],
+
         ];
     }
 

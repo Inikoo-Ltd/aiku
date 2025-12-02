@@ -251,14 +251,6 @@ class EditProduct extends OrgAction
             $nameFields = array_merge($nameFields, $webpageNameFields);
         }
 
-        $saleStatusFields = [
-            'is_for_sale' => [
-                'type'  => 'toggle',
-                'label' => __('For Sale'),
-                'value' => $product->is_for_sale,
-            ],
-        ];
-
         return array_filter(
             [
                 [
@@ -389,7 +381,13 @@ class EditProduct extends OrgAction
                 [
                     'label'  => __('Sale Status'),
                     'icon'   => 'fal fa-cart-arrow-down',
-                    'fields' => $saleStatusFields,
+                    'fields' => [
+                        'is_for_sale' => [
+                            'type'  => 'toggle',
+                            'label' => __('For Sale'),
+                            'value' => $product->is_for_sale,
+                        ],
+                    ],
                 ],
 
             ]
