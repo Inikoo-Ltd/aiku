@@ -2,7 +2,7 @@
 
 /*
  * Author: Steven Wicca stewicalf@gmail.com
- * Created: Mon, 01 Dec 2025 16:43:14 Central Indonesia Time, Lembeng Beach, Bali, Indonesia
+ * Created: Tue, 02 Dec 2025 10:05:55 Central Indonesia Time, Lembeng Beach, Bali, Indonesia
  * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
@@ -10,14 +10,13 @@ namespace App\Actions\Catalogue\ProductCategory\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\ProductCategory;
 use DB;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductCategoryHydrateInvoiceIntervals implements ShouldBeUnique
+class ProductCategoryHydrateSalesIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalUniqueJob;
@@ -46,34 +45,19 @@ class ProductCategoryHydrateInvoiceIntervals implements ShouldBeUnique
             ->select('it.invoice_id')
             ->distinct();
 
-        $queryBaseInvoice = Invoice::query()
+        $queryBaseSales = Invoice::query()
             ->whereIn('id', $invoiceIdsQuery)
             ->where('in_process', false)
-            ->where('type', InvoiceTypeEnum::INVOICE)
-            ->selectRaw('count(*) as sum_aggregate');
+            ->selectRaw('sum(net_amount) as sum_aggregate');
 
         $stats = $this->getIntervalsData(
             stats: $stats,
-            queryBase: $queryBaseInvoice,
-            statField: 'invoices_',
+            queryBase: $queryBaseSales,
+            statField: 'sales_',
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $queryBaseRefund = Invoice::query()
-            ->whereIn('id', $invoiceIdsQuery)
-            ->where('in_process', false)
-            ->where('type', InvoiceTypeEnum::REFUND)
-            ->selectRaw('count(*) as sum_aggregate');
-
-        $stats = $this->getIntervalsData(
-            stats: $stats,
-            queryBase: $queryBaseRefund,
-            statField: 'refunds_',
-            intervals: $intervals,
-            doPreviousPeriods: $doPreviousPeriods
-        );
-
-        $productCategory->orderingIntervals()->update($stats);
+        $productCategory->salesIntervals()->update($stats);
     }
 }

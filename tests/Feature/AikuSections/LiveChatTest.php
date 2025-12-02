@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 27 Nov 2025 13:05:00 Central Indonesia Time, Kuala Lumpur, Malaysia
@@ -37,7 +38,7 @@ beforeEach(function () {
             $this->organisation,
             $this->user,
             $this->shop
-            ) = createShop();
+        ) = createShop();
         $web = createWebsite($this->shop);
     } else {
         $this->organisation = $web->organisation;
@@ -50,7 +51,7 @@ beforeEach(function () {
 
     $customer = Customer::first();
 
-    if(!$customer){
+    if (!$customer) {
         $customer = createCustomer($this->shop);
     }
 

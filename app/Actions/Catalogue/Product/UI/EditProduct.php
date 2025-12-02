@@ -11,18 +11,14 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Web\Webpage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 
 class EditProduct extends OrgAction
 {
@@ -182,32 +178,7 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-        $family = $product->family;
-        if ($family) {
-            $stateData = [
-                'label' => $family->state->labels()[$family->state->value],
-                'icon'  => $family->state->stateIcon()[$family->state->value]['icon'],
-                'class' => $family->state->stateIcon()[$family->state->value]['class']
-            ];
 
-            $familyOptions = [
-                'id'                      => $family->id,
-                'code'                    => $family->code,
-                'state'                   => $stateData,
-                'name'                    => $family->name,
-                'number_current_products' => $family->stats->number_current_products,
-
-            ];
-        } else {
-            $familyOptions = [
-                'id'                      => null,
-                'code'                    => null,
-                'state'                   => null,
-                'name'                    => null,
-                'number_current_products' => null,
-
-            ];
-        }
 
         $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
 
@@ -287,30 +258,6 @@ class EditProduct extends OrgAction
                 'value' => $product->is_for_sale,
             ],
         ];
-        // Only show if product webpage is available previously
-        if(!$product->is_for_sale && ($product->webpage?->state != WebpageStateEnum::CLOSED)){
-            $saleStatusFields['webpage_state_data'] = [
-                'type'               => 'toggle_state_webpage',
-                'label'              => __('Website State'),
-                'placeholder'        => __('Select webpage state'),
-                'information'        => __('This would affect the product webpage viewability'),
-                'options'            => Options::forEnum(WebpageStateEnum::class),
-                'searchable'         => true,
-                'default_storefront' => getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $product->webpage->shop_id)->first()),
-                'init_options'       => $product->webpage->redirectWebpage ? [
-                    getFieldWebpageData($product->webpage->redirectWebpage)
-                ] : null,
-                'value'              => [
-                    'state'               => $product->webpage->state,
-                    'redirect_webpage_id' => $product->webpage->redirect_webpage_id,
-                ],
-                'fetch_params'       => [
-                    'organisation' => $product->organisation->slug,
-                    'shop' => $product->shop->slug,
-                    'website' => $product->shop->website->slug,
-                ]
-            ];
-        }
 
         return array_filter(
             [
@@ -444,30 +391,7 @@ class EditProduct extends OrgAction
                     'icon'   => 'fal fa-cart-arrow-down',
                     'fields' => $saleStatusFields,
                 ],
-                // [
-                //     'label'  => __('Family'),
-                //     'icon'   => 'fa-light fa-folder',
-                //     'fields' => [
-                //         'family_id' => [
-                //             'type'       => 'select_infinite',
-                //             'label'      => __('Family'),
-                //             'options'    => [
-                //                 $familyOptions
-                //             ],
-                //             'fetchRoute' => [
-                //                 'name'       => 'grp.json.shop.families',
-                //                 'parameters' => [
-                //                     'shop' => $product->shop->id
-                //                 ]
-                //             ],
-                //             'valueProp'  => 'id',
-                //             'labelProp'  => 'code',
-                //             'required'   => true,
-                //             'value'      => $product->family->id ?? null,
-                //             'type_label' => 'families'
-                //         ]
-                //     ],
-                // ],
+
             ]
         );
     }

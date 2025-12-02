@@ -21,7 +21,7 @@ use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read ChatAgent|null $chatAgent
+ * @property-read \App\Models\CRM\Livechat\ChatAgent|null $chatAgent
  * @property-read \App\Models\CRM\Livechat\ChatSession|null $chatSession
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAssignment newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAssignment newQuery()
