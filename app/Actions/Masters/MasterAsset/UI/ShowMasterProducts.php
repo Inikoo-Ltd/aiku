@@ -217,7 +217,7 @@ class ShowMasterProducts extends GrpAction
                 'masterAsset'           => $masterAsset,
                 'currency'              => $masterAsset->group->currency,
                 'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
-                'tradeUnits'            => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset)), 
+                'tradeUnits'            => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset)),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => MasterAssetTabsEnum::navigation()

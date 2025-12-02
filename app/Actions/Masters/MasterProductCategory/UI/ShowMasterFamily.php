@@ -209,7 +209,7 @@ class ShowMasterFamily extends GrpAction
                 ],
                 'masterProductCategory' => $masterFamily->id,
                 'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
-                
+
                 MasterFamilyTabsEnum::SALES->value => $this->tab == MasterFamilyTabsEnum::SALES->value ?
                     fn () => MasterFamiliesSalesResource::collection(IndexMasterFamilySales::run($masterFamily))
                     : Inertia::lazy(fn () => MasterFamiliesSalesResource::collection(IndexMasterFamilySales::run($masterFamily))),

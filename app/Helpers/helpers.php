@@ -16,8 +16,8 @@ if (!function_exists('group')) {
     }
 }
 
-if (!function_exists('getFieldWebpageData')){
-    function getFieldWebpageData(Webpage $webpage): ?Array
+if (!function_exists('getFieldWebpageData')) {
+    function getFieldWebpageData(Webpage $webpage): ?array
     {
         return [
             'code'     => $webpage->code,

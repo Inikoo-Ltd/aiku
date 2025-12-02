@@ -29,6 +29,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $lost_revenue_invoice_category_currency
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string $sales_org_currency
+ * @property string $revenue_org_currency
+ * @property string $lost_revenue_org_currency
  * @property-read Group $group
  * @property-read \App\Models\Accounting\InvoiceCategory $invoiceCategory
  * @property-read Organisation $organisation

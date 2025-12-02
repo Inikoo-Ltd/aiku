@@ -19,7 +19,6 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 
 class EditProduct extends OrgAction
 {
@@ -179,32 +178,7 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-        $family = $product->family;
-        if ($family) {
-            $stateData = [
-                'label' => $family->state->labels()[$family->state->value],
-                'icon'  => $family->state->stateIcon()[$family->state->value]['icon'],
-                'class' => $family->state->stateIcon()[$family->state->value]['class']
-            ];
 
-            $familyOptions = [
-                'id'                      => $family->id,
-                'code'                    => $family->code,
-                'state'                   => $stateData,
-                'name'                    => $family->name,
-                'number_current_products' => $family->stats->number_current_products,
-
-            ];
-        } else {
-            $familyOptions = [
-                'id'                      => null,
-                'code'                    => null,
-                'state'                   => null,
-                'name'                    => null,
-                'number_current_products' => null,
-
-            ];
-        }
 
         $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
 
@@ -417,30 +391,7 @@ class EditProduct extends OrgAction
                     'icon'   => 'fal fa-cart-arrow-down',
                     'fields' => $saleStatusFields,
                 ],
-                // [
-                //     'label'  => __('Family'),
-                //     'icon'   => 'fa-light fa-folder',
-                //     'fields' => [
-                //         'family_id' => [
-                //             'type'       => 'select_infinite',
-                //             'label'      => __('Family'),
-                //             'options'    => [
-                //                 $familyOptions
-                //             ],
-                //             'fetchRoute' => [
-                //                 'name'       => 'grp.json.shop.families',
-                //                 'parameters' => [
-                //                     'shop' => $product->shop->id
-                //                 ]
-                //             ],
-                //             'valueProp'  => 'id',
-                //             'labelProp'  => 'code',
-                //             'required'   => true,
-                //             'value'      => $product->family->id ?? null,
-                //             'type_label' => 'families'
-                //         ]
-                //     ],
-                // ],
+
             ]
         );
     }
