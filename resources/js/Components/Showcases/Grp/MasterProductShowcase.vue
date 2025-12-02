@@ -214,6 +214,12 @@ const isModalProductForSale = ref(false);
 					{{ `${data.availability_status.total_product_for_sale}/${data.availability_status.product.length}` }}
 				</span>)
 				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+				<FontAwesomeIcon
+					v-if="data.availability_status?.from_trade_unit"
+					v-tooltip="getTooltips()"
+					icon="fal fa-atom"
+					:class="'ms-2 hover:cursor-pointer'"
+				/>
 			</span>
 		</div>
 	</div>
