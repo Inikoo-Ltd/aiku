@@ -34,6 +34,11 @@ class OrgStocksResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $quantityAvailable = $this->quantity_available;
+        if ($quantityAvailable) {
+            $quantityAvailable = trimDecimalZeros($quantityAvailable);
+        }
+
         return [
             'id'                              => $this->id,
             'slug'                            => $this->slug,
@@ -41,7 +46,7 @@ class OrgStocksResource extends JsonResource
             'state'                           => $this->state->stateIcon()[$this->state->value],
             'name'                            => $this->name,
             'quantity'                        => $this->quantity,
-            'quantity_available'              => trimDecimalZeros($this->quantity_available),
+            'quantity_available'              => $quantityAvailable,
             'unit_value'                      => $this->unit_value,
             'number_locations'                => $this->number_location,
             'quantity_locations'              => $this->quantity_in_locations,

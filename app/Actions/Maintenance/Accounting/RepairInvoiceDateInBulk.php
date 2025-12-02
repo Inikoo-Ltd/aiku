@@ -23,8 +23,8 @@ class RepairInvoiceDateInBulk
         UpdateInvoice::run(
             $invoice,
             [
-                'date' => '2025-09-30 18:00:00',
-                'tax_liability_at' => '2025-09-30 18:00:00',
+                'date' => '2025-11-30 18:00:00',
+                'tax_liability_at' => '2025-11-30 18:00:00',
             ]
         );
     }
@@ -37,8 +37,8 @@ class RepairInvoiceDateInBulk
 
 
 
-        Invoice::whereIn('shop_id', [15, 30])
-            ->where('date', '>=', '2025-10-01 00:00:00')
+        Invoice::whereIn('shop_id', [15, 30]) // fulfilment shops
+            ->where('date', '>=', '2025-12-01 00:00:00')
             ->whereNotNull('recurring_bill_id')
             ->orderBy('date', 'desc')
             ->chunk(1000, function ($invoices) {

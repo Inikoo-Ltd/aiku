@@ -62,7 +62,7 @@ trait WithAuroraImages
 
             ];
         } else {
-            print "Image not found: $image_path\n";
+            //print "Image not found: $image_path\n";
 
             return [];
         }
@@ -85,7 +85,7 @@ trait WithAuroraImages
 
             ];
         } else {
-            print "Image not found: $image_path\n";
+            //print "Image not found: $image_path\n";
 
             return [];
         }
