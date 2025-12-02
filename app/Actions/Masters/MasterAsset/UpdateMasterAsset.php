@@ -114,7 +114,7 @@ class UpdateMasterAsset extends OrgAction
             foreach ($masterAsset->products as $product) {
                 UpdateProduct::run($product, [
                     'is_for_sale'              => $masterAsset->is_for_sale,
-                    'not_for_sale_from_master' => $masterAsset->is_for_sale
+                    'not_for_sale_from_master' => !$masterAsset->is_for_sale
                 ]);
             }
         }
@@ -220,7 +220,8 @@ class UpdateMasterAsset extends OrgAction
             'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n'       => ['sometimes', 'array'],
             'description_extra_i8n' => ['sometimes', 'array'],
-            'is_for_sale'           => ['sometimes', 'boolean']
+            'is_for_sale'           => ['sometimes', 'boolean'],
+            'not_for_sale_from_trade_unit'  => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

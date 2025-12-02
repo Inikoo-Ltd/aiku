@@ -486,6 +486,8 @@ class UpdateProduct extends OrgAction
 
             // Sale Status & Webpage
             'is_for_sale'               => ['sometimes', 'boolean'],
+            'not_for_sale_from_master' => ['sometimes', 'boolean'],
+            'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
 
         ];
 
