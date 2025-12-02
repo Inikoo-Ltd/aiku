@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faFilter, faSearch, faLayerGroup } from "@fas";
 import { ref, computed, inject, watch } from "vue";
+import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue";
 import FilterProducts from "@/Components/CMS/Webpage/Products1/FilterProduct.vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -11,13 +12,14 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
+import { getProductsRenderDropshippingComponent } from "@/Composables/getIrisComponents";
 
 library.add(faFileDownload)
 
 const props = defineProps<{
   modelValue: any
   screenType: "mobile" | "tablet" | "desktop";
+  code : string
 }>();
 
 const layout: any = inject("layout", {});
@@ -88,16 +90,6 @@ watch(
       </transition>
 
       <main class="flex-1 mt-4">
-        <!-- <div class="px-4 xpt-4 mb-2 text-base font-normal">
-            <div
-                v-tooltip="trans('This is not work in workshop, try in website.')"
-                xhref="route().has('iris.catalogue.feeds.product_category.download') ? route('iris.catalogue.feeds.product_category.download', { productCategory: props.modelValue.model_slug }) : '#'"
-                xtarget="_blank"
-                class="group hover:underline w-fit">
-                <FontAwesomeIcon icon="fas fa-file-download" class="text-sm opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
-                <span class="text-sm font-normal opacity-70 group-hover:opacity-100">Download products (csv)</span>
-            </div>
-        </div> -->
         <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
           <div class="flex items-center w-full md:w-1/3 gap-2">
             
@@ -151,14 +143,13 @@ watch(
           <div v-for="product in dummyProducts" :key="product.id"
             :style="getStyles(modelValue?.card_product?.properties, screenType)"
             class="border p-3 relative rounded  bg-white">
-            <ProductRenderEcom 
+            <component 
+              :is="getProductsRenderDropshippingComponent(code)" 
               :product="product" 
-              :buttonStyle="getStyles(modelValue?.button?.properties, screenType, false)"
-              :hasInBasket="[]" 
-              :bestSeller="modelValue.bestseller" 
-              :buttonStyleHover="getStyles(modelValue?.buttonHover?.properties, screenType)"
+              :bestSeller="modelValue.bestseller"
+              :buttonStyle="getStyles(modelValue?.button?.properties, screenType)"
               :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
-             />
+            />
           </div>
         </div>
       </main>

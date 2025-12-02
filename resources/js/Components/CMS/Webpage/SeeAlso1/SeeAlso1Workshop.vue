@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
-import ProductRender from '@/Components/CMS/Webpage/Products1/Droppshiping/ProductRender.vue'
+import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from './Blueprint'
 

@@ -40,7 +40,7 @@ import SubDepartmentWorkshop1 from '@/Components/CMS/Webpage/SubDepartment1/SubD
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
 import Families2Workshop from '@/Components/CMS/Webpage/Families2/Families2Workshop.vue'
 import Products1EcommerceWorkshop from '@/Components/CMS/Webpage/Products1/Ecommerce/Products1Workshop.vue'
-import Product1DropshippingWorkshop from '@/Components/CMS/Webpage/Products1/Droppshiping/Products1Workshop.vue'
+import Product1DropshippingWorkshop from '@/Components/CMS/Webpage/Products1/Dropshipping/Products1Workshop.vue'
 import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
 import CTAVideo1Workshop from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue'
 import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
@@ -53,8 +53,6 @@ import CarouselCtaWorkshop from '@/Components/CMS/Webpage/CarouselCta/CarouselCt
 import CarouselImageBackground from '@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundWorkshop.vue'
 import SubDepartmentWorkshop2 from '@/Components/CMS/Webpage/SubDepartment2/SubDepartmentWorkshop.vue'
 
-
-
 import LuigiTrends1Workshop from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'
 import LuigiLastSeen1Workshop from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'
 import LuigiItemAlternatives1Workshop from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Workshop.vue'
@@ -62,6 +60,7 @@ import LuigiItemAlternatives1Workshop from '@/Components/CMS/Webpage/LuigiItemAl
 import RecommendationCustomerRecentlyBought1Workshop from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Workshop.vue'
 import CtaImageBackroundWorkshop from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'
 import TimelineWorkshop2 from '@/Components/CMS/Webpage/Step2/Step2Workshop.vue'
+import ListProductWorkshop from '@/Components/CMS/Webpage/Products/Dropshipping/ListProductsWorkshop.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -100,7 +99,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 
         //product list
-        'products-1' : shop_type == 'b2b' ? Products1EcommerceWorkshop : Product1DropshippingWorkshop,
+        'products-1' : shop_type == 'b2b' ? Products1EcommerceWorkshop : ListProductWorkshop,
 
         //see-also
         'see-also-1' : SeeAlso1Workshop,

@@ -152,7 +152,7 @@ watch(isPreviewLoggedIn, (value) => {
                 <template v-if="webpage?.layout?.web_blocks?.length">
                     <div v-for="(activityItem, activityItemIdx) in webpage?.layout?.web_blocks"
                         :key="'block' + activityItem.id" class="w-full">
-                        <component v-if="showWebpage(activityItem)" :is="getIrisComponent(activityItem.type,  { shop_type: layout?.shopState?.type })"
+                        <component v-if="showWebpage(activityItem)" :is="getIrisComponent(activityItem.type,  { shop_type: layout?.shopState?.type })" :code="activityItem.type"
                             :key="activityItemIdx" :theme="layout"
                             :fieldValue="activityItem.web_block?.layout?.data?.fieldValue" :screenType="screenType" />
                     </div>
