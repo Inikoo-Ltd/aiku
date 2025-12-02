@@ -36,6 +36,7 @@ import ListProductsIris from "@/Components/CMS/Webpage/Products/Dropshipping/Lis
 import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue"
 import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 import ListProductsEcomIris from "@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue"
+
 import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Iris.vue'
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
 import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/ProductIris1Ecom.vue'
@@ -66,6 +67,9 @@ import AnnouncemenPromo3 from '@/Components/Websites/Announcement/Templates/Prom
 
 import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
 import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
+
+
+
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
 
 
@@ -176,19 +180,22 @@ export const getProductsRenderB2bComponent = (
 	const components: Record<string, any> = {
 		"products-1": ProductRenderEcom,
 	}
+
 	return components[componentName] ?? null
 }
 
+export const announcementComponent = (shop_type?: string): Record<string, Component> => {
+    return {
+        'announcement-information-1': AnnouncementInformation1,
+        'announcement-informational-1': AnnouncementInformational1,
+        'announcement-promo-1': AnnouncementPromo1,
+        'announcement-promo-3': AnnouncemenPromo3,
+        'announcement-promo-2-countdown': AnnouncementPromo2Countdown,
+        'announcement-information-2-transition-text': AnnouncementInformation2TransitionText,
 
-const announcementComponent = (shop_type?: string): Record<string, Component> => {
-	return {
-		"announcement-information-1": AnnouncementInformation1,
-		"announcement-promo-1": AnnouncementPromo1,
-		"announcement-promo-3": AnnouncemenPromo3,
-		"announcement-promo-2-countdown": AnnouncementPromo2Countdown,
-		"announcement-information-2-transition-text": AnnouncementInformation2TransitionText,
-	}
+    }
 }
+
 
 export const getIrisAnnouncementComponent = (
 	componentName: string,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faTrash as falTrash,
@@ -14,6 +14,8 @@ import {
 	faChevronUp,
 	faBox,
 	faVideo,
+	faTimesCircle,
+	faCheckCircle
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { faImage } from "@far"
@@ -24,6 +26,11 @@ import { Image as ImageTS } from "@/types/Image"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterProductSummary.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
+import { trans } from "laravel-vue-i18n"
+import Modal from "@/Components/Utils/Modal.vue"
+import { Link, router } from "@inertiajs/vue3"
+import { useLayoutStore } from "@/Stores/layout"
+import { provide } from "vue"
 
 
 library.add(
@@ -44,11 +51,19 @@ library.add(
 	faVideo
 )
 
+provide("layout", useLayoutStore())
+const layout = useLayoutStore()
+console.log(layout.app.theme);
 
 const props = defineProps<{
 	currency: string,
 	handleTabUpdate: Function
 	data: {
+		availability_status: {
+			is_for_sale: boolean
+			product: {}[]
+			total_product_for_sale: number
+		}
 		masterProduct: {
 			stockImagesRoute: routeType
 			uploadImageRoute: routeType
@@ -135,6 +150,22 @@ const tradeUnitBrands = computed(() => {
     .flatMap(unit => unit?.brand ?? [])
 })
 
+function productRoute(product: any, openEdit = false) {
+    if (!product?.slug) return "";
+
+    const base = "grp.org.shops.show.catalogue.products.current_products.";
+    const action = openEdit ? "edit" : "show";
+
+    return route(`${base}${action}`, {
+        organisation: product.organisation.slug,
+        shop: product.shop.slug,
+        product: product.slug,
+        ...(openEdit && { section: 4 })
+    });
+}
+
+const isModalProductForSale = ref(false);
+
 </script>
 
 
@@ -147,6 +178,19 @@ const tradeUnitBrands = computed(() => {
 				{{ data.masterProduct.name }}
 			</span>
 		</span>
+		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center">
+			<span 
+			v-on:click="isModalProductForSale = true"
+			v-tooltip="data.availability_status.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
+			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
+				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
+				(<span class="font-semibold" :class='data.availability_status.total_product_for_sale != data.availability_status.product.length ? "opacity-80" : ""'>
+					{{ `${data.availability_status.total_product_for_sale}/${data.availability_status.product.length}` }}
+				</span>)
+				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+			</span>
+		</div>
 	</div>
 
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
@@ -194,5 +238,57 @@ const tradeUnitBrands = computed(() => {
 		</div>
 	</div>
 
+	<Modal :isOpen="isModalProductForSale" @onClose="isModalProductForSale = false" width="w-full max-w-lg">
+		<div class="text-center font-bold mb-4">
+            {{ trans('Product For Sale Statuses') }}
+        </div>
+			<div class="grid grid-cols-3 mt-3 text-sm font-bold">
+				<div class="text-left">
+					Shop
+				</div>
+				<div class="text-left">
+					Code
+				</div>
+				<div class="text-right">
+				</div>	
+            </div>
+            <div v-for="item in data.availability_status.product" :key="item.id" class="grid grid-cols-3 mt-3 text-sm min-h-8">
+				<div class="text-left">
+					{{ item.shop.code }}
+				</div>
+				<div class="text-left">
+					<Link :href="productRoute(item)" class="primaryLinkxx">
+						{{ item.code }}
+					</Link>
+				</div>
+				<div class="text-right min-h-max" :class="item.is_for_sale ? 'text-green-600' : 'text-red-600'">
+					<span
+					v-on:click="router.visit(productRoute(item, true))"
+					v-tooltip="item.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
+					class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+					:class="item.is_for_sale ? 'border-green-500' : 'border-red-500'">
+						{{ item.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
+						<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+					</span>
+				</div>	
+            </div>
+	</Modal>
 	
 </template>
+<style lang="scss">
+    .primaryLinkxx {
+        background: linear-gradient(to top, var(--theme-color-3), var(--theme-color-3));
+
+        &:hover, &:focus {
+            color: v-bind('`${layout.app.theme[7]}`');
+        }
+
+        @apply focus:ring-0 focus:outline-none focus:border-none
+        bg-no-repeat [background-position:0%_100%]
+        transition-all
+        [background-size:100%_0.2em]
+        motion-safe:transition-all motion-safe:duration-200
+        hover:[background-size:100%_100%]
+        focus:[background-size:100%_100%] px-1 py-1 lg:py-0.5
+    }
+</style>
