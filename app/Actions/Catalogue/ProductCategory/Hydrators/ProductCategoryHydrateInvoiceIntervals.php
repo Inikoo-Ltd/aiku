@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
@@ -19,11 +20,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProductCategoryHydrateInvoiceIntervals implements ShouldBeUnique
 {
     use AsAction;
+    use WithIntervalUniqueJob;
     use WithIntervalsAggregators;
 
-    public function getJobUniqueId(ProductCategory $productCategory): string
+    public function getJobUniqueId(ProductCategory $productCategory, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        return $productCategory->id;
+        return $this->getUniqueJobWithIntervalFromId($productCategory->id, $intervals, $doPreviousPeriods);
     }
 
     public function handle(ProductCategory $productCategory, ?array $intervals = null, ?array $doPreviousPeriods = null): void
