@@ -7,11 +7,24 @@
  */
 
 use App\Models\SysAdmin\Group;
+use App\Models\Web\Webpage;
 
 if (!function_exists('group')) {
     function group(): ?Group
     {
         return Group::first();
+    }
+}
+
+if (!function_exists('getFieldWebpageData')){
+    function getFieldWebpageData(Webpage $webpage): ?Array
+    {
+        return [
+            'code'     => $webpage->code,
+            'id'       => $webpage->id,
+            'href'     => 'https://'.$webpage->website->domain.'/'.$webpage->url,
+            "typeIcon" => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
+        ];
     }
 }
 

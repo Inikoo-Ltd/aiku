@@ -40,7 +40,6 @@ class UpdateWebpage extends OrgAction
 
     private Webpage $webpage;
 
-
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
         $oldSeoData = $webpage->seo_data;

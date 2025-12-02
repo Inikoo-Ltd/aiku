@@ -5,7 +5,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, ref, onMounted, onUnmounted, inject, watch } from "vue"
 import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 import { trans } from "laravel-vue-i18n"
-import { uniqueId } from "lodash"
+import { uniqueId } from "lodash-es"
 import { get } from "lodash-es"
 library.add(faTimes)
 
