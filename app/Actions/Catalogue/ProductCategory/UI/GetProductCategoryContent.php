@@ -9,7 +9,6 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
  * copyright 2025
 */
 
-use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 

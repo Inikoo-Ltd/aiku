@@ -36,7 +36,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\Portfolio> $portfolios
  * @property-read \App\Models\Dropshipping\PlatformSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\PlatformShopSalesIntervals> $shopSalesIntervals
  * @property-read \App\Models\Dropshipping\PlatformStats|null $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Platform newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Platform newQuery()

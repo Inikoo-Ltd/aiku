@@ -50,16 +50,6 @@ class EditWebpage extends OrgAction
         return $this->handle($webpage);
     }
 
-    public function getFieldWebpageData(Webpage $webpage): array
-    {
-        return [
-            'code'     => $webpage->code,
-            'id'       => $webpage->id,
-            'href'     => 'https://'.$webpage->website->domain.'/'.$webpage->url,
-            "typeIcon" => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
-        ];
-    }
-
     /**
      * @throws Exception
      */
@@ -228,9 +218,9 @@ class EditWebpage extends OrgAction
                                     'required'           => true,
                                     'options'            => Options::forEnum(WebpageStateEnum::class),
                                     'searchable'         => true,
-                                    'default_storefront' => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
+                                    'default_storefront' => getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
                                     'init_options'       => $webpage->redirectWebpage ? [
-                                        $this->getFieldWebpageData($webpage->redirectWebpage)
+                                        getFieldWebpageData($webpage->redirectWebpage)
                                     ] : null,
                                     'value'              => [
                                         'state'               => $webpage->state,
@@ -247,9 +237,9 @@ class EditWebpage extends OrgAction
                                     'type'               => 'delete_webpage',
                                     'noSaveButton'       => true,
                                     'current_state'      => $webpage->state,
-                                    'default_storefront' => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
+                                    'default_storefront' => getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
                                     'init_options'       => $webpage->redirectWebpage ? [
-                                        $this->getFieldWebpageData($webpage->redirectWebpage)
+                                        getFieldWebpageData($webpage->redirectWebpage)
                                     ] : null,
                                     'value'              => [
                                         'state'               => $webpage->state,

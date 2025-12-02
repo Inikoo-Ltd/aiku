@@ -26,7 +26,7 @@ class GetWebBlockProduct
         /** @var Product $product */
         $product = $webpage->model;
 
-        if(!$product->is_for_sale){
+        if (!$product->is_for_sale) {
             abort(404);
         }
 
