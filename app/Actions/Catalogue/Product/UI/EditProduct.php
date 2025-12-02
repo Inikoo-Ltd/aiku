@@ -11,14 +11,18 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\Webpage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\LaravelOptions\Options;
 
 class EditProduct extends OrgAction
 {
@@ -276,6 +280,38 @@ class EditProduct extends OrgAction
             $nameFields = array_merge($nameFields, $webpageNameFields);
         }
 
+        $saleStatusFields = [
+            'is_for_sale' => [
+                'type'  => 'toggle',
+                'label' => __('Is For Sale'),
+                'value' => $product->is_for_sale,
+            ],
+        ];
+        // Only show if product webpage is available previously
+        if(!$product->is_for_sale && ($product->webpage?->state != WebpageStateEnum::CLOSED)){
+            $saleStatusFields['webpage_state_data'] = [
+                'type'               => 'toggle_state_webpage',
+                'label'              => __('Website State'),
+                'placeholder'        => __('Select webpage state'),
+                'information'        => __('This would affect the product webpage viewability'),
+                'options'            => Options::forEnum(WebpageStateEnum::class),
+                'searchable'         => true,
+                'default_storefront' => getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $product->webpage->shop_id)->first()),
+                'init_options'       => $product->webpage->redirectWebpage ? [
+                    getFieldWebpageData($product->webpage->redirectWebpage)
+                ] : null,
+                'value'              => [
+                    'state'               => $product->webpage->state,
+                    'redirect_webpage_id' => $product->webpage->redirect_webpage_id,
+                ],
+                'fetch_params'       => [
+                    'organisation' => $product->organisation->slug,
+                    'shop' => $product->shop->slug,
+                    'website' => $product->shop->website->slug,
+                ]
+            ];
+        }
+
         return array_filter(
             [
                 [
@@ -350,62 +386,64 @@ class EditProduct extends OrgAction
                         ],
                     ]
                 ],
-                $product->is_single_trade_unit
-                    ? []
-                    :
-                    [
-                        'label'  => __('Properties'),
-                        'title'  => __('id'),
-                        'icon'   => 'fa-light fa-fingerprint',
-                        'fields' => [
-                            'unit'                 => [
-                                'type'  => 'input',
-                                'label' => __('Unit'),
-                                'value' => $product->unit,
-                            ],
-                            'units'                => [
-                                'type'  => 'input_number',
-                                'label' => __('Units'),
-                                'value' => $product->units,
-                            ],
-                            'marketing_weight'     => [
-                                'type'        => 'input_number',
-                                'label'       => __('Marketing weight'),
-                                'information' => __('In product page, this will be displayed in specifications as Net Weight'),
-                                'value'       => $product->marketing_weight,
-                                'bind'        => [
-                                    'suffix' => 'g'
-                                ]
-                            ],
-                            'gross_weight'         => [
-                                'type'        => 'input_number',
-                                'label'       => __('Gross weight'),
-                                'information' => __('In product page, this will be displayed in specifications as Shipping Weight'),
-                                'value'       => $product->gross_weight,
-                                'bind'        => [
-                                    'suffix' => 'g'
-                                ]
-                            ],
-                            'marketing_dimensions' => [
-                                'type'        => 'input-dimension',
-                                'information' => __('In product page, this will be displayed in specifications as Dimensions'),
-                                'label'       => __('Marketing dimension'),
-                                'value'       => $product->marketing_dimensions,
-                            ],
-                            'barcode'              => [
-                                'type'     => 'select',
-                                'label'    => __('Barcode'),
-                                'value'    => $product->barcode,
-                                'readonly' => $product->tradeUnits->count() == 1,
-                                'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                                    return [$barcode => $barcode];
-                                })->toArray()
-                            ],
+                $product->is_single_trade_unit ? [] :
+                [
+                    'label'  => __('Properties'),
+                    'title'  => __('id'),
+                    'icon'   => 'fa-light fa-fingerprint',
+                    'fields' => [
+                        'unit'                 => [
+                            'type'  => 'input',
+                            'label' => __('Unit'),
+                            'value' => $product->unit,
+                        ],
+                        'units'                => [
+                            'type'  => 'input_number',
+                            'label' => __('Units'),
+                            'value' => $product->units,
+                        ],
+                        'marketing_weight'     => [
+                            'type'        => 'input_number',
+                            'label'       => __('Marketing weight'),
+                            'information' => __('In product page, this will be displayed in specifications as Net Weight'),
+                            'value'       => $product->marketing_weight,
+                            'bind'        => [
+                                'suffix' => 'g'
+                            ]
+                        ],
+                        'gross_weight'         => [
+                            'type'        => 'input_number',
+                            'label'       => __('Gross weight'),
+                            'information' => __('In product page, this will be displayed in specifications as Shipping Weight'),
+                            'value'       => $product->gross_weight,
+                            'bind'        => [
+                                'suffix' => 'g'
+                            ]
+                        ],
+                        'marketing_dimensions' => [
+                            'type'        => 'input-dimension',
+                            'information' => __('In product page, this will be displayed in specifications as Dimensions'),
+                            'label'       => __('Marketing dimension'),
+                            'value'       => $product->marketing_dimensions,
+                        ],
+                        'barcode'              => [
+                            'type'     => 'select',
+                            'label'    => __('Barcode'),
+                            'value'    => $product->barcode,
+                            'readonly' => $product->tradeUnits->count() == 1,
+                            'options'  => $barcodes->mapWithKeys(function ($barcode) {
+                                return [$barcode => $barcode];
+                            })->toArray()
+                        ],
 
 
-                        ]
-                    ],
-
+                    ]
+                ],
+                [
+                    'label'  => __('Sale Status'),
+                    'icon'   => 'fal fa-cart-arrow-down',
+                    'fields' => $saleStatusFields,
+                ],
                 // [
                 //     'label'  => __('Family'),
                 //     'icon'   => 'fa-light fa-folder',

@@ -26,7 +26,6 @@ import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
 import { cloneDeep } from "lodash-es";
 import { trans } from "laravel-vue-i18n"
 import axios from "axios";
-import TradeUnit from "../Goods/TradeUnit.vue"
 import ProductSales from "@/Components/Product/ProductSales.vue"
 
 library.add(
@@ -52,7 +51,7 @@ const props = defineProps<{
     attachments?: {}
     shopsData: any[]
     masterAsset: {}
-    tradeUnit : {}
+    tradeUnits : {}
 }>()
 console.log('sdsjkh',props.trade_units)
 const layout = inject('layout', {});
@@ -66,6 +65,7 @@ const currency = props.masterCurrency ?? layout.group.currency;
 
 const form = useForm({
     shop_products: null,
+    trade_units: props.tradeUnits
 });
 
 const component = computed(() => {
