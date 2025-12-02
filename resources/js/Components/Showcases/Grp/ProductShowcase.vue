@@ -20,6 +20,7 @@ import ProductPriceGrp from "@/Components/Product/ProductPriceGrp.vue"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import { router } from "@inertiajs/vue3"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -111,6 +112,15 @@ const tradeUnitBrands = computed(() => {
 })
 
 
+const editIsForSale = () => {
+    router.visit(
+		route('grp.org.shops.show.catalogue.products.all_products.edit', {
+			...route().params,
+			section: 4
+		})
+	)
+}
+
 
 </script>
 
@@ -139,7 +149,8 @@ const tradeUnitBrands = computed(() => {
 			</span>
 			<span 
 			v-tooltip="data.availability_status.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
-			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
+			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+			v-on:click="editIsForSale"
 			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
 			{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
 				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>

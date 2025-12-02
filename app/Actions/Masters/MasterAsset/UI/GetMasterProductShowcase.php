@@ -62,6 +62,11 @@ class GetMasterProductShowcase
         }
 
 
+        $product = $masterAsset->products()->select('products.id', 'products.slug', 'products.code', 'products.shop_id', 'products.organisation_id', 'products.is_for_sale')
+            ->with(['shop:id,code,slug'])
+            ->with(['organisation:id,code,slug'])
+            ->get();
+            
         return [
             'images'                => $this->getImagesData($masterAsset),
             'main_image'            => $masterAsset->imageSources(),
@@ -72,7 +77,12 @@ class GetMasterProductShowcase
             'attachment_box'        => [
                 'public'      => [],
                 'private'     => []
-            ]
+            ],
+            'availability_status'     => [
+                'is_for_sale'               => $masterAsset->is_for_sale,
+                'product'              => $product->toArray(),
+                'total_product_for_sale'    => $product->where('is_for_sale', true)->count(),
+            ],
         ];
     }
 
