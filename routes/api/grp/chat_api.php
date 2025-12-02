@@ -1,7 +1,9 @@
 <?php
 
 
+use App\Events\BroadcastRealtimeChat;
 use Illuminate\Support\Facades\Route;
+use App\Models\CRM\Livechat\ChatMessage;
 use App\Actions\CRM\ChatSession\StoreChatAgent;
 use App\Actions\CRM\ChatSession\GetChatMessages;
 use App\Actions\CRM\ChatSession\GetChatSessions;
@@ -36,3 +38,9 @@ Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
 
 Route::put('/agents/{chatAgent:id}/update', UpdateChatAgent::class, 'agents.update')
     ->name('agents.update');
+
+Route::get('/test-broadcast', function () {
+    $chatMessage = ChatMessage::first();
+    BroadcastRealtimeChat::dispatch($chatMessage);
+
+});

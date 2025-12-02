@@ -10,8 +10,9 @@ use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 
-class BroadcastRealtimeChat implements ShouldBroadcast
+class BroadcastRealtimeChat implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -28,28 +29,32 @@ class BroadcastRealtimeChat implements ShouldBroadcast
     {
         $this->message = $message;
         $this->ulid = $message->chatSession->ulid;
+        // logger('🔥 BroadcastRealtimeChat fired for ULID: ' . $this->ulid);
     }
-
-
 
     /**
      * Get the channels the event should broadcast on.
      *
      * @return \Illuminate\Broadcasting\Channel|array
      */
-    public function broadcastOn(): Channel
+    public function broadcastOn(): array
     {
-           return new Channel('chat-session.' . $this->ulid);
+        return [
+            new Channel("chat-session.{$this->ulid}"),
+        ];
+
     }
 
     public function broadcastAs(): string
     {
-        return 'new-message';
+        return 'message';
     }
 
     public function broadcastWith(): array
     {
-        return $this->message->toArray();
+        return [
+            'message'=> $this->message,
+        ];
     }
 
 }

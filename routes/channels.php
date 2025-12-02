@@ -100,30 +100,25 @@ Broadcast::channel("upload-portfolio-to-r2.{randomString}", function () {
 });
 
 
-Broadcast::channel('chat-session.{ulid}', function () {
+Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $ulid) {
+    $session = ChatSession::where('ulid', $ulid)->first();
+    if ($session) {
+        return true;
+    };
 
-    // $session = ChatSession::where('ulid', $ulid)->first();
-    // if (! $session) return false;
+    if ($user instanceof User) {
 
-    // if ($user instanceof User) {
+        $agent = ChatAgent::where('user_id', $user->id)->first();
+        if (!$agent) return false;
 
-    //     $agent = ChatAgent::where('user_id', $user->id)->first();
-    //     if (!$agent) return false;
+        return ChatAssignment::where('chat_session_id', $session->id)
+            ->where('chat_agent_id', $agent->id)
+            ->exists();
+    }
 
-    //     return ChatAssignment::where('chat_session_id', $session->id)
-    //         ->where('chat_agent_id', $agent->id)
-    //         ->exists();
-    // }
+    if ($user instanceof WebUser) {
+        return $session->web_user_id === $user->id;
+    }
 
-    // $guestIdentifier = request()->header('X-Guest-Identifier');
-
-    // if (!$session->web_user_id && $session->guest_identifier) {
-    //     return $session->guest_identifier === $guestIdentifier;
-    // }
-
-    // if ($user instanceof WebUser) {
-    //     return $session->web_user_id === $user->id;
-    // }
-
-    return true;
+    return false;
 });

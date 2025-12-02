@@ -5,12 +5,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMessage } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 
-declare global {
-	interface Window {
-		Echo: any
-	}
-}
-
 interface ChatMessage {
 	id: number
 	chat_session_id: number
@@ -33,12 +27,6 @@ interface ChatSessionData {
 	language?: number
 	priority?: string
 	saved_at?: string
-}
-
-interface WebSocketEvent {
-	message: ChatMessage
-	ulid: string
-	[socket: string]: any
 }
 
 const layout: any = inject("layout", {})
@@ -65,7 +53,7 @@ const saveChatSession = (sessionData: {
 	session_id?: number
 }) => {
 	const data = {
-		ulid: "01KBC7W4Q8DCBR15VSGQPYDX7S",
+		ulid: "01KBF41487H4NPAP23TY3Z0A9T",
 		guest_identifier: sessionData.guest_identifier,
 		session_id: sessionData.session_id,
 		language: 64,
@@ -128,7 +116,7 @@ const createSession = async (): Promise<ChatSessionData | null> => {
 			saveChatSession(sessionData)
 
 			chatSession.value = {
-				ulid: "01KBC7W4Q8DCBR15VSGQPYDX7S",
+				ulid: "01KBF41487H4NPAP23TY3Z0A9T",
 				guest_identifier: sessionData.guest_identifier,
 				session_id: sessionData.session_id,
 			}
@@ -225,6 +213,18 @@ const sendMessage = async (messageText: string): Promise<any> => {
 /**
  * Initialize WebSocket connection for realtime chat
  */
+let chatChannel: any = null
+
+const stopChatWebSocket = () => {
+	if (chatChannel) {
+		console.log("🔌 Disconnecting from chat WebSocket...")
+
+		chatChannel.stopListening("message")
+
+		chatChannel = null
+	}
+}
+
 const initWebSocket = () => {
 	if (!chatSession.value?.ulid) {
 		console.warn("⚠️ Cannot init WebSocket: No session data")
@@ -232,69 +232,27 @@ const initWebSocket = () => {
 	}
 
 	const channelName = `chat-session.${chatSession.value.ulid}`
-	console.log(`🔌 Connecting to WebSocket channel: ${channelName}`)
+	console.log(`🔌 Subscribing with Echo to: ${channelName}`)
 
 	if (!window.Echo) {
-		console.error("❌ Echo is not initialized. Check bootstrap.ts")
+		console.error("❌ Echo is not initialized")
 		return
 	}
 
-	const pusher = window.Echo.connector.pusher
-	console.log("📡 Pusher connection state:", pusher.connection.state)
+	stopChatWebSocket()
 
-	const channel = window.Echo.channel(channelName)
+	// Subscribe with Echo
+	chatChannel = window.Echo.channel(channelName)
+	console.log(chatChannel)
 
-	channel.listen(".new-message", (event: any) => {
-		console.log("📨 public message:", event)
-
-		// if (event.message) {
-		// 	// Format message sesuai interface ChatMessage
-		// 	const newMessage: ChatMessage = {
-		// 		id: event.message.id,
-		// 		chat_session_id: event.message.chat_session_id,
-		// 		message_type: event.message.message_type,
-		// 		sender_type: event.message.sender_type,
-		// 		sender_id: event.message.sender_id,
-		// 		message_text: event.message.message_text,
-		// 		media_id: event.message.media_id,
-		// 		is_read: event.message.is_read,
-		// 		delivered_at: event.message.delivered_at,
-		// 		read_at: event.message.read_at,
-		// 		created_at: event.message.created_at,
-		// 		updated_at: event.message.updated_at,
-		// 	}
-
-		// 	console.log("📝 Adding message to array:", newMessage)
-		// 	messages.value.push(newMessage)
-
-		// 	// Auto scroll
-		// 	setTimeout(() => {
-		// 		const container = document.querySelector(".messages-container")
-		// 		if (container) {
-		// 			container.scrollTop = container.scrollHeight
-		// 		}
-		// 	}, 50)
-		// } else {
-		// 	console.warn("⚠️ Event received but no message data:", event)
-		// }
+	chatChannel.listen(".message", (eventData: any) => {
+		console.log("📨 Chat message received:", eventData)
+		if (eventData.message) {
+			messages.value.push(eventData.message)
+		}
 	})
 
-	// Error handling
-	channel.error((error: any) => {
-		console.error("❌ WebSocket error:", error)
-
-		// Debug koneksi
-		console.log("🔧 Connection debug:", {
-			socketId: pusher.connection.socket_id,
-			state: pusher.connection.state,
-			subscribedChannels: Object.keys(pusher.channels.channels),
-		})
-	})
-
-	// Success callback
-	channel.subscribed(() => {
-		console.log("✅ Successfully subscribed to channel:", channelName)
-	})
+	console.log("✅ Livechat WebSocket Ready")
 }
 
 /**
