@@ -49,7 +49,7 @@ class IndexOrgStocks extends OrgAction
         $this->bucket = 'all';
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request);
-        
+
         return $this->handle(parent: $organisation);
     }
 
@@ -210,7 +210,7 @@ class IndexOrgStocks extends OrgAction
             $queryBuilder->where('org_stocks.state', OrgStockStateEnum::DISCONTINUED);
         } elseif ($this->bucket == 'abnormality') {
             $queryBuilder->where('org_stocks.state', OrgStockStateEnum::ABNORMALITY);
-        } elseif (! ($parent instanceof Group)) {
+        } elseif (!($parent instanceof Group)) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
                     key: $key,
@@ -256,7 +256,7 @@ class IndexOrgStocks extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             if ($bucket == 'all') {
@@ -280,7 +280,7 @@ class IndexOrgStocks extends OrgAction
             }
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            if (! $bucket || in_array($bucket, ['active', 'discontinuing'])) {
+            if (!$bucket || in_array($bucket, ['active', 'discontinuing'])) {
                 $table->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'revenue', label: __('Revenue'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'dispatch', label: __('Dispatch'), canBeHidden: false, sortable: true, searchable: true);
@@ -470,7 +470,7 @@ class IndexOrgStocks extends OrgAction
                         'name' => $routeName,
                         'parameters' => $routeParameters,
                     ],
-                    trim('('.__('Current').') '.$suffix)
+                    trim('(' . __('Current') . ') ' . $suffix)
                 )
             ),
             'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.index' => array_merge(
@@ -480,7 +480,7 @@ class IndexOrgStocks extends OrgAction
                         'name' => $routeName,
                         'parameters' => $routeParameters,
                     ],
-                    trim('('.__('Discontinued').') '.$suffix)
+                    trim('(' . __('Discontinued') . ') ' . $suffix)
                 )
             ),
 
