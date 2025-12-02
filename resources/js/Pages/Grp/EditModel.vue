@@ -59,7 +59,8 @@ import {
     faBookOpen,
     faNotesMedical,
     faBiohazard,
-    faFolder
+    faFolder,
+    faCartArrowDown
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from "@fas"
@@ -115,7 +116,8 @@ library.add(
     faDoorClosed,
     faBoxes,
     faMoneyBill,
-    faFolder
+    faFolder,
+    faCartArrowDown
 )
 
 const props = defineProps<{

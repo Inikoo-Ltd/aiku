@@ -29,11 +29,8 @@ class UpdateMasterProductCategory extends OrgAction
     use WithMasterProductCategoryAction;
     use WithImageCatalogue;
 
-    private $offersData;
-
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
-        $oldData = $masterProductCategory;
 
         $originalImageId = $masterProductCategory->image_id;
         if (Arr::has($modelData, 'master_department_id')) {
@@ -108,14 +105,14 @@ class UpdateMasterProductCategory extends OrgAction
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if(Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'rrp', 'offers_data'])){
+        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'rrp', 'offers_data'])) {
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 $dataToBeUpdated = [];
                 // If name/description/description_title/description_extra is already reviewed / modified, ignore the changes, but change the status back to false
-                // Moved everything to singular check. Just becase name is changed, 
+                // Moved everything to singular check. Just because the name is changed,
                 // doesn't mean everything else should be updated at the same time if it doesn't present
-                // Should Family RRP / Offers Data blindly follow master? Even if it has been modified? 
-                // And RRP is not included in UpdateProductCategory rules, so it will be ignored. Please delete if not used
+                // Should Family RRP / Offers Data blindly follow master? Even if it has been modified?
+                // And RRP is not included in UpdateProductCategory rules, so it will be ignored. Please delete it if not used
                 if (Arr::has($changed, 'name')) {
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
@@ -138,7 +135,7 @@ class UpdateMasterProductCategory extends OrgAction
                     $dataToBeUpdated['offers_data'] = $masterProductCategory->offers_data;
                 }
 
-                if($dataToBeUpdated){
+                if ($dataToBeUpdated) {
                     UpdateProductCategory::make()->action($productCategory, $dataToBeUpdated);
                 }
             }

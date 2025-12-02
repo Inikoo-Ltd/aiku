@@ -13,7 +13,6 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;

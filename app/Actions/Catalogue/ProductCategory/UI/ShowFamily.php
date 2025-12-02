@@ -13,7 +13,6 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Catalogue\ProductCategory\UI\GetProductCategoryContent;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;

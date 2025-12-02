@@ -66,6 +66,8 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property array<array-key, mixed>|null $offers_data
+ * @property bool|null $is_for_sale
+ * @property string|null $not_for_sale_since
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group
@@ -221,7 +223,8 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return match ($this->type) {
             MasterProductCategoryTypeEnum::DEPARTMENT => $this->hasMany(MasterAsset::class, 'master_department_id'),
             MasterProductCategoryTypeEnum::FAMILY => $this->hasMany(MasterAsset::class, 'master_family_id'),
-            MasterProductCategoryTypeEnum::SUB_DEPARTMENT => $this->hasMany(MasterAsset::class, 'master_sub_department_id')
+            MasterProductCategoryTypeEnum::SUB_DEPARTMENT => $this->hasMany(MasterAsset::class, 'master_sub_department_id'),
+            default => null
         };
     }
 

@@ -2,7 +2,6 @@
 
 namespace App\Models\Dropshipping;
 
-use App\Models\Catalogue\Shop;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -307,8 +306,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $sales_grp_currency_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Dropshipping\Platform $platform
- * @property-read Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformShopSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformShopSalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformShopSalesIntervals query()

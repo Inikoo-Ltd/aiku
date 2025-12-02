@@ -36,7 +36,7 @@ class UpdateMasterSubDepartmentMasterDepartment extends GrpAction
 
         data_set($modelData, 'master_parent_id', Arr::get($modelData, 'master_department_id'));
         data_set($modelData, 'master_department_id', Arr::get($modelData, 'master_department_id'));
-        
+
         /** @var MasterProductCategory $masterSubDepartment */
         $masterSubDepartment = $this->update($masterSubDepartment, $modelData);
         $changes             = $masterSubDepartment->getChanges();
