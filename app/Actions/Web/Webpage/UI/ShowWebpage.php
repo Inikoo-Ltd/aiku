@@ -53,7 +53,6 @@ class ShowWebpage extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->initialisationFromShop($shop, $request)->withTab(WebpageTabsEnum::values());
-
         return $webpage;
     }
 
@@ -256,20 +255,7 @@ class ShowWebpage extends OrgAction
                 ]
             ];
         }
-        /* elseif (in_array($webpage->type, [WebpageTypeEnum::STOREFRONT, WebpageTypeEnum::CONTENT])) {
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('New webpage'),
-                'route' => [
-                    'name'       => 'org.websites.show.webpages.show.webpages.create',
-                    'parameters' => [
-                        'website' => $webpage->website->slug,
-                        'webpage' => $webpage->slug
-                    ]
-                ]
-            ];
-        } */
+
 
         return $actions;
     }
@@ -286,6 +272,7 @@ class ShowWebpage extends OrgAction
         $actions = array_merge($actions, $this->getTypeSpecificActions($webpage));
 
         $subNavigationRoot = '';
+
 
         return Inertia::render(
             'Org/Web/Webpage',

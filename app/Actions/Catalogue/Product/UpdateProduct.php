@@ -17,11 +17,15 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\CloseWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
+use App\Actions\Web\Webpage\ReopenWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
+use App\Enums\Web\Redirect\RedirectTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
@@ -168,12 +172,35 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
+        if (Arr::has($changed, 'is_for_sale') && $product->webpage) {
+
+            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED) {
+                ReopenWebpage::run($product->webpage);
+            }
+
+            if (!$product->is_for_sale && $product->webpage->state == WebPageStateEnum::LIVE) {
+
+
+                CloseWebpage::make()->action(
+                    $product->webpage,
+                    [
+                        'redirect_type' => RedirectTypeEnum::TEMPORAL,
+                        'to_webpage_id' => $product->webpage->website->storefront_id
+                    ]
+                );
+            }
+
+
+
+        }
+
+
         if (Arr::has($changed, 'is_for_sale') || $newData) {
             $product->auditEvent    = 'update';
             $product->isCustomEvent = true;
 
             $product->auditCustomOld = array_intersect_key($oldData, $newData);
-            ;
+
             $product->auditCustomNew = $newData;
 
             Event::dispatch(new AuditCustom($product));
