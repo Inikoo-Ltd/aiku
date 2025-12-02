@@ -300,9 +300,18 @@ onMounted(() => {
             </div>
         </template>
 
-        <!-- Column: actions -->
+        <!-- Column: to do actions -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
 
+            <div class="hidden">
+                <div><span class="bg-yellow-400">itemValue.quantity_to_pick</span>: {{ itemValue.quantity_to_pick }}</div>
+                <div><span class="bg-yellow-400">itemValue.locations</span>: {{ itemValue.locations }}</div>
+                <div><span class="bg-yellow-400">proxyItem.hehe</span>: {{ proxyItem.hehe }}</div>
+                <div><span class="bg-yellow-400">findLocation(itemValue.locations, proxyItem.hehe)</span>: {{ findLocation(itemValue.locations, proxyItem.hehe) }}</div>
+                <div><span class="bg-yellow-400">itemValue.is_handled</span>: {{ itemValue.is_handled }}</div>
+                <div><span class="bg-yellow-400">itemValue.quantity_required</span>: {{ itemValue.quantity_required }}</div>
+            </div>
+            
             <div v-if="itemValue.quantity_to_pick > 0">
                 <div v-if="findLocation(itemValue.locations, proxyItem.hehe)"
                     class="flex flex-col justify-between gap-x-6 items-center">
