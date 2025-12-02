@@ -39,8 +39,6 @@ class FamiliesResource extends JsonResource
         if ($media) {
             $width  = 720;
             $height = 720;
-
-
             $image        = $media->getImage()->resize($width, $height);
             $imageSources = GetPictureSources::run($image);
         }
@@ -70,8 +68,12 @@ class FamiliesResource extends JsonResource
             'updated_at'               => $this->updated_at,
             'number_current_products'  => $this->number_current_products,
             'collections'       => $collections,
-            'sales_all'                    => $this->sales_all,
-            'invoices_all'                 => $this->invoices_all,
+            'sales_ytd' => $this->sales_ytd,
+            'sales_ytd_ly' => $this->sales_ytd_ly,
+            'sales_ytd_delta' => $this->calculateDelta($this->sales_ytd, $this->sales_ytd_ly),
+            'invoices_ytd' => $this->invoices_ytd,
+            'invoices_ytd_ly' => $this->invoices_ytd_ly,
+            'invoices_ytd_delta' => $this->calculateDelta($this->invoices_ytd, $this->invoices_ytd_ly),
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
             'master_product_category_id'     => $this->master_product_category_id,
@@ -79,6 +81,21 @@ class FamiliesResource extends JsonResource
             'is_description_title_reviewed' => $this->is_description_title_reviewed,
             'is_description_reviewed' => $this->is_description_reviewed,
             'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
+        ];
+    }
+    private function calculateDelta($current, $previous)
+    {
+        if (!$previous || $previous == 0) {
+            return null;
+        }
+
+        $delta = (($current - $previous) / $previous) * 100;
+
+        return [
+            'value' => $delta,
+            'formatted' => number_format($delta, 1) . '%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
         ];
     }
 }

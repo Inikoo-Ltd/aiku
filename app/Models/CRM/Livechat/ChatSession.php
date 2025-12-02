@@ -29,6 +29,7 @@ use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
+ * @property-read Language $language
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatMessage> $messages
  * @property-read WebUser|null $webUser
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatSession newModelQuery()

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Procurement\OrgSupplier;
 
-use App\Actions\Catalogue\ProductCategory\UpdateSubDepartmentDepartment;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSuppliers;
 use App\Actions\Procurement\OrgSupplier\Search\OrgSupplierRecordSearch;

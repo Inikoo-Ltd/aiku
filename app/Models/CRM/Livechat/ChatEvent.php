@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property array<array-key, mixed>|null $payload
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Model|\Eloquent|null $actor
  * @property-read \App\Models\CRM\Livechat\ChatSession $chatSession
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent fromActor(\App\Enums\CRM\Livechat\ChatActorTypeEnum $actorType, ?int $actorId = null)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent newModelQuery()
