@@ -30,6 +30,9 @@ class FulfillOrderToShopify extends OrgAction
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $order->customerSalesChannel->user;
 
+        if (! $shopifyUser) {
+            return;
+        }
 
         $mutation = <<<'MUTATION'
            mutation fulfillmentCreate($fulfillment: FulfillmentInput!, $message: String) {
