@@ -14,7 +14,7 @@ use App\Models\Web\WebBlockType;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
+class DeleteWebBlockType
 {
     use WithActionUpdate;
     use WithRepairWebpages;

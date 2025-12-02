@@ -37,6 +37,38 @@ import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/Produ
 import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 import ListProductsEcomIris from "@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue"
 
+import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Iris.vue'
+import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
+import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/ProductIris1Ecom.vue'
+import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
+import SubDepartmentIris from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentIris.vue'
+import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
+import CTAVideo1Iris from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue'
+import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
+import families1Iris from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
+import BlogIris from '@/Components/CMS/Webpage/Blog/BlogIris.vue'
+import CarouselCtaIris from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaIris.vue'
+import CarouselImageBackgroundIris from '@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundIris.vue'
+
+import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
+
+import SeeAlso1WorkshopIris from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue'
+import LuigiTrends1Iris from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Iris.vue'
+import Step2Iris from '@/Components/CMS/Webpage/Step2/Step2Iris.vue'
+
+import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
+import LuigiLastSeen1Iris from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Iris.vue'
+import LuigiItemAlternatives1Iris from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Iris.vue'
+import AnnouncementInformation1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation1.vue'
+import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo1.vue'
+import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
+import AnnouncementInformation2TransitionText from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue'
+import AnnouncemenPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3.vue'
+
+import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
+import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
+
+
 
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
 
@@ -148,6 +180,8 @@ export const getProductsRenderB2bComponent = (
 	const components: Record<string, any> = {
 		"products-1": ProductRenderEcom,
 	}
+
+	return components[componentName] ?? null
 }
 
 export const announcementComponent = (shop_type?: string): Record<string, Component> => {
