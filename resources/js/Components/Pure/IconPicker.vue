@@ -115,21 +115,23 @@ defineExpose({
 </script>
 
 <template>
-  <span v-html="renderIcon(modelValue)" @click="toggle"></span>
+    <div @click="toggle" >
+        <span v-html="renderIcon(modelValue)"></span>
 
-  <Popover ref="_popover">
-    <div class="w-full max-w-[25rem]">
-      <div class="grid grid-cols-4 gap-2 h-44 overflow-y-auto">
-        <div
-          v-for="(iconData, index) in allIcons"
-          :key="index"
-          class="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-200 cursor-pointer"
-          @click="() => onChangeIcon(iconData)"
-        >
-          <span v-html="renderIcon(iconData)" class="text-gray-700 text-lg"></span>
-        </div>
-      </div>
+        <Popover ref="_popover">
+          <div class="w-full max-w-[25rem]">
+            <div class="grid grid-cols-4 gap-2 h-44 overflow-y-auto">
+              <div
+                v-for="(iconData, index) in allIcons"
+                :key="index"
+                class="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-200 cursor-pointer"
+                @click="() => onChangeIcon(iconData)"
+              >
+                <span v-html="renderIcon(iconData)" class="text-gray-700 text-lg"></span>
+              </div>
+            </div>
+          </div>
+        </Popover>
     </div>
-  </Popover>
 </template>
 
