@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \App\Models\CRM\Livechat\ChatSession|null $chatSession
+ * @property-read Media|null $media
  * @property-read Model|\Eloquent|null $sender
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage fromSenderType(\App\Enums\CRM\Livechat\ChatSenderTypeEnum $senderType)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newModelQuery()
