@@ -27,7 +27,6 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Comms\Outbox\ReorderRemainder\UI\IndexReorderEmailBulkRuns;
 use App\Http\Resources\Mail\ReorderRemainderEmailBulkRunsResource;
-use Illuminate\Support\Facades\Log;
 
 /**
  * @property Outbox $outbox
@@ -90,7 +89,7 @@ class ShowOutbox extends OrgAction
 
     public function htmlResponse(Outbox $outbox, ActionRequest $request): Response
     {
-        Log::info($outbox);
+
         $actions = [
             [
                 'type'  => 'button',
@@ -154,8 +153,8 @@ class ShowOutbox extends OrgAction
                     : Inertia::lazy(fn () => GetOutboxShowcase::run($outbox)),
 
                 OutboxTabsEnum::EMAIL_RUNS->value => $this->tab == OutboxTabsEnum::EMAIL_RUNS->value ?
-                    fn () => ReorderRemainderEmailBulkRunsResource::collection(IndexReorderEmailBulkRuns::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))
-                    : Inertia::lazy(fn () => ReorderRemainderEmailBulkRunsResource::collection(IndexReorderEmailBulkRuns::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))),
+                    fn () => ReorderRemainderEmailBulkRunsResource::collection(IndexReorderEmailBulkRuns::run($outbox, OutboxTabsEnum::EMAIL_RUNS->value))
+                    : Inertia::lazy(fn () => ReorderRemainderEmailBulkRunsResource::collection(IndexReorderEmailBulkRuns::run($outbox, OutboxTabsEnum::EMAIL_RUNS->value))),
 
                 OutboxTabsEnum::MAILSHOTS->value => $this->tab == OutboxTabsEnum::MAILSHOTS->value ?
                     fn () => MailshotResource::collection(IndexMailshots::run($outbox, OutboxTabsEnum::MAILSHOTS->value))

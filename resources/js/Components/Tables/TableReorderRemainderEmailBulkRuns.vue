@@ -52,35 +52,6 @@ defineProps<{
 }>();
 
 
-// function emailBulkRunRoute(emailBulkRun: EmailBulkRun) {
-//     console.log(route().current());
-//     switch (route().current()) {
-//         case "grp.org.fulfilments.show.operations.comms.outboxes.show":
-//             return route(
-//                 "grp.org.fulfilments.show.operations.comms.outboxes.dispatched-email.show",
-//                 [
-//                     (route().params as RouteParams).organisation,
-//                     (route().params as RouteParams).fulfilment,
-//                     (route().params as RouteParams).outbox,
-
-//                     dispatchedEmail.id]);
-//         case "grp.org.shops.show.dashboard.comms.outboxes.show":
-//             // return route(
-//             //     "grp.org.shops.show.dashboard.comms.outboxes.dispatched-email.show",
-//             //     [
-//             //         (route().params as RouteParams).organisation,
-//             //         (route().params as RouteParams).fulfilment,
-//             //         (route().params as RouteParams).outbox,
-//             //         dispatchedEmail.id]);
-//             return null;
-//         default:
-//             return null;
-//     }
-// }
-
-// const locale = inject("locale", aikuLocaleStructure);
-
-
 </script>
 
 <template>

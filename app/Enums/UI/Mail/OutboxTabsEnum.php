@@ -37,7 +37,7 @@ enum OutboxTabsEnum: string
                 'icon'  => 'far fa-paper-plane',
             ],
             OutboxTabsEnum::EMAIL_RUNS => [
-                'title' => __('Email runs'),
+                'title' => __('Email Bulk runs'),
                 'icon'  => 'far fa-mail-bulk',
             ],
         };
