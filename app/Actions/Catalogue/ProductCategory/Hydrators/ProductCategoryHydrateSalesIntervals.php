@@ -58,6 +58,32 @@ class ProductCategoryHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
+        $queryBaseSalesGrpCurrency = Invoice::query()
+            ->whereIn('id', $invoiceIdsQuery)
+            ->where('in_process', false)
+            ->selectRaw('sum(grp_net_amount) as sum_aggregate');
+
+        $stats = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBaseSalesGrpCurrency,
+            statField: 'sales_grp_currency_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
+
+        $queryBaseSalesOrgCurrency = Invoice::query()
+            ->whereIn('id', $invoiceIdsQuery)
+            ->where('in_process', false)
+            ->selectRaw('sum(org_net_amount) as sum_aggregate');
+
+        $stats = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBaseSalesOrgCurrency,
+            statField: 'sales_org_currency_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
+
         $productCategory->salesIntervals()->update($stats);
     }
 }
