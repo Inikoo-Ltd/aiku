@@ -20,6 +20,7 @@ import ProductPriceGrp from "@/Components/Product/ProductPriceGrp.vue"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import { router } from "@inertiajs/vue3"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -86,9 +87,12 @@ const props = defineProps<{
 			warnings: string | null
 		}
 		availability_status?: {
+			from_master: boolean     
+			from_trade_unit: boolean  
 			is_for_sale: boolean           
 			product_state: string        
 			product_state_icon: []
+			parentLink?: []
 		}
 		images: any
 		main_image: ImageTS
@@ -110,6 +114,37 @@ const tradeUnitBrands = computed(() => {
     .flatMap(unit => unit?.brand ?? [])
 })
 
+
+const editIsForSale = () => {
+	let url = route('grp.org.shops.show.catalogue.products.all_products.edit', {
+			...route().params,
+			section: 4
+	});
+	if(props.data.availability_status?.from_master && props.data.availability_status?.parentLink){
+		url = route(props.data.availability_status?.parentLink['url'], {
+			...props.data.availability_status?.parentLink['params'],
+			section: 6
+		});
+	}
+	if(props.data.availability_status?.from_trade_unit && props.data.availability_status?.parentLink){
+		url = route(props.data.availability_status?.parentLink['url'], {
+			...props.data.availability_status?.parentLink['params'],
+			section: 8
+		});
+	}
+
+    router.visit(url)
+}
+
+const getTooltips = () => {
+	let tooltipText = props.data.availability_status?.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')
+
+	if(props.data.availability_status?.from_master || props.data.availability_status?.parentLink){
+		tooltipText = props.data.availability_status?.from_master ? trans('This product For Sale status has been modified from the Master Product level') : trans('This product For Sale status has been modified from the Trade Unit level')
+	}
+
+	return tooltipText;
+}
 
 
 </script>
@@ -138,11 +173,23 @@ const tradeUnitBrands = computed(() => {
 				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']"/>
 			</span>
 			<span 
-			v-tooltip="data.availability_status.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
-			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
+			v-tooltip="getTooltips()"
+			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+			v-on:click="editIsForSale"
 			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
 			{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
 				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+				<FontAwesomeIcon
+					v-if="data.availability_status?.from_master"
+					icon="fab fa-octopus-deploy"
+					:class="'ms-1'"
+					color="#4B0082"
+				/>
+				<FontAwesomeIcon
+					v-if="data.availability_status?.from_trade_unit"
+					icon="fal fa-atom"
+					:class="'ms-1'"
+				/>
 			</span>
 		</div>
 	</div>
@@ -165,7 +212,6 @@ const tradeUnitBrands = computed(() => {
 							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
 					</div>
 				</div>
-
 				<div v-else>
 					<div
 						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">

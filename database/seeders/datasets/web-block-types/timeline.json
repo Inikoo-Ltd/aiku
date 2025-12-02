@@ -5,7 +5,7 @@
 	"name": "timeline",
 	"icon": ["fal", "text"],
 	"category": "block",
-	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
+	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
 	"fixed": true,
 	"data": {
 		"fieldValue": {

@@ -179,8 +179,8 @@ watch(currentView, (newValue) => {
       <div class="flex-1 overflow-auto">
         <div v-if="data.layout?.code" class="editor-class">
           <div :class="['border-2 border-t-0 overflow-auto', iframeClass]">
-            <component :screenType="currentView" class="flex-1 overflow-auto active-block"
-              :is="getComponent(data.layout.code)" :modelValue="computedDataProduct" />
+            <component :screenType="currentView" class="flex-1 overflow-auto active-block" :code="data.layout.code"
+              :is="getComponent(data.layout.code,  { shop_type: layout?.shopState?.type })" :modelValue="computedDataProduct" />
           </div>
         </div>
 

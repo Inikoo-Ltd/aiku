@@ -123,7 +123,7 @@ class UpdateTradeUnit extends GrpAction
             foreach ($tradeUnit->masterAssets()->where('type', MasterAssetTypeEnum::PRODUCT)->get() as $masterProduct) {
                 UpdateMasterAsset::run($masterProduct, [
                     'is_for_sale'                  => $tradeUnit->is_for_sale,
-                    'not_for_sale_from_trade_unit' => $tradeUnit->is_for_sale
+                    'not_for_sale_from_trade_unit' => !$tradeUnit->is_for_sale
                 ]);
             }
 
@@ -131,7 +131,7 @@ class UpdateTradeUnit extends GrpAction
                 UpdateProduct::run($product, [
                     'is_for_sale'                  => $tradeUnit->is_for_sale,
                     'not_for_sale_from_master'     => false,
-                    'not_for_sale_from_trade_unit' => $tradeUnit->is_for_sale
+                    'not_for_sale_from_trade_unit' => !$tradeUnit->is_for_sale
                 ]);
             }
         }

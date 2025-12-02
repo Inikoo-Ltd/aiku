@@ -6,15 +6,13 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { faHeart } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircle, faHeart as fasHeart, faMedal } from "@fas"
 import { Image as ImageTS } from "@/types/Image"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import BestsellerBadge from "@/Components/CMS/Webpage/Products1/BestsellerBadge.vue"
-import Prices from "./Prices.vue"
+import Prices from "@/Components/CMS/Webpage/Products1/Prices.vue"
 
 const layout = inject("layout", retinaLayoutStructure)
 

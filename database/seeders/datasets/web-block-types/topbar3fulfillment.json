@@ -5,6 +5,7 @@
 	"name": "Topbar Awesome",
 	"component": "topbar",
 	"fixed": true,
+	"website_type" : ["fulfilment"],
 	"data": {
 		"fieldValue": {
 			"key": "Topheader",

@@ -3,7 +3,7 @@
 	"slug": "recommendation-customer-recently-bought-1",
 	"code": "recommendation-customer-recently-bought-1",
 	"name": "Recommenders: Customer Recently Bought",
-	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
+	"website_type" : ["b2b","b2c","dropshipping"],
 	"category": "block",
 	"fixed": true,
 	"data": {

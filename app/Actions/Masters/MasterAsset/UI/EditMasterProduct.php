@@ -330,11 +330,15 @@ class EditMasterProduct extends GrpAction
                     ],
                 ],
             ] : [],
-            [
+            // To do display message that prompts user to edit from trade unit / master
+            $masterProduct->not_for_sale_from_trade_unit ? [] : [
                 'label'  => __('Sale Status'),
                 'icon'   => 'fal fa-cart-arrow-down',
                 'fields' => [
                     'is_for_sale' => [
+                        'confirmation' => [
+                            'description' => __('Changing the sale status of a master product will affect all products linked to it in all shops.'),
+                        ],
                         'type'  => 'toggle',
                         'label' => __('For Sale'),
                         'value' => $masterProduct->is_for_sale,
