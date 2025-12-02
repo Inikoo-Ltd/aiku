@@ -15,6 +15,7 @@ import { remove as loRemove } from 'lodash-es'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faTimesCircle, faCheckCircle } from "@fal";
+import { faTriangle, faEquals, faMinus } from "@fas"
 import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -178,6 +179,26 @@ const dotClass = (filled: boolean) =>
     filled ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600";
 const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle);
 
+const getIntervalChangesIcon = (isPositive: boolean) => {
+    if (isPositive) {
+        return {
+            icon: faTriangle
+        }
+    } else if (!isPositive) {
+        return {
+            icon: faTriangle,
+            class: 'rotate-180'
+        }
+    }
+}
+
+const getIntervalStateColor = (isPositive: boolean) => {
+    if (isPositive) {
+        return 'text-green-500'
+    } else if (!isPositive) {
+        return 'text-red-500'
+    }
+}
 </script>
 
 <template>
@@ -303,6 +324,78 @@ const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_extra_reviewed),
                 ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="'Review name'" />
+            </div>
+        </template>
+
+        <template #cell(sales_ytd_delta)="{ item }">
+            <div v-if="item.sales_ytd_delta">
+                <span>{{ item.sales_ytd_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.sales_ytd_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.sales_ytd_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_ytd_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+        </template>
+
+        <template #cell(invoices_ytd_delta)="{ item }">
+            <div v-if="item.invoices_ytd_delta">
+                <span>{{ item.invoices_ytd_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.invoices_ytd_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.invoices_ytd_delta.is_positive).class,
+                        getIntervalStateColor(item.invoices_ytd_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
             </div>
         </template>
     </Table>

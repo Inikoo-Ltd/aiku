@@ -40,6 +40,7 @@ class EditMasterProduct extends GrpAction
         return $this->handle($masterProduct);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartment(MasterAsset $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
         $this->initialisation($masterProduct->group, $request);
@@ -47,6 +48,7 @@ class EditMasterProduct extends GrpAction
         return $this->handle($masterProduct);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
         $this->initialisation($masterShop->group, $request);
@@ -54,9 +56,11 @@ class EditMasterProduct extends GrpAction
         return $this->handle($masterProduct);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
         $this->initialisation($masterShop->group, $request);
+
         return $this->handle($masterProduct);
     }
 
@@ -69,10 +73,10 @@ class EditMasterProduct extends GrpAction
             'EditModel',
             [
                 'title'       => __('Master product'),
-                'warning' => $masterAsset->products ? [
-                    'type'  =>  'warning',
-                    'title' =>  'warning',
-                    'text'  =>  __('Changing name or description may affect multiple products in various shops.'),
+                'warning'     => $masterAsset->products ? [
+                    'type'  => 'warning',
+                    'title' => 'warning',
+                    'text'  => __('Changing name or description may affect multiple products in various shops.'),
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -81,8 +85,8 @@ class EditMasterProduct extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'   => __('Edit master product'),
-                    'model'   => $masterAsset->code,
+                    'model'   => __('Editing master product'),
+                    'title'   => $masterAsset->code,
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
@@ -100,7 +104,7 @@ class EditMasterProduct extends GrpAction
                     ]
                 ],
 
-                'formData'    => [
+                'formData' => [
                     'blueprint' => $this->getBlueprint($masterAsset),
                     'args'      => [
                         'updateRoute' => [
@@ -123,17 +127,17 @@ class EditMasterProduct extends GrpAction
     {
         $barcodes = $masterProduct->tradeUnits->pluck('barcode')->filter()->unique();
         $packedIn = DB::table('model_has_trade_units')
-                ->where('model_type', 'Stock')
-                ->whereIn('trade_unit_id', $masterProduct->tradeUnits->pluck('id'))
-                ->pluck('quantity', 'trade_unit_id')
-                ->toArray();
+            ->where('model_type', 'Stock')
+            ->whereIn('trade_unit_id', $masterProduct->tradeUnits->pluck('id'))
+            ->pluck('quantity', 'trade_unit_id')
+            ->toArray();
 
         $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
             return array_merge(
-                ['quantity' => (int) $t->pivot->quantity],
-                ['fraction'   =>  $t->pivot->quantity /  $packedIn[$t->id]],
-                ['packed_in'   =>  $packedIn[$t->id]],
-                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity /  $packedIn[$t->id])), $packedIn[$t->id])],
+                ['quantity' => (int)$t->pivot->quantity],
+                ['fraction' => $t->pivot->quantity / $packedIn[$t->id]],
+                ['packed_in' => $packedIn[$t->id]],
+                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity / $packedIn[$t->id])), $packedIn[$t->id])],
                 $t->toArray()
             );
         });
@@ -154,37 +158,37 @@ class EditMasterProduct extends GrpAction
                 'label'  => __('Name/Description'),
                 'icon'   => 'fa-light fa-tag',
                 'fields' => [
-                    'name' => [
-                        'type'  => 'input',
-                        'label' => __('Name'),
-                        'options'   => [
-                            'counter'   => true,
+                    'name'              => [
+                        'type'    => 'input',
+                        'label'   => __('Name'),
+                        'options' => [
+                            'counter' => true,
                         ],
-                        'value' => $masterProduct->name
+                        'value'   => $masterProduct->name
                     ],
                     'description_title' => [
-                        'type'  => 'input',
-                        'label' => __('Description title'),
-                        'options'   => [
-                            'counter'   => true,
+                        'type'    => 'input',
+                        'label'   => __('Description title'),
+                        'options' => [
+                            'counter' => true,
                         ],
-                        'value' => $masterProduct->description_title
+                        'value'   => $masterProduct->description_title
                     ],
-                    'description' => [
-                        'type'  => 'textEditor',
-                        'label' => __('Description'),
-                        'options'   => [
-                            'counter'   => true,
+                    'description'       => [
+                        'type'    => 'textEditor',
+                        'label'   => __('Description'),
+                        'options' => [
+                            'counter' => true,
                         ],
-                        'value' => $masterProduct->description
+                        'value'   => $masterProduct->description
                     ],
                     'description_extra' => [
-                        'type'  => 'textEditor',
-                        'label' => __('Extra description'),
-                        'options'   => [
-                            'counter'   => true,
+                        'type'    => 'textEditor',
+                        'label'   => __('Extra description'),
+                        'options' => [
+                            'counter' => true,
                         ],
-                        'value' => $masterProduct->description_extra
+                        'value'   => $masterProduct->description_extra
                     ],
                 ]
             ],
@@ -192,41 +196,41 @@ class EditMasterProduct extends GrpAction
                 'label'  => __('Translations'),
                 'icon'   => 'fa-light fa-language',
                 'fields' => [
-                    'name_i8n' => [
-                        'type'  => 'input_translation',
-                        'label' => __('translate name'),
+                    'name_i8n'              => [
+                        'type'          => 'input_translation',
+                        'label'         => __('translate name'),
                         'language_from' => 'en',
-                        'full' => true,
-                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-                        'main'  => $masterProduct->name,
-                        'value' => $masterProduct->getTranslations('name_i8n')
+                        'full'          => true,
+                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+                        'main'          => $masterProduct->name,
+                        'value'         => $masterProduct->getTranslations('name_i8n')
                     ],
                     'description_title_i8n' => [
-                        'type'  => 'input_translation',
-                        'label' => __('translate description title'),
-                        'main'  => $masterProduct->description_title,
-                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-                        'value' => $masterProduct->getTranslations('description_title_i8n'),
+                        'type'          => 'input_translation',
+                        'label'         => __('translate description title'),
+                        'main'          => $masterProduct->description_title,
+                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+                        'value'         => $masterProduct->getTranslations('description_title_i8n'),
                         'language_from' => 'en',
-                        'full' => true,
+                        'full'          => true,
                     ],
-                    'description_i8n' => [
-                        'type'  => 'textEditor_translation',
-                        'label' => __('translate description'),
-                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-                        'main'  => $masterProduct->description,
+                    'description_i8n'       => [
+                        'type'          => 'textEditor_translation',
+                        'label'         => __('translate description'),
+                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+                        'main'          => $masterProduct->description,
                         'language_from' => 'en',
-                        'full' => true,
-                        'value' => $masterProduct->getTranslations('description_i8n')
+                        'full'          => true,
+                        'value'         => $masterProduct->getTranslations('description_i8n')
                     ],
                     'description_extra_i8n' => [
-                        'type'  => 'textEditor_translation',
+                        'type'          => 'textEditor_translation',
                         'language_from' => 'en',
-                        'full' => true,
-                        'label' => __('translate description extra'),
-                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-                        'main' => $masterProduct->description_extra,
-                        'value' => $masterProduct->getTranslations('description_extra_i8n')
+                        'full'          => true,
+                        'label'         => __('translate description extra'),
+                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+                        'main'          => $masterProduct->description_extra,
+                        'value'         => $masterProduct->getTranslations('description_extra_i8n')
                     ],
                 ]
             ],
@@ -235,63 +239,55 @@ class EditMasterProduct extends GrpAction
                 'title'  => __('id'),
                 'icon'   => 'fa-light fa-fingerprint',
                 'fields' => [
-                    'unit'        => [
+                    'unit'    => [
                         'type'  => 'input',
                         'label' => __('unit'),
                         'value' => $masterProduct->unit,
                     ],
-                    'barcode'       => [
-                        'type'  => 'select',
-                        'label' => __('barcode'),
-                        'value' => $masterProduct->barcode,
+                    'barcode' => [
+                        'type'     => 'select',
+                        'label'    => __('barcode'),
+                        'value'    => $masterProduct->barcode,
                         'readonly' => $masterProduct->tradeUnits->count() == 1,
-                        'options' => $barcodes->mapWithKeys(function ($barcode) {
+                        'options'  => $barcodes->mapWithKeys(function ($barcode) {
                             return [$barcode => $barcode];
                         })->toArray()
                     ],
-                   /*  'marketing_weight'       => [
-                        'type'     => 'input_number',
-                        'label'    => __('marketing weight'),
-                        'value'    => $masterProduct->marketing_weight,
-                        'bind'     => [
-                                'suffix' => 'g'
-                        ]
-                    ], */
+
                 ]
             ],
             [
                 'label'  => __('Master Family'),
                 'icon'   => 'fal fa-folder',
                 'fields' => [
-                    'master_family_id'   => [
-                        'type'        => 'select_infinite',
-                        'label'       => __('Master Family'),
-                        'value'       => $masterProduct->masterFamily->id ?? null,
-                        'options'   => [
-                                [
-                                    'code' =>  $masterProduct->masterFamily->code ?? null,
-                                    'name' =>  $masterProduct->masterFamily->name ?? null,
-                                    'number_current_products' =>  $masterProduct->masterFamily->stats->number_current_master_assets ?? 0
-                                ]
+                    'master_family_id' => [
+                        'type'       => 'select_infinite',
+                        'label'      => __('Master Family'),
+                        'options'    => [
+                            [
+                                'code'                    => $masterProduct->masterFamily->code ?? null,
+                                'name'                    => $masterProduct->masterFamily->name ?? null,
+                                'number_current_products' => $masterProduct->masterFamily->stats->number_current_master_assets ?? 0
+                            ]
                         ],
-                        'fetchRoute'    => [
-                            'name' => 'grp.json.master-family.all-master-family',
+                        'fetchRoute' => [
+                            'name'       => 'grp.json.master-family.all-master-family',
                             'parameters' => [
-                                'masterShop' => $this->masterShop->slug,
+                                'masterShop'                    => $masterProduct->masterShop->slug,
                                 'withMasterProductCategoryStat' => true,
                             ]
                         ],
-                        'required' => true,
+                        'required'   => true,
                         'type_label' => 'families',
-                        'valueProp' => 'id',
-                        'labelProp' => 'code',
-                        'value'   => $masterProduct->masterFamily->id ?? null,
+                        'valueProp'  => 'id',
+                        'labelProp'  => 'code',
+                        'value'      => $masterProduct->masterFamily->id ?? null,
                     ]
                 ]
             ],
             $masterProduct->masterFamily ? [
-                'label' => __('Trade unit'),
-                'icon'  => 'fa-light fa-atom',
+                'label'  => __('Trade unit'),
+                'icon'   => 'fa-light fa-atom',
                 'fields' => [
                     'trade_units' => [
                         'label'        => __('Trade Units'),
@@ -300,9 +296,9 @@ class EditMasterProduct extends GrpAction
                         'withQuantity' => true,
                         'full'         => true,
                         'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
-                        'tabs' => [
+                        'tabs'         => [
                             [
-                                'label' => __('To do'),
+                                'label'      => __('To do'),
                                 'routeFetch' => [
                                     'name'       => 'grp.json.master-product-category.recommended-trade-units',
                                     'parameters' => [
@@ -311,7 +307,7 @@ class EditMasterProduct extends GrpAction
                                 ],
                             ],
                             [
-                                'label' => __('Done'),
+                                'label'      => __('Done'),
                                 'routeFetch' => [
                                     'name'       => 'grp.json.master-product-category.taken-trade-units',
                                     'parameters' => [
@@ -320,8 +316,8 @@ class EditMasterProduct extends GrpAction
                                 ],
                             ],
                             [
-                                'label'   => __('All'),
-                                'search'  => true,
+                                'label'      => __('All'),
+                                'search'     => true,
                                 'routeFetch' => [
                                     'name'       => 'grp.json.master-product-category.all-trade-units',
                                     'parameters' => [
@@ -334,6 +330,18 @@ class EditMasterProduct extends GrpAction
                     ],
                 ],
             ] : [],
+            [
+                'label'  => __('Sale Status'),
+                'icon'   => 'fal fa-cart-arrow-down',
+                'fields' => [
+                    'is_for_sale' => [
+                        'type'  => 'toggle',
+                        'label' => __('For Sale'),
+                        'value' => $masterProduct->is_for_sale,
+                    ],
+                ],
+            ],
+
         ];
     }
 

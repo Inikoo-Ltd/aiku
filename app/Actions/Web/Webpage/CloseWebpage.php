@@ -12,7 +12,7 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Redirect\StoreRedirect;
-use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
+use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Webpage;
@@ -25,6 +25,7 @@ class CloseWebpage extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+    use WithWebpageHydrators;
 
 
     public function handle(Webpage $webpage, array $modelData): Webpage
@@ -40,7 +41,9 @@ class CloseWebpage extends OrgAction
         $webpage->update([
             'state' => WebpageStateEnum::CLOSED->value,
         ]);
-        WebsiteHydrateWebpages::dispatch($webpage->website);
+
+
+        $this->dispatchWebpageHydratorsAndRefresh($webpage);
 
         return $webpage;
     }
@@ -48,8 +51,7 @@ class CloseWebpage extends OrgAction
     public function rules(): array
     {
         return [
-            'redirect_type', ['required', Rule::enum(RedirectTypeEnum::class)],
-
+            'redirect_type' => ['required', Rule::enum(RedirectTypeEnum::class)],
             'to_webpage_id' => [
                 'required',
                 Rule::exists(Webpage::class, 'id')->where('website_id', $this->shop->website->id)->where('state', WebpageStateEnum::LIVE),
@@ -60,8 +62,10 @@ class CloseWebpage extends OrgAction
     public function action(Webpage $webpage, array $modelData): Webpage
     {
         $this->asAction = true;
+
+
         $this->initialisationFromShop($webpage->shop, $modelData);
 
-        return $this->handle($webpage, $modelData);
+        return $this->handle($webpage, $this->validatedData);
     }
 }

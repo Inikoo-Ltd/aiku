@@ -172,8 +172,10 @@ class IndexFamilies extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                'product_category_sales_intervals.sales_grp_currency_all as sales_all',
-                'product_category_ordering_intervals.invoices_all as invoices_all',
+                'product_category_sales_intervals.sales_grp_currency_ytd as sales_ytd',
+                'product_category_sales_intervals.sales_grp_currency_ytd_ly as sales_ytd_ly',
+                'product_category_ordering_intervals.invoices_ytd as invoices_ytd',
+                'product_category_ordering_intervals.invoices_ytd_ly as invoices_ytd_ly',
                 'product_categories.master_product_category_id',
                 DB::raw(
                     "(
@@ -203,8 +205,8 @@ class IndexFamilies extends OrgAction
                 'number_current_products',
                 'sub_department_name',
                 'department_name',
-                'sales_all',
-                'invoices_all',
+                'sales_ytd',
+                'invoices_ytd',
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -288,8 +290,10 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'sales_ytd', label: __('sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_ytd_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_ytd', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_ytd_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);

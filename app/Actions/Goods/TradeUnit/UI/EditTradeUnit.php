@@ -481,7 +481,19 @@ class EditTradeUnit extends OrgAction
                                 ],
                             ],
                         ],
+                        [
+                            'label'  => __('Sale Status'),
+                            'icon'   => 'fal fa-cart-arrow-down',
+                            'fields' => [
+                                'is_for_sale' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('For Sale'),
+                                    'value' => $tradeUnit->is_for_sale,
+                                ],
+                            ],
+                        ],
                     ],
+
 
                     'args' => [
                         'updateRoute' => [
