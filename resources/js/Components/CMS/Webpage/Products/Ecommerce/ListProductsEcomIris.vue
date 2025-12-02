@@ -409,7 +409,6 @@ watch(
 </script>
 
 <template>
-    
     <div id="products-1-ecom">
         <ConfirmDialog>
             <template #icon>

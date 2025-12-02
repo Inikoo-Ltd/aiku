@@ -193,6 +193,7 @@ class ShowIrisWebpage
 
     public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
+
         if (is_string($webpageData)) {
             $queryParameters = Arr::except(request()->query(), [
                 'favicons',
@@ -213,11 +214,14 @@ class ShowIrisWebpage
                 ]);
         }
 
+        $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
 
         $response = Inertia::render(
             'IrisWebpage',
             $webpageData
-        )->toResponse(request());
+        )->withViewData([
+            'browserTitle' => $browserTitle,
+        ])->toResponse(request());
 
         $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
         if (isset($webpageData['webpage_id'])) {
