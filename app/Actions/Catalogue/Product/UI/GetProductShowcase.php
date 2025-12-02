@@ -69,6 +69,27 @@ class GetProductShowcase
             $dataTradeUnits = $this->getDataTradeUnit($product->tradeUnits);
         }
 
+        $parentLink = null;
+        if($product->not_for_sale_from_master || $product->not_for_sale_from_trade_unit){
+            if($product->not_for_sale_from_master){
+                $parentLink = [
+                    'url' => "grp.masters.master_shops.show.master_products.edit",
+                    'params' => [
+                        'masterShop' => $product->masterProduct->masterShop->slug,
+                        'masterProduct' => $product->masterProduct->slug,
+                    ]
+                ];
+            } else {
+                $parentLink = [
+                    'url' => 	"grp.trade_units.units.edit",
+                    'params' => [
+                        'tradeUnit' => $product->tradeUnits->where('is_for_sale', false)->first()->slug,
+                    ]
+                ];
+
+            }
+        }
+
         return [
             'product'         => ProductResource::make($product),
             'properties'      => $properties,
@@ -82,8 +103,11 @@ class GetProductShowcase
             'webpage_url'     => $webpageUrl,
             'availability_status'     => [
                 'is_for_sale'           => $product->is_for_sale,
+                'from_master'           => $product->not_for_sale_from_master,
+                'from_trade_unit'       => $product->not_for_sale_from_trade_unit,
                 'product_state'         => $product->state->labels()[$product->state->value],
                 'product_state_icon'    => $product->state->stateIcon()[$product->state->value],
+                'parentLink'            => $parentLink,
             ],
         ];
     }

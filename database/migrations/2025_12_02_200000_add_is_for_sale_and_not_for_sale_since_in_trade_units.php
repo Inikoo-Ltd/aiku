@@ -13,7 +13,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('trade_units', function (Blueprint $table) {
-            $table->boolean('is_for_sale')->nullable();
+            $table->boolean('is_for_sale')->default(true);
             $table->timestampTz('not_for_sale_since')->nullable();
         });
     }

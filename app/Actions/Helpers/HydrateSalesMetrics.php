@@ -25,6 +25,13 @@ class HydrateSalesMetrics
 {
     use AsAction;
 
+    public string $commandSignature = 'hydrate:sales-metrics';
+
+    public function asCommand(): void
+    {
+        $this->handle();
+    }
+
     public function handle(): void
     {
         $groups = Group::all();

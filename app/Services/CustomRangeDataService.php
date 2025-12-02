@@ -10,7 +10,9 @@ namespace App\Services;
 
 use App\Actions\Accounting\InvoiceCategory\InvoiceCategoryCalculateCustomRangeSales;
 use App\Actions\Catalogue\Shop\ShopCalculateCustomRangeSales;
+use App\Actions\Dropshipping\Platform\PlatformCalculateCustomRangeSales;
 use App\Actions\SysAdmin\Organisation\OrganisationCalculateCustomRangeSales;
+use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Collection;
@@ -31,6 +33,12 @@ class CustomRangeDataService
 
         foreach ($group->invoiceCategories as $invoiceCategory) {
             $data['invoice_categories'][$invoiceCategory->id] = InvoiceCategoryCalculateCustomRangeSales::run($invoiceCategory, $startDate, $endDate);
+        }
+
+        $platforms = Platform::all();
+
+        foreach ($platforms as $platform) {
+            $data['ds_platforms'][$platform->id] = PlatformCalculateCustomRangeSales::run($platform, $startDate, $endDate);
         }
 
         return $data;
@@ -54,7 +62,11 @@ class CustomRangeDataService
     public function injectCustomRangeData(Collection $models, array $customRangeData, string $modelType): Collection
     {
         return $models->map(function ($model) use ($customRangeData, $modelType) {
-            $customData = $customRangeData[$modelType][$model->id] ?? [];
+            if ($modelType === 'ds_platforms') {
+                $customData = $customRangeData[$modelType][$model->platform_id] ?? [];
+            } else {
+                $customData = $customRangeData[$modelType][$model->id] ?? [];
+            }
 
             foreach ($customData as $key => $value) {
                 $model->{$key} = $value;
