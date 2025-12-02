@@ -34,7 +34,7 @@ class ReopenWebpage extends OrgAction
 
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);
-        
+
         return $webpage;
     }
 

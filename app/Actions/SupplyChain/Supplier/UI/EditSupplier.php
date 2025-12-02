@@ -21,7 +21,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditSupplier extends GrpAction
 {
-
     // todo: authorisation
 
     public function handle(Supplier $supplier): Supplier
