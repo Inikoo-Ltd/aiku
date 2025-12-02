@@ -24,14 +24,14 @@ class DeleteWebBlockType
         // Check if used in websites or webpages
         $exists = DB::table('websites')
                     ->where('published_layout->family->code', $block_name)
-                    ->exists() || 
+                    ->exists() ||
                 DB::table('webpages')
                     ->whereJsonContains('published_layout->web_blocks', [
                         ['type' => $block_name]
                     ])
                     ->exists();
         // Delete if not used
-        if(!$exists){
+        if (!$exists) {
             WebBlockType::where('code', $block_name)->delete();
         }
 

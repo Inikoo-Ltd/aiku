@@ -35,6 +35,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $category
+ * @property array<array-key, mixed> $website_type
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Helpers\Media|null $image
@@ -45,7 +46,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @method static Builder<static>|WebBlockType newModelQuery()
  * @method static Builder<static>|WebBlockType newQuery()
+ * @method static Builder<static>|WebBlockType onlyTrashed()
  * @method static Builder<static>|WebBlockType query()
+ * @method static Builder<static>|WebBlockType withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|WebBlockType withoutTrashed()
  * @mixin \Eloquent
  */
 class WebBlockType extends Model implements HasMedia

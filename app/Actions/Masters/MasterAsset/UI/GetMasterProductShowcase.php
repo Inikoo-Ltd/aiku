@@ -27,7 +27,6 @@ class GetMasterProductShowcase
 
     public function handle(MasterAsset $masterAsset): array
     {
-
         $tradeUnits = $masterAsset->tradeUnits;
         $tradeUnits->loadMissing(['ingredients']);
         $properties = [
@@ -68,32 +67,32 @@ class GetMasterProductShowcase
             ->get();
 
         $parentLink = null;
-        if($masterAsset->not_for_sale_from_trade_unit){
+        if ($masterAsset->not_for_sale_from_trade_unit) {
             $parentLink = [
-                'url' => 	"grp.trade_units.units.edit",
+                'url'    => "grp.trade_units.units.edit",
                 'params' => [
                     'tradeUnit' => $masterAsset->tradeUnits->where('is_for_sale', false)->first()->slug,
                 ]
             ];
         }
-            
+
         return [
-            'images'                => $this->getImagesData($masterAsset),
-            'main_image'            => $masterAsset->imageSources(),
-            'masterProduct'         => MasterProductResource::make($masterAsset)->toArray(request()),
-            'properties'            => $properties,
-            'trade_units'           => $dataTradeUnits,
-            'gpsr'                  => $gpsr,
-            'attachment_box'        => [
-                'public'      => [],
-                'private'     => []
+            'images'              => $this->getImagesData($masterAsset),
+            'main_image'          => $masterAsset->imageSources(),
+            'masterProduct'       => MasterProductResource::make($masterAsset)->toArray(request()),
+            'properties'          => $properties,
+            'trade_units'         => $dataTradeUnits,
+            'gpsr'                => $gpsr,
+            'attachment_box'      => [
+                'public'  => [],
+                'private' => []
             ],
-            'availability_status'     => [
-                'is_for_sale'               => $masterAsset->is_for_sale,
-                'product'                   => $product->toArray(),
-                'total_product_for_sale'    => $product->where('is_for_sale', true)->count(),
-                'from_trade_unit'           => $masterAsset->not_for_sale_from_trade_unit,
-                'parentLink'                => $parentLink,
+            'availability_status' => [
+                'is_for_sale'            => $masterAsset->is_for_sale,
+                'product'                => $product->toArray(),
+                'total_product_for_sale' => $product->where('is_for_sale', true)->count(),
+                'from_trade_unit'        => $masterAsset->not_for_sale_from_trade_unit,
+                'parentLink'             => $parentLink,
             ],
         ];
     }
