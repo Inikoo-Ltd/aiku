@@ -100,7 +100,7 @@ Broadcast::channel("upload-portfolio-to-r2.{randomString}", function () {
 });
 
 
-Broadcast::channel('chat-session.{ulid}', function (User|WebUser $user, string $ulid) {
+Broadcast::channel('chat-session.{ulid}', function () {
 
     // $session = ChatSession::where('ulid', $ulid)->first();
     // if (! $session) return false;

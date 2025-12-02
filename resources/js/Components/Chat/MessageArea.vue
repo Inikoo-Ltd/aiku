@@ -20,19 +20,15 @@ const props = defineProps({
 	},
 })
 
-console.log("🚀 MessageArea props:", props)
+console.log("🚀 MessageArea props:", props.messages)
 
-// Emit events ke parent
-const emit = defineEmits(["send-message", "reload"])
+const emit = defineEmits(["send-message", "reload", "mounted"])
 
 const layout: any = inject("layout", {})
 const input = ref("")
 const isSending = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
 
-/**
- * Format timestamp
- */
 const formatTime = (timestamp: string) => {
 	if (!timestamp) return ""
 
@@ -40,9 +36,6 @@ const formatTime = (timestamp: string) => {
 	return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 }
 
-/**
- * Format date untuk message
- */
 const formatDate = (timestamp: string) => {
 	if (!timestamp) return ""
 
@@ -85,22 +78,17 @@ const sendMessage = async () => {
 	if (!text || !props.session?.ulid) return
 
 	isSending.value = true
-	input.value = "" // Clear input immediately for better UX
+	input.value = ""
 
 	try {
-		// Emit ke parent component untuk handle sending
 		emit("send-message", text)
 	} catch (error) {
 		console.error("❌ Error sending message:", error)
-		// Optional: Show error message to user
 	} finally {
 		isSending.value = false
 	}
 }
 
-/**
- * Handle Enter key dengan Shift untuk new line
- */
 const handleKeyDown = (event: KeyboardEvent) => {
 	if (event.key === "Enter" && !event.shiftKey) {
 		event.preventDefault()
@@ -108,9 +96,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
 	}
 }
 
-/**
- * Auto-scroll ke bottom saat messages berubah
- */
 const scrollToBottom = () => {
 	if (messagesContainer.value) {
 		setTimeout(() => {
@@ -119,16 +104,10 @@ const scrollToBottom = () => {
 	}
 }
 
-/**
- * Check jika message dari user/guest
- */
 const isUserMessage = (message: any) => {
 	return message.sender_type === "guest"
 }
 
-/**
- * Get message bubble class
- */
 const getBubbleClass = (message: any) => {
 	if (isUserMessage(message)) {
 		return "user-bubble"
@@ -139,9 +118,6 @@ const getBubbleClass = (message: any) => {
 	}
 }
 
-/**
- * Get sender display name
- */
 const getSenderName = (message: any) => {
 	switch (message.sender_type) {
 		case "guest":
@@ -155,7 +131,6 @@ const getSenderName = (message: any) => {
 	}
 }
 
-// Auto-scroll saat messages berubah
 watch(
 	() => props.messages,
 	() => {
@@ -164,8 +139,8 @@ watch(
 	{ deep: true }
 )
 
-// Scroll ke bottom saat component mounted
 onMounted(() => {
+	emit("mounted")
 	scrollToBottom()
 })
 </script>
@@ -181,7 +156,7 @@ onMounted(() => {
 		<!-- Messages Area -->
 		<div
 			ref="messagesContainer"
-			class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
+			class="messages-container flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
 			v-if="messages.length > 0">
 			<template v-for="(groupMessages, date) in groupedMessages()" :key="date">
 				<!-- Date Separator -->
@@ -197,18 +172,15 @@ onMounted(() => {
 						class="flex"
 						:class="isUserMessage(message) ? 'justify-end' : 'justify-start'">
 						<div class="max-w-[80%]">
-							<!-- Sender Name (hanya untuk non-user messages) -->
 							<div
 								v-if="!isUserMessage(message)"
 								class="text-xs text-gray-500 mb-1 ml-1">
 								{{ getSenderName(message) }}
 							</div>
 
-							<!-- Message Bubble -->
 							<div
 								class="flex items-end gap-2"
 								:class="isUserMessage(message) ? 'flex-row-reverse' : ''">
-								<!-- Message Content -->
 								<div
 									class="px-3 py-2 rounded-lg text-sm break-words"
 									:class="[
@@ -220,7 +192,6 @@ onMounted(() => {
 									]">
 									{{ message.message_text }}
 
-									<!-- Message Status/Timestamp -->
 									<div
 										class="text-xs mt-1 text-right"
 										:class="

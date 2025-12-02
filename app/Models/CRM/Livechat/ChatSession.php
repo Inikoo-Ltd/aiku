@@ -2,8 +2,8 @@
 
 namespace App\Models\CRM\Livechat;
 
-use App\Models\Language;
 use App\Models\CRM\WebUser;
+use App\Models\Helpers\Language;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\CRM\Livechat\ChatAssignment;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;

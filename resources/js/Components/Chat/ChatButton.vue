@@ -53,6 +53,7 @@ const chatSession = ref<{
 	guest_identifier: string
 	session_id?: number
 } | null>(null)
+
 const messages = ref<ChatMessage[]>([])
 
 /**
@@ -64,7 +65,7 @@ const saveChatSession = (sessionData: {
 	session_id?: number
 }) => {
 	const data = {
-		ulid: sessionData.ulid,
+		ulid: "01KBC7W4Q8DCBR15VSGQPYDX7S",
 		guest_identifier: sessionData.guest_identifier,
 		session_id: sessionData.session_id,
 		language: 64,
@@ -127,7 +128,7 @@ const createSession = async (): Promise<ChatSessionData | null> => {
 			saveChatSession(sessionData)
 
 			chatSession.value = {
-				ulid: sessionData.ulid,
+				ulid: "01KBC7W4Q8DCBR15VSGQPYDX7S",
 				guest_identifier: sessionData.guest_identifier,
 				session_id: sessionData.session_id,
 			}
@@ -244,51 +245,38 @@ const initWebSocket = () => {
 	const channel = window.Echo.channel(channelName)
 
 	channel.listen(".new-message", (event: any) => {
-		console.log("📨 Realtime message received (FULL EVENT):", event)
-		console.log("📨 Message data:", event.message)
+		console.log("📨 public message:", event)
 
-		// Debug: cek struktur event
-		console.log("🔍 Event structure:", {
-			hasMessage: !!event.message,
-			eventKeys: Object.keys(event),
-			messageKeys: event.message ? Object.keys(event.message) : "No message",
-		})
+		// if (event.message) {
+		// 	// Format message sesuai interface ChatMessage
+		// 	const newMessage: ChatMessage = {
+		// 		id: event.message.id,
+		// 		chat_session_id: event.message.chat_session_id,
+		// 		message_type: event.message.message_type,
+		// 		sender_type: event.message.sender_type,
+		// 		sender_id: event.message.sender_id,
+		// 		message_text: event.message.message_text,
+		// 		media_id: event.message.media_id,
+		// 		is_read: event.message.is_read,
+		// 		delivered_at: event.message.delivered_at,
+		// 		read_at: event.message.read_at,
+		// 		created_at: event.message.created_at,
+		// 		updated_at: event.message.updated_at,
+		// 	}
 
-		if (event.message) {
-			// Format message sesuai interface ChatMessage
-			const newMessage: ChatMessage = {
-				id: event.message.id,
-				chat_session_id: event.message.chat_session_id,
-				message_type: event.message.message_type,
-				sender_type: event.message.sender_type,
-				sender_id: event.message.sender_id,
-				message_text: event.message.message_text,
-				media_id: event.message.media_id,
-				is_read: event.message.is_read,
-				delivered_at: event.message.delivered_at,
-				read_at: event.message.read_at,
-				created_at: event.message.created_at,
-				updated_at: event.message.updated_at,
-			}
+		// 	console.log("📝 Adding message to array:", newMessage)
+		// 	messages.value.push(newMessage)
 
-			console.log("📝 Adding message to array:", newMessage)
-			messages.value.push(newMessage)
-
-			// Auto scroll
-			setTimeout(() => {
-				const container = document.querySelector(".messages-container")
-				if (container) {
-					container.scrollTop = container.scrollHeight
-				}
-			}, 50)
-		} else {
-			console.warn("⚠️ Event received but no message data:", event)
-		}
-	})
-
-	// Listen untuk semua events (debug)
-	channel.listen("*", (eventName: string, event: any) => {
-		console.log(`🎯 All events - ${eventName}:`, event)
+		// 	// Auto scroll
+		// 	setTimeout(() => {
+		// 		const container = document.querySelector(".messages-container")
+		// 		if (container) {
+		// 			container.scrollTop = container.scrollHeight
+		// 		}
+		// 	}, 50)
+		// } else {
+		// 	console.warn("⚠️ Event received but no message data:", event)
+		// }
 	})
 
 	// Error handling
@@ -325,7 +313,20 @@ const initChat = async () => {
 	})
 
 	await getMessages()
+	setTimeout(() => {
+		const container = document.querySelector(".messages-container")
+		if (container) container.scrollTop = container.scrollHeight
+	}, 200)
 	initWebSocket()
+}
+
+const forceScrollBottom = () => {
+	setTimeout(() => {
+		const container = document.querySelector(".messages-container")
+		if (container) {
+			container.scrollTop = container.scrollHeight
+		}
+	}, 150)
 }
 
 defineExpose({
@@ -361,7 +362,8 @@ defineExpose({
 					:session="chatSession"
 					:loading="loading"
 					@send-message="sendMessage"
-					@reload="getMessages" />
+					@reload="getMessages"
+					@mounted="forceScrollBottom" />
 			</div>
 		</transition>
 	</div>

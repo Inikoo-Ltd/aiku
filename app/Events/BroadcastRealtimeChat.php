@@ -37,14 +37,19 @@ class BroadcastRealtimeChat implements ShouldBroadcast
      *
      * @return \Illuminate\Broadcasting\Channel|array
      */
-    public function broadcastOn()
+    public function broadcastOn(): Channel
     {
            return new Channel('chat-session.' . $this->ulid);
     }
 
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
         return 'new-message';
+    }
+
+    public function broadcastWith(): array
+    {
+        return $this->message->toArray();
     }
 
 }
