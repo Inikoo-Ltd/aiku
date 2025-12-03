@@ -15,10 +15,10 @@ import { faQuestionCircle } from "@fal"
 import { faStarHalfAlt } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ProductResource } from '@/types/Iris/Products'
-import NewAddToCartButton from '@/Components/CMS/Webpage/Products1/NewAddToCartButton.vue' 
+import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue' 
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
-import BestsellerBadge from '@/Components/CMS/Webpage/Products1/BestsellerBadge.vue'
+import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
 import { routeType } from '@/types/route'
 

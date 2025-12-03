@@ -4,7 +4,7 @@ import { debounce, get, set, cloneDeep } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { getFilterComponent } from '@/Composables/SideEditorHelperFilter'
-import { blueprint } from './BlueprintFilter'
+import { blueprint } from '../Products1/BlueprintFilter'
 
 const props = defineProps<{
   modelValue: Record<string, any>
