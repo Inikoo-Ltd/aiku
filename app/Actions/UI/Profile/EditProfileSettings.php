@@ -99,7 +99,7 @@ class EditProfileSettings
                             ],
                         ],
                     ],
-                    app()->environment('local') ? [
+                    app()->environment('local') ? [  // TODO
                         "label"  => __("Timezone"),
                         "icon"   => "fal fa-sliders-v",
                         "fields" => [
@@ -107,7 +107,8 @@ class EditProfileSettings
                                 "type"    => "select_infinite",
                                 "label"   => __("Timezone"),
                                 "information"   => __("Select your timezone to show in the footer"),
-                                "options"   => [],  // TODO
+                                "options"   => [],
+                                "mode"      => "multiple",
                                 "fetchRoute"    => [
                                     "name"       => "grp.masters.master_shops.show.master_departments.index",
                                     "parameters" => ["awd"]
