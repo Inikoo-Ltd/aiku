@@ -38,6 +38,8 @@ import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/Prod
 import ListProductsEcomIris from "@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue"
 
 import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Iris.vue'
+import ProductIris1 from '@/Components/CMS/Webpage/Product1/Dropshipping/ProductIris1.vue'
+import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue'
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 import SubDepartmentIris from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentIris.vue'
 import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
@@ -186,6 +188,30 @@ export const getProductsRenderB2bComponent = (
 
 	return components[componentName] ?? null
 }
+
+export const getProductRenderB2bComponent = (
+	componentName: string,
+	options: Record<string, any> = {}
+) => {
+	const components: Record<string, any> = {
+		"product-1": ProductIris1Ecom,
+	}
+
+	return components[componentName] ?? null
+}
+
+
+export const getProductRenderDropshippingComponent = (
+	componentName: string,
+	options: Record<string, any> = {}
+) => {
+	const components: Record<string, any> = {
+		"product-1": ProductIris1,
+	}
+
+	return components[componentName] ?? null
+}
+
 
 export const announcementComponent = (shop_type?: string): Record<string, Component> => {
     return {
