@@ -34,8 +34,6 @@ class DispatchedEmailsInOrderResource extends JsonResource
     {
         /** @var Mailshot $mailshot */
         $mailshot = $this;
-        // "id\":2,\"state\":\"opened\",\"mask_as_spam\":false,\"number_email_tracking_events\":0,\"sent_at\":\"2018-06-11T09:36:11.000000Z\",\"number_reads\":1,\"number_clicks\":0}"}
-        // Sample data for debugging
 
         return array(
             'id'                           => $this->id,
@@ -51,8 +49,31 @@ class DispatchedEmailsInOrderResource extends JsonResource
                     'icon'    => 'fal fa-dumpster',
                 ] : [],
             'number_email_tracking_events' => $this->number_email_tracking_events,
-            'body_preview' => $this->body_preview,
+            'body_preview' => $this->is_body_encoded ? $this->decodeBodySafely($this->body_preview) : $this->body_preview,
 
         );
+    }
+
+    private function decodeBodySafely($body): string
+    {
+        try {
+            $decoded = base64_decode($body, true);
+            if ($decoded === false) {
+                return '[Decode Error]';
+            }
+
+            // Check if the decoded string is valid UTF-8
+            if (!mb_check_encoding($decoded, 'UTF-8')) {
+                // Try to fix encoding issues
+                $decoded = mb_convert_encoding($decoded, 'UTF-8', 'UTF-8');
+                if (!mb_check_encoding($decoded, 'UTF-8')) {
+                    return '[Encoding Error]';
+                }
+            }
+
+            return $decoded;
+        } catch (\Exception $e) {
+            return '[Decode Error]';
+        }
     }
 }

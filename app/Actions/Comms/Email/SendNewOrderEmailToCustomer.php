@@ -46,6 +46,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         }
         $outbox = $dispatchedEmail->outbox;
 
+        $order->dispatchedEmails()->attach($dispatchedEmail, ['outbox_id' => $outbox->id]);
 
         return $this->sendEmailWithMergeTags(
             $dispatchedEmail,
