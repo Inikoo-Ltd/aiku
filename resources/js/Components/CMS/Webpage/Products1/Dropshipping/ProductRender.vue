@@ -197,18 +197,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
     )
 }
 
-const profitMargin = computed(() => {
-    const price = props.product?.price
-    const rrp = props.product?.rrp
-    if (!price || !rrp) return 0
-    return Math.floor(((rrp - price) / rrp) * 100)
-})
-
-
 </script>
 
 <template>
-    <div class="relative flex flex-col justify-between h-full">
+    <div class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
