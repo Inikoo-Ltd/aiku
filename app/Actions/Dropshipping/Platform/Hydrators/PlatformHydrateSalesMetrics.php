@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Platform\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithHydrateSalesMetrics;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;

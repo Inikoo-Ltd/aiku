@@ -63,6 +63,7 @@ const props = defineProps<{
 			is_for_sale: boolean
 			product: {}[]
 			total_product_for_sale: number
+			from_trade_unit: boolean
 		}
 		masterProduct: {
 			stockImagesRoute: routeType
@@ -164,6 +165,30 @@ function productRoute(product: any, openEdit = false) {
     });
 }
 
+const getTooltips = () => {
+	let tooltipText = props.data.availability_status.is_for_sale ? trans('Master product is currently for sale and available to be purchased') : trans('Master product is currently not for sale and unavailable to be purchased');
+	if (props.data.availability_status.from_trade_unit) {
+		tooltipText = trans('This master product For Sale status has been modified from the Trade Unit level')
+	}
+
+	return tooltipText;
+}
+
+const editRoute = () => {
+	let url = route(route().current().replace(/show$/, 'edit'), {
+			...route().params,
+			section: 4
+	});
+	if(props.data.availability_status?.from_trade_unit && props.data.availability_status?.parentLink){
+		url = route(props.data.availability_status?.parentLink['url'], {
+			...props.data.availability_status?.parentLink['params'],
+			section: 8
+		});
+	}
+
+	router.visit(url);
+}
+
 const isModalProductForSale = ref(false);
 
 </script>
@@ -181,7 +206,7 @@ const isModalProductForSale = ref(false);
 		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center">
 			<span 
 			v-on:click="isModalProductForSale = true"
-			v-tooltip="data.availability_status.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
+			v-tooltip="getTooltips()"
 			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
 			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
 				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
@@ -189,6 +214,12 @@ const isModalProductForSale = ref(false);
 					{{ `${data.availability_status.total_product_for_sale}/${data.availability_status.product.length}` }}
 				</span>)
 				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+				<FontAwesomeIcon
+					v-if="data.availability_status?.from_trade_unit"
+					v-tooltip="getTooltips()"
+					icon="fal fa-atom"
+					:class="'ms-2 hover:cursor-pointer'"
+				/>
 			</span>
 		</div>
 	</div>
@@ -239,8 +270,25 @@ const isModalProductForSale = ref(false);
 	</div>
 
 	<Modal :isOpen="isModalProductForSale" @onClose="isModalProductForSale = false" width="w-full max-w-lg">
-		<div class="text-center font-bold mb-4">
-            {{ trans('Product For Sale Statuses') }}
+		<div class="grid grid-cols-2 font-bold mb-4">
+			<div class="text-left text-lg">
+				{{ trans('Product For Sale Statuses') }}
+			</div>	
+			<div class="justify-self-end text-lg">
+				<FontAwesomeIcon
+					icon="fal fa-edit"
+					class="hover:cursor-pointer hover:opacity-80"
+					style="color: var(--theme-color-0);"
+					v-tooltip="trans('Click to edit For Sale status')"
+					v-on:click="editRoute()"
+				/>
+				<FontAwesomeIcon
+					v-if="data.availability_status?.from_trade_unit"
+					v-tooltip="getTooltips()"
+					icon="fal fa-atom"
+					:class="'ms-2 hover:cursor-pointer'"
+				/>
+			</div>
         </div>
 			<div class="grid grid-cols-3 mt-3 text-sm font-bold">
 				<div class="text-left">

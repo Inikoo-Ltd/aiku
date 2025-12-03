@@ -2,7 +2,7 @@
 import DashboardSettings from "./DashboardSettings.vue"
 import DashboardTable from "./DashboardTable.vue"
 import DashboardWidget from "./DashboardWidget.vue"
-import { ref, provide, inject, computed } from "vue"
+import { ref, provide, inject } from "vue"
 import {
     faBox,
     faBoxesAlt,
@@ -37,8 +37,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const getExpectedSales = () => {
     const currentMonthSales = props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.sales_org_currency?.['mtd']?.raw_value;
+    const lastMonthSales = props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.sales_org_currency?.['lm']?.raw_value;
+    const currentMonthOrders = props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.orders?.['mtd']?.raw_value;
+    const lastMonthOrders = props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.orders?.['lm']?.raw_value;
 
-    if (!currentMonthSales || currentMonthSales === 0) {
+    if (!currentMonthSales || !lastMonthSales || !currentMonthOrders || !lastMonthOrders) {
         return locale.currencyFormat(
             props.dashboard?.super_blocks?.[0]?.shop_blocks?.currency_code,
             0
@@ -48,43 +51,29 @@ const getExpectedSales = () => {
     const now = new Date();
     const currentDay = now.getDate();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-
-    const dailyAverage = currentMonthSales / currentDay;
     const remainingDays = daysInMonth - currentDay;
-    const projectedRemainingSales = dailyAverage * remainingDays;
-    const expectedSales = currentMonthSales + projectedRemainingSales;
+
+    const currentAOV = parseFloat(currentMonthSales) / currentMonthOrders;
+    const lastMonthAOV = parseFloat(lastMonthSales) / lastMonthOrders;
+
+    const projectedAOV = (currentAOV * 0.6) + (lastMonthAOV * 0.4);
+
+    const lastMonthDays = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+    const avgOrdersPerDay = lastMonthOrders / lastMonthDays;
+
+    const currentOrderRate = currentMonthOrders / currentDay;
+
+    const projectedOrderRate = (currentOrderRate * 0.7) + (avgOrdersPerDay * 0.3);
+
+    const projectedTotalOrders = currentMonthOrders + (projectedOrderRate * remainingDays);
+
+    const expectedSales = projectedTotalOrders * projectedAOV;
 
     return locale.currencyFormat(
         props.dashboard?.super_blocks?.[0]?.shop_blocks?.currency_code,
         expectedSales
     );
 }
-
-const getSalesGrowth = computed(() => {
-    const currentMonthSales = props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.sales_org_currency?.['mtd']?.raw_value;
-    const lastMonthSales = props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.sales_org_currency?.['lm']?.raw_value;
-
-    if (!currentMonthSales || !lastMonthSales || currentMonthSales === 0) {
-        return null;
-    }
-
-    const now = new Date();
-    const currentDay = now.getDate();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-
-    const currentDailyAverage = currentMonthSales / currentDay;
-    const lastMonthDailyAverage = lastMonthSales / daysInMonth;
-
-    if (lastMonthDailyAverage === 0) return null;
-
-    const growthRate = ((currentDailyAverage - lastMonthDailyAverage) / lastMonthDailyAverage) * 100;
-
-    return {
-        value: Math.abs(growthRate).toFixed(1),
-        isPositive: growthRate > 0,
-        isNegative: growthRate < 0
-    };
-});
 
 const getAverageCLV = () => {
     const clv = props.dashboard?.super_blocks?.[0]?.shop_blocks?.average_clv;
@@ -131,18 +120,6 @@ const getHistoricCLV = () => {
                     <p class="text-lg font-bold mb-1">Expected Sales</p>
                     <span class="text-2xl font-bold">
                         {{ getExpectedSales() }}
-                        <span
-                            v-if="getSalesGrowth"
-                            :class="[
-                                'italic text-sm font-medium ml-1',
-                                {
-                                    'text-green-500': getSalesGrowth.isPositive,
-                                    'text-red-500': getSalesGrowth.isNegative
-                                }
-                            ]"
-                        >
-                            {{ getSalesGrowth.isPositive ? '+' : '-' }}{{ getSalesGrowth.value }}%
-                        </span>
                     </span>
                     <p class="text-xs text-gray-500 mt-1">Projected this month</p>
                 </div>
