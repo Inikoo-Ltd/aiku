@@ -43,9 +43,7 @@ class SendChatMessage
 
         $this->logMessageEvent($chatSession, $modelData['sender_type'], $modelData['sender_id'] ?? null, $chatMessage);
 
-        broadcast(new BroadcastRealtimeChat($chatMessage))->toOthers();
-        // BroadcastRealtimeChat::dispatch($chatMessage);
-        // BroadcastRealtimeChat::dispatch($chatMessage);
+        BroadcastRealtimeChat::dispatch($chatMessage);
 
         return $chatMessage;
     }
