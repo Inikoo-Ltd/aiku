@@ -2,15 +2,14 @@
 import { inject, ref } from 'vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faEnvelope, faHeart as farHeart } from '@far'
-import { faCircle, faHeart as fasHeart, faStarHalfAlt } from '@fas'
+import { faHeart as fasHeart, faStarHalfAlt } from '@fas'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faQuestionCircle } from "@fal"
 
 import Image from '@/Components/Image.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import NewAddToCartButton from '@/Components/CMS/Webpage/Products1/NewAddToCartButton.vue'
-import BestsellerBadge from '@/Components/CMS/Webpage/Products1/BestsellerBadge.vue'
-import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
+import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue'
+import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
