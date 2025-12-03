@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Ebay\Traits;
 
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
 use App\Exceptions\Dropshipping\Ebay\EbayApiException;
+use App\Models\Catalogue\Product;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -185,7 +186,7 @@ trait WithEbayApiRequest
         return !empty($displayErrors) ? $displayErrors : null;
     }
 
-    public function extractProductAttributes($product, $categoryAspects)
+    public function extractProductAttributes(Product $product, $categoryAspects)
     {
         $attributes = [];
         $brand = $product->getBrand();
@@ -206,7 +207,7 @@ trait WithEbayApiRequest
                         ['Not Specified'];
                     break;
                 case 'Brand':
-                    $attributes['Brand'] = [$brand?->name ?? $product->shop?->name ?? 'Unbranded'];
+                    $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
                     break;
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
@@ -220,6 +221,10 @@ trait WithEbayApiRequest
                     $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
             }
         }
+
+        // Use this as default value and always included
+        $attributes['Country/Region of Manufacture'] = [$product->country_of_origin];
+        $attributes['Material'] = [$product->marketing_ingredients];
 
         return $attributes;
     }

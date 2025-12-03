@@ -165,6 +165,18 @@ class StoreEbayProduct extends RetinaAction
                     ]
                 ],
                 'condition' => 'NEW',
+                'packageWeightAndSize' => [
+                    'dimensions' => [
+                        'height' => Arr::get($product->marketing_dimensions, 'h'),
+                        'length' => Arr::get($product->marketing_dimensions, 'l'),
+                        'unit' => 'CENTIMETER',
+                        'width' => Arr::get($product->marketing_dimensions, 'w'),
+                    ],
+                    'weight' => [
+                        'unit' => 'KILOGRAM',
+                        'value' => $product->marketing_weight / 1000
+                    ]
+                ],
                 'product' => [
                     'title' => mb_substr($portfolio->customer_product_name, 0, 80),
                     'description' => $descriptions,
