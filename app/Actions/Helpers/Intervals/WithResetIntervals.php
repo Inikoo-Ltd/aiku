@@ -112,7 +112,7 @@ trait WithResetIntervals
                 doPreviousPeriods: $this->doPreviousPeriods
             );
             GroupHydrateRegistrationIntervals::dispatch(
-                group: $group,
+                groupId: $group->id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
@@ -162,7 +162,7 @@ trait WithResetIntervals
             );
 
             OrganisationHydrateRegistrationIntervals::dispatch(
-                organisation: $organisation,
+                organisationId: $organisation->id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
@@ -254,7 +254,7 @@ trait WithResetIntervals
             );
 
             ShopHydrateRegistrationIntervals::dispatch(
-                shop: $shop,
+                shopId: $shop->id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
@@ -311,7 +311,7 @@ trait WithResetIntervals
             )->delay(now()->addMinute())->onQueue('low-priority');
 
             ShopHydrateRegistrationIntervals::dispatch(
-                shop: $shop,
+                shopId: $shop->id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             )->delay(now()->addMinute())->onQueue('low-priority');
