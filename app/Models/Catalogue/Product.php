@@ -207,7 +207,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, Product> $productVariants
  * @property-read Media|null $rightImage
  * @property-read Media|null $seoImage
- * @property-read Shop|null $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
