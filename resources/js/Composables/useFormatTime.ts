@@ -9,6 +9,7 @@ export const localesCode: any = { zhCN, enUS, fr, de, id, ja, sk, es }
 export interface OptionsTime {
     formatTime?: string
     localeCode?: string
+    keepTimezone?: boolean
 }
 
 
@@ -16,7 +17,10 @@ export const useFormatTime = (dateIso: string | Date | undefined, OptionsTime?: 
     if (!dateIso) return '-'  // If the provided data date is null
 
     let tempLocaleCode = OptionsTime?.localeCode === 'zh-Hans' ? 'zhCN' : OptionsTime?.localeCode ?? 'enGB'
-    let tempDateIso = new Date(dateIso)
+
+    let tempDateIso = OptionsTime?.keepTimezone
+        ? new Date((typeof dateIso === 'string' ? dateIso : dateIso.toISOString()).replace('Z', ''))
+        : new Date(dateIso)
 
     if (OptionsTime?.formatTime === 'aiku') return format(tempDateIso, 'EEE, do MMM yy', { locale: localesCode[tempLocaleCode] })  // Sun, 1st Jan 23
     if (OptionsTime?.formatTime === 'ddmy') return format(tempDateIso, 'PPPP', { locale: localesCode[tempLocaleCode] })  // Friday, April 29th, 1453
@@ -115,7 +119,7 @@ export const useTimeCountdown: any = (dateIso: string, options?: { human?: boole
 
     if (options?.human) return formatDuration(countdown, options)  // 5 days 23 hours 3 minutes 58 seconds
 
-    return countdown  // { "years": 0, "months": 0, "days": 0, "hours": 0, "minutes": 51, "seconds": 0 } 
+    return countdown  // { "years": 0, "months": 0, "days": 0, "hours": 0, "minutes": 51, "seconds": 0 }
 }
 
 

@@ -119,8 +119,18 @@ const onRefreshPage = () => {
     window.location.reload()
 }
 
+// Section: Screen Type
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const checkScreenType = () => {
+    const width = screen.width
+    if (width < 640) screenType.value = 'mobile'
+    else if (width >= 640 && width < 1024) screenType.value = 'tablet'
+    else screenType.value = 'desktop'
+}
+provide('screenType', screenType)
 
 onMounted(() => {
+    checkScreenType()
     onCheckAppVersion()
     setColorStyleRoot(layout?.app?.theme)
 })

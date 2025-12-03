@@ -99,6 +99,26 @@ class EditProfileSettings
                             ],
                         ],
                     ],
+                    app()->environment('local') ? [
+                        "label"  => __("Timezone"),
+                        "icon"   => "fal fa-sliders-v",
+                        "fields" => [
+                            "department_id"  =>  [
+                                "type"    => "select_infinite",
+                                "label"   => __("Timezone"),
+                                "information"   => __("Select your timezone to show in the footer"),
+                                "options"   => [],  // TODO
+                                "fetchRoute"    => [
+                                    "name"       => "grp.masters.master_shops.show.master_departments.index",
+                                    "parameters" => ["awd"]
+                                ],
+                                "valueProp" => "id",
+                                "labelProp" => "code",
+                                "required" => false,
+                                "value"   => []
+                            ]
+                        ],
+                    ] : [],
                 ],
                 "args"      => [
                     "updateRoute" => [
