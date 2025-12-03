@@ -217,7 +217,7 @@ const updateCollection = async (e: Event) => {
 <template>
     <div class="grid grid-cols-2 lg:grid-cols-3 xdivide-x xdivide-gray-300 border-b border-gray-200">
         <!-- Box: Order -->
-        <BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+        <BoxStatPallet v-once class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ trans("Order") }}
@@ -307,7 +307,7 @@ const updateCollection = async (e: Event) => {
         </BoxStatPallet>
 
         <!-- Box: Shipping -->
-        <BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+        <BoxStatPallet v-once class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
             <div class="text-xs md:text-sm">
 
 
