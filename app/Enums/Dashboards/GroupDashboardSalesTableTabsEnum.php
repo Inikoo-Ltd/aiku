@@ -68,14 +68,14 @@ enum GroupDashboardSalesTableTabsEnum: string
             GroupDashboardSalesTableTabsEnum::ORGANISATIONS => IndexOrganisationsSalesTable::make()->action($group, $customRangeData),
             GroupDashboardSalesTableTabsEnum::SHOPS => IndexShopsSalesTable::make()->action($group, $customRangeData),
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => IndexInvoiceCategoriesSalesTable::make()->action($group, $customRangeData),
-            GroupDashboardSalesTableTabsEnum::DS_PLATFORMS => IndexPlatformSalesTable::make()->action($group)
+            GroupDashboardSalesTableTabsEnum::DS_PLATFORMS => IndexPlatformSalesTable::make()->action($group, $customRangeData)
         };
 
         $totals = match ($this) {
             GroupDashboardSalesTableTabsEnum::ORGANISATIONS => json_decode(DashboardTotalOrganisationsSalesResource::make($group)->setCustomRangeData($customRangeData)->toJson(), true),
             GroupDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardTotalGroupShopsSalesResource::make($group)->setCustomRangeData($customRangeData)->toJson(), true),
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalGroupInvoiceCategoriesSalesResource::make($group)->setCustomRangeData($customRangeData)->toJson(), true),
-            GroupDashboardSalesTableTabsEnum::DS_PLATFORMS => IndexPlatformSalesTable::make()->total($group)
+            GroupDashboardSalesTableTabsEnum::DS_PLATFORMS => IndexPlatformSalesTable::make()->total($group, $customRangeData)
         };
 
         return [

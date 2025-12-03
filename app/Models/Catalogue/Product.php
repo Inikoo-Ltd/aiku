@@ -167,6 +167,8 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $scpn_number
  * @property array<array-key, mixed>|null $offers_data
  * @property \Illuminate\Support\Carbon|null $not_for_sale_since
+ * @property bool $not_for_sale_from_master
+ * @property bool $not_for_sale_from_trade_unit
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -205,7 +207,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, Product> $productVariants
  * @property-read Media|null $rightImage
  * @property-read Media|null $seoImage
- * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Shop|null $shop
  * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
@@ -367,6 +369,16 @@ class Product extends Model implements Auditable, HasMedia
     public function department(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'department_id');
+    }
+
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
+    }
+
+    public function organisation(): BelongsTo
+    {
+        return $this->belongsTo(Organisation::class, 'organisation_id');
     }
 
     public function subDepartment(): BelongsTo

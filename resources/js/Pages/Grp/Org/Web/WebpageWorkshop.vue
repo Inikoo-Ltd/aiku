@@ -103,6 +103,8 @@ const sideKey = ref(1);
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
 
+console.log('layout',layout)
+
 provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
 provide('openedBlockSideEditor', openedBlockSideEditor);
@@ -618,6 +620,7 @@ onMounted(() => {
     }
   };
 
+  
   window.addEventListener("message", handleMessage);
 
   onUnmounted(() => {
@@ -638,7 +641,6 @@ const openWebsite = () => {
 </script>
 
 <template>
-
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">

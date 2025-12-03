@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatAssignment> $assignments
+ * @property-read User $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent available()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newQuery()

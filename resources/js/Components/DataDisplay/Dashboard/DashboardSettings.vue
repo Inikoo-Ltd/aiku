@@ -148,16 +148,16 @@ onMounted(() => {
 
 <template>
     <div class="relative px-1 md:px-4 md:mt-4">
-        <div class="mb-2 flex justify-between gap-x-2">
+        <div class="mb-2 flex justify-between gap-2">
             <!-- Section: Period options list with overflow indicators -->
-            <div class="relative flex-1">
+            <div class="relative flex-1 min-w-0">
                 <!-- Left overflow indicator -->
                 <transition name="fade">
                     <div v-if="hasOverflowLeft"
                          @click="scrollLeft"
-                         class="absolute left-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-r from-white via-white to-transparent pl-1 pr-6">
-                        <div class="bg-indigo-500 text-white rounded-full p-1.5 shadow-lg hover:bg-indigo-600 transition-colors">
-                            <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" />
+                         class="absolute left-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-r from-white via-white to-transparent pl-1 pr-3 sm:pr-6">
+                        <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors">
+                            <FontAwesomeIcon icon="far fa-chevron-left" class="text-[10px] sm:text-xs" />
                         </div>
                     </div>
                 </transition>
@@ -166,9 +166,9 @@ onMounted(() => {
                 <transition name="fade">
                     <div v-if="hasOverflowRight"
                          @click="scrollRight"
-                         class="absolute right-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-l from-white via-white to-transparent pr-1 pl-6">
-                        <div class="bg-indigo-500 text-white rounded-full p-1.5 shadow-lg hover:bg-indigo-600 transition-colors">
-                            <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" />
+                         class="absolute right-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-l from-white via-white to-transparent pr-1 pl-3 sm:pl-6">
+                        <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors">
+                            <FontAwesomeIcon icon="far fa-chevron-right" class="text-[10px] sm:text-xs" />
                         </div>
                     </div>
                 </transition>
@@ -176,9 +176,9 @@ onMounted(() => {
                 <nav
                     ref="navElement"
                     @scroll="checkOverflow"
-                    class="isolate rounded border py-1 px-2 flex gap-1 items-center w-full overflow-x-scroll scrollbar-hide"
+                    class="isolate rounded border py-1 px-1 sm:px-2 flex gap-1 items-center w-full overflow-x-scroll scrollbar-hide"
                     aria-label="Tabs">
-                    <div v-if="layout.currentRoute === 'grp.dashboard.show' || 'grp.dashboard.show'">
+                    <div v-if="(layout.currentRoute === 'grp.dashboard.show') || (layout.currentRoute === 'grp.org.dashboard.show')">
                         <DashboardCustomDateRange :intervals="intervals" />
                     </div>
 
@@ -187,20 +187,20 @@ onMounted(() => {
                         :key="idxInterval"
                         @click="updateInterval(interval.value)"
                         :class="[
-							interval.value === intervals.value
-								? 'bg-indigo-500 text-white font-medium'
-								: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
-						]"
+                            interval.value === intervals.value
+                                ? 'bg-indigo-500 text-white font-medium'
+                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
+                        ]"
                         v-tooltip="interval.label"
-                        class="relative flex-grow rounded py-1 md:py-1.5 px-2 md:px-4 text-center min-w-fit w-fit text-sm cursor-pointer select-none">
-						<span :class="isLoadingInterval === interval.value ? 'opacity-0 truncate' : ''">
-							{{ interval.label }}
-						</span>
+                        class="relative flex-grow flex-shrink-0 rounded py-1 md:py-1.5 px-2 sm:px-3 md:px-4 text-center text-xs sm:text-sm cursor-pointer select-none whitespace-nowrap">
+                        <span :class="isLoadingInterval === interval.value ? 'opacity-0' : ''">
+                            {{ interval.label }}
+                        </span>
                         <span
                             class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
                             :class="isLoadingInterval === interval.value ? '' : 'opacity-0'">
-							<LoadingIcon />
-						</span>
+                            <LoadingIcon />
+                        </span>
                     </div>
                 </nav>
             </div>
@@ -209,20 +209,20 @@ onMounted(() => {
             <div
                 v-tooltip="trans('Open advanced settings')"
                 @click="isSectionVisible = !isSectionVisible"
-                class="cursor-pointer p-2 rounded border flex items-center justify-center"
+                class="cursor-pointer p-2 rounded border flex items-center justify-center flex-shrink-0 self-start sm:self-auto"
                 :class="isSectionVisible ? 'bg-indigo-200 text-indigo-500 border-transparent' : 'border-gray-300 text-gray-400 hover:bg-gray-200'">
-                <FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-2xl" />
+                <FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-xl sm:text-2xl" />
             </div>
         </div>
 
         <transition name="slide-to-right">
-            <div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-wrap justify-between items-center gap-4 lg:gap-8 mb-2">
+            <div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-col lg:flex-row lg:flex-wrap justify-between lg:items-center gap-3 lg:gap-8 mb-2">
 
-                <div class="flex items-center gap-x-4 text-sm md:text-base">
+                <div class="flex items-center gap-x-2 sm:gap-x-4 text-xs sm:text-sm md:text-base overflow-x-auto">
                     <!-- Toggle: model_state -->
                     <Transition name="slide-to-right">
-                        <div v-if="settings.model_state_type && currentTab === 'shops' " class="flex items-center gap-x-4">
-                            <p v-tooltip="settings.model_state_type.options[0].tooltip" class="leading-none" :class="[ settings.model_state_type.options[0].value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
+                        <div v-if="settings.model_state_type && currentTab === 'shops'" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
+                            <p v-tooltip="settings.model_state_type.options[0].tooltip" class="leading-none whitespace-nowrap" :class="[ settings.model_state_type.options[0].value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
                                 {{ settings.model_state_type.options[0].label }}
                             </p>
                             <ToggleSwitch
@@ -232,17 +232,17 @@ onMounted(() => {
                                 :trueValue="settings.model_state_type.options[1]?.value"
                                 :disabled="`left_model_state_type` === isLoadingToggle"
                             />
-                            <p v-tooltip="settings.model_state_type.options[1]?.tooltip" class="" :class="[ settings.model_state_type.options[1]?.value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
+                            <p v-tooltip="settings.model_state_type.options[1]?.tooltip" class="whitespace-nowrap" :class="[ settings.model_state_type.options[1]?.value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
                                 {{ settings.model_state_type.options[1]?.label }}
                             </p>
                         </div>
                     </Transition>
                 </div>
 
-                <div class="flex items-center gap-x-8 text-sm md:text-base">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-x-4 lg:gap-x-8 text-xs sm:text-sm md:text-base">
                     <!-- Toggle: data_display_type (minified, full) -->
-                    <div v-if="settings.data_display_type" class="flex items-center gap-x-4">
-                        <p v-tooltip="settings.data_display_type.options[0].tooltip" class="" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
+                    <div v-if="settings.data_display_type" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
+                        <p v-tooltip="settings.data_display_type.options[0].tooltip" class="whitespace-nowrap" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
                             {{ settings.data_display_type.options[0].label }}
                         </p>
                         <ToggleSwitch
@@ -252,22 +252,22 @@ onMounted(() => {
                             :trueValue="settings.data_display_type.options[1]?.value"
                             :disabled="`left_data_display_type` === isLoadingToggle"
                         />
-                        <p v-tooltip="settings.data_display_type.options[1]?.tooltip" class="" :class="[ settings.data_display_type.options[1]?.value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
+                        <p v-tooltip="settings.data_display_type.options[1]?.tooltip" class="whitespace-nowrap" :class="[ settings.data_display_type.options[1]?.value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
                             {{ settings.data_display_type.options[1]?.label }}
                         </p>
                     </div>
 
                     <!-- Toggle: currency_type -->
-                    <div v-if="settings.currency_type" class="flex items-center gap-x-4">
-                        <RadioGroup class="relative"
+                    <div v-if="settings.currency_type" class="flex items-center gap-x-2 sm:gap-x-4 w-full sm:w-auto">
+                        <RadioGroup class="relative w-full sm:w-auto"
                                     :modelValue="settings.currency_type.value"
                                     @update:modelValue="(value: any) => updateCurrencyType(value)"
                         >
-                            <div v-if="`right_currency_type` === isLoadingToggle" class="absolute inset-0 bg-black/50 rounded-md flex items-center justify-center">
+                            <div v-if="`right_currency_type` === isLoadingToggle" class="absolute inset-0 bg-black/50 rounded-md flex items-center justify-center z-10">
                                 <LoadingIcon class="text-white text-xl m-auto" />
                             </div>
                             <RadioGroupLabel class="sr-only">Choose the radio</RadioGroupLabel>
-                            <div class="flex gap-y-1 flex-wrap border border-gray-300 rounded-md overflow-hidden">
+                            <div class="flex gap-y-1 flex-wrap border border-gray-300 rounded-md overflow-hidden w-fit">
                                 <RadioGroupOption
                                     as="template" v-for="(option) in settings.currency_type.options"
                                     :key="option.value"
@@ -275,9 +275,9 @@ onMounted(() => {
                                     v-slot="{ active, checked }"
                                 >
                                     <div :class="[
-											'cursor-pointer focus:outline-none flex items-center justify-center py-1 md:py-3 px-3 text-sm font-medium',
-											checked ? 'bg-indigo-500 text-white' : ' bg-white text-gray-700 hover:bg-gray-200',
-										]"
+                                            'cursor-pointer focus:outline-none flex items-center justify-center py-1 sm:py-2 md:py-3 px-2 sm:px-3 text-xs sm:text-sm font-medium whitespace-nowrap',
+                                            checked ? 'bg-indigo-500 text-white' : ' bg-white text-gray-700 hover:bg-gray-200',
+                                        ]"
                                          v-tooltip="option.tooltip"
                                     >
                                         <RadioGroupLabel as="span">{{ option.label }}</RadioGroupLabel>
