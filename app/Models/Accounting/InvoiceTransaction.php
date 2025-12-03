@@ -66,6 +66,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $original_invoice_transaction_id For refunds link to original invoice transaction
  * @property bool $in_process Used for refunds only
  * @property array<array-key, mixed>|null $offers_data
+ * @property int|null $sub_department_id
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
  * @property-read \App\Models\CRM\Customer $customer

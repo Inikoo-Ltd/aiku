@@ -36,54 +36,51 @@ class ShowSysAdminDashboard extends OrgAction
         return $this->handle($group);
     }
 
-
     public function htmlResponse(Group $group): Response
     {
         return Inertia::render(
             'SysAdmin/SysAdminDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('system administration'),
+                'title'       => __('system Administration'),
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-users-cog'],
-                        'title' => __('System administration')
+                        'title' => __('System Administration')
                     ],
-                    'title' => __('System administration'),
+                    'title' => __('System Administration'),
                 ],
                 'stats'       => [
                     [
-                        'name'  => __('users'),
+                        'name'  => __('Users'),
                         'stat'  => $group->sysadminStats->number_users_status_active,
                         'route' => ['name' => 'grp.sysadmin.users.index']
                     ],
                     [
-                        'name'  => __('guests'),
+                        'name'  => __('Guests'),
                         'stat'  => $group->sysadminStats->number_guests_status_active,
                         'route' => ['name' => 'grp.sysadmin.guests.index']
                     ]
                 ]
-
             ]
         );
     }
 
     public function getBreadcrumbs(): array
     {
-        return
-            array_merge(
-                ShowGroupDashboard::make()->getBreadcrumbs(),
+        return array_merge(
+            ShowGroupDashboard::make()->getBreadcrumbs(),
+            [
                 [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name' => 'grp.sysadmin.dashboard'
-                            ],
-                            'label' => __('System administration'),
-                        ]
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name' => 'grp.sysadmin.dashboard'
+                        ],
+                        'label' => __('System Administration'),
                     ]
                 ]
-            );
+            ]
+        );
     }
 }
