@@ -170,11 +170,6 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
     return locationsList.find(x => x.location_code == selectedHehe) || locationsList[0]
 }
 
-const breakpoint = ref('')
-const innerWidth = ref(0)
-onMounted(() => {
-    innerWidth.value = window.innerWidth
-})
 
 </script>
 
@@ -411,17 +406,18 @@ onMounted(() => {
 
 
                             <ButtonWithLink v-if="!itemValue.is_handled" type="negative" tooltip="Set as not picked"
-                                icon="fal fa-debug" :size="innerWidth > 768 ? undefined : 'lg'"
+                                icon="fal fa-debug" :size="screenType == 'desktop' ? undefined : 'lg'"
                                 :routeTarget="itemValue.not_picking_route" :bindToLink="{preserveScroll: true}" />
 
-                            <!-- Section: Errors list -->
-                            <div v-if="proxyItem.errors?.length">
-                                <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">
-                                    *{{ error }}
-                                </p>
                             </div>
                         </div>
-                    </div>
+                        
+                        <!-- Section: Errors list -->
+                        <div v-if="proxyItem.errors?.length" class="">
+                            <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">
+                                *{{ error }}
+                            </p>
+                        </div>
 
 
                 </div>
@@ -430,17 +426,17 @@ onMounted(() => {
                     {{ itemValue.quantity_to_pick }}
 
                     <ButtonWithLink type="negative" tooltip="Set as not picked" icon="fal fa-debug"
-                        :size="innerWidth > 768 ? undefined : 'lg'" :routeTarget="itemValue.not_picking_route"
+                        :size="screenType == 'desktop' ? 'sm' : 'lg'" :routeTarget="itemValue.not_picking_route"
                         :bindToLink="{preserveScroll: true}" />
                 </div>
             </div>
 
             <div v-else>
                 <ButtonWithLink v-if="!itemValue.is_handled" type="negative" tooltip="Set as not picked"
-                    icon="fal fa-debug" :size="innerWidth > 768 ? undefined : 'lg'"
+                    icon="fal fa-debug" :size="screenType == 'desktop' ? 'sm' : 'lg'"
                     :routeTarget="itemValue.not_picking_route" :bindToLink="{preserveScroll: true}" />
                 
-                <span v-else class="text-gray-400 italic text-xs">{{ trans("No quantity to pick") }}</span>
+                <span class="hidden text-gray-400 italic text-xs">{{ trans("No quantity to pick") }}</span>
             </div>
 
 
@@ -467,9 +463,9 @@ onMounted(() => {
                         {{ location.location_code }}
                         </Link>
                     </span>
-                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">({{
-                        trans("Unknown")
-                        }})</span>
+                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
+                        ({{ trans("Unknown") }})
+                    </span>
 
                     <span
                         v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(location.quantity), location_code: location.location_code})"
