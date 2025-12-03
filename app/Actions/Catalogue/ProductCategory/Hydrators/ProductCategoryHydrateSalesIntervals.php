@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\ProductCategory\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\ProductCategory;
 use DB;
@@ -31,18 +32,15 @@ class ProductCategoryHydrateSalesIntervals implements ShouldBeUnique
     {
         $stats = [];
 
-        $invoiceIdsQuery = DB::table('invoice_transactions as it')
-            ->join('transactions as t', 'it.transaction_id', '=', 't.id')
-            ->join('products as p', function ($join) {
-                $join->on('t.model_id', '=', 'p.id')
-                    ->where('t.model_type', '=', 'Product');
-            })
-            ->where(function ($q) use ($productCategory) {
-                $q->where('p.family_id', $productCategory->id)
-                    ->orWhere('p.sub_department_id', $productCategory->id)
-                    ->orWhere('p.department_id', $productCategory->id);
-            })
-            ->select('it.invoice_id')
+        $fieldName = match ($productCategory->type) {
+            ProductCategoryTypeEnum::DEPARTMENT => 'department_id',
+            ProductCategoryTypeEnum::FAMILY => 'family_id',
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => 'sub_department_id',
+        };
+
+        $invoiceIdsQuery = DB::table('invoice_transactions')
+            ->where($fieldName, $productCategory->id)
+            ->select('invoice_id')
             ->distinct();
 
         $queryBaseSales = Invoice::query()
