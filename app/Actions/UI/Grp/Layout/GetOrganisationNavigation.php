@@ -201,6 +201,20 @@ class GetOrganisationNavigation
             'topMenu' => [],
         ];
 
+        $navigation['crm_agents'] = [
+            'label'   => __('CRM Agents'),
+            'tooltip' => __('CRM Agents'),
+            'icon'    => ['fal', 'fa-headset'],
+            'root'    => 'grp.org.agents.show',
+            'route'   => [
+                'name'       => 'grp.org.agents.show',
+                'parameters' => [$organisation->slug],
+            ],
+            'topMenu' => [],
+        ];
+
+
+
         return $this->getSettingsNavs($user, $organisation, $navigation);
     }
 }

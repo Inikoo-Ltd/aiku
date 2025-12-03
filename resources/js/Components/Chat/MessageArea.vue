@@ -18,6 +18,8 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	isInitialLoad: Boolean,
+	isLoadingMore: Boolean,
 })
 
 console.log("🚀 MessageArea props:", props.messages)
@@ -96,6 +98,13 @@ const handleKeyDown = (event: KeyboardEvent) => {
 	}
 }
 
+const onScroll = (e: any) => {
+	const el = e.target
+	if (el.scrollTop === 0) {
+		emit("reload", true)
+	}
+}
+
 const scrollToBottom = () => {
 	if (messagesContainer.value) {
 		setTimeout(() => {
@@ -134,7 +143,21 @@ const getSenderName = (message: any) => {
 watch(
 	() => props.messages,
 	() => {
-		scrollToBottom()
+		if (props.isLoadingMore) return
+		if (props.isInitialLoad) {
+			scrollToBottom()
+			return
+		}
+
+		const el = messagesContainer.value
+		if (el) {
+			const threshold = 150
+			const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+
+			if (distanceFromBottom < threshold) {
+				scrollToBottom()
+			}
+		}
 	},
 	{ deep: true }
 )
@@ -156,6 +179,7 @@ onMounted(() => {
 		<!-- Messages Area -->
 		<div
 			ref="messagesContainer"
+			@scroll="onScroll"
 			class="messages-container flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
 			v-if="messages.length > 0">
 			<template v-for="(groupMessages, date) in groupedMessages()" :key="date">
@@ -182,7 +206,7 @@ onMounted(() => {
 								class="flex items-end gap-2"
 								:class="isUserMessage(message) ? 'flex-row-reverse' : ''">
 								<div
-									class="px-3 py-2 rounded-lg text-sm break-words"
+									class="px-3 py-2 rounded-lg text-sm break-words whitespace-normal max-w-full"
 									:class="[
 										isUserMessage(message)
 											? 'user-bubble rounded-br-none'

@@ -36,6 +36,9 @@ const buttonRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
 const loading = ref(false)
 
+const isInitialLoad = ref(true)
+const isLoadingMore = ref(false)
+
 const chatSession = ref<{
 	ulid: string
 	guest_identifier: string
@@ -135,24 +138,33 @@ const createSession = async (): Promise<ChatSessionData | null> => {
 /**
  * Fetch messages for current session
  */
-const getMessages = async () => {
+const getMessages = async (loadMore = false) => {
 	if (!chatSession.value?.ulid) return
 
 	try {
-		const response = await axios.get(
-			`https://aiku.test/app/api/chats/sessions/${chatSession.value.ulid}/messages`
-		)
+		if (loadMore) isLoadingMore.value = true
 
-		if (response.data?.data?.messages && Array.isArray(response.data.data.messages)) {
-			messages.value = response.data.data.messages
-		} else {
-			messages.value = []
+		let url = `https://aiku.test/app/api/chats/sessions/${chatSession.value.ulid}/messages`
+
+		if (loadMore && messages.value.length > 0) {
+			const cursor = messages.value[0].created_at
+			url += `?cursor=${cursor}&limit=100`
 		}
 
-		console.log(`✅ Loaded ${messages.value.length} messages`)
+		const response = await axios.get(url)
+		const fetched = response.data?.data?.messages || []
+
+		if (!loadMore) {
+			messages.value = fetched
+		} else {
+			messages.value = [...fetched, ...messages.value]
+		}
 	} catch (e) {
-		console.error("❌ Error:", e)
-		messages.value = []
+		console.error("❌ Error loading messages:", e)
+	} finally {
+		if (loadMore) {
+			isLoadingMore.value = false
+		}
 	}
 }
 
@@ -246,9 +258,9 @@ const initWebSocket = () => {
 	console.log(chatChannel)
 
 	chatChannel.listen(".message", (eventData: any) => {
-		console.log("📨 Chat message received:", eventData)
 		if (eventData.message) {
 			messages.value.push(eventData.message)
+			forceScrollBottom()
 		}
 	})
 
@@ -271,10 +283,15 @@ const initChat = async () => {
 	})
 
 	await getMessages()
+	isInitialLoad.value = true
+
 	setTimeout(() => {
-		const container = document.querySelector(".messages-container")
-		if (container) container.scrollTop = container.scrollHeight
+		if (isInitialLoad.value) {
+			forceScrollBottom()
+			isInitialLoad.value = false
+		}
 	}, 200)
+
 	initWebSocket()
 }
 
@@ -292,6 +309,8 @@ defineExpose({
 	sendMessage,
 	chatSession,
 	loading,
+	isInitialLoad,
+	isLoadingMore,
 })
 </script>
 
@@ -320,7 +339,7 @@ defineExpose({
 					:session="chatSession"
 					:loading="loading"
 					@send-message="sendMessage"
-					@reload="getMessages"
+					@reload="(loadMore: any) => getMessages(loadMore)"
 					@mounted="forceScrollBottom" />
 			</div>
 		</transition>

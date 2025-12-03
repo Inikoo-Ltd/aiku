@@ -64,6 +64,10 @@ Route::prefix("tags")
     ->name("tags.")
     ->group(__DIR__."/tags.php");
 
+Route::prefix("agents")
+    ->name("agents.")
+    ->group(__DIR__."/agents.php");
+
 Route::get('/show', ShowOrganisation::class)->name('show');
 
 Route::fallback(function () {
