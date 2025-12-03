@@ -99,6 +99,26 @@ class EditProfileSettings
                             ],
                         ],
                     ],
+                    app()->environment('local') ? [
+                        "label"  => __("Timezone"),
+                        "icon"   => "fal fa-sliders-v",
+                        "fields" => [
+                            "department_id"  =>  [
+                                "type"    => "select_infinite",
+                                "label"   => __("Timezone"),
+                                "information"   => __("Select your timezone to show in the footer"),
+                                "options"   => [],
+                                "mode"      => "multiple",
+                                "fetchRoute"    => [
+                                    "name"       => "grp.json.timezones",
+                                ],
+                                "valueProp" => "id",
+                                "labelProp" => "code",
+                                "required" => false,
+                                "value"   => []
+                            ]
+                        ],
+                    ] : [],
                 ],
                 "args"      => [
                     "updateRoute" => [

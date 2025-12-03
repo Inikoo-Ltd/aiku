@@ -77,7 +77,7 @@ class ShowSupplier extends GrpAction
                     'next'     => $this->getNext($supplier, $request),
                 ],
                 'pageHead'    => [
-                    'model'   => __('supplier'),
+                    'model'   => __('Supplier'),
                     'icon'    =>
                         [
                             'icon'  => 'fal fa-person-dolly',
@@ -109,7 +109,7 @@ class ShowSupplier extends GrpAction
                                 'name'       => 'grp.supply-chain.suppliers.show.purchase_orders.create',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
-                            'label' => __('purchase order')
+                            'label' => __('Purchase order')
                         ] : false,
                     ],
                     'meta'    => [
@@ -122,7 +122,7 @@ class ShowSupplier extends GrpAction
                             ],
                             'leftIcon' => [
                                 'icon'    => 'fal fa-person-dolly',
-                                'tooltip' => __('sales')
+                                'tooltip' => __('Sales')
                             ]
                         ],
                         [
@@ -134,7 +134,7 @@ class ShowSupplier extends GrpAction
                             ],
                             'leftIcon' => [
                                 'icon'    => 'fal fa-box-usd',
-                                'tooltip' => __('products')
+                                'tooltip' => __('Products')
                             ]
                         ],
                     ]

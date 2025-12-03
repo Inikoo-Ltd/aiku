@@ -14,9 +14,12 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTrad
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
+use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Country;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Actions\GrpAction;
@@ -108,8 +111,30 @@ class UpdateTradeUnit extends GrpAction
             $oldTradeUnitFamily = $tradeUnit->tradeUnitFamily;
         }
 
+        if (Arr::has($modelData, 'is_for_sale')) {
+            data_set($modelData, 'not_for_sale_since', Arr::get($modelData, 'is_for_sale') ? now() : null);
+        }
+
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
         $tradeUnit->refresh();
+
+
+        if ($tradeUnit->wasChanged('is_for_sale')) {
+            foreach ($tradeUnit->masterAssets()->where('type', MasterAssetTypeEnum::PRODUCT)->get() as $masterProduct) {
+                UpdateMasterAsset::run($masterProduct, [
+                    'is_for_sale'                  => $tradeUnit->is_for_sale,
+                    'not_for_sale_from_trade_unit' => !$tradeUnit->is_for_sale
+                ]);
+            }
+
+            foreach ($tradeUnit->products as $product) {
+                UpdateProduct::run($product, [
+                    'is_for_sale'                  => $tradeUnit->is_for_sale,
+                    'not_for_sale_from_master'     => false,
+                    'not_for_sale_from_trade_unit' => !$tradeUnit->is_for_sale
+                ]);
+            }
+        }
 
         if ($tradeUnit->wasChanged('marketing_dimensions')) {
             foreach ($tradeUnit->products as $product) {
@@ -164,12 +189,12 @@ class UpdateTradeUnit extends GrpAction
             }
             // Hydrate Products
             if ($tradeUnit->products->count() > 500) {
-                // If trade unit is linked with more than 500 products, use horizon
+                // If a trade unit is linked with more than 500 products, use a horizon
                 foreach ($tradeUnit->products as $product) {
                     ProductHydrateHeathAndSafetyFromTradeUnits::dispatch($product);
                 }
             } else {
-                // If trade unit is linked with 500 or less products brute force it
+                // If a trade unit is linked with 500 or fewer products, brute force it
                 foreach ($tradeUnit->products as $product) {
                     ProductHydrateHeathAndSafetyFromTradeUnits::run($product);
                 }
@@ -243,23 +268,23 @@ class UpdateTradeUnit extends GrpAction
             'pictogram_danger'             => ['sometimes', 'boolean'],
 
 
-
-            'cpnp_number'                  => ['sometimes', 'nullable', 'string'],
-            'ufi_number'                  => ['sometimes', 'nullable', 'string'],
-            'scpn_number'                  => ['sometimes', 'nullable', 'string'],
-            'tariff_code'                  => ['sometimes', 'nullable', 'string'],
-            'duty_rate'                    => ['sometimes', 'nullable', 'string'],
-            'hts_us'                       => ['sometimes', 'nullable', 'string'],
-            'marketing_ingredients'        => ['sometimes', 'nullable', 'string'],
-            'name_i8n'                     => ['sometimes', 'array'],
-            'description_title_i8n'        => ['sometimes', 'array'],
-            'description_i8n'              => ['sometimes', 'array'],
-            'description_extra_i8n'        => ['sometimes', 'array'],
-            'tags'                         => ['sometimes', 'array'],
-            'brands'                       => ['sometimes'],
-            'trade_unit_family_id'         => ['sometimes'],
-            'country_of_origin'            => ['sometimes', 'nullable', 'string'],
-            'origin_country_id'            => ['sometimes', 'nullable', 'exists:countries,id'],
+            'cpnp_number'           => ['sometimes', 'nullable', 'string'],
+            'ufi_number'            => ['sometimes', 'nullable', 'string'],
+            'scpn_number'           => ['sometimes', 'nullable', 'string'],
+            'tariff_code'           => ['sometimes', 'nullable', 'string'],
+            'duty_rate'             => ['sometimes', 'nullable', 'string'],
+            'hts_us'                => ['sometimes', 'nullable', 'string'],
+            'marketing_ingredients' => ['sometimes', 'nullable', 'string'],
+            'name_i8n'              => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n'       => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
+            'tags'                  => ['sometimes', 'array'],
+            'brands'                => ['sometimes'],
+            'trade_unit_family_id'  => ['sometimes'],
+            'country_of_origin'     => ['sometimes', 'nullable', 'string'],
+            'origin_country_id'     => ['sometimes', 'nullable', 'exists:countries,id'],
+            'is_for_sale'           => ['sometimes', 'boolean']
         ];
 
         if (!$this->strict) {
@@ -290,8 +315,6 @@ class UpdateTradeUnit extends GrpAction
                 $this->set('origin_country_id', Arr::get($this->get('origin_country_id'), 'id'));
             }
         }
-
-
     }
 
     public function action(TradeUnit $tradeUnit, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): TradeUnit

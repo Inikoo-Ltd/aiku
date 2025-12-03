@@ -32,19 +32,19 @@ class AddMissingFamiliesToMaster
     {
         $categoriesToAdd = $fromShop->productCategories()->where('product_categories.type', MasterProductCategoryTypeEnum::FAMILY)
             ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE);
-        if($missingOnly){
+        if ($missingOnly) {
             $categoriesToAdd->leftJoin('master_product_categories as mpc', 'mpc.id', '=', 'product_categories.master_product_category_id')
                 ->whereNull('mpc.id')
                 ->select(
                     'product_categories.*',
                     DB::raw('mpc.id IS NULL as no_master')
-            );
+                );
         }
         $categoriesToAdd = $categoriesToAdd->get();
 
         foreach ($categoriesToAdd as $categoryToAdd) {
             // Create/Find Master Family using Family Data
-            $masterFamily = $this->upsertMasterFamily($shop, $categoryToAdd);
+            $this->upsertMasterFamily($shop, $categoryToAdd);
         }
     }
 
@@ -126,7 +126,7 @@ class AddMissingFamiliesToMaster
             );
         }
 
-        if($family->no_master){
+        if ($family->no_master) {
             // Link Product Category with Master
             UpdateProductCategory::make()->action(
                 $family,

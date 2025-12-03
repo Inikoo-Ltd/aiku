@@ -41,6 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $location_key
  * @property string|null $marketplace
  * @property EbayUserStepEnum $step
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property WebUserTypeEnum $state
  * @property WebUserAuthTypeEnum $auth_type
  * @property-read Customer $customer
@@ -50,7 +51,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser withoutTrashed()
  * @mixin \Eloquent
  */
 class EbayUser extends Model

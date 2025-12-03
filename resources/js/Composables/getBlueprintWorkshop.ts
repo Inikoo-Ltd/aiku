@@ -31,6 +31,7 @@ import DepartmentBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
 import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
 import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blueprint"
+import SubDepartment2Blueprint from "@/Components/CMS/Webpage/SubDepartment2/Blueprint"
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
@@ -38,6 +39,7 @@ import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
+import Families2Blueprint from '@/Components/CMS/Webpage/Families2/Blueprint'
 import CtaCarousel from '@/Components/CMS/Webpage/CarouselCta/Blueprint'
 import CarouselImageBackgroundIrisBlueprint from "@/Components/CMS/Webpage/CarouselImageBackground/Blueprint"
 import BluprintBestseller from "@/Components/CMS/Webpage/Products1/BluprintBestseller"
@@ -76,12 +78,14 @@ export const getBlueprint = (componentName: string, data?: object) => {
 
 		// sub-department
 		"sub-departments-1": SubDepartment1Blueprint.blueprint,
+		"sub-departments-2": SubDepartment2Blueprint.blueprint,
 
 		// family
 		"family-1": FamilyBluprint.blueprint,
 
 		// families list
 		"families-1": Families1Blueprint.blueprint,
+		"families-2": Families2Blueprint.blueprint,
 
 		// products list
 		"products-1": ProductsList1Blueprint.blueprint,

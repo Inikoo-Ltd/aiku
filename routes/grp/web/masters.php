@@ -45,7 +45,7 @@ Route::get('/', ShowMastersDashboard::class)->name('dashboard');
 
 Route::get('/master-products', IndexMasterProducts::class)->name('master_products.index');
 Route::get('/master-departments', [IndexMasterDepartments::class, 'inGroup'])->name('master_departments.index');
-Route::delete('/master-departments/{masterProductCategory}/delete',DeleteMasterProductCategory::class)->name('master_departments.delete');
+Route::delete('/master-departments/{masterProductCategory}/delete', DeleteMasterProductCategory::class)->name('master_departments.delete');
 
 
 Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.show')->group(function () {

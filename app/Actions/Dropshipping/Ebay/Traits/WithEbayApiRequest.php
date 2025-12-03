@@ -10,10 +10,12 @@ namespace App\Actions\Dropshipping\Ebay\Traits;
 
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
 use App\Exceptions\Dropshipping\Ebay\EbayApiException;
+use App\Models\Catalogue\Product;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 trait WithEbayApiRequest
 {
@@ -185,7 +187,7 @@ trait WithEbayApiRequest
         return !empty($displayErrors) ? $displayErrors : null;
     }
 
-    public function extractProductAttributes($product, $categoryAspects)
+    public function extractProductAttributes(Product $product, $categoryAspects)
     {
         $attributes = [];
         $brand = $product->getBrand();
@@ -206,7 +208,7 @@ trait WithEbayApiRequest
                         ['Not Specified'];
                     break;
                 case 'Brand':
-                    $attributes['Brand'] = [$brand?->name ?? $product->shop?->name ?? 'Unbranded'];
+                    $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
                     break;
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
@@ -219,6 +221,15 @@ trait WithEbayApiRequest
                     // Use generic mapping or default value
                     $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
             }
+        }
+
+        // Use this as default value and always included
+        if ($product->country_of_origin) {
+            $attributes['Country/Region of Manufacture'] = [$product->country_of_origin];
+        }
+
+        if ($product->marketing_ingredients) {
+            $attributes['Material'] = [Str::substr($product->marketing_ingredients, 0, 60)];
         }
 
         return $attributes;

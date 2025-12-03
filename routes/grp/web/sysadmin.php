@@ -13,6 +13,7 @@ use App\Actions\SysAdmin\Guest\UI\CreateGuest;
 use App\Actions\SysAdmin\Guest\UI\EditGuest;
 use App\Actions\SysAdmin\Guest\UI\IndexGuests;
 use App\Actions\SysAdmin\Guest\UI\ShowGuest;
+use App\Actions\SysAdmin\UI\IndexSysAdminScheduledTasks;
 use App\Actions\SysAdmin\UI\ShowSysAdminAnalyticsDashboard;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\User\ExportUsers;
@@ -29,8 +30,6 @@ Route::get('/settings', EditGroupSettings::class)->name('settings.edit');
 Route::prefix('analytics')->as('analytics.')->group(function () {
     Route::get('', ShowSysAdminAnalyticsDashboard::class)->name('dashboard');
     Route::get('requests', IndexUserRequestLogs::class)->name('request.index');
-
-
 });
 
 Route::prefix('users')->as('users.')->group(function () {
@@ -45,7 +44,6 @@ Route::prefix('users')->as('users.')->group(function () {
         Route::get('action', IndexUserActions::class)->name('show.actions.index');
         Route::get('edit', EditUser::class)->name('edit');
     });
-
 });
 
 Route::prefix('guests')->as('guests.')->group(function () {
@@ -58,3 +56,5 @@ Route::prefix('guests')->as('guests.')->group(function () {
     Route::get('{guest}', ShowGuest::class)->name('show');
     Route::get('{guest}/edit', EditGuest::class)->name('edit');
 });
+
+Route::get('/scheduled-tasks', IndexSysAdminScheduledTasks::class)->name('scheduled-tasks.index');

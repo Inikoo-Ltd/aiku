@@ -98,9 +98,8 @@ onBeforeUnmount(() => {
       >
         <component
           :screenType="screenType"
-          :is="getIrisComponent(web_block_data.type, {
-            shop_type: layout.retina.type
-          })"
+          :code="web_block_data.type"
+          :is="getIrisComponent(web_block_data.type, { shop_type: layout.retina.type })"
           :theme="layout?.app?.theme" :key="web_block_data_idx"
           :fieldValue="web_block_data.web_block.layout.data.fieldValue" />
       </div>

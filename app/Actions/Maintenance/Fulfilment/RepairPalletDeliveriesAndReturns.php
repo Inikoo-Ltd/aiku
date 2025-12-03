@@ -229,10 +229,10 @@ class RepairPalletDeliveriesAndReturns
                 $pallet = $transaction->item;
 
                 if (!$pallet) {
-                   print "Delete transaction $transaction->id\n";
+                    print "Delete transaction $transaction->id\n";
 
                     DeleteRecurringBillTransaction::make()->action($transaction);
-                }else {
+                } else {
                     if ($pallet->received_at && $pallet->received_at->startOfDay()->isAfter($currentStartDay)) {
                         $currentStartDay = $pallet->received_at->startOfDay();
                     }

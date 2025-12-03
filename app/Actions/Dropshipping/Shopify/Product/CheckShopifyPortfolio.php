@@ -22,7 +22,11 @@ class CheckShopifyPortfolio
     {
 
 
-        $shopifyUser = $portfolio->customerSalesChannel->user;
+        $shopifyUser = $portfolio->customerSalesChannel?->user;
+
+        if (! $shopifyUser) {
+            return $portfolio;
+        }
 
         // Do not check on platform_status = true
         if ($portfolio->platform_status ||  !$portfolio->customerSalesChannel || !$shopifyUser instanceof ShopifyUser || !$shopifyUser->checkConnection()) {

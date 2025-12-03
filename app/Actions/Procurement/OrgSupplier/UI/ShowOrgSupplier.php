@@ -28,19 +28,15 @@ class ShowOrgSupplier extends OrgAction
     use WithOrgSupplierSubNavigation;
 
     private OrgAgent|Organisation $parent;
+
+    //todo: authorisation
+
     public function handle(OrgSupplier $orgSupplier): OrgSupplier
     {
         return $orgSupplier;
     }
 
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-        $this->canDelete = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
 
     public function asController(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {
@@ -91,6 +87,7 @@ class ShowOrgSupplier extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
+                            'label' => __('Edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

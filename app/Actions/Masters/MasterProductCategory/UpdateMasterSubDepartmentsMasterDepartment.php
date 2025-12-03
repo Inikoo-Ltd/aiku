@@ -13,10 +13,8 @@ use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-
 class UpdateMasterSubDepartmentsMasterDepartment extends OrgAction
 {
-
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): bool
     {
         $updatedCount     = 0;

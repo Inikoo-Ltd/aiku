@@ -12,9 +12,11 @@ use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateBestFamilyS
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollections;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateImages;
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateInvoiceIntervals;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateSales;
 use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateSubDepartments;
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateSalesIntervals;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\ProductCategory;
 
@@ -39,6 +41,8 @@ class HydrateDepartments
         ProductCategoryHydrateCollections::run($productCategory);
         ProductCategoryHydrateImages::run($productCategory);
         DepartmentHydrateBestFamilySeller::run($productCategory);
+        ProductCategoryHydrateInvoiceIntervals::run($productCategory->id);
+        ProductCategoryHydrateSalesIntervals::run($productCategory->id);
     }
 
 }

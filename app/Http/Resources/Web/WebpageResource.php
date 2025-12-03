@@ -56,6 +56,8 @@ class WebpageResource extends JsonResource
             ] : null,
             // 'url'                 => $webpage->url,
             'url'                 => $webpage->getUrl(),
+            'canonical_url'       => $webpage->canonical_url,
+            'canonical_url_without_domain'       => $webpage->getCanonicalUrl(),
             'type'                => $webpage->type,
             'typeIcon'            => match ($webpage->type) {
                 WebpageTypeEnum::STOREFRONT => ['fal', 'fa-home'],
@@ -69,6 +71,7 @@ class WebpageResource extends JsonResource
             'created_at'                 => $webpage->created_at,
             'updated_at'                 => $webpage->updated_at,
             'state'                      => $webpage->state,
+            'title'                      => $webpage->title,
 
             'luigi_data' => [
                 'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),

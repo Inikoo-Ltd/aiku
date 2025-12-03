@@ -956,7 +956,9 @@ const isLoading = ref<string | boolean>(false)
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <slot name="body" :show="show">
                                     <template v-for="(item, key) in compResourceData"
-                                        :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`">
+                                        :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
+                                        vxmemo="[JSON.stringify(item)]"
+                                    >
                                         <tr class="" :class="[
                                                 {
                                                     'bg-gray-50': striped && key % 2,

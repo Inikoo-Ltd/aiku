@@ -75,13 +75,17 @@ beforeEach(function () {
     $this->order    = createOrder($this->customer, $this->product);
 
     if ($this->order->state == OrderStateEnum::CREATING) {
-        $this->orde = SubmitOrder::make()->action($this->order);
+        $this->order = SubmitOrder::make()->action($this->order);
     }
 
-    $employeeData = Employee::factory()->definition();
-    $employeeData['worker_number'] .= Str::random(6);
+    if (!isset($this->employee)) {
+        $employeeData = Employee::factory()->definition();
+        $employeeData['worker_number'] .= Str::random(6);
 
-    $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
+        $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
+    }
+
+
 });
 
 test('create shipper', function () {

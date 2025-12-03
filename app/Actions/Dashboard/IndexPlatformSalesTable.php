@@ -14,6 +14,7 @@ use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Group;
+use App\Services\CustomRangeDataService;
 use App\Services\QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -86,7 +87,7 @@ class IndexPlatformSalesTable extends OrgAction
             });
     }
 
-    public function action(Group|Shop $parent): array
+    public function action(Group|Shop $parent, array $customRangeData = []): array
     {
         if ($parent instanceof Group) {
             $this->initialisationFromGroup($parent, []);
@@ -95,11 +96,19 @@ class IndexPlatformSalesTable extends OrgAction
         }
 
         $platforms = $this->handle($parent);
+
+        // Inject custom range data if available
+        if (!empty($customRangeData) && !empty($customRangeData['ds_platforms'])) {
+            $customRangeService = app(CustomRangeDataService::class);
+            $platforms->setCollection(
+                $customRangeService->injectCustomRangeData($platforms->getCollection(), $customRangeData, 'ds_platforms')
+            );
+        }
 
         return json_decode(DashboardPlatformSalesResource::collection($platforms)->toJson(), true);
     }
 
-    public function total(Group|Shop $parent): array
+    public function total(Group|Shop $parent, array $customRangeData = []): array
     {
         if ($parent instanceof Group) {
             $this->initialisationFromGroup($parent, []);
@@ -108,6 +117,14 @@ class IndexPlatformSalesTable extends OrgAction
         }
 
         $platforms = $this->handle($parent);
+
+        // Inject custom range data if available
+        if (!empty($customRangeData) && !empty($customRangeData['ds_platforms'])) {
+            $customRangeService = app(CustomRangeDataService::class);
+            $platforms->setCollection(
+                $customRangeService->injectCustomRangeData($platforms->getCollection(), $customRangeData, 'ds_platforms')
+            );
+        }
 
         return json_decode(DashboardTotalPlatformSalesResource::make($platforms)->toJson(), true);
     }
