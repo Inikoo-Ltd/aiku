@@ -78,7 +78,7 @@ beforeEach(function () {
         $this->order = SubmitOrder::make()->action($this->order);
     }
 
-    if(!isset($this->employee)){
+    if (!isset($this->employee)) {
         $employeeData = Employee::factory()->definition();
         $employeeData['worker_number'] .= Str::random(6);
 
