@@ -101,6 +101,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 
         //product list
         'products-1' : shop_type == 'b2b' ? ListProductsEcomWorkshop : ListProductWorkshop,
+        'products-2' : ListProductsEcomWorkshop,
 
         //see-also
         'see-also-1' : SeeAlso1Workshop,
