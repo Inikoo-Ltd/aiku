@@ -21,7 +21,6 @@ import LinkIris from '@/Components/Iris/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products1/BestsellerBadge.vue'
 import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
 import { routeType } from '@/types/route'
-import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -39,7 +38,7 @@ const props = withDefaults(defineProps<{
     buttonStyle?: object | undefined
     buttonStyleLogin?: object | undefined
     addToBasketRoute:routeType
-    updateBasketQuantityRoute?:routeType
+    updateBasketQuantityRoute:routeType
     isLoadingFavourite:boolean
     isLoadingRemindBackInStock:boolean
 }>(), {
@@ -76,41 +75,8 @@ const onAddBackInStock = (product: ProductResource) => {
 }
 
 const onUnselectBackInStock = (product: ProductResource) => {
-    router.delete(
-        route(props.detachBackInStockRoute.name, {
-            product: product.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ['iris'],
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
-                product.is_back_in_stock = false
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingRemindBackInStock.value = false
-                emits('afterOnUnselectBackInStock', product)
-            },
-        }
-    )
+    emits('unsetBackInStock', product)
 }
-
-
 
 
 const idxSlideLoading = ref(false)
@@ -120,25 +86,12 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 </script>
 
 <template>
-    <div class="pb-3 relative flex flex-col justify-between h-full" comp="product-render-ecom">
-
-        <!-- Top Section: Stock, Images, Title, Code, Price -->
+    asdasd
+    <div class="pb-3 relative flex flex-col justify-between h-full" comp="product-2-render-ecom">
         <div class="text-gray-800 isolate">
-            <!-- <div v-if="product?.top_seller"
-                class="z-10 absolute top-2 left-2 border text-xs font-bold px-2 py-0.5 rounded" :class="{
-                    'text-[#FFD700] bg-[#584b015] border-[#FFD700]': product.top_seller == 1, // Gold
-                    'text-[#C0C0C0] bg-[#C0C0C033] border-[#C0C0C0]': product.top_seller === 2, // Silver
-                    'text-[#CD7F32] bg-[#CD7F3222] border-[#CD7F32]': product.top_seller === 3  // Bronze
-                }">
-                <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2" fixed-width s />
-
-                <span class="hidden md:inline">{{ trans("BESTSELLER") }}</span>
-            </div> -->
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
-
-            <!-- Product Image -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
-                :type="typeOfLink" class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative"
+                :type="typeOfLink" class="block w-full mb-1 rounded-xl sm:h-[305px] h-[180px] relative"
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false">
                 <slot name="image" :product="product">
                     <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery" :alt="product.name"
@@ -165,7 +118,6 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     </div>
                 </template>
 
-                <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton 
                         v-if="product.stock > 0 && basketButton" 
@@ -209,14 +161,15 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                         {{ product?.code }}
                     </div>
 
-                    <!-- Section: Stock -->
-                    <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
-                        <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right"/>
-                        <div v-else
+                    <!-- Stock Info -->
+                    <div class="flex items-center md:justify-end justify-start">
+                        <div v-if="layout?.iris?.is_logged_in"
                             class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
                             :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+
+                            <FontAwesomeIcon :icon="faCircle" class="text-[6px] mt-[6px]" />
+
                             <span class="text-xs">
-                                <FontAwesomeIcon :icon="faCircle" class="text-[6px] " />
                                 {{ product.stock > 10000
                                     ? trans("Unlimited quantity available")
                                     : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' +

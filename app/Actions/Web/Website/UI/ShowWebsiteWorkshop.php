@@ -60,6 +60,7 @@ class ShowWebsiteWorkshop extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
+
         $product = $website->shop->productsInStock()->first();
 
 

@@ -12,11 +12,8 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
-import { useIrisLayoutStore } from "@/Stores/irisLayout"
-import { useLayoutStore } from "@/Stores/retinaLayout"
-import { faCartShopping } from '@fortawesome/free-solid-svg-icons'
 import { faShoppingCart } from '@far'
-import { ButtonStyle } from 'primevue'
+
 
 library.add(faPlus, faMinus, faCartPlus)
 
@@ -321,16 +318,6 @@ const isHovered = ref(false)
                 }" />
             </button>
         </div>
-
-        <!-- Status indicator (optional, bisa dicomment jika tidak diperlukan) -->
-        <!-- <div 
-            v-if="status === 'success'"
-            class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-ping"
-        ></div>
-        <div 
-            v-if="status === 'error'"
-            class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"
-        ></div> -->
     </div>
 </template>
 

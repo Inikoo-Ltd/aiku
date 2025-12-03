@@ -71,6 +71,7 @@ import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/Ct
 
 
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
+import Products2Render from "@/Components/CMS/Webpage/Products2/Products2Render.vue"
 
 
 const components = (shop_type?: string): Record<string, Component> => {
@@ -109,6 +110,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 		//product list
 		"products-1": shop_type === "b2b" ? ListProductsEcomIris : ListProductsIris,
+		"products-2": ListProductsEcomIris,
 
 		//see-also
 		"see-also-1": SeeAlso1WorkshopIris,
@@ -179,6 +181,7 @@ export const getProductsRenderB2bComponent = (
 ) => {
 	const components: Record<string, any> = {
 		"products-1": ProductRenderEcom,
+		"products-2": Products2Render,
 	}
 
 	return components[componentName] ?? null
