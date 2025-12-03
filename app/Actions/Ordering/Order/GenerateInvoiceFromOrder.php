@@ -108,18 +108,14 @@ class GenerateInvoiceFromOrder extends OrgAction
 
                     StoreInvoiceTransactionFromAdjustment::make()->action($invoice, $adjustment, $data);
                 } elseif ($transaction->model_type == 'Charge') {
-
                     StoreInvoiceTransactionFromCharge::make()->action(
                         invoice: $invoice,
                         charge: $transaction->model,
                         modelData: $data
                     );
-
                 } elseif ($transaction->model_type == 'ShippingZone') {
-
                     StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
                 } else {
-
                     $updatedData = $this->recalculateTransactionTotals($transaction);
                     StoreInvoiceTransaction::make()->action($invoice, $transaction, $updatedData);
                     $transaction->update(
@@ -135,8 +131,6 @@ class GenerateInvoiceFromOrder extends OrgAction
             $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
 
             if ($amountToCredit > 0) {
-
-
                 /** @var \App\Models\Accounting\PaymentAccountShop $paymentAccountShop */
                 $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
                 $paymentData        = [
@@ -220,22 +214,29 @@ class GenerateInvoiceFromOrder extends OrgAction
             $pickings[] = $ratioOfPicking;
         }
         if (empty($pickings)) {
-            //to check this or I will reget
+            //todo: check this or I will reget
             $quantityPicked = $transaction->quantity_ordered;
         } else {
             $sumOfPickings  = array_sum($pickings) / count($pickings);
             $quantityPicked = $transaction->quantity_ordered * $sumOfPickings;
         }
 
-        // fix this put correct grossly and net depend on discounts
+        $discountsRatio = 1;
+        if ($transaction->gross_amount != 0) {
+            $discountsRatio = $transaction->net_amount / $transaction->gross_amount;
+        }
+
+
         $gross = $historicAsset->price * $quantityPicked;
-        $net   = $historicAsset->price * $quantityPicked;
+        $net   = $historicAsset->price * $discountsRatio * $quantityPicked;
 
         return [
             'tax_category_id' => $transaction->order->tax_category_id,
             'quantity'        => $quantityPicked,
             'gross_amount'    => $gross,
             'net_amount'      => $net,
+            'org_net_amount'  => $net * $transaction->org_exchange,
+            'grp_net_amount'  => $net * $transaction->grp_exchange,
         ];
     }
 
