@@ -3,8 +3,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Actions\CRM\Agent\UI\ShowAgent;
-use App\Actions\CRM\Agent\UI\IndexAgent;
-
 
 Route::get('/', ShowAgent::class)->name('show');
 // Route::get('/create', CreateTag::class)->name('create');

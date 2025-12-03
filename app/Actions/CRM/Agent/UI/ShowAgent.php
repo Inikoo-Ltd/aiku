@@ -8,7 +8,6 @@ use App\Models\Catalogue\Shop;
 use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\CRM\Agent\UI\IndexAgent;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Http\Resources\CRM\Livechat\ChatAgentResource;
@@ -65,7 +64,7 @@ class ShowAgent extends OrgAction
                 ],
                 'data'        => ChatAgentResource::collection(IndexAgent::run($this->organisation, __('Agents'))),
             ],
-            )->table(
+        )->table(
             IndexAgent::make()->tableStructure(
                 prefix: 'Agents'
             ),

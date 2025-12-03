@@ -7,7 +7,6 @@ use App\Actions\OrgAction;
 use App\Services\QueryBuilder;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
-
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
@@ -21,7 +20,7 @@ class IndexAgent extends OrgAction
 {
     use AsAction;
 
-     public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): LengthAwarePaginator
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
@@ -101,13 +100,13 @@ class IndexAgent extends OrgAction
             $table
             ->withModelOperations($modelOperations)
             ->withGlobalSearch()
-            ->column(key: 'user_contact_name',label: __('Agent Name'), sortable: true, searchable: true)
-            ->column(key: 'is_online',label: __('Online'), sortable: true)
-            ->column(key: 'is_available',label: __('Available'), sortable: true)
-            ->column(key: 'current_chat_count',label: __('Current Chats'), sortable: true)
-            ->column(key: 'max_concurrent_chats',label: __('Max Chats'), sortable: true)
-            ->column(key: 'specialization',label: __('Specialization'))
-            ->column(key: 'action',label: __('Action'))
+            ->column(key: 'user_contact_name', label: __('Agent Name'), sortable: true, searchable: true)
+            ->column(key: 'is_online', label: __('Online'), sortable: true)
+            ->column(key: 'is_available', label: __('Available'), sortable: true)
+            ->column(key: 'current_chat_count', label: __('Current Chats'), sortable: true)
+            ->column(key: 'max_concurrent_chats', label: __('Max Chats'), sortable: true)
+            ->column(key: 'specialization', label: __('Specialization'))
+            ->column(key: 'action', label: __('Action'))
             ->defaultSort('user_contact_name');
         };
     }
