@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
-import { useFormatTime, useRangeFromNow } from '@/Composables/useFormatTime'
+//import { useFormatTime, useRangeFromNow } from '@/Composables/useFormatTime'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { LastOrderedProduct } from '@/types/Resource/LastOrderedProductsResource'
 import { faCircle } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link } from '@inertiajs/vue3'
-import { formatDistance } from 'date-fns'
+//import { formatDistance } from 'date-fns'
 import { trans } from 'laravel-vue-i18n'
 import { SwiperSlide } from 'swiper/vue'
 import { inject } from 'vue'
@@ -56,7 +56,9 @@ const locale = inject('locale', aikuLocaleStructure)
             </div>
 
             <div class="text-center text-sm text-gray-400 italic">
-                {{ formatDistance(new Date(product.submitted_at), new Date(), { addSuffix: true }) }}
+                {{product.submitted_at}}
+
+<!--                {{ formatDistance(new Date(product.submitted_at), new Date(), { addSuffix: true }) }}-->
             </div>
         </div>
         

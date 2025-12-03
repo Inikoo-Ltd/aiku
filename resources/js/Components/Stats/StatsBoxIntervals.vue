@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref, computed, defineProps } from "vue"
+import { inject, ref, computed } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -9,7 +9,6 @@ import BackgroundBox from "../BackgroundBox.vue"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Icon from "../Icon.vue"
 import CountUp from "vue-countup-v3"
-import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 import type { StatsBoxTS } from "@/types/Components/StatsBox"
 
 library.add(faFireAlt)
@@ -130,10 +129,12 @@ const metasWithInterval = computed(() => {
                         v-if="isLoadingMeta == idxMeta"
                         class="md:opacity-50 group-hover/sub:opacity-100"
                     />
-                    <span
+                    <img
                         v-else-if="meta.logo_icon"
-                        v-html="ChannelLogo(meta.logo_icon)"
+                        :src="`/assets/channel_logo/${channel.platform_code}.svg`"
                         class="flex items-center min-w-6 w-min max-w-10 min-h-4 h-auto max-h-7"
+                        :alt="channel.platform_name"
+                        v-tooltip="channel.platform_name"
                     />
                     <Icon
                         v-else-if="meta.icon"

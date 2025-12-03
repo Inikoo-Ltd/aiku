@@ -11,7 +11,11 @@ namespace App\Actions\Discounts\OfferAllowance;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreOffer;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
 use Illuminate\Support\Facades\DB;
@@ -26,9 +30,10 @@ class StoreOfferAllowance extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Offer $offer, $trigger, array $modelData): OfferAllowance
+    public function handle(Offer $offer, array $modelData): OfferAllowance
     {
-        $modelData = $this->prepareOfferData($offer, $trigger, $modelData);
+
+        $modelData = $this->prepareOfferData($offer, $modelData);
         data_set($modelData, 'offer_campaign_id', $offer->offer_campaign_id);
 
 
@@ -48,7 +53,10 @@ class StoreOfferAllowance extends OrgAction
             'start_at'      => ['sometimes', 'date'],
             'end_at'        => ['sometimes', 'nullable', 'date'],
             'trigger_scope' => ['required', 'max:250', 'string'],
-
+            'duration'      => ['sometimes', OfferDurationEnum::class],
+            'type'          => ['sometimes', Rule::enum(OfferAllowanceType::class)],
+            'target_type'   => ['sometimes', Rule::enum(OfferAllowanceTargetTypeEnum::class)],
+            'class'         => ['sometimes', Rule::enum(OfferAllowanceClass::class)],
         ];
         if (!$this->strict) {
             $rules['state']            = ['required', Rule::enum(OfferAllowanceStateEnum::class)];
@@ -66,7 +74,7 @@ class StoreOfferAllowance extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Offer $offer, $trigger, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): OfferAllowance
+    public function action(Offer $offer, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): OfferAllowance
     {
         if (!$audit) {
             OfferAllowance::disableAuditing();
@@ -77,6 +85,6 @@ class StoreOfferAllowance extends OrgAction
 
         $this->initialisationFromShop($offer->shop, $modelData);
 
-        return $this->handle($offer, $trigger, $this->validatedData);
+        return $this->handle($offer, $this->validatedData);
     }
 }

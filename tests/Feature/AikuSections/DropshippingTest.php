@@ -472,7 +472,7 @@ test('UI index customer platforms', function (CustomerClient $customerClient) {
 
 test('Customer clients basket hydrator', function () {
     $customerClient = CustomerClient::first();
-    CustomerClientHydrateBasket::run($customerClient);
+    CustomerClientHydrateBasket::run($customerClient->id);
     expect($customerClient)->toBeInstanceOf(CustomerClient::class)
         ->and($customerClient->amount_in_basket)->toEqual(0)
         ->and($customerClient->current_order_in_basket_id)->toBeNull();

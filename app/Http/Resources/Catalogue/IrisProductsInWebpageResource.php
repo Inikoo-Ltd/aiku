@@ -10,8 +10,7 @@ namespace App\Http\Resources\Catalogue;
 
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Http\Resources\HasSelfCall;
-use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Helpers\Media;
+use App\Http\Resources\Traits\HasPriceMetrics;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -34,24 +33,23 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $currency_code
  * @property mixed $web_images
  * @property mixed $top_seller
- * @property mixed $parent_url
  * @property mixed $group_id
  * @property mixed $organisation_id
  * @property mixed $webpage_id
  * @property mixed $website_id
  * @property mixed $shop_id
  * @property mixed $canonical_url
+ * @property mixed $transaction_id
  */
 class IrisProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
+    use HasPriceMetrics;
 
     public function toArray($request): array
     {
-        $media = null;
-        if ($this->image_id) {
-            $media = Media::find($this->image_id);
-        }
+
+
 
         $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
 
@@ -60,41 +58,32 @@ class IrisProductsInWebpageResource extends JsonResource
             $url = ShowIrisWebpage::make()->getEnvironmentUrl($url);
         }
 
-        $margin     = '';
-        $rrpPerUnit = '';
-        $profit     = '';
-        $units = (int) $this->units;
-        if ($this->rrp > 0) {
-            $margin     = percentage(round((($this->rrp - $this->price) / $this->rrp) * 100, 1), 100);
-            $rrpPerUnit = round($this->rrp / $this->units, 2);
-            // $profit     = round(($this->price - $this->rrp) / $this->units, 2);
-            $profit     = round($this->rrp - $this->price, 2);
-        }
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
 
-        $units = (int) $this->units;
         return [
-            'id'             => $this->id,
-            'image_id'       => $this->image_id,
-            'image'          => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'code'           => $this->code,
-            'luigi_identity' => $oldLuigiIdentity,
-            'name'           => $this->name,
-            'stock'          => $this->available_quantity,
-            'price'          => $this->price,
-            'margin'         => $margin,
-            'profit'         => $profit,
-            'rrp'            => $this->rrp,
-            'rrp_per_unit'   => $rrpPerUnit,
-            'state'          => $this->state,
-            'status'         => $this->status,
-            'created_at'     => $this->created_at,
-            'updated_at'     => $this->updated_at,
-            'units'          => $units,
-            'unit'           => $this->unit,
-            'url'            => $url,
-            'top_seller'     => $this->top_seller,
-            'web_images'     => $this->web_images,
+            'id'              => $this->id,
+            'code'            => $this->code,
+            'luigi_identity'  => $oldLuigiIdentity,
+            'name'            => $this->name,
+            'stock'           => $this->available_quantity,
+            'price'           => $this->price,
+            'price_per_unit'  => $pricePerUnit,
+            'margin'          => $margin,
+            'profit'          => $profit,
+            'profit_per_unit' => $profitPerUnit,
+            'rrp'             => $this->rrp,
+            'rrp_per_unit'    => $rrpPerUnit,
+            'state'           => $this->state,
+            'status'          => $this->status,
+            'created_at'      => $this->created_at,
+            'updated_at'      => $this->updated_at,
+            'units'           => $units,
+            'unit'            => $this->unit,
+            'url'             => $url,
+            'top_seller'      => $this->top_seller,
+            'web_images'      => $this->web_images,
+            'transaction_id'  => $this->transaction_id,
         ];
     }
 

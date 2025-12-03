@@ -1,5 +1,4 @@
-name: Backend Tests
-
+name: Backend Tests With Coverage
 on:
   push:
     branches: [ "main" ]
@@ -49,23 +48,24 @@ jobs:
             tests/**
             database/migrations/**
       - name: Generate database dumps 📚
-        run: ./generate_testing_db_dumps.sh php8.3 aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
+        run: ./generate_testing_db_dumps.sh php8.4 aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test with coverage
         if: steps.changed-coverage-files.outputs.any_changed == 'true'
-        run: vendor/bin/pest -d memory_limit=-1 --coverage-clover clover.xml --exclude-group=integration --stop-on-defect
+        run: /usr/bin/php8.4 vendor/bin/pest -d memory_limit=-1 --coverage-clover clover.xml --exclude-group=integration --stop-on-defect
       - name: Run test without coverage
         if: steps.changed-coverage-files.outputs.any_changed != 'true'
-        run: vendor/bin/pest --exclude-group=integration --stop-on-defect
-      - name: Upload coverage to Codecov
+        run: /usr/bin/php8.4 vendor/bin/pest --exclude-group=integration --stop-on-defect
+      - name: Process coverage to Codecov
         if: steps.changed-coverage-files.outputs.any_changed == 'true'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           fail_ci_if_error: false
-          file: ./clover.xml
-          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./clover.xml
           verbose: true
-      - name: Upload coverage to Codacy
-        if: steps.changed-coverage-files.outputs.any_changed == 'true'
-        run: export CODACY_PROJECT_TOKEN=${{ secrets.CODACY_PROJECT_TOKEN }}; bash <(curl -Ls https://coverage.codacy.com/get.sh)
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+#      - name: Upload coverage to Codacy
+#        if: steps.changed-coverage-files.outputs.any_changed == 'true'
+#        run: export CODACY_PROJECT_TOKEN=${{ secrets.CODACY_PROJECT_TOKEN }}; bash <(curl -Ls https://coverage.codacy.com/get.sh)

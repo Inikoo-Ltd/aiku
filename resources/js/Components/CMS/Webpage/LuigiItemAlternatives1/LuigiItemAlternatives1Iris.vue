@@ -2,7 +2,6 @@
 import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
 import Cookies from 'js-cookie';
@@ -15,39 +14,35 @@ import 'swiper/css/pagination'
 import { Autoplay, Navigation, Pagination } from 'swiper/modules'
 
 // Font Awesome
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from "laravel-vue-i18n"
-import { faCircle } from "@fas"
-import { Link } from "@inertiajs/vue3"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
-// import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
-    fieldValue: {}
+    fieldValue: {
+        product: {
+            luigi_identity: string
+        }
+    }
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 
-
-
 const slidesPerView = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
     return {
-        desktop: perRow.desktop ?? 5,
+        desktop: perRow.desktop ?? 6,
         tablet: perRow.tablet ?? 4,
         mobile: perRow.mobile ?? 2,
     }[props.screenType] ?? 5
 })
 
-const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
 const listProducts = ref<ProductHit[] | null>()
@@ -67,7 +62,7 @@ const fetchRecommenders = async () => {
             [
                 {
                     "blacklisted_item_ids": [],
-                    "item_ids": [],
+                    "item_ids": props.fieldValue?.product?.luigi_identity ? [props.fieldValue.product.luigi_identity] : [],
                     "recommendation_type": "item_detail_alternatives",
                     "recommender_client_identifier": "item_detail_alternatives",
                     "size": 12,
@@ -87,7 +82,7 @@ const fetchRecommenders = async () => {
         }
 
         console.log('LIA1:', response.data)
-        RecommendationCollector(response.data[0])
+        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProducts.value = response.data[0].hits
     } catch (error: any) {

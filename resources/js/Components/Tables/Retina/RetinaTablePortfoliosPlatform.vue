@@ -44,7 +44,9 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import {routeType} from "@/types/route";
-import {InputText, Message} from "primevue"
+import { InputNumber, InputText, Message } from "primevue"
+import { EditorContent } from "@tiptap/vue-3";
+import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue";
 
 library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
@@ -89,6 +91,7 @@ const props = defineProps<{
     useCheckBox?: boolean
     progressToUploadToEcom : {}
     count_product_not_synced : number
+    disabled?: boolean
 }>()
 
 const errorBluk = ref([])
@@ -138,6 +141,10 @@ const selectSocketiBasedPlatform = (porto: { id: number }) => {
             action: '.magento-upload-progress'
         }
     }
+}
+
+const ebayCalculator = () => {
+    //
 }
 
 const debReloadPage = debounce(() => {
@@ -349,8 +356,10 @@ const fetchRoute = async () => {
 }
 const debounceGetPortfoliosList = debounce(() => fetchRoute(), 700)
 
-
-
+const openEditModal = (item) => {
+    isOpenModalEditProduct.value = true
+    selectedEditProduct.value = item;
+}
 
 const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
     if (!selectedProducts.value) return
@@ -387,17 +396,21 @@ const listErrorProducts = ref({
 })
 
 // Section: Modal Error Product (i.e Ebay title too long)
+const selectedEditProduct = ref(null)
 const selectedErrorProduct = ref(null)
-const isOpenModalErrorProduct = ref(false)
+const isOpenModalEditProduct = ref(false)
 const isLoadingSubmitErrorTitle = ref(false)
-const submitErrorProduct = (sel) => {
+
+const submitUpdateAndUploadProduct = (sel, state: 'draft' | 'publish') => {
     // Section: Submit
     router.post(
-        route('retina.models.portfolio.update_new_ebay_product', {
-            portfolio: sel.product.id
+        route(`retina.models.portfolio.update_new_ebay_product.${state}`, {
+            portfolio: sel.id
         }),
         {
-            title: sel.product.new_name
+            title: sel.name,
+            price: sel.customer_price,
+            description: sel.description
         },
         {
             preserveScroll: true,
@@ -411,7 +424,7 @@ const submitErrorProduct = (sel) => {
                     text: trans("Successfully submit the data"),
                     type: "success"
                 })
-                isOpenModalErrorProduct.value = false
+                isOpenModalEditProduct.value = false
             },
             onError: errors => {
                 notify({
@@ -425,6 +438,10 @@ const submitErrorProduct = (sel) => {
             },
         }
     )
+}
+
+const calculateVat = (price: number) => {
+    return (price * 1) + (price * props.customerSalesChannel.vat_rate);
 }
 </script>
 
@@ -545,11 +562,20 @@ const submitErrorProduct = (sel) => {
             </div>
 
             <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
-                <div>
+                <div v-if="customerSalesChannel.include_vat">
+                    {{ trans("Price (include VAT):") }} {{ locale.currencyFormat(product.currency_code, calculateVat(product.price)) }}
+                </div>
+                <div v-else>
                     {{ trans("Price:") }} {{ locale.currencyFormat(product.currency_code, product.price) }}
                 </div>
-                <div>
-                    {{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, product.customer_price) }}
+                <div v-if="customerSalesChannel.include_vat">
+                    {{ trans("RRP (include VAT):") }} {{ locale.currencyFormat(product.currency_code, product.customer_price) }}
+                </div>
+                <div v-else-if="platform_data.type === 'ebay'">
+                    {{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, (product.customer_price * 0.8)) }}
+                </div>
+                <div v-else>
+                    {{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, (product.customer_price)) }}
                 </div>
             </div>
 
@@ -593,6 +619,13 @@ const submitErrorProduct = (sel) => {
 
         </template>
 
+        <template #cell(message)="{item}">
+            <div v-if="item.message">
+                <FontAwesomeIcon v-tooltip="item.message" v-if="item.message === 'OK'" icon='fal fa-check-circle' class="text-green-500 text-xl" fixed-width aria-hidden='true' />
+                <FontAwesomeIcon v-tooltip="item.message" v-else icon='fal fa-exclamation-circle' class="text-red-500 text-xl" fixed-width aria-hidden='true' />
+            </div>
+        </template>
+
         <!-- Column: Actions (connect) -->
         <template #cell(matches)="{ item }">
             <template v-if="item.customer_sales_channel_platform_status">
@@ -610,7 +643,8 @@ const submitErrorProduct = (sel) => {
                             </div>
                         </div>
 
-                        <ButtonWithLink v-if="item.platform_possible_matches?.number_matches"
+
+                        <ButtonWithLink v-if="item.platform_possible_matches?.number_matches && !disabled"
                                         v-tooltip="trans('Match to existing :platform product', { platform: platform_data?.name || 'Platform'})" :routeTarget="{
                                 method: 'post',
                                 name: props.routes.single_match.name,
@@ -625,7 +659,8 @@ const submitErrorProduct = (sel) => {
 
                     </div>
 
-                    <Button v-if="item.platform_possible_matches?.number_matches"
+                    <div v-if="!disabled">
+                          <Button v-if="item.platform_possible_matches?.number_matches"
                             @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
                             :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs"
                             type="tertiary"/>
@@ -633,6 +668,9 @@ const submitErrorProduct = (sel) => {
                             :label="trans('Match it with an existing product in your shop')" :capitalize="false"
                             size="xxs"
                             type="tertiary"/>
+
+                    </div>
+
                 </template>
 
                 <template v-else>
@@ -651,7 +689,7 @@ const submitErrorProduct = (sel) => {
                     </template>
 
 
-                    <Button class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
+                    <Button v-if="!disabled" class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
                             :label="trans('Connect with other product')" :capitalize="false" :icon="faRecycle"
                             size="xxs"
                             type="tertiary"/>
@@ -724,7 +762,7 @@ const submitErrorProduct = (sel) => {
         </template>
 
         <!-- Column: Actions 2 (Modal shopify) -->
-        <template #cell(create_new)="{ item }">
+        <template #cell(create_new)="{ item }" v-if="!disabled">
             <!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
             <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
                  class="flex gap-x-2 items-center">
@@ -754,7 +792,6 @@ const submitErrorProduct = (sel) => {
                             product: item,
                             error: e
                         }
-                        isOpenModalErrorProduct = true
                         set(listErrorProducts, [`x${item.id}`], e)
                     }"
                 />
@@ -762,16 +799,22 @@ const submitErrorProduct = (sel) => {
         </template>
 
         <!-- Column: Actions 3 -->
-        <template #cell(delete)="{ item }">
+        <template #cell(delete)="{ item }"  v-if=!disabled>
+            <div class="flex gap-2">
+                <Button v-if="! item.platform_status && platform_data.type === 'ebay'"
+                        v-tooltip="trans('Edit detail of the product')"
+                        type="tertiary"
+                        size="xs"
+                        icon="fal fa-pencil"
+                @click="openEditModal(item)"/>
+
             <ButtonWithLink v-tooltip="trans('Unselect product. This will not remove the product from :platform', {platform: props.platform_data.name})" type="negative" icon="fal fa-skull"
                             :routeTarget="item.update_portfolio" :body="{
 						'status': false,
 					}" size="xs" :bindToLink="{
 						preserveScroll: true,
 					}"/>
-        </template>
-        <template #cell(message)="{item}">
-            <span :class="item.message === 'OK' ? 'text-green-500' : 'text-red-500'">{{item.message}}</span>
+            </div>
         </template>
     </Table>
 
@@ -871,38 +914,77 @@ const submitErrorProduct = (sel) => {
         </div>
     </Modal>
 
-    <Modal :isOpen="isOpenModalErrorProduct" width="w-full max-w-lg h-full max-h-[570px]" @close="isOpenModalErrorProduct = false">
+    <Modal :isOpen="isOpenModalEditProduct" width="w-full max-w-2xl h-full max-h-[570px]" @close="isOpenModalEditProduct = false">
         <div>
             <div class="text-xl font-semibold text-center">
-                {{ trans("Error Product") }}
+                {{ trans("Edit Product") }}
             </div>
 
-            <div v-if="selectedErrorProduct?.error?.title" av-for="error in selectedErrorProduct?.error_response ?? []" class="mt-6">
-                <label for="error-product-input" class="block text-sm font-semibold">{{ trans("Title") }}</label>
-                <div class="errorShake rounded">
+            <div class="mb-3">
+                <label for="edit-product-title" class="block text-sm font-semibold">{{ trans("Title") }}</label>
                     <InputText
-                        :modelValue="get(selectedErrorProduct, ['product', 'new_name'], selectedErrorProduct?.product?.name)"
-                        @update:modelValue="(value) => set(selectedErrorProduct, ['product', 'new_name'], value)"
+                        v-model="selectedEditProduct.name"
                         fluid
-                        inputId="error-product-input"
+                        inputId="edit-product-title"
+                        size="small"
+                        :disabled="isLoadingSubmitErrorTitle"
+                    />
+            </div>
+
+            <div class="mb-3">
+                <label for="edit-product-rrp" class="block text-sm font-semibold">{{ trans("Selling Price") }}</label>
+                <InputNumber
+                    :modelValue="selectedEditProduct?.customer_price"
+                    @update:modelValue="(value) => set(selectedEditProduct, ['customer_price'], value)"
+                    inputId="edit-product-rrp"
+                    mode="currency"
+                    fluid
+                    size="small"
+                    :currency="layout?.iris?.currency?.code"
+                    :locale="layout.locale"
+                    :disabled="isLoadingSubmitErrorTitle"
+                />
+            </div>
+
+<!--            <div v-if="platform_data.type === 'ebay'">
+                <div class="mb-3" v-for="(aspect, key) in selectedEditProduct.portfolio_data?.product?.aspects">
+                    <label :for="'edit-product-'+key" class="block text-sm font-semibold">{{ trans(key) }}</label>
+                    <InputText
+                        type="text"
+                        :modelValue="aspect?.[0]"
+                        @update:modelValue="(value) => set(selectedEditProduct, ['new_name'], value)"
+                        fluid
+                        :inputId="'edit-product-'+key"
                         size="small"
                         :disabled="isLoadingSubmitErrorTitle"
                     />
                 </div>
-
-                <div class="text-xs opacity-60 mt-1">
-                    {{ trans("Characters") }}: {{ get(selectedErrorProduct, ['product', 'new_name'], selectedErrorProduct?.product?.name)?.length }}
-                </div>
-
-                <div class="mt-4 text-xs italic text-red-500">
-                    *{{selectedErrorProduct?.error?.title}}
-                </div>
+            </div>-->
+            <div class="mb-3">
+                <label for="edit-product-description" class="block text-sm font-semibold">{{ trans("Description") }}</label>
+                <Editor2
+                    v-model="selectedEditProduct.description"
+                    class="w-full"
+                    :placeholder="trans('Enter text')"
+                >
+                    <template #editor-content="{ editor }">
+                        <div class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-gray-400">
+                            <EditorContent :editor="editor" class="focus:outline-none" />
+                        </div>
+                    </template>
+                </Editor2>
             </div>
-
-            <div class="mt-3">
+            <div class="mt-3 flex gap-2">
                 <Button
-                    @click="() => submitErrorProduct(selectedErrorProduct)"
-                    :label="trans('Try again')"
+                    type="tertiary"
+                    @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'draft')"
+                    :label="trans('Save as Draft')"
+                    full
+                    :loading="isLoadingSubmitErrorTitle"
+                />
+                <Button
+                    @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'publish')"
+                    :label="trans('Save & Upload')"
                     full
                     :loading="isLoadingSubmitErrorTitle"
                 />

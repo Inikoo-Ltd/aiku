@@ -71,7 +71,7 @@ function clientRoute(order) {
 
 <template>
   <div>
-    <Table :resource="data" class="mt-5">
+    <Table :resource="data" class="mt-5 overflow-x-auto">
 
       <!-- Column: Reference -->
       <template #cell(reference)="{ item }">
@@ -83,6 +83,9 @@ function clientRoute(order) {
           <FontAwesomeIcon v-if="item.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="" fixed-width aria-hidden="true" />
           <FontAwesomeIcon v-if="item.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="" fixed-width aria-hidden="true" />
         </span>
+        <div v-if="!(item.payment_amount >= item.total_amount)" class="text-xs text-red-500 italic bg-red-100 px-1 py-0.5 w-fit rounded-sm mt-0.5">
+          {{ trans("Not paid yet") }}
+        </div>
       </template>
 
       <template #cell(client_name)="{ item }">

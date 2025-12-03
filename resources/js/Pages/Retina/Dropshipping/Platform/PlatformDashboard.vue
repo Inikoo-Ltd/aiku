@@ -11,12 +11,13 @@ import Timeline from '@/Components/Utils/Timeline.vue'
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import {trans} from "laravel-vue-i18n"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
+import PlatformEbayWarningNotComplete from "@/Components/Retina/Platform/PlatformEbayWarningNotComplete.vue"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure";
 
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
@@ -51,7 +52,7 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
-
+const layout = inject('layout', layoutStructure)
 </script>
 
 <template>
@@ -105,8 +106,10 @@ const locale = inject('locale', aikuLocaleStructure)
         <div v-else>
             <div class="flex justify-between">
                 <h3 class="text-2xl font-semibold">
-                    <div v-html="ChannelLogo(platform.code)"
+                    <img
+                        :src="`/assets/channel_logo/${platform.code}.svg`"
                         class="align-middle inline-block h-7 w-7"
+                        :alt="platform.code"
                         v-tooltip="platform.name"
                     />
                     {{ customer_sales_channel.name || 'n/a' }}
@@ -177,6 +180,12 @@ const locale = inject('locale', aikuLocaleStructure)
                         </template>
                     </ModalConfirmationDelete>
                 </div>
+
+                <div v-if="route().params?.['customerSalesChannel'] && platform_status">
+                    <Link :href="route('retina.dropshipping.customer_sales_channels.edit', route().params)">
+                        <FontAwesomeIcon icon="fal fa-pencil" />
+                    </Link>
+                </div>
             </div>
 
             <!-- Section: Alert if platform not connected yet -->
@@ -187,6 +196,12 @@ const locale = inject('locale', aikuLocaleStructure)
                 />
 
                 <PlatformWarningNotConnected
+                    v-else-if="platform.type !== 'ebay'"
+                    :customer_sales_channel="customer_sales_channel"
+                    :error_captcha="error_captcha"
+                />
+
+                <PlatformEbayWarningNotComplete
                     v-else
                     :customer_sales_channel="customer_sales_channel"
                     :error_captcha="error_captcha"

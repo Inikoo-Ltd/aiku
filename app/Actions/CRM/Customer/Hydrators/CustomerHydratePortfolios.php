@@ -11,6 +11,7 @@ namespace App\Actions\CRM\Customer\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CustomerHydratePortfolios implements ShouldBeUnique
@@ -26,8 +27,8 @@ class CustomerHydratePortfolios implements ShouldBeUnique
     public function handle(Customer $customer): void
     {
         $stats = [
-            'number_portfolios'         => $customer->portfolios()->count(),
-            'number_current_portfolios' => $customer->portfolios()->where('status', true)->count(),
+            'number_portfolios'         => DB::table('portfolios')->where('customer_id', $customer->id)->count(),
+            'number_current_portfolios' => DB::table('portfolios')->where('customer_id', $customer->id)->where('status', true)->count(),
         ];
 
         $customer->stats->update($stats);

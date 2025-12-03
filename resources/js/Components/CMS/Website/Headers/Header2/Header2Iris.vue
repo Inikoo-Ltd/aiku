@@ -28,14 +28,17 @@ const props = defineProps<{
 				properties: Record<string, string>
 			}
 		}
+		search?: {
+			placeholder?: string
+			is_box_full_width?: boolean
+		}
 	}
-	loginMode: boolean
-	screenType: "mobile" | "tablet" | "desktop"
+	loginMode?: boolean
+	screenType?: "mobile" | "tablet" | "desktop"
 }>()
 
 const isLoggedIn = inject("isPreviewLoggedIn", false)
 const layout = inject('layout', layoutStructure)
-
 
 </script>
 
@@ -47,10 +50,11 @@ const layout = inject('layout', layoutStructure)
             
 		}">
 		<div class="flex flex-col justify-between items-start py-4 px-6">
-			<div class="w-full grid grid-cols-3 items-start gap-6">
+			<div class="w-full grid grid-cols-3 items-start gap-y-6 gap-x-10">
 				<!-- Logo -->
-
-				<div class="flex items-center justify-start h-full">
+				<div class="col-span-2 flex items-center gap-x-10 justify-between h-full"
+					:class="fieldValue?.search?.is_box_full_width ? 'flex' : 'grid grid-cols-2'"
+				>
 					<div class="relative w-[200px] md:w-[200px] aspect-[4/2]">
 						<component v-if="fieldValue?.logo?.image?.source"
 						:is="fieldValue?.logo?.image?.source ? LinkIris : 'div'"
@@ -68,10 +72,17 @@ const layout = inject('layout', layoutStructure)
 							</template>
 						</component>
 					</div>
-				</div>
-				<!-- Search Bar -->
-				<div class="relative justify-self-center w-full max-w-80 flex items-center h-full">
-					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id" id="luigi_header_2" />
+				
+					<!-- Search Bar -->
+					<div class="relative justify-self-center w-full flex items-center h-full"
+						:class="fieldValue?.search?.is_box_full_width ? 'max-w-[1100px] ' : 'max-w-sm'"
+					>
+						<LuigiSearch
+							v-if="layout.iris?.luigisbox_tracker_id"
+							:fieldValueSearch="fieldValue?.search"
+							id="luigi_header_2"
+						/>
+					</div>
 				</div>
 
 				<div class="relative w-full h-auto">

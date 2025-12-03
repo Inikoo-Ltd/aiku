@@ -85,6 +85,9 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_description_title_reviewed
  * @property bool|null $is_description_reviewed
  * @property bool|null $is_description_extra_reviewed
+ * @property array<array-key, mixed>|null $offers_data
+ * @property bool|null $is_for_sale
+ * @property string|null $not_for_sale_since
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -147,11 +150,13 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'discontinued_at'  => 'datetime',
         'fetched_at'       => 'datetime',
         'last_fetched_at'  => 'datetime',
+        'offers_data'      => 'array',
     ];
 
     protected $attributes = [
         'data'       => '{}',
         'web_images' => '{}',
+        'offers_data' => '{}',
     ];
 
     public function generateTags(): array

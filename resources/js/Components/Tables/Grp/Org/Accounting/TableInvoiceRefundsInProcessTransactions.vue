@@ -64,7 +64,7 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: For
             onError: (e) => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: e.net_amount,
+                    text: e.net_amount || e.message,
                     type: "error",
                 })
             }
@@ -100,19 +100,12 @@ const reloadForm = () => {
 
 
 
-
 defineExpose({
     reloadForm
 })
 
-
 const productRoute = (item) => {
-    // console.log('id', item.id)
-    // if (route().current() === 'grp.org.shops.show.ordering.orders.show.invoices.show.refunds.show') {
-        return route('grp.helpers.redirect_asset', [item.id])
-    // }
-
-    // return ''
+    return item.asset_id ? route('grp.helpers.redirect_asset', [item.asset_id]) : '';
 }
 </script>
 
@@ -121,7 +114,6 @@ const productRoute = (item) => {
         <Table :resource="data" :name="tab">
             <template #cell(net_amount)="{ item}">
                 <div class="flex flex-col items-end">
-
                     <!-- Net Amount (yang tersisa setelah refund) -->
                     <div>
                         {{ locale.currencyFormat(item.currency_code, item.net_amount) }}

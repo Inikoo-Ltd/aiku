@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
@@ -51,7 +52,6 @@ class CreateTag extends OrgAction
         }
 
         $scopes = collect(TagScopeEnum::cases())
-            ->filter(fn ($case) => $case !== TagScopeEnum::PRODUCT_PROPERTY)
             ->map(fn ($case) => [
                 'label' => $case->pretty(),
                 'value' => $case->value,

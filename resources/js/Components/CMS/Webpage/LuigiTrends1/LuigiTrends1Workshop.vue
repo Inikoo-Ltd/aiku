@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
-import { sendMessageToParent } from "@/Composables/Workshop"
-
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
@@ -44,7 +42,7 @@ const emits = defineEmits<{
 const slidesPerView = computed(() => {
     const perRow = props.modelValue?.settings?.per_row ?? {}
     return {
-        desktop: perRow.desktop ?? 4,
+        desktop: perRow.desktop ?? 6,
         tablet: perRow.tablet ?? 4,
         mobile: perRow.mobile ?? 2,
     }[props.screenType] ?? 1

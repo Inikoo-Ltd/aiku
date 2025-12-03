@@ -17,6 +17,7 @@ use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -34,6 +35,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $platform_id
  * @property int|null $customer_sales_channel_id
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property WebUserTypeEnum $state
  * @property WebUserAuthTypeEnum $auth_type
  * @property-read \App\Models\CRM\Customer $customer
@@ -45,7 +47,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser withoutTrashed()
  * @mixin \Eloquent
  */
 class WooCommerceUser extends Model
@@ -53,6 +58,7 @@ class WooCommerceUser extends Model
     use InCustomer;
     use HasSlug;
     use WithWooCommerceApiRequest;
+    use SoftDeletes;
 
     protected $guarded = [];
 

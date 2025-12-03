@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -170,6 +171,7 @@ class SaveShopifyProductData extends RetinaAction
             }
 
             UpdatePortfolio::run($portfolio, $dataToUpdate);
+            CustomerSalesChannelsHydratePortfolios::dispatch($portfolio->customerSalesChannel)->delay(1);
 
 
             // Format the response to match the expected structure

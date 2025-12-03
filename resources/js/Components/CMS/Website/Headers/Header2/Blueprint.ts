@@ -35,7 +35,32 @@ export default {
 				},
 			],
 		},
-			{
+		{
+			name: "Search",
+			key: ["search"],
+			icon: {
+				icon: "fal fa-search",
+				tooltip: "Search",
+			},
+			replaceForm: [
+				{
+					key: ["placeholder"],
+					label: "Placeholder text",
+					information: "This text will be displayed inside the search box (when the user didn't type anything yet).",
+					props_data: {
+						placeholder: 'Enter text to search'
+					},
+					type: "text",
+				},
+				{
+					key: ["is_box_full_width"],
+					label: "Full width search box?",
+					information: "If enabled, the search box will take the full width available.",
+					type: "switch",
+				},
+			],
+		},
+		{
 			name: "Mobile",
 			key: ["mobile"],
 			icon: {

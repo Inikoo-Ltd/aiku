@@ -25,7 +25,7 @@ class BreakWebsiteCache extends OrgAction
 
         ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*');
         ClearCacheByWildcard::run(config('iris.cache.webpage.prefix').'_'.$website->id.'_*');
-
+        ClearCacheByWildcard::run("irisData:website:$website->id:*");
 
         BreakWebsiteVarnishCache::run($website);
 

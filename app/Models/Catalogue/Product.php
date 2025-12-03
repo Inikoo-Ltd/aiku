@@ -165,6 +165,10 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $origin_country_id
  * @property string|null $ufi_number
  * @property string|null $scpn_number
+ * @property array<array-key, mixed>|null $offers_data
+ * @property \Illuminate\Support\Carbon|null $not_for_sale_since
+ * @property bool $not_for_sale_from_master
+ * @property bool $not_for_sale_from_trade_unit
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -264,6 +268,8 @@ class Product extends Model implements Auditable, HasMedia
         'cpnp_number'                   => 'string',
         'ufi_number'                    => 'string',
         'scpn_number'                   => 'string',
+        'offers_data'                   => 'array',
+        'not_for_sale_since'            => 'datetime',
     ];
 
     protected $attributes = [
@@ -271,6 +277,7 @@ class Product extends Model implements Auditable, HasMedia
         'settings'             => '{}',
         'web_images'           => '{}',
         'marketing_dimensions' => '{}',
+        'offers_data'          => '{}',
     ];
 
     public function generateTags(): array
@@ -362,6 +369,16 @@ class Product extends Model implements Auditable, HasMedia
     public function department(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'department_id');
+    }
+
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
+    }
+
+    public function organisation(): BelongsTo
+    {
+        return $this->belongsTo(Organisation::class, 'organisation_id');
     }
 
     public function subDepartment(): BelongsTo

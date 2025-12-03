@@ -13,6 +13,7 @@ const props = defineProps<{
     order_summary: FieldOrderSummary[][] | {
         [key: string]: FieldOrderSummary[]
     }
+    size?: 'sm'
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -20,11 +21,11 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-    <dl class="flex flex-col space-y-2 text-gray-500 rounded-lg">
+    <dl class="flex flex-col text-gray-500 rounded-lg" :class="size === 'sm' ? 'text-xs' : 'space-y-2'">
         <template v-for="(summaryGroup, summaryRowIndex) in order_summary" :key="'fieldSummary' + summaryRowIndex">
-            <div v-if="summaryGroup.length" class="pt-2 first:pt-0 pr-2 flex flex-col gap-y-2 first:border-t-0 border-t border-gray-200 ">
+            <div v-if="summaryGroup.length" class="first:pt-0 pr-2 flex flex-col first:border-t-0 border-t border-gray-200 " :class="size === 'sm' ? 'gap-y-1 pt-1 pb-1.5' : 'gap-y-2 pt-2'">
                 <div v-for="fieldSummary in summaryGroup" class="grid grid-cols-7 gap-x-4 items-center justify-between">
-                    <dt class="col-span-2 flex flex-col">
+                    <dt class="col-span-3 flex flex-col">
                         <div class="flex items-center leading-none" :class="fieldSummary.label_class">
                             <span>{{ fieldSummary.label }}</span>
                             <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle' v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
@@ -36,7 +37,7 @@ const locale = inject('locale', aikuLocaleStructure)
                         <dd :key="fieldSummary.quantity" class="justify-self-end">{{ typeof fieldSummary.quantity === 'number' ? locale.number(fieldSummary.quantity) : null}}</dd>
                     </Transition>
 
-                    <div class="relative col-span-4 justify-self-end font-medium overflow-hidden">
+                    <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
                         <Transition name="spin-to-right">
                             <dd :key="fieldSummary.price_total" class="" :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : '']">
                                 {{ locale.currencyFormat(currency_code, fieldSummary.price_total || 0) }}

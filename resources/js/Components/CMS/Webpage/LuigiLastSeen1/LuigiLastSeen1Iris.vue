@@ -12,24 +12,22 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
-import { Autoplay, Navigation, Pagination } from 'swiper/modules'
+import { Autoplay} from 'swiper/modules'
 import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 
-// Font Awesome
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from "laravel-vue-i18n"
-import { faCircle } from "@fas"
-import { Link } from "@inertiajs/vue3"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
-// import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
-    fieldValue: {}
+    fieldValue: {
+        product: {
+            luigi_identity: string
+        }
+    }
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
@@ -39,7 +37,7 @@ const props = defineProps<{
 const slidesPerView = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
     return {
-        desktop: perRow.desktop ?? 5,
+        desktop: perRow.desktop ?? 6,
         tablet: perRow.tablet ?? 4,
         mobile: perRow.mobile ?? 2,
     }[props.screenType] ?? 5
@@ -65,7 +63,7 @@ const fetchRecommenders = async () => {
             [
                 {
                     "blacklisted_item_ids": [],
-                    "item_ids": [],
+                    "item_ids": props.fieldValue?.product?.luigi_identity ? [props.fieldValue.product.luigi_identity] : [],
                     "recommendation_type": "last_seen",
                     "recommender_client_identifier": "last_seen",
                     "size": 12,
@@ -83,8 +81,9 @@ const fetchRecommenders = async () => {
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
-        RecommendationCollector(response.data[0])
+        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
         console.log('LLS1:', response.data)
+
         listProducts.value = response.data[0].hits
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)

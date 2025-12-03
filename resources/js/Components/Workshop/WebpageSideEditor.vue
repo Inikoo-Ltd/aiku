@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, defineProps, defineEmits, onMounted, onUnmounted, toRaw, computed, watch  } from 'vue'
+import { ref, inject, onMounted, onUnmounted, toRaw, computed, watch  } from 'vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import draggable from 'vuedraggable'
@@ -306,7 +306,7 @@ defineExpose({
 
         <!-- Tab 3: Style -->
         <TabPanel class="w-[400px] p-2">
-          <div class="max-h-[calc(100vh-220px)] overflow-y-auto">
+          <div class="max-h-[calc(100vh-220px)] overflow-y-auto pb-14">
             <template v-if="openedBlockSideEditor !== null">
               <Collapse :when="true">
                 <div class="p-2 space-y-2">

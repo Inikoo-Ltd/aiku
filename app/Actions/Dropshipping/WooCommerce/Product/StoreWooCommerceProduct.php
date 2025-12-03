@@ -22,7 +22,6 @@ use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class StoreWooCommerceProduct extends RetinaAction
 {
@@ -34,8 +33,12 @@ class StoreWooCommerceProduct extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
     {
+        if ($wooCommerceUser->customerSalesChannel->ban_stock_update_util && $wooCommerceUser->customerSalesChannel->ban_stock_update_util->gt(now())) {
+            return null;
+        }
+
         $logs = StorePlatformPortfolioLog::run($portfolio, [
-            'type'   => PlatformPortfolioLogsTypeEnum::UPLOAD
+            'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
         ]);
 
         try {
@@ -53,22 +56,32 @@ class StoreWooCommerceProduct extends RetinaAction
 
 
             $wooCommerceProduct = [
-                'name' => $portfolio->customer_product_name,
-                'type' => 'simple',
-                'regular_price' => (string)$portfolio->customer_price,
-                'description' => $portfolio->customer_description,
+                'name'              => $portfolio->customer_product_name,
+                'type'              => 'simple',
+                'regular_price'     => (string)$portfolio->customer_price,
+                'description'       => $portfolio->customer_description,
                 'short_description' => $portfolio->customer_description,
-                // 'categories' => $portfolio->item->family?->name,
-                'categories' => [],
-                'images' => $images,
-                'stock_quantity' => $product->available_quantity,
-                'manage_stock' => !is_null($product->available_quantity),
-                'stock_status' => Arr::get($product, 'stock_status', 'instock'),
-                'attributes' => Arr::get($product, 'attributes', []),
-                'sku' => $portfolio->sku,
-                'weight' => (string) ($product->gross_weight / 100),
-                'status' => $this->mapProductStateToWooCommerce($product->status->value)
+                'categories'        => [],
+                'images'            => $images,
+                'stock_quantity'    => $product->available_quantity,
+                'manage_stock'      => !is_null($product->available_quantity),
+                'stock_status'      => Arr::get($product, 'stock_status', 'instock'),
+                'attributes'        => Arr::get($product, 'attributes', []),
+                'sku'               => $portfolio->sku,
+                'weight'            => (string)($product->gross_weight / 100),
+                'status'            => $this->mapProductStateToWooCommerce($product->status->value)
             ];
+
+            $isOnDemand = false;
+            foreach ($product->orgStocks as $orgStock) {
+                if ($orgStock->is_on_demand) {
+                    $isOnDemand = true;
+                }
+            }
+
+            if ($isOnDemand) {
+                data_set($wooCommerceProduct, 'backorders', 'yes');
+            }
 
             $availableSku = $wooCommerceUser->getWooCommerceProducts([
                 'sku' => $portfolio->sku
@@ -81,7 +94,7 @@ class StoreWooCommerceProduct extends RetinaAction
             }
 
             UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => Arr::get($result, 'id'),
+                'platform_product_id'         => Arr::get($result, 'id'),
                 'platform_product_variant_id' => Arr::get($result, 'id'),
             ]);
 
@@ -105,10 +118,12 @@ class StoreWooCommerceProduct extends RetinaAction
 
             if ($logs) {
                 UpdatePlatformPortfolioLog::run($logs, [
-                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $e->getMessage()
                 ]);
             }
+
+
 
             return null;
         }
@@ -117,9 +132,9 @@ class StoreWooCommerceProduct extends RetinaAction
     private function mapProductStateToWooCommerce($status): string
     {
         $stateMap = [
-            ProductStatusEnum::FOR_SALE->value => 'publish',
+            ProductStatusEnum::FOR_SALE->value     => 'publish',
             ProductStatusEnum::DISCONTINUED->value => 'pending',
-            ProductStatusEnum::IN_PROCESS->value => 'draft',
+            ProductStatusEnum::IN_PROCESS->value   => 'draft',
             ProductStatusEnum::OUT_OF_STOCK->value => 'draft'
         ];
 

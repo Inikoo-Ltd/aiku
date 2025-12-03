@@ -1,0 +1,32 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 04 Nov 2025 09:58:38 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Enums\Discounts\OfferAllowance;
+
+enum OfferAllowanceTargetTypeEnum: string
+{
+    case ALL_PRODUCTS_IN_ORDER = 'all_products_in_order';
+    case ALL_PRODUCTS_IN_PRODUCT_CATEGORY = 'all_products_in_product_category';
+
+    public function label(): string
+    {
+        return match ($this) {
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER => __('All products in order'),
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY => __('All products in product category'),
+        };
+    }
+
+    public function slug(): string
+    {
+        return match ($this) {
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER => 'all',
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY => 'category',
+        };
+    }
+
+}

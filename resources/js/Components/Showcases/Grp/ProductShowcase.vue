@@ -2,9 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
+import ImagePrime from "primevue/image"
 import { ref, computed, inject } from "vue"
-import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
-import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
+import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo} from "@fal"
+import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle, faTimesCircle } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
@@ -15,6 +16,11 @@ import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ReviewContent from "@/Components/ReviewContent.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
+import ProductPriceGrp from "@/Components/Product/ProductPriceGrp.vue"
+import { ProductResource } from "@/types/Iris/Products"
+import { Image as ImageTS } from "@/types/Image"
+import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import { router } from "@inertiajs/vue3"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -35,20 +41,7 @@ const props = defineProps<{
 			save_route: routeType
 		}
 		product: {
-			data: {
-				id: number
-				slug: string
-				image_id: number
-				code: string
-				name: string
-				price: string
-				description?: string
-				state: string
-				created_at: string
-				updated_at: string
-				images: Images[]
-				currency_code: string
-			}
+			data: ProductResource
 		}
 		stats: {
 			amount: number | null
@@ -93,166 +86,168 @@ const props = defineProps<{
 			product_languages: string | null
 			warnings: string | null
 		}
+		availability_status?: {
+			from_master: boolean     
+			from_trade_unit: boolean  
+			is_for_sale: boolean           
+			product_state: string        
+			product_state_icon: []
+			parentLink?: []
+		}
 		images: any
+		main_image: ImageTS
 	}
+	handleTabUpdate?: Function
 }>()
 
-const locale = inject("locale", aikuLocaleStructure)
-const imagesSetup = ref(
-	props?.data?.images?.filter((item: any) => item.type === "image")
-		.map((item : any) => ({
-			label: item.label,
-			column: item.column_in_db,
-			images: item.images,
-		}))
-)
 
-const videoSetup = ref(
-	props.data.images.find(item => item.type === "video") || null
-)
+const tradeUnitTags = computed(() => {
+	const list = props.data?.trade_units ?? []
+	const tags = list.flatMap(item => item.tags ?? [])
+	const unique = new Map(tags.map(tag => [tag.id, tag]))
+	return [...unique.values()]
+})
 
 
-const validImages = computed(() =>
-	imagesSetup.value
-		.filter(item => item.images) // only keep if images exist
-		.flatMap(item => {
-			const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
-			return images.map(img => ({
-				source: img,
-				thumbnail: img
-			}))
-		})
-)
+const tradeUnitBrands = computed(() => {
+  return (props.data?.trade_units ?? [])
+    .flatMap(unit => unit?.brand ?? [])
+})
+
+
+const editIsForSale = () => {
+	let url = route('grp.org.shops.show.catalogue.products.all_products.edit', {
+			...route().params,
+			section: 4
+	});
+	if(props.data.availability_status?.from_master && props.data.availability_status?.parentLink){
+		url = route(props.data.availability_status?.parentLink['url'], {
+			...props.data.availability_status?.parentLink['params'],
+			section: 6
+		});
+	}
+	if(props.data.availability_status?.from_trade_unit && props.data.availability_status?.parentLink){
+		url = route(props.data.availability_status?.parentLink['url'], {
+			...props.data.availability_status?.parentLink['params'],
+			section: 8
+		});
+	}
+
+    router.visit(url)
+}
+
+const getTooltips = () => {
+	let tooltipText = props.data.availability_status?.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')
+
+	if(props.data.availability_status?.from_master || props.data.availability_status?.parentLink){
+		tooltipText = props.data.availability_status?.from_master ? trans('This product For Sale status has been modified from the Master Product level') : trans('This product For Sale status has been modified from the Trade Unit level')
+	}
+
+	return tooltipText;
+}
+
+
 </script>
 
 <template>
-	<div v-if="data.webpage_url"
-		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
-		<div class="flex items-center gap-2 text-blue-700 text-sm">
-			<FontAwesomeIcon :icon="faExternalLink" class="text-blue-500" />
-			<a :href="data.webpage_url" target="_blank" rel="noopener noreferrer"
-				class="font-medium break-all hover:underline hover:text-blue-800 transition-colors duration-200">
-				{{ data.webpage_url }}
-			</a>
+	<div class="w-full px-4 py-3 mb-3 shadow-sm grid grid-cols-2">
+		<div class="text-xl font-semibold text-gray-800 whitespace-pre-wrap justify-self-start">
+			<!-- Units box -->
+			<ProductUnitLabel
+				v-if="data.product?.data?.units"
+				:units="data.product?.data?.units"
+				:unit="data.product?.data?.unit"
+				class="mr-2"
+			/>
+			
+			<!-- Product name -->
+			<span class="align-middle">
+				{{ data.product.data.name }}
+			</span>
+		</div>
+		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center">
+			<span
+			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help me-2"
+			:class="data.availability_status.product_state_icon['class'].replace('text', 'border').replace('500', '300')">
+                <span class="opacity-50"> {{trans('Procurement')}}:</span>	 {{ data.availability_status.product_state}}
+				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']"/>
+			</span>
+			<span 
+			v-tooltip="getTooltips()"
+			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+			v-on:click="editIsForSale"
+			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
+			{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
+				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+				<FontAwesomeIcon
+					v-if="data.availability_status?.from_master"
+					icon="fab fa-octopus-deploy"
+					:class="'ms-1'"
+					color="#4B0082"
+				/>
+				<FontAwesomeIcon
+					v-if="data.availability_status?.from_trade_unit"
+					icon="fal fa-atom"
+					:class="'ms-1'"
+				/>
+			</span>
 		</div>
 	</div>
-
-
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
+			<!-- Product Tags -->
+			<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
+				<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+					{{ tag.name }}
+				</span>
+			</dd>
 			<!-- Image Preview & Thumbnails -->
 			<div class="bg-white   p-4 lg:p-5">
-				<ImageProducts v-if="validImages.length" :images="validImages" :breakpoints="{
-					0: { slidesPerView: 3 },
-					480: { slidesPerView: 4 },
-					640: { slidesPerView: 5 },
-					1024: { slidesPerView: 6 }
-				}" class="overflow-x-auto">
-					<template #image-thumbnail="{ image, index }">
-						<div
-							class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
-							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
-								class="block w-full h-full object-cover" />
-							<!-- Delete Icon -->
-							<ModalConfirmationDelete :routeDelete="{
-								name: props.data.deleteImageRoute.name,
-								parameters: {
-									...props.data.deleteImageRoute.parameters,
-									media: image.id,
-								}
-							}" :title="trans('Are you sure you want to delete the image?')"
-								:description="trans('This action cannot be undone.')" isFullLoading noLabel="Delete"
-								noIcon="fal fa-times">
-								<template #default="{ changeModel }">
-									<div @click="changeModel"
-										class="absolute top-2 right-2 bg-white shadow-md rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition cursor-pointer hover:bg-red-500 hover:text-white text-red-500">
-										<FontAwesomeIcon icon="fal fa-times" fixed-width />
-									</div>
-								</template>
-							</ModalConfirmationDelete>
-						</div>
-					</template>
-				</ImageProducts>
-
-				<!-- Empty State -->
-				<div v-else
-					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
-					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
+					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview
+						class="min-h-60" />
+					<div class="text-sm italic text-gray-500">
+						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
+							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
+					</div>
+				</div>
+				<div v-else>
+					<div
+						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+					</div>
+					<div class="mt-2 text-sm italic text-gray-500">
+						Manage images in tab <span @click="() => handleTabUpdate('images')"
+							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
+					</div>
 				</div>
 			</div>
 		</div>
 
 		<!-- Product Summary -->
-		<ProductSummary :data="data.product.data" :gpsr="data.gpsr" :properties="data.properties" :parts="data.parts"
-			:video="videoSetup.url" :hide="['price', 'rrp', 'stock']" />
-
-
-
-
+		<ProductSummary 
+			 :data="{...data.product.data, tags : tradeUnitTags, brands : tradeUnitBrands}" 
+			 :properties="data.properties" 
+			 :parts="data.parts"
+			 :public-attachment="data.attachment_box.public" 
+			 :gpsr="data.gpsr"
+		/>
 		<div class="bg-white h-fit mx-4  shadow-sm ">
-			<div class="my-4 ">
-				<ReviewContent :data="data.product.data" />
+			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
+				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+					:class="data?.product?.data?.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+				<span>
+					{{
+					data?.product?.data?.stock > 0
+					? trans("In stock") + ` (${data?.product?.data?.stock} ` + trans("available") + `)`
+					: trans("Out Of Stock")
+					}}
+				</span>
 			</div>
-			<dl class="space-y-2 text-sm border border-gray-100 px-4 py-2 lg:p-6 lg:py-4 rounded">
-				<!-- Stock -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Stock") }}</dt>
-					<dd class="flex items-center gap-2 font-medium">
-						<FontAwesomeIcon :icon="['fas', 'circle']" :class="[
-							data.product.data?.stock > 20
-								? 'text-green-500'
-								: data.product.data?.stock > 0
-									? 'text-orange-500'
-									: 'text-red-500'
-						]" />
-						<span :class="[
-							data.product.data?.stock > 20
-								? 'text-green-600'
-								: data.product.data?.stock > 0
-									? 'text-orange-600'
-									: 'text-red-600 font-semibold'
-						]">
-							{{ data.product.data?.stock }} {{ data.product.data?.unit }}
-						</span>
-					</dd>
-				</div>
-
-				<hr class="border-gray-200" />
-
-				<!-- Cost -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Cost") }}</dt>
-					<dd class="font-medium text-blue-600">
-						{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.cost) || '-' }}
-					</dd>
-				</div>
-
-				<!-- Price -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Price") }}</dt>
-					<dd class="font-semibold text-green-600 text-lg">
-						{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.price) }}
-					</dd>
-				</div>
-
-				<!-- RRP -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">RRP</dt>
-					<dd class="flex items-center gap-2 font-semibold text-gray-700">
-						<span>
-							{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.rrp) }}
-						</span>
-						<span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-							({{ (((data.product.data?.rrp - data.product.data?.price) / data.product.data?.rrp) *
-							100).toFixed(2) }}%)
-						</span>
-					</dd>
-				</div>
-			</dl>
-
-
+			<!-- Section: Price -->
+			<ProductPriceGrp :product="data?.product?.data" :currency_code="data.product.data?.currency_code" />
 			<div>
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
 			</div>

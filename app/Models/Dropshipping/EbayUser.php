@@ -12,10 +12,12 @@ namespace App\Models\Dropshipping;
 use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
+use App\Enums\Dropshipping\EbayUserStepEnum;
 use App\Models\CRM\Customer;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -33,6 +35,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_sales_channel_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $fulfillment_policy_id
+ * @property string|null $payment_policy_id
+ * @property string|null $return_policy_id
+ * @property string|null $location_key
+ * @property string|null $marketplace
+ * @property EbayUserStepEnum $step
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property WebUserTypeEnum $state
  * @property WebUserAuthTypeEnum $auth_type
  * @property-read Customer $customer
@@ -42,7 +51,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser withoutTrashed()
  * @mixin \Eloquent
  */
 class EbayUser extends Model
@@ -50,6 +62,7 @@ class EbayUser extends Model
     use InCustomer;
     use HasSlug;
     use WithEbayApiRequest;
+    use SoftDeletes;
 
     protected $guarded = [];
 
@@ -57,6 +70,7 @@ class EbayUser extends Model
         'data'      => 'array',
         'settings'  => 'array',
         'state'     => WebUserTypeEnum::class,
+        'step'      => EbayUserStepEnum::class,
         'auth_type' => WebUserAuthTypeEnum::class,
     ];
 

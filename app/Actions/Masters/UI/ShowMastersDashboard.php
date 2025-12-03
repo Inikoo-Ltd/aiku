@@ -50,12 +50,16 @@ class ShowMastersDashboard extends OrgAction
         $userSettings = $request->user()->settings;
 
         $currentTab = Arr::get($userSettings, 'masters_dashboard_tab', Arr::first(MastersDashboardSalesTableTabsEnum::values()));
+
         if (!in_array($currentTab, MastersDashboardSalesTableTabsEnum::values())) {
             $currentTab = Arr::first(MastersDashboardSalesTableTabsEnum::values());
         }
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
+        if ($saved_interval === DateIntervalEnum::CUSTOM) {
+            $saved_interval = DateIntervalEnum::ALL;
+        }
 
         $dashboard = [
             'super_blocks' => [
@@ -63,8 +67,8 @@ class ShowMastersDashboard extends OrgAction
                     'id'        => 'masters_dashboard_tab',
                     'intervals' => [
                         'options'        => $this->dashboardIntervalOption(),
-                        'value'          => Arr::get($userSettings, 'selected_interval', 'all'),  // fix this
-                        'range_interval' => DashboardIntervalFilters::run($saved_interval)
+                        'value'          => $saved_interval,
+                        'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
                     ],
                     'settings'  => [
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
@@ -86,15 +90,11 @@ class ShowMastersDashboard extends OrgAction
                             'tabs'        => MastersDashboardSalesTableTabsEnum::navigation(),
                             'tables'      => MastersDashboardSalesTableTabsEnum::tables($group),
                             'charts'      => [] // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
-
                         ]
                     ]
-
                 ]
-
             ]
         ];
-
 
         return Inertia::render(
             'Masters/MastersDashboard',
@@ -109,30 +109,25 @@ class ShowMastersDashboard extends OrgAction
                     'title' => __('Master catalogue'),
                 ],
                 'dashboard'   => $dashboard
-
-
             ]
         );
     }
 
     public function getBreadcrumbs(): array
     {
-        return
-            array_merge(
-                ShowGroupDashboard::make()->getBreadcrumbs(),
+        return array_merge(
+            ShowGroupDashboard::make()->getBreadcrumbs(),
+            [
                 [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name' => 'grp.masters.dashboard'
-                            ],
-                            'label' => __('Masters'),
-                        ]
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name' => 'grp.masters.dashboard'
+                        ],
+                        'label' => __('Masters'),
                     ]
                 ]
-            );
+            ]
+        );
     }
-
-
 }

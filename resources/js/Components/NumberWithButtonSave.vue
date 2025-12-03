@@ -304,6 +304,7 @@ const onClickPlusButton = () => {
 				</slot>
 			</button>
 			<slot></slot>
+			<slot name="suffix"></slot>
 		</div>
 
 		<div

@@ -14,6 +14,7 @@ use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoDepartment;
+use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamiliesWithNoDepartment;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamiliesWithNoDepartment;
@@ -69,9 +70,6 @@ class UpdateFamilyDepartment extends OrgAction
                 GroupHydrateFamiliesWithNoDepartment::dispatch($family->group);
             }
         }
-
-
-
         if (Arr::has($changes, 'sub_department_id')) {
 
             if ($family->subDepartment) {
@@ -88,6 +86,11 @@ class UpdateFamilyDepartment extends OrgAction
             }
 
         }
+
+        if ($family->webpage) {
+            ClearCacheByWildcard::run("irisData:website:{$family->webpage->website_id}:*");
+        }
+
 
         return $family;
     }

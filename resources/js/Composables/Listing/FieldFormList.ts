@@ -35,6 +35,7 @@ import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
 import FormEditTradeUnit from '@/Components/Forms/Fields/FormEditTradeUnit.vue'
 import TagsTradeUnits from '@/Components/Forms/Fields/TagsTradeUnits.vue'
 import invoiceSerialReferences from '@/Components/Forms/Fields/invoiceSerialReferences.vue'
+import ListSelectorTradeUnit from "@/Components/Forms/Fields/ListSelectorTradeUnit.vue"
 
 
 const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
@@ -63,6 +64,9 @@ import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/Multiselect
 import InputDimensions from '@/Components/Forms/Fields/InputDimensions.vue'
 import WrapperEmailSubscribetion from '@/Components/Forms/Fields/WrapperEmailSubscribetion.vue'
 import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
+import TagsCustomer from "@/Components/Forms/Fields/TagsCustomer.vue";
+import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue";
+import InputTwin from '@/Components/Forms/Fields/InputTwin.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -127,8 +131,11 @@ export const componentsList: {[key: string]: Component} = {
     'multiselect-tags' : MultiselectTagsInfiniteScroll,
     'input-dimension' : InputDimensions,
     'invoice_serial_references' : invoiceSerialReferences,
-
-    'email_subscriptions': WrapperEmailSubscribetion
+    'tags-customer': TagsCustomer,
+    'retina-tags-customer': RetinaTagsCustomer,
+    'email_subscriptions': WrapperEmailSubscribetion,
+    'input_twin' : InputTwin,
+    'list-selector-trade-unit' : ListSelectorTradeUnit
 }
 
 export const getComponent = (componentName: string) => {

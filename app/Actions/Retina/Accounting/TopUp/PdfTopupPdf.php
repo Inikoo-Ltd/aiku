@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\Accounting\TopUp;
 
-use App\Actions\Accounting\Invoice\WithInvoicesExport;
 use App\Actions\RetinaAction;
 use App\Models\CRM\Customer;
 use Exception;
@@ -23,7 +22,6 @@ class PdfTopupPdf extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
-    use WithInvoicesExport;
 
 
     public function handle(Customer $customer, array $options): Response
@@ -33,7 +31,7 @@ class PdfTopupPdf extends RetinaAction
 
         try {
             $config = [
-                'title'                  => 'Topup - ' . $customer->reference,
+                'title'                  => 'Topup All History - ' . $customer->reference,
                 'margin_left'            => 8,
                 'margin_right'           => 8,
                 'margin_top'             => 2,
@@ -44,7 +42,7 @@ class PdfTopupPdf extends RetinaAction
 
 
             $filename = $config['title'].'-'.now()->format('Y-m-d');
-            $pdf      = PDF::loadView('invoices.templates.pdf.topup', [
+            $pdf      = PDF::loadView('invoices.templates.pdf.topup-all', [
                 'shop'                 => $customer->shop,
                 'topups'                => $customer->topUps,
                 'reference'                => $config['title'],
@@ -55,7 +53,6 @@ class PdfTopupPdf extends RetinaAction
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
         } catch (Exception $e) {
-            dd($e);
             Sentry::captureException($e);
 
             return response()->json(['error' => 'Failed to generate PDF'], 404);

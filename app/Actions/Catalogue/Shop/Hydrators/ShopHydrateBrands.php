@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
+use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Catalogue\Shop;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -30,6 +31,26 @@ class ShopHydrateBrands implements ShouldBeUnique
             'number_current_brands' => $shop->brands()->where('is_for_sale', true)->count()
         ];
 
-        $shop->stats()->update($stats);
+        $shopStats = $shop->stats;
+
+        // Capture previous values to detect changes
+        $oldNumberBrands = $shopStats->number_brands ?? null;
+        $oldNumberCurrentBrands = $shopStats->number_current_brands ?? null;
+
+        $shopStats->update($stats);
+
+        // If any of the tracked values changed, clear the related website cache
+        $changed = (
+            $oldNumberBrands !== $stats['number_brands'] ||
+            $oldNumberCurrentBrands !== $stats['number_current_brands']
+        );
+
+        if ($changed && $shop->website) {
+            ClearCacheByWildcard::run("irisData:website:{$shop->website->id}:*");
+        }
+
+
+
+
     }
 }

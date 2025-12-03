@@ -22,6 +22,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import Register from "@/Pages/Retina/Auth/Register.vue";
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
+import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
 
 library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
 
@@ -60,10 +61,11 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
         google_access_token: e.access_token,
     })
 
-    console.log('Google login response:', data.data)
+    console.log('Google register response:', data.data)
     if(data.status === 200) {
         if (data.data.logged_in) {
-            router.get(route('retina.dashboard.show'))
+            // router.get(route('retina.dashboard.show'))
+            window.location.href = await getRefRedirect()
         } else {
             router.get(route('retina.register_from_google'), {
                 google_access_token: e.access_token

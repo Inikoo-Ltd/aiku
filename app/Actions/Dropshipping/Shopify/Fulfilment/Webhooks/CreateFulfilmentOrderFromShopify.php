@@ -27,11 +27,12 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $fulfillmentOrder): void
     {
+        $shopifyUser->debugWebhooks()->create([
+            'data' => $fulfillmentOrder
+        ]);
+
         DB::transaction(function () use ($shopifyUser, $fulfillmentOrder) {
             $assignedLineItems = [];
-            $shopifyUser->debugWebhooks()->create([
-                'data' => $fulfillmentOrder
-            ]);
 
             $destination = $fulfillmentOrder['destination'];
             $lineItems = $fulfillmentOrder['lineItems']['edges'];

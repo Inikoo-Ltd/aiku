@@ -32,6 +32,7 @@ use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
+use App\Http\Resources\Ordering\DispatchedEmailsInOrderResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
@@ -202,6 +203,7 @@ class ShowOrder extends OrgAction
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
+        $wrapped_actions = [];
         $finalTimeline = $this->getOrderTimeline($order);
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
@@ -211,6 +213,29 @@ class ShowOrder extends OrgAction
             GetDropshippingOrderActions::run($order, $this->canEdit)
             :
             GetEcomOrderActions::run($order, $this->canEdit);
+
+        if ($order->state != OrderStateEnum::CANCELLED) {
+            $wrapped_actions = [
+                [
+                    'type'  => 'button',
+                    'icon'    => 'fal fa-pencil',
+                    'style' => 'tertiary',
+                    'tooltip' => __('Edit the order reference'),
+                    'label' => __('Edit'),
+                    'route' => [
+                        'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                        'parameters' => array_values($request->route()->originalParameters())
+                    ]
+                ]
+            ];
+        }
+
+        $wrapped_actions[] = [
+            'type'  => 'button',
+            'style' => 'save',
+            'label' => __('Add note'),
+            'key' => 'add-note'
+        ];
 
         $deliveryNoteRoute    = null;
         $deliveryNoteResource = null;
@@ -269,6 +294,7 @@ class ShowOrder extends OrgAction
                         'label' => $order->state->labels()[$order->state->value],
                     ],
                     'actions'    => $actions,
+                    'wrapped_actions' => $wrapped_actions,
                     'platform'   => $platform ? [
                         'icon'  => $platform->imageSources(24, 24),
                         'type'  => $platform->type,
@@ -445,6 +471,10 @@ class ShowOrder extends OrgAction
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
+                OrderTabsEnum::DISPATCHED_EMAILS->value => $this->tab == OrderTabsEnum::DISPATCHED_EMAILS->value ?
+                    fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $order, prefix: OrderTabsEnum::DISPATCHED_EMAILS->value))
+                    : Inertia::lazy(fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $order, prefix: OrderTabsEnum::DISPATCHED_EMAILS->value))),
+
                 OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
                     fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
@@ -468,6 +498,11 @@ class ShowOrder extends OrgAction
                     parent: $order,
                     tableRows: $nonProductItems,
                     prefix: OrderTabsEnum::TRANSACTIONS->value
+                )
+            )
+            ->table(
+                IndexDispatchedEmailsInOrder::make()->tableStructure(
+                    prefix: OrderTabsEnum::DISPATCHED_EMAILS->value
                 )
             )
             ->table(

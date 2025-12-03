@@ -22,7 +22,7 @@ import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { faStackOverflow, faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import {
-    faPoll, faPhotoVideo, faBrowser, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear,
+    faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear,
     faParking, faSeedling, faBoxCheck,
     faUsers, faShoppingBasket, faLayerGroup, faInboxOut,
     faTachometerAltFast,
@@ -35,14 +35,14 @@ import {
     faAtom, faBan, faSnooze,
     faFileInvoice, faInboxIn,
     faPaperPlane,
-    faDraftingCompass, faExternalLinkAlt,
+    faDraftingCompass, faFolderDownload, faExternalLinkAlt,
     faCheck,
     faTimes, faTrashAlt,
     faAsterisk, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble,
     faSmile
 } from "@fal"
-import { faSearch, faBell } from "@far"
-import { faAsterisk as fasAsterisk, faBoxHeart, faExclamation, faInfo, faPlay, faGlobe as fasGlobe, faStar } from "@fas"
+import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
+import { faAsterisk as fasAsterisk, faBoxHeart, faExclamation, faInfo, faPlay, faGlobe as fasGlobe, faStar, faCheckCircle, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -51,7 +51,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
 
-library.add(faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faBan, faSnooze, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
+library.add(faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faCheckCircle, faTimesCircle, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faArrowRight, faShippingFast, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faBan, faSnooze, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faFolderDownload, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
 
 provide("layout", useLayoutStore())
 provide("locale", useLocaleStore())
@@ -119,8 +119,18 @@ const onRefreshPage = () => {
     window.location.reload()
 }
 
+// Section: Screen Type
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const checkScreenType = () => {
+    const width = screen.width
+    if (width < 640) screenType.value = 'mobile'
+    else if (width >= 640 && width < 1024) screenType.value = 'tablet'
+    else screenType.value = 'desktop'
+}
+provide('screenType', screenType)
 
 onMounted(() => {
+    checkScreenType()
     onCheckAppVersion()
     setColorStyleRoot(layout?.app?.theme)
 })
@@ -128,7 +138,7 @@ onMounted(() => {
 
 <template>
     <div id="grp_app" class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
-         :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
+         :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'w-[80%]' : 'mr-0']">
 
         <TopBar @sidebarOpen="(value: boolean) => sidebarOpen = value" :sidebarOpen="sidebarOpen"
                 :logoRoute="`grp.dashboard.show`" urlPrefix="grp." />
@@ -164,8 +174,9 @@ onMounted(() => {
         </main>
 
         <!-- Sidebar: Right -->
-        <RightSideBar class="fixed top-16 w-44 transition-all duration-200 ease-in-out"
-                      :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'right-0' : '-right-44']" />
+       
+        <RightSideBar class="fixed top-16  transition-all duration-200 ease-in-out"
+                      :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'right-0 w-[20%]' : '-right-44']" />
 
         <Teleport to="body">
             <div>

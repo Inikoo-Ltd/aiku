@@ -11,6 +11,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { ref } from "vue";
 
 const props = defineProps<{
+    platform: any
     customer_sales_channel: CustomerSalesChannel
     error_captcha: any
 }>()
@@ -29,7 +30,11 @@ const onClickReconnect = async () => {
         if (response.status !== 200) {
             throw new Error('Something went wrong. Try again later.')
         } else {
-            window.open(response.data, '_blank');
+            if(! response.data.id) {
+                window.open(response.data, '_blank');
+            } else {
+                window.location.href = ''
+            }
         }
     } catch (error: any) {
         notify({
@@ -116,7 +121,7 @@ const ipAddresses = [
         </div>
         <div class="ml-2">
             <div>
-                <small>{{ trans('Please add this IP Address to whitelist: ')}}</small>
+                <small>{{ trans('Please add this IP Address to whitelist:')}}</small>
             </div>
             <div v-for="(ip, i) in ipAddresses" :key="i">
                 <blockquote>{{ ip }}</blockquote>

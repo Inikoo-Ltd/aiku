@@ -17,7 +17,6 @@ use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreOrgStockHasOrgSuppl
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockHasSupplierProduct;
-use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Transfers\Aurora\WithAuroraAttachments;
 use App\Transfers\SourceOrganisationService;
@@ -53,10 +52,8 @@ class FetchAuroraStocks extends FetchAuroraAction
         if ($stockData['abnormal']) {
             $tradeUnit = $stockData['trade_unit'];
 
-
-
-
             $orgStock = $this->processAbnormalOrgStock($organisationSource, $stockData);
+
             if (!$orgStock) {
                 return [
                     'stock'    => null,
@@ -160,6 +157,7 @@ class FetchAuroraStocks extends FetchAuroraAction
                 ]);
             }
 
+
             if ($stock->state == StockStateEnum::IN_PROCESS and $stockData['org_stock']['state'] != StockStateEnum::IN_PROCESS) {
                 $stock = UpdateStock::make()->action(
                     stock: $stock,
@@ -183,9 +181,8 @@ class FetchAuroraStocks extends FetchAuroraAction
                     ], 60, false);
                 }
             }
-            /** @var TradeUnit $tradeUnit */
-            $tradeUnit = $stock->tradeUnits()->first();
-            $this->processFetchAttachments($tradeUnit, 'Part', $stockData['stock']['source_id']);
+            //$tradeUnit = $stock->tradeUnits()->first();
+            //$this->processFetchAttachments($tradeUnit, 'Part', $stockData['stock']['source_id']);
 
 
             if ($isPrincipal) {
@@ -226,6 +223,11 @@ class FetchAuroraStocks extends FetchAuroraAction
             }
 
 
+            $sourceData = explode(':', $stockData['stock']['source_id']);
+            DB::connection('aurora')->table('Part Dimension')
+                ->where('Part SKU', $sourceData[1])
+                ->update(['aiku_id' => $stock->id]);
+
             return [
                 'stock'    => $stock,
                 'orgStock' => $orgStock
@@ -250,7 +252,7 @@ class FetchAuroraStocks extends FetchAuroraAction
             });
 
         if ($this->onlyNew) {
-            $query->whereNull('aiku_id');
+            $query->whereNull('aiku_id')->whereNull('aiku_unit_id');
         }
         $query->orderBy('Part Valid From');
 
@@ -261,7 +263,7 @@ class FetchAuroraStocks extends FetchAuroraAction
     {
         $query = DB::connection('aurora')->table('Part Dimension');
         if ($this->onlyNew) {
-            $query->whereNull('aiku_id');
+            $query->whereNull('aiku_id')->whereNull('aiku_unit_id');
         }
 
         return $query->count();

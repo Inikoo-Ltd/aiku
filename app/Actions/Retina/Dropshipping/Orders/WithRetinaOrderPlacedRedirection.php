@@ -86,7 +86,7 @@ trait WithRetinaOrderPlacedRedirection
             return Redirect::back()->with('modal', [
                 'status'  => 'error',
                 'title'   => __('Error!'),
-                'description' => __('An error occurred while processing your order: ').$arr['reason'],
+                'description' => __('An error occurred while processing your order:') . ' ' . $arr['reason'],
             ]);
         }
     }

@@ -27,6 +27,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $master_family_name
  * @property mixed $show_in_website
  * @property mixed $used_in
+ * @property mixed $id
+ * @property mixed $unit
+ * @property mixed $currency_code
+ * @property mixed $rrp
+ * @property mixed $price
+ * @property mixed $status
  */
 class MasterProductsResource extends JsonResource
 {
@@ -51,9 +57,20 @@ class MasterProductsResource extends JsonResource
             'show_in_website'        => $this->show_in_website,
             'used_in'                => $this->used_in,
             'unit'                   => $this->unit,
+            'units'                  => $this->units,
             'price'                  => $this->price,
             'rrp'                    => $this->rrp,
+            'status'                 => $this->status,
             'currency_code'          => $this->currency_code,
+            'status_icon'            => $this->status ? [
+                'tooltip' => __('Active'),
+                'icon'    => 'fas fa-check-circle',
+                'class'   => 'text-green-400'
+            ] : [
+                'tooltip' => __('Closed'),
+                'icon'    => 'fas fa-times-circle',
+                'class'   => 'text-red-400'
+            ],
         ];
     }
 }

@@ -35,6 +35,7 @@ import { Action } from "@/types/Action"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import { notify } from "@kyvg/vue3-notification"
 import OrderProductTable from "@/Components/Dropshipping/Orders/OrderProductTable.vue"
+import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatchedEmailsInOrder.vue"
 import NeedToPay from "@/Components/Utils/NeedToPay.vue"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
@@ -64,7 +65,7 @@ import {
     faMapMarkerAlt,
     faPlus,
     faEllipsisH,
-    faCopy,faParachuteBox
+    faCopy,faParachuteBox, faSortNumericDown
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -82,8 +83,9 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faParachuteBox,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
+library.add(faParachuteBox, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
 interface UploadSection {
     title: {
@@ -106,6 +108,7 @@ const props = defineProps<{
     shop_type: 'b2b' | 'dropshipping'
     data?: {
         data: {
+            id: number
             state: string
             is_premium_dispatch: boolean
             has_extra_packing: boolean
@@ -233,6 +236,7 @@ const props = defineProps<{
         }[]
         route_download_pdf: routeType
     }
+    dispatched_emails?: {}
 }>()
 
 
@@ -243,6 +247,7 @@ const confirm = useConfirm();
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
+console.log("dispatched_emails", props.dispatched_emails)
 
 const component = computed(() => {
     const components: Component = {
@@ -251,7 +256,8 @@ const component = computed(() => {
         attachments: TableAttachments,
         invoices: TableInvoices,
         products: TableProductList,
-        payments: TablePayments
+        payments: TablePayments,
+        dispatched_emails: TableDispatchedEmailsInOrder
     }
 
     return components[currentTab.value]
@@ -620,6 +626,36 @@ const copyToClipboard = async (text: string, label: string) => {
         })
     }
 }
+
+const isLoadingPayWithBalance = ref(false)
+const onPayWithBalance = () => {
+    // Section: Submit
+    router.post(
+        route('grp.models.order.pay_order_with_balance', { order: props.data?.data.id }),
+        {
+            data: 'qqq'
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingPayWithBalance.value = true
+            },
+            onSuccess: () => {
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to pay order with customer balance"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingPayWithBalance.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -676,79 +712,6 @@ const copyToClipboard = async (text: string, label: string) => {
             <div v-if="!props.readonly || isShowProforma" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
-
-                <div>
-                    <!-- Button: icon ellipsis -->
-                    <button @click="toggleElipsis" class="cursor-pointer "
-                        :class="'text-gray-400 hover:text-indigo-500'">
-                        <FontAwesomeIcon :icon="faEllipsisH" class="text-4xl" fixed-width aria-hidden="true" />
-                    </button>
-
-                    <!-- Popover: on click ellipsis -->
-                    <PopoverPrimevue ref="ellipsis">
-                        <div class="flex flex-col gap-2">
-                            <!-- Button: Undispatched -->
-                            <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
-                                :routeDelete="routes.rollback_dispatch"
-                                :title="trans('Are you sure you want to rollback the Order??')"
-                                :description="trans('The state of the Order will go back to finalised state.')"
-                                isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
-                                <template #default="{ changeModel }">
-                                    <Button @click="changeModel" type="negative" :label="trans('Undispatch')"
-                                        icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
-                                </template>
-                            </ModalConfirmationDelete>
-
-                            <!-- Button: Add Notes -->
-                            <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
-                                <template #button="{ open }">
-                                    <Button icon="fal fa-sticky-note" type="tertiary" full
-                                        :label="trans('Add notes')" />
-                                </template>
-                                <template #content="{ close: closed }">
-                                    <div class="w-[350px]">
-                                        <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
-                                        <div class="">
-                                            <PureMultiselect v-model="noteToSubmit.selectedNote"
-                                                @update:modelValue="() => errorNote = ''"
-                                                :placeholder="trans('Select type note')" required
-                                                :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
-                                                valueProp="value" />
-                                        </div>
-
-                                        <div class="mt-3">
-                                            <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
-                                            <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
-                                                @keydown.enter="() => onSubmitNote(closed)" />
-                                        </div>
-
-                                        <p v-if="errorNote" class="mt-2 text-sm text-red-600">
-                                            *{{ errorNote }}
-                                        </p>
-
-                                        <div class="flex justify-end mt-3">
-                                            <Button @click="() => onSubmitNote(closed)" :style="'save'"
-                                                :loading="isLoadingButton === 'submitNote'"
-                                                :disabled="!noteToSubmit.value" label="Save" full />
-                                        </div>
-
-                                        <div v-if="isLoadingButton === 'submitNote'"
-                                            class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl"
-                                                fixed-width aria-hidden="true" />
-                                        </div>
-                                    </div>
-                                </template>
-                            </Popover>
-
-                            <Button
-                                v-if="proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)"
-                                @click="() => isOpenModalProforma = true" type="tertiary"
-                                :label="trans('Proforma Invoice')" icon="fal fa-download" />
-
-                        </div>
-                    </PopoverPrimevue>
-                </div>
             </div>
 
 
@@ -758,6 +721,73 @@ const copyToClipboard = async (text: string, label: string) => {
             <Button @click="() => onCreateReplacement(action)" :label="trans('Replacement')" xsize="xs" type="secondary"
                 icon="fal fa-plus" key="1" :disabled="replacementLoading" :loading="replacementLoading"
                 v-tooltip="trans('Create replacement')" />
+        </template>
+
+        <template #wrapped-add-note="{ action }">
+            <!-- Button: Add Notes -->
+            <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
+                <template #button="{ open }">
+                    <Button icon="fal fa-sticky-note" type="tertiary" full
+                            :label="trans('Add notes')" />
+                </template>
+                <template #content="{ close: closed }">
+                    <div class="w-[350px]">
+                        <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
+                        <div class="">
+                            <PureMultiselect v-model="noteToSubmit.selectedNote"
+                                             @update:modelValue="() => errorNote = ''"
+                                             :placeholder="trans('Select type note')" required
+                                             :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
+                                             valueProp="value" />
+                        </div>
+
+                        <div class="mt-3">
+                            <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
+                            <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
+                                          @keydown.enter="() => onSubmitNote(closed)" />
+                        </div>
+
+                        <p v-if="errorNote" class="mt-2 text-sm text-red-600">
+                            *{{ errorNote }}
+                        </p>
+
+                        <div class="flex justify-end mt-3">
+                            <Button @click="() => onSubmitNote(closed)" :style="'save'"
+                                    :loading="isLoadingButton === 'submitNote'"
+                                    :disabled="!noteToSubmit.value" label="Save" full />
+                        </div>
+
+                        <div v-if="isLoadingButton === 'submitNote'"
+                             class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl"
+                                             fixed-width aria-hidden="true" />
+                        </div>
+                    </div>
+                </template>
+            </Popover>
+
+            <!-- Popover: on click ellipsis -->
+            <PopoverPrimevue ref="ellipsis">
+                <div class="flex flex-col gap-2">
+                    <!-- Button: Undispatched -->
+                    <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
+                                             :routeDelete="routes.rollback_dispatch"
+                                             :title="trans('Are you sure you want to rollback the Order??')"
+                                             :description="trans('The state of the Order will go back to finalised state.')"
+                                             isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
+                        <template #default="{ changeModel }">
+                            <Button @click="changeModel" type="negative" :label="trans('Undispatch')"
+                                    icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
+                        </template>
+                    </ModalConfirmationDelete>
+
+                    <Button
+                        v-if="proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)"
+                        @click="() => isOpenModalProforma = true" type="tertiary"
+                        :label="trans('Proforma Invoice')" icon="fal fa-download" />
+
+                </div>
+            </PopoverPrimevue>
         </template>
 
         <template #afterTitle2>
@@ -1004,59 +1034,81 @@ const copyToClipboard = async (text: string, label: string) => {
         <!-- Box: Payment/Invoices/Delivery Notes  -->
         <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
-
-
                 <div class=" pl-1">
                     <!-- Field: Billing -->
-                    <dl class="relative flex items-start w-full flex-none gap-x-1">
+                    <dl class="relative flex items-start w-full flex-none gap-x-1 py-1">
                         <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
                         </dt>
 
-                        <div v-if="box_stats.products.payment.pay_status != 'no_need'">
-                            <NeedToPay :totalAmount="box_stats.products.payment.total_amount"
-                                :paidAmount="box_stats.products.payment.paid_amount"
-                                :payAmount="box_stats.products.payment.pay_amount"
-                                xclass="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                                :currencyCode="currency.code">
-                                <template #default>
-                                    <!-- Pay: Invoice -->
-                                    <div v-if="box_stats.products.payment.pay_amount > 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
-                                        class="pt-1 border-t border-green-300 text-xxs">
-                                        <Button @click.prevent="() => onClickPayInvoice()" :label="trans('Pay')"
-                                            type="secondary" size="xxs" />
+                        <div v-if="box_stats.products.payment.pay_status != 'no_need'" class="">
+                            <!-- Section: pay with balance (if order Submit without paid) -->
+                            
+
+                            <div class="w-fit flex xgap-x-2 border rounded isolate">
+                                <NeedToPay :totalAmount="box_stats.products.payment.total_amount"
+                                    :paidAmount="box_stats.products.payment.paid_amount"
+                                    :payAmount="box_stats.products.payment.pay_amount"
+                                    xclass="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
+                                    class="border-0 border-r pr-2"
+                                    :currencyCode="currency.code">
+                                    <template #default>
+                                        <!-- Pay: Invoice -->
+                                        <div v-if="box_stats.products.payment.pay_amount > 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
+                                            class="pt-1 border-t border-green-300 text-xxs">
+                                            <Button @click.prevent="() => onClickPayInvoice()" :label="trans('Pay')"
+                                                type="secondary" size="xxs" />
+                                        </div>
+                                        <!-- Pay: Refund -->
+                                        <div v-if="box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
+                                            class="pt-1 border-t border-green-300 text-xxs">
+                                            <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
+                                                type="secondary" size="xxs" />
+                                        </div>
+                                        <!-- Pay: excesses balance -->
+                                        <div v-if="box_stats.products.excesses_payment?.amount > 0"
+                                            class="pt-1 border-t border-green-300 text-xxs">
+                                            <p class="text-gray-500 mb-1 mt-2">
+                                                {{ trans("The order is overpaid") }}:
+                                                <span class="text-gray-700">
+                                                    {{
+                                                    locale.currencyFormat(currency.code,
+                                                    Number(box_stats.products.excesses_payment?.amount))
+                                                    }}
+                                                </span>
+                                            </p>
+                                            <ButtonWithLink
+                                                v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
+                                                :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
+                                                icon="far fa-plus" label="Add to customer balance" size="xxs" />
+                                        </div>
+                                    </template>
+                                </NeedToPay>
+
+                                <div v-if="
+                                    box_stats.products.payment.pay_amount > 0
+                                    && box_stats.products.payment.pay_amount <= box_stats?.customer?.balance
+                                    && props.data?.data?.state === 'submitted'
+                                " class="-ml-2 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded pl-4 pr-2">
+                                    <div class="text-yellow-700">
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                                        {{ trans("Order :xorder is not paid yet", { xorder: data?.data?.reference }) }}
+                                    </div>
+                                    <div class="mt-2 whitespace-nowrap text-xs xtext-center">{{ trans("Customer balance") }}: <span class="font-bold text-xs">{{ locale.currencyFormat(currency.code, Number(box_stats?.customer?.balance)) }}</span></div>
+                                    <div class="mt-1">
+                                        <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(currency.code, Number(box_stats.products.payment.pay_amount)) })" size="xxs" type="secondary" :loading="isLoadingPayWithBalance" />
                                     </div>
 
-                                    <!-- Pay: Refund -->
-                                    <div v-if="box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
-                                        class="pt-1 border-t border-green-300 text-xxs">
-                                        <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
-                                            type="secondary" size="xxs" />
+                                    <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
+                                        <LoadingIcon />
                                     </div>
+                                </div>
+                            </div>
 
-                                    <!-- Pay: excesses balance -->
-                                    <div v-if="box_stats.products.excesses_payment?.amount > 0"
-                                        class="pt-1 border-t border-green-300 text-xxs">
-                                        <p class="text-gray-500 mb-1 mt-2">
-                                            {{ trans("The order is overpaid") }}:
-                                            <span class="text-gray-700">
-                                                {{
-                                                locale.currencyFormat(currency.code,
-                                                Number(box_stats.products.excesses_payment?.amount))
-                                                }}
-                                            </span>
-                                        </p>
-
-                                        <ButtonWithLink
-                                            v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
-                                            :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
-                                            icon="far fa-plus" label="Add to customer balance" size="xxs" />
-                                    </div>
-
-                                </template>
-                            </NeedToPay>
-                            <div v-if="last_payment" class="text-xs text-gray-500">
+                            
+                            
+                            <div v-if="last_payment" class="mt-1.5 text-xs text-gray-500">
                                 {{ trans("Last payments:") }}
                                 <Link :href="route('grp.org.accounting.payments.show', {
                                     organisation: route().params.organisation,
@@ -1065,6 +1117,7 @@ const copyToClipboard = async (text: string, label: string) => {
                                 </Link>
                             </div>
                         </div>
+                        
                         <div v-else class="text-gray-500">
                             <div class="border border-gray-300 rounded-md p-2 pr-4">
                                 {{ trans("Order cancelled, payments returned to balance") }}
@@ -1082,6 +1135,16 @@ const copyToClipboard = async (text: string, label: string) => {
                             {{ box_stats?.products.estimated_weight || 0 }} kilograms
                         </dd>
                     </dl>
+
+                    <!-- Field: number of order -->
+                    <!-- <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+                        <dt zv-tooltip="trans('Weight')" class="flex-none pl-1">
+                            <FontAwesomeIcon icon="fal fa-sort-numeric-down" fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500" v-tooltip="box_stats?.order_properties?.customer_order_ordinal_tooltip ?? trans('Customer order number')">
+                            {{ box_stats?.order_properties?.customer_order_ordinal || 0 }}
+                        </dd>
+                    </dl> -->
 
 
                     <!-- Field: Invoices -->
@@ -1264,7 +1327,7 @@ const copyToClipboard = async (text: string, label: string) => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to pay")
                             }}: {{
-                            locale.currencyFormat(box_stats.order_summary.currency.code,
+                            locale.currencyFormat(box_stats.currency.code,
                             box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
@@ -1325,7 +1388,7 @@ const copyToClipboard = async (text: string, label: string) => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to refund")
                             }}: {{
-                            locale.currencyFormat(box_stats.order_summary.currency.code,
+                            locale.currencyFormat(box_stats.currency.code,
                             box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"

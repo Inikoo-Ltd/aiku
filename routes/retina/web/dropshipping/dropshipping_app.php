@@ -12,6 +12,10 @@ use App\Actions\Dropshipping\Amazon\AuthorizeRetinaAmazonUser;
 use App\Actions\Dropshipping\Amazon\CallbackRetinaAmazonUser;
 use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
+use App\Actions\Dropshipping\Ebay\CheckEbayUserAuthorized;
+use App\Actions\Dropshipping\Ebay\CheckEbayUserCreating;
+use App\Actions\Dropshipping\Ebay\IndexEbayUserPolicies;
+use App\Actions\Dropshipping\Ebay\ShowCallbackSuccessRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\StoreMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
@@ -39,15 +43,19 @@ use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ReconnectRetinaCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\RedirectRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
+use App\Actions\Retina\Dropshipping\Orders\UpdateCustomerOrderVatStatus;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
 use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
+use App\Actions\Retina\Ebay\StoreRetinaEbayUser;
+use App\Actions\Retina\Ebay\UpdateRetinaEbayUser;
 use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
@@ -59,6 +67,14 @@ Route::get('select-products-for-basket/{order:id}', IndexRetinaDropshippingProdu
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
     Route::get('/', IndexRetinaDropshippingCustomerSalesChannels::class)->name('index');
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
+
+    Route::get('/{customerSalesChannel:id}/redirect', RedirectRetinaCustomerSalesChannel::class)->name('redirect');
+
+    Route::post('ebay-user', StoreRetinaEbayUser::class)->name('ebay.store');
+    Route::patch('ebay-user/{ebayUser}', UpdateRetinaEbayUser::class)->name('ebay.update')->withoutScopedBindings();
+    Route::get('ebay-user/{ebayUser}/auth-check', CheckEbayUserAuthorized::class)->name('ebay.auth_check')->withoutScopedBindings();
+    Route::get('ebay-user/creating-check', CheckEbayUserCreating::class)->name('ebay.creating_check')->withoutScopedBindings();
+    Route::get('ebay-user/{ebayUser}/policies', IndexEbayUserPolicies::class)->name('ebay_policies.index')->withoutScopedBindings();
 });
 
 Route::prefix('platform')->as('platform.')->group(function () {
@@ -72,6 +88,7 @@ Route::prefix('platform')->as('platform.')->group(function () {
 
     Route::post('ebay-user/authorize', AuthorizeRetinaEbayUser::class)->name('ebay.authorize');
     Route::get('ebay-user-callback', CallbackRetinaEbayUser::class)->name('ebay.callback');
+    Route::get('ebay-user-callback/success', ShowCallbackSuccessRetinaEbayUser::class)->name('ebay_callback.success');
 
     Route::post('amazon-user/authorize', AuthorizeRetinaAmazonUser::class)->name('amazon.authorize');
     Route::get('amazon-user-callback', CallbackRetinaAmazonUser::class)->name('amazon.callback');
@@ -90,6 +107,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');
         Route::get('{order}', ShowRetinaDropshippingBasket::class)->name('show');
+        Route::patch('{order}/vatCheck', UpdateCustomerOrderVatStatus::class)->name('vatCheck');
     });
 
     Route::prefix('client')->as('client.')->group(function () {

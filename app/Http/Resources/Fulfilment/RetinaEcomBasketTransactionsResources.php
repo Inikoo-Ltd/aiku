@@ -57,7 +57,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             $webpage = Webpage::where('model_id', $transaction->product_id)
             ->where('model_type', class_basename(Product::class))->first();
 
-            $webpageUrl = $webpage->getCanonicalUrl();
+            $webpageUrl = $webpage?->getCanonicalUrl();
         }
 
         return [
@@ -74,6 +74,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'asset_code'          => $transaction->asset_code,
             'asset_name'          => $transaction->asset_name,
             'asset_type'          => $transaction->asset_type,
+            'units'               => $transaction->units,
             'price'               => $transaction->price,
             'product_slug'        => $transaction->product_slug,
             'image'               => $transaction->product_image_id ? ImageResource::make($media)->getArray() : null,
@@ -81,6 +82,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'available_quantity'    => $transaction->available_quantity,
             'currency_code'       => $transaction->currency_code,
             'webpage_url'         => $webpageUrl,
+            'offers_data'         => $transaction->offers_data,
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',
                 'parameters' => [

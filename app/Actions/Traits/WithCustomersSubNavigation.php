@@ -9,6 +9,8 @@
 
 namespace App\Actions\Traits;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -38,14 +40,11 @@ trait WithCustomersSubNavigation
             ]
         ];
 
-
-
-
         // $meta[] = [
-        // 'route'     => [
-        //     'name'       => 'grp.org.shops.show.crm.prospects.lists.index',
-        //     'parameters' => $request->route()->originalParameters()
-        // ],
+        //     'route'     => [
+        //         'name'       => 'grp.org.shops.show.crm.prospects.lists.index',
+        //         'parameters' => $request->route()->originalParameters()
+        //     ],
         //     'number'   => $this->parent->crmStats->number_prospect_queries,
         //     'label'    => __('Lists'),
         //     'leftIcon' => [
@@ -53,8 +52,6 @@ trait WithCustomersSubNavigation
         //         'tooltip' => __('lists')
         //     ]
         // ];
-
-
 
         $meta[] = [
             'route'     => [
@@ -82,18 +79,20 @@ trait WithCustomersSubNavigation
             ]
         ];
 
-        $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.platforms.index',
-                'parameters' => $request->route()->originalParameters()
-            ],
-            'number'   => Platform::all()->count(), // Fix Later with hydrators
-            'label'    => __('Platforms'),
-            'leftIcon' => [
-                'icon'    => 'fal fa-route',
-                'tooltip' => __('platforms')
-            ]
-        ];
+        if ($this->parent instanceof Shop && $this->parent->type === ShopTypeEnum::DROPSHIPPING) {
+            $meta[] = [
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.crm.platforms.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'number'   => Platform::all()->count(), // Fix Later with hydrators
+                'label'    => __('Platforms'),
+                'leftIcon' => [
+                    'icon'    => 'fal fa-route',
+                    'tooltip' => __('platforms')
+                ]
+            ];
+        }
 
         $meta[] = [
             'route'     => [

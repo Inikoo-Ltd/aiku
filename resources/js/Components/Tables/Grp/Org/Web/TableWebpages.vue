@@ -84,15 +84,6 @@ function webpageRoute(webpage: Webpage) {
                     route().params['website'],
                     webpage.slug
                 ]);
-        case 'grp.org.shops.show.web.webpages.index.type.content':
-            return route(
-                'grp.org.shops.show.web.webpages.show',
-                [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
-                    webpage.slug
-                ]);
         case 'grp.org.shops.show.web.webpages.index.type.catalogue':
             return route(
                 'grp.org.shops.show.web.webpages.show',
@@ -245,14 +236,20 @@ function productsRoute(webpage: Webpage) {
         </template>
 
         <template #cell(action)="{ item: webpage }">
-            <div
-                class="px-2 cursor-pointer"
-                v-tooltip="'Go to website'"
-                @click="openWebsite(webpage.href)"
-                role="button"
-                tabindex="0"
+            <a
+                v-if="webpage.href"
+                class="px-2 cursor-pointer text-gray-400 hover:text-gray-700"
+                v-tooltip="'Open the website in new tab'"
+                :href="webpage.href ?? '#'"
+                target="_blank"
+                rel="noopener noreferrer"
+
             >
-                <FontAwesomeIcon :icon="faExternalLink" size="xl" aria-hidden="true" />
+                <FontAwesomeIcon :icon="faExternalLink" size="xl" fixed-width aria-hidden="true" />
+            </a>
+
+            <div v-else class="text-gray-400">
+                No canonical url
             </div>
         </template>
 

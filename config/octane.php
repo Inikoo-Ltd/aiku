@@ -221,7 +221,7 @@ return [
     |
     */
 
-    'max_execution_time' => 300,
+    'max_execution_time' => 45,
 
     'roadrunner' => [
         'command' => env('OCTANE_ROADRUNNER_WORKER_PATH', base_path('vendor/bin/roadrunner-worker')),

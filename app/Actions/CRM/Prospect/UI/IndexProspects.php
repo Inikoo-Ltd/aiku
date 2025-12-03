@@ -52,28 +52,38 @@ class IndexProspects extends OrgAction
         $this->parent = group();
         $this->scope  = 'all';
         $tabs         = ProspectsTabsEnum::values();
-        unset($tabs[array_search(ProspectsTabsEnum::DASHBOARD->value, $tabs)]);
-        $this->initialisationFromGroup(group(), $request)->withTab($tabs);
+
+        $this->initialisationFromGroup(group(), $request)
+            ->withTab($tabs);
 
         return $this->handle($this->parent, ProspectsTabsEnum::PROSPECTS->value, 'all');
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
-    {
+    public function inFulfilment(
+        Organisation $organisation,
+        Fulfilment $fulfilment,
+        ActionRequest $request
+    ): LengthAwarePaginator {
         $this->parent = $fulfilment;
         $this->scope  = 'all';
-        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(ProspectsTabsEnum::values());
+
+        $this->initialisationFromFulfilment($fulfilment, $request)
+            ->withTab(ProspectsTabsEnum::values());
 
         return $this->handle($this->parent, ProspectsTabsEnum::PROSPECTS->value, 'all');
     }
 
-
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
-    {
+    public function asController(
+        Organisation $organisation,
+        Shop $shop,
+        ActionRequest $request
+    ): LengthAwarePaginator {
         $this->parent = $shop;
         $this->scope  = 'all';
-        $this->initialisationFromShop($shop, $request)->withTab(ProspectsTabsEnum::values());
+
+        $this->initialisationFromShop($shop, $request)
+            ->withTab(ProspectsTabsEnum::values());
 
         return $this->handle($shop, ProspectsTabsEnum::PROSPECTS->value, 'all');
     }
@@ -129,6 +139,7 @@ class IndexProspects extends OrgAction
                     ),
                     'engine'   => function ($query, $elements) use ($scope) {
                         $query->whereIn('prospects.state', $elements);
+
                         if ($scope == 'opt_in') {
                             $query->where('prospects.is_opt_in', true);
                         } elseif ($scope == 'opt_out') {
@@ -142,9 +153,11 @@ class IndexProspects extends OrgAction
         return $elements;
     }
 
-    // if $scope is set as $scope= all, then php artisan ide-helper:meta will fail!
-    public function handle(Group|Organisation|Shop|Fulfilment|Tag $parent, $prefix = null, $scope): LengthAwarePaginator
-    {
+    public function handle(
+        Group|Organisation|Shop|Fulfilment|Tag $parent,
+        ?string $prefix,
+        string $scope
+    ): LengthAwarePaginator {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('prospects.name', $value)
@@ -203,9 +216,11 @@ class IndexProspects extends OrgAction
                 'is_opt_in',
                 AllowedSort::callback('website', function ($query, $direction) {
                     $direction = strtolower($direction);
+
                     if (!in_array($direction, ['asc', 'desc'])) {
                         $direction = 'asc';
                     }
+
                     return $query->orderBy('contact_website', $direction);
                 }),
             ])
@@ -214,14 +229,20 @@ class IndexProspects extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|Shop|Fulfilment|Tag $parent, ?array $modelOperations = null, $prefix = null, $scope = 'all'): Closure
-    {
+    public function tableStructure(
+        Group|Organisation|Shop|Fulfilment|Tag $parent,
+        ?array $modelOperations = null,
+        $prefix = null,
+        $scope = 'all'
+    ): Closure {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $scope) {
+
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
+
             if (class_basename($parent) != 'Tag' && !($parent instanceof Group)) {
                 foreach ($this->getElementGroups($parent, $scope) as $key => $elementGroup) {
                     $table->elementGroup(
@@ -232,19 +253,18 @@ class IndexProspects extends OrgAction
                 }
             }
 
-
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch();
+
             if (!($parent instanceof Group)) {
-                $table->withEmptyState(
-                    [
-                        'title'       => __('No Prospects'),
-                        'description' => null,
-                        'count'       => $parent->crmStats->number_prospects
-                    ]
-                );
+                $table->withEmptyState([
+                    'title'       => __('No Prospects'),
+                    'description' => null,
+                    'count'       => $parent->crmStats->number_prospects
+                ]);
             }
+
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_opt_in', label: __('Opt In'), canBeHidden: false, sortable: true, searchable: true)
@@ -254,32 +274,38 @@ class IndexProspects extends OrgAction
         };
     }
 
-    public function jsonResponse(LengthAwarePaginator $prospects): AnonymousResourceCollection
-    {
+    public function jsonResponse(
+        LengthAwarePaginator $prospects
+    ): AnonymousResourceCollection {
         return ProspectsResource::collection($prospects);
     }
 
-
-    public function htmlResponse(LengthAwarePaginator $prospects, ActionRequest $request): Response
-    {
-
-        $shop = $request->route()->parameters()['shop'];
+    public function htmlResponse(
+        LengthAwarePaginator $prospects,
+        ActionRequest $request
+    ): Response {
+        $shop          = $request->route()->parameters()['shop'];
         $subNavigation = $this->getSubNavigation($shop, $request);
 
         $navigation = ProspectsTabsEnum::navigation();
+
         if (!($this->parent instanceof Shop)) {
             unset($navigation[ProspectsTabsEnum::CONTACTED->value]);
             unset($navigation[ProspectsTabsEnum::FAILED->value]);
             unset($navigation[ProspectsTabsEnum::SUCCESS->value]);
         }
 
-
-
         if ($this->parent instanceof Shop) {
             $spreadsheetRoute = [
                 'event'           => 'action-progress',
-                'channel'         => 'grp.personal.' . $this->group->id,
-                'required_fields' => ["id:prospect_key", "company", "contact_name", "email", "telephone"],
+                'channel'         => 'grp.personal.'.$this->group->id,
+                'required_fields' => [
+                    "id:prospect_key",
+                    "company",
+                    "contact_name",
+                    "email",
+                    "telephone"
+                ],
                 'route'           => [
                     'upload' => [
                         'name'       => 'grp.models.shop.prospects.upload',
@@ -291,10 +317,7 @@ class IndexProspects extends OrgAction
             ];
         }
 
-
-
         if ($this->parent instanceof Group) {
-            unset($navigation[ProspectsTabsEnum::DASHBOARD->value]);
             $subNavigation = null;
         }
 
@@ -304,37 +327,110 @@ class IndexProspects extends OrgAction
                 'navigation' => $navigation,
             ],
 
-            ProspectsTabsEnum::DASHBOARD->value => $this->tab == ProspectsTabsEnum::DASHBOARD->value ?
-                fn () => GetProspectsDashboard::run($this->parent, $request)
-                : Inertia::lazy(fn () => GetProspectsDashboard::run($this->parent, $request)),
+            ProspectsTabsEnum::PROSPECTS->value =>
+                $this->tab == ProspectsTabsEnum::PROSPECTS->value
+                    ? fn () => ProspectsResource::collection($prospects)
+                    : Inertia::lazy(fn () => ProspectsResource::collection($prospects)),
 
-            ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
-                fn () => ProspectsResource::collection($prospects)
-                : Inertia::lazy(fn () => ProspectsResource::collection($prospects)),
+            ProspectsTabsEnum::OPT_IN->value =>
+                $this->tab == ProspectsTabsEnum::OPT_IN->value
+                    ? fn () => ProspectsResource::collection(
+                        IndexProspects::run(
+                            parent: $this->parent,
+                            prefix: ProspectsTabsEnum::OPT_IN->value,
+                            scope: 'opt_in'
+                        )
+                    )
+                    : Inertia::lazy(fn () => ProspectsResource::collection(
+                        IndexProspects::run(
+                            parent: $this->parent,
+                            prefix: ProspectsTabsEnum::OPT_IN->value,
+                            scope: 'opt_in'
+                        )
+                    )),
 
-            ProspectsTabsEnum::OPT_IN->value => $this->tab == ProspectsTabsEnum::OPT_IN->value ?
-                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_IN->value, scope: 'opt_in'))
-                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_IN->value, scope: 'opt_in'))),
+            ProspectsTabsEnum::OPT_OUT->value =>
+                $this->tab == ProspectsTabsEnum::OPT_OUT->value
+                    ? fn () => ProspectsResource::collection(
+                        IndexProspects::run(
+                            parent: $this->parent,
+                            prefix: ProspectsTabsEnum::OPT_OUT->value,
+                            scope: 'opt_out'
+                        )
+                    )
+                    : Inertia::lazy(fn () => ProspectsResource::collection(
+                        IndexProspects::run(
+                            parent: $this->parent,
+                            prefix: ProspectsTabsEnum::OPT_OUT->value,
+                            scope: 'opt_out'
+                        )
+                    )),
 
-            ProspectsTabsEnum::OPT_OUT->value => $this->tab == ProspectsTabsEnum::OPT_OUT->value ?
-                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_OUT->value, scope: 'opt_out'))
-                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_OUT->value, scope: 'opt_out'))),
+            ProspectsTabsEnum::CONTACTED->value =>
+                $this->tab == ProspectsTabsEnum::CONTACTED->value
+                    ? fn () => ProspectsResource::collection(
+                        IndexProspects::run(
+                            parent: $this->parent,
+                            prefix: ProspectsTabsEnum::CONTACTED->value,
+                            scope: 'contacted'
+                        )
+                    )
+                    : Inertia::lazy(fn () => ProspectsResource::collection(
+                        IndexProspects::run(
+                            parent: $this->parent,
+                            prefix: ProspectsTabsEnum::CONTACTED->value,
+                            scope: 'contacted'
+                        )
+                    )),
 
-            ProspectsTabsEnum::CONTACTED->value => $this->tab == ProspectsTabsEnum::CONTACTED->value ?
-                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
-                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))),
+            ProspectsTabsEnum::FAILED->value =>
+                $this->tab == ProspectsTabsEnum::FAILED->value
+                    ? fn () => ProspectsResource::collection(
+                        IndexProspects::run(
+                            parent: $this->parent,
+                            prefix: ProspectsTabsEnum::FAILED->value,
+                            scope: 'fail'
+                        )
+                    )
+                    : Inertia::lazy(fn () => ProspectsResource::collection(
+                        IndexProspects::run(
+                            parent: $this->parent,
+                            prefix: ProspectsTabsEnum::FAILED->value,
+                            scope: 'fail'
+                        )
+                    )),
 
-            ProspectsTabsEnum::FAILED->value => $this->tab == ProspectsTabsEnum::FAILED->value ?
-                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))
-                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))),
+            ProspectsTabsEnum::SUCCESS->value =>
+                $this->tab == ProspectsTabsEnum::SUCCESS->value
+                    ? fn () => ProspectsResource::collection(
+                        IndexProspects::run(
+                            parent: $this->parent,
+                            prefix: ProspectsTabsEnum::SUCCESS->value,
+                            scope: 'success'
+                        )
+                    )
+                    : Inertia::lazy(fn () => ProspectsResource::collection(
+                        IndexProspects::run(
+                            parent: $this->parent,
+                            prefix: ProspectsTabsEnum::SUCCESS->value,
+                            scope: 'success'
+                        )
+                    )),
 
-            ProspectsTabsEnum::SUCCESS->value => $this->tab == ProspectsTabsEnum::SUCCESS->value ?
-                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))
-                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))),
-
-            ProspectsTabsEnum::HISTORY->value => $this->tab == ProspectsTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))),
+            ProspectsTabsEnum::HISTORY->value =>
+                $this->tab == ProspectsTabsEnum::HISTORY->value
+                    ? fn () => HistoryResource::collection(
+                        IndexHistory::run(
+                            model: Prospect::class,
+                            prefix: ProspectsTabsEnum::HISTORY->value
+                        )
+                    )
+                    : Inertia::lazy(fn () => HistoryResource::collection(
+                        IndexHistory::run(
+                            model: Prospect::class,
+                            prefix: ProspectsTabsEnum::HISTORY->value
+                        )
+                    )),
         ];
 
         return Inertia::render(
@@ -344,7 +440,9 @@ class IndexProspects extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
+
                 'title'              => __('Prospects'),
+
                 'pageHead'           => array_filter([
                     'icon'          => ['fal', 'fa-user-plus'],
                     'title'         => __('Prospects'),
@@ -352,36 +450,34 @@ class IndexProspects extends OrgAction
                         $this->canEdit ? [
                             'type'    => 'buttonGroup',
                             'buttons' =>
-                            match (class_basename($this->parent)) {
-                                'Shop' => [
-                                    [
-                                        'style' => 'primary',
-                                        'icon'  => ['fal', 'fa-upload'],
-                                        'label' => 'Upload',
-                                        'route' => [
-                                            'name'       => 'grp.org.models.shop.prospects.upload',
-                                            'parameters' => $this->parent->id
-
+                                match (class_basename($this->parent)) {
+                                    'Shop' => [
+                                        [
+                                            'style' => 'primary',
+                                            'icon'  => ['fal', 'fa-upload'],
+                                            'label' => 'Upload',
+                                            'route' => [
+                                                'name'       => 'grp.org.models.shop.prospects.upload',
+                                                'parameters' => $this->parent->id
+                                            ],
                                         ],
-                                    ],
-                                    [
-                                        'type'  => 'button',
-                                        'style' => 'create',
-                                        'label' => __('Prospect'),
-                                        'route' => [
-                                            'name'       => 'grp.org.shops.show.prospects.create',
-                                            'parameters' => $request->route()->originalParameters()
+                                        [
+                                            'type'  => 'button',
+                                            'style' => 'create',
+                                            'label' => __('Prospect'),
+                                            'route' => [
+                                                'name'       => 'grp.org.shops.show.prospects.create',
+                                                'parameters' => $request->route()->originalParameters()
+                                            ]
                                         ]
-                                    ]
-                                ],
-                                default => []
-                            }
-
-
+                                    ],
+                                    default => []
+                                }
                         ] : false
                     ],
                     'subNavigation' => $subNavigation,
                 ]),
+
                 'uploads'            => [
                     'templates' => [
                         'routes' => [
@@ -389,9 +485,11 @@ class IndexProspects extends OrgAction
                         ]
                     ],
                     'event'     => class_basename(Prospect::class),
-                    'channel'   => 'uploads.org.' . request()->user()->id
+                    'channel'   => 'uploads.org.'.request()->user()->id
                 ],
+
                 'upload_spreadsheet' => $spreadsheetRoute ?? null,
+
                 'uploadRoutes'       => [
                     'upload'  => [
                         'name'       => 'org.models.shop.prospects.upload',
@@ -402,38 +500,68 @@ class IndexProspects extends OrgAction
                         'parameters' => []
                     ],
                 ],
-                'download_route' => [
-                    'xlsx'   => [
+
+                'download_route'     => [
+                    'xlsx' => [
                         'name'       => 'grp.org.shops.show.crm.prospects.export',
                         'parameters' => [
                             'organisation' => $this->organisation->slug,
-                            'shop' => $this->shop->slug,
-                            'type' => 'xlsx'
+                            'shop'         => $this->shop->slug,
+                            'type'         => 'xlsx'
                         ]
                     ],
-                    'csv'    => [
+                    'csv'  => [
                         'name'       => 'grp.org.shops.show.crm.prospects.export',
                         'parameters' => [
                             'organisation' => $this->organisation->slug,
-                            'shop' => $this->shop->slug,
-                            'type'                 => 'csv'
+                            'shop'         => $this->shop->slug,
+                            'type'         => 'csv'
                         ]
                     ]
                 ],
-                ...$tabs
 
+                ...$tabs
             ]
-        )->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::PROSPECTS->value))
-            ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
-            ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))
-            ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))
-            ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_IN->value, scope: 'opt_in'))
-            ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_OUT->value, scope: 'opt_out'))
-            ->table(IndexHistory::make()->tableStructure(prefix: ProspectsTabsEnum::HISTORY->value));
+        )
+            ->table($this->tableStructure(
+                parent: $this->parent,
+                prefix: ProspectsTabsEnum::PROSPECTS->value
+            ))
+            ->table($this->tableStructure(
+                parent: $this->parent,
+                prefix: ProspectsTabsEnum::CONTACTED->value,
+                scope: 'contacted'
+            ))
+            ->table($this->tableStructure(
+                parent: $this->parent,
+                prefix: ProspectsTabsEnum::FAILED->value,
+                scope: 'fail'
+            ))
+            ->table($this->tableStructure(
+                parent: $this->parent,
+                prefix: ProspectsTabsEnum::SUCCESS->value,
+                scope: 'success'
+            ))
+            ->table($this->tableStructure(
+                parent: $this->parent,
+                prefix: ProspectsTabsEnum::OPT_IN->value,
+                scope: 'opt_in'
+            ))
+            ->table($this->tableStructure(
+                parent: $this->parent,
+                prefix: ProspectsTabsEnum::OPT_OUT->value,
+                scope: 'opt_out'
+            ))
+            ->table(
+                IndexHistory::make()
+                    ->tableStructure(prefix: ProspectsTabsEnum::HISTORY->value)
+            );
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
-    {
+    public function getBreadcrumbs(
+        string $routeName,
+        array $routeParameters
+    ): array {
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
@@ -453,22 +581,19 @@ class IndexProspects extends OrgAction
                 ShowShop::make()->getBreadcrumbs(
                     $routeParameters
                 ),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.crm.prospects.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
+                $headCrumb([
+                    'name'       => 'grp.org.shops.show.crm.prospects.index',
+                    'parameters' => $routeParameters
+                ])
             ),
+
             'grp.overview.crm.prospects.index' =>
             array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.overview.crm.prospects.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
+                $headCrumb([
+                    'name'       => 'grp.overview.crm.prospects.index',
+                    'parameters' => $routeParameters
+                ])
             ),
 
             default => []

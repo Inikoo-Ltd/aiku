@@ -9,12 +9,11 @@
 
 namespace App\Actions\Dropshipping\Ebay;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
-use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\EbayUserStepEnum;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use Exception;
 use Illuminate\Support\Arr;
@@ -25,7 +24,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
 
-class CallbackRetinaEbayUser extends OrgAction
+class CallbackRetinaEbayUser extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -37,6 +36,7 @@ class CallbackRetinaEbayUser extends OrgAction
      */
     public function handle(Customer $customer, array $modelData): string
     {
+
         $config = $this->getEbayConfig();
 
         try {
@@ -52,21 +52,13 @@ class CallbackRetinaEbayUser extends OrgAction
                 $tokenData = $response->json();
 
                 /** @var EbayUser $ebayUser */
-                $ebayUser = StoreEbayUser::run($customer, [
-                    'settings' => [
-                        'credentials' => [
-                            'ebay_access_token' => $tokenData['access_token'],
-                            'ebay_refresh_token' => $tokenData['refresh_token'],
-                            'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
-                        ]
-                    ]
-                ]);
+                $ebayUser = EbayUser::where('customer_id', $customer->id)
+                    ->where('step', EbayUserStepEnum::MARKETPLACE)
+                    ->orderBy('updated_at', 'desc')
+                    ->first();
 
-                $ebayUser->refresh();
-                $userData = $ebayUser->getUser();
-
-                if ($customerSalesChannel = CustomerSalesChannel::where('name', Arr::get($userData, 'username'))->first()) {
-                    $currentEbayUser = UpdateEbayUser::run($customerSalesChannel->user, [
+                $ebayUser = UpdateEbayUser::run($ebayUser, [
+                        'step' => EbayUserStepEnum::AUTH,
                         'settings' => [
                             'credentials' => [
                                 'ebay_access_token' => $tokenData['access_token'],
@@ -76,33 +68,15 @@ class CallbackRetinaEbayUser extends OrgAction
                         ]
                     ]);
 
-                    $ebayUser->delete();
-                    $ebayUser->customerSalesChannel()->delete();
-
-                    $ebayUser = $currentEbayUser;
-                } else {
-                    $ebayUser = UpdateEbayUser::run($ebayUser, [
-                        'name' => Arr::get($userData, 'username'),
-                    ]);
-
-                    UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
-                        'reference' => Arr::get($userData, 'username'),
-                        'name' => Arr::get($userData, 'username')
-                    ]);
-
-                    UpdateEbayUserData::dispatch($ebayUser);
-                }
-
-                CheckEbayChannel::run($ebayUser);
+                UpdateEbayUserData::run($ebayUser);
+                // CheckEbayChannel::run($ebayUser);
 
                 $routeName = match ($ebayUser->customer->is_fulfilment) {
                     true => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
-                    default => 'retina.dropshipping.customer_sales_channels.show'
+                    default => 'retina.dropshipping.platform.ebay_callback.success'
                 };
 
-                return route($routeName, [
-                    'customerSalesChannel' => $ebayUser->customerSalesChannel->slug
-                ]);
+                return route($routeName);
             }
 
             throw new Exception('Failed to exchange code for token: ' . $response->body());
@@ -119,6 +93,8 @@ class CallbackRetinaEbayUser extends OrgAction
 
     public function asController(ActionRequest $request): string
     {
+        $this->initialisation($request);
+
         return $this->handle($request->user()->customer, $request->all());
     }
 }

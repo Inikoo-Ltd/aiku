@@ -12,17 +12,23 @@ use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\CloseWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
+use App\Actions\Web\Webpage\ReopenWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
+use App\Enums\Web\Redirect\RedirectTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
+use App\Models\Web\Webpage;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
@@ -30,6 +36,9 @@ use App\Stubs\Migrations\HasProductInformation;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class UpdateProduct extends OrgAction
 {
@@ -44,8 +53,10 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
-
         $webpageData = [];
+        $newData = [];
+        $oldData = $product->toArray();
+
         if (Arr::has($modelData, 'webpage_title')) {
             $webpageData['title'] = Arr::pull($modelData, 'webpage_title');
         }
@@ -66,31 +77,37 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        $orgStocks = null;
+        // todo: remove this after total aurora migration
+        if (!$this->strict) {
+            $orgStocks = null;
 
-        if (Arr::has($modelData, 'org_stocks')) {
-            $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
+            if (Arr::has($modelData, 'org_stocks')) {
+                $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
 
 
-            $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
+                $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
 
-            $orgStocksRaw = array_map(function ($item) {
-                $filtered             = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
-                $filtered['quantity'] = (float)$filtered['quantity']; // or (int) if you want integers
+                $orgStocksRaw = array_map(function ($item) {
+                    $filtered             = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
+                    $filtered['quantity'] = (float)$filtered['quantity']; // or (int) if you want integers
 
-                return $filtered;
-            }, $orgStocksRaw);
+                    return $filtered;
+                }, $orgStocksRaw);
 
-            $orgStocks = $orgStocksRaw;
+                $orgStocks = $orgStocksRaw;
+            }
+
+            if (Arr::has($modelData, 'well_formatted_org_stocks')) {
+                $orgStocks = Arr::pull($modelData, 'well_formatted_org_stocks', []);
+            }
+
+            if ($orgStocks !== null) {
+                $this->syncOrgStocksToBeDeleted($product, $orgStocks);
+            }
+        } elseif (Arr::has($modelData, 'trade_units')) {
+            $product = SyncProductTradeUnits::run($product, Arr::pull($modelData, 'trade_units'));
         }
 
-        if (Arr::has($modelData, 'well_formatted_org_stocks')) {
-            $orgStocks = Arr::pull($modelData, 'well_formatted_org_stocks', []);
-        }
-
-        if ($orgStocks !== null) {
-            $this->syncOrgStocks($product, $orgStocks);
-        }
 
         $assetData = [];
         if (Arr::has($modelData, 'follow_master')) {
@@ -129,6 +146,17 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
+        if (Arr::hasAny($modelData, ['is_for_sale'])) {
+            data_set($modelData, 'not_for_sale_since', $modelData['is_for_sale'] ? null : Carbon::now('UTC'));
+            if (!$modelData['is_for_sale']) {
+                data_set($modelData, 'status', ProductStatusEnum::NOT_FOR_SALE);
+            } else {
+                $modelData = array_merge($modelData, $this->getProductStatus($product));
+            }
+            // For auditing | Ignore not_for_sale_since
+            $newData = array_merge($newData, Arr::except($modelData, ['not_for_sale_since', 'out_of_stock_since', 'back_in_stock_since']));
+        }
+
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
@@ -136,13 +164,46 @@ class UpdateProduct extends OrgAction
             UpdateWebpage::make()->action($product->webpage, $webpageData);
         }
 
-
         if (Arr::has($changed, 'name')) {
             UpdateProductAndMasterTranslations::make()->action($product, [
                 'translations' => [
                     'name' => [$product->shop->language->code => Arr::pull($modelData, 'name')]
                 ]
             ]);
+        }
+
+        if (Arr::has($changed, 'is_for_sale') && $product->webpage) {
+
+            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED) {
+                ReopenWebpage::run($product->webpage);
+            }
+
+            if (!$product->is_for_sale && $product->webpage->state == WebPageStateEnum::LIVE) {
+
+
+                CloseWebpage::make()->action(
+                    $product->webpage,
+                    [
+                        'redirect_type' => RedirectTypeEnum::TEMPORAL,
+                        'to_webpage_id' => $product->webpage->website->storefront_id
+                    ]
+                );
+            }
+
+
+
+        }
+
+
+        if (Arr::has($changed, 'is_for_sale') || $newData) {
+            $product->auditEvent    = 'update';
+            $product->isCustomEvent = true;
+
+            $product->auditCustomOld = array_intersect_key($oldData, $newData);
+
+            $product->auditCustomNew = $newData;
+
+            Event::dispatch(new AuditCustom($product));
         }
 
         if (Arr::has($changed, 'description_title')) {
@@ -169,10 +230,8 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-
         if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
             $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
-
 
             $product->updateQuietly(
                 [
@@ -243,7 +302,6 @@ class UpdateProduct extends OrgAction
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
         }
 
-
         if (Arr::has($changed, 'available_quantity')) {
             $product->updateQuietly([
                 'available_quantity_updated_at' => now()
@@ -267,6 +325,64 @@ class UpdateProduct extends OrgAction
         }
 
         return $product;
+    }
+
+    public function getProductStatus(Product $product): array
+    {
+        // Moved function here, since ProductHydrateAvailableQuantity will call this action making it redundant, and some logic needs to be modified
+        $dataToUpdate = [];
+        if ($product->state == ProductStateEnum::DISCONTINUED) {
+            $dataToUpdate['status'] = ProductStatusEnum::DISCONTINUED;
+            return $dataToUpdate;
+        }
+        $currentQuantity   = $product->available_quantity;
+        $availableQuantity = 0;
+
+        $numberOrgStocksChecked = 0;
+        foreach ($product->orgStocks as $orgStock) {
+
+            if ($orgStock->is_on_demand) {
+                $quantityInStock = 10000;
+            } else {
+                $quantityInStock = $orgStock->quantity_available;
+            }
+
+            $productToOrgStockRatio = $orgStock->pivot->quantity;
+            if (!$productToOrgStockRatio || $productToOrgStockRatio == 0) {
+                continue;
+            }
+
+            $availableQuantityFromThisOrgStock = floor($quantityInStock / $productToOrgStockRatio);
+
+            if ($numberOrgStocksChecked == 0) {
+                $availableQuantity = $availableQuantityFromThisOrgStock;
+            } else {
+                $availableQuantity = min($availableQuantityFromThisOrgStock, $availableQuantity);
+            }
+
+            $numberOrgStocksChecked++;
+        }
+
+        if ($availableQuantity < 0) {
+            $availableQuantity = 0;
+        }
+
+        $dataToUpdate['available_quantity'] = $availableQuantity;
+
+        if ($currentQuantity == 0 && $availableQuantity > 0) {
+            $dataToUpdate['back_in_stock_since'] = now();
+        }
+        if (in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::NOT_FOR_SALE, ProductStatusEnum::OUT_OF_STOCK])) {
+            if ($availableQuantity == 0) {
+                $status                             = ProductStatusEnum::OUT_OF_STOCK;
+                $dataToUpdate['out_of_stock_since'] = now();
+            } else {
+                $status = ProductStatusEnum::FOR_SALE;
+            }
+            $dataToUpdate['status'] = $status;
+        }
+
+        return $dataToUpdate;
     }
 
     public function rules(): array
@@ -321,15 +437,14 @@ class UpdateProduct extends OrgAction
                 'integer',
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
-            'org_stocks'                => ['sometimes', 'present', 'array'],
-            'well_formatted_org_stocks' => ['sometimes', 'present', 'array'],
-            'name_i8n'                  => ['sometimes', 'array'],
-            'description_title_i8n'     => ['sometimes', 'array'],
-            'description_i8n'           => ['sometimes', 'array'],
-            'description_extra_i8n'     => ['sometimes', 'array'],
-            'gross_weight'              => ['sometimes', 'numeric'],
-            'marketing_weight'          => ['sometimes', 'numeric'],
-            'marketing_dimensions'      => ['sometimes'],
+
+            'name_i8n'              => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n'       => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
+            'gross_weight'          => ['sometimes', 'numeric'],
+            'marketing_weight'      => ['sometimes', 'numeric'],
+            'marketing_dimensions'  => ['sometimes'],
 
             'cpnp_number'                  => ['sometimes', 'nullable', 'string'],
             'ufi_number'                   => ['sometimes', 'nullable', 'string'],
@@ -365,9 +480,14 @@ class UpdateProduct extends OrgAction
             'pictogram_oxidising'          => ['sometimes', 'boolean'],
             'pictogram_danger'             => ['sometimes', 'boolean'],
 
-            'webpage_title'       => ['sometimes', 'string'],
-            'webpage_description' => ['sometimes', 'string'],
-            'webpage_breadcrumb_label'    => ['sometimes', 'string', 'max:40'],
+            'webpage_title'            => ['sometimes', 'string'],
+            'webpage_description'      => ['sometimes', 'string'],
+            'webpage_breadcrumb_label' => ['sometimes', 'string', 'max:40'],
+
+            // Sale Status & Webpage
+            'is_for_sale'               => ['sometimes', 'boolean'],
+            'not_for_sale_from_master' => ['sometimes', 'boolean'],
+            'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
 
         ];
 
@@ -376,8 +496,12 @@ class UpdateProduct extends OrgAction
             $rules['org_stocks']                = ['sometimes', 'nullable', 'array'];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
+            $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
+
 
             $rules = $this->noStrictUpdateRules($rules);
+        } else {
+            $rules['trade_units'] = ['sometimes', 'present', 'array'];
         }
 
         return $rules;

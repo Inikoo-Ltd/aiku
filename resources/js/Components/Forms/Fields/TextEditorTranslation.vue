@@ -16,40 +16,35 @@ const props = defineProps<{
 }>()
 
 const emits = defineEmits(["update:form"])
-const key = ref(uniqueId("editor-"))
 
 const storedLang = localStorage.getItem("translation_box")
-const initialLang =
-  storedLang || Object.values(props.fieldData.languages)[0]?.code || "en"
+const initialLang = storedLang || Object.values(props.fieldData.languages)[0]?.code || "en"
 const selectedLang = ref(initialLang)
+const codeString = ref<string | null>(null)
+const key = ref(uniqueId("editor-"))
 
-// loading states
 const loadingOne = ref(false)
 const loadingAll = ref(false)
 
-// ✅ disable state when no original content
-const isDisabled = computed(() =>
-  props.fieldData?.disable ||
-  !props.fieldData?.main ||
-  loadingOne.value ||
-  loadingAll.value
+const isDisabled = computed(
+  () =>
+    props.fieldData?.disable ||
+    !props.fieldData?.main ||
+    loadingOne.value ||
+    loadingAll.value
 )
 
-// Ensure valid lang
-if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.value)) {
+if (!Object.values(props.fieldData.languages).some((l) => l.code === selectedLang.value)) {
   selectedLang.value = Object.values(props.fieldData.languages)[0]?.code || "en"
 }
 
-// Ensure form field exists
 if (!props.form[props.fieldName]) {
   props.form[props.fieldName] = {}
 }
 
-// Local buffer (copy all existing translations)
 const langBuffers = ref<Record<string, string>>({
-  ...props.form[props.fieldName]
+  ...props.form[props.fieldName],
 })
-
 
 const langLabel = (code: string) => {
   const langObj = Object.values(props.fieldData.languages).find(
@@ -58,47 +53,79 @@ const langLabel = (code: string) => {
   return langObj?.name ?? code
 }
 
-// single translation
+let channel: any = null
+const initSocketListener = (isBulk = false) => {
+  if (!window.Echo || !codeString.value) return
+
+  const socketEvent = `translate.${codeString.value}.channel`
+  const socketAction = ".translate-progress"
+
+  if (channel) channel.stopListening(socketAction)
+
+  channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
+    console.log("Translation Socket Event:", eventData)
+
+    if (eventData.translated_text) {
+      langBuffers.value[selectedLang.value] = eventData.translated_text
+      key.value = uniqueId("editor-")
+    }
+
+    // ✅ Stop loading when translation event arrives
+    if (isBulk) {
+      loadingAll.value = false
+    } else {
+      loadingOne.value = false
+    }
+
+    // optional notification
+    notify({
+      title: "Translation Completed",
+      text: `Translation finished for ${langLabel(selectedLang.value)}.`,
+      type: "success",
+    })
+
+    // stop listening after this event
+    channel.stopListening(socketAction)
+  })
+}
+
+// === TRANSLATE ONE LANGUAGE ===
 const generateLanguagetranslateAI = async () => {
   if (isDisabled.value) return
   loadingOne.value = true
+
   try {
     const response = await axios.post(
-      route("grp.models.translate", { languageFrom: props.fieldData.language_from || 'en', languageTo: selectedLang.value }),
+      route("grp.models.translate", {
+        languageFrom: props.fieldData.language_from || "en",
+        languageTo: selectedLang.value,
+      }),
       { text: props.fieldData.main }
     )
 
     if (response.data) {
-      langBuffers.value[selectedLang.value] = response.data
+      codeString.value = response.data
+      initSocketListener(false) // single translation
     }
-
-    key.value = uniqueId("editor-")
   } catch (error: any) {
+    loadingOne.value = false
     notify({
       title: "Translation Error",
       text: error.response?.data?.message || "Failed to generate translation.",
       type: "error",
     })
-  } finally {
-    loadingOne.value = false
   }
 }
 
-// all translations
-// all translations
+// === TRANSLATE ALL LANGUAGES ===
 const generateAllTranslationsAI = async () => {
   if (isDisabled.value) return
   loadingAll.value = true
+
   const langs = Object.values(props.fieldData.languages).map((l: any) => l.code)
 
   for (const lang of langs) {
-    if (
-      lang === "main" ||
-      lang === props.fieldData.mainLang ||
-      langBuffers.value[lang] // ✅ skip if already translated
-    ) {
-      continue
-    }
+    if (lang === "main" || lang === props.fieldData.mainLang || langBuffers.value[lang]) continue
 
     try {
       const response = await axios.post(
@@ -110,39 +137,31 @@ const generateAllTranslationsAI = async () => {
       )
 
       if (response.data) {
-        langBuffers.value[lang] = response.data
-        key.value = uniqueId("editor-")
+        langBuffers.value[lang] = response.data.translation
+        if (response.data.code) {
+          codeString.value = response.data.code
+          initSocketListener(true) // bulk translation
+        }
       }
     } catch (error: any) {
       notify({
         title: `Translation Error for ${langLabel(lang)}`,
-        text:
-          error.response?.data?.message ||
-          "Failed to translate this language.",
+        text: error.response?.data?.message || "Failed to translate this language.",
         type: "error",
       })
     }
   }
 
-  loadingAll.value = false
-  key.value = uniqueId("editor-")
-  notify({
-    title: "Translation Complete",
-    text: "All missing translations have been updated.",
-    type: "success",
-  })
+  // ❌ don't set loadingAll=false here, handled in socket event
 }
 
-// sync buffer → form
+// === WATCHERS ===
 watch(
   langBuffers,
   (newVal) => {
     if (props.fieldData.mode === "single") {
-      // store only selected language
       props.form[props.fieldName] = newVal[selectedLang.value] || ""
-
     } else {
-      // store all translations
       props.form[props.fieldName] = { ...newVal }
     }
     emits("update:form", { ...props.form })
@@ -150,34 +169,44 @@ watch(
   { deep: true }
 )
 
-// sync selectedLang → storage + event
 watch(
   selectedLang,
-  newLang => {
+  (newLang) => {
     localStorage.setItem("translation_box", newLang)
-    window.dispatchEvent(
-      new CustomEvent("translation_box_updated", { detail: newLang })
-    )
+    window.dispatchEvent(new CustomEvent("translation_box_updated", { detail: newLang }))
   },
   { immediate: true }
 )
 
-// Listen cross-tab
+// === STORAGE & SOCKET SYNC ===
 onMounted(() => {
   const handleStorage = (e: StorageEvent) => {
     if (e.key === "translation_box" && e.newValue) {
       selectedLang.value = e.newValue
     }
   }
+
   const handleCustom = (e: CustomEvent) => {
     selectedLang.value = e.detail
   }
+
   window.addEventListener("storage", handleStorage)
   window.addEventListener("translation_box_updated", handleCustom as EventListener)
+
+  if (codeString.value) {
+    initSocketListener()
+  }
+
+  watch(codeString, (newCode) => {
+    if (newCode) {
+      initSocketListener()
+    }
+  })
 
   onBeforeUnmount(() => {
     window.removeEventListener("storage", handleStorage)
     window.removeEventListener("translation_box_updated", handleCustom as EventListener)
+    if (channel) channel.stopListening(".translate-progress")
   })
 })
 </script>
@@ -185,7 +214,7 @@ onMounted(() => {
 <template>
   <div class="space-y-3">
     <!-- Language Selector -->
- <div class="flex gap-3 px-3">
+    <div class="flex gap-3 px-3">
       <!-- Language buttons (kiri 50%) -->
       <div class="flex flex-wrap gap-1 basis-[90%]">
         <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
@@ -199,10 +228,10 @@ onMounted(() => {
       </div>
 
       <!-- Translate All button (kanan 50%) -->
-      <div class="flex justify-end items-start basis-[10%]">
+   <!--    <div class="flex justify-end items-start basis-[10%]">
         <Button :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow" :icon="faRobot"
           :disabled="loadingAll || loadingOne || isDisabled" @click="generateAllTranslationsAI" :loading="loadingAll" />
-      </div>
+      </div> -->
     </div>
 
 
@@ -215,8 +244,7 @@ onMounted(() => {
           <p class="text-xs font-semibold text-gray-500 mb-1">
             {{ fieldData.mainLang || "en" }}
           </p>
-          <div class="text-sm text-gray-700 whitespace-pre-wrap py-4"
-            v-html="fieldData.main" />
+          <div class="text-sm text-gray-700 whitespace-pre-wrap py-4" v-html="fieldData.main" />
         </div>
 
 
@@ -234,8 +262,8 @@ onMounted(() => {
           <EditorV2 v-model="langBuffers[selectedLang]" :key="selectedLang + key">
             <template #editor-content="{ editor }">
               <div
-                class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all"
-                :class="{ 'opacity-50 pointer-events-none': isDisabled }">
+                class="editor-wrapper border border-gray-300 rounded-md p-3 focus-within:border-blue-400 transition-all"
+                :class="{ 'opacity-50 pointer-events-none bg-gray-500/20': isDisabled }">
                 <EditorContent :key="key" :editor="editor"
                   class="editor-content focus:outline-none leading-6 min-h-[6rem]" />
               </div>

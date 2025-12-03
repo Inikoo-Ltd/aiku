@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
@@ -11,13 +12,13 @@ namespace App\Actions\Helpers\Tag;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTag extends OrgAction
@@ -29,18 +30,30 @@ class UpdateTag extends OrgAction
         return $this->handle($tag, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Tag $tag, ActionRequest $request): Tag
+    public function inCustomer(Customer $customer, Tag $tag, ActionRequest $request): Tag
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($customer->organisation, $request);
 
         return $this->handle($tag, $this->validatedData);
     }
 
-    public function htmlResponse(Tag $tag): RedirectResponse
+    /**
+     * @throws ValidationException
+     */
+    public function asController(Organisation $organisation, Tag $tag, ActionRequest $request): Tag
     {
-        return Redirect::route('grp.org.tags.show', [$this->organisation->slug])->with('notification', [
+        $this->initialisation($organisation, $request);
+
+        $this->validateTagScopeUpdate($tag, $this->validatedData);
+
+        return $this->handle($tag, $this->validatedData);
+    }
+
+    public function htmlResponse(): void
+    {
+        request()->session()->flash('notification', [
             'status'  => 'success',
-            'title'   => __('Success'),
+            'title'   => __('Success!'),
             'description' => __('Tag successfully updated.'),
         ]);
     }
@@ -61,6 +74,14 @@ class UpdateTag extends OrgAction
                 imageData: $imageData,
                 scope: 'image',
             );
+
+            if ($tag->image) {
+                $tag->update(
+                    [
+                        'web_image' => $tag->imageSources(30, 30)
+                    ]
+                );
+            }
         }
 
         $tag->update($modelData);
@@ -71,12 +92,17 @@ class UpdateTag extends OrgAction
     public function rules(): array
     {
         return [
-            'name'  => ['sometimes', 'required', 'string', 'max:255'],
+            'name'  => ['sometimes', 'required', 'string', 'max:255', 'unique:tags,name,' . request()->route('tag')->id],
             'scope' => [
                 'sometimes',
                 'nullable',
                 'string',
                 'in:' . implode(',', array_column(TagScopeEnum::cases(), 'value')),
+                function ($attribute, $value, $fail) {
+                    if ($value === TagScopeEnum::SYSTEM_CUSTOMER->value) {
+                        $fail(__("You can't create tag with system scope."));
+                    }
+                },
             ],
             'image' => [
                 'sometimes',
@@ -84,5 +110,27 @@ class UpdateTag extends OrgAction
                 File::image()->max(12 * 1024),
             ],
         ];
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    protected function validateTagScopeUpdate(Tag $tag, array $modelData): void
+    {
+        if (! isset($modelData['scope'])) {
+            return;
+        }
+
+        $newScope = $modelData['scope'];
+
+        if ($newScope !== $tag->scope) {
+            $hasRelations = $tag->customers()->exists() || $tag->tradeUnits()->exists();
+
+            if ($hasRelations) {
+                throw ValidationException::withMessages([
+                    'scope' => __("You can't change the scope of a tag that is already linked to customers or trade units."),
+                ]);
+            }
+        }
     }
 }

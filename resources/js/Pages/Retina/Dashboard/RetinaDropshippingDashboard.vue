@@ -3,12 +3,11 @@ import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 import { faArrowRight } from "@far"
-import { faReceipt, faUser, faBuilding, faEnvelope, faPhone } from "@fas"
+import { faReceipt, faUser, faBuilding, faEnvelope, faPhone, faExternalLinkSquare } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link, router } from '@inertiajs/vue3'
 import { inject, ref } from 'vue'
-import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 import { trans } from 'laravel-vue-i18n'
 import { Fieldset } from 'primevue'
@@ -19,7 +18,8 @@ import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfi
 import { notify } from '@kyvg/vue3-notification'
 import TaxNumberDisplay from '@/Components/UI/TaxNumberDisplay.vue'
 import EmailSubscribetion from '@/Components/EmailSubscribetion.vue'
-library.add(faReceipt, faArrowRight, faUser, faBuilding, faEnvelope, faPhone)
+import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
+library.add(faReceipt, faArrowRight, faUser, faBuilding, faEnvelope, faPhone, faExternalLinkSquare)
 
 const props = defineProps<{
     data: {
@@ -52,7 +52,7 @@ const props = defineProps<{
 const locale = inject('locale', aikuLocaleStructure)
 console.log(props);
 
-// Section: Modal Create Order
+// Section: Modal Create Order (if only 1 Manual channel)
 const isModalCreateOrder = ref(false)
 const selectedCustomerClientId = ref(null)
 const isLoadingSubmit = ref(false)
@@ -68,7 +68,7 @@ const onSubmitCreateOrder = () => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingSubmit.value = true
             },
             onSuccess: () => {
@@ -92,6 +92,11 @@ const onSubmitCreateOrder = () => {
         }
     )
 }
+
+// Section: Modal Create Manual Order (if have order more than one)
+const isSingleManual = !!props.data?.shortcut?.order?.manual_data
+const isModalCreateManualOrder = ref(false)
+const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.slug ?? null)
 
 </script>
 
@@ -121,15 +126,15 @@ const onSubmitCreateOrder = () => {
                                 }"
                             /> -->
                         </div>
-                        
+
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <!-- Left Column: Customer Information -->
                             <div class="space-y-3 text-sm">
                                 <!-- Information: contact name -->
                                 <div v-if="data.customer.contact_name" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-user" 
+                                        fixed-width
+                                        icon="fas fa-user"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Contact Name')"
                                     />
@@ -139,8 +144,8 @@ const onSubmitCreateOrder = () => {
                                 <!-- Information: company name -->
                                 <div v-if="data.customer.company_name" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-building" 
+                                        fixed-width
+                                        icon="fas fa-building"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Company Name')"
                                     />
@@ -150,8 +155,8 @@ const onSubmitCreateOrder = () => {
                                 <!-- Information: email -->
                                 <div v-if="data.customer.email" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-envelope" 
+                                        fixed-width
+                                        icon="fas fa-envelope"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Email')"
                                     />
@@ -161,8 +166,8 @@ const onSubmitCreateOrder = () => {
                                 <!-- Information: phone -->
                                 <div v-if="data.customer.phone" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-phone" 
+                                        fixed-width
+                                        icon="fas fa-phone"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Phone')"
                                     />
@@ -180,17 +185,18 @@ const onSubmitCreateOrder = () => {
                                 </div>
                             </div>
 
+                            <!-- hide email subscription, required by tomas -->
                             <!-- Right Column: Email Subscriptions -->
-                            <div class="flex justify-start lg:justify-end">
-                                <EmailSubscribetion 
+                            <!-- <div class="flex justify-start lg:justify-end">
+                                <EmailSubscribetion
                                     v-if="data?.customer?.email_subscriptions"
                                     :emailSubscriptions="data.customer.email_subscriptions"
                                     containerClass="p-3 bg-white rounded-md border border-gray-200 w-full max-w-sm"
                                 />
-                            </div>
+                            </div> -->
                         </div>
 
-                      
+
                     </div>
 
                     <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
@@ -200,8 +206,8 @@ const onSubmitCreateOrder = () => {
                         {{ trans("Have a look at your channels summary.") }}
                     </p>
                 </div>
-                
-                <div class="flex justify-between gap-x-4">
+
+                <div class="flex flex-col md:flex-row justify-between gap-x-4">
                     <div class="w-full max-w-96 mt-4 xmd:grid grid-cols-1 gap-2 lg:gap-5 xsm:grid-cols-2">
                         <StatsBox
                             v-for="(stat, idxStat) in data.stats"
@@ -213,7 +219,12 @@ const onSubmitCreateOrder = () => {
                             </div>
                             <ul role="list" class="divide-y divide-gray-100">
                                 <li v-for="channel in data.last_visited_channels" xkey="person.email" class="flex gap-x-4 px-3 py-2">
-                                    <div v-html="ChannelLogo(channel.platform)" class="flex-grow size-8 overflow-hidden border border-gray-300 rounded-full"></div>
+                                    <img
+                                        :src="`/assets/channel_logo/${channel.platform}.svg`"
+                                        class="flex-grow size-8 overflow-hidden border border-gray-300 rounded-full"
+                                        :alt="channel.platform"
+                                        v-tooltip="channel.platform"
+                                    />
                                     <div class="w-full xflex-shrink-0 justify-between flex items-center">
                                         <div class="min-w-0">
                                             <p class="text-sm/6 font-semibold">
@@ -244,12 +255,12 @@ const onSubmitCreateOrder = () => {
                     </div>
 
                     <!-- Section: Shortcut -->
-                    <div v-if="data.shortcut.order.is_show_button ||
-                    data.shortcut?.create_customer_sales_channel?.route_create?.name" class="max-w-64 w-full">
+                    <div xv-if="data.shortcut?.create_customer_sales_channel?.route_create?.name" class="md:max-w-64 mt-8 md:mt-0 w-full">
                         <Fieldset :legend="trans('Quick links (Shortcuts)')">
                             <div class="flex flex-col gap-y-2">
+
                                 <Button
-                                    v-if="data.shortcut.order.is_show_button"
+                                    v-if="data?.shortcut?.order?.manual_data"
                                     @click="isModalCreateOrder = true"
                                     :label="trans('Create manual Order')"
                                     full
@@ -257,6 +268,16 @@ const onSubmitCreateOrder = () => {
                                     type="tertiary"
                                     icon="fas fa-plus"
                                 />
+                                <Button
+                                    v-else
+                                    @click="isModalCreateManualOrder = true"
+                                    :label="trans('Create manual Orders')"
+                                    full
+                                    iconRight="fal fa-shopping-cart"
+                                    type="tertiary"
+                                    icon="fas fa-external-link-square"
+                                />
+
                                 <ButtonWithLink
                                     v-if="data.shortcut?.create_customer_sales_channel?.route_create?.name"
                                     :label="trans('Create Customer Sales Channel')"
@@ -298,14 +319,21 @@ const onSubmitCreateOrder = () => {
                     />
                 </div>
             </div>
-            
+
         </div>
 
-        <!-- Modal: Create order -->
+        <!-- Modal: Create order (if only 1 Manual channel) -->
         <Modal :isOpen="isModalCreateOrder" @onClose="isModalCreateOrder = false" closeButton :isClosableInBackground="false" width="max-w-lg w-full">
             <div>
-                <div class="text-lg font-semibold mb-4 text-center">
-                    {{ trans("Create Manual Order") }}
+                <div class="mb-4">
+                    <div class="text-xl font-semibold text-center">
+                        <FontAwesomeIcon icon="fal fa-shopping-basket" class="" fixed-width aria-hidden="true" />
+                        {{ trans("Create Manual Order") }}
+                    </div>
+
+                    <div v-if="data.shortcut.order.manual_data?.reference" class="text-center text-gray-500 italic text-xs">
+                        {{ trans("For channel #:reference", { reference: data.shortcut.order.manual_data?.reference }) }}
+                    </div>
                 </div>
 
                 <div>
@@ -334,14 +362,14 @@ const onSubmitCreateOrder = () => {
                             </template>
 
                             <template #afterlist>
-                                <div class="m-2 cursor-auto text-gray-400 text-sm">
+                                <div class="m-2 cursor-auto text-blue-400 text-sm">
                                     {{ trans("Can't find the client?") }}
-                                    
+
                                     <Link
                                         :href="route('retina.dropshipping.customer_sales_channels.client.create', {
                                             customerSalesChannel: data.shortcut.order.manual_data.slug
                                         })"
-                                        class="hover:underline hover:text-gray-700 cursor-pointer"
+                                        class="hover:underline hover:text-blue-700 cursor-pointer"
                                     >
                                         {{ trans("Create new client here") }}
                                     </Link>
@@ -350,7 +378,7 @@ const onSubmitCreateOrder = () => {
                         </PureMultiselectInfiniteScroll>
                     </div>
 
-                    <Button 
+                    <Button
                         @click="() => onSubmitCreateOrder()"
                         label="Create Order"
                         full
@@ -385,6 +413,113 @@ const onSubmitCreateOrder = () => {
                         icon="fas fa-plus"
                     />
                 </Link>
+            </div>
+        </Modal>
+
+        <!-- Section: Modal add manual orders -->
+        <Modal :isOpen="isModalCreateManualOrder" @onClose="isModalCreateManualOrder = false" closeButton :isClosableInBackground="false" width="max-w-lg w-full">
+            <div>
+                <div class="text-2xl font-semibold mb-4 text-center">
+                    <FontAwesomeIcon icon="fal fa-shopping-basket" class="" fixed-width aria-hidden="true" />
+                    {{ trans("Create Manual Order") }}
+                </div>
+
+                <div class="mt-8">
+                    <div class="mb-4">
+                        <div class="text-sm xmb-2">
+                            {{ trans("Select Manual channel") }}
+                        </div>
+
+                        <PureMultiselectInfiniteScroll
+                            v-model="selectedManualChannelSlug"
+                            @update:modelValue="() => selectedCustomerClientId = null"
+                            :fetchRoute="{
+                                name: 'retina.dropshipping.customer_sales_channels.index',
+                                parameters: {
+                                    'filter[platform]': 'manual',
+                                    'closed': 'false'
+                                }
+                            }"
+                            valueProp="slug"
+                            required
+                            :disabled="isLoadingSubmit"
+                        >
+                            <template #singlelabel="{ value }">
+                                <div class="w-full text-left pl-4">
+                                    {{ value.name}}
+                                    <span v-if="value.reference" class="text-sm text-gray-400">
+                                        (#{{ value.reference }})
+                                    </span>
+                                </div>
+                            </template>
+
+                            <template #afterlist>
+                                <div class="m-2 cursor-auto text-blue-500 text-sm">
+                                    {{ trans("Want to create a new sales channel?") }}
+
+                                    <Link
+                                        :href="route('retina.dropshipping.customer_sales_channels.create')"
+                                        class="hover:underline hover:text-blue-700 cursor-pointer"
+                                    >
+                                        {{ trans("Click here") }}
+                                    </Link>
+                                </div>
+                            </template>
+                        </PureMultiselectInfiniteScroll>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="text-sm xmb-2">
+                            {{ trans("Select Customer Client") }}
+                        </div>
+                        
+                        <PureMultiselect v-if="!selectedManualChannelSlug" disabled/>
+                        <PureMultiselectInfiniteScroll
+                            v-else
+                            v-model="selectedCustomerClientId"
+                            :fetchRoute="{
+                                name: 'retina.dropshipping.customer_sales_channels.client.index',
+                                parameters: {
+                                    customerSalesChannel: selectedManualChannelSlug,
+                                }
+                            }"
+                            required
+                            :disabled="isLoadingSubmit"
+                        >
+                            <template #singlelabel="{ value }">
+                                <div class="w-full text-left pl-4">
+                                    {{ value.name}}
+                                    <span v-if="value.reference" class="text-sm text-gray-400">
+                                        (#{{ value.reference }})
+                                    </span>
+                                </div>
+                            </template>
+
+                            <template #afterlist>
+                                <div class="m-2 cursor-auto text-blue-400 text-sm">
+                                    {{ trans("Can't find the client?") }}
+
+                                    <Link
+                                        :href="route('retina.dropshipping.customer_sales_channels.client.create', {
+                                            customerSalesChannel: selectedManualChannelSlug
+                                        })"
+                                        class="hover:underline hover:text-blue-700 cursor-pointer"
+                                    >
+                                        {{ trans("Create new client here") }}
+                                    </Link>
+                                </div>
+                            </template>
+                        </PureMultiselectInfiniteScroll>
+                    </div>
+
+                    <Button
+                        @click="() => onSubmitCreateOrder()"
+                        :label="trans('Create Order')"
+                        full
+                        :loading="isLoadingSubmit"
+                        :disabled="!selectedCustomerClientId"
+                    />
+                </div>
             </div>
         </Modal>
     </div>

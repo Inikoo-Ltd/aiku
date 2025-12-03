@@ -8,14 +8,17 @@
 
 use App\Actions\Catalogue\Product\Json\GetRetinaPortfoliosInProduct;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductCategorySalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
+use App\Actions\Helpers\Tag\Json\GetTags;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Iris\Json\GetRetinaFirstHitData;
 use App\Actions\Iris\RetinaLogWebUserRequest;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
+use App\Actions\Retina\Dropshipping\Portfolio\UploadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentServices;
 use App\Actions\Retina\GetCheckoutComTokenToPayOrder;
@@ -31,10 +34,12 @@ Route::get('/{order}/recent-uploads', \App\Actions\Ordering\Order\UI\IndexRecent
 Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComTokenToPayOrder::class)->name('get_checkout_com_token_to_pay_order');
 
 Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', DownloadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.portfolio_images_zip');
+Route::get('dropshipping/{customerSalesChannel:id}/upload-portfolio-zip-images', UploadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.upload_portfolio_zip_images');
 
 Route::get('dropshipping/{product:id}/channels_list', GetRetinaPortfoliosInProduct::class)->name('dropshipping.product.channels_list');
 
 Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerProductCategorySalesChannelIds::class)->name('product_category.channel_ids.index');
+Route::get('collection/{collection:id}/channels', GetRetinaCustomerCollectionSalesChannelIds::class)->name('collection.channel_ids.index');
 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
@@ -42,3 +47,5 @@ Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', Get
 Route::get('first-hit', GetRetinaFirstHitData::class)->name('first_hit');
 Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
 Route::get('log-web-user-request', RetinaLogWebUserRequest::class)->name('hit');
+
+Route::get('customer/{customer:id}/tags', [GetTags::class, 'inRetina'])->name('customer.tags.index');

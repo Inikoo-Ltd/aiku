@@ -87,6 +87,7 @@ import suggestion from './Variables/suggestion'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { irisVariable } from "@/Composables/variableList"
+import { uniqueId } from "lodash"
 
 
 const props = withDefaults(defineProps<{
@@ -99,7 +100,6 @@ const props = withDefaults(defineProps<{
 }>(), {
     editable: true,
     type: 'Bubble',
-    placeholder: '',
     toogle: () => [
         'heading', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'query', "fontFamily",
         'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
@@ -169,7 +169,7 @@ const editorInstance = useEditor({
                                     .nodeAt(pos)
                                     ?.marks.find((mark) => mark.type === linkMark)?.attrs
 
-                                if (attrs) {
+                               /*  if (attrs) {
                                     event.preventDefault()
                                     if (attrs.workshop) {
                                         CustomLinkConfirm.value = true
@@ -178,7 +178,7 @@ const editorInstance = useEditor({
                                         console.log(attrs.href)
                                     }
                                     return true
-                                }
+                                } */
                                 return false
                             },
                         },
@@ -358,12 +358,13 @@ const editorInstance = useEditor({
     },
 })
 
-
+const keyLinkCustomDialog = ref(uniqueId('link-custom-dialog-'))
 function openLinkDialogCustom() {
     const attrs = editorInstance.value?.getAttributes("link")
-    currentLinkInDialog.value = attrs
+    currentLinkInDialog.value = attrs;
     showLinkDialogCustom.value = true;
     showDialog.value = true;
+    keyLinkCustomDialog.value=uniqueId()
 }
 
 function updateLinkCustom(value) {
@@ -371,7 +372,7 @@ function updateLinkCustom(value) {
         const attrs = {
             type: value.type,
             workshop: value.workshop,
-            id: value.type === 'internal' ? value.id?.id : null,
+            id: value.type === 'internal' ? value.id : null,
             href: value.href,
             target: value.target ? value.target : '_self'
         };
@@ -493,6 +494,7 @@ onMounted(async () => {
   setTimeout(() => {
     contentResult.value = editorInstance.value?.getHTML()
   }, 250)
+
 
   /* tippyOptions.value = {
     boundary: 'viewport',
@@ -939,6 +941,7 @@ onMounted(async () => {
             v-if="showLinkDialogCustom" 
             :show="showLinkDialogCustom" 
             :attribut="currentLinkInDialog"
+            :key="keyLinkCustomDialog"
             @close="() => { showLinkDialogCustom = false; showDialog = false; }" 
             @update="updateLinkCustom" 
         />
@@ -1165,5 +1168,13 @@ onMounted(async () => {
 
 :deep(.ProseMirror-focused .ProseMirror-gapcursor) {
     @apply block;
+}
+
+:deep(p.is-editor-empty:first-child::before){
+    color: gray;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
 }
 </style>

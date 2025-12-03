@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
-import ProductRender from '@/Components/CMS/Webpage/Products1/ProductRender.vue'
+import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from './Blueprint'
 
@@ -16,15 +16,15 @@ import { Navigation, Pagination } from 'swiper/modules'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
+import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
 
 const props = defineProps<{
-	fieldValue: FieldValue
-	webpageData?: any
-	blockData?: Object,
-	screenType: 'mobile' | 'tablet' | 'desktop'
+  fieldValue: FieldValue
+  webpageData?: any
+  blockData?: Object,
+  screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const emits = defineEmits<{
@@ -50,22 +50,22 @@ const prevEl = ref(null)
 const nextEl = ref(null)
 
 const compSwiperOptions = computed(() => {
-    if (props.fieldValue?.settings?.products_data?.type == 'custom') {
-        return props.fieldValue?.settings?.products_data?.products
-    } else if (props.fieldValue?.settings?.products_data?.type == 'current-family') {
-        return props.fieldValue?.settings?.products_data?.current_family?.option || []
-    } else if (props.fieldValue?.settings?.products_data?.type == 'other-family') {
-        return props.fieldValue?.settings?.products_data?.other_family?.option || []
-    } else {
-        return props.fieldValue?.settings?.products_data?.top_sellers || []
-    }
+  if (props.fieldValue?.settings?.products_data?.type == 'custom') {
+    return props.fieldValue?.settings?.products_data?.products
+  } else if (props.fieldValue?.settings?.products_data?.type == 'current-family') {
+    return props.fieldValue?.settings?.products_data?.current_family?.option || []
+  } else if (props.fieldValue?.settings?.products_data?.type == 'other-family') {
+    return props.fieldValue?.settings?.products_data?.other_family?.option || []
+  } else {
+    return props.fieldValue?.settings?.products_data?.top_sellers || []
+  }
 })
 
-console.log('see also',props)
+console.log('see also', props)
 </script>
 
 <template>
- <div id="see-also-1-iris" class="w-full pb-6" :style="{
+  <div id="see-also-1-iris" class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
     width: 'auto'
@@ -77,9 +77,10 @@ console.log('see also',props)
       </div>
     </div>
 
-    <div v-if="['luigi-trends', 'luigi-recently_ordered', 'luigi-last_seen', 'luigi-item_detail_alternatives'].includes(fieldValue.settings.products_data.type)">
+    <div
+      v-if="['luigi-trends', 'luigi-recently_ordered', 'luigi-last_seen', 'luigi-item_detail_alternatives'].includes(fieldValue.settings.products_data.type)">
       <!-- Render nothing due to deprecated -->
-        <!-- <RecommendersLuigi1Iris :slidesPerView recommendation_type="trends" /> -->
+      <!-- <RecommendersLuigi1Iris :slidesPerView recommendation_type="trends" /> -->
     </div>
 
     <!-- Carousel with custom navigation -->
@@ -97,19 +98,18 @@ console.log('see also',props)
 
       <!-- Swiper -->
       <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
-        :navigation="{ prevEl, nextEl }" pagination>
-        <SwiperSlide v-for="(product, index) in  compSwiperOptions" :key="product.slug"
-          class="h-full">
-          <div class="h-full">
-            <div v-if="product" class="h-full flex flex-col">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
-              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+        :navigation="{ prevEl, nextEl }" pagination class="w-full">
+        <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20" class="h-full">
+          <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug"
+            class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded flex flex-col justify-between" style="height: auto;">
+            <div class="flex flex-col h-full">
+              <div class="flex flex-col flex-1">
+                <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
+                <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+              </div>
             </div>
-            <div v-else>
-            </div>
-          </div>
-        </SwiperSlide>
-
+          </SwiperSlide>
+        </Swiper>
       </Swiper>
     </div>
   </div>
@@ -122,5 +122,14 @@ console.log('see also',props)
 
 .swiper-nav-button svg {
   @apply text-gray-700 w-4 h-4;
+}
+
+.swiper-wrapper {
+  align-items: stretch !important;
+}
+
+.swiper-slide {
+  display: flex !important;
+  flex-direction: column !important;
 }
 </style>

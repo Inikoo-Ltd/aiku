@@ -13,6 +13,7 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
@@ -71,6 +72,25 @@ class EditShop extends OrgAction
         $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
             ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();
+
+        $helpPortalFields = [
+            'portal_link'  => [
+                'type'          => 'input',
+                'placeholder'   => 'https://example.com',
+                'label'         => __('Portal Link'),
+                'value'         => Arr::get($shop->settings, 'portal.link', ''),
+            ]
+        ];
+
+        // Disable Widget_Key input if shop doesn't have any related website
+        if ($shop->website) {
+            $helpPortalFields['widget_key'] = [
+                'type'          => 'input',
+                'placeholder'   => 'keyExample',
+                'label'         => __('Widget Key'),
+                'value'         => Arr::get($shop->website->settings, 'jira_help_desk_widget'),
+            ];
+        }
 
         return Inertia::render(
             'EditModel',
@@ -187,13 +207,13 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
-                        [
-                            'label'  => __('contact/details'),
-                            'icon'   => 'fa-light fa-user',
-                            'fields' => [
+                        // [
+                        //     'label'  => __('contact/details'),
+                        //     'icon'   => 'fa-light fa-user',
+                        //     'fields' => [
 
-                            ]
-                        ],
+                        //     ]
+                        // ],
                         [
                             'label'  => __('Pricing'),
                             'icon'   => 'fa-light fa-money-bill',
@@ -356,6 +376,27 @@ class EditShop extends OrgAction
                                 ]
                             ],
                         ],
+                        $shop->type === ShopTypeEnum::DROPSHIPPING ? [
+                            'label'  => __('Ebay Redirect Key'),
+                            'icon'   => 'fa-light fa-key',
+                            'fields' => [
+                                'ebay_redirect_key' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ebay Redirect Key'),
+                                    'value' => Arr::get($shop->settings, 'ebay.redirect_key', ''),
+                                ],
+                                'ebay_marketplace_id' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ebay Marketplace Id'),
+                                    'value' => Arr::get($shop->settings, 'ebay.marketplace_id', ''),
+                                ],
+                            ],
+                        ] : [],
+                        [
+                            'label'  => __('HELP Portal'),
+                            'icon'   => 'fal fa-life-ring',
+                            'fields' => $helpPortalFields,
+                        ]
                     ],
                     'args'      => [
                         'updateRoute' => [

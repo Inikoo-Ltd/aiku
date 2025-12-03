@@ -8,128 +8,132 @@
 
 namespace App\Actions\CRM\Customer\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\Hydrators\WithHydrateInvoices;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\CRM\Customer;
-use Illuminate\Console\Command;
+use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class CustomerHydrateClv implements ShouldBeUnique
 {
-    use AsAction;
     use WithEnumStats;
     use WithHydrateInvoices;
+    use WithHydrateCommand;
 
-    public string $commandSignature = 'hydrate:customer-clv {customer}';
+    public string $jobQueue = 'low-priority';
 
-    public function getJobUniqueId(int $customerId): string
+    public string $commandSignature = 'hydrate:customers-clv {organisations?*} {--S|shop= shop slug} {--s|slug=}';
+
+    public function __construct()
     {
-        return $customerId;
+        $this->model = Customer::class;
+        $this->modelAsHandleArg = false;
     }
 
-    public function asCommand(Command $command): void
+    public function getJobUniqueId(int $customerID): string
     {
-        $customer = Customer::where('slug', $command->argument('customer'))->first();
-
-        $this->handle($customer->id);
+        return $customerID;
     }
 
-    public function handle(int $customerId): void
-    {
-        $customer = Customer::find($customerId);
 
+    public function handle(int $customerID): void
+    {
+
+        $customer = Customer::find($customerID);
         if (!$customer) {
             return;
         }
 
-        // Get customer's orders
-        $invoices = $customer->invoices()->where('in_process', false)->get();
+        // Aggregate invoice stats in a single, efficient SQL query
+        $invoiceStats = $customer->invoices()
+            ->where('in_process', false)
+            ->selectRaw('
+            COUNT(*) as total_orders,
+            SUM(net_amount) as total_net_amount,
+            SUM(org_net_amount) as total_org_net_amount,
+            SUM(grp_net_amount) as total_grp_net_amount,
+            MIN(created_at) as first_order_date,
+            MAX(created_at) as last_order_date
+            ')
+            ->first();
 
-        if ($invoices->isEmpty()) {
-            return; // No orders to calculate CLV
+        if (!$invoiceStats || $invoiceStats->total_orders == 0) {
+            // Set default values if no invoices
+            $this->setDefaultStats($customer);
+            return;
         }
 
-        // Calculate for each currency type
-        $currencies = ['', '_org_currency', '_grp_currency'];
+        // Convert to Carbon instances once
+        $firstOrderDate = $invoiceStats->first_order_date ? Carbon::parse($invoiceStats->first_order_date) : null;
+        $lastOrderDate  = $invoiceStats->last_order_date ? Carbon::parse($invoiceStats->last_order_date) : null;
 
-        foreach ($currencies as $currencySuffix) {
-            $amountColumn = 'net_amount';
+        if (!$firstOrderDate || !$lastOrderDate) {
+            $this->setDefaultStats($customer);
+            return;
+        }
 
-            if ($currencySuffix === '_org_currency') {
-                $amountColumn = 'org_net_amount';
+        $totalOrders = (int)$invoiceStats->total_orders;
+        $daysBetween = max($firstOrderDate->diffInDays($lastOrderDate), 1);
+
+        // Average orders per month
+        $ordersPerMonth = ($totalOrders / $daysBetween) * 30;
+
+        // Customer age and lifespan
+        $customerAgeDays  = (int)$customer->created_at->diffInDays(now());
+        $averageLifespanY = max($customerAgeDays / 365, 1);
+        $customerAgeMonths = max($customer->created_at->diffInMonths(now()), 1);
+        $expectedRemainingLifespanMonths = $customerAgeMonths / $averageLifespanY;
+
+        $stats = [];
+
+        // --- Calculate CLV values for each currency type ---
+        $currencies = [
+            ''               => $invoiceStats->total_net_amount,
+            '_org_currency'  => $invoiceStats->total_org_net_amount,
+            '_grp_currency'  => $invoiceStats->total_grp_net_amount,
+        ];
+
+        foreach ($currencies as $suffix => $totalRevenue) {
+            if (!$totalRevenue) {
+                $totalRevenue = 0;
             }
 
-            if ($currencySuffix === '_grp_currency') {
-                $amountColumn = 'grp_net_amount';
-            }
-
-            // 1. Calculate Average Purchase Value
-            $totalRevenue         = $invoices->sum($amountColumn);
-            $totalOrders          = $invoices->count();
+            // 1. Average Purchase Value
             $averagePurchaseValue = $totalRevenue / $totalOrders;
 
-            // 2. Calculate Average Purchase Frequency (orders per time period)
-            $firstOrderDate          = $invoices->min('created_at');
-            $lastOrderDate           = $invoices->max('created_at');
-            $daysBetweenFirstAndLast = $firstOrderDate->diffInDays($lastOrderDate);
+            // 2. Historic CLV
+            $historicClv = $averagePurchaseValue * $totalOrders;
 
-            $ordersPerMonth = $daysBetweenFirstAndLast > 0
-                ? ($totalOrders / $daysBetweenFirstAndLast) * 30
-                : $totalOrders;
+            // 3. Predicted CLV for next year (12 months)
+            $predictedClvNextYear = 12 * $averagePurchaseValue * $ordersPerMonth;
 
-            // 3. Calculate Average Customer Lifespan (in years)
-            $customerAge = (int)$customer->created_at->diffInDays(now());
+            // 4. Predicted CLV for remaining lifespan
+            $predictedClvLifespan = $expectedRemainingLifespanMonths * $predictedClvNextYear;
 
+            // 5. Total CLV
+            $totalClv = $historicClv + $predictedClvLifespan;
 
-            $averageCustomerLifespan = $customerAge / 365;
-            $monthlyCustomerLifespan = (int)$customer->created_at->diffInMonths(now());
-
-            $expectedRemainingLifespan = 0;
-            if ($monthlyCustomerLifespan > 0) {
-                $expectedRemainingLifespan = $monthlyCustomerLifespan / $averageCustomerLifespan;
-            }
-
-            $customerValue = $monthlyCustomerLifespan * $averagePurchaseValue * $ordersPerMonth;
-
-            // 4. Calculate CLV values
-            $historicClv  = $averagePurchaseValue * $totalOrders;
-            $predictedClv = $expectedRemainingLifespan * $customerValue;
-            $totalClv     = $historicClv + $predictedClv;
-
-            // Store values with appropriate suffix
-            $stats['historic_clv_amount'.$currencySuffix]  = round($historicClv, 2);
-            $stats['predicted_clv_amount'.$currencySuffix] = round($predictedClv, 2);
-            $stats['total_clv_amount'.$currencySuffix]     = round($totalClv, 2);
+            $stats['historic_clv_amount'.$suffix] = round($historicClv, 2);
+            $stats['predicted_clv_amount_next_year'.$suffix] = round($predictedClvNextYear, 2);
+            $stats['predicted_clv_amount'.$suffix] = round($predictedClvLifespan, 2);
+            $stats['total_clv_amount'.$suffix] = round($totalClv, 2);
         }
 
-        // Calculate average time between orders (only once, currency-independent)
-        $firstOrderDate          = $invoices->min('date');
-        $lastOrderDate           = $invoices->max('date');
-        $daysBetweenFirstAndLast = $firstOrderDate->diffInDays($lastOrderDate);
-
-        $averageTimeBetweenOrders = $daysBetweenFirstAndLast > 0
-            ? ceil($daysBetweenFirstAndLast / max($invoices->count() - 1, 1))
+        // --- Currency-independent stats ---
+        $averageTimeBetweenOrders = $totalOrders > 1
+            ? ceil($daysBetween / ($totalOrders - 1))
             : null;
 
-        // Calculate days since last order
-        $daysSinceLastOrder = (int)$lastOrderDate->diffInDays(now());
+        $daysSinceLastOrder = $lastOrderDate->diffInDays(now());
 
-        // Calculate churn interval (predicted days until customer churns)
-        // Using a common formula: expected lifetime remaining based on purchase pattern
+        // Churn interval and risk prediction
         if ($averageTimeBetweenOrders && $averageTimeBetweenOrders > 0) {
-            // Churn interval = average time between orders * expected remaining order cycles
-            // Common approach: use 3x the average time between orders as churn threshold
             $churnInterval = max(($averageTimeBetweenOrders * 3) - $daysSinceLastOrder, 0);
-        } else {
-            $churnInterval = 365; // default to 1 year if no pattern
-        }
-
-        // Calculate churn risk prediction (0-1 scale)
-        $churnRiskPrediction = 0;
-        if ($averageTimeBetweenOrders && $averageTimeBetweenOrders > 0) {
-            // Risk increases as days since last order exceeds average time between orders
             $churnRiskPrediction = min($daysSinceLastOrder / ($averageTimeBetweenOrders * 2), 1);
+        } else {
+            $churnInterval = 365;
+            $churnRiskPrediction = 0;
         }
 
         // Predict next order date
@@ -137,13 +141,65 @@ class CustomerHydrateClv implements ShouldBeUnique
             ? $lastOrderDate->copy()->addDays($averageTimeBetweenOrders)
             : null;
 
-        // Add currency-independent stats
-        $stats['average_order_value']         = round($invoices->sum('net_amount') / $invoices->count(), 2);
+        // Calculate timeline positions
+        $timelinePositions = $this->calculateTimelinePositions($firstOrderDate, $expectedNextOrder);
+
+        // Final stats
+        $stats['average_order_value'] = round($invoiceStats->total_net_amount / $totalOrders, 2);
         $stats['average_time_between_orders'] = $averageTimeBetweenOrders;
         $stats['expected_date_of_next_order'] = $expectedNextOrder;
-        $stats['churn_interval']              = $churnInterval;
-        $stats['churn_risk_prediction']       = round($churnRiskPrediction, 4);
+        $stats['churn_interval'] = $churnInterval;
+        $stats['churn_risk_prediction'] = round($churnRiskPrediction, 4);
+        $stats['first_order_date'] = $firstOrderDate;
+        $stats['expected_remaining_lifespan_months'] = round($expectedRemainingLifespanMonths);
+        $stats['today_timeline_position'] = $timelinePositions['todayPosition'];
+        $stats['next_order_timeline_position'] = $timelinePositions['nextOrderPosition'];
 
+        // --- Update stats efficiently ---
         $customer->stats()->update($stats);
+    }
+
+    private function setDefaultStats(Customer $customer): void
+    {
+        $customer->stats()->update([
+            'historic_clv_amount' => 0,
+            'predicted_clv_amount_next_year' => 0,
+            'predicted_clv_amount' => 0,
+            'total_clv_amount' => 0,
+            'average_order_value' => 0,
+            'average_time_between_orders' => null,
+            'expected_date_of_next_order' => null,
+            'churn_interval' => 365,
+            'churn_risk_prediction' => 0,
+            'first_order_date' => null,
+            'expected_remaining_lifespan_months' => 0,
+            'today_timeline_position' => 0,
+            'next_order_timeline_position' => null,
+        ]);
+    }
+
+    private function calculateTimelinePositions(?Carbon $firstOrderDate, ?Carbon $nextOrderDate): array
+    {
+        $today = now();
+
+        if (!$firstOrderDate) {
+            return ['todayPosition' => 0, 'nextOrderPosition' => null];
+        }
+
+        // One year from today for a predicted period
+        $oneYearFromNow = $today->copy()->addYear();
+
+        // Calculate the total timeline range (from first order to 1 year from now)
+        $totalRange = $oneYearFromNow->diffInSeconds($firstOrderDate);
+
+        // Calculate positions as percentages
+        $todayPosition = ($today->diffInSeconds($firstOrderDate) / $totalRange) * 100;
+        $nextOrderPosition = $nextOrderDate ?
+            min(100, ($nextOrderDate->diffInSeconds($firstOrderDate) / $totalRange) * 100) : null;
+
+        return [
+            'todayPosition' => max(0, min(100, $todayPosition)),
+            'nextOrderPosition' => $nextOrderPosition ? max(0, min(100, $nextOrderPosition)) : null,
+        ];
     }
 }

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Http\Resources\Catalogue\TagsResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -37,6 +38,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $address
  * @property mixed $shop_name
  * @property mixed $balance
+ * @property mixed $tags
  * @property mixed $number_customer_sales_channels
  */
 class CustomersResource extends JsonResource
@@ -71,6 +73,7 @@ class CustomersResource extends JsonResource
             'sales_grp_currency_all'          => $this->sales_grp_currency_all,
             'currency_code'                   => $this->currency_code,
             'balance'                         => $this->balance,
+            'tags'                            => $this->whenLoaded('tags', fn () => TagsResource::collection($this->tags)->toArray(request())),
         ];
 
         if ($this->organisation_name) {

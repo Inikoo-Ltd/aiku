@@ -11,7 +11,9 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateBestSellerProduct;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateImages;
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateInvoiceIntervals;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateSales;
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateSalesIntervals;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\ProductCategory;
 
@@ -32,6 +34,8 @@ class HydrateFamilies
         ProductCategoryHydrateSales::run($productCategory);
         ProductCategoryHydrateImages::run($productCategory);
         FamilyHydrateBestSellerProduct::run($productCategory);
+        ProductCategoryHydrateInvoiceIntervals::run($productCategory);
+        ProductCategoryHydrateSalesIntervals::run($productCategory);
     }
 
 }

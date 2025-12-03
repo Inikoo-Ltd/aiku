@@ -22,13 +22,13 @@ return new class () extends Migration {
             $table = $this->groupOrgRelationship($table);
             $table->unsignedSmallInteger('shop_id')->index()->nullable();
             $table->foreign('shop_id')->references('id')->on('shops');
-            $table->unsignedInteger('customer_id');
+            $table->unsignedInteger('customer_id')->index();
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
             $table->unsignedInteger('product_id');
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
             $table->string('reference')->index()->nullable()->comment('This is the reference that the customer uses to identify the product');
             $table->string('type')->default(PortfolioTypeEnum::MANUAL->value);
-            $table->boolean('status')->default(true);
+            $table->boolean('status')->index()->default(true);
             $table->dateTimeTz('last_added_at')->nullable();
             $table->dateTimeTz('last_removed_at')->nullable()->nullable;
             $table->jsonb('data');

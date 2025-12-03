@@ -13,8 +13,8 @@
             margin-header: 1mm; /* <any of the usual CSS values for margins> */
             margin-footer: 5mm; /* <any of the usual CSS values for margins> */
             marks: 'cross'; /*crop | cross | none*/
-            header: myheader;
-            footer: myfooter;
+            header: myHeader;
+            footer: myFooter;
             /* background: ...
             background-image: ...
             background-position ...
@@ -29,7 +29,7 @@
         }
 
         p {
-            margin: 0pt;
+            margin: 0;
         }
 
         h1 {
@@ -79,9 +79,9 @@
             border: 0.1mm solid #000000;
         }
 
-        .items td.blanktotal {
+        .items td.blank_total {
             background-color: #FFFFFF;
-            border: 0mm none #000000;
+            border: 0 none #000000;
             border-top: 0.1mm solid #000000;
             border-right: 0.1mm solid #000000;
         }
@@ -102,7 +102,7 @@
 </head>
 
 <body>
-<htmlpageheader name="myheader">
+<htmlpageheader name="myHeader">
     <br><br>
     <table width="100%" style="font-size: 9pt;">
         <tr>
@@ -128,12 +128,12 @@
     </table>
 </htmlpageheader>
 
-<sethtmlpageheader name="myheader" value="on" show-this-page="1"/>
-<sethtmlpagefooter name="myfooter" value="on"/>
+<sethtmlpageheader name="myHeader" value="on" show-this-page="1"/>
+<sethtmlpagefooter name="myFooter" value="on"/>
 
 <table width="100%" style="font-family: sans-serif; margin-top: 20px" cellpadding="0">
     <tr>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;">
+        <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;">
             <div>
                 <div>
                     {{ __('Employee') }}</b>
@@ -168,7 +168,7 @@
 </table>
 <br>
 
-<htmlpagefooter name="myfooter">
+<htmlpagefooter name="myFooter">
     <div
         style="font-size: 9pt; text-align: right; padding-top: 3mm; margin-top: 120px">
         <table width="100%">

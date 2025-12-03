@@ -204,6 +204,11 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Extra description'),
                                     'value' => $tradeUnit->description_extra
                                 ],
+                                 'type' => [
+                                    'type'  => 'input',
+                                    'label' => __('unit label'),
+                                    'value' => $tradeUnit->type
+                                ],
                                 'gross_weight' => [
                                     'type'  => 'input_number',
                                     'label' => __('gross weight'),
@@ -405,7 +410,7 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('EU Responsible'),
                                     'value' => $tradeUnit->gpsr_eu_responsible
                                 ],
-                                'warnings' => [
+                                'gpsr_warnings' => [
                                     'type'  => 'input',
                                     'label' => __('Warnings'),
                                     'value' => $tradeUnit->gpsr_warnings
@@ -476,7 +481,22 @@ class EditTradeUnit extends OrgAction
                                 ],
                             ],
                         ],
+                        [
+                            'label'  => __('Sale Status'),
+                            'icon'   => 'fal fa-cart-arrow-down',
+                            'fields' => [
+                                'is_for_sale' => [
+                                    'confirmation' => [
+                                        'description' => __('Changing the sale status of a Trade Unit will affect all products linked to it in all shops.'),
+                                    ],
+                                    'type'  => 'toggle',
+                                    'label' => __('For Sale'),
+                                    'value' => $tradeUnit->is_for_sale,
+                                ],
+                            ],
+                        ],
                     ],
+
 
                     'args' => [
                         'updateRoute' => [

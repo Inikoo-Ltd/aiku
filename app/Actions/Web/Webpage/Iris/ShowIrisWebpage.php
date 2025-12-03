@@ -41,24 +41,20 @@ class ShowIrisWebpage
             ];
         }
 
-
-        $webPageLayout = $webpage->published_layout;
-
-
         $webBlocks  = $this->getIrisWebBlocks(
             webpage: $webpage,
-            webBlocks: Arr::get($webPageLayout, 'web_blocks', []),
+            webBlocks: Arr::get($webpage->published_layout, 'web_blocks', []),
             isLoggedIn: $loggedIn
         );
+
+
+
         $webpageImg = [];
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
 
-
-        return [
-            'status'       => 'ok',
-            'webpage_id'   => $webpage->id,
+        $baseWebpageData = [
             'breadcrumbs'  => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
@@ -71,8 +67,13 @@ class ShowIrisWebpage
 
             ],
             'webpage_img'  => $webpageImg,
-            'web_blocks'   => $webBlocks,
         ];
+
+        return array_merge($baseWebpageData, [
+            'status'     => 'ok',
+            'webpage_id' => $webpageID,
+            'web_blocks' => $webBlocks,
+        ]);
     }
 
 
@@ -145,15 +146,16 @@ class ShowIrisWebpage
     public function getEnvironmentUrl($url)
     {
         $environment = app()->environment();
+        $website     = request()->website ?? null;
 
+        if ($environment === 'local') {
+            $shopType = $website?->shop?->type ?? null;
 
-        if ($environment == 'local') {
-            $localDomain = match (request()->website->shop->type) {
+            $localDomain = match ($shopType) {
                 ShopTypeEnum::FULFILMENT => 'fulfilment.test',
                 ShopTypeEnum::DROPSHIPPING => 'ds.test',
-                default => 'ecom.test'
+                default => 'ecom.test',
             };
-
 
             return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain), '');
         } elseif ($environment == 'staging') {
@@ -191,6 +193,7 @@ class ShowIrisWebpage
 
     public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
+
         if (is_string($webpageData)) {
             $queryParameters = Arr::except(request()->query(), [
                 'favicons',
@@ -211,11 +214,14 @@ class ShowIrisWebpage
                 ]);
         }
 
+        $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
 
         $response = Inertia::render(
             'IrisWebpage',
             $webpageData
-        )->toResponse(request());
+        )->withViewData([
+            'browserTitle' => $browserTitle,
+        ])->toResponse(request());
 
         $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
         if (isset($webpageData['webpage_id'])) {
@@ -232,7 +238,7 @@ class ShowIrisWebpage
             $webpageID = $website->storefront_id;
         } else {
             $webpageID = DB::table('webpages')->where('website_id', $website->id)
-                ->whereRaw("lower(url) = lower(?)", [$path])
+                ->where('url', strtolower($path))
                 ->where('state', '=', WebpageStateEnum::LIVE)
                 ->whereNull('deleted_at')
                 ->value('id');
@@ -304,5 +310,4 @@ class ShowIrisWebpage
 
         return $breadcrumbs;
     }
-
 }

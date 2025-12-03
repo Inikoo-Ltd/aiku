@@ -28,7 +28,7 @@ class ProcessFetchStacks
 
         $query = FetchStack::where('state', FetchStackStateEnum::IN_PROCESS)
             ->orderBy('submitted_at');
-        $query->limit($runInBackground ? 250 : 100000);
+        $query->limit($runInBackground ? 100 : 100000);
 
         $stack = [];
         /** @var FetchStack $fetchStack */

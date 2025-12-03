@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
-import { inject, computed } from "vue"
+import { inject, computed, ref } from "vue"
 
 type RouteType = string | Record<string, any>
 
@@ -19,6 +19,7 @@ const props = withDefaults(
     target?: string
     type?: "internal" | "external"
     canonical_url?: string
+    id?:number
   }>(),
   {
     header: () => ({}),
@@ -65,6 +66,8 @@ const getLinkLocation = (link: string): "iris" | "retina" => {
   }
   return "iris"
 }
+
+const isLoading = ref(false)
 </script>
 
 <template>
@@ -78,12 +81,13 @@ const getLinkLocation = (link: string): "iris" | "retina" => {
     :class="class"
     :style="style"
     :target="target"
-    @start="emit('start')"
+    :id="id"
+    @start="emit('start'), isLoading = true"
     @success="emit('success')"
     @error="emit('error')"
-    @finish="emit('finish')"
+    @finish="emit('finish'), isLoading = false"
   >
-    <slot>{{ label }}</slot>
+    <slot :isLoading="isLoading">{{ label }}</slot>
   </Link>
 
   <!-- External or cross-app link -->

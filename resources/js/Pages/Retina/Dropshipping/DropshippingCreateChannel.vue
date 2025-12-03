@@ -2,7 +2,7 @@
 import {Head, router,usePage} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {inject, ref, watch, onMounted } from "vue";
+import { inject, ref, watch, onMounted, provide } from "vue";
 
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
@@ -11,18 +11,24 @@ import {routeType} from "@/types/route";
 
 import {trans} from "laravel-vue-i18n";
 import Modal from "@/Components/Utils/Modal.vue";
+import Dialog from 'primevue/dialog';
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import {notify} from "@kyvg/vue3-notification";
 
 import {layoutStructure} from "@/Composables/useLayoutStructure";
 import axios from "axios";
-import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import PurePassword from "@/Components/Pure/PurePassword.vue";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core"
+import EbayProgressBar from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayProgressBar.vue";
+import EbayAccountNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAccountNameForm.vue";
+import EbaySiteForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbaySiteForm.vue";
+import EbayAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAuthKeyForm.vue";
+import EbayListingProfileNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileNameForm.vue";
+import EbayListingProfileConfirmationForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileConfirmationForm.vue";
 library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers);
@@ -34,6 +40,7 @@ const props = defineProps<{
     shopify_url: string
     unlinkRoute: routeType
     fetchCustomerRoute: routeType
+    shop: object
     tiktokAuth: {
         url: string
         isAuthenticated: boolean
@@ -80,6 +87,7 @@ const props = defineProps<{
 const layout = inject("layout", layoutStructure);
 
 const isModalOpen = ref<string | boolean>(false);
+const isPlatformCreateLoading = ref<string | boolean>(false);
 const websiteInput = ref<string | null>(null);
 const isLoading = ref<string | boolean>(false);
 const errorShopify = ref('')
@@ -175,14 +183,6 @@ const onSubmitManual = async () => {
     isLoading.value = false;
 }
 
-// Section: ebay
-const onSubmitEbay = async () => {
-    const response = await axios.post(
-        route(props.type_ebay.connectRoute.name, props.type_ebay.connectRoute.parameters));
-
-    window.location.href = response.data;
-};
-
 // Section: amazon
 const onSubmitAmazon = async () => {
     const response = await axios.post(
@@ -264,7 +264,102 @@ const isModalEbayDuplicate = ref(false)
             isModalEbayDuplicate.value = true
             // router.get(window.location.origin + window.location.pathname)
         }
+
+        if(route().params?.['continueEbayRegistration']) {
+            openCreateEbayModal();
+        }
     })
+
+const isModalCreateEbay = ref(false);
+const ebayId = ref<int|null>(null);
+const customerSalesChannelId = ref<int|null>(null);
+const ebayName = ref<string|null>(null);
+
+watch(customerSalesChannelId, (value) => {
+    console.log("customerSalesChannelId", value)
+}, { immediate: true });
+
+const closeCreateEbayModal = () => {
+    isModalCreateEbay.value = false;
+    ebayId.value = null;
+    ebayName.value = null;
+}
+
+const openCreateEbayModal = async () => {
+    isPlatformCreateLoading.value = true;
+    const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.creating_check'));
+
+    if(data) {
+        ebayId.value = data.id;
+        customerSalesChannelId.value = data.customer_sales_channel_id;
+        ebayName.value = data.name;
+        switch (data.step) {
+            case 'name':
+                currentStep.value = 1
+                steps.value[0].status = "complete";
+                steps.value[1].status = "current";
+                steps.value[2].status = "upcoming";
+                break
+            case 'marketplace':
+                currentStep.value = 1
+                steps.value[0].status = "complete";
+                steps.value[1].status = "current";
+                steps.value[2].status = "upcoming";
+                break
+            case 'auth':
+                currentStep.value = 2
+                steps.value[0].status = "complete";
+                steps.value[1].status = "complete";
+                steps.value[2].status = "current";
+                break
+            default:
+                currentStep.value = 0
+                steps.value[0].status = "current";
+                steps.value[1].status = "upcoming";
+                steps.value[2].status = "upcoming";
+        }
+    }
+
+    isPlatformCreateLoading.value = false;
+    isModalCreateEbay.value = true;
+}
+
+provide("closeCreateEbayModal", closeCreateEbayModal);
+provide("ebayId", ebayId);
+provide("ebayName", ebayName);
+provide("customerSalesChannelId", customerSalesChannelId);
+
+const steps = ref([
+    { name: "Ebay Account Name", status: "current" },
+    // { name: "Ebay Site", status: "upcoming" },
+    { name: "Ebay Auth Key", status: "upcoming" },
+    // { name: "Ebay Listing Profile Name", status: "upcoming" },
+    { name: "Ebay Listing Profile Confirmation", status: "upcoming" }
+]);
+
+provide("steps", steps);
+
+const stepComponents = [
+    EbayAccountNameForm,
+    // EbaySiteForm,
+    EbayAuthKeyForm,
+    // EbayListingProfileNameForm,
+    EbayListingProfileConfirmationForm
+];
+
+const currentStep = ref(0);
+
+provide("currentStep", currentStep);
+
+const goNext = () => {
+    if (currentStep.value < steps.value.length - 1) {
+        steps.value[currentStep.value].status = "complete";
+        currentStep.value++;
+        steps.value[currentStep.value].status = "current";
+    }
+};
+
+provide("goNext", goNext);
 </script>
 
 <template>
@@ -298,7 +393,12 @@ const isModalEbayDuplicate = ref(false)
             <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <div v-html="ChannelLogo('shopify')" class="h-9 sm:h-12"></div>
+                    <img
+                        src="/assets/channel_logo/shopify.svg"
+                        class="h-9 sm:h-12"
+                        alt="Shopify"
+                        v-tooltip="'Shopify'"
+                    />
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Shopify</div>
                         <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
@@ -311,11 +411,16 @@ const isModalEbayDuplicate = ref(false)
             </div>
 
             <!-- Section: Tiktok -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <div v-html="ChannelLogo('tiktok')" class="h-9 sm:h-12"
-                         :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
+                    <img
+                        src="/assets/channel_logo/tiktok.svg"
+                        class="h-9 sm:h-12"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
+                        alt="Tiktok"
+                        v-tooltip="'Tiktok'"
+                    />
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Tiktok</div>
                         <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
@@ -336,13 +441,18 @@ const isModalEbayDuplicate = ref(false)
                     </a>
 
                 </div>
-            </div>
+            </div>-->
 
             <!-- Section: Woocommerce -->
             <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="truncate md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <div v-html="ChannelLogo('woocommerce')" class="h-9 sm:h-12 min-w-6"></div>
+                    <img
+                        src="/assets/channel_logo/woocommerce.svg"
+                        class="h-9 sm:h-12 min-w-6"
+                        alt="Woocommerce"
+                        v-tooltip="'Woocommerce'"
+                    />
 
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Woocommerce</div>
@@ -379,26 +489,41 @@ const isModalEbayDuplicate = ref(false)
 
                 <div class="w-full flex justify-end">
 
+<!--                    <Button-->
+<!--                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"-->
+<!--                        :label="trans('Connect')"-->
+<!--                        xtype="primary"-->
+<!--                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"-->
+<!--                        full-->
+<!--                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"-->
+<!--                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"-->
+<!--                    />-->
+
                     <Button
+                        :loading="isPlatformCreateLoading"
+                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         xtype="primary"
-                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"
+                        type="primary"
                         full
-                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
-                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
+                        @click="openCreateEbayModal"
                     />
-<!--                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
 
+<!--                    <Button xv-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
                 </div>
             </div>
 
             <!-- Section: Amazon -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-
-                    <div v-html="ChannelLogo('amazon_simple')" class="h-9 sm:h-12"
-                         :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
+                    <img
+                        src="/assets/channel_logo/amazon_simple.svg"
+                        class="h-9 sm:h-12"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
+                        alt="Amazon"
+                        v-tooltip="'Amazon'"
+                    />
 
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Amazon</div>
@@ -421,10 +546,10 @@ const isModalEbayDuplicate = ref(false)
                     <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
 
                 </div>
-            </div>
+            </div>-->
 
             <!-- Section: Magento -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                      <img src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
@@ -450,7 +575,7 @@ const isModalEbayDuplicate = ref(false)
                     />
                     <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
-            </div>
+            </div>-->
         </div>
     </div>
 
@@ -541,7 +666,7 @@ const isModalEbayDuplicate = ref(false)
                 <PureInput v-model="wooCommerceInput.name" :placeholder="trans('Your store name')"></PureInput>
                 <PureInputWithAddOn v-model="wooCommerceInput.url" :leftAddOn="{
                     icon: 'fal fa-globe'
-                }" :placeholder="trans('e.g https://storeurlexample.com')"
+                }" :placeholder="'e.g https://storeurlexample.com'"
                                     @keydown.enter="() => onSubmitWoocommerce()"/>
             </div>
 
@@ -568,11 +693,17 @@ const isModalEbayDuplicate = ref(false)
                     @click="() => onSubmitEbay()"
                     :label="trans('Connect')"
                     full
-                    iconRight="fas fa-arrow-right"
                 />
             </div>
         </div>
     </Modal>
+
+    <Dialog v-model:visible="isModalCreateEbay" modal header="eBay" class="max-w-[90%] w-full">
+        <div class="flex flex-col gap-6">
+            <EbayProgressBar />
+            <component :is="stepComponents[currentStep]" :props="props" />
+        </div>
+    </Dialog>
 
     <!-- Modal: Magento -->
     <Modal :isOpen="isModalMagento" @onClose="isModalMagento = false" width="w-full max-w-lg">
@@ -592,7 +723,7 @@ const isModalEbayDuplicate = ref(false)
                 <PurePassword v-model="magentoInput.password" :placeholder="trans('Password')"></PurePassword>
                 <PureInputWithAddOn v-model="magentoInput.url" :leftAddOn="{
                     icon: 'fal fa-globe'
-                }" :placeholder="trans('e.g https://storeurlexample.com')"
+                }" :placeholder="'e.g https://storeurlexample.com'"
                                     @keydown.enter="() => onSubmitMagento()"/>
             </div>
 

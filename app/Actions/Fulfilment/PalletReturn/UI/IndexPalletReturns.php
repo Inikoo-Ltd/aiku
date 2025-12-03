@@ -337,7 +337,7 @@ class IndexPalletReturns extends OrgAction
                 'type'        => 'button',
                 'style'       => 'create',
                 'tooltip'     => $this->parent->items_storage ? __('Create new return (whole pallet)') : __('Create new return'),
-                'label'       => $this->parent->items_storage ? __('Return (whole pallet) ') : __('Return'),
+                'label'       => $this->parent->items_storage ? __('Return (whole pallet)') : __('Return'),
                 'fullLoading' => true,
                 'route'       => [
                     'method'     => 'post',

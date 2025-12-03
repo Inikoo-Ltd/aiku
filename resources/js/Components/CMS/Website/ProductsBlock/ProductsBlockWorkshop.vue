@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, provide, toRaw, watch, computed } from "vue"
+import { ref, provide, toRaw, watch, computed, inject } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop, faThLarge, faPaintBrushAlt, faMedal } from "@fas"
 import { router } from "@inertiajs/vue3"
 import { debounce } from "lodash-es"
 import { notify } from "@kyvg/vue3-notification"
+import ToggleSwitch from 'primevue/toggleswitch';
+
 
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { routeType } from "@/types/route"
@@ -51,7 +53,10 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
+const layout = inject("layout", {});
+layout.iris = {
+  is_logged_in: true
+}
 const selectedTab = ref(props.data.layout.data ? 1 : 0)
 const isLoadingSave = ref(false)
 const iframeClass = ref("w-full h-full")
@@ -138,7 +143,7 @@ const computedTabs = computed(() => {
 
 const computedDataProduct = computed(() => ({
   ...props.data.layout.data?.fieldValue,
-  products: selectedTab.value !== 2 ?  props.data.products : props.data.top_seller,
+  products: selectedTab.value !== 2 ? props.data.products : props.data.top_seller,
   model_type: "family",
   model_id: props.data.family.id,
   model_slug: props.data.family.slug,
@@ -152,40 +157,39 @@ watch(currentView, (newValue) => {
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-      <SideMenuFamilyWorkshop
-        :data="data.layout"
-        :webBlockTypes="data.web_block_types"
-        :dataList="data.families"
-        v-model:selectedTab="selectedTab"
-        :tabs="computedTabs"
-        @auto-save="autosave"
-        @set-up-template="onPickTemplate"
-        @onChangeDepartment="onChangeDepartment"
-        @update:selectedTab="(e) => (selectedTab = e)"
-      />
+      <SideMenuFamilyWorkshop :data="data.layout" :webBlockTypes="data.web_block_types" :dataList="data.families"
+        v-model:selectedTab="selectedTab" :tabs="computedTabs" @auto-save="autosave" @set-up-template="onPickTemplate"
+        @onChangeDepartment="onChangeDepartment" @update:selectedTab="(e) => (selectedTab = e)" />
     </div>
 
-    <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
-      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
+    <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col border overflow-hidden">
+
+      <!-- HEADER (fixed / tidak scroll) -->
+      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b shrink-0">
         <div class="py-1 px-2 cursor-pointer lg:block hidden" v-tooltip="'Desktop view'">
           <ScreenView @screenView="(e) => (currentView = e)" v-model="currentView" />
         </div>
-      </div>
-
-      <div v-if="data.layout?.code" class="editor-class">
-        <div :class="['border-2 border-t-0 overflow-auto', iframeClass]">
-          <component
-            :screenType="currentView"
-            class="flex-1 overflow-auto active-block"
-            :is="getComponent(data.layout.code)"
-            :modelValue="computedDataProduct"
-          />
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium">Login</span>
+          <ToggleSwitch v-model="layout.iris.is_logged_in" />
         </div>
       </div>
 
-      <div v-else>
-        <EmptyState />
+      <!-- AREA SCROLL -->
+      <div class="flex-1 overflow-auto">
+        <div v-if="data.layout?.code" class="editor-class">
+          <div :class="['border-2 border-t-0 overflow-auto', iframeClass]">
+            <component :screenType="currentView" class="flex-1 overflow-auto active-block" :code="data.layout.code"
+              :is="getComponent(data.layout.code,  { shop_type: layout?.shopState?.type })" :modelValue="computedDataProduct" />
+          </div>
+        </div>
+
+        <div v-else>
+          <EmptyState />
+        </div>
       </div>
+
     </div>
+
   </div>
 </template>

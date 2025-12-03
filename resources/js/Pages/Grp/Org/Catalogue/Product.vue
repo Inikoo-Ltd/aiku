@@ -6,7 +6,8 @@ import {
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
     faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
-    faFolderDownload
+    faFolderDownload,faQuoteLeft,
+    faExternalLink
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -33,6 +34,9 @@ import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vu
 import { routeType } from '@/types/route'
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
+import ProductSales from "@/Components/Product/ProductSales.vue";
+import { trans } from "laravel-vue-i18n"
+import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 
 
 library.add(
@@ -54,7 +58,8 @@ library.add(
     faLanguage,
     faPaperclip,
     faFolderTree,
-    faFolderDownload
+    faFolderDownload,
+    faQuoteLeft
 )
 
 const props = defineProps<{
@@ -69,6 +74,7 @@ const props = defineProps<{
     customers?: {}
     mailshots?: {}
     showcase?: {}
+    content?: {}
     service: {}
     rental: {}
     trade_units?: {}
@@ -97,6 +103,10 @@ const props = defineProps<{
             }
         }
     }
+    webpage_canonical_url?: string
+    sales: {}
+    is_single_trade_unit?: boolean
+    trade_unit_slug?: string
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -118,30 +128,18 @@ const component = computed(() => {
         stocks: TableOrgStocks,
         images: TradeUnitImagesManagement,
         translation: ProductTranslation,
-        attachments : AttachmentManagement
+        attachments : AttachmentManagement,
+        sales: ProductSales,
+        content: ProductContent,
     }
     console.log(currentTab.value)
     return components[currentTab.value]
 })
 
-
-
 // Warning flag
 const showMissingTaxonomyMessage = computed(() => {
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
-
-
-
-function masterProductRoute() {
-    return route(
-        "grp.masters.master_shops.show.master_products.show",
-        {
-            masterShop : route().params.shop as string,
-            masterProduct : props.code as string
-        }
-    );
-}
 
 
 </script>
@@ -152,18 +150,26 @@ function masterProductRoute() {
 
     <PageHeading :data="pageHead" >
         <template #afterTitle>
-             <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="'Go to Master'" class="mr-1">
+             <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="trans('Go to Master')">
                 <FontAwesomeIcon
                     icon="fab fa-octopus-deploy"
                     color="#4B0082"
                 />
             </Link>
+            <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
+                <FontAwesomeIcon
+                    icon="fal fa-atom"
+                />
+            </Link>
+        </template>
+
+        <template #other>
         </template>
     </PageHeading>
 
 
     <Message v-if="showMissingTaxonomyMessage" severity="warn" class="mb-4">
-        Both department and family data are missing in taxonomy.
+        {{trans('Both department and family data are missing in taxonomy.')}}
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
@@ -177,7 +183,7 @@ function masterProductRoute() {
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
                         <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
-                        <span class="">{{ item.label || '-' }}</span>
+                        <span>{{ item.label || '-' }}</span> <span v-if="item.post_label" class="text-gray-400">{{ item.post_label }}</span>
                     </component>
                 </div>
             </template>
@@ -185,7 +191,7 @@ function masterProductRoute() {
     </div>
 
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate />
 </template>
 
 

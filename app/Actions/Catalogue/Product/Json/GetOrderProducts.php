@@ -41,7 +41,6 @@ class GetOrderProducts extends OrgAction
                 ->where('transactions.order_id', $order->id)
                 ->whereNull('transactions.deleted_at');
         });
-        $queryBuilder->leftJoin('orders', 'transactions.order_id', 'orders.id');
         $queryBuilder->where('products.shop_id', $order->shop_id)->where('products.is_for_sale', true);
         $queryBuilder
             ->defaultSort('products.code')
@@ -52,19 +51,17 @@ class GetOrderProducts extends OrgAction
                 'products.code',
                 'products.name',
                 'products.state',
-                'products.created_at',
-                'products.updated_at',
                 'products.price',
+                'products.web_images',
                 'products.slug',
                 'products.available_quantity',
                 'transactions.quantity_ordered as quantity_ordered',
                 'transactions.id as transaction_id',
-                'orders.id as order_id',
-            ])
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
+                'transactions.order_id',
+            ]);
 
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
+        return $queryBuilder->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
             ->withQueryString();

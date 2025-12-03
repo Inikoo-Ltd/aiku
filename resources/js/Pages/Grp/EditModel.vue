@@ -58,7 +58,9 @@ import {
     faUserTag,
     faBookOpen,
     faNotesMedical,
-    faBiohazard
+    faBiohazard,
+    faFolder,
+    faCartArrowDown
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from "@fas"
@@ -113,7 +115,9 @@ library.add(
     faCode,
     faDoorClosed,
     faBoxes,
-    faMoneyBill
+    faMoneyBill,
+    faFolder,
+    faCartArrowDown
 )
 
 const props = defineProps<{
@@ -317,7 +321,7 @@ const getSeverity = (type?: string) => {
                 <div class="sticky top-16">
                     <template v-for="(sectionData, key) in formData.blueprint">
                         <!-- If Section: all fields is not hidden -->
-                        <div v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))"
+                        <div v-if="!(Object.values(sectionData.fields || {}).every((field: any) => field.hidden))"
                             @click="switchTab(key)" :class="[
 								key == currentTab ? `navigationSecondActive` : `navigationSecond`,
 								'cursor-pointer group px-3 py-2 flex items-center text-sm font-medium',
@@ -369,7 +373,7 @@ const getSeverity = (type?: string) => {
 
                 <template v-for="(sectionData, sectionIdx) in formData.blueprint" :key="sectionIdx">
                     <!-- If Section: all fields is not hidden -->
-                    <template v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))">
+                    <template v-if="!(Object.values(sectionData.fields || {}).every((field: any) => field.hidden))">
                         <div v-show="sectionIdx == currentTab" class="pt-4">
                             <div class="sr-only absolute -top-16" :id="`field${sectionIdx}`" />
                             <!-- Title -->
@@ -427,7 +431,7 @@ const getSeverity = (type?: string) => {
         <ul v-else class="space-y-8">
             <template v-for="(sectionData, key) in formData.blueprint">
                 <!-- If Section: all fields is not hidden -->
-                <li v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))"
+                <li v-if="!(Object.values(sectionData.fields || {}).every((field: any) => field.hidden))"
                     class="group font-medium" :aria-current="key === currentTab ? 'page' : undefined">
                     <div class="bg-gray-200 py-3 pl-5 flex items-center">
                         <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"

@@ -9,6 +9,7 @@
 namespace App\Http\Resources\CRM;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Http\Resources\Catalogue\TagsResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
@@ -26,6 +27,11 @@ class CustomerResource extends JsonResource
     {
         /** @var Customer $customer */
         $customer = $this;
+
+        // Temp fix || Need to redo later, some payment have invalid customer id
+        if (!$customer->resource) {
+            return [];
+        }
 
         $comms = $customer->comms;
 
@@ -80,6 +86,8 @@ class CustomerResource extends JsonResource
         return [
             'id'                  => $customer->id,
             'slug'                => $customer->slug,
+            'organisation_slug'   => $customer->organisation?->slug,
+            'shop_slug'           => $customer->shop?->slug,
             'reference'           => $customer->reference,
             'name'                => $customer->name,
             'contact_name'        => $customer->contact_name,
@@ -116,7 +124,8 @@ class CustomerResource extends JsonResource
                 ],
                 'subscriptions' => $subscriptions
 
-            ]
+            ],
+            'tags' => TagsResource::collection($customer->tags)->toArray(request())
         ];
     }
 }

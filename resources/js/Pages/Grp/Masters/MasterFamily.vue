@@ -17,7 +17,7 @@ import {
 import { faExclamationTriangle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, defineAsyncComponent, inject, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
@@ -37,6 +37,7 @@ import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from 'primevue/breadcrumb'
 import { create } from "lodash"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
+import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue"
 
 library.add(
     faFolder,
@@ -44,7 +45,7 @@ library.add(
     faCameraRetro,
     faTag,
     faBullhorn,
-    faProjectDiagram,
+    faProjectDiagram,  
     faUser,
     faMoneyBillWave,
     faBrowser, faExclamationTriangle
@@ -66,6 +67,7 @@ const props = defineProps<{
     history?: object;
     families?: object   
     is_orphan?: boolean
+    sales?:object
     currency?:Object
     url_master?:routeType
     shopsData? :any
@@ -89,7 +91,8 @@ const component = computed(() => {
         customers: TableCustomers,
         details: ModelDetails,
         history: TableHistories,
-        images : ImagesManagement
+        images : ImagesManagement,
+        sales: ProductCategorySales
     }
     return components[currentTab.value] ?? ModelDetails
 })
@@ -108,7 +111,7 @@ const showDialog = ref(false);
             <Button :icon="action.icon" :label="action.label" @click="showDialog = true" :style="action.style" />
         </template>
 
-        <template #afterTitle>
+        <template #afterTitle2>
            <div class="whitespace-nowrap">
             <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
                 <FontAwesomeIcon
@@ -168,6 +171,7 @@ const showDialog = ref(false);
         :master-currency="currency"
         :shopsData="shopsData"
         :masterProductCategory="masterProductCategory"
+        :is_dropship="route().params['masterShop'] == 'ds'"
     />
 
 

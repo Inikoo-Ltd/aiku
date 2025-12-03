@@ -9,6 +9,7 @@
 namespace App\Models\Discounts;
 
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\HasHistory;
@@ -55,6 +56,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property array<array-key, mixed> $source_data
+ * @property OfferDurationEnum|null $duration
+ * @property string|null $allowance_signature
+ * @property string|null $bracket
+ * @property string|null $trigger_sub_type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
@@ -94,6 +99,7 @@ class Offer extends Model implements Auditable
         'last_fetched_at' => 'datetime',
         'status'          => 'boolean',
         'state'           => OfferStateEnum::class,
+        'duration'        => OfferDurationEnum::class,
     ];
 
     protected $attributes = [

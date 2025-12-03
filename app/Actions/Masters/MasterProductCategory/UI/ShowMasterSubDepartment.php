@@ -68,7 +68,7 @@ class ShowMasterSubDepartment extends GrpAction
         return Inertia::render(
             'Masters/MasterSubDepartment',
             [
-                'title'       => __('master sub-department'),
+                'title'       => __('Master sub-department'),
                  'breadcrumbs' => $this->getBreadcrumbs(
                      $masterSubDepartment,
                      $request->route()->getName(),
@@ -109,10 +109,19 @@ class ShowMasterSubDepartment extends GrpAction
                 ),
                 'pageHead'    => [
                     'title'   => $masterSubDepartment->name,
-                    'model'   => __('master sub-department'),
+                    'model'   => __('Master sub-department'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder-download'],
                         'title' => __('Master sub-department')
+                    ],
+                    'iconRight' => $masterSubDepartment->status ? [
+                        'tooltip' => __('Active'),
+                        'icon'    => 'fas fa-check-circle',
+                        'class'   => 'text-green-400'
+                    ] : [
+                        'tooltip' => __('Closed'),
+                        'icon'    => 'fas fa-times-circle',
+                        'class'   => 'text-red-400'
                     ],
                     'actions' => [
                         $this->canEdit ? [
@@ -215,7 +224,7 @@ class ShowMasterSubDepartment extends GrpAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('master sub-departments')
+                            'label' => __('Master sub-departments')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

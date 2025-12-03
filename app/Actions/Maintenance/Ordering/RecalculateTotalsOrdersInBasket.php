@@ -24,7 +24,7 @@ class RecalculateTotalsOrdersInBasket
 
     public function handle(Order $order): void
     {
-        CalculateOrderTotalAmounts::run($order);
+        CalculateOrderTotalAmounts::run($order, true, true, false, true);
     }
 
 

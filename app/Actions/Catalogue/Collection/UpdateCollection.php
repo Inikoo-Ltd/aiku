@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\Catalogue\Collection\Search\CollectionRecordSearch;
+use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
@@ -45,12 +46,23 @@ class UpdateCollection extends OrgAction
             }
         }
         $collection = $this->update($collection, $modelData, ['data']);
+        $changes = Arr::except($collection->getChanges(), ['updated_at']);
+
 
         if (!$collection->image_id && $originalImageId) {
             $collection->images()->detach($originalImageId);
         }
 
-        CollectionRecordSearch::dispatch($collection);
+
+        if (Arr::hasAny($changes, ['code', 'nane'])) {
+            CollectionRecordSearch::dispatch($collection);
+            if ($collection->webpage) {
+                ClearCacheByWildcard::run("irisData:website:{$collection->webpage->website_id}:*");
+            }
+
+        }
+
+
 
         return $collection;
     }

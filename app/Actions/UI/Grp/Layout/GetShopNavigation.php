@@ -346,6 +346,17 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                                 ],
                             ],
+
+                            [
+                                "label"   => __("Announcements"),
+                                "tooltip" => __("Announcements"),
+                                "icon"    => ["fal", "fa-megaphone"],
+                                'root'    => 'grp.org.shops.show.web.announcements.',
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.web.announcements.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
+                                ],
+                            ],
                             [
                                 "label"   => __("Analytics"),
                                 "tooltip" => __("Analytics"),
@@ -400,10 +411,16 @@ class GetShopNavigation
 
                 "topMenu" => [
                     "subSections" => [
-
+                        [
+                            "label"   => __("Dashboard"),
+                            "icon"    => ["fal", "fa-tachometer-alt"],
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.crm.dashboard",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
                         [
                             "label"   => __("Customers"),
-                            "tooltip" => __("Customers"),
                             "icon"    => ["fal", "fa-user"],
                             "route"   => [
                                 "name"       => "grp.org.shops.show.crm.customers.index",
@@ -412,7 +429,6 @@ class GetShopNavigation
                         ],
                         [
                             "label"   => __("Prospects"),
-                            "tooltip" => __("Prospects"),
                             "icon"    => ["fal", "fa-user-plus"],
                             "route"   => [
                                 "name"       => "grp.org.shops.show.crm.prospects.index",

@@ -92,6 +92,7 @@ class IndexCustomerSalesChannels extends OrgAction
         return $queryBuilder->defaultSort('customer_sales_channels.reference')
             ->allowedSorts(['reference', 'name', 'number_clients', 'number_portfolios', 'number_orders', 'total_amount', 'platform_status', 'customer_company_name'])
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['created_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -146,6 +147,7 @@ class IndexCustomerSalesChannels extends OrgAction
                     ->pageName($prefix.'Page');
             }
             $table
+                ->betweenDates(['created_at'])
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('Name'), sortable: true);

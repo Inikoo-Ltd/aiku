@@ -10,10 +10,13 @@ use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProducts;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithNoFamily;
 use App\Actions\Masters\MasterCollection\UI\CreateMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollectionsInMasterProductCategory;
 use App\Actions\Masters\MasterCollection\UI\ShowMasterCollection;
+use App\Actions\Masters\MasterCollection\UI\EditMasterCollection;
+use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\EditMasterDepartment;
@@ -42,6 +45,7 @@ Route::get('/', ShowMastersDashboard::class)->name('dashboard');
 
 Route::get('/master-products', IndexMasterProducts::class)->name('master_products.index');
 Route::get('/master-departments', [IndexMasterDepartments::class, 'inGroup'])->name('master_departments.index');
+Route::delete('/master-departments/{masterProductCategory}/delete', DeleteMasterProductCategory::class)->name('master_departments.delete');
 
 
 Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.show')->group(function () {
@@ -61,7 +65,6 @@ Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.
                 });
         });
     });
-
 
     Route::prefix('master-collections')->as('.master_collections.')->group(function () {
         Route::get('', [IndexMasterCollectionsInMasterProductCategory::class, 'inMasterDepartment'])->name('index');
@@ -102,6 +105,7 @@ Route::name("master_shops")->prefix('master-shops')
 
                 Route::get('{masterDepartment}/blueprint', ShowMasterDepartmentWorkshop::class)->name('blueprint');
                 Route::get('{masterDepartment}/edit', EditMasterDepartment::class)->name('edit');
+
 
                 Route::prefix('{masterDepartment}')->name('show')->group(function () {
                     Route::get('', ShowMasterDepartment::class);
@@ -197,9 +201,13 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('{masterProduct}', ShowMasterProducts::class)->name('show');
                 Route::get('{masterProduct}/edit', EditMasterProduct::class)->name('edit');
             });
+
+            Route::get('/master-products-orphan', [IndexMasterProductsWithNoFamily::class, 'inMasterShop'])->name('.master_products_orphan');
+
             Route::prefix('master-collections')->as('.master_collections.')->group(function () {
                 Route::get('', IndexMasterCollections::class)->name('index');
                 Route::get('create', CreateMasterCollection::class)->name('create');
+                Route::get('{masterCollection}/edit', EditMasterCollection::class)->name('edit');
                 Route::get('{masterCollection}', ShowMasterCollection::class)->name('show');
             });
         });

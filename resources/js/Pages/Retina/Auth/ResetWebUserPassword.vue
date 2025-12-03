@@ -56,7 +56,7 @@ watchEffect(() => {
                 {{ trans("Reset your password") }}
             </div>
             <div class="text-center font-semibold text-lg">
-                {{ trans("Username ") }} {{ username  }}
+                {{ trans("Username") }} {{ username  }}
             </div>
             <div class="flex flex-col gap-y-4">
                 <div class="">

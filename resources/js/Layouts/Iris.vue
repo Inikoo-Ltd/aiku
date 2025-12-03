@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import Notification from '@/Components/Utils/Notification.vue'
 import IrisHeader from '@/Layouts/Iris/Header.vue'
-import { isArray } from 'lodash-es'
+import { isArray, set } from 'lodash-es'
 import "@/../css/iris_styling.css"
 import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -15,7 +15,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome } from '@fal'
+import { faHome, faImage } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
@@ -24,7 +24,12 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
-library.add(faHome, faExclamationTriangle, faWhatsapp)
+import IrisRightsideBasket from '@/Components/Iris/Layout/IrisRightsideBasket.vue'
+import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
+import ChatButton from '@/Components/Chat/ChatButton.vue'
+import axios from 'axios'
+
+library.add(faHome, faImage, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
 
@@ -32,6 +37,11 @@ const layout = useIrisLayoutStore()
 const isOpenMenuMobile = ref(false)
 provide('layout', layout)
 provide('isOpenMenuMobile', isOpenMenuMobile)
+
+
+const propsAnnouncementsTopbar = ref([])
+const propsAnnouncementsBottomMenu =  ref([])
+const propsAnnouncementsTopFooter =  ref([])
 
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
@@ -74,6 +84,18 @@ const checkScreenType = () => {
     else screenType.value = 'desktop'
 }
 
+
+const getAnnouncements = async () => {
+    try {
+    const response = await axios.get(route("iris.json.announcements.index"))
+    propsAnnouncementsTopbar.value = response.data.top_bar
+    propsAnnouncementsBottomMenu.value = response.data.bottom_menu
+    propsAnnouncementsTopFooter.value = response.data.top_footer
+  } catch (error: any) {
+    console.error(error)
+  }
+} 
+
 provide('screenType', screenType)
 
 onMounted(() => {
@@ -97,6 +119,14 @@ onBeforeUnmount(() => {
 
 onBeforeMount(()=>{
 initialiseIrisVarnish(useIrisLayoutStore)
+getAnnouncements()
+})
+
+// Watch: open Side Basket if cart have any changes
+watch(() => layout.iris_variables?.cart_amount, (newVal) => {
+    if (typeof layout.rightbasket?.show === 'undefined') {
+        set(layout, 'rightbasket.show', true)
+    }
 })
 
 console.log('handle', usePage().props)
@@ -133,7 +163,15 @@ console.log('handle', usePage().props)
         </Modal>
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
+            <template v-if="propsAnnouncementsTopbar?.length">
+                <template v-for="announcement in propsAnnouncementsTopbar">
+                    <IrisAnnouncement
+                        :data="announcement"
+                    />
+                </template>
+            </template>
 
+            <!-- Section: Topbar, Header, Menu, Sidebar -->
             <IrisHeader
                 v-if="header?.header"
                 :data="header"
@@ -142,6 +180,14 @@ console.log('handle', usePage().props)
                 :screen-type="screenType"
                 :custom-sidebar="customSidebar"
             />
+
+            <template v-if="propsAnnouncementsBottomMenu?.length">
+                <template v-for="announcement in propsAnnouncementsBottomMenu">
+                    <IrisAnnouncement
+                        :data="announcement"
+                    />
+                </template>
+            </template>
 
             <div class="border-b border-gray-200 ">
                 <div
@@ -166,11 +212,33 @@ console.log('handle', usePage().props)
                 </div>
             </div>
 
-            <main>
-                <div>
+            <main class="relative flex">
+                <!-- Layout: main page -->
+                <div class="flex-1 min-w-0">
                     <slot />
                 </div>
+
+                <!-- Layout: SideBasket (right) -->
+                <div
+                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile'"
+                    class="sticky border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
+                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-lg' : 'border-transparent max-w-0'"
+                >
+                    <IrisRightsideBasket
+                        v-if="layout.iris_variables?.cart_count > 0"
+                        :isOpen="layout.rightbasket?.show"
+                    />
+                </div>
             </main>
+
+
+            <template v-if="propsAnnouncementsTopFooter?.length">
+                <template v-for="announcement in propsAnnouncementsTopFooter">
+                    <IrisAnnouncement
+                        :data="announcement"
+                    />
+                </template>
+            </template>
 
             <Footer
                 v-if="footer && !isArray(footer)"
@@ -189,6 +257,7 @@ console.log('handle', usePage().props)
     </notifications>
 
 
+    <ChatButton data="null" v-if="layout?.app?.environment === 'local'"/>
 
 
 </template>

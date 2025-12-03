@@ -14,6 +14,7 @@ use App\Actions\Web\WebBlock\GetWebBlockCollections;
 use App\Actions\Web\WebBlock\GetWebBlockDepartments;
 use App\Actions\Web\WebBlock\GetWebBlockFamilies;
 use App\Actions\Web\WebBlock\GetWebBlockFamily;
+use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\GetWebBlockSeeAlso;
@@ -29,24 +30,26 @@ trait WithFillIrisWebBlocks
 
         if ($webBlockType === 'banner') {
             $parsedWebBlocks[$key] = GetBanner::run($webBlock);
-        } elseif (in_array($webBlockType, ['departments'])) { // not used
+        } elseif ($webBlockType == 'departments') { // not used
             $parsedWebBlocks[$key] = GetWebBlockDepartments::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['sub-departments-1'])) {
+        } elseif ($webBlockType == 'sub-departments-1') {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['families-1'])) {
+        } elseif ($webBlockType == 'families-1') {
             $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['products-1'])) {
+        } elseif ($webBlockType == 'products-1') {
             $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock, $isLoggedIn);
-        } elseif (in_array($webBlockType, ['family-1'])) {
+        } elseif ($webBlockType == 'family-1') {
             $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['product-1'])) {
+        } elseif ($webBlockType == 'product-1') {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['collections-1'])) { // not used
+        } elseif ($webBlockType == 'collections-1') { // not used
             $parsedWebBlocks[$key] = GetWebBlockCollections::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['see-also-1'])) {
+        } elseif ($webBlockType == 'see-also-1') {
             $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['blog'])) {
+        } elseif ($webBlockType == 'blog') {
             $parsedWebBlocks[$key] = GetWebBlockBlog::run($webpage, $webBlock);
+        } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
+            $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }

@@ -11,6 +11,8 @@ const props = withDefaults(defineProps<{
     alt?: string
     class?: string
     style?: Object
+    width?:string
+    height?:string
     imgAttributes?: {
         fetchpriority?: string // 'high' | 'low'
         loading?: string  // 'lazy'
@@ -31,7 +33,7 @@ const avif: Ref<string | undefined> = ref(get(imageSrc, ['value', 'avif'], fallb
 const webp: Ref<string | undefined> = ref(get(imageSrc, ['value', 'webp'], fallbackPath))
 const original = ref(get(imageSrc, ['value', 'original'], fallbackPath))
 
-watch(() => src.value, (newValue) => {
+watch(() => props.src, (newValue) => {
     if(!newValue) {
         
     }
@@ -69,6 +71,16 @@ onBeforeMount(setImage)
     <picture :class="[props.class ?? 'w-full h-full flex justify-center items-center']">
         <source v-if="avif && avif != fallbackPath" type="image/avif" :srcset="avif">
         <source v-if="webp && webp != fallbackPath" type="image/webp" :srcset="webp">
-        <img :class="[imageCover ? 'w-full object-cover aspect-auto' : undefined]" :style="{height: 'inherit', ...style }" @load="() => emits('onLoadImage')" :srcset="original" :src="get(src, 'original')" :alt="alt"  v-bind="imgAttributes">
+        <img
+            :class="[imageCover ? 'w-full object-cover aspect-auto' : undefined]"
+            :style="{height: 'inherit', ...style }"
+            @load="() => emits('onLoadImage')"
+            :srcset="original"
+            :src="get(src, 'original')"
+            :alt="alt"
+            v-bind="imgAttributes"
+            :width="width" 
+            :height="height"
+        >
     </picture>
 </template>

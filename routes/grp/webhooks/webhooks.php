@@ -14,10 +14,10 @@ use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductChanged;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
-use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
+use App\Actions\Dropshipping\ShopifyUser\WebhookUninstalledShopifyUser;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
-use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
+use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
 
 Route::name('webhooks.')->group(function () {
@@ -28,7 +28,7 @@ Route::name('webhooks.')->group(function () {
 Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::any('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
     Route::get('fetch_stock.json', CallbackFetchStock::class)->name('fetch_stock');
-    Route::post('app-uninstalled', [DeleteShopifyUser::class, 'inWebhook'])->name('app_uninstalled');
+    Route::post('app-uninstalled', WebhookUninstalledShopifyUser::class)->name('app_uninstalled');
     Route::any('products-deleted', CallbackProductChanged::class)->name('products_deleted');
     Route::any('products-updated', CallbackProductChanged::class)->name('products_updated');
 
@@ -45,7 +45,7 @@ Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
         });
 
         Route::prefix('orders')->as('orders.')->group(function () {
-            Route::post('catch', FetchWooUserOrders::class)->name('catch');
+            Route::post('catch', CallbackFetchWooUserOrders::class)->name('catch');
         });
     });
 });

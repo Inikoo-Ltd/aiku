@@ -18,6 +18,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Web\Website\UpdateWebsite;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -88,6 +89,9 @@ class UpdateShop extends OrgAction
                     'shopify_access_token' => 'settings.shopify.access_token',
                     'registration_number' => 'data.registration_number',
                     'vat_number' => 'data.vat_number',
+                    'ebay_redirect_key' => 'settings.ebay.redirect_key',
+                    'ebay_marketplace_id' => 'settings.ebay.marketplace_id',
+                    'portal_link'   => 'settings.portal.link',
                     default => $key
                 },
                 $value
@@ -100,6 +104,20 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'shopify_access_token');
         data_forget($modelData, 'registration_number');
         data_forget($modelData, 'vat_number');
+        data_forget($modelData, 'ebay_redirect_key');
+        data_forget($modelData, 'ebay_marketplace_id');
+        data_forget($modelData, 'portal_link');
+
+        if (Arr::exists($modelData, 'widget_key')) {
+            $widgetKey = Arr::pull($modelData, 'widget_key');
+            UpdateWebsite::make()->action(
+                website: $shop->website,
+                modelData: ['jira_help_desk_widget' => $widgetKey],
+                hydratorsDelay: 0,
+                strict: false,
+                audit: true
+            );
+        }
 
         if (Arr::exists($modelData, 'collection_address')) {
             $collectionAddressData = Arr::get($modelData, 'collection_address');
@@ -251,6 +269,10 @@ class UpdateShop extends OrgAction
             'shopify_access_token'         => ['sometimes', 'string'],
             'registration_number'          => ['sometimes', 'string'],
             'vat_number'                   => ['sometimes', 'string'],
+            'ebay_redirect_key'            => ['sometimes', 'string'],
+            'ebay_marketplace_id'          => ['sometimes', 'string'],
+            'portal_link'                  => ['sometimes', 'string'],
+            'widget_key'                   => ['sometimes', 'string'],
             'required_approval'            => ['sometimes', 'boolean'],
             'required_phone_number'        => ['sometimes', 'boolean'],
             'marketing_opt_in_default'     => ['sometimes', 'boolean'],

@@ -20,29 +20,22 @@ defineProps<{
 }>()
 
 const locale = useLocaleStore()
-
 </script>
 
-
 <template>
-    <!-- {{ props.shopsList }} -->
     <Table :resource="data" :name="tab" class="mt-5">
-
         <template #cell(state)="{ item: paymentAccountShops }">
             <Icon :data="paymentAccountShops.state_icon" />
         </template>
 
         <template #cell(show_in_checkout)="{ item: paymentAccountShops }">
             {{paymentAccountShops.show_in_checkout}}
-
         </template>
-
-
-
 
         <template #cell(number_payments)="{ item: paymentAccountShops }">
             {{ useLocaleStore().number(paymentAccountShops.number_payments) }}
         </template>
+
         <template #cell(amount_successfully_paid)="{ item: paymentAccountShop }">
             <div class="text-gray-500">{{ locale.currencyFormat(paymentAccountShop.shop_currency_code, paymentAccountShop.amount_successfully_paid) }}</div>
         </template>

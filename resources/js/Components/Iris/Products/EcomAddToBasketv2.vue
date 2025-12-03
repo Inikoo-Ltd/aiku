@@ -4,7 +4,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { InputNumber } from 'primevue'
 import { router } from '@inertiajs/vue3'
-import { inject, ref, computed } from 'vue'
+import { inject, ref, computed, watch } from 'vue'
 import { debounce, get, set } from 'lodash-es'
 import { ProductResource } from '@/types/Iris/Products'
 import axios from 'axios'
@@ -23,6 +23,7 @@ library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRig
 const props = defineProps<{
     product: ProductResource
     customerData : any
+    buttonStyle?: any
 }>()
 
 const customer = ref({...props.customerData})
@@ -59,6 +60,24 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
             
         }
 
+        const productToAddToBasket = {
+            ...product,
+            transaction_id: response.data?.transaction_id,
+            quantity_ordered: response.data?.quantity_ordered,
+            quantity_ordered_new: response.data?.quantity_ordered,
+        }
+        
+        // Check the product in Basket, if exist: replace, not exist: push
+        const products = layout.rightbasket?.products
+        if (products) {
+            const index = products.findIndex((p: any) => p.transaction_id === productToAddToBasket.transaction_id)
+            if (index !== -1) {
+                products[index] = productToAddToBasket
+            } else {
+                products.push(productToAddToBasket)
+            }
+        }
+
         router.reload({
             only: ['iris'],
         })
@@ -66,6 +85,7 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
         /* product.transaction_id = response.data?.transaction_id
         product.quantity_ordered = response.data?.quantity_ordered */
         customer.value.quantity_ordered = response.data?.quantity_ordered
+        customer.value.quantity_ordered_new = response.data?.quantity_ordered
         customer.value.transaction_id = response.data?.transaction_id
         setStatus('success')
         layout.reload_handle()
@@ -100,6 +120,9 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
 
 const onUpdateQuantity = (product: ProductResource) => {
     // console.log('stock in', stockInBasket)
+    const isWillRemoveFrombasket = get(product, ['quantity_ordered_new'], 0) === 0
+    const productTransactionId = product.transaction_id
+
     router.post(
         route('iris.models.transaction.update', {
             transaction: customer.value.transaction_id 
@@ -118,6 +141,29 @@ const onUpdateQuantity = (product: ProductResource) => {
             onSuccess: () => {
                 setStatus('success')
                 // product.quantity_ordered = product.quantity_ordered_new
+                customer.value.quantity_ordered = product.quantity_ordered_new
+
+                if (isWillRemoveFrombasket) {
+                    // Remove product from layout basket
+                    const products = layout.rightbasket?.products
+                    if (products) {
+                        const index = products.findIndex((p: any) => p.transaction_id === productTransactionId)
+                        if (index !== -1) {
+                            products.splice(index, 1)
+                        }
+                    }
+                } else {
+                    // Update product quantity in layout basket
+                    const products = layout.rightbasket?.products
+                    if (products) {
+                        const index = products.findIndex((p: any) => p.transaction_id === productTransactionId)
+                        if (index !== -1) {
+                            products[index].quantity_ordered = product.quantity_ordered_new
+                            products[index].quantity_ordered_new = product.quantity_ordered_new
+                        }
+                    }
+                }
+
                 set(props, ['product', 'quantity_ordered'], get(product, ['quantity_ordered_new'], null))
                 layout.reload_handle()
             },
@@ -139,13 +185,25 @@ const onUpdateQuantity = (product: ProductResource) => {
 
 
 const debAddAndUpdateProduct = debounce(() => {
-    if (!customer.value.quantity_ordered) {
-        onAddToBasket(props.product)
-    } else if (customer.value.quantity_ordered_new === 0) {
-        onUpdateQuantity(customer.value)
-    } else {
-        onUpdateQuantity(customer.value)
+    const currentQty = customer.value.quantity_ordered || 0
+    const newQty = customer.value.quantity_ordered_new ?? currentQty
+
+    if (!customer.value.transaction_id || currentQty === 0) {
+        if (newQty > 0) {
+            onAddToBasket(props.product, newQty)
+        }
+        return
     }
+
+    if (newQty === 0) {
+        onUpdateQuantity(customer.value)
+        customer.value.transaction_id = null
+        // customer.value.quantity_ordered = 0
+        return
+    }
+
+    // Otherwise just update normally
+    onUpdateQuantity(customer.value)
 }, 700)
 
 
@@ -161,13 +219,19 @@ const showWarning = () => {
     })
 }
 
+// Watch: if parent refetch the Customer Data (maybe RightSideBasket have update the quantity)
+watch(() => props.customerData, (newVal) => {
+    customer.value = {...newVal}
+}, {
+    deep: true
+})
 </script>
 
 <template>
     <div class="">
         <div class="flex items-center gap-2 relative w-36">
             <InputNumber
-                :modelValue="get(customer, ['quantity_ordered_new'], null) === null ? customer.quantity_ordered : get(customer, ['quantity_ordered_new'], null)"
+                :modelValue="get(customer, ['quantity_ordered_new'], null) === null ? (get(customer, ['quantity_ordered'], 0) ?? 0) : get(customer, ['quantity_ordered_new'], 0)"
                 @input="(e) => (e.value ? set(customer, ['quantity_ordered_new'], e.value) : set(customer, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
                 inputId="integeronly"
                 fluid
@@ -201,9 +265,9 @@ const showWarning = () => {
                     size="lg"
                     :disabled="customer.quantity_ordered > customer.stock"
                     :loading="isLoadingSubmitQuantityProduct"
+                    :inject-style="buttonStyle"
                 />
             </div>
-
             
         </div>
         

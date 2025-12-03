@@ -4,7 +4,6 @@ import { faTriangle, faEquals } from "@fas"
 import { Link } from "@inertiajs/vue3"
 import { Intervals } from "@/types/Components/Dashboard"
 import { getDashboardDateRange } from "@/Composables/useDashboard"
-import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg";
 
 interface RouteTarget {
     name?: string
@@ -85,13 +84,15 @@ const getIntervalStateColor = (state?: string) => {
         :is="cell?.route_target?.name ? Link : 'div'"
         :href="cell?.route_target?.name ? route(cell?.route_target.name, cell?.route_target.key_date_filter ? {
             ...cell?.route_target?.parameters,
-            [cell?.route_target?.key_date_filter]: getDashboardDateRange(props.interval.value)
+            [cell?.route_target?.key_date_filter]: getDashboardDateRange(props.interval.value, props.interval.range_interval)
         } : cell?.route_target.parameters) : '#'"
     >
-        <span
+        <img
             v-if="cell?.icon"
-            v-html="ChannelLogo(cell.icon)"
+            :src="`/assets/channel_logo/${cell.icon}.svg`"
             class="w-4 h-4"
+            :alt="cell.icon"
+            v-tooltip="cell?.tooltip ?? cell.icon"
         />
         <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value }}</span>
         <FontAwesomeIcon

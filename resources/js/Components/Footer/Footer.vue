@@ -15,6 +15,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { inject } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import FooterMessage from '@/Components/Footer/FooterMessage.vue'
+import TimezoneDisplay from './TimezoneDisplay.vue'
 
 
 const layout = inject('layout', layoutStructure)
@@ -28,17 +30,23 @@ library.add(faHeart, faComputerClassic, faDiscord)
         <!-- Helper: Product background (close popup purpose) -->
         <div class="flex justify-between">
             <!-- Left: Logo Section -->
-            <div class="pl-4 flex items-center gap-x-1.5 text-slate-400">
-                <div class="font-normal leading-none" :class="layout.app.environment === 'local' ? 'bg-yellow-500 text-gray-700 h-full flex items-center px-3 ' : ' py-1' ">
-                    {{layout?.user?.username}}@{{ layout?.app?.environment }}
+            <div class="pl-4 flex gap-x-4">
+                <div class="flex items-center gap-x-1.5 text-slate-400">
+                    <div class="font-normal leading-none" :class="layout.app.environment === 'local' ? 'bg-yellow-500 text-gray-700 h-full flex items-center px-3 ' : ' py-1' ">
+                        {{layout?.user?.username}}@{{ layout?.app?.environment }}
+                    </div>
+                    <img class="h-3 select-none hidden lg:inline pl-1 pr-1" src="/art/logo-yellow.svg" alt="aiku" />
+                    <span class="text-xs hidden lg:inline">
+                        {{ trans('Made with') }}
+                        <FontAwesomeIcon icon='fas fa-heart' class="text-pink-500 mx-1" fixed-width aria-hidden='true' />
+                        {{ trans('and') }}
+                        <FontAwesomeIcon icon='fas fa-computer-classic' class="mx-1" fixed-width aria-hidden='true' /> {{ 'in KL|Bali' }}
+                    </span>
                 </div>
-                <img class="h-3 select-none hidden lg:inline pl-1 pr-1" src="/art/logo-yellow.svg" alt="aiku" />
-                <span class="text-xs hidden lg:inline">
-                    {{ trans('Made with') }}
-                    <FontAwesomeIcon icon='fas fa-heart' class="text-pink-500 mx-1" fixed-width aria-hidden='true' />
-                    {{ trans('and') }}
-                    <FontAwesomeIcon icon='fas fa-computer-classic' class="mx-1" fixed-width aria-hidden='true' /> {{ 'in KL|Bali' }}
-                </span>
+                
+                <div v-if="layout.app.environment === 'local'">
+                    <TimezoneDisplay />
+                </div>
             </div>
 
             <!-- Right: Tab Section -->
@@ -48,6 +56,7 @@ library.add(faHeart, faComputerClassic, faDiscord)
                 </div>
                <!--  <FooterCurrency /> -->
                 <FooterLanguage />
+                <FooterMessage v-if="layout?.app?.environment === 'local'" />
                 <FooterActiveUsers />
             </div>
         </div>

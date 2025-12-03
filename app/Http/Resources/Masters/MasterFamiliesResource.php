@@ -44,7 +44,16 @@ class MasterFamiliesResource extends JsonResource
             'used_in'                => $this->used_in,
             'products'               => $this->products,
             'show_in_website'        => $this->show_in_website,
-
+            'status_icon'            => $this->status ? [
+                'tooltip' => __('Active'),
+                'icon'    => 'fas fa-check-circle',
+                'class'   => 'text-green-400'
+            ] : [
+                'tooltip' => __('Closed'),
+                'icon'    => 'fas fa-times-circle',
+                'class'   => 'text-red-400'
+            ],
+            'number_current_products' => $this->current_master_assets,
         ];
     }
 }

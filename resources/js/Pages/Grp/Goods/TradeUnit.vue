@@ -25,6 +25,7 @@ import type { Navigation } from "@/types/Tabs"
 import { Images } from "@/types/Images"
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
+import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProducts.vue"
 
 library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
 
@@ -50,7 +51,8 @@ const props = defineProps<{
     }
     products?: {}
     stocks?: {}
-    images?: {},
+    images?: {}
+    master_products?: {}
     images_category_box?: {
         label: string
         type: string
@@ -72,6 +74,7 @@ const component = computed(() => {
         showcase: TradeUnitShowcase,
         history: ModelChangelog,
         attachments: AttachmentManagement,
+        master_products: TableMasterProducts,
         products: TableProducts,
         stocks: TableStocks,
         images: TradeUnitImagesManagement
@@ -96,7 +99,7 @@ const component = computed(() => {
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :tag_routes />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :tag_routes :handleTabUpdate="handleTabUpdate"/>
 
     <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',

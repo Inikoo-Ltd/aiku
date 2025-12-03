@@ -88,7 +88,7 @@
     "spatie/laravel-sluggable": "^3.4",
     "spatie/laravel-translatable": "^6.11",
     "spatie/temporary-directory": "^2.2",
-    "spiral/roadrunner-cli": "^2.6.0",
+    "spiral/roadrunner-cli": "^2.7",
     "spiral/roadrunner-http": "^3.3.0",
     "srmklive/paypal": "^3.0",
     "stevebauman/location": "^7.2",
@@ -101,7 +101,8 @@
     "vemcogroup/laravel-translation": "^3.0",
     "vildanbina/laravel-auto-translation": "^1.5",
     "vlucas/phpdotenv": "^5.4",
-    "webklex/laravel-imap": "^6.2"
+    "webklex/laravel-imap": "^6.2",
+    "ext-zip": "*"
   },
   "require-dev": {
     "amphibee/laravel-pint-pre-commit": "^1.5",
@@ -109,6 +110,7 @@
     "barryvdh/laravel-ide-helper": "^3.6",
     "deployer/deployer": "^7.3",
     "fakerphp/faker": "^1.9.1",
+    "laravel/boost": "^1.8",
     "laravel/breeze": "^2",
     "laravel/envoy": "^2.8",
     "laravel/pint": "^1.0",

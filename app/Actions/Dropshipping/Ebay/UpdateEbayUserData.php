@@ -9,10 +9,8 @@
 
 namespace App\Actions\Dropshipping\Ebay;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Console\Command;
@@ -26,56 +24,63 @@ class UpdateEbayUserData extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public $queue = 'long-running';
-
     public $commandSignature = 'update:ebay {customerSalesChannel}';
 
+    /**
+     * @throws \Exception
+     */
     public function handle(EbayUser $ebayUser): EbayUser
     {
+        if ($ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key) {
+            return $ebayUser;
+        }
+
         $ebayUser->createOptInProgram();
-        $ebayUser->createFulfilmentPolicy();
+        $ebayUser->createFulfilmentPolicy([]);
         $ebayUser->createPaymentPolicy();
         $ebayUser->createReturnPolicy();
-        $defaultLocationData = [
-            'locationKey' => 'mainWarehouse',
-            'city' => 'Sheffield',
-            'state' => 'England',
-            'country' => 'GB',
-        ];
-        $ebayUser->createInventoryLocation($defaultLocationData);
 
         $fulfilmentPolicies = $ebayUser->getFulfilmentPolicies();
+        $fulfilmentPolicyId = Arr::get($fulfilmentPolicies, 'fulfillmentPolicies.0.fulfillmentPolicyId');
+
         $paymentPolicies = $ebayUser->getPaymentPolicies();
+        $paymentPolicyId = Arr::get($paymentPolicies, 'paymentPolicies.0.paymentPolicyId');
+
         $returnPolicies = $ebayUser->getReturnPolicies();
-        // $userData = $ebayUser->getUser();
+        $returnPolicyId = Arr::get($returnPolicies, 'returnPolicies.0.returnPolicyId');
 
-        $updatedSettings = [
-            ...$ebayUser->settings,
-            'defaults' => [
-                'main_location_key' => Arr::get($defaultLocationData, 'locationKey'),
-                'main_fulfilment_policy_id' => Arr::get($fulfilmentPolicies, 'fulfillmentPolicies.0.fulfillmentPolicyId'),
-                'main_payment_policy_id' => Arr::get($paymentPolicies, 'paymentPolicies.0.paymentPolicyId'),
-                'main_return_policy_id' => Arr::get($returnPolicies, 'returnPolicies.0.returnPolicyId'),
+        $defaultLocationData = match ($ebayUser->marketplace ?? Arr::get($ebayUser->customer?->shop?->settings, 'ebay.marketplace_id', 'EBAY_GB')) {
+            'EBAY_ES' => [
+                'locationKey' => 'esWarehouse',
+                'city' => 'Guadalhorce',
+                'state' => 'Málaga',
+                'country' => 'ES',
+            ],
+            'EBAY_DE' => [
+                'locationKey' => 'deWarehouse',
+                'city' => 'Zavar',
+                'state' => 'Trnava Region',
+                'country' => 'DE',
+            ],
+            default => [
+                'locationKey' => 'mainWarehouse',
+                'city' => 'Sheffield',
+                'state' => 'England',
+                'country' => 'GB',
             ]
-        ];
+        };
 
+        $ebayUser->createInventoryLocation($defaultLocationData);
 
-        $ebayUser = UpdateEbayUser::run($ebayUser, [
-            'settings' => $updatedSettings
+        return UpdateEbayUser::run($ebayUser, [
+            'fulfillment_policy_id' => $fulfilmentPolicyId,
+            'payment_policy_id' => $paymentPolicyId,
+            'return_policy_id' => $returnPolicyId,
+            'location_key' => Arr::get($defaultLocationData, 'locationKey'),
         ]);
-
-        // UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
-        //     'reference' => Arr::get($userData, 'username'),
-        //     'name' => Arr::get($userData, 'username'),
-        //     'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
-        // ]);
-
-        $ebayUser->refresh();
-
-        return $ebayUser;
     }
 
-    public function asCommand(Command $command)
+    public function asCommand(Command $command): void
     {
         $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
 

@@ -6,7 +6,6 @@ import { faCircle } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
-import { SwiperSlide } from 'swiper/vue'
 import { inject } from 'vue'
 
 const props = defineProps<{
@@ -37,37 +36,35 @@ const locale = inject('locale', aikuLocaleStructure)
 
             <!-- SKU and RRP -->
             <div class="flex justify-between text-xs text-gray-500 mb-1">
-                <span>{{ product.attributes.product_code?.[0] }}</span>
-            </div>
-
-            <!-- Rating and Stock F -->
-            <div class="flex justify-between items-center text-xs mb-2">
-                <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')"
-                    class="flex items-center gap-1"
-                    :class="Number(product.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
-                    <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
-                    <span>{{ Number(product.attributes?.stock_qty?.[0]) > 0 ?
-                        locale.number(Number(product.attributes?.stock_qty?.[0])) : 0 }} {{ trans('available') }}</span>
-                </div>
-            </div>
-
-            <!-- Prices -->
-            <div v-if="layout?.iris?.is_logged_in" class="mb-3">
-                <div class="flex justify-between text-sm ">
-                    <span>{{ trans('Price') }}: <span class="font-semibold"> {{ product.attributes.formatted_price }}</span>
-                    </span>
-                    <!-- <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(layout.iris.currency.code,product.rrp) }}</span></span> -->
+                <div>{{ product.attributes.product_code?.[0] }}</div>
+                <!-- Rating and Stock F -->
+                <div class="flex justify-between items-center text-xs mb-2">
+                    <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')"
+                        class="flex items-center gap-1"
+                        :class="Number(product.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
+                        <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
+                        <span>{{ Number(product.attributes?.stock_qty?.[0]) > 0 ?
+                            locale.number(Number(product.attributes?.stock_qty?.[0])) : 0 }} {{ trans('available') }}</span>
+                    </div>
                 </div>
             </div>
         </div>
+
+     
         
         <!-- Add to Basket Button -->
-        <div v-if="layout.retina?.type === 'b2b' && product.attributes.product_id?.[0]">
+        <!-- <div v-if="layout.retina?.type === 'b2b' && product.attributes.product_id?.[0]">
             <Button
                 disabled
                 :label="trans('Add to Basket')"
                 class="w-full justify-center"
             />
-        </div>
+        </div> -->
     </div>
+        <!-- Prices -->
+            <div v-if="layout?.iris?.is_logged_in" class="mb-3">
+                <div class="flex justify-between text-sm ">
+                    <span>{{ trans('Price') }}: <span class="font-semibold"> {{ product.attributes.formatted_price }}</span></span>
+                </div>
+            </div>
 </template>

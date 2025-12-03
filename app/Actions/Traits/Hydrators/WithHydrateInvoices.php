@@ -25,7 +25,7 @@ trait WithHydrateInvoices
         $stats          = [
             'number_invoices'              => $numberInvoices,
             'number_invoices_type_invoice' => $model->invoices()->where('invoices.in_process', false)->where('type', InvoiceTypeEnum::INVOICE)->count(),
-            'last_invoiced_at'             => $model->invoices()->where('invoices.in_process', false)->max('date'),
+            'last_invoiced_at'             => $model->invoices()->where('invoices.in_process', false)->where('type', InvoiceTypeEnum::INVOICE)->max('date'),
         ];
 
         if ($model instanceof Customer) {

@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\Offer;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
 use App\Actions\Discounts\Offer\Search\OfferRecordSearch;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
+use App\Actions\Maintenance\Ordering\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
@@ -18,6 +19,8 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Models\Discounts\Offer;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -32,7 +35,13 @@ class UpdateOffer extends OrgAction
     {
         $offer = $this->update($offer, $modelData);
 
-        OfferRecordSearch::dispatch($offer)->delay($this->hydratorsDelay);
+        if ($offer->wasChanged(['name'])) {
+            RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop->id);
+        }
+
+        if ($offer->wasChanged(['code', 'name'])) {
+            OfferRecordSearch::dispatch($offer)->delay($this->hydratorsDelay);
+        }
 
         if ($offer->wasChanged(['state', 'status'])) {
             GroupHydrateOffers::dispatch($offer->group)->delay($this->hydratorsDelay);
@@ -53,7 +62,7 @@ class UpdateOffer extends OrgAction
         return $request->user()->authTo("discounts.{$this->shop->id}.edit");
     }
 
-    public function rules(): array
+    public function rules(ActionRequest $request): array
     {
         $rules = [
             'code'         => [
@@ -111,6 +120,14 @@ class UpdateOffer extends OrgAction
     {
         $this->offer = $offer;
         $this->initialisationFromShop($offer->shop, $request);
+
+        return $this->handle($offer, $this->validatedData);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, Offer $offer, ActionRequest $request): offer
+    {
+        $this->offer = $offer;
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($offer, $this->validatedData);
     }

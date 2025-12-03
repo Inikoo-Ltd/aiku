@@ -138,6 +138,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool|null $has_insurance
  * @property bool $is_re recargo de equivalencia
  * @property int $number_item_transactions Count of product item transactions in the order
+ * @property array<array-key, mixed>|null $offer_meters
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -189,6 +190,7 @@ class Order extends Model implements HasMedia, Auditable
         'data'                          => 'array',
         'payment_data'                  => 'array',
         'post_submit_modification_data' => 'array',
+        'offer_meters'                  => 'array',
 
 
         'date'                   => 'datetime',
@@ -235,7 +237,8 @@ class Order extends Model implements HasMedia, Auditable
     protected $attributes = [
         'data'                          => '{}',
         'payment_data'                  => '{}',
-        'post_submit_modification_data' => '{}'
+        'post_submit_modification_data' => '{}',
+        'offer_meters'                  => '{}'
     ];
 
     protected $guarded = [];

@@ -10,11 +10,9 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Translations\TranslateCategoryModel;
-use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
@@ -41,30 +39,16 @@ class StoreProductFromMasterProduct extends GrpAction
 
                 $shopProductData = isset($modelData['shop_products'][$shop->id]) ? $modelData['shop_products'][$shop->id] : [];
 
-                $createInShop = Arr::get($shopProductData, 'create_in_shop', 'No');
+                $createInShop = Arr::get($shopProductData, 'create_in_shop');
 
-                if ($createInShop=='Yes') {
+                if ($createInShop == 'Yes') {
                     $price = $shopProductData['price'] ?? $masterAsset->price;
                     $rrp   = $shopProductData['rrp'];
 
-                    $orgStocks = [];
-
-
-                    foreach ($masterAsset->stocks as $stock) {
-                        $stockOrgStock = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->first();
-
-
-                        if (!$stockOrgStock) {
-                            $stockOrgStock = StoreOrgStock::make()->action(
-                                $productCategory->organisation,
-                                $stock,
-                                [
-                                    'state' => OrgStockStateEnum::ACTIVE,
-                                ]
-                            );
-                        }
-                        $orgStocks[$stockOrgStock->id] = [
-                            'quantity' => $stock->pivot->quantity,
+                    $tradeUnits = [];
+                    foreach ($masterAsset->tradeUnits as $tradeUnit) {
+                        $tradeUnits[$tradeUnit->id] = [
+                            'quantity' => $tradeUnit->pivot->quantity,
                         ];
                     }
 
@@ -81,14 +65,14 @@ class StoreProductFromMasterProduct extends GrpAction
                         'unit'              => $masterAsset->unit,
                         'units'             => $masterAsset->units,
                         'is_main'           => true,
-                        'org_stocks'        => $orgStocks,
+                        'trade_units'       => $tradeUnits,
                         'master_product_id' => $masterAsset->id,
                         'state'             => ProductStateEnum::ACTIVE,
                         'status'            => ProductStatusEnum::FOR_SALE,
                         'is_for_sale'       => true,
                     ];
 
-                    if (count($orgStocks) > 1) {
+                    if (count($tradeUnits) > 1) {
                         data_set($data, 'gross_weight', $masterAsset->gross_weight);
                         data_set($data, 'marketing_weight', $masterAsset->marketing_weight);
                     }
@@ -100,9 +84,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
                     if ($product) {
                         data_set($data, 'family_id', $productCategory->id);
-                        data_set($data, 'well_formatted_org_stocks', $orgStocks);
-                        data_forget($data, 'org_stocks');
-
+                        data_set($data, 'trade_units', $tradeUnits);
 
                         $this->updateFoundProduct($product, $data, true);
                         continue;

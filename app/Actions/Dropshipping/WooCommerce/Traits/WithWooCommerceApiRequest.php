@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Client\ConnectionException;
 use Carbon\Carbon;
-use Sentry;
 
 trait WithWooCommerceApiRequest
 {
@@ -63,8 +62,8 @@ trait WithWooCommerceApiRequest
      */
     protected function initWooCommerceApi(): void
     {
-        $this->woocommerceApiUrl = Arr::get($this->settings, 'credentials.store_url', '');
-        $this->woocommerceConsumerKey = Arr::get($this->settings, 'credentials.consumer_key', '');
+        $this->woocommerceApiUrl         = Arr::get($this->settings, 'credentials.store_url', '');
+        $this->woocommerceConsumerKey    = Arr::get($this->settings, 'credentials.consumer_key', '');
         $this->woocommerceConsumerSecret = Arr::get($this->settings, 'credentials.consumer_secret', '');
     }
 
@@ -79,16 +78,16 @@ trait WithWooCommerceApiRequest
             $this->initWooCommerceApi();
         }
 
-        return rtrim($this->woocommerceApiUrl, '/') . '/wp-json/' . $this->woocommerceApiVersion;
+        return rtrim($this->woocommerceApiUrl, '/').'/wp-json/'.$this->woocommerceApiVersion;
     }
 
     /**
      * Make API request to WooCommerce
      *
-     * @param string $method HTTP method (GET, POST, PUT, DELETE)
-     * @param string $endpoint API endpoint
-     * @param array $params Request parameters
-     * @param bool $useCache Whether to use cache for GET requests
+     * @param  string  $method  HTTP method (GET, POST, PUT, DELETE)
+     * @param  string  $endpoint  API endpoint
+     * @param  array  $params  Request parameters
+     * @param  bool  $useCache  Whether to use cache for GET requests
      *
      * @return array|null Response data
      */
@@ -98,8 +97,8 @@ trait WithWooCommerceApiRequest
             $this->initWooCommerceApi();
         }
 
-        $url = $this->getWooCommerceApiUrl() . '/' . $endpoint;
-        $cacheKey = 'woocommerce_' . md5($method . $url . serialize($params));
+        $url      = $this->getWooCommerceApiUrl().'/'.$endpoint;
+        $cacheKey = 'woocommerce_'.md5($method.$url.serialize($params));
 
         // Use cache for GET requests if enabled
         if ($method === 'GET' && $useCache && Cache::has($cacheKey)) {
@@ -109,7 +108,7 @@ trait WithWooCommerceApiRequest
         try {
             $response = Http::timeout($this->timeOut)
                 ->withHeaders([
-                    'Accept' => 'application/json',
+                    'Accept'       => 'application/json',
                     'Content-Type' => 'application/json'
                 ])
                 ->connectTimeout($this->timeOut)
@@ -124,7 +123,7 @@ trait WithWooCommerceApiRequest
                 'POST' => $response->post($url, $params),
                 'PUT' => $response->put($url, $params),
                 'DELETE' => $response->delete($url, $params),
-                default => throw new \InvalidArgumentException("Unsupported HTTP method: {$method}"),
+                default => throw new \InvalidArgumentException("Unsupported HTTP method: $method"),
             };
 
             if ($response->successful()) {
@@ -137,28 +136,21 @@ trait WithWooCommerceApiRequest
 
                 return $data;
             } else {
-                Log::error('WooCommerce API Error', [
-                    'url' => $url,
-                    'method' => $method,
-                    'status' => $response->status(),
-                    'response' => $response->body(),
-                ]);
-
-                // Sentry::captureMessage($response->body());
+                Log::error('WooCommerce API Error, status'.$response->status().' body:'.$response->body());
 
                 return [$response->body()];
             }
         } catch (ConnectionException $e) {
             Log::error('WooCommerce API Connection Error', [
-                'url' => $url,
+                'url'    => $url,
                 'method' => $method,
-                'error' => $e->getMessage()
+                'error'  => $e->getMessage()
             ]);
 
             // Sentry::captureMessage($e->getMessage());
 
             return [
-                ['message' => 'WooCommerce API Connection Error: ' . $e->getMessage()],
+                ['message' => 'WooCommerce API Connection Error: '.$e->getMessage()],
             ];
         }
     }
@@ -166,8 +158,8 @@ trait WithWooCommerceApiRequest
     /**
      * Get products from WooCommerce
      *
-     * @param array $params Query parameters
-     * @param bool $useCache Whether to use cache
+     * @param  array  $params  Query parameters
+     * @param  bool  $useCache  Whether to use cache
      *
      * @return array|null Products data
      */
@@ -179,20 +171,20 @@ trait WithWooCommerceApiRequest
     /**
      * Get a single product from WooCommerce
      *
-     * @param int $productId Product ID
-     * @param bool $useCache Whether to use cache
+     * @param  int  $productId  Product ID
+     * @param  bool  $useCache  Whether to use cache
      *
      * @return array|null Product data
      */
-    public function getWooCommerceProduct(int $productId, bool $useCache = true): ?array
+    public function getWooCommerceProduct(int $productId, bool $useCache = false): ?array
     {
-        return $this->makeWooCommerceRequest('GET', "products/{$productId}", [], $useCache);
+        return $this->makeWooCommerceRequest('GET', "products/$productId", [], $useCache);
     }
 
     /**
      * Create a product in WooCommerce
      *
-     * @param array $productData Product data
+     * @param  array  $productData  Product data
      *
      * @return array|null Created product data
      */
@@ -204,27 +196,27 @@ trait WithWooCommerceApiRequest
     /**
      * Update a product in WooCommerce
      *
-     * @param int $productId Product ID
-     * @param array $productData Product data to update
+     * @param  int  $productId  Product ID
+     * @param  array  $productData  Product data to update
      *
      * @return array|null Updated product data
      */
     public function updateWooCommerceProduct(int $productId, array $productData): ?array
     {
-        return $this->makeWooCommerceRequest('PUT', "products/{$productId}", $productData);
+        return $this->makeWooCommerceRequest('PUT', "products/$productId", $productData);
     }
 
     /**
      * Delete a product from WooCommerce
      *
-     * @param int $productId Product ID
-     * @param bool $force Whether to permanently delete the product
+     * @param  int  $productId  Product ID
+     * @param  bool  $force  Whether to permanently delete the product
      *
      * @return array|null Response data
      */
     public function deleteWooCommerceProduct(int $productId, bool $force = false): ?array
     {
-        return $this->makeWooCommerceRequest('DELETE', "products/{$productId}", [
+        return $this->makeWooCommerceRequest('DELETE', "products/$productId", [
             'force' => $force,
         ]);
     }
@@ -232,8 +224,8 @@ trait WithWooCommerceApiRequest
     /**
      * Get customers from WooCommerce
      *
-     * @param array $params Query parameters
-     * @param bool $useCache Whether to use cache
+     * @param  array  $params  Query parameters
+     * @param  bool  $useCache  Whether to use cache
      *
      * @return array|null Customers data
      */
@@ -245,20 +237,20 @@ trait WithWooCommerceApiRequest
     /**
      * Get a single customer from WooCommerce
      *
-     * @param int $customerId Customer ID
-     * @param bool $useCache Whether to use cache
+     * @param  int  $customerId  Customer ID
+     * @param  bool  $useCache  Whether to use cache
      *
      * @return array|null Customer data
      */
     public function getWooCommerceCustomer(int $customerId, bool $useCache = true): ?array
     {
-        return $this->makeWooCommerceRequest('GET', "customers/{$customerId}", [], $useCache);
+        return $this->makeWooCommerceRequest('GET', "customers/$customerId", [], $useCache);
     }
 
     /**
      * Create a customer in WooCommerce
      *
-     * @param array $customerData Customer data
+     * @param  array  $customerData  Customer data
      *
      * @return array|null Created customer data
      */
@@ -270,27 +262,27 @@ trait WithWooCommerceApiRequest
     /**
      * Update a customer in WooCommerce
      *
-     * @param int $customerId Customer ID
-     * @param array $customerData Customer data to update
+     * @param  int  $customerId  Customer ID
+     * @param  array  $customerData  Customer data to update
      *
      * @return array|null Updated customer data
      */
     public function updateWooCommerceCustomer(int $customerId, array $customerData): ?array
     {
-        return $this->makeWooCommerceRequest('PUT', "customers/{$customerId}", $customerData);
+        return $this->makeWooCommerceRequest('PUT', "customers/$customerId", $customerData);
     }
 
     /**
      * Delete a customer from WooCommerce
      *
-     * @param int $customerId Customer ID
-     * @param bool $force Whether to permanently delete the customer
+     * @param  int  $customerId  Customer ID
+     * @param  bool  $force  Whether to permanently delete the customer
      *
      * @return array|null Response data
      */
     public function deleteWooCommerceCustomer(int $customerId, bool $force = false): ?array
     {
-        return $this->makeWooCommerceRequest('DELETE', "customers/{$customerId}", [
+        return $this->makeWooCommerceRequest('DELETE', "customers/$customerId", [
             'force' => $force,
         ]);
     }
@@ -298,8 +290,8 @@ trait WithWooCommerceApiRequest
     /**
      * Get orders from WooCommerce
      *
-     * @param array $params Query parameters
-     * @param bool $useCache Whether to use cache
+     * @param  array  $params  Query parameters
+     * @param  bool  $useCache  Whether to use cache
      *
      * @return array|null Orders data
      */
@@ -311,20 +303,20 @@ trait WithWooCommerceApiRequest
     /**
      * Get a single order from WooCommerce
      *
-     * @param int $orderId Order ID
-     * @param bool $useCache Whether to use cache
+     * @param  int  $orderId  Order ID
+     * @param  bool  $useCache  Whether to use cache
      *
      * @return array|null Order data
      */
     public function getWooCommerceOrder(int $orderId, bool $useCache = true): ?array
     {
-        return $this->makeWooCommerceRequest('GET', "orders/{$orderId}", [], $useCache);
+        return $this->makeWooCommerceRequest('GET', "orders/$orderId", [], $useCache);
     }
 
     /**
      * Create an order in WooCommerce
      *
-     * @param array $orderData Order data
+     * @param  array  $orderData  Order data
      *
      * @return array|null Created order data
      */
@@ -336,27 +328,27 @@ trait WithWooCommerceApiRequest
     /**
      * Update an order in WooCommerce
      *
-     * @param int $orderId Order ID
-     * @param array $orderData Order data to update
+     * @param  int  $orderId  Order ID
+     * @param  array  $orderData  Order data to update
      *
      * @return array|null Updated order data
      */
     public function updateWooCommerceOrder(int $orderId, array $orderData): ?array
     {
-        return $this->makeWooCommerceRequest('PUT', "orders/{$orderId}", $orderData);
+        return $this->makeWooCommerceRequest('PUT', "orders/$orderId", $orderData);
     }
 
     /**
      * Delete an order from WooCommerce
      *
-     * @param int $orderId Order ID
-     * @param bool $force Whether to permanently delete the order
+     * @param  int  $orderId  Order ID
+     * @param  bool  $force  Whether to permanently delete the order
      *
      * @return array|null Response data
      */
     public function deleteWooCommerceOrder(int $orderId, bool $force = false): ?array
     {
-        return $this->makeWooCommerceRequest('DELETE', "orders/{$orderId}", [
+        return $this->makeWooCommerceRequest('DELETE', "orders/$orderId", [
             'force' => $force,
         ]);
     }
@@ -364,8 +356,8 @@ trait WithWooCommerceApiRequest
     /**
      * Update the status of an order in WooCommerce
      *
-     * @param int $orderId Order ID
-     * @param string $status New order status
+     * @param  int  $orderId  Order ID
+     * @param  string  $status  New order status
      *
      * @return array|null Updated order data
      */
@@ -379,8 +371,8 @@ trait WithWooCommerceApiRequest
     /**
      * Get product categories from WooCommerce
      *
-     * @param array $params Query parameters
-     * @param bool $useCache Whether to use cache
+     * @param  array  $params  Query parameters
+     * @param  bool  $useCache  Whether to use cache
      *
      * @return array|null Categories data
      */
@@ -390,9 +382,9 @@ trait WithWooCommerceApiRequest
     }
 
     /**
-     * Batch update multiple products in WooCommerce
+     * Batch updates multiple products in WooCommerce
      *
-     * @param array $batch Batch operations data
+     * @param  array  $batch  Batch operations data
      *
      * @return array|null Response data
      */
@@ -402,9 +394,9 @@ trait WithWooCommerceApiRequest
     }
 
     /**
-     * Batch update multiple orders in WooCommerce
+     * Batch updates multiple orders in WooCommerce
      *
-     * @param array $batch Batch operations data
+     * @param  array  $batch  Batch operations data
      *
      * @return array|null Response data
      */
@@ -416,30 +408,30 @@ trait WithWooCommerceApiRequest
     /**
      * Get order notes from WooCommerce
      *
-     * @param int $orderId Order ID
-     * @param array $params Query parameters
-     * @param bool $useCache Whether to use cache
+     * @param  int  $orderId  Order ID
+     * @param  array  $params  Query parameters
+     * @param  bool  $useCache  Whether to use cache
      *
      * @return array|null Order notes data
      */
     public function getWooCommerceOrderNotes(int $orderId, array $params = [], bool $useCache = true): ?array
     {
-        return $this->makeWooCommerceRequest('GET', "orders/{$orderId}/notes", $params, $useCache);
+        return $this->makeWooCommerceRequest('GET', "orders/$orderId/notes", $params, $useCache);
     }
 
     /**
      * Add a note to an order in WooCommerce
      *
-     * @param int $orderId Order ID
-     * @param string $note Note content
-     * @param bool $customerNote Whether the note is visible to the customer
+     * @param  int  $orderId  Order ID
+     * @param  string  $note  Note content
+     * @param  bool  $customerNote  Whether the note is visible to the customer
      *
      * @return array|null Created note data
      */
     public function addWooCommerceOrderNote(int $orderId, string $note, bool $customerNote = false): ?array
     {
-        return $this->makeWooCommerceRequest('POST', "orders/{$orderId}/notes", [
-            'note' => $note,
+        return $this->makeWooCommerceRequest('POST', "orders/$orderId/notes", [
+            'note'          => $note,
             'customer_note' => $customerNote
         ]);
     }
@@ -447,8 +439,8 @@ trait WithWooCommerceApiRequest
     /**
      * Get coupons from WooCommerce
      *
-     * @param array $params Query parameters
-     * @param bool $useCache Whether to use cache
+     * @param  array  $params  Query parameters
+     * @param  bool  $useCache  Whether to use cache
      *
      * @return array|null Coupons data
      */
@@ -460,15 +452,15 @@ trait WithWooCommerceApiRequest
     /**
      * Get report data from WooCommerce
      *
-     * @param string $reportType Type of report
-     * @param array $params Query parameters
-     * @param bool $useCache Whether to use cache
+     * @param  string  $reportType  Type of report
+     * @param  array  $params  Query parameters
+     * @param  bool  $useCache  Whether to use cache
      *
      * @return array|null Report data
      */
     public function getWooCommerceReport(string $reportType, array $params = [], bool $useCache = true): ?array
     {
-        return $this->makeWooCommerceRequest('GET', "reports/{$reportType}", $params, $useCache);
+        return $this->makeWooCommerceRequest('GET', "reports/$reportType", $params, $useCache);
     }
 
     /**
@@ -481,10 +473,10 @@ trait WithWooCommerceApiRequest
     {
         $createdWebhooks = [];
 
-        // Create webhook for new orders
+        // Create a webhook for new orders
         $orderWebhook = $this->createWooCommerceWebhook([
-            'name' => 'Order created',
-            'topic' => 'order.created',
+            'name'         => 'Order created',
+            'topic'        => 'order.created',
             'delivery_url' => route('webhooks.woo.orders.catch', [
                 'wooCommerceUser' => $this->id
             ]),
@@ -494,10 +486,10 @@ trait WithWooCommerceApiRequest
             $createdWebhooks['order_created'] = $orderWebhook['id'];
         }
 
-        // Create webhook for product deletion
+        // Create a webhook for product deletion
         $productDeleteWebhook = $this->createWooCommerceWebhook([
-            'name' => 'Product deleted',
-            'topic' => 'product.deleted',
+            'name'         => 'Product deleted',
+            'topic'        => 'product.deleted',
             'delivery_url' => route('webhooks.woo.products.delete', [
                 'wooCommerceUser' => $this->id
             ]),
@@ -513,7 +505,7 @@ trait WithWooCommerceApiRequest
     /**
      * Create a single WooCommerce webhook
      *
-     * @param array $webhookData The webhook configuration
+     * @param  array  $webhookData  The webhook configuration
      *
      * @return array|null The created webhook data or null on failure
      */
@@ -525,13 +517,13 @@ trait WithWooCommerceApiRequest
     /**
      * Delete a WooCommerce webhook by ID
      *
-     * @param int $webhookId The webhook ID to delete
+     * @param  int  $webhookId  The webhook ID to delete
      *
      * @return array Success status
      */
     public function deleteWooCommerceWebhook(int $webhookId): array
     {
-        return $this->makeWooCommerceRequest('DELETE', "webhooks/{$webhookId}", [
+        return $this->makeWooCommerceRequest('DELETE', "webhooks/$webhookId", [
             'force' => true
         ]);
     }
@@ -555,7 +547,6 @@ trait WithWooCommerceApiRequest
 
             return $this->makeWooCommerceRequest('GET', 'system_status');
         } catch (\Exception $e) {
-
             return [$e->getMessage()];
         }
     }
@@ -563,7 +554,7 @@ trait WithWooCommerceApiRequest
     /**
      * Check if a product exists and is available in WooCommerce
      *
-     * @param int $productId Product ID to check
+     * @param  int  $productId  Product ID to check
      *
      * @return bool Whether the product exists and is available
      */
@@ -571,8 +562,9 @@ trait WithWooCommerceApiRequest
     {
         try {
             $product = $this->getWooCommerceProduct($productId, false);
+
             return !empty($product) && isset($product['status']) && $product['status'] === 'publish';
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return false;
         }
     }

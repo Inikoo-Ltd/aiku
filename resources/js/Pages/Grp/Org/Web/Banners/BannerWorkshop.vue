@@ -174,7 +174,6 @@ const saveBanner = () => {
 
 const autoSave = debounce(() => {
     const form = useForm(data);
-    console.log('ssss',data)
     form.patch(
         route(props.autoSaveRoute.name, props.autoSaveRoute.parameters), {
             preserveScroll: true,
@@ -223,7 +222,7 @@ onBeforeUnmount(() => {
 <template>
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
-        <template v-if="layout.app.environment === 'local'" #afterTitle2>
+        <template #afterTitle2>
             <ConditionIcon v-if="status" :state="status" class="text-xl" />
             <Button
                 v-else

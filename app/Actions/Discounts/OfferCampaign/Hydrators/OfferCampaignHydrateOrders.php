@@ -11,7 +11,9 @@ namespace App\Actions\Discounts\OfferCampaign\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Discounts\OfferCampaign;
+use App\Models\Discounts\TransactionHasOfferAllowance;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class OfferCampaignHydrateOrders implements ShouldBeUnique
@@ -28,12 +30,12 @@ class OfferCampaignHydrateOrders implements ShouldBeUnique
     public function handle(OfferCampaign $offerCampaign): void
     {
         $stats = [
-            'number_orders'   => $offerCampaign->transactions()->distinct()->count('transaction_has_offer_allowances.order_id'),
+            'number_orders' => TransactionHasOfferAllowance::query()
+                ->where('offer_campaign_id', $offerCampaign->id)
+                ->count(DB::raw('DISTINCT order_id')),
         ];
-
 
         $offerCampaign->stats()->update($stats);
     }
-
 
 }

@@ -40,7 +40,7 @@ import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
   faStars, faTimes, faBars, faExternalLink, faExpandWide, faCompressWide,
   faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull,
-  faEye, 
+  faEye,
   faUndo,
   faRedo,
   faChevronRight
@@ -94,13 +94,16 @@ const filterBlock = ref('all');
 const history = ref<any[]>([]);
 const future = ref<any[]>([]);
 const selectedTab = ref(1)
-const dialogUploadImageVisible=ref(false)
+const dialogUploadImageVisible = ref(false)
 const imageUploadSetting = ref(null)
 const activeChildBlockArray = ref<number | null>(null);
 const activeChildBlockArrayBlock = ref<number | null>(null);
+const sideKey = ref(1);
 
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
+
+console.log('layout',layout)
 
 provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
@@ -112,6 +115,7 @@ provide('isLoadingDeleteBlock', isLoadingDeleteBlock);
 provide('filterBlock', filterBlock);
 provide('activeChildBlockArray', activeChildBlockArray);
 provide('activeChildBlockArrayBlock', activeChildBlockArrayBlock);
+provide('sideKey', sideKey);
 
 // Utility
 const sendToIframe = (data: any) => {
@@ -186,7 +190,7 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
   );
 };
 
-const debounceSaveWorkshop = (block) => {
+const debounceSaveWorkshop = (block, reload = false) => {
   // Clear any pending debounce timers for this block
   if (debounceTimers.value[block.id]) {
     clearTimeout(debounceTimers.value[block.id]);
@@ -206,8 +210,8 @@ const debounceSaveWorkshop = (block) => {
     const source = axios.CancelToken.source();
     cancelTokens.value[block.id] = source.cancel;
 
-    isLoadingBlock.value = block.id;  // This made the state inside in the field will changes (like opened Select will closed)
-    isSavingBlock.value = true;  // This made the state inside in the field will changes (like opened Select will closed)
+    isLoadingBlock.value = block.id;
+    isSavingBlock.value = true;
     //pushToHistory();
     try {
       const response = await axios.patch(
@@ -229,6 +233,17 @@ const debounceSaveWorkshop = (block) => {
       // Reload the preview
       data.value.layout = response.data.data.layout;
       saveState()
+      if (reload) {
+        router.reload({
+          only: ['webpage'],
+          onSuccess: (newValue) => {
+           /*  console.log('sss', newValue.props.webpage , data.value) */
+            data.value = newValue.props.webpage
+            sideKey.value++
+          },
+        })
+        /* router.reload({ only: ["webpage"] }) */
+      }
       /* sendToIframe({ key: "reload", value: {} }); */
     } catch (error) {
       if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
@@ -285,7 +300,7 @@ const debouncedSaveSiteSettings = debounce(block => {
 
 const onSaveSiteSettings = block => debouncedSaveSiteSettings(block);
 
-const onSaveWorkshop = (block, sendChangeValue = true) => {
+const onSaveWorkshop = (block, sendChangeValue = true, reload = false) => {
   if (cancelTokens.value[block.id]) cancelTokens.value[block.id]();
   if (sendChangeValue) {
     sendToIframe({
@@ -293,7 +308,7 @@ const onSaveWorkshop = (block, sendChangeValue = true) => {
       value: JSON.parse(JSON.stringify(data.value))
     });
   }
-  debounceSaveWorkshop(block);
+  debounceSaveWorkshop(block, reload);
 };
 
 const onSaveWorkshopFromId = (blockId, from) => {
@@ -542,13 +557,17 @@ const clearHistory = () => {
 
 const closeUploadImage = (visible) => {
   dialogUploadImageVisible.value = visible,
-  imageUploadSetting.value = null
+    imageUploadSetting.value = null
 }
 
 watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
 watch(currentView, (newValue) => iframeClass.value = setIframeView(newValue));
 watch(filterBlock, (newValue) => sendToIframe({ key: 'isPreviewLoggedIn', value: newValue }));
-
+/* watch(()=>props.webpage, (newValue) => {
+   console.log('msssssssssssasukk')
+   data.value = newValue
+  sideKey.value++
+},{ deep: true }); */
 // When component is unmounted
 onUnmounted(() => {
   clearHistory();
@@ -561,18 +580,15 @@ window.addEventListener('beforeunload', () => {
 
 
 onMounted(() => {
+  layout.leftSidebar.show = false
   const handleMessage = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
     switch (key) {
       case 'autosave':
-        return onSaveWorkshop(value, false);
+        return onSaveWorkshop(value, false, true);
       case 'activeBlock':
         openedBlockSideEditor.value = value;
-        return;
-      case 'activeChildBlock':
-        selectedTab.value = 2;
-        openedChildSideEditor.value = value;
         return;
       case 'activeChildBlock':
         selectedTab.value = 2;
@@ -582,7 +598,7 @@ onMounted(() => {
         selectedTab.value = 2;
         activeChildBlockArray.value = value;
         return;
-       case 'activeChildBlockArrayBlock':
+      case 'activeChildBlockArrayBlock':
         selectedTab.value = 2;
         activeChildBlockArrayBlock.value = value;
         return;
@@ -594,7 +610,7 @@ onMounted(() => {
         }
         return;
       case 'uploadImage':
-         if (value) {
+        if (value) {
           dialogUploadImageVisible.value = true;
           imageUploadSetting.value = value
         }
@@ -604,6 +620,7 @@ onMounted(() => {
     }
   };
 
+  
   window.addEventListener("message", handleMessage);
 
   onUnmounted(() => {
@@ -649,7 +666,7 @@ const openWebsite = () => {
   </ConfirmDialog>
 
   <div class="flex">
-    <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[10]">
+    <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[20]">
       <!-- Sidebar Content -->
       <div v-show="!fullScreen">
         <WebpageSideEditor ref="_WebpageSideEditor" v-model="isModalBlockList" :webpage="data"
@@ -720,32 +737,23 @@ const openWebsite = () => {
     </div>
   </div>
 
-  <Dialog 
-    v-model:visible="dialogUploadImageVisible" 
-    modal 
-    header="Upload Image" 
-    :style="{ width: '80rem' }"
-    @hide="()=>closeUploadImage(false)"
-  >
-   <ImageUploadWithCroppedFunction
-        @dialog="(visible) => closeUploadImage(visible)"
-        :model-value="get(data.layout.web_blocks[openedBlockSideEditor].web_block.layout.data.fieldValue, imageUploadSetting.key)"
-        @update:modelValue="(val) => {
-          set(
-            data.layout.web_blocks[openedBlockSideEditor].web_block.layout.data.fieldValue,
-            imageUploadSetting.key,
-            val
-          )
-          onSaveWorkshop(data.layout.web_blocks[openedBlockSideEditor])
-        }"
-        :stencilProps="imageUploadSetting.stencilProps"
-        :upload-routes="{
+  <Dialog v-model:visible="dialogUploadImageVisible" modal header="Upload Image" :style="{ width: '80rem' }"
+    @hide="() => closeUploadImage(false)">
+    <ImageUploadWithCroppedFunction @dialog="(visible) => closeUploadImage(visible)"
+      :model-value="get(data.layout.web_blocks[openedBlockSideEditor].web_block.layout.data.fieldValue, imageUploadSetting.key)"
+      @update:modelValue="(val) => {
+        set(
+          data.layout.web_blocks[openedBlockSideEditor].web_block.layout.data.fieldValue,
+          imageUploadSetting.key,
+          val
+        )
+        onSaveWorkshop(data.layout.web_blocks[openedBlockSideEditor])
+      }" :stencilProps="imageUploadSetting.stencilProps" :upload-routes="{
           ...data.images_upload_route,
           parameters: {
             modelHasWebBlocks: data.layout.web_blocks[openedBlockSideEditor].id
           }
-        }"
-    />
+        }" />
   </Dialog>
 
 </template>

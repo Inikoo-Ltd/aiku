@@ -63,7 +63,6 @@ const onSubmitToFamily = () => {
     isLoadingButton.value = true
 
     const selectedProductsIdToSubmit = compSelectedProductsId.value
-    console.log('ewqewq', selectedProductsIdToSubmit)
 
     router.post(
         route(props.routes.submit_route?.name, {
@@ -88,8 +87,8 @@ const onSubmitToFamily = () => {
             onError: (errors) => {
                 console.error(errors)
                 notify({
-                    title: 'Something went wrong.',
-                    text: 'Failed to add Family, please try again.',
+                    title: trans('Something went wrong.'),
+                    text: trans('Failed to add Family, please try again.'),
                     type: 'error',
                 })
             },

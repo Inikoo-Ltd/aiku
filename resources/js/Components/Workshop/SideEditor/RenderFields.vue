@@ -11,6 +11,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import type { Ref } from 'vue'
+import { getFilterComponent } from '@/Composables/SideEditorHelperFilter'
+
 library.add(faInfoCircle)
 
 const props = defineProps<{
@@ -24,6 +26,7 @@ const props = defineProps<{
     props_data?: any
     reset_value?: any  // Value to reset the field to
   },
+  modelType?: string
   uploadImageRoute?: routeType,
 }>()
 

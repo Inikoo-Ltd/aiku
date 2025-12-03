@@ -38,10 +38,10 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
     public function toArray($request): array
     {
 
-        $deleteMsg=match ($this->platform_code) {
-            'manual'=>__('This operation is irreversible.'),
-            'shopify'=>__('The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.'),
-            default=>__('The channel will be unlinked from your shop. You can relinked again creating a new channel.'),
+        $deleteMsg = match ($this->platform_code) {
+            'manual' => __('This operation is irreversible.'),
+            'shopify' => __('The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.'),
+            default => __('The channel will be unlinked from your shop. You can relinked again creating a new channel.'),
         };
 
 

@@ -112,7 +112,29 @@ class ShowMasterCollection extends GrpAction
                         'icon'  => ['fal', 'fa-album-collection'],
                         'title' => __('Master collection')
                     ],
-                    'actions' => [],
+                    'iconRight' => $masterCollection->status ? [
+                        'tooltip' => __('Active'),
+                        'icon'    => 'fas fa-check-circle',
+                        'class'   => 'text-green-400'
+                    ] : [
+                        'tooltip' => __('Closed'),
+                        'icon'    => 'fas fa-times-circle',
+                        'class'   => 'text-red-400'
+                    ],
+                    'actions' => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'edit',
+                            'tooltip' => __('Edit'),
+                            'route'   => [
+                                'name'       => 'grp.masters.master_shops.show.master_collections.edit',
+                                'parameters' => [
+                                    'masterShop' => $masterCollection->masterShop->slug,
+                                    'masterCollection' => $masterCollection->slug
+                                ]
+                            ]
+                        ]
+                    ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -202,6 +224,10 @@ class ShowMasterCollection extends GrpAction
                 MasterCollectionTabsEnum::COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::COLLECTIONS->value ?
                     fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))
                     : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))),
+
+               MasterCollectionTabsEnum::IMAGES->value => $this->tab == MasterCollectionTabsEnum::IMAGES->value ?
+                    fn () =>  GetMasterCollectionsImages::run($masterCollection)
+                    : Inertia::lazy(fn () => GetMasterCollectionsImages::run($masterCollection)),
 
                 MasterCollectionTabsEnum::SHOP_COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::SHOP_COLLECTIONS->value ?
                     fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))

@@ -12,10 +12,12 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaAccountManagement extends RetinaAction
@@ -39,8 +41,11 @@ class ShowRetinaAccountManagement extends RetinaAction
 
         $customer = $request->user()->customer;
         $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
-
-
+        $isEu = false;
+        // To ensure VAT info only shows on EU shop
+        if ($this->organisation->country) {
+            $isEu = $this->organisation->country->continent == 'EU';
+        }
 
         return Inertia::render(
             'EditModel',
@@ -54,23 +59,23 @@ class ShowRetinaAccountManagement extends RetinaAction
                     "blueprint" =>
                     [
                         [
-                            'title'  => __('contact information'),
-                            'label'  => __('contact'),
+                            'title'  => __('Contact Information'),
+                            'label'  => __('Contact'),
                             'icon'    => 'fa-light fa-address-book',
                             'fields' => [
                                     'contact_name' => [
                                         'type'  => 'input',
-                                        'label' => __('contact name'),
+                                        'label' => __('Contact Name'),
                                         'value' => $customer->contact_name
                                     ],
                                     'company_name' => [
                                         'type'  => 'input',
-                                        'label' => __('company'),
+                                        'label' => __('Company'),
                                         'value' => $customer->company_name
                                     ],
                                     'email' => [
                                         'type'  => 'input',
-                                        'label' => __('email'),
+                                        'label' => __('Email'),
                                         'value' => $customer->email
                                     ],
                                     'phone'        => [
@@ -109,6 +114,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'label'   => __('Tax number'),
                                         'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                         'country' => $customer->address->country_code,
+                                        'europeanUnion' => $isEu ? implode(', ', IsEuropeanUnion::getEUCountryCodes()) : '',
                                     ],
                                     'is_re'           => [
                                         'type'   => 'toggle',
@@ -118,6 +124,44 @@ class ShowRetinaAccountManagement extends RetinaAction
 
                                     ]
                                 ]
+                        ],
+                        [
+                            'title'  => __('Interest'),
+                            'label'  => __('Interest'),
+                            'icon'    => 'fal fa-tags',
+                            'fields' => [
+                                'tags' => [
+                                    'type'  => 'retina-tags-customer',
+                                    'label' => __('Interest'),
+                                    'value' => $customer
+                                        ->tags()
+                                        ->where('tags.scope', TagScopeEnum::USER_CUSTOMER->value)
+                                        ->pluck('tags.id')
+                                        ->toArray(),
+                                    'tag_routes' => [
+                                        'index_tag' => [
+                                            'name'       => 'retina.json.customer.tags.index',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
+                                            ]
+                                        ],
+                                        'attach_tag' => [
+                                            'name'       => 'retina.models.customer.tags.attach',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
+                                            ],
+                                            'method'    => 'post'
+                                        ],
+                                        'detach_tag' => [
+                                            'name'       => 'retina.models.customer.tags.detach',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
+                                            ],
+                                            'method'    => 'delete'
+                                        ],
+                                    ],
+                                ],
+                            ]
                         ]
                     ],
                     "args"      => [

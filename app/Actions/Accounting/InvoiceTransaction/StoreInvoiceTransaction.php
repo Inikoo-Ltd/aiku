@@ -8,9 +8,9 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomers;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoices;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSales;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomersIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithOrderExchanges;
@@ -72,8 +72,9 @@ class StoreInvoiceTransaction extends OrgAction
                 /** @var Product $product */
                 $product = $historicAsset->model;
 
-                $modelData['family_id']     = $product->family_id;
-                $modelData['department_id'] = $product->department_id;
+                $modelData['family_id']         = $product->family_id;
+                $modelData['department_id']     = $product->department_id;
+                $modelData['sub_department_id'] = $product->sub_department_id;
             } elseif ($historicAsset->model_type == 'Service' && $invoice->shop->type == ShopTypeEnum::FULFILMENT) {
                 $modelData = $this->processFulfilmentService($historicAsset->model, $modelData);
             }
@@ -90,10 +91,10 @@ class StoreInvoiceTransaction extends OrgAction
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
-        if ($invoiceTransaction->asset) {
-            AssetHydrateSales::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-            AssetHydrateInvoices::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-            AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        if ($invoiceTransaction->asset_id) {
+            AssetHydrateSalesIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
+            AssetHydrateInvoiceIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
+            AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
         }
 
         return $invoiceTransaction;

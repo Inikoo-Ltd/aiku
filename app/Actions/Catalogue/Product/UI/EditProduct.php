@@ -8,12 +8,9 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
-use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
-use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Inventory\OrgStocksInProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -22,8 +19,6 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Inventory\OrgStocksResource;
-use App\Models\Goods\TradeUnit;
 
 class EditProduct extends OrgAction
 {
@@ -99,13 +94,31 @@ class EditProduct extends OrgAction
         $warning = null;
         if ($product->is_single_trade_unit) {
             $warning = [
-                    'type'  => 'warning',
-                    'title' => __('Important'),
-                    'text'  => __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.'),
-                    'icon'  => ['fas', 'fa-exclamation-triangle']
-                ];
+                'type'  => 'warning',
+                'title' => __('Important'),
+                'text'  => __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.'),
+                'icon'  => ['fas', 'fa-exclamation-triangle']
+            ];
         }
 
+        $iconLinks = [
+
+        ];
+
+        if ($product->shop->masterShop) {
+            $iconLinks[] = [
+                'icon'    => 'fab fa-octopus-deploy',
+                'tooltip' => __('Go to Edit Master Product'),
+                'route'   => [
+                    'name'       => 'grp.masters.master_shops.show.master_products.edit',
+                    'parameters' => [
+                        'masterShop'    => $product->shop->masterShop->slug,
+                        'masterProduct' => $product->masterProduct->slug,
+                    ]
+                ],
+                'color'   => 'rgb(75, 0, 130)'
+            ];
+        }
 
         return Inertia::render(
             'EditModel',
@@ -122,13 +135,14 @@ class EditProduct extends OrgAction
                     'next'     => $this->getNext($product, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $product->code,
-                    'icon'    =>
+                    'title'     => __('Edit product'),
+                    'model'     => $product->code,
+                    'icon'      =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
                             'title' => __('Goods')
                         ],
-                    'actions' => [
+                    'actions'   => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -137,7 +151,8 @@ class EditProduct extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks
                 ],
 
                 'formData' => [
@@ -148,7 +163,6 @@ class EditProduct extends OrgAction
                             'parameters' => [
                                 'product' => $product->id
                             ]
-
                         ],
                     ]
                 ]
@@ -163,35 +177,7 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-        //$value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
 
-
-        $family = $product->family;
-        if ($family) {
-            $stateData = [
-                'label' => $family->state->labels()[$family->state->value],
-                'icon'  => $family->state->stateIcon()[$family->state->value]['icon'],
-                'class' => $family->state->stateIcon()[$family->state->value]['class']
-            ];
-
-            $familyOptions = [
-                'id'                      => $family->id,
-                'code'                    => $family->code,
-                'state'                   => $stateData,
-                'name'                    => $family->name,
-                'number_current_products' => $family->stats->number_current_products,
-
-            ];
-        } else {
-            $familyOptions = [
-                'id'                      => null,
-                'code'                    => null,
-                'state'                   => null,
-                'name'                    => null,
-                'number_current_products' => null,
-
-            ];
-        }
 
         $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
 
@@ -309,19 +295,21 @@ class EditProduct extends OrgAction
                             'type'     => 'input_number',
                             'label'    => __('Price'),
                             'required' => true,
+                            'bind'     => [
+                                'minFractionDigits' => 0,
+                                'maxFractionDigits' => 2,
+                            ],
                             'value'    => $product->price,
-                            /*  'bind'  => [
-                                 'suffix' => 'g'
-                             ] */
                         ],
                         'rrp'              => [
                             'type'     => 'input_number',
                             'label'    => __('RRP'),
                             'required' => true,
+                            'bind'     => [
+                                'minFractionDigits' => 0,
+                                'maxFractionDigits' => 2,
+                            ],
                             'value'    => $product->rrp,
-                            /* 'bind'  => [
-                                'suffix' => 'g'
-                            ] */
                         ],
                         'cost_price_ratio' => [
                             'type'        => 'input_number',
@@ -336,127 +324,77 @@ class EditProduct extends OrgAction
                         ],
                     ]
                 ],
-                $product->is_single_trade_unit
-                    ? []
-                    :
-                    [
-                        'label'  => __('Properties'),
-                        'title'  => __('id'),
-                        'icon'   => 'fa-light fa-fingerprint',
-                        'fields' => [
-                            'unit'                 => [
-                                'type'  => 'input',
-                                'label' => __('Unit'),
-                                'value' => $product->unit,
-                            ],
-                            'units'                => [
-                                'type'  => 'input_number',
-                                'label' => __('Units'),
-                                'value' => $product->units,
-                            ],
-                            'marketing_weight'     => [
-                                'type'        => 'input_number',
-                                'label'       => __('Marketing weight'),
-                                'information' => __('In product page, this will be displayed in specifications as Net Weight'),
-                                'value'       => $product->marketing_weight,
-                                'bind'        => [
-                                    'suffix' => 'g'
-                                ]
-                            ],
-                            'gross_weight'         => [
-                                'type'        => 'input_number',
-                                'label'       => __('Gross weight'),
-                                'information' => __('In product page, this will be displayed in specifications as Shipping Weight'),
-                                'value'       => $product->gross_weight,
-                                'bind'        => [
-                                    'suffix' => 'g'
-                                ]
-                            ],
-                            'marketing_dimensions' => [
-                                'type'        => 'input-dimension',
-                                'information' => __('In product page, this will be displayed in specifications as Dimensions'),
-                                'label'       => __('Marketing dimension'),
-                                'value'       => $product->marketing_dimensions,
-                            ],
-                            'barcode'              => [
-                                'type'     => 'select',
-                                'label'    => __('Barcode'),
-                                'value'    => $product->barcode,
-                                'readonly' => $product->tradeUnits->count() == 1,
-                                'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                                    return [$barcode => $barcode];
-                                })->toArray()
-                            ],
-
-
-                        ]
-                    ],
-                //                [
-                //                    'label'  => __('Parts'),
-                //                    'icon' => 'fal fa-boxes',
-                //                    'fields' => [
-                //                        'org_stocks' => [
-                //                            'type'         => 'product_parts',
-                //                            'label'        => __('Parts'),
-                //                            'full'         => true,
-                //                            'fetch_route'  => [
-                //                                'name'       => 'grp.json.org_stocks.index',
-                //                                'parameters' => [
-                //                                    'organisation' => $product->organisation_id,
-                //                                ]
-                //                            ],
-                //                            'init_options' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
-                //                            'value'        => $value
-                //                        ],
-                //                    ]
-                //                ],
-                //                [
-                //                    'label' => __('Trade unit'),
-                //                    'icon' => 'fa-light fa-atom',
-                //                    'fields' => [
-                //                        'trade_units' => [
-                //                            'label'      => __('Trade Units'),
-                //                            'type' => 'edit-trade-unit-shop',
-                //                            'value' => null,
-                //                            'noSaveButton' => true,
-                //                            'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []
-                //                        ]
-                //                    ],
-                //                ],
+                $product->is_single_trade_unit ? [] :
                 [
-                    'label'  => __('Family'),
-                    'icon'   => 'fa-light fa-folder',
+                    'label'  => __('Properties'),
+                    'title'  => __('id'),
+                    'icon'   => 'fa-light fa-fingerprint',
                     'fields' => [
-                        'family_id' => [
-                            'type'       => 'select_infinite',
-                            'label'      => __('Family'),
-                            'options'    => [
-                                $familyOptions
-                            ],
-                            'fetchRoute' => [
-                                'name'       => 'grp.json.shop.families',
-                                'parameters' => [
-                                    'shop' => $product->shop->id
-                                ]
-                            ],
-                            'valueProp'  => 'id',
-                            'labelProp'  => 'code',
-                            'required'   => true,
-                            'value'      => $product->family->id ?? null,
-                            'type_label' => 'families'
-                        ]
+                        'unit'                 => [
+                            'type'  => 'input',
+                            'label' => __('Unit'),
+                            'value' => $product->unit,
+                        ],
+                        'units'                => [
+                            'type'  => 'input_number',
+                            'label' => __('Units'),
+                            'value' => $product->units,
+                        ],
+                        'marketing_weight'     => [
+                            'type'        => 'input_number',
+                            'label'       => __('Marketing weight'),
+                            'information' => __('In product page, this will be displayed in specifications as Net Weight'),
+                            'value'       => $product->marketing_weight,
+                            'bind'        => [
+                                'suffix' => 'g'
+                            ]
+                        ],
+                        'gross_weight'         => [
+                            'type'        => 'input_number',
+                            'label'       => __('Gross weight'),
+                            'information' => __('In product page, this will be displayed in specifications as Shipping Weight'),
+                            'value'       => $product->gross_weight,
+                            'bind'        => [
+                                'suffix' => 'g'
+                            ]
+                        ],
+                        'marketing_dimensions' => [
+                            'type'        => 'input-dimension',
+                            'information' => __('In product page, this will be displayed in specifications as Dimensions'),
+                            'label'       => __('Marketing dimension'),
+                            'value'       => $product->marketing_dimensions,
+                        ],
+                        'barcode'              => [
+                            'type'     => 'select',
+                            'label'    => __('Barcode'),
+                            'value'    => $product->barcode,
+                            'readonly' => $product->tradeUnits->count() == 1,
+                            'options'  => $barcodes->mapWithKeys(function ($barcode) {
+                                return [$barcode => $barcode];
+                            })->toArray()
+                        ],
+
+
+                    ]
+                ],
+                // To do display message that prompts user to edit from trade unit / master
+                $product->not_for_sale_from_master || $product->not_for_sale_from_trade_unit ? [
+                ] : [
+                    'label'  => __('Sale Status'),
+                    'icon'   => 'fal fa-cart-arrow-down',
+                    'fields' => [
+                        'is_for_sale' => [
+                            'type'  => 'toggle',
+                            'label' => __('For Sale'),
+                            'value' => $product->is_for_sale,
+                        ],
                     ],
                 ],
+
             ]
         );
     }
 
-    private function getDataTradeUnit($tradeUnits): array
-    {
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
-            return GetTradeUnitShowcase::run($tradeUnit);
-        })->toArray();
-    }
 
     public function getBreadcrumbs(Product $product, string $routeName, array $routeParameters): array
     {

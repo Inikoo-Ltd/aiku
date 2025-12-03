@@ -78,35 +78,35 @@ const unitOptions = [
     <div class="flex flex-wrap items-center gap-3">
       <!-- Rectangular -->
       <template v-if="localValue.type === 'rectangular'">
-        <NumberInput v-model="localValue.l" inputClass="w-20 text-center" placeholder="L" />
+        <NumberInput v-model="localValue.l" inputClass="w-20 text-center" placeholder="L" :minFractionDigits="0" :maxFractionDigits="3" />
         <span class="text-gray-500">×</span>
-        <NumberInput v-model="localValue.w" inputClass="w-20 text-center" placeholder="W" />
+        <NumberInput v-model="localValue.w" inputClass="w-20 text-center" placeholder="W" :minFractionDigits="0" :maxFractionDigits="3" />
         <span class="text-gray-500">×</span>
-        <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="H" />
+        <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="H" :minFractionDigits="0" :maxFractionDigits="3" />
       </template>
 
       <!-- Sheet -->
       <template v-else-if="localValue.type === 'sheet'">
-        <NumberInput v-model="localValue.l" inputClass="w-20 text-center" placeholder="L" />
+        <NumberInput v-model="localValue.l" inputClass="w-20 text-center" placeholder="L" :minFractionDigits="0" :maxFractionDigits="3" />
         <span class="text-gray-500">×</span>
-        <NumberInput v-model="localValue.w" inputClass="w-20 text-center" placeholder="W" />
+        <NumberInput v-model="localValue.w" inputClass="w-20 text-center" placeholder="W" :minFractionDigits="0" :maxFractionDigits="3" />
       </template>
 
       <!-- Cylinder -->
       <template v-else-if="localValue.type === 'cylinder'">
-        <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="H" />
+        <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="H" :minFractionDigits="0" :maxFractionDigits="3" />
         <span class="text-gray-500">×</span>
-        <NumberInput v-model="localValue.w" inputClass="w-20 text-center" placeholder="D" />
+        <NumberInput v-model="localValue.w" inputClass="w-20 text-center" placeholder="D" :minFractionDigits="0" :maxFractionDigits="3" />
       </template>
 
       <!-- Sphere -->
       <template v-else-if="localValue.type === 'sphere'">
-        <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="D" />
+        <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="D" :minFractionDigits="0" :maxFractionDigits="3" />
       </template>
 
       <!-- String -->
       <template v-else-if="localValue.type === 'string'">
-        <NumberInput v-model="localValue.l" inputClass="w-20 text-center" placeholder="L" />
+        <NumberInput v-model="localValue.l" inputClass="w-20 text-center" placeholder="L" :minFractionDigits="0" :maxFractionDigits="3" />
       </template>
 
       <!-- Units -->

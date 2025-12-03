@@ -8,7 +8,6 @@ import { Image as ImageTS } from '@/types/Image'
 import { Popover } from 'primevue'
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 import axios from 'axios'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -46,9 +45,9 @@ const props = withDefaults(defineProps<{
     categoryHasChannels?: number[]
     routeAddPortfolios?: routeType
     routeGetCategoryChannels?: routeType
-
 }>(), {
     categoryHasChannels: () => [],
+
     routeAddPortfolios : {
         name: 'iris.models.multi_channels.product_category.portfolio.store',
         parameters: {}
@@ -147,11 +146,11 @@ const onAddCategoryToChannel = (channel: {}) => {
             },
             onError: (errors) => {
                 console.error(errors)
-                notify({
+/*                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to add to portfolio"),
                     type: "error"
-                })
+                }) */
             },
             onFinish: () => {
                 const idx = isLoadingSpecificChannel.value.indexOf(channelId)
@@ -198,7 +197,6 @@ const fetchProductExistInChannel = async () => {
                 {
                     ...props.routeGetCategoryChannels.parameters,
                     customer: layout.iris?.customer?.id,
-                    productCategory: props.categoryId,
                 }
             )
         )
@@ -210,6 +208,7 @@ const fetchProductExistInChannel = async () => {
         console.log('Xxx product exist in channel response:', response.data)
         categoryHasChannelsList.value = response.data || []
     } catch (error: any) {
+        console.error(error)
         notify({
             title: trans('Something went wrong'),
             text: error.message,
@@ -233,29 +232,6 @@ onMounted(() => {
         <div v-if="products.length" class="flex items-center gap-2 xmt-2">
             <div class="flex gap-2  w-full">
                 <div class="w-full flex flex-nowrap relative">
-
-                    <!-- <Button v-if="isCategoryExistInSomeChannel"
-                        :label="isExistInAllChannel ? trans('Exist on all channels') : trans('Exist on some channels')"
-                        type="tertiary"
-                        disabled
-                        :icon="'fal fa-check-double'"
-                        class="border-none border-transparent"
-                        :class="!isExistInAllChannel ? 'rounded-r-none' : ''"
-                        full
-                    />
-                    <Button v-else
-                        aclick="() => onAddToAllPortfolios(product)"
-                        @click="(e) => _popover?.toggle(e)"
-                        :label="trans('Add category to channel')"
-                        :loading="isLoadingAllPortfolios"
-                        :icon="faPlus"
-                        :class="!isExistInAllChannel ? 'rounded-r-none' : ''"
-                        class="border-none border-transparent"
-                        full
-                        xsize="l"
-                        xdisabled
-                        xstyle="border: 0px"
-                    /> -->
 
                     <!-- Popup: list of channels -->
                     <Button v-if="!isExistInAllChannel"
@@ -312,7 +288,12 @@ onMounted(() => {
                     </template>
                     <template #label>
                         <div class="flex items-center gap-2">
-                            <div v-tooltip="channel.platform_name" v-html="ChannelLogo(channel.platform_code)" class="h-4 w-4"></div>
+                            <img
+                                :src="`/assets/channel_logo/${channel.platform_code}.svg`"
+                                class="h-4 w-4"
+                                :alt="channel.platform_name"
+                                v-tooltip="channel.platform_name"
+                            />
                             {{ channel.customer_sales_channel_name || '-' }}
                             <span class="text-gray-500 text-xs">({{ channel.platform_name }})</span>
                         </div>

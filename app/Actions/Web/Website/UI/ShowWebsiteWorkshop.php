@@ -60,7 +60,7 @@ class ShowWebsiteWorkshop extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-        $product = $website->shop->products()->first();
+        $product = $website->shop->productsInStock()->first();
 
 
         $navigation = WebsiteWorkshopTabsEnum::navigation();

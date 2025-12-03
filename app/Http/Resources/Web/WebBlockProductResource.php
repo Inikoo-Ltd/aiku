@@ -12,14 +12,20 @@ use App\Actions\Traits\HasBucketImages;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
 
+/**
+ * @property mixed $units
+ * @property mixed $rrp
+ */
 class WebBlockProductResource extends JsonResource
 {
     use HasSelfCall;
     use HasBucketImages;
+    use HasPriceMetrics;
 
 
     public function toArray($request): array
@@ -27,40 +33,19 @@ class WebBlockProductResource extends JsonResource
         /** @var Product $product */
         $product = $this->resource;
 
-
-        $tradeUnits = $product->tradeUnits;
-
-
-        $tradeUnits->loadMissing(['ingredients']);
-
-        $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
-            return $tradeUnit->ingredients->pluck('name');
-        })->unique()->values()->all();
-
-
         $specifications = [
             'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
-            'ingredients'       => $ingredients,
+            'ingredients'       => $product->marketing_ingredients,
             'gross_weight'      => $product->gross_weight,
-            'marketing_weights' => $tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all(),
             'barcode'           => $product->barcode,
             'dimensions'        => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
             'cpnp'              => $product->cpnp_number,
-            'net_weight'        => $product->marketing_weight,
+            'marketing_weight'  => $product->marketing_weight,
             'unit'              => $product->unit,
         ];
 
-        $margin     = '';
-        $rrpPerUnit = '';
-        $profit     = '';
-        $units = (int) $this->units;
-        if ($product->rrp > 0) {
-            $margin     = percentage(round((($product->rrp - $product->price) / $this->rrp) * 100, 1), 100);
-            $rrpPerUnit = round($product->rrp / $product->units, 2);
-            // $profit     = round(($product->price - $product->rrp) / $product->units, 2);
-            $profit     = round($product->rrp - $product->price, 2);
-        }
 
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
         return [
             'luigi_identity'    => $product->getLuigiIdentity(),
@@ -71,7 +56,7 @@ class WebBlockProductResource extends JsonResource
             'description_title' => $product->description_title,
             'description_extra' => $product->description_extra,
             'stock'             => $product->available_quantity,
-            'specifications'    => $tradeUnits->count() > 0 ? $specifications : null,
+            'specifications'    => $product->is_single_trade_unit ? $specifications : null,
             'contents'          => ModelHasContentsResource::collection($product->contents)->toArray($request),
             'id'                => $product->id,
             'image_id'          => $product->image_id,
@@ -80,7 +65,9 @@ class WebBlockProductResource extends JsonResource
             'rrp_per_unit'      => $rrpPerUnit,
             'margin'            => $margin,
             'profit'            => $profit,
+            'profit_per_unit'   => $profitPerUnit,
             'price'             => $product->price,
+            'price_per_unit'    => $pricePerUnit,
             'status'            => $product->status,
             'state'             => $product->state,
             'units'             => $units,
@@ -89,7 +76,7 @@ class WebBlockProductResource extends JsonResource
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
             'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
-            'tags'              => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
+            'tags'              => TagResource::collection($product->tags)->toArray($request),
         ];
     }
 

@@ -27,7 +27,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest:retina')->group(function () {
 
-
     Route::post('login', RetinaLogin::class)->name('login.store');
     Route::post('login-google', GoogleLoginRetina::class)->name('login_google');
 

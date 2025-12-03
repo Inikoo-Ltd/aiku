@@ -28,7 +28,7 @@
     {{Vite::useHotFile('grp.hot')->useBuildDirectory('grp')->withEntryPoints(['resources/js/app-grp.js'])}}
     @inertiaHead
 
-    @if (config('app.env') === 'production')
+    @if (config('services.jsd.widget_key'))
     <style>
         iframe[name='JSD widget'] {
             /* display: block; */
@@ -40,7 +40,7 @@
             opacity: .80;
         }
     </style>
-    <script data-jsd-embedded data-key="efb5edc3-6921-4d19-8fa2-300ec340b897" data-base-url="https://jsd-widget.atlassian.com" src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
+    <script data-jsd-embedded data-key="{{ config('services.jsd.widget_key') }}" data-base-url="https://jsd-widget.atlassian.com" src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
     @endif
 </head>
 <body class="font-sans antialiased h-full text-slate-700">

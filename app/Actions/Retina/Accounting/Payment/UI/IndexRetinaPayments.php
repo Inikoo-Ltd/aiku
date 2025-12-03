@@ -251,7 +251,7 @@ class IndexRetinaPayments extends RetinaAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('payments '),
+                'title'       => __('payments'),
                 'pageHead'    => [
                     'subNavigation' => $subNavigation,
                     'icon'      => ['fal', 'fa-coins'],

@@ -10,6 +10,7 @@ namespace App\Actions\Maintenance\Masters;
 
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -27,13 +28,22 @@ class AddMissingFamiliesToMaster
     /**
      * @throws \Throwable
      */
-    public function handle(Shop $fromShop, MasterShop $shop): void
+    public function handle(Shop $fromShop, MasterShop $shop, bool $missingOnly = false): void
     {
-        $categoriesToAdd = $fromShop->productCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)
-            ->where('state', ProductCategoryStateEnum::ACTIVE)
-            ->get();
+        $categoriesToAdd = $fromShop->productCategories()->where('product_categories.type', MasterProductCategoryTypeEnum::FAMILY)
+            ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE);
+        if ($missingOnly) {
+            $categoriesToAdd->leftJoin('master_product_categories as mpc', 'mpc.id', '=', 'product_categories.master_product_category_id')
+                ->whereNull('mpc.id')
+                ->select(
+                    'product_categories.*',
+                    DB::raw('mpc.id IS NULL as no_master')
+                );
+        }
+        $categoriesToAdd = $categoriesToAdd->get();
 
         foreach ($categoriesToAdd as $categoryToAdd) {
+            // Create/Find Master Family using Family Data
             $this->upsertMasterFamily($shop, $categoryToAdd);
         }
     }
@@ -50,7 +60,6 @@ class AddMissingFamiliesToMaster
             ->where('type', MasterProductCategoryTypeEnum::FAMILY->value)
             ->where('deleted_at', null)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
-
 
         if (!$foundMasterFamilyData) {
             $masterParent = $this->getMasterParent($masterShop, $family);
@@ -117,6 +126,14 @@ class AddMissingFamiliesToMaster
             );
         }
 
+        if ($family->no_master) {
+            // Link Product Category with Master
+            UpdateProductCategory::make()->action(
+                $family,
+                ['master_product_category_id' => $foundMasterFamily->id]
+            );
+        }
+
         return $foundMasterFamily;
     }
 
@@ -163,7 +180,8 @@ class AddMissingFamiliesToMaster
 
     public function getCommandSignature(): string
     {
-        return 'repair:add_missing_families_to_master {from} {to}';
+        // --missing to search for family with no master
+        return 'repair:add_missing_families_to_master {from?} {to?} {--missing}';
     }
 
     /**
@@ -171,10 +189,17 @@ class AddMissingFamiliesToMaster
      */
     public function asCommand(Command $command): int
     {
-        $toShop   = MasterShop::where('slug', $command->argument('to'))->firstOrFail();
-        $fromShop = Shop::where('slug', $command->argument('from'))->firstOrFail();
+        if ($command->argument('to') && $command->argument('from')) {
+            $fromShop = Shop::where('slug', $command->argument('from'))->firstOrFail();
+            $toShop   = MasterShop::where('slug', $command->argument('to'))->firstOrFail();
 
-        $this->handle($fromShop, $toShop);
+            $this->handle($fromShop, $toShop, $command->option('missing'));
+        } else {
+            $shops = Shop::whereNotNull('master_shop_id')->get();
+            foreach ($shops as $shop) {
+                $this->handle($shop, $shop->masterShop, $command->option('missing'));
+            }
+        }
 
         return 0;
     }

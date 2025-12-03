@@ -101,9 +101,19 @@ class ShowMasterDepartment extends GrpAction
                 ),
                 'pageHead'    => [
                     'title'         => $masterDepartment->name,
+                    'model'         => __('Master Department'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => $tittle
+                    ],
+                    'iconRight' => $masterDepartment->status ? [
+                        'tooltip' => __('Active'),
+                        'icon'    => 'fas fa-check-circle',
+                        'class'   => 'text-green-400'
+                    ] : [
+                        'tooltip' => __('Closed'),
+                        'icon'    => 'fas fa-times-circle',
+                        'class'   => 'text-red-400'
                     ],
                     'actions'       => [
                          $this->canEdit ? [
@@ -114,23 +124,6 @@ class ShowMasterDepartment extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        /* [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => 'blueprint',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ], */
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'shops.show.departments.remove',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false
                     ],
                     'subNavigation' => $subNavigation,
                 ],
@@ -138,10 +131,24 @@ class ShowMasterDepartment extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => MasterDepartmentTabsEnum::navigation()
                 ],
-
+                'delete_route' => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.masters.master_departments.delete',
+                    'parameters' => [
+                        'masterProductCategory' => $masterDepartment->slug
+                    ]
+                ],
+                'delete_condition' => [
+                    'can_delete' => $masterDepartment->children()->exists() === false,
+                    'master_shop_slug' => $masterDepartment->masterShop->slug,
+                ],
                 MasterDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryShowcase::run($masterDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterDepartment)),
+
+              /*   MasterDepartmentTabsEnum::CONTENT->value => $this->tab == MasterDepartmentTabsEnum::CONTENT->value ?
+                    fn () => GetMasterProductCategoryContent::run($masterDepartment)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryContent::run($masterDepartment)), */
 
                 MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
                     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))

@@ -3,7 +3,6 @@
 namespace App\Models\Dropshipping;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -232,7 +231,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sales_grp_currency_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Dropshipping\Platform $platform
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformSalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformSalesIntervals query()
@@ -241,9 +239,4 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PlatformSalesIntervals extends Model
 {
     protected $guarded = [];
-
-    public function platform(): BelongsTo
-    {
-        return $this->belongsTo(Platform::class);
-    }
 }

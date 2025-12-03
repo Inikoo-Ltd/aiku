@@ -1,21 +1,26 @@
 <script setup lang="ts">
-import { ref, reactive, inject, onBeforeUnmount, defineExpose } from 'vue'
+import { ref, reactive, inject, onBeforeUnmount } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
 import { routeType } from '@/types/route'
 import { Table as TableTS } from '@/types/Table'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPencil, faTimes, faTrashAlt } from '@far'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
-import { debounce, includes } from 'lodash-es'
+import { debounce } from 'lodash-es'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import { ulid } from 'ulid'
 import Image from "@/Components/Image.vue"
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faBadgePercent } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import Discount from '@/Components/Utils/Label/Discount.vue'
+library.add(faBadgePercent)
 
 type ProductRow = {
   id: number
@@ -260,23 +265,7 @@ defineExpose({
       return ''
     }">
 
-      <!-- Save All Button -->
-      <!-- <template #add-on-button-in-before>
-        <div v-if="layout?.app?.environment === 'local'" class="flex items-center gap-2">
-          <Button type="create" label="Product" size="sm" @click="openModal" :injectStyle="{ borderRadius: '3px' }" />
 
-          <div v-if="
-            Object.keys(createNewQty).length > 0 ||
-            rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
-          " class="h-5 border-r"></div>
-
-          <Button v-if="
-            Object.keys(createNewQty).length > 0 ||
-            rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
-          " type="save" label="Save all changes" size="sm" :injectStyle="{ borderRadius: '3px' }"
-            :loading="loadingsaveModify" @click="onSave" />
-        </div>
-      </template> -->
 
       <template #cell(image)="{ item }">
          <!-- <pre>{{ item }}</pre> -->
@@ -297,13 +286,15 @@ defineExpose({
       <!-- Column: Name / Stock -->
       <template #cell(asset_name)="{ item }">
         <div>
-          <div>{{ item.asset_name }}</div>
+          <div xclass="item.offers_data ? 'text-pink-600' : ''">{{ item.asset_name }}</div>
           <div v-if="item.available_quantity !== undefined && item.available_quantity < 1">
             <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
           </div>
           <div v-else class="text-gray-500 italic text-xs">
             Stock: {{ locale.number(item.available_quantity || 0) }} available
           </div>
+          
+            <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
         </div>
       </template>
 
@@ -351,7 +342,10 @@ defineExpose({
             </div>
           </div>
           <div v-else>
-            {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
+              <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
+                  <span v-if="item.gross_amount != item.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
+                  <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
+              </p>
           </div>
         </div>
       </template>

@@ -35,7 +35,7 @@ defineProps<{
                         <p>{{ getNotificationData(notification).description }}</p>
                     </div>
                     <div v-if="notification.message" class="text-xs opacity-90 ">
-                        <p>{{ getNotificationData(notification).message }}</p>
+                        <p>{{ getNotificationData(notification).message }} <slot name="messageExtra" /> </p>
                     </div>
                 </div>
             </div>

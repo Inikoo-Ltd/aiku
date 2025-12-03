@@ -12,34 +12,16 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\Json;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Services\QueryBuilder;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetCustomerProductCategorySalesChannelIds extends OrgAction
 {
     public function handle(Customer $customer, ProductCategory $productCategory): array
     {
-        $productIds = $productCategory->getProducts()->pluck('id');
-
-        $queryBuilder = QueryBuilder::for(CustomerSalesChannel::class);
-        $queryBuilder->where('customer_sales_channels.customer_id', $customer->id)
-            ->distinct();
-        $queryBuilder->join('portfolios', function ($join) use ($productIds) {
-            $join->on('customer_sales_channels.id', '=', 'portfolios.customer_sales_channel_id')
-                ->where('portfolios.item_type', '=', 'Product')
-                ->whereIn('portfolios.item_id', $productIds);
-        });
-
-        $queryBuilder
-            ->select('customer_sales_channels.id')
-            ->groupBy('customer_sales_channels.id')
-            ->havingRaw('COUNT(DISTINCT portfolios.item_id) = ?', [count($productIds)]);
-
-        return $queryBuilder->get()->pluck('id')->toArray();
+        return GetRetinaCustomerProductCategorySalesChannelIds::run($customer, $productCategory);
     }
 
-    public function asController(Customer $customer, ProductCategory $productCategory, ActionRequest $request)
+    public function asController(Customer $customer, ProductCategory $productCategory, ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisationFromShop($customer->shop, $request);
 

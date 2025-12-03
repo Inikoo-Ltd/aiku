@@ -17,6 +17,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
+import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -30,6 +31,8 @@ const props = defineProps<{
     domain: string
     code: string
     typeIcon: string
+    canonical_url_without_domain: string
+    canonical_url: string
     url: string
     layout: {
       web_blocks?: any[]
@@ -112,18 +115,24 @@ const isAbleReindex = computed(() => {
         </div>
 
         <!-- Browser View -->
-        <BrowserView :screenMode="screenMode" :tab="{ icon: data.typeIcon, label: data.code }"
-          :url="{ domain: data.domain, page: data.url }">
-          <template #page v-if="data.layout.web_blocks?.length">
-            <div class="relative w-full h-full">
-              <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
-                <LoadingIcon class="w-24 h-24 text-6xl" />
-              </div>
-              <iframe ref="_iframe" :src="iframeSrc" :title="props.title" class="w-full h-full"
-                @load="isIframeLoading = false" />
+        <div class="relative">
+          <BrowserView :screenMode="screenMode" :tab="{ icon: data.typeIcon, label: data.title }"
+            :url="{ domain: data.domain, page: data.canonical_url_without_domain }">
+            <template #page v-if="data.layout.web_blocks?.length">
+              <div class="relative w-full h-full">
+                <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
+                  <LoadingIcon class="w-24 h-24 text-6xl" />
+                </div>
+                <iframe ref="_iframe" :src="iframeSrc" :title="'props.title'" class="w-full h-full"
+                  @load="isIframeLoading = false" />
+                </div>
+              </template>
+            </BrowserView>
+            
+            <div v-if="data.state === 'closed'" class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
+              <img src="/assets/offline_stamp.webp" class="-rotate-[12deg] w-1/2"/>
             </div>
-          </template>
-        </BrowserView>
+        </div>
       </div>
 
       <!-- Right Panel (Optional) -->
@@ -148,14 +157,15 @@ const isAbleReindex = computed(() => {
             </ModalConfirmationDelete>
 
             <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id" s
-              v-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
-              :disabled="!isAbleReindex" :routeTarget="{
+              xv-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
+              xdisabled="!isAbleReindex"
+              :routeTarget="{
                 name: 'grp.models.webpage_luigi.reindex',
                 parameters: {
                   webpage: data?.id
                 }
               }" icon="fal fa-search" method="post"
-              :type="!isAbleReindex || data?.luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'" full>
+              :type="data?.luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'" full>
               <template #label>
                 <span class="text-xs">
                   {{ trans('Reindex Webpage Search') }}

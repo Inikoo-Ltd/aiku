@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 
-use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
+use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Magento\ReAuthorizeMagentoUser;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\RetinaAction;
@@ -24,7 +24,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
 {
     use WithActionUpdate;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel): ?string
+    public function handle(CustomerSalesChannel $customerSalesChannel, ?ActionRequest $request): ?string
     {
         /** @var MagentoUser|ShopifyUser|WooCommerceUser $platformUser */
         $platformUser = $customerSalesChannel->user;
@@ -35,7 +35,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
             ]),
             PlatformTypeEnum::WOOCOMMERCE => ReAuthorizeRetinaWooCommerceUser::run($platformUser),
             PlatformTypeEnum::MAGENTO => ReAuthorizeMagentoUser::run($platformUser),
-            PlatformTypeEnum::EBAY => AuthorizeRetinaEbayUser::run(),
+            PlatformTypeEnum::EBAY => CheckEbayChannel::run($platformUser),
             default => null
         };
     }
@@ -44,6 +44,6 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel);
+        return $this->handle($customerSalesChannel, $request);
     }
 }

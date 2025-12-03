@@ -42,7 +42,7 @@ return new class () extends Migration {
             $table->string('fail_status')->default(ProspectFailStatusEnum::NA);
             $table->string('success_status')->default(ProspectSuccessStatusEnum::NA);
             $table->boolean('dont_contact_me')->default(false);
-            $table->boolean('can_contact_by_email')->default(false);
+            $table->boolean('can_contact_by_email')->index()->default(false);
             $table->boolean('can_contact_by_phone')->default(false);
             $table->boolean('can_contact_by_address')->default(false);
             $table->jsonb('data');

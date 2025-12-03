@@ -16,24 +16,24 @@ use Illuminate\Support\Arr;
 
 trait WithStoreOffer
 {
-    protected function prepareOfferData(OfferCampaign|Offer $parent, $trigger, array $modelData): array
+    protected function prepareOfferData(OfferCampaign|Offer $parent, array $modelData): array
     {
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);
 
         $status = false;
-        if (Arr::get($modelData, 'state') == $parent instanceof Offer ? OfferStateEnum::ACTIVE : OfferCampaignStateEnum::ACTIVE) {
+        if ($parent instanceof Offer) {
+            if (Arr::get($modelData, 'state') == OfferStateEnum::ACTIVE) {
+                $status = true;
+            }
+        } elseif (Arr::get($modelData, 'state') == OfferCampaignStateEnum::ACTIVE) {
             $status = true;
         }
 
+
         data_set($modelData, 'status', $status);
 
-
-        if ($trigger) {
-            data_set($modelData, 'trigger_type', class_basename($trigger));
-            data_set($modelData, 'trigger_id', $trigger->id);
-        }
 
         return $modelData;
     }

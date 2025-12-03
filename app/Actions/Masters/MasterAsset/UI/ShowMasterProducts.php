@@ -22,6 +22,7 @@ use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Masters\MasterProductSalesResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
@@ -167,19 +168,26 @@ class ShowMasterProducts extends GrpAction
                 ),
                 'pageHead'    => [
                     'title'   => $masterAsset->code,
-                    'afterTitle' => [
-                        'label' => $masterAsset->name
-                    ],
-                    'model'   => '',
+                    'model'   => __('Master Product'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-cube'],
                         'title' => __('Master asset')
+                    ],
+                    'iconRight' => $masterAsset->status ? [
+                        'tooltip' => __('Active'),
+                        'icon'    => 'fas fa-check-circle',
+                        'class'   => 'text-green-400'
+                    ] : [
+                        'tooltip' => __('Closed'),
+                        'icon'    => 'fas fa-times-circle',
+                        'class'   => 'text-red-400'
                     ],
                     'actions' => [
                         [
                             'key'   => 'edit',
                             'type'  => 'button',
                             'style' => 'edit',
+                            'label' => _('Edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -189,6 +197,7 @@ class ShowMasterProducts extends GrpAction
                             'key'   => 'assign',
                             'type'  => 'button',
                             'style' => 'create',
+                            'label' => __('Add to Other Shop'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -205,8 +214,10 @@ class ShowMasterProducts extends GrpAction
                         ] : false
                     ],
                 ],
+                'masterAsset'           => $masterAsset,
                 'currency'              => $masterAsset->group->currency,
                 'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
+                'tradeUnits'            => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset)),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => MasterAssetTabsEnum::navigation()
@@ -224,12 +235,17 @@ class ShowMasterProducts extends GrpAction
                     fn () =>  GetMasterProductImages::run($masterAsset)
                     : Inertia::lazy(fn () => GetMasterProductImages::run($masterAsset)),
 
+                MasterAssetTabsEnum::SALES->value => $this->tab == MasterAssetTabsEnum::SALES->value ?
+                    fn () => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
+
                 MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
                     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
 
             ]
         )->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value))
+        ->table(IndexMasterProductsSales::make()->tableStructure(prefix: MasterAssetTabsEnum::SALES->value))
         ->table(IndexMailshots::make()->tableStructure($masterAsset))
         ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value));
     }

@@ -33,6 +33,10 @@ class CloneProductCategoryImagesFromMaster implements ShouldBeUnique
 
         $master = $productCategory->masterProductCategory;
 
+        if (!$master) {
+            return;
+        }
+
         foreach ($master->images as $image) {
             $images[$image->id] = [
                 'is_public'       => true,

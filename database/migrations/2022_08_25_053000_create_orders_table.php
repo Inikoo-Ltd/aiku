@@ -47,8 +47,8 @@ return new class () extends Migration {
             $table->boolean('billing_locked')->default(false);
             $table->boolean('delivery_locked')->default(false);
 
-            $table->unsignedInteger('estimated_weight')->nullable()->comment('grams');
-            $table->unsignedInteger('weight')->nullable()->comment('actual weight, grams');
+            $table->unsignedBigInteger('estimated_weight')->nullable()->comment('grams');
+            $table->unsignedBigInteger('weight')->nullable()->comment('actual weight, grams');
             $table->jsonb('payment_data');
 
             $table->unsignedInteger('billing_address_id')->index()->nullable();
@@ -64,14 +64,14 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('delivery_country_id')->index()->nullable();
             $table->foreign('delivery_country_id')->references('id')->on('countries');
 
-            $table->dateTimeTz('date');
+            $table->dateTimeTz('date')->index();
 
             $table->dateTimeTz('submitted_at')->nullable();
             $table->dateTimeTz('in_warehouse_at')->nullable();
             $table->dateTimeTz('handling_at')->nullable();
             $table->dateTimeTz('packed_at')->nullable();
             $table->dateTimeTz('finalised_at')->nullable();
-            $table->dateTimeTz('dispatched_at')->nullable();
+            $table->dateTimeTz('dispatched_at')->nullable()->index();
             $table->dateTimeTz('cancelled_at')->nullable();
             $table->dateTimeTz('settled_at')->nullable()->comment('dispatched_at|cancelled_at');
 

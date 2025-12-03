@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { ref, onMounted, nextTick, computed, defineExpose } from 'vue';
+import { ref, onMounted, nextTick, computed } from 'vue';
 import PureInput from '@/Components/Pure/PureInput.vue';
 // import RetinaShowIris from '@/Layouts/RetinaShowIris.vue';
 import { trans } from 'laravel-vue-i18n'

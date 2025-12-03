@@ -1,0 +1,137 @@
+[
+    {
+        "name": "New Customer",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "recency",
+            "description": "Customers with first transaction ≤ 30 days ago"
+        }
+    },
+    {
+        "name": "Active",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "recency",
+            "description": "Customers with last transaction ≤ 30 days ago"
+        }
+    },
+    {
+        "name": "At Risk",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "recency",
+            "description": "Customers with last transaction 31-90 days ago"
+        }
+    },
+    {
+        "name": "Inactive",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "recency",
+            "description": "Customers with last transaction 91-180 days ago"
+        }
+    },
+    {
+        "name": "Lost Customer",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "recency",
+            "description": "Customers with last transaction > 180 days ago"
+        }
+    },
+    {
+        "name": "One-Time Buyer",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "frequency",
+            "description": "Customers with 1 transaction in last 12 months"
+        }
+    },
+    {
+        "name": "Occasional Shopper",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "frequency",
+            "description": "Customers with 2-4 transactions in last 12 months"
+        }
+    },
+    {
+        "name": "Frequent Buyer",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "frequency",
+            "description": "Customers with 5-9 transactions in last 12 months"
+        }
+    },
+    {
+        "name": "Brand Advocate",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "frequency",
+            "description": "Customers with ≥10 transactions in last 12 months"
+        }
+    },
+    {
+        "name": "Low Value",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "monetary",
+            "description": "Customers with total spend in percentile 0-50"
+        }
+    },
+    {
+        "name": "Medium Value",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "monetary",
+            "description": "Customers with total spend in percentile 50-80"
+        }
+    },
+    {
+        "name": "High Value",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "monetary",
+            "description": "Customers with total spend in percentile 80-95"
+        }
+    },
+    {
+        "name": "Gold Reward",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "monetary",
+            "description": "Customers with total spend in percentile 95-99"
+        }
+    },
+    {
+        "name": "Top 100",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "monetary",
+            "description": "Top 100 customers by total spend"
+        }
+    },
+    {
+        "name": "Top 10",
+        "scope": "system_customer",
+        "group_id": 1,
+        "data": {
+            "type": "monetary",
+            "description": "Top 10 customers by total spend"
+        }
+    }
+]

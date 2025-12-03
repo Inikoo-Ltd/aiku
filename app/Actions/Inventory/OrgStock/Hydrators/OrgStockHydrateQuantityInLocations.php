@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\Hydrators;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
@@ -24,20 +25,24 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
 
     public function handle(OrgStock $orgStock): void
     {
-        $quantityInLocations = $orgStock->locationOrgStocks()->sum('quantity');
+        $quantityInLocations = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->sum('quantity');
 
         $quantityAvailable = $quantityInLocations - $orgStock->quantity_in_submitted_orders - $orgStock->quantity_to_be_picked;
+
+        $quantityAvailable = $quantityAvailable - $orgStock->source_quantity_in_submitted_orders - $orgStock->source_quantity_to_be_picked;
+
 
         if ($quantityAvailable < 0) {
             $quantityAvailable = 0;
         }
+
 
         $orgStock->update([
             'quantity_in_locations' => $quantityInLocations,
             'quantity_available'    => $quantityAvailable,
         ]);
 
-        if ($orgStock->wasChanged('quantity_in_locations')) {
+        if ($orgStock->wasChanged('quantity_available')) {
             foreach ($orgStock->products as $product) {
                 ProductHydrateAvailableQuantity::run($product);
             }

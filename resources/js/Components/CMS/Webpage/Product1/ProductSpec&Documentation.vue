@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
 import { computed } from 'vue'
-import { faUnlink, faInfoCircle, faFile, faStarChristmas, faFileCheck, faFilePdf, faFileWord } from "@fal"
+import { faFileCheck, faFilePdf, faFileWord } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const props = defineProps<{
     product: {
         specifications: {
             gross_weight?: number
-            net_weight?: number
+            marketing_weight?: number
             barcode?: number
             origin?: string
             dimensions?: [number, number]
@@ -57,15 +57,15 @@ const groupedAttachments = computed(() => {
 </script>
 
 <template>
-    <div class="w-full sm:w-7/12 border border-gray-300">
+    <div class="w-full  border border-gray-300">
         <div v-if="product?.specifications?.origin" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Origin') }}</div>
             <div class="p-2 text-sm">{{ product.specifications.origin }}</div>
         </div>
 
-        <div v-if="product?.specifications?.net_weight" class="grid grid-cols-2 border-b border-gray-300">
+        <div v-if="product?.specifications?.marketing_weight" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Net Weight') }}</div>
-            <div class="p-2 text-sm">{{ product.specifications.net_weight }} g/{{ product.specifications.unit }}</div>
+            <div class="p-2 text-sm">{{ product.specifications.marketing_weight }} g/{{ product.specifications.unit }}</div>
         </div>
 
         <div v-if="product?.specifications?.gross_weight" class="grid grid-cols-2 border-b border-gray-300">
@@ -81,7 +81,7 @@ const groupedAttachments = computed(() => {
 
         <div v-if="product?.specifications?.ingredients" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Materials/Ingredients') }}</div>
-            <div class="p-2 text-sm"> {{ product.specifications.ingredients.join(', ') }}</div>
+            <div class="p-2 text-sm"> {{ product.specifications.ingredients }}</div>
         </div>
 
         <div v-if="product?.specifications?.barcode" class="grid grid-cols-2 border-b border-gray-300">
@@ -117,11 +117,9 @@ const groupedAttachments = computed(() => {
 
             <!-- Files column (up to 2 files per scope) -->
             <div>
-                <div v-for="item in items" :key="item.caption"
-                    class="p-2 text-xs text-blue-600 underline cursor-pointer flex items-center">
+                <div v-for="item in items" :key="item.caption"  class="p-2 text-xs text-blue-600 underline cursor-pointer flex items-center">
                     <div>
-                        <a :href="route(item.download_route.name, item.download_route.parameters)" target="_blank"
-                            class="flex items-center">
+                        <a :href="item.url" target="_blank"  class="flex items-center">
                             <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" class="mr-1" />
                             {{ item.caption }}{{ `.${extractFileType(item.mime_type)}` }}
                         </a>

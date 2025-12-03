@@ -11,7 +11,6 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { Link, router, usePage } from "@inertiajs/vue3";
 import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-
 import { computed, getCurrentInstance, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
 import qs from 'qs'
 import clone from 'lodash-es/clone'
@@ -600,14 +599,19 @@ const visit = (url?: string) => {
     );
 }
 
+const debouncedFilter = debounce(() => {
+    try {
+        visit(location.pathname + '?' + generateNewQueryString())
+    } catch {
+        console.error("Can't visit expected path")
+    }
+}, 750, {
+    leading: false,
+    trailing: true,
+});
+
 watch(queryBuilderData, async () => {
-        // if(queryBuilderData.value.sort !== queryBuilderProps.value.sort) {  // To avoid sort on first load
-            try {
-                visit(location.pathname + '?' + generateNewQueryString())
-            } catch {
-                console.error("Can't visit expected path")
-            }
-        // }
+        debouncedFilter();
     },
     {deep: true},
 );
@@ -952,7 +956,9 @@ const isLoading = ref<string | boolean>(false)
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <slot name="body" :show="show">
                                     <template v-for="(item, key) in compResourceData"
-                                        :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`">
+                                        :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
+                                        vxmemo="[JSON.stringify(item)]"
+                                    >
                                         <tr class="" :class="[
                                                 {
                                                     'bg-gray-50': striped && key % 2,

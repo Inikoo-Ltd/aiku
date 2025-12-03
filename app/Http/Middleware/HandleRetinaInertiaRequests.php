@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use App\Http\Resources\Helpers\CurrencyResource;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Arr;
 use Tighten\Ziggy\Ziggy;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 
@@ -49,7 +50,6 @@ class HandleRetinaInertiaRequests extends Middleware
         $website                           = $request->get('website');
         $firstLoadOnlyProps['environment'] = app()->environment();
 
-
         $customerSalesChannels = [];
         if ($webUser) {
             $channels = DB::table('customer_sales_channels')
@@ -75,7 +75,6 @@ class HandleRetinaInertiaRequests extends Middleware
             [
                 'auth'     => [
                     'user'          => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
-                    'webUser_count' => $webUser?->customer?->webUsers?->count() ?? 1,
                     'customerSalesChannels' => $customerSalesChannels
                 ],
                 'currency' => [
@@ -95,7 +94,12 @@ class HandleRetinaInertiaRequests extends Middleware
                 "retina"   => [
                     "type"     => $website->shop->type->value,
                     "currency" => CurrencyResource::make($website->shop->currency)->toArray(request()),
+                    'portal_link' => Arr::get($website->shop->settings, 'portal.link', ''),
                     "balance"  => $webUser?->customer?->balance,
+                    'show_cards_modal' => !$webUser?->customer->mitSavedCard()->exists() && $webUser?->customer
+                            ->customerSalesChannels()
+                            ->whereNot('platform_id', 4)
+                            ->exists(),
                 ],
                 'iris'     => $this->getIrisData($website, $webUser)
             ],
