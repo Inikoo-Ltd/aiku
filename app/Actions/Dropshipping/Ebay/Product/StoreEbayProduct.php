@@ -183,7 +183,7 @@ class StoreEbayProduct extends RetinaAction
                     ],
                     'weight' => [
                         'unit' => 'KILOGRAM',
-                        'value' => $product->marketing_weight / 1000
+                        'value' => (in_array($product->marketing_weight, [null, 0]) ? 100 : $product->marketing_weight) / 1000
                     ]
                 ],
                 'product' => [
