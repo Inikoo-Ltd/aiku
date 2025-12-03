@@ -34,6 +34,7 @@ import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blu
 import SubDepartment2Blueprint from "@/Components/CMS/Webpage/SubDepartment2/Blueprint"
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
+import ProductsList2Blueprint from '@/Components/CMS/Webpage/Products2/Blueprint'
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
@@ -89,6 +90,7 @@ export const getBlueprint = (componentName: string, data?: object) => {
 
 		// products list
 		"products-1": ProductsList1Blueprint.blueprint,
+		"products-2": ProductsList2Blueprint.blueprint,
 
 		//BestSeller
 		"bestseller-1": BluprintBestseller.blueprint,
