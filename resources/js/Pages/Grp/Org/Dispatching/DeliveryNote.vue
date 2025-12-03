@@ -438,8 +438,14 @@ onMounted(() => {
     </div>
 
 
-    <BoxStatsDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes :deliveryNote="delivery_note"
-        :updateRoute="routes.update" :shipments />
+    <BoxStatsDeliveryNote
+        v-if="box_stats && pickingView"
+        :boxStats="box_stats"
+        :routes
+        :deliveryNote="delivery_note"
+        :updateRoute="routes.update"
+        :shipments
+    />
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 

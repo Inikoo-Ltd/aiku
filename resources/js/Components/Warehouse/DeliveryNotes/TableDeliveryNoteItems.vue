@@ -137,20 +137,25 @@ const generateLocationRoute = (location: any) => {
 // Button: undo pick
 const isLoadingUndoPick = reactive({});
 const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadingKey: string) => {
-    try {
-        pallet_stored_item.isLoadingUndo = true;
-        set(isLoadingUndoPick, loadingKey, true);
-        await axios[routeTarget.method || "get"](
-            route(routeTarget.name, routeTarget.parameters)
-        );
-        pallet_stored_item.state = "picking";
-    } catch (error) {
-        console.error("error:", error);
+    console.log('cccccccccccccccccccc')
+    // try {
+    //     console.log('0000')
+    //     pallet_stored_item.isLoadingUndo = true;
+    //     console.log('1111')
+    //     set(isLoadingUndoPick, loadingKey, true);
+    //     console.log('2222')
+    //     const xxx = await axios[routeTarget.method || "get"](
+    //         route(routeTarget.name, routeTarget.parameters)
+    //     );
+    //     console.log('33333', xxx)
+    //     pallet_stored_item.state = "picking";
+    //     console.log('4444')
+    // } catch (error) {
+    //     console.error("error:", error);
 
-    } finally {
-        set(isLoadingUndoPick, loadingKey, false);
-    }
-
+    // } finally {
+    //     set(isLoadingUndoPick, loadingKey, false);
+    // }
 };
 
 // Section: Modal for a location list
@@ -169,6 +174,8 @@ const onCloseModal = () => {
 const findLocation = (locationsList: { location_code: string }[], selectedHehe: string) => {
     return locationsList.find(x => x.location_code == selectedHehe) || locationsList[0]
 }
+
+const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps', 'warehouse', 'shipments_routes', 'address', 'navigation', 'breadcrumbs']
 
 
 </script>
