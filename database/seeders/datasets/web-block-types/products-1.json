@@ -2,7 +2,7 @@
 	"scope": "webpage",
 	"slug": "products-1",
 	"code": "products-1",
-	"name": "List products",
+	"name": "List products 1",
 	"category" : "list_products",
 	"icon": ["fal", "cube"],
 	"website_type" : ["b2b","b2c","dropshipping"],

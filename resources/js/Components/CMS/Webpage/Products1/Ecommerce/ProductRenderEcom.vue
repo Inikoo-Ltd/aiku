@@ -20,6 +20,7 @@ import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
+import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
@@ -77,6 +78,8 @@ const onAddBackInStock = (product: ProductResource) => {
 const onUnselectBackInStock = (product: ProductResource) => {
       emits('unsetBackInStock', product)
 }
+
+
 
 
 const idxSlideLoading = ref(false)
