@@ -120,7 +120,6 @@ class EditProduct extends OrgAction
             ];
         }
 
-
         return Inertia::render(
             'EditModel',
             [
@@ -378,7 +377,9 @@ class EditProduct extends OrgAction
 
                     ]
                 ],
-                [
+                // To do display message that prompts user to edit from trade unit / master
+                $product->not_for_sale_from_master || $product->not_for_sale_from_trade_unit ? [
+                ] : [
                     'label'  => __('Sale Status'),
                     'icon'   => 'fal fa-cart-arrow-down',
                     'fields' => [
