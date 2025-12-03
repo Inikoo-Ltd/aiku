@@ -41,6 +41,7 @@ const emit = defineEmits<{
     'validation-error': [itemId: string | number, hasError: boolean]
 }>();
 
+const screenType = inject('screenType', ref('desktop'))
 
 const locale = inject("locale", aikuLocaleStructure);
 
@@ -276,20 +277,18 @@ onMounted(() => {
                         </span>
                     </div>
 
-                    <div class="hidden lg:block">
-                        <ButtonWithLink v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0" v-tooltip="trans('Undo pick')" type="negative" size="xxs"
-                            icon="fal fa-undo-alt" :routeTarget="picking.undo_picking_route"
+                    <div class="">
+                        <ButtonWithLink
+                            v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0"
+                            v-tooltip="trans('Undo pick')"
+                            type="negative"
+                            :size="screenType != 'mobile' ? 'xxs' : 'md'"
+                            icon="fal fa-undo-alt"
+                            :routeTarget="picking.undo_picking_route"
                             :bindToLink="{ preserveScroll: true }"
                             @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
-                            :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)" />
-                    </div>
-
-                    <div class="lg:hidden">
-                        <ButtonWithLink v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0" v-tooltip="trans('Undo pick')" type="negative" size="sm"
-                            icon="fal fa-undo-alt" :routeTarget="picking.undo_picking_route"
-                            :bindToLink="{ preserveScroll: true }"
-                            @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
-                            :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)" />
+                            :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
+                        />
                     </div>
                 </div>
 
@@ -380,47 +379,29 @@ onMounted(() => {
                                 }" autoSave xxisWithRefreshModel
                                 :readonly="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked">
                                 <template #save="{ isProcessing, isDirty, onSaveViaForm }">
-                                    <div class="hidden lg:flex gap-x-8 w-fit">
-                                        <ButtonWithLink v-tooltip="trans('Pick all required quantity in this location')"
+                                    <div class="flex gap-x-8 w-fit">
+                                        <ButtonWithLink
+                                            v-tooltip="trans('Pick all required quantity in this location')"
                                             icon="fal fa-clipboard-list-check"
                                             :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
-                                            size="xs" type="secondary" :loading="isProcessing" class="py-0"
-                                            :routeTarget="itemValue.picking_all_route" :bind-to-link="{
+                                            :size="screenType != 'mobile' ? 'xs' : 'md'"
+                                            type="secondary"
+                                            :loading="isProcessing"
+                                            class="py-0"
+                                            :routeTarget="itemValue.picking_all_route"
+                                            :bind-to-link="{
                                                 preserveScroll: true,
                                                 preserveState: true,
-                                            }" :body="{
+                                            }"
+                                            :body="{
                                                 location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id
-                                            }" isWithError>
+                                            }"
+                                            isWithError
+                                        >
                                             <template #label>
                                                 <div>
-                                                    <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
-                                                        :fractionData="itemValue.quantity_to_pick_fractional" />
-                                                    <span v-else>{{
-                                                        locale.number(itemValue.quantity_to_pick ?? 0)
-                                                        }}</span>
-                                                </div>
-                                            </template>
-                                        </ButtonWithLink>
-                                    </div>
-
-                                    <div class="lg:hidden space-y-1">
-                                        <ButtonWithLink v-tooltip="trans('Pick all required quantity in this location')"
-                                            icon="fal fa-clipboard-list-check"
-                                            :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
-                                            xsize="md" type="secondary" :loading="isProcessing" class="py-0"
-                                            :routeTarget="itemValue.picking_all_route" :bind-to-link="{
-                                                preserveScroll: true,
-                                                preserveState: true,
-                                            }" :body="{
-                                                location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id
-                                            }" isWithError full>
-                                            <template #label>
-                                                <div>
-                                                    <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
-                                                        :fractionData="itemValue.quantity_to_pick_fractional" />
-                                                    <span v-else>{{
-                                                        locale.number(itemValue.quantity_to_pick ?? 0)
-                                                        }}</span>
+                                                    <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
+                                                    <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
                                                 </div>
                                             </template>
                                         </ButtonWithLink>
@@ -435,9 +416,9 @@ onMounted(() => {
 
                             <!-- Section: Errors list -->
                             <div v-if="proxyItem.errors?.length">
-                                <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">*{{
-                                    error
-                                    }}</p>
+                                <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">
+                                    *{{ error }}
+                                </p>
                             </div>
                         </div>
                     </div>
