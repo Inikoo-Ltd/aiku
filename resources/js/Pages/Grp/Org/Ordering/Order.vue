@@ -84,6 +84,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
 
 library.add(faParachuteBox, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
@@ -627,35 +628,7 @@ const copyToClipboard = async (text: string, label: string) => {
     }
 }
 
-const isLoadingPayWithBalance = ref(false)
-const onPayWithBalance = () => {
-    // Section: Submit
-    router.post(
-        route('grp.models.order.pay_order_with_balance', { order: props.data?.data.id }),
-        {
-            data: 'qqq'
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                isLoadingPayWithBalance.value = true
-            },
-            onSuccess: () => {
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to pay order with customer balance"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingPayWithBalance.value = false
-            },
-        }
-    )
-}
+
 </script>
 
 <template>
@@ -1042,51 +1015,89 @@ const onPayWithBalance = () => {
                                 class="text-gray-500" />
                         </dt>
 
-                        <div v-if="box_stats.products.payment.pay_status != 'no_need'" class="">
+                        <div v-if="box_stats.products.payment.pay_status != 'no_need'" class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
                             
 
-                            <div class="w-fit flex xgap-x-2 border rounded isolate">
-                                <NeedToPay :totalAmount="box_stats.products.payment.total_amount"
+                            <div class="w-full flex xgap-x-2 border rounded isolate">
+                                <NeedToPayV2 :totalAmount="box_stats.products.payment.total_amount"
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
                                     xclass="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                                    class="border-0 border-r pr-2"
-                                    :currencyCode="currency.code">
+                                    cclass="border-0 border-r pr-2"
+                                    :balance="box_stats?.customer?.balance"
+                                    :currencyCode="currency.code"
+                                    :toBePaidBy="data?.data?.to_be_paid_by"
+                                    :order="data?.data"
+                                >
                                     <template #default>
-                                        <!-- Pay: Invoice -->
-                                        <div v-if="box_stats.products.payment.pay_amount > 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
-                                            class="pt-1 border-t border-green-300 text-xxs">
-                                            <Button @click.prevent="() => onClickPayInvoice()" :label="trans('Pay')"
-                                                type="secondary" size="xxs" />
-                                        </div>
+                                        
                                         <!-- Pay: Refund -->
                                         <div v-if="box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
                                             class="pt-1 border-t border-green-300 text-xxs">
                                             <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
                                                 type="secondary" size="xxs" />
                                         </div>
+                                        
+
+                                        
+                                        <div v-if="Number(box_stats.products.payment.pay_amount) > 0" class="mt-2 pt-2 border-t border-gray-300 text-xxs">
+                                            <div v-if="data?.data?.to_be_paid_by?.value" class="flex">
+                                                <Button
+                                                    
+                                                    :label="trans('Pay with :lastPayMethod', { lastPayMethod: data?.data?.to_be_paid_by?.label})"
+                                                    type="secondary"
+                                                    size="xs"
+                                                    full
+                                                    class="rounded-r-none !border-r-0"
+                                                />
+                                                <Button
+                                                    icon="far fa-ellipsis-v"
+                                                    @click.prevent="() => onClickPayInvoice()"
+                                                    type="secondary"
+                                                    size="xs"
+                                                    class="rounded-l-none"
+                                                />
+                                            </div>
+
+                                            <Button
+                                                v-else
+                                                full
+                                                @click.prevent="() => onClickPayInvoice()"
+                                                type="secondary"
+                                                :label="trans('Pay with payment method')"
+                                                size="xs"
+                                                class="rounded-l-none"
+                                            />
+                                        </div>
+
                                         <!-- Pay: excesses balance -->
                                         <div v-if="box_stats.products.excesses_payment?.amount > 0"
-                                            class="pt-1 border-t border-green-300 text-xxs">
-                                            <p class="text-gray-500 mb-1 mt-2">
-                                                {{ trans("The order is overpaid") }}:
-                                                <span class="text-gray-700">
-                                                    {{
-                                                    locale.currencyFormat(currency.code,
-                                                    Number(box_stats.products.excesses_payment?.amount))
-                                                    }}
+                                            class="mt-2 pt-2 border-t-2 border-yellow-500 text-xs">
+                                            <p class="text-yellow-600 mb-1 flex justify-between">
+                                                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
+                                                <span class="">
+                                                    {{ trans("The order is overpaid") }}:
+                                                    <strong>{{ locale.currencyFormat(currency.code, Number(box_stats.products.excesses_payment?.amount)) }}</strong>
                                                 </span>
+                                                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
                                             </p>
+
                                             <ButtonWithLink
                                                 v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
                                                 :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
-                                                icon="far fa-plus" label="Add to customer balance" size="xxs" />
+                                                icon="far fa-plus"
+                                                :label="trans('Add :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
+                                                size="xs"
+                                                type="secondary"
+                                                full
+                                            />
                                         </div>
+                                        
                                     </template>
-                                </NeedToPay>
+                                </NeedToPayV2>
 
-                                <div v-if="
+                                <!-- <div v-if="
                                     box_stats.products.payment.pay_amount > 0
                                     && box_stats.products.payment.pay_amount <= box_stats?.customer?.balance
                                     && props.data?.data?.state === 'submitted'
@@ -1103,7 +1114,7 @@ const onPayWithBalance = () => {
                                     <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
                                         <LoadingIcon />
                                     </div>
-                                </div>
+                                </div> -->
                             </div>
 
                             
