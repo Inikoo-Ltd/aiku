@@ -38,6 +38,8 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
         }
         $outbox = $dispatchedEmail->outbox;
 
+        $order->dispatchedEmails()->attach($dispatchedEmail, ['outbox_id' => $outbox->id]);
+
         $orderUrl   = $this->getOrderLink($order);
         $invoiceUrl = $this->getInvoiceLink($order->invoices()->first() ?? null);
 
