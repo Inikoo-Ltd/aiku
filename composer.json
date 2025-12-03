@@ -110,6 +110,7 @@
     "barryvdh/laravel-ide-helper": "^3.6",
     "deployer/deployer": "^7.3",
     "fakerphp/faker": "^1.9.1",
+    "laravel/boost": "^1.8",
     "laravel/breeze": "^2",
     "laravel/envoy": "^2.8",
     "laravel/pint": "^1.0",

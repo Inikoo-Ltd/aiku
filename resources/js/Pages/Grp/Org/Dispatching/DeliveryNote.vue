@@ -438,15 +438,27 @@ onMounted(() => {
     </div>
 
 
-    <BoxStatsDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes :deliveryNote="delivery_note"
-        :updateRoute="routes.update" :shipments />
+    <BoxStatsDeliveryNote
+        v-if="box_stats && pickingView"
+        :boxStats="box_stats"
+        :routes
+        :deliveryNote="delivery_note"
+        :updateRoute="routes.update"
+        :shipments
+    />
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
     <div class="pb-12">
-        <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
-            :state="delivery_note.state" @update:quantity-to-resend="handleQuantityToResendUpdate"
-            @validation-error="handleValidationError" />
+        <component
+            :is="component"
+            :data="props[currentTab as keyof typeof props]"
+            :tab="currentTab"
+            :routes
+            :state="delivery_note.state"
+            @update:quantity-to-resend="handleQuantityToResendUpdate"
+            @validation-error="handleValidationError"
+        />
     </div>
 
     <!-- Modal: Select picker -->

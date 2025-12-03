@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\ShopifyUser;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\DeleteFulfilmentService;
 use App\Actions\Dropshipping\Shopify\Webhook\DeleteWebhooksFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -29,6 +30,10 @@ class DeleteShopifyUser extends OrgAction
         }
 
         DeleteWebhooksFromShopify::run($shopifyUser);
+
+        if ($shopifyUser->customerSalesChannel) {
+            DeleteFulfilmentService::run($shopifyUser->customerSalesChannel);
+        }
 
         $data = $shopifyUser->data;
 

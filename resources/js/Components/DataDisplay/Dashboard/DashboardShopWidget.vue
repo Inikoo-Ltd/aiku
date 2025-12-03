@@ -1,45 +1,52 @@
 <script setup lang="ts">
-    import { inject } from "vue";
-    import { trans } from "laravel-vue-i18n";
-    import ShopSales from "@/Components/Shop/ShopSales.vue";
-    import ShopInvoices from "@/Components/Shop/ShopInvoices.vue";
-    import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
+import { inject } from "vue";
+import { trans } from "laravel-vue-i18n";
+import ShopSales from "@/Components/Shop/ShopSales.vue";
+import ShopInvoices from "@/Components/Shop/ShopInvoices.vue";
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 
-    const props = defineProps<{
-        interval: string
-        data: any
-    }>()
+const props = defineProps<{
+    interval: string
+    data: any
+}>()
 
-    const locale = inject('locale', aikuLocaleStructure);
+const locale = inject('locale', aikuLocaleStructure);
 
-    const getAverageOrderValue = () => {
-        const sales = props.data.interval_data.sales_org_currency?.[props.interval]?.raw_value;
-        const orders = props.data.interval_data.orders?.[props.interval]?.raw_value;
+const getAverageOrderValue = () => {
+    const sales = props.data.interval_data.sales_org_currency?.[props.interval]?.raw_value;
+    const orders = props.data.interval_data.orders?.[props.interval]?.raw_value;
 
-        if (!sales || !orders || orders === 0) return null;
+    if (!sales || !orders || orders === 0) return null;
 
-        return locale.currencyFormat(props.data.currency_code, sales / orders);
+    return locale.currencyFormat(props.data.currency_code, sales / orders);
+}
+
+const getConversionRate = () => {
+    const invoices = props.data.interval_data.invoices?.[props.interval]?.raw_value;
+    const visitors = props.data.interval_data.visitors?.[props.interval]?.raw_value;
+
+    if (!invoices || !visitors || visitors === 0) return null;
+
+    const rate = (invoices / visitors) * 100;
+
+    if (rate > 100 || isNaN(rate) || !isFinite(rate)) {
+        console.error('Invalid conversion rate:', { invoices, visitors, rate });
+        return null;
     }
 
-    const getConversionRate = () => {
-        const orders = props.data.interval_data.orders?.[props.interval]?.raw_value;
-        const visitors = props.data.interval_data.visitors?.[props.interval]?.raw_value;
+    return rate;
+}
 
-        if (!orders || !visitors || visitors === 0) return null;
+const getYoYComparison = (metric: string) => {
+    const delta = props.data.interval_data[`${metric}_delta`]?.[props.interval];
+    if (!delta || delta.raw_value === 9999999) return null;
 
-        return (orders / visitors) * 100;
-    }
-
-    const getYoYComparison = (metric: string) => {
-        const delta = props.data.interval_data[`${metric}_delta`]?.[props.interval];
-        if (!delta || delta.raw_value === 9999999) return null;
-
-        return {
-            value: delta.formatted_value,
-            isPositive: delta.raw_value > 1,
-            isNegative: delta.raw_value < 1
-        };
-    }
+    return {
+        value: delta.formatted_value,
+        isPositive: delta.raw_value > 1,
+        isNegative: delta.raw_value < 1
+    };
+}
 </script>
 
 <template>
@@ -84,7 +91,7 @@
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">{{ trans('Conversion Rate') }}</p>
                 <span class="text-2xl font-bold">{{ getConversionRate().toFixed(2) }}%</span>
-                <p class="text-xs text-gray-500 mt-1">{{ trans('Orders ÷ Total visits') }}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ trans('Invoiced orders ÷ Total visits') }}</p>
             </div>
         </div>
     </div>

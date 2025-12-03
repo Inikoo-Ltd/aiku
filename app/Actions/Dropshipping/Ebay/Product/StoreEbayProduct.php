@@ -151,6 +151,15 @@ class StoreEbayProduct extends RetinaAction
                 $aspects['aspects'] = $productAttributes;
             }
 
+            $height = Arr::get($product->marketing_dimensions, 'h');
+            $h = in_array($height, [null, 0]) ? 0.5 : $height;
+
+            $length = Arr::get($product->marketing_dimensions, 'l');
+            $l = in_array($length, [null, 0]) ? 0.5 : $length;
+
+            $width = Arr::get($product->marketing_dimensions, 'w');
+            $w = in_array($width, [null, 0]) ? 0.5 : $width;
+
             $inventoryItem = [
                 'sku' => $portfolio->sku,
                 'availability' => [
@@ -165,6 +174,18 @@ class StoreEbayProduct extends RetinaAction
                     ]
                 ],
                 'condition' => 'NEW',
+                'packageWeightAndSize' => [
+                    'dimensions' => [
+                        'height' => $h,
+                        'length' => $l,
+                        'unit' => 'CENTIMETER',
+                        'width' => $w,
+                    ],
+                    'weight' => [
+                        'unit' => 'KILOGRAM',
+                        'value' => (in_array($product->marketing_weight, [null, 0]) ? 100 : $product->marketing_weight) / 1000
+                    ]
+                ],
                 'product' => [
                     'title' => mb_substr($portfolio->customer_product_name, 0, 80),
                     'description' => $descriptions,

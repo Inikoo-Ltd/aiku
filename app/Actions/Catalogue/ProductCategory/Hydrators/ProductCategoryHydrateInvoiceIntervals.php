@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\ProductCategory\Hydrators;
 use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\ProductCategory;
 use DB;
@@ -23,27 +24,30 @@ class ProductCategoryHydrateInvoiceIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
     use WithIntervalsAggregators;
 
-    public function getJobUniqueId(ProductCategory $productCategory, ?array $intervals = null, ?array $doPreviousPeriods = null): string
+    public function getJobUniqueId(int $productCategoryId, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        return $this->getUniqueJobWithIntervalFromId($productCategory->id, $intervals, $doPreviousPeriods);
+        return $this->getUniqueJobWithIntervalFromId($productCategoryId, $intervals, $doPreviousPeriods);
     }
 
-    public function handle(ProductCategory $productCategory, ?array $intervals = null, ?array $doPreviousPeriods = null): void
+    public function handle(int $productCategoryId, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
+        $productCategory = ProductCategory::find($productCategoryId);
+
+        if (!$productCategory) {
+            return;
+        }
+
         $stats = [];
 
-        $invoiceIdsQuery = DB::table('invoice_transactions as it')
-            ->join('transactions as t', 'it.transaction_id', '=', 't.id')
-            ->join('products as p', function ($join) {
-                $join->on('t.model_id', '=', 'p.id')
-                    ->where('t.model_type', '=', 'Product');
-            })
-            ->where(function ($q) use ($productCategory) {
-                $q->where('p.family_id', $productCategory->id)
-                    ->orWhere('p.sub_department_id', $productCategory->id)
-                    ->orWhere('p.department_id', $productCategory->id);
-            })
-            ->select('it.invoice_id')
+        $fieldName = match ($productCategory->type) {
+            ProductCategoryTypeEnum::DEPARTMENT => 'department_id',
+            ProductCategoryTypeEnum::FAMILY => 'family_id',
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => 'sub_department_id',
+        };
+
+        $invoiceIdsQuery = DB::table('invoice_transactions')
+            ->where($fieldName, $productCategory->id)
+            ->select('invoice_id')
             ->distinct();
 
         $queryBaseInvoice = Invoice::query()
