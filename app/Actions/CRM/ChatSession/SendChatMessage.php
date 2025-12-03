@@ -7,16 +7,13 @@ use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
-
 use Illuminate\Http\JsonResponse;
-
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatMessage;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
-use App\Actions\CRM\ChatSession\StoreChatEvent;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 
 class SendChatMessage
