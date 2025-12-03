@@ -26,6 +26,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Comms\Outbox\ReorderRemainder\UI\IndexReorderEmailBulkRuns;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Mail\ReorderRemainderEmailBulkRunsResource;
 
 /**
@@ -119,6 +120,10 @@ class ShowOutbox extends OrgAction
         $navigation = OutboxTabsEnum::navigation();
         if (!$outbox->model_type != 'Mailshot') {
             unset($navigation[OutboxTabsEnum::MAILSHOTS->value]);
+        }
+
+        if($outbox->code !== OutboxCodeEnum::REORDER_REMINDER){
+            unset($navigation[OutboxTabsEnum::EMAIL_RUNS->value]);
         }
 
 
