@@ -15,6 +15,7 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 trait WithEbayApiRequest
 {
@@ -223,8 +224,13 @@ trait WithEbayApiRequest
         }
 
         // Use this as default value and always included
-        $attributes['Country/Region of Manufacture'] = [$product->country_of_origin];
-        $attributes['Material'] = [$product->marketing_ingredients];
+        if ($product->country_of_origin) {
+            $attributes['Country/Region of Manufacture'] = [$product->country_of_origin];
+        }
+
+        if ($product->marketing_ingredients) {
+            $attributes['Material'] = [Str::substr($product->marketing_ingredients, 0, 60)];
+        }
 
         return $attributes;
     }
