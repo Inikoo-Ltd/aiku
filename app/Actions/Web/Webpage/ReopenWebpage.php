@@ -25,12 +25,11 @@ class ReopenWebpage extends OrgAction
     {
         $webpage->update(
             [
+                'redirect_webpage_id' => null,
                 'state' => WebpageStateEnum::LIVE,
             ]
         );
 
-
-        $webpage->redirectedTo->delete();
 
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);

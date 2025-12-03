@@ -148,7 +148,7 @@ onMounted(() => {
 
 <template>
     <div class="relative px-1 md:px-4 md:mt-4">
-        <div class="mb-2 flex flex-col sm:flex-row justify-between gap-2">
+        <div class="mb-2 flex justify-between gap-2">
             <!-- Section: Period options list with overflow indicators -->
             <div class="relative flex-1 min-w-0">
                 <!-- Left overflow indicator -->
@@ -178,8 +178,7 @@ onMounted(() => {
                     @scroll="checkOverflow"
                     class="isolate rounded border py-1 px-1 sm:px-2 flex gap-1 items-center w-full overflow-x-scroll scrollbar-hide"
                     aria-label="Tabs">
-                    <!-- FIX: Changed to proper conditional check -->
-                    <div v-if="layout.currentRoute === 'grp.dashboard.show'">
+                    <div v-if="(layout.currentRoute === 'grp.dashboard.show') || (layout.currentRoute === 'grp.org.dashboard.show')">
                         <DashboardCustomDateRange :intervals="intervals" />
                     </div>
 
@@ -193,7 +192,7 @@ onMounted(() => {
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
                         ]"
                         v-tooltip="interval.label"
-                        class="relative flex-shrink-0 rounded py-1 md:py-1.5 px-2 sm:px-3 md:px-4 text-center text-xs sm:text-sm cursor-pointer select-none whitespace-nowrap">
+                        class="relative flex-grow flex-shrink-0 rounded py-1 md:py-1.5 px-2 sm:px-3 md:px-4 text-center text-xs sm:text-sm cursor-pointer select-none whitespace-nowrap">
                         <span :class="isLoadingInterval === interval.value ? 'opacity-0' : ''">
                             {{ interval.label }}
                         </span>

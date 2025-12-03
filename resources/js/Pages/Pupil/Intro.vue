@@ -47,8 +47,8 @@ const onClickGetStarted = (domain: string) => {
         </h2>
 
         <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-500">
-            Welcome! We're excited to help you. <br> You need to create account from our website shop first
-            <br>  Please select one of our available shops below to begin using our services.
+            {{ trans('Welcome! We\'re excited to help you.') }} <br> {{ trans('You need to create account from our website shop first') }}
+            <br>  {{ trans('Please select one of our available shops below to begin using our services.') }}
         </p>
 
         <div class="mt-10 flex items-center justify-center gap-x-6">
