@@ -99,7 +99,7 @@ class EditProfileSettings
                             ],
                         ],
                     ],
-                    app()->environment('local') ? [  // TODO
+                    app()->environment('local') ? [
                         "label"  => __("Timezone"),
                         "icon"   => "fal fa-sliders-v",
                         "fields" => [
@@ -110,8 +110,7 @@ class EditProfileSettings
                                 "options"   => [],
                                 "mode"      => "multiple",
                                 "fetchRoute"    => [
-                                    "name"       => "grp.masters.master_shops.show.master_departments.index",
-                                    "parameters" => ["awd"]
+                                    "name"       => "grp.json.timezones",
                                 ],
                                 "valueProp" => "id",
                                 "labelProp" => "code",
