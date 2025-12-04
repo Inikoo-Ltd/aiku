@@ -12,12 +12,15 @@ use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
+use App\Actions\Web\UpdateWebBlockToWebsiteAndChild;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Website;
+use App\Models\Web\WebBlockType;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Facades\Log;
 
 class PublishWebsiteMarginal extends OrgAction
 {
@@ -99,7 +102,13 @@ class PublishWebsiteMarginal extends OrgAction
             ];
         }
 
+        $oldWebBlock = WebBlockType::find(data_get($website->published_layout, $marginal.'.id'));
         $website->update($updateData);
+
+        if(in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])){
+            // Update webpage, web_blocks & their snapshots (unpublished/published)
+            UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find($layout['id']), $website, $marginal);
+        }
 
         BreakWebsiteCache::run($website);
 
@@ -118,7 +127,7 @@ class PublishWebsiteMarginal extends OrgAction
             'comment'        => ['sometimes', 'required', 'string', 'max:1024'],
             'publisher_id'   => ['sometimes'],
             'publisher_type' => ['sometimes', 'string'],
-            'layout'         => ['sometimes']
+            'layout'         => ['sometimes', 'array']
         ];
     }
 
