@@ -84,6 +84,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
 
 library.add(faParachuteBox, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
@@ -380,8 +381,12 @@ const openModal = (action: any) => {
     isModalProductListOpen.value = true
 }
 
-function onClickPayInvoice() {
-
+const onClickPayInvoice = (idSelectedPayment?: number) => {
+    if (idSelectedPayment) {
+        paymentData.value.payment_method = Number(idSelectedPayment)
+    } else {
+        paymentData.value.payment_method = null
+    }
     isOpenModalPayment.value = true
     fetchPaymentMethod()
 }
@@ -389,8 +394,6 @@ function onClickPayInvoice() {
 const isOpenModalRefund = ref(false)
 
 function onClickPayRefund() {
-
-
     isOpenModalRefund.value = true
     fetchPaymentMethod()
 }
@@ -627,35 +630,17 @@ const copyToClipboard = async (text: string, label: string) => {
     }
 }
 
-const isLoadingPayWithBalance = ref(false)
-const onPayWithBalance = () => {
-    // Section: Submit
-    router.post(
-        route('grp.models.order.pay_order_with_balance', { order: props.data?.data.id }),
-        {
-            data: 'qqq'
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                isLoadingPayWithBalance.value = true
-            },
-            onSuccess: () => {
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to pay order with customer balance"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingPayWithBalance.value = false
-            },
-        }
-    )
+
+const labelToBePaid = (toBePaidValue: string) => {
+    if (toBePaidValue.toLowerCase() === 'cash_on_delivery') {
+        return 'COD'
+    }
+
+    if (toBePaidValue.toLowerCase() === 'bank_transfer') {
+        return 'Bank Transfer'
+    }
 }
+
 </script>
 
 <template>
@@ -1034,59 +1019,43 @@ const onPayWithBalance = () => {
         <!-- Box: Payment/Invoices/Delivery Notes  -->
         <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
-                <div class=" pl-1">
+                <div class="">
+                    
                     <!-- Field: Billing -->
-                    <dl class="relative flex items-start w-full flex-none gap-x-1 py-1">
-                        <dt class="flex-none pt-0.5 pl-1">
+                    <dl class="xmt-3 relative flex items-start w-full flex-none gap-x-1 py-1">
+                        <!-- <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
-                        </dt>
+                        </dt> -->
 
-                        <div v-if="box_stats.products.payment.pay_status != 'no_need'" class="">
+                        <div v-if="box_stats.products.payment.pay_status != 'no_need'" class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
-                            
-
-                            <div class="w-fit flex xgap-x-2 border rounded isolate">
-                                <NeedToPay :totalAmount="box_stats.products.payment.total_amount"
+                            <div class="w-full xflex xgap-x-2 xborder rounded-md shadow pxb-2 isolate border"
+                                :class="[
+                                    Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
+                                ]"
+                            >
+                                <NeedToPayV2
+                                    :totalAmount="box_stats.products.payment.total_amount"
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
-                                    xclass="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                                    class="border-0 border-r pr-2"
-                                    :currencyCode="currency.code">
+                                    :balance="box_stats?.customer?.balance"
+                                    :payments="box_stats?.payments"
+                                    :currencyCode="currency.code"
+                                    :toBePaidBy="data?.data?.to_be_paid_by"
+                                    :order="data?.data"
+                                    :handleTabUpdate="handleTabUpdate"
+                                >
                                     <template #default>
-                                        <!-- Pay: Invoice -->
-                                        <div v-if="box_stats.products.payment.pay_amount > 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
-                                            class="pt-1 border-t border-green-300 text-xxs">
-                                            <Button @click.prevent="() => onClickPayInvoice()" :label="trans('Pay')"
-                                                type="secondary" size="xxs" />
-                                        </div>
-                                        <!-- Pay: Refund -->
-                                        <div v-if="box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
-                                            class="pt-1 border-t border-green-300 text-xxs">
-                                            <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
-                                                type="secondary" size="xxs" />
-                                        </div>
-                                        <!-- Pay: excesses balance -->
-                                        <div v-if="box_stats.products.excesses_payment?.amount > 0"
-                                            class="pt-1 border-t border-green-300 text-xxs">
-                                            <p class="text-gray-500 mb-1 mt-2">
-                                                {{ trans("The order is overpaid") }}:
-                                                <span class="text-gray-700">
-                                                    {{
-                                                    locale.currencyFormat(currency.code,
-                                                    Number(box_stats.products.excesses_payment?.amount))
-                                                    }}
-                                                </span>
-                                            </p>
-                                            <ButtonWithLink
-                                                v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
-                                                :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
-                                                icon="far fa-plus" label="Add to customer balance" size="xxs" />
-                                        </div>
+                                        
+                                        
+                                        
                                     </template>
-                                </NeedToPay>
+                                </NeedToPayV2>
 
-                                <div v-if="
+                                
+
+                                <!-- <div v-if="
                                     box_stats.products.payment.pay_amount > 0
                                     && box_stats.products.payment.pay_amount <= box_stats?.customer?.balance
                                     && props.data?.data?.state === 'submitted'
@@ -1103,19 +1072,79 @@ const onPayWithBalance = () => {
                                     <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
                                         <LoadingIcon />
                                     </div>
+                                </div> -->
+
+                                <!-- Pay: Refund -->
+                                <div v-if="false && box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
+                                    class="pt-1 border-t border-green-300 text-xxs">
+                                    <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
+                                        type="secondary" size="xxs" />
+                                </div>
+                                
+                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0" class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
+                                    <div v-if="data?.data?.to_be_paid_by?.value" class="mx-auto w-fit flex items-center">
+                                        <Button
+                                            @click.prevent="() => onClickPayInvoice(data?.data?.to_be_paid_by?.id)"
+                                            xtype="secondary"
+                                            :label="trans('Mark :toBePaidBy as received', { toBePaidBy: labelToBePaid(data?.data?.to_be_paid_by?.value) })"
+                                            size="sm"
+                                            class="rounded-r-none !border-r-0"
+                                        />
+                                        <Button
+                                            @click.prevent="() => onClickPayInvoice()"
+                                            xtype="secondary"
+                                            icon="far fa-ellipsis-v"
+                                            xlabel="trans('Pay with other')"
+                                            size="sm"
+                                            class="rounded-l-none !border-l-0"
+                                        />
+                                    </div>
+                                    <div v-else class="mx-auto w-fit flex items-center">
+                                        <Button
+                                            @click.prevent="() => onClickPayInvoice()"
+                                            xtype="secondary"
+                                            xicon="far fa-ellipsis-v"
+                                            :label="trans('Pay with other')"
+                                            size="sm"
+                                            xclass="rounded-l-none !border-l-0"
+                                        />
+                                    </div>
+                                </div>
+    
+                                <!-- Pay: excesses balance -->
+                                <div v-if="box_stats.products.excesses_payment?.amount > 0"
+                                    class="mt-2 pt-2 border-t-2 border-yellow-500 text-xs">
+                                    <p class="text-yellow-600 mb-1 flex justify-between">
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
+                                        <span class="">
+                                            {{ trans("The order is overpaid") }}:
+                                            <strong>{{ locale.currencyFormat(currency.code, Number(box_stats.products.excesses_payment?.amount)) }}</strong>
+                                        </span>
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
+                                    </p>
+    
+                                    <ButtonWithLink
+                                        v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
+                                        :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
+                                        xicon="far fa-plus"
+                                        :label="trans('Move :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
+                                        size="xs"
+                                        type="primary"
+                                        full
+                                    />
                                 </div>
                             </div>
 
                             
                             
-                            <div v-if="last_payment" class="mt-1.5 text-xs text-gray-500">
+                            <!-- <div v-if="last_payment" class="mt-1.5 text-xs text-gray-500">
                                 {{ trans("Last payments:") }}
                                 <Link :href="route('grp.org.accounting.payments.show', {
                                     organisation: route().params.organisation,
                                     payment: last_payment?.id
                                 })" class="secondaryLink">{{ last_payment?.reference ?? last_payment?.id }}
                                 </Link>
-                            </div>
+                            </div> -->
                         </div>
                         
                         <div v-else class="text-gray-500">
@@ -1125,61 +1154,10 @@ const onPayWithBalance = () => {
                         </div>
                     </dl>
 
-                    <!-- Field: weight -->
-                    <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                        <dt v-tooltip="trans('Weight')" class="flex-none pl-1">
-                            <FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true"
-                                class="text-gray-500" />
-                        </dt>
-                        <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
-                            {{ box_stats?.products.estimated_weight || 0 }} kilograms
-                        </dd>
-                    </dl>
-
-                    <!-- Field: number of order -->
-                    <!-- <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                        <dt zv-tooltip="trans('Weight')" class="flex-none pl-1">
-                            <FontAwesomeIcon icon="fal fa-sort-numeric-down" fixed-width aria-hidden="true" class="text-gray-500" />
-                        </dt>
-                        <dd class="text-gray-500" v-tooltip="box_stats?.order_properties?.customer_order_ordinal_tooltip ?? trans('Customer order number')">
-                            {{ box_stats?.order_properties?.customer_order_ordinal || 0 }}
-                        </dd>
-                    </dl> -->
-
-
-                    <!-- Field: Invoices -->
-                    <div v-if="props.box_stats?.invoices?.length"
-                        class="pl-1 mt-1 flex items-start w-full flex-none justify-between gap-x-1">
-                        <div v-tooltip="trans('Invoices')" class="flex-none mt-1">
-                            <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true"
-                                class="text-gray-500" />
-                        </div>
-
-                        <ul class="w-full list-inside list-disc">
-                            <li v-for="(invoice, index) in box_stats?.invoices" :key="index"
-                                class="flex justify-between">
-                                <div class="flex items-center gap-3 gap-x-1.5  cursor-pointer">
-                                    <Link :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
-                                        class="text-gray-500 secondaryLink" v-tooltip="trans('Invoice')">
-                                    {{ invoice?.reference }}
-                                    </Link>
-                                </div>
-
-                                <a v-if="invoice?.routes?.download?.name"
-                                    :href="route(invoice?.routes?.download?.name, invoice?.routes?.download.parameters)"
-                                    as="a" target="_blank"
-                                    class="flex items-center text-gray-400 hover:text-orange-600">
-                                    <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-
-
-
-
+                    
+                    <!-- Section: Delivery Notes -->
                     <div v-if="box_stats?.delivery_notes?.length"
-                        class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
+                        class="mt-4 border rounded-lg p-4 xpt-3 bg-white shadow-sm">
                         <!-- Section Title -->
                         <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                             <div class="text-sm font-semibold text-gray-800">
@@ -1236,18 +1214,78 @@ const onPayWithBalance = () => {
                             </div>-->
                         </div>
                     </div>
+
+                    
+
+                    <!-- Field: number of order -->
+                    <!-- <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+                        <dt zv-tooltip="trans('Weight')" class="flex-none pl-1">
+                            <FontAwesomeIcon icon="fal fa-sort-numeric-down" fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500" v-tooltip="box_stats?.order_properties?.customer_order_ordinal_tooltip ?? trans('Customer order number')">
+                            {{ box_stats?.order_properties?.customer_order_ordinal || 0 }}
+                        </dd>
+                    </dl> -->
+
+
+                    <!-- Field: Invoices -->
+                    <div v-if="props.box_stats?.invoices?.length"
+                        class="pl-1 mt-1 flex items-start w-full flex-none justify-between gap-x-1">
+                        <div v-tooltip="trans('Invoices')" class="flex-none mt-1">
+                            <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true"
+                                class="text-gray-500" />
+                        </div>
+
+                        <ul class="w-full list-inside list-disc">
+                            <li v-for="(invoice, index) in box_stats?.invoices" :key="index"
+                                class="flex justify-between">
+                                <div class="flex items-center gap-3 gap-x-1.5  cursor-pointer">
+                                    <Link :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
+                                        class="text-gray-500 secondaryLink" v-tooltip="trans('Invoice')">
+                                    {{ invoice?.reference }}
+                                    </Link>
+                                </div>
+
+                                <a v-if="invoice?.routes?.download?.name"
+                                    :href="route(invoice?.routes?.download?.name, invoice?.routes?.download.parameters)"
+                                    as="a" target="_blank"
+                                    class="flex items-center text-gray-400 hover:text-orange-600">
+                                    <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+
+
+
+                    
                 </div>
             </div>
         </BoxStatPallet>
 
         <!-- Box: Order summary -->
-        <BoxStatPallet class="py-4 border-t lg:border-t-0 border-gray-300">
+        <BoxStatPallet class="pb-4 border-t lg:border-t-0 border-gray-300">
             <div class="text-xs md:text-sm">
-                <div class="px-3 font-semibold xmb-2 text-base">
+                <!-- <div class="px-3 font-semibold xmb-2 text-base">
                     {{ trans("Summary") }}
-                </div>
+                </div> -->
 
-                <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
+                
+                <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-4 lg:mt-0">
+                    <div class="border-b border-gray-300 mb-2 pb-2">
+                        <!-- Field: weight -->
+                        <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+                            <dt v-tooltip="trans('Weight')" class="flex-none">
+                                <FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true"
+                                    class="text-gray-500" />
+                            </dt>
+                            <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
+                                {{ box_stats?.products.estimated_weight || 0 }} kilograms
+                            </dd>
+                        </dl>
+                    </div>
+
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code" />
                 </section>
             </div>
@@ -1327,7 +1365,7 @@ const onPayWithBalance = () => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to pay")
                             }}: {{
-                            locale.currencyFormat(box_stats.currency.code,
+                            locale.currencyFormat(currency.code,
                             box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
@@ -1388,7 +1426,7 @@ const onPayWithBalance = () => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to refund")
                             }}: {{
-                            locale.currencyFormat(box_stats.currency.code,
+                            locale.currencyFormat(currency.code,
                             box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"

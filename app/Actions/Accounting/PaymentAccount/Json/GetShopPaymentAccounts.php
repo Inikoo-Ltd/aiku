@@ -62,12 +62,7 @@ class GetShopPaymentAccounts extends OrgAction
             ->withQueryString();
     }
 
-    // public function authorize(ActionRequest $request): bool //TODO: raul pls fix
-    // {
-    //     $this->canEdit = $request->user()->authTo("accounting.{$this->organisation->id}.edit");
 
-    //     return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-    // }
 
     public function asController(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
