@@ -18,6 +18,7 @@ use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+
 class OrderResource extends JsonResource
 {
     use IsOrder;
@@ -55,7 +56,7 @@ class OrderResource extends JsonResource
                 ],
                 'estimated_weight' => $estWeight
             ],
-            'is_fully_paid'            => $this->total_amount == $this->payment_amount,
+            'is_fully_paid'            => $order->total_amount == $order->payment_amount,
             'transactions' => TransactionsResource::collection($order->transactions),
         ];
     }
