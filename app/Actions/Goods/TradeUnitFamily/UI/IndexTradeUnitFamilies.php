@@ -62,11 +62,22 @@ class IndexTradeUnitFamilies extends GrpAction
                 'trade_unit_families.name',
                 'trade_unit_families.description',
                 'trade_unit_families.id',
-                'trade_unit_family_stats.number_trade_units'
+                'trade_unit_family_stats.number_trade_units',
+                'trade_unit_family_stats.number_trade_units_status_in_process',
+                'trade_unit_family_stats.number_trade_units_status_active',
+                'trade_unit_family_stats.number_trade_units_status_discontinued',
+                'trade_unit_family_stats.number_trade_units_status_anomality'
             ]);
 
 
-        return $queryBuilder->allowedSorts(['code', 'name'])
+        return $queryBuilder->allowedSorts([
+            'code',
+            'name',
+            'number_trade_units_status_in_process',
+            'number_trade_units_status_active',
+            'number_trade_units_status_discontinued',
+            'number_trade_units_status_anomality'
+        ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -94,7 +105,10 @@ class IndexTradeUnitFamilies extends GrpAction
                     }
                 )
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_trade_units_status_active', label: __('Active'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_trade_units_status_discontinued', label: __('Discontinued'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_trade_units_status_anomality', label: __('Anomality'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -106,18 +120,19 @@ class IndexTradeUnitFamilies extends GrpAction
 
     public function htmlResponse(LengthAwarePaginator $tradeUnitFamilies, ActionRequest $request): Response
     {
-        $actions = [];
+        $actions   = [];
         $actions[] = [
-                    'type'    => 'button',
-                    'style'   => 'create',
-                    'tooltip' => __('New trade unit family'),
-                    'label'   => __('Trade unit family'),
-                    'route'   => [
-                        'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
-                        'parameters' => []
-                    ],
-                    'method' => 'get'
-                ];
+            'type'    => 'button',
+            'style'   => 'create',
+            'tooltip' => __('New trade unit family'),
+            'label'   => __('Trade unit family'),
+            'route'   => [
+                'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
+                'parameters' => []
+            ],
+            'method'  => 'get'
+        ];
+
         return Inertia::render(
             'Goods/TradeUnitsFamilies',
             [
@@ -127,9 +142,9 @@ class IndexTradeUnitFamilies extends GrpAction
                 ),
                 'title'       => __('Trade Unit Families'),
                 'pageHead'    => [
-                    'title'         => __('Trade Unit Families'),
-                     'actions'       => $actions,
-                    'iconRight'     => [
+                    'title'     => __('Trade Unit Families'),
+                    'actions'   => $actions,
+                    'iconRight' => [
                         'icon'  => ['fal', 'fa-atom-alt'],
                         'title' => __('Trade Unit Families'),
                     ],
