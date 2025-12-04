@@ -57,6 +57,9 @@ export const layoutStructure = {
         id: number,
         email: string,
         username: string,
+        settings: {
+            timezones: string[]
+        }
     },
     notifications: [] as Notification[],
     avatar_thumbnail: null as Image | null,
