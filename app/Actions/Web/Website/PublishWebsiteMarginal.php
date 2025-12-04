@@ -103,7 +103,6 @@ class PublishWebsiteMarginal extends OrgAction
         }
 
         $website->update($updateData);
-        dd($layout);
 
         if(in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])){
             // Update webpage, web_blocks & their snapshots (unpublished/published)
