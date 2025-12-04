@@ -208,5 +208,9 @@ class Outbox extends Model
     {
         return $this->hasMany(OutBoxHasSubscriber::class);
     }
+    public function setting(): HasOne
+    {
+        return $this->hasOne(OutboxSetting::class);
+    }
 
 }

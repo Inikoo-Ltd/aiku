@@ -29,49 +29,50 @@ class EditOutboxInShop extends OrgAction
     public function handle(Outbox $outbox, ActionRequest $request): Response
     {
 
+        // TODO: Update the time based on timi zone client
         $fields = [];
         if ($outbox->code === OutboxCodeEnum::REORDER_REMINDER) {
             $fields[] = [
                 'title' => '',
                 'fields' => [
-                    'days_after_last_order_dispatched' => [
+                    'days_after' => [
                         'type' => 'input_number',
                         'label' => __('Days after last order dispatched'),
                         'placeholder' => __('Days after last order dispatched'),
                         'required' => false,
                         'value' => '',
                     ],
-                    'time' => [
+                    'send_time' => [
                         'type' => 'select',
-                        'label' => __('Time'),
-                        'placeholder' => __('Time'),
+                        'label' => __('Send Time'),
+                        'placeholder' => __('Send Time'),
                         'options'  => [
-                            ['label' => '12:00 AM', 'value' => '00:00'],
-                            ['label' => '1:00 AM', 'value' => '01:00'],
-                            ['label' => '2:00 AM', 'value' => '02:00'],
-                            ['label' => '3:00 AM', 'value' => '03:00'],
-                            ['label' => '4:00 AM', 'value' => '04:00'],
-                            ['label' => '5:00 AM', 'value' => '05:00'],
-                            ['label' => '6:00 AM', 'value' => '06:00'],
-                            ['label' => '7:00 AM', 'value' => '07:00'],
-                            ['label' => '8:00 AM', 'value' => '08:00'],
-                            ['label' => '9:00 AM', 'value' => '09:00'],
-                            ['label' => '10:00 AM', 'value' => '10:00'],
-                            ['label' => '11:00 AM', 'value' => '11:00'],
-                            ['label' => '12:00 PM', 'value' => '12:00'],
-                            ['label' => '1:00 PM', 'value' => '13:00'],
-                            ['label' => '2:00 PM', 'value' => '14:00'],
-                            ['label' => '3:00 PM', 'value' => '15:00'],
-                            ['label' => '4:00 PM', 'value' => '16:00'],
-                            ['label' => '5:00 PM', 'value' => '17:00'],
-                            ['label' => '6:00 PM', 'value' => '18:00'],
-                            ['label' => '7:00 PM', 'value' => '19:00'],
-                            ['label' => '8:00 PM', 'value' => '20:00'],
-                            ['label' => '9:00 PM', 'value' => '21:00'],
-                            ['label' => '10:00 PM', 'value' => '22:00'],
-                            ['label' => '11:00 PM', 'value' => '23:00'],
+                            ['label' => '12:00 AM UTC', 'value' => '00:00+00:00'],
+                            ['label' => '1:00 AM UTC', 'value' => '01:00+00:00'],
+                            ['label' => '2:00 AM UTC', 'value' => '02:00+00:00'],
+                            ['label' => '3:00 AM UTC', 'value' => '03:00+00:00'],
+                            ['label' => '4:00 AM UTC', 'value' => '04:00+00:00'],
+                            ['label' => '5:00 AM UTC', 'value' => '05:00+00:00'],
+                            ['label' => '6:00 AM UTC', 'value' => '06:00+00:00'],
+                            ['label' => '7:00 AM UTC', 'value' => '07:00+00:00'],
+                            ['label' => '8:00 AM UTC', 'value' => '08:00+00:00'],
+                            ['label' => '9:00 AM UTC', 'value' => '09:00+00:00'],
+                            ['label' => '10:00 AM UTC', 'value' => '10:00+00:00'],
+                            ['label' => '11:00 AM UTC', 'value' => '11:00+00:00'],
+                            ['label' => '12:00 PM UTC', 'value' => '12:00+00:00'],
+                            ['label' => '1:00 PM UTC', 'value' => '13:00+00:00'],
+                            ['label' => '2:00 PM UTC', 'value' => '14:00+00:00'],
+                            ['label' => '3:00 PM UTC', 'value' => '15:00+00:00'],
+                            ['label' => '4:00 PM UTC', 'value' => '16:00+00:00'],
+                            ['label' => '5:00 PM UTC', 'value' => '17:00+00:00'],
+                            ['label' => '6:00 PM UTC', 'value' => '18:00+00:00'],
+                            ['label' => '7:00 PM UTC', 'value' => '19:00+00:00'],
+                            ['label' => '8:00 PM UTC', 'value' => '20:00+00:00'],
+                            ['label' => '9:00 PM UTC', 'value' => '21:00+00:00'],
+                            ['label' => '10:00 PM UTC', 'value' => '22:00+00:00'],
+                            ['label' => '11:00 PM UTC', 'value' => '23:00+00:00'],
                         ],
-                        'value'    => '09:00',
+                        'value'    => '09:00+00:00',
                         'required' => false,
                     ],
                 ]
@@ -125,9 +126,9 @@ class EditOutboxInShop extends OrgAction
                         ],
                     'args' => [
                         'updateRoute' => [
-                            'name' => 'grp.models.fulfilment.outboxes.update',
+                            'name' => 'grp.models.shop.outboxes.update',
                             'parameters' => [
-                                'fulfilment' => $outbox->shop->id,
+                                'shop' => $outbox->shop->id,
                                 'outbox' => $outbox->id
                             ]
                         ],
