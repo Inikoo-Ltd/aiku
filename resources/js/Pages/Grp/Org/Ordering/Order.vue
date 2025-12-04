@@ -631,6 +631,16 @@ const copyToClipboard = async (text: string, label: string) => {
 }
 
 
+const labelToBePaid = (toBePaidValue: string) => {
+    if (toBePaidValue.toLowerCase() === 'cash_on_delivery') {
+        return 'COD'
+    }
+
+    if (toBePaidValue.toLowerCase() === 'bank_transfer') {
+        return 'Bank Transfer'
+    }
+}
+
 </script>
 
 <template>
@@ -1020,8 +1030,13 @@ const copyToClipboard = async (text: string, label: string) => {
 
                         <div v-if="box_stats.products.payment.pay_status != 'no_need'" class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
-                            <div class="w-full flex xgap-x-2 xborder xrounded isolate">
-                                <NeedToPayV2 :totalAmount="box_stats.products.payment.total_amount"
+                            <div class="w-full xflex xgap-x-2 xborder rounded-md shadow pxb-2 isolate border"
+                                :class="[
+                                    Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
+                                ]"
+                            >
+                                <NeedToPayV2
+                                    :totalAmount="box_stats.products.payment.total_amount"
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
                                     :balance="box_stats?.customer?.balance"
@@ -1033,77 +1048,12 @@ const copyToClipboard = async (text: string, label: string) => {
                                 >
                                     <template #default>
                                         
-                                        <!-- Pay: Refund -->
-                                        <div v-if="false && box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
-                                            class="pt-1 border-t border-green-300 text-xxs">
-                                            <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
-                                                type="secondary" size="xxs" />
-                                        </div>
                                         
-                                        <div v-if="Number(box_stats.products.payment.pay_amount) > 0" class="mt-2 pt-2 border-t border-gray-300 text-xxs">
-                                            <div v-if="false && data?.data?.to_be_paid_by?.value" class="flex">
-                                                <Button
-                                                    
-                                                    :label="trans('Pay with :lastPayMethod', { lastPayMethod: data?.data?.to_be_paid_by?.label})"
-                                                    type="secondary"
-                                                    size="xs"
-                                                    full
-                                                    class="rounded-r-none !border-r-0"
-                                                />
-                                                <Button
-                                                    icon="far fa-ellipsis-v"
-                                                    @click.prevent="() => onClickPayInvoice()"
-                                                    type="secondary"
-                                                    size="xs"
-                                                    class="rounded-l-none"
-                                                />
-                                            </div>
-
-                                            <div v-else class="mx-auto w-fit flex items-center">
-                                                <Button
-                                                    v-if="data?.data?.to_be_paid_by?.value"
-                                                    @click.prevent="() => onClickPayInvoice(data?.data?.to_be_paid_by?.id)"
-                                                    xtype="secondary"
-                                                    :label="trans('Pay with :toBePaidBy', { toBePaidBy: data?.data?.to_be_paid_by?.label })"
-                                                    size="sm"
-                                                    class="rounded-r-none !border-r-0"
-                                                />
-                                                <Button
-                                                    @click.prevent="() => onClickPayInvoice()"
-                                                    xtype="secondary"
-                                                    icon="far fa-ellipsis-v"
-                                                    xlabel="trans('Pay with other')"
-                                                    size="sm"
-                                                    class="rounded-l-none !border-l-0"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <!-- Pay: excesses balance -->
-                                        <div v-if="box_stats.products.excesses_payment?.amount > 0"
-                                            class="mt-2 pt-2 border-t-2 border-yellow-500 text-xs">
-                                            <p class="text-yellow-600 mb-1 flex justify-between">
-                                                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
-                                                <span class="">
-                                                    {{ trans("The order is overpaid") }}:
-                                                    <strong>{{ locale.currencyFormat(currency.code, Number(box_stats.products.excesses_payment?.amount)) }}</strong>
-                                                </span>
-                                                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
-                                            </p>
-
-                                            <ButtonWithLink
-                                                v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
-                                                :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
-                                                xicon="far fa-plus"
-                                                :label="trans('Move :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
-                                                size="xs"
-                                                type="primary"
-                                                full
-                                            />
-                                        </div>
                                         
                                     </template>
                                 </NeedToPayV2>
+
+                                
 
                                 <!-- <div v-if="
                                     box_stats.products.payment.pay_amount > 0
@@ -1123,6 +1073,66 @@ const copyToClipboard = async (text: string, label: string) => {
                                         <LoadingIcon />
                                     </div>
                                 </div> -->
+
+                                <!-- Pay: Refund -->
+                                <div v-if="false && box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
+                                    class="pt-1 border-t border-green-300 text-xxs">
+                                    <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
+                                        type="secondary" size="xxs" />
+                                </div>
+                                
+                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0" class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
+                                    <div v-if="data?.data?.to_be_paid_by?.value" class="mx-auto w-fit flex items-center">
+                                        <Button
+                                            @click.prevent="() => onClickPayInvoice(data?.data?.to_be_paid_by?.id)"
+                                            xtype="secondary"
+                                            :label="trans('Mark :toBePaidBy as received', { toBePaidBy: labelToBePaid(data?.data?.to_be_paid_by?.value) })"
+                                            size="sm"
+                                            class="rounded-r-none !border-r-0"
+                                        />
+                                        <Button
+                                            @click.prevent="() => onClickPayInvoice()"
+                                            xtype="secondary"
+                                            icon="far fa-ellipsis-v"
+                                            xlabel="trans('Pay with other')"
+                                            size="sm"
+                                            class="rounded-l-none !border-l-0"
+                                        />
+                                    </div>
+                                    <div v-else class="mx-auto w-fit flex items-center">
+                                        <Button
+                                            @click.prevent="() => onClickPayInvoice()"
+                                            xtype="secondary"
+                                            xicon="far fa-ellipsis-v"
+                                            :label="trans('Pay with other')"
+                                            size="sm"
+                                            xclass="rounded-l-none !border-l-0"
+                                        />
+                                    </div>
+                                </div>
+    
+                                <!-- Pay: excesses balance -->
+                                <div v-if="box_stats.products.excesses_payment?.amount > 0"
+                                    class="mt-2 pt-2 border-t-2 border-yellow-500 text-xs">
+                                    <p class="text-yellow-600 mb-1 flex justify-between">
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
+                                        <span class="">
+                                            {{ trans("The order is overpaid") }}:
+                                            <strong>{{ locale.currencyFormat(currency.code, Number(box_stats.products.excesses_payment?.amount)) }}</strong>
+                                        </span>
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
+                                    </p>
+    
+                                    <ButtonWithLink
+                                        v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
+                                        :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
+                                        xicon="far fa-plus"
+                                        :label="trans('Move :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
+                                        size="xs"
+                                        type="primary"
+                                        full
+                                    />
+                                </div>
                             </div>
 
                             
