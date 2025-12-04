@@ -102,7 +102,6 @@ class PublishWebsiteMarginal extends OrgAction
             ];
         }
 
-        $oldWebBlock = WebBlockType::find(data_get($website->published_layout, $marginal.'.id'));
         $website->update($updateData);
         if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])) {
             // Update webpage, web_blocks & their snapshots (unpublished/published)
@@ -111,7 +110,7 @@ class PublishWebsiteMarginal extends OrgAction
 
         if(in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])){
             // Update webpage, web_blocks & their snapshots (unpublished/published)
-            UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find($layout['id']), $website, $marginal);
+            UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find(data_get($layout, "$marginal.id")), $website, $marginal);
         }
 
         BreakWebsiteCache::run($website);
