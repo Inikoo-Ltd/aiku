@@ -23,9 +23,9 @@ class CustomerHydrateRfm implements ShouldBeUnique
 
     public string $commandSignature = 'hydrate:customer-rfm {customer}';
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int $customerId): string
     {
-        return (string) $customer->id;
+        return (string) $customerId;
     }
 
     public function asCommand(Command $command): void
@@ -37,11 +37,17 @@ class CustomerHydrateRfm implements ShouldBeUnique
             return;
         }
 
-        $this->handle($customer);
+        $this->handle($customer->id);
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int $customerId): void
     {
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
+
         $now = Carbon::now();
         $periodStart = $now->copy()->subYear();
 

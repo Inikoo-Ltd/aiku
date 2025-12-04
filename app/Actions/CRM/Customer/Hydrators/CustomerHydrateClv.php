@@ -45,6 +45,18 @@ class CustomerHydrateClv implements ShouldBeUnique
             return;
         }
 
+        // Check if customer has invoices in the last year
+        $oneYearAgo = now()->subYear();
+        $hasRecentInvoices = $customer->invoices()
+            ->where('in_process', false)
+            ->where('created_at', '>=', $oneYearAgo)
+            ->exists();
+
+        if (!$hasRecentInvoices) {
+            $this->setDefaultStats($customer);
+            return;
+        }
+
         // Aggregate invoice stats in a single, efficient SQL query
         $invoiceStats = $customer->invoices()
             ->where('in_process', false)

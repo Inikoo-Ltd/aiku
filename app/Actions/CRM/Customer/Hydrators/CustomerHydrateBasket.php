@@ -22,13 +22,18 @@ class CustomerHydrateBasket implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int $customerId): string
     {
-        return $customer->id;
+        return (string) $customerId;
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int $customerId): void
     {
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
 
         if ($customer->is_dropshipping || $customer->is_fulfilment) {
             return;
