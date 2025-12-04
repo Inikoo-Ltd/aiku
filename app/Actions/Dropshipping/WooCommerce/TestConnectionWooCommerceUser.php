@@ -36,7 +36,7 @@ class TestConnectionWooCommerceUser extends RetinaAction
         $connection = $wooCommerceUser->checkConnection();
 
         if (! Arr::has($connection, 'environment')) {
-            throw ValidationException::withMessages(['status' => false]);
+            throw ValidationException::withMessages(['message' => $connection ? Arr::get(json_decode($connection[0], true), 'message') : __('Invalid')]);
         }
 
         return null;
