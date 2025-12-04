@@ -91,7 +91,7 @@ class ShowPupilDashboard
             'shops'   => $query->map(function (Shop $shop) {
                 return [
                     'id'   => $shop->id,
-                    'name' => $shop->name . "(".$shop->website?->domain.")",
+                    'name' => $shop->website?->domain,
                     'domain' => 'https://' . $shop->website?->domain . '/app/login?ref=/app/dropshipping/sale-channels/create&modal=shopify'
                 ];
             }),
