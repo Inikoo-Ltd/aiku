@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Sales;
 
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -31,6 +32,10 @@ class OrderResource extends JsonResource
             'customer_slug'       => $order->customer->slug ?? '',
             'currency_code'       => $order->currency->code,
             'net_amount'          => $order->net_amount,
+            'to_be_paid_by'       => [
+                'value' => $order->to_be_paid_by,
+                'label' => $order->to_be_paid_by, // TODO: make it as label
+            ],
             'customer_notes'      => $order->customer_notes,
             'shipping_notes'      => $order->shipping_notes,
             'payment_amount'      => $order->payment_amount,
