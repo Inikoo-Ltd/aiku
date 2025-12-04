@@ -34,25 +34,25 @@ class PublishWebsiteMarginal extends OrgAction
         $this->marginal =  $marginal;
         $layout = Arr::get($modelData, 'layout', []);
         if ($marginal == 'header') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedHeaderSnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedHeaderSnapshot->layout[$marginal];
         } elseif ($marginal == 'footer') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFooterSnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFooterSnapshot->layout[$marginal];
         } elseif ($marginal == 'menu') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout[$marginal];
         } elseif ($marginal == 'sidebar') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSidebarSnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSidebarSnapshot->layout[$marginal];
         } elseif ($marginal == 'department') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedDepartmentSnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedDepartmentSnapshot->layout[$marginal];
         } elseif ($marginal == 'sub_department') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSubDepartmentSnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSubDepartmentSnapshot->layout[$marginal];
         } elseif ($marginal == 'family') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFamilySnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFamilySnapshot->layout[$marginal];
         } elseif ($marginal == 'product') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductSnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductSnapshot->layout[$marginal];
         } elseif ($marginal == 'products') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductsSnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductsSnapshot->layout[$marginal];
         } elseif ($marginal == 'collection') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedCollectionSnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedCollectionSnapshot->layout[$marginal];
         }
 
         $firstCommit = true;
@@ -103,10 +103,11 @@ class PublishWebsiteMarginal extends OrgAction
         }
 
         $website->update($updateData);
+        dd($layout);
 
         if(in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])){
             // Update webpage, web_blocks & their snapshots (unpublished/published)
-            UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find(data_get($layout, "$marginal.id")), $website, $marginal);
+            UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find(data_get($layout, "id")), $website, $marginal);
         }
 
         BreakWebsiteCache::run($website);
