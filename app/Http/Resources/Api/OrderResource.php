@@ -18,7 +18,6 @@ use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-
 class OrderResource extends JsonResource
 {
     use IsOrder;
