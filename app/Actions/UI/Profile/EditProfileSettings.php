@@ -103,19 +103,22 @@ class EditProfileSettings
                         "label"  => __("Timezone"),
                         "icon"   => "fal fa-sliders-v",
                         "fields" => [
-                            "department_id"  =>  [
+                            "timezones"  =>  [
                                 "type"    => "select_infinite",
                                 "label"   => __("Timezone"),
                                 "information"   => __("Select your timezone to show in the footer"),
-                                "options"   => [],
+                                "options"   => collect(Arr::get($user->settings, 'timezones', []))
+                                    ->map(fn($tz) => ['label' => $tz, 'code' => $tz])
+                                    ->values()
+                                    ->toArray(),
                                 "mode"      => "multiple",
                                 "fetchRoute"    => [
                                     "name"       => "grp.json.timezones",
                                 ],
-                                "valueProp" => "id",
-                                "labelProp" => "code",
+                                "valueProp" => "value",
+                                "labelProp" => "label",
                                 "required" => false,
-                                "value"   => []
+                                "value"   => Arr::get($user->settings, 'timezones')
                             ]
                         ],
                     ] : [],

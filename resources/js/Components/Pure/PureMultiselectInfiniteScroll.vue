@@ -68,16 +68,21 @@ const fetchProductList = async (url?: string, ccc) => {
     try {
         const xxx = await axios.get(urlToFetch)
         
-        optionsList.value = [...optionsList.value, ...xxx?.data?.data]
-        optionsMeta.value = xxx?.data.meta || null
-        optionsLinks.value = xxx?.data.links || null
+        
+        if (xxx?.data?.data) {
+            optionsList.value = [...optionsList.value, ...xxx?.data?.data]
+            optionsMeta.value = xxx?.data.meta || null
+            optionsLinks.value = xxx?.data.links || null
+        } else {
+            optionsList.value = xxx?.data
+        }
 
         emits('optionsList', optionsList.value)
     } catch (error) {
-        // console.log(error)
+        console.log(error)
         notify({
             title: trans('Something went wrong.'),
-            text: trans('Failed to fetch product list'),
+            text: trans('Failed to get the options list'),
             type: 'error',
         })
     }
@@ -221,6 +226,7 @@ defineExpose({
         </template>
     </Multiselect>
 
+{{ model }}
 </template>
 
 <style src="@vueform/multiselect/themes/default.css"></style>
