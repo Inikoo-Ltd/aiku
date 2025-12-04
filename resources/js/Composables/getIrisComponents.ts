@@ -198,6 +198,7 @@ export const getProductRenderB2bComponent = (
 ) => {
 	const components: Record<string, any> = {
 		"product-1": ProductIris1Ecom,
+		"product-2": ProductIris2Ecom,
 	}
 
 	return components[componentName] ?? null
