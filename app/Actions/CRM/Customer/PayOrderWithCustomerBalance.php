@@ -34,14 +34,20 @@ class PayOrderWithCustomerBalance extends OrgAction
      */
     public function handle(Order $order): array
     {
-        if ($order->payment_amount == $order->total_amount) {
+
+        $toPayAmount = $order->total_amount - $order->payment_amount;
+
+        if ($toPayAmount <= 0) {
             return [
                 'success' => false,
                 'reason'  => 'Order has been paid',
             ];
         }
 
-        if ($order->customer->balance < $order->total_amount) {
+
+
+
+        if ($order->customer->balance < $toPayAmount) {
             return [
                 'success' => false,
                 'reason'  => 'Insufficient balance',
@@ -60,7 +66,7 @@ class PayOrderWithCustomerBalance extends OrgAction
 
         $paymentData = [
             'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
-            'amount'                  => $order->total_amount,
+            'amount'                  => $toPayAmount,
             'status'                  => PaymentStatusEnum::SUCCESS,
             'state'                   => PaymentStateEnum::COMPLETED,
             'payment_account_shop_id' => $paymentAccountShop->id
