@@ -8,6 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInTradeUnit;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
 use App\Actions\Goods\Stock\UI\IndexStocksInTradeUnit;
@@ -17,6 +18,7 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
@@ -108,11 +110,16 @@ class ShowTradeUnit extends GrpAction
                     fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))
                     : Inertia::lazy(fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))),
 
+                TradeUnitTabsEnum::ORG_STOCKS->value => $this->tab == TradeUnitTabsEnum::ORG_STOCKS->value ?
+                    fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))
+                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))),
+
             ]
         )
             ->table(IndexMasterProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::MASTER_PRODUCTS->value))
             ->table(IndexProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::PRODUCTS->value))
             ->table(IndexStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::STOCKS->value))
+            ->table(IndexOrgStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::ORG_STOCKS->value))
             ->table(IndexAttachments::make()->tableStructure(TradeUnitTabsEnum::ATTACHMENTS->value))
             ->table(IndexTradeUnitImages::make()->tableStructure($tradeUnit, TradeUnitTabsEnum::IMAGES->value));
     }
