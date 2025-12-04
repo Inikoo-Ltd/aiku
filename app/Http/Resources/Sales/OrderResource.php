@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Sales;
 
-use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Resources\Json\JsonResource;
 
