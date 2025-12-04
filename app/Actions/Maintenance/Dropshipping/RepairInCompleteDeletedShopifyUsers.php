@@ -25,8 +25,6 @@ class RepairInCompleteDeletedShopifyUsers
     public function handle(ShopifyUser $shopifyUser)
     {
         DeleteShopifyUser::run($shopifyUser);
-
-        dd('OK');
     }
 
     public function getCommandSignature(): string
@@ -43,6 +41,7 @@ class RepairInCompleteDeletedShopifyUsers
         foreach ($shopifyUsers as $shopifyUser) {
             $this->handle($shopifyUser);
         }
+
     }
 
     public function asController(ActionRequest $request): void
@@ -54,6 +53,8 @@ class RepairInCompleteDeletedShopifyUsers
         foreach ($shopifyUsers as $shopifyUser) {
             $this->handle($shopifyUser);
         }
+
+        dd('OK');
     }
 
 }
