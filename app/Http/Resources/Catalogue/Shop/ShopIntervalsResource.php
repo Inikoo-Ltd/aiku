@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Resources\Dashboards;
+namespace App\Http\Resources\Catalogue\Shop;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class DashboardTotalShopInvoiceCategoriesSalesResource extends JsonResource
+class ShopIntervalsResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
@@ -24,6 +24,10 @@ class DashboardTotalShopInvoiceCategoriesSalesResource extends JsonResource
             $this->getDashboardTableColumn($shop->orderingIntervals, 'orders_delta'),
             $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations'),
             $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations_delta'),
+            $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations_with_orders'),
+            $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations_with_orders_delta'),
+            $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations_without_orders'),
+            $this->getDashboardTableColumn($shop->orderingIntervals, 'registrations_without_orders_delta'),
             $this->getDashboardTableColumn($shop->salesIntervals, 'sales_org_currency'),
             $this->getDashboardTableColumn($shop->salesIntervals, 'sales_org_currency_delta'),
             $this->getDashboardTableColumn($shop->orderingIntervals, 'lost_revenue_other_amount'),

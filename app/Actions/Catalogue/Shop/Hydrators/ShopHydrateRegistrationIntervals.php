@@ -26,20 +26,27 @@ class ShopHydrateRegistrationIntervals implements ShouldBeUnique
     public string $jobQueue = 'urgent';
     public string $commandSignature = 'hydrate:shop-registration-intervals {shop}';
 
-    public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
+    public function getJobUniqueId(int $shopId, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        return $this->getUniqueJobWithInterval($shop, $intervals, $doPreviousPeriods);
+        return $this->getUniqueJobWithIntervalFromId($shopId, $intervals, $doPreviousPeriods);
     }
 
     public function asCommand(Command $command): void
     {
         $shop = Shop::where('slug', $command->argument('shop'))->first();
 
-        $this->handle($shop);
+        if ($shop) {
+            $this->handle($shop->id);
+        }
     }
 
-    public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
+    public function handle(int $shopId, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
+        $shop = Shop::find($shopId);
+        if (!$shop) {
+            return;
+        }
+
         $stats = [];
 
         $queryBase = Customer::where('shop_id', $shop->id)->selectRaw('count(*) as  sum_aggregate');
@@ -48,6 +55,32 @@ class ShopHydrateRegistrationIntervals implements ShouldBeUnique
             queryBase: $queryBase,
             statField: 'registrations_',
             dateField: 'registered_at',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
+
+        $queryBaseWithOrders = Customer::where('shop_id', $shop->id)
+            ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+            ->where('customer_stats.number_orders', '>', 0)
+            ->selectRaw('count(*) as sum_aggregate');
+        $stats = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBaseWithOrders,
+            statField: 'registrations_with_orders_',
+            dateField: 'customers.registered_at',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
+
+        $queryBaseWithoutOrders = Customer::where('shop_id', $shop->id)
+            ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+            ->where('customer_stats.number_orders', '=', 0)
+            ->selectRaw('count(*) as sum_aggregate');
+        $stats = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBaseWithoutOrders,
+            statField: 'registrations_without_orders_',
+            dateField: 'customers.registered_at',
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );

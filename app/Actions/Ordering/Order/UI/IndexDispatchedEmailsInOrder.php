@@ -46,7 +46,8 @@ class IndexDispatchedEmailsInOrder extends OrgAction
                 'dispatched_emails.number_clicks',
                 'email_addresses.email as email_address',
                 'email_copies.subject as subject',
-                'email_copies.body as body_preview'
+                'email_copies.body as body_preview',
+                'email_copies.is_body_encoded',
             ])
             ->allowedSorts(['number_email_tracking_events', 'sent_at', 'number_reads', 'mask_as_spam', 'number_clicks', 'email_addresses.email_address'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
