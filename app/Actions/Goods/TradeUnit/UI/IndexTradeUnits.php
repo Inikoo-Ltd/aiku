@@ -38,7 +38,7 @@ class IndexTradeUnits extends GrpAction
         $this->parent = group();
         $this->initialisation($this->parent, $request);
 
-        return $this->handle(bucket: 'all');
+        return $this->handle();
     }
 
     public function inProcess(ActionRequest $request): LengthAwarePaginator
@@ -167,12 +167,12 @@ class IndexTradeUnits extends GrpAction
     }
 
 
-    public function jsonResponse(LengthAwarePaginator $tradeUnit): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnit);
+        return TradeUnitsResource::collection($tradeUnits);
     }
 
-    public function htmlResponse(LengthAwarePaginator $tradeUnit, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $tradeUnits, ActionRequest $request): Response
     {
         $title = match ($this->bucket) {
             'active' => __('Active Trade Units'),
@@ -198,7 +198,7 @@ class IndexTradeUnits extends GrpAction
                         'title' => $title,
                     ],
                 ],
-                'data'        => TradeUnitsResource::collection($tradeUnit),
+                'data'        => TradeUnitsResource::collection($tradeUnits),
 
             ]
         )->table($this->tableStructure(parent: $this->parent));
