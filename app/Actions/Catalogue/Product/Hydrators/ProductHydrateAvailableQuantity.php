@@ -41,10 +41,9 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         $currentQuantity   = $product->available_quantity;
         $availableQuantity = 0;
 
-        $numberOrgStocksChecked = 0;
+        $numberOrgStocksChecked                 = 0;
         $numberOrgStocksHasNeverBeenInWarehouse = 0;
         foreach ($product->orgStocks as $orgStock) {
-
             if (!$orgStock->has_been_in_warehouse) {
                 $numberOrgStocksHasNeverBeenInWarehouse++;
             }
@@ -91,11 +90,10 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             ProductStatusEnum::COMING_SOON
         ])) {
             if ($availableQuantity == 0) {
-                $status                             = ProductStatusEnum::OUT_OF_STOCK;
+                $status = ProductStatusEnum::OUT_OF_STOCK;
 
                 if ($numberOrgStocksChecked == 0 || $numberOrgStocksHasNeverBeenInWarehouse > 0) {
-                    // todo: hold on until orgStocks.has_been_in_warehouse are hydrated
-                    //$status = ProductStatusEnum::COMING_SOON;
+                    $status = ProductStatusEnum::COMING_SOON;
                 }
 
 
