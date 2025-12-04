@@ -12,7 +12,6 @@ use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\CRM\Customer;
 use App\Models\Masters\MasterShop;
-use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -23,16 +22,16 @@ class MasterShopHydrateRegistrationIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
 
     public string $jobQueue = 'urgent';
-    public string $commandSignature = 'hydrate:master-shop-registration-intervals {masterShop}';
+    public string $commandSignature = 'hydrate:master-shop-registration-intervals';
 
     public function getJobUniqueId(int $masterShopID, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         return $this->getUniqueJobWithIntervalFromId($masterShopID, $intervals, $doPreviousPeriods);
     }
 
-    public function asCommand(Command $command): void
+    public function asCommand(): void
     {
-        $masterShop = MasterShop::where('id', $command->argument('masterShop'))->first();
+        $masterShop = MasterShop::first();
 
         if ($masterShop) {
             $this->handle($masterShop->id);

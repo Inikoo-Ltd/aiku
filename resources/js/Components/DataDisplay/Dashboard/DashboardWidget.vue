@@ -26,6 +26,9 @@ const totalsColumns = computed(() => {
     if (props.tableData?.tables?.shops?.totals?.columns) {
         return props.tableData.tables.shops.totals.columns
     }
+    if (props.tableData?.tables?.master_shops?.totals?.columns) {
+        return props.tableData.tables.master_shops.totals.columns
+    }
     return null
 })
 
