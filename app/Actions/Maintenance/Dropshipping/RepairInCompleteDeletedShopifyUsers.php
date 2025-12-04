@@ -53,8 +53,6 @@ class RepairInCompleteDeletedShopifyUsers
         foreach ($shopifyUsers as $shopifyUser) {
             $this->handle($shopifyUser);
         }
-
-        dd('OK');
     }
 
 }
