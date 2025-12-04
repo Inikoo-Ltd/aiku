@@ -20,7 +20,6 @@ use App\Models\Web\Website;
 use App\Models\Web\WebBlockType;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Log;
 
 class PublishWebsiteMarginal extends OrgAction
 {
@@ -103,10 +102,9 @@ class PublishWebsiteMarginal extends OrgAction
         }
 
         $website->update($updateData);
-
-        if(in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])){
+        if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])) {
             // Update webpage, web_blocks & their snapshots (unpublished/published)
-            UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find(data_get($layout, "id")), $website, $marginal);
+            UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find(data_get($layout, "id")), $website, $marginal, data_get($layout, 'data.fieldValue'));
         }
 
         BreakWebsiteCache::run($website);
