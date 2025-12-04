@@ -181,21 +181,19 @@ const idxSlideLoading = ref<null | number>(null)
             </component>
           </div>
         </SwiperSlide>
-
-        <!-- Navigation Buttons -->
-        <div class="absolute inset-0 pointer-events-none z-50">
-          <div v-if="isLooping" ref="prevEl" @click="swiperInstance?.slidePrev()"
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
-            <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft"
-              :style="getStyles(props.fieldValue?.carousel_data?.buttonStyle, screenType)" />
-          </div>
-          <div v-if="isLooping" ref="nextEl" @click="swiperInstance?.slideNext()"
-            class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
-            <FontAwesomeIcon fixed-width :icon="faChevronCircleRight"
-              :style="getStyles(props.fieldValue?.carousel_data?.buttonStyle, screenType)" />
-          </div>
-        </div>
       </Swiper>
+    </div>
+          <div class="absolute inset-0 pointer-events-none z-50">
+      <div v-if="isLooping" ref="prevEl" @click="swiperInstance?.slidePrev()"
+        class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+        <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft"
+          :style="getStyles(props.fieldValue?.carousel_data?.buttonStyle, screenType)" />
+      </div>
+      <div v-if="isLooping" ref="nextEl" @click="swiperInstance?.slideNext()"
+        class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+        <FontAwesomeIcon fixed-width :icon="faChevronCircleRight"
+          :style="getStyles(props.fieldValue?.carousel_data?.buttonStyle, screenType)" />
+      </div>
     </div>
   </div>
 </template>
