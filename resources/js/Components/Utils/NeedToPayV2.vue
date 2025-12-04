@@ -104,7 +104,11 @@ const onPayWithBalance = () => {
                 </div>
             
                 <div class="opacity-70">
-                    remaining of {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
+                    {{ trans("Total to pay") }}: {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
+                </div>
+
+                <div v-if="toBePaidBy?.value" class="text-xs italic">
+                    <span class="opacity-60">{{ trans("To be paid with") }}:</span> <span class="opacity-60">{{ toBePaidBy.label }}</span>
                 </div>
             </div>
         </div>
@@ -113,7 +117,7 @@ const onPayWithBalance = () => {
         <div v-else-if="Number(payAmount) > 0">
             <!-- Section: Progress bar -->
             <div class="my-3">
-                <div v-tooltip="trans(':paidAmount remaining of :totalAmount', { paidAmount: locale.currencyFormat(currencyCode, Number(paidAmount)), totalAmount: locale.currencyFormat(currencyCode, Number(totalAmount)) })"
+                <div v-tooltip="trans(':paidAmount has paid, :payAmount remaining', { paidAmount: locale.currencyFormat(currencyCode, Number(paidAmount)), payAmount: locale.currencyFormat(currencyCode, Number(payAmount)) })"
                     class="h-2 w-full bg-black/20 rounded-full relative overflow-hidden">
                     <div class="bg-green-500 absolute h-full shimmer"
                         :style="{

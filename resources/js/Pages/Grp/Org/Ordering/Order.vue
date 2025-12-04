@@ -1097,7 +1097,7 @@ const copyToClipboard = async (text: string, label: string) => {
                                         </div>
                                         
                                         <div v-if="Number(box_stats.products.payment.pay_amount) > 0" class="mt-2 pt-2 border-t border-gray-300 text-xxs">
-                                            <div v-if="data?.data?.to_be_paid_by?.value" class="flex">
+                                            <div v-if="false && data?.data?.to_be_paid_by?.value" class="flex">
                                                 <Button
                                                     
                                                     :label="trans('Pay with :lastPayMethod', { lastPayMethod: data?.data?.to_be_paid_by?.label})"
