@@ -91,6 +91,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_collections_products_status_normal
  * @property int $number_collections_products_status_discontinuing
  * @property int $number_collections_products_status_discontinued
+ * @property int $number_products_state_coming_soon
  * @method static Builder<static>|ProductCategoryStats newModelQuery()
  * @method static Builder<static>|ProductCategoryStats newQuery()
  * @method static Builder<static>|ProductCategoryStats query()
