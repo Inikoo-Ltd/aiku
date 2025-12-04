@@ -26,6 +26,7 @@ import { Images } from "@/types/Images"
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProducts.vue"
+import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue"
 
 library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
 
@@ -51,6 +52,7 @@ const props = defineProps<{
     }
     products?: {}
     stocks?: {}
+    org_stocks?: {}
     images?: {}
     master_products?: {}
     images_category_box?: {
@@ -77,6 +79,7 @@ const component = computed(() => {
         master_products: TableMasterProducts,
         products: TableProducts,
         stocks: TableStocks,
+        org_stocks: TableOrgStocks,
         images: TradeUnitImagesManagement
     }
     return components[currentTab.value]
