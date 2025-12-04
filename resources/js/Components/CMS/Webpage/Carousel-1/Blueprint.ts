@@ -42,6 +42,12 @@ export default {
 					key: ["card_container", "properties"],
 					replaceForm: [
 						{
+							key: [ "dimension"],
+							label: "Dimension",
+							type: "dimension",
+							useIn: ["desktop", "tablet", "mobile"],
+						},
+						{
 							key: ["background"],
 							label: "Background",
 							type: "background",
