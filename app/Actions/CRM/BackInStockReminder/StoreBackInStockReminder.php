@@ -34,7 +34,7 @@ class StoreBackInStockReminder extends OrgAction
         /** @var BackInStockReminder $reminder */
         $reminder = $customer->backInStockReminder()->create($modelData);
 
-        CustomerHydrateBackInStockReminders::dispatch($customer)->delay($this->hydratorsDelay);
+        CustomerHydrateBackInStockReminders::dispatch($customer->id)->delay($this->hydratorsDelay);
         ProductHydrateCustomersWhoReminded::dispatch($product)->delay($this->hydratorsDelay);
         ProductHydrateCustomersWhoRemindedInCategories::dispatch($product)->delay($this->hydratorsDelay);
 

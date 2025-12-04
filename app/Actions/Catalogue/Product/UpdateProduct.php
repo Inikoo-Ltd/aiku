@@ -247,7 +247,7 @@ class UpdateProduct extends OrgAction
         }
 
         if (Arr::has($changed, 'exclusive_for_customer_id')) {
-            CustomerHydrateExclusiveProducts::dispatch($product->exclusiveForCustomer)->delay($this->hydratorsDelay);
+            CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
         }
 
         if (Arr::hasAny(

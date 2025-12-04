@@ -37,17 +37,16 @@ class HydrateCustomers
 
     public function handle(Customer $customer): void
     {
-        CustomerHydrateInvoices::run($customer);
-        CustomerHydrateWebUsers::run($customer);
-        CustomerHydrateClients::run($customer);
-        CustomerHydrateOrders::run($customer);
-        CustomerHydrateInvoices::run($customer);
+        CustomerHydrateInvoices::run($customer->id);
+        CustomerHydrateWebUsers::run($customer->id);
+        CustomerHydrateClients::run($customer->id);
+        CustomerHydrateOrders::run($customer->id);
         CustomerHydrateDeliveryNotes::run($customer->id, DeliveryNoteTypeEnum::ORDER);
         CustomerHydrateDeliveryNotes::run($customer->id, DeliveryNoteTypeEnum::REPLACEMENT);
-        CustomerHydrateTopUps::run($customer);
-        CustomerHydrateCreditTransactions::run($customer);
-        CustomerHydrateBasket::run($customer);
-        CustomerHydrateExclusiveProducts::run($customer);
+        CustomerHydrateTopUps::run($customer->id);
+        CustomerHydrateCreditTransactions::run($customer->id);
+        CustomerHydrateBasket::run($customer->id);
+        CustomerHydrateExclusiveProducts::run($customer->id);
         CustomerHydrateCustomerSalesChannels::run($customer->id);
         CustomerHydrateClv::run($customer->id);
 

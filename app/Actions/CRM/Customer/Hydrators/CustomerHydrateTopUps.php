@@ -20,13 +20,23 @@ class CustomerHydrateTopUps implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int $customerId): string
     {
-        return $customer->id;
+        return (string) $customerId;
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
+
         $stats = [
             'number_top_ups' => $customer->topUps()->count(),
         ];
@@ -38,8 +48,8 @@ class CustomerHydrateTopUps implements ShouldBeUnique
                 field: 'status',
                 enum: TopUpStatusEnum::class,
                 models: TopUp::class,
-                where: function ($q) use ($customer) {
-                    $q->where('customer_id', $customer->id);
+                where: function ($q) use ($customerId) {
+                    $q->where('customer_id', $customerId);
                 }
             )
         );
