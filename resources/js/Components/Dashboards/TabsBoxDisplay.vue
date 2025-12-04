@@ -146,24 +146,81 @@ const getRoute = (tabSlug) => {
         </div>
 
         <!-- Mobile -->
-        <div class="mt-2 px-2 md:hidden">
+        <div class="mt-2 px-3 md:hidden space-y-3">
             <div
                 v-for="box in tabs_box"
                 :key="'mobile-' + box.label"
-                class="border rounded-md p-3 select-none"
+                class="rounded-lg border shadow-sm overflow-hidden select-none"
+                :style="{
+                  backgroundColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '11' : 'transparent',
+                  borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '44' : 'inherit'
+                }"
             >
-                <div class="text-center mb-2 text-xs font-semibold">
-                    <FontAwesomeIcon v-if="box.icon" :icon="box.icon" fixed-width aria-hidden="true" />
-                    {{ box.label }}
+                <!-- Box Header -->
+                <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                    <div class="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700">
+                        <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="text-gray-500" fixed-width aria-hidden="true" />
+                        <span>{{ box.label }}</span>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
-                    <div v-for="tab in box.tabs" :key="tab.tab_slug" class="text-center">
-                        <div class="text-lg font-medium opacity-80">
-                            {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
-                        </div>
-                        <div class="text-gray-400 text-xs opacity-70">
-                            {{ renderLabelBasedOnType(tab.information?.label, tab.information?.type, { currency_code: box.currency_code }) }}
+                <!-- Tabs Grid -->
+                <div class="p-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div
+                            v-for="tab in box.tabs"
+                            :key="tab.tab_slug"
+                            class="rounded-md p-3 transition-all duration-200"
+                            :class="[
+                                tab.tab_slug === props.current
+                                    ? 'ring-2 shadow-sm'
+                                    : 'bg-gray-50 hover:bg-gray-100',
+                                layoutStore.currentRoute === 'grp.org.shops.show.dashboard.show' ? 'cursor-pointer active:scale-95' : 'cursor-default'
+                            ]"
+                            :style="tab.tab_slug === props.current ? {
+                                backgroundColor: layoutStore.app.theme[4] + '22',
+                                ringColor: layoutStore.app.theme[4]
+                            } : {}"
+                            @click="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? null : router.get(getRoute(tab.tab_slug))"
+                        >
+                            <!-- Tab Icon (if exists) -->
+                            <div v-if="tab.icon || tab.icon_data" class="flex justify-center mb-2">
+                                <Icon
+                                    v-if="tab.icon_data"
+                                    :data="tab.icon_data"
+                                    class="text-lg"
+                                    :style="tab.tab_slug === props.current ? { color: layoutStore.app.theme[4] } : {}"
+                                />
+                                <FontAwesomeIcon
+                                    v-else
+                                    :icon="tab.icon"
+                                    class="text-lg"
+                                    :style="tab.tab_slug === props.current ? { color: layoutStore.app.theme[4] } : {}"
+                                    fixed-width
+                                    aria-hidden="true"
+                                />
+                            </div>
+
+                            <!-- Tab Value -->
+                            <div class="text-center relative">
+                                <div
+                                    class="text-xl font-semibold tabular-nums mb-1"
+                                    :style="tab.tab_slug === props.current ? { color: layoutStore.app.theme[4] } : {}"
+                                >
+                                    {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
+                                </div>
+
+                                <!-- Indicator -->
+                                <template v-if="tab.indicator">
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 right-0 text-green-500 text-[6px]" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 right-0 text-green-500 text-[6px] animate-ping" fixed-width aria-hidden="true" />
+                                </template>
+                            </div>
+
+                            <!-- Tab Information Label -->
+                            <div class="text-center text-xs text-gray-500 leading-tight">
+                                {{ renderLabelBasedOnType(tab.information?.label, tab.information?.type, { currency_code: box.currency_code }) }}
+                            </div>
                         </div>
                     </div>
                 </div>

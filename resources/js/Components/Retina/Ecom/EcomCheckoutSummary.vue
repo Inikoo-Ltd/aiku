@@ -149,14 +149,14 @@ const convertToFloat2 = (val: any) => {
             <div class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
                 <div class="">{{ trans("Current balance") }}:</div>
                 <div>
-                    {{ locale.currencyFormat(summary.order_summary?.currency?.data?.code, balance ?? 0) }}
+                    {{ locale.currencyFormat(layout?.iris?.currency?.code, balance ?? 0) }}
                 </div>
             </div>
             
             <div class="border border-gray-200 p-2 rounded">
                 <OrderSummary
                     :order_summary="summary.order_summary"
-                    :currency_code="currency_code"
+                    :currency_code="layout?.iris?.currency?.code"
                 />
             </div>
         </div>
