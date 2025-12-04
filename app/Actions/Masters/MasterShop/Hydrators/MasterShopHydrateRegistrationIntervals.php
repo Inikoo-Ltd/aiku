@@ -22,10 +22,20 @@ class MasterShopHydrateRegistrationIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
 
     public string $jobQueue = 'urgent';
+    public string $commandSignature = 'hydrate:master-shop-registration-intervals';
 
     public function getJobUniqueId(int $masterShopID, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         return $this->getUniqueJobWithIntervalFromId($masterShopID, $intervals, $doPreviousPeriods);
+    }
+
+    public function asCommand(): void
+    {
+        $masterShop = MasterShop::first();
+
+        if ($masterShop) {
+            $this->handle($masterShop->id);
+        }
     }
 
     public function handle(int $masterShopID, ?array $intervals = null, ?array $doPreviousPeriods = null): void
@@ -43,6 +53,32 @@ class MasterShopHydrateRegistrationIntervals implements ShouldBeUnique
             queryBase: $queryBase,
             statField: 'registrations_',
             dateField: 'registered_at',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
+
+        $queryBaseWithOrders = Customer::where('master_shop_id', $masterShop->id)
+            ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+            ->where('customer_stats.number_orders', '>', 0)
+            ->selectRaw('count(*) as sum_aggregate');
+        $stats = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBaseWithOrders,
+            statField: 'registrations_with_orders_',
+            dateField: 'customers.registered_at',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
+
+        $queryBaseWithoutOrders = Customer::where('master_shop_id', $masterShop->id)
+            ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+            ->where('customer_stats.number_orders', '=', 0)
+            ->selectRaw('count(*) as sum_aggregate');
+        $stats = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBaseWithoutOrders,
+            statField: 'registrations_without_orders_',
+            dateField: 'customers.registered_at',
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );

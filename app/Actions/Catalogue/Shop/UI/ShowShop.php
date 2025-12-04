@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
-use App\Actions\Dashboard\IndexPlatformSalesTable;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
@@ -17,9 +16,9 @@ use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
+use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
-use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
-use App\Http\Resources\Dashboards\DashboardTotalShopInvoiceCategoriesSalesResource;
+use App\Http\Resources\Catalogue\Shop\ShopIntervalsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -39,6 +38,12 @@ class ShowShop extends OrgAction
     public function handle(Shop $shop, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
+
+        $currentTab = Arr::get($userSettings, 'shop_dashboard_tab', Arr::first(ShopDashboardSalesTableTabsEnum::values()));
+
+        if (!in_array($currentTab, ShopDashboardSalesTableTabsEnum::values())) {
+            $currentTab = Arr::first(ShopDashboardSalesTableTabsEnum::values());
+        }
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
@@ -60,11 +65,11 @@ class ShowShop extends OrgAction
                     'settings'  => [
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($this->group, $userSettings)
+                        'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings)
                     ],
                     'shop_blocks' => array_merge(
                         [
-                            'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
+                            'interval_data' => json_decode(ShopIntervalsResource::make($shop)->toJson()),
                             'currency_code' => $shop->currency->code,
                         ],
                         $this->getAverageClv($shop)
@@ -82,21 +87,11 @@ class ShowShop extends OrgAction
                 [
                     'id'          => 'sales_table',
                     'type'        => 'table',
-                    'current_tab' => 'dropship',
-                    'tabs'        => [
-                        'dropship' => [
-                            'title' => __('DS Platforms'),
-                            'icon'  => 'fal fa-code-branch'
-                        ],
-                    ],
-                    'tables'      => [
-                        'dropship' => [
-                            'header' => json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true),
-                            'body'   => IndexPlatformSalesTable::make()->action($shop),
-                            'totals' => IndexPlatformSalesTable::make()->total($shop)
-                        ],
-                    ],
-                ],
+                    'current_tab' => $currentTab,
+                    'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
+                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop),
+                    'charts'      => []
+                ]
             ];
         }
 

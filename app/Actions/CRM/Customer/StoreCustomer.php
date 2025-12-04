@@ -165,9 +165,9 @@ class StoreCustomer extends OrgAction
         OrganisationHydrateCustomers::dispatch($customer->organisation)->delay($this->hydratorsDelay);
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-        ShopHydrateRegistrationIntervals::dispatch($customer->shop, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        GroupHydrateRegistrationIntervals::dispatch($customer->group, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        ShopHydrateRegistrationIntervals::dispatch($customer->shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        GroupHydrateRegistrationIntervals::dispatch($customer->group_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         if ($customer->master_shop_id) {
             MasterShopHydrateRegistrationIntervals::dispatch($customer->master_shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         }

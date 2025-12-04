@@ -232,7 +232,7 @@ class HydrateGroup extends HydrateModel
         GroupHydrateAdjustments::run($group);
         GroupHydrateWebUsers::run($group);
         GroupHydrateDeletedInvoices::run($group);
-        GroupHydrateRegistrationIntervals::run($group);
+        GroupHydrateRegistrationIntervals::run($group->id);
 
         GroupHydrateOrderInBasketAtCustomerUpdateIntervals::run($group);
         GroupHydrateOrderInBasketAtCreatedIntervals::run($group);

@@ -11,6 +11,8 @@ import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import ButtonWithLink from '../Elements/Buttons/ButtonWithLink.vue'
+import { useFormatTime } from '@/Composables/useFormatTime'
+import { useStringToHex } from '@/Composables/useStringToHex'
 
 library.add(faCheck, faEllipsisV)
 
@@ -29,7 +31,19 @@ const props = defineProps<{
 
     }
     handleTabUpdate: Function
+    payments: {
+        id: number
+        amount: number
+        created_at: string
+        payment_account: {
+            type: string
+            code: string
+            name: string
+        } | null
+    }[]
 }>()
+
+console.log('[apayments', props.payments)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -65,91 +79,84 @@ const onPayWithBalance = () => {
 </script>
 
 <template>
-    <dd class="relative w-full flex flex-col border px-2.5 py-3 rounded-md  xoverflow-hidden"
-        :class="[
-            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 pr-5' : 'bg-red-100 shadow border-red-500',
-        ]"
-    >
-        <div v-if="Number(payAmount) > 0" class="text-xs text-gray-500 font-light whitespace-nowrap">
+    <dd class="relative w-full flex flex-col xpy-3">
+        <!-- Section: Balance (pay with balance) -->
+        <div v-if="Number(payAmount) > 0" class="mt-2 text-xs text-gray-500 font-light whitespace-nowrap px-2.5 mb-1.5">
             {{ trans('Balance') }}: {{ locale.currencyFormat(currencyCode, Number(balance)) }}
             <Button
                 v-if="Number(balance) >= Number(payAmount) && Number(payAmount) > 0"
                 size="xxs"
                 :label="trans('Pay with balance')"
-                type="secondary"
+                xtype="secondary"
                 @click="() => onPayWithBalance()"
                 :loading="isLoadingPayWithBalance"
             />
         </div>
 
-        <!-- Section: if 0 paid -->
-        <div v-if="Number(paidAmount) === 0">
+        <!-- Section: background green/red -->
+        <div class="px-2.5 pt-1 pb-2" :class="[
+            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 rounded-md' : 'bg-red-100',
+        ]">
+    
             <!-- Section: Progress bar -->
-            <div class="my-3">
-                <div v-tooltip="trans(':paidAmount remaining of :totalAmount', { paidAmount: locale.currencyFormat(currencyCode, Number(paidAmount)), totalAmount: locale.currencyFormat(currencyCode, Number(totalAmount)) })"
-                    class="h-2 w-full bg-black/20 rounded-full relative overflow-hidden">
-                    <div class="bg-green-500 absolute h-full shimmer"
+            <div v-if="payments?.length" class="my-3">
+                <div class="h-3 w-full bg-black/20 rounded-full relative overflow-hidden flex">
+                    <div v-for="(payment, idx) in payments.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))"
+                        v-tooltip="trans('(:paymentName) Paid :paymentAmount at :datePayment', { paymentName: payment.payment_account?.name || 'Unknown', paymentAmount: locale.currencyFormat(currencyCode, Number(payment.amount)), datePayment: useFormatTime(payment.created_at, { formatTime: 'hm'}) })"
+                        class="h-full opacity-50 hover:opacity-100"
+                        :class="idx != payments.length - 1 ? 'border-r border-black/70' : ''"
                         :style="{
-                            width: (Number(paidAmount)/Number(totalAmount))*100 + '%'
+                            width: (Number(payment.amount)/Number(totalAmount))*100 + '%',
+                            backgroundColor: useStringToHex(payment.payment_account?.code || 'gray')
                         }"
                     />
                 </div>
             </div>
-
-            <!-- Section: Remaining -->
-            <div class="text-center relative">
-                <div class="text-2xl font-bold">
-                    {{ trans("Unpaid") }}
-                    <FontAwesomeIcon v-tooltip="trans('Not fully paid yet')" icon="fas fa-times-circle" class="text-red-600" fixed-width aria-hidden="true" />
-                </div>
-            
-                <div class="opacity-70">
-                    {{ trans("Total to pay") }}: {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
-                </div>
-
-                <div v-if="toBePaidBy?.value" class="text-xs italic">
-                    <span class="opacity-60">{{ trans("To be paid with") }}:</span> <span class="opacity-60">{{ toBePaidBy.label }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section: if partially paid -->
-        <div v-else-if="Number(payAmount) > 0">
-            <!-- Section: Progress bar -->
-            <div class="my-3">
-                <div v-tooltip="trans(':paidAmount has paid, :payAmount remaining', { paidAmount: locale.currencyFormat(currencyCode, Number(paidAmount)), payAmount: locale.currencyFormat(currencyCode, Number(payAmount)) })"
-                    class="h-2 w-full bg-black/20 rounded-full relative overflow-hidden">
-                    <div class="bg-green-500 absolute h-full shimmer"
-                        :style="{
-                            width: (Number(paidAmount)/Number(totalAmount))*100 + '%'
-                        }"
-                    />
+    
+            <!-- Section: if 0 paid -->
+            <div v-if="Number(paidAmount) === 0">
+    
+                <!-- Section: Remaining -->
+                <div class="text-center relative">
+                    <div class="text-lg font-bold">
+                        <span v-if="toBePaidBy?.value">{{ trans("Waiting :toBePaid", { toBePaid: toBePaidBy?.label }) }}</span>
+                        <span v-else>
+                            {{ trans("Unpaid") }}
+                        </span>
+                        <!-- <FontAwesomeIcon v-tooltip="trans('Not fully paid yet')" icon="fas fa-times-circle" class="text-red-600" fixed-width aria-hidden="true" /> -->
+                    </div>
+    
+                    <div class="opacity-70">
+                        {{ trans("Total to pay") }}: {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
+                    </div>
                 </div>
             </div>
-
-            <!-- Section: Remaining -->
-            <div class="text-center relative">
-                <div class="text-2xl font-bold">
-                    {{ trans("Unpaid") }}
-                    <FontAwesomeIcon v-tooltip="trans('Not fully paid yet')" icon="fas fa-times-circle" class="text-red-600" fixed-width aria-hidden="true" />
-                </div>
-            
-                <div class="opacity-70">
-                    {{ locale.currencyFormat(currencyCode, Number(payAmount)) }} remaining of {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
+    
+            <!-- Section: if partially paid -->
+            <div v-else-if="Number(payAmount) > 0">
+                <!-- Section: Remaining -->
+                <div class="text-center relative">
+                    <div class="text-lg font-bold">
+                        <span v-if="toBePaidBy?.value">{{ trans("Waiting :toBePaid", { toBePaid: toBePaidBy?.label }) }}</span>
+                        <span v-else>
+                            {{ trans("Unpaid") }}
+                        </span>
+                        <!-- <FontAwesomeIcon v-tooltip="trans('Not fully paid yet')" icon="fas fa-times-circle" class="text-red-600" fixed-width aria-hidden="true" /> -->
+                    </div>
+    
+                    <div class="opacity-70">
+                        Need to pay {{ locale.currencyFormat(currencyCode, Number(payAmount)) }} of {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Section: if fully paid -->
-        <div v-if="Number(paidAmount) >= Number(totalAmount)" class="text-center relative">
-            <div @click="() => handleTabUpdate('payments')" v-tooltip="locale.currencyFormat(currencyCode, Number(paidAmount))" class="text-2xl font-bold text-green-600 hover:underline cursor-pointer">
-                {{ trans("Paid") }}
-                <FontAwesomeIcon v-tooltip="trans('Fully paid')" icon="fas fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
+    
+            <!-- Section: if fully paid -->
+            <div v-if="Number(paidAmount) >= Number(totalAmount)" class="text-center relative w-full">
+                <div @click="() => handleTabUpdate('payments')" v-tooltip="locale.currencyFormat(currencyCode, Number(paidAmount))" class="text-2xl font-bold text-green-600 hover:underline cursor-pointer">
+                    {{ trans("Paid") }}
+                    <FontAwesomeIcon v-tooltip="trans('Fully paid')" icon="fas fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
+                </div>
             </div>
-        
-            <!-- <div class="opacity-70 text-xs">
-                {{ trans("Paid amount") }}: {{ locale.currencyFormat(currencyCode, Number(paidAmount)) }}
-            </div> -->
         </div>
 
 
