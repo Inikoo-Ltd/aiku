@@ -31,10 +31,11 @@ class OrderResource extends JsonResource
             'customer_slug'       => $order->customer->slug ?? '',
             'currency_code'       => $order->currency->code,
             'net_amount'          => $order->net_amount,
-            'to_be_paid_by'       => [
+            'to_be_paid_by'       => $order->to_be_paid_by ? [
+                'id'    => 83,  // TODO: id from payment_accounts (83 is hardcoded for 'Cash on delivery' account)
                 'value' => $order->to_be_paid_by,
-                'label' => $order->to_be_paid_by, // TODO: make it as label
-            ],
+                'label' => $order->to_be_paid_by->label(),
+            ] : null,
             'customer_notes'      => $order->customer_notes,
             'shipping_notes'      => $order->shipping_notes,
             'payment_amount'      => $order->payment_amount,

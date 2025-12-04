@@ -381,8 +381,12 @@ const openModal = (action: any) => {
     isModalProductListOpen.value = true
 }
 
-function onClickPayInvoice() {
-
+const onClickPayInvoice = (idSelectedPayment?: number) => {
+    if (idSelectedPayment) {
+        paymentData.value.payment_method = Number(idSelectedPayment)
+    } else {
+        paymentData.value.payment_method = null
+    }
     isOpenModalPayment.value = true
     fetchPaymentMethod()
 }
@@ -390,8 +394,6 @@ function onClickPayInvoice() {
 const isOpenModalRefund = ref(false)
 
 function onClickPayRefund() {
-
-
     isOpenModalRefund.value = true
     fetchPaymentMethod()
 }
@@ -1007,69 +1009,10 @@ const copyToClipboard = async (text: string, label: string) => {
         <!-- Box: Payment/Invoices/Delivery Notes  -->
         <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
-                <div class=" pl-1">
-                    <!-- Section: Delivery Notes -->
-                    <div v-if="box_stats?.delivery_notes?.length"
-                        class="zmt-4 border rounded-lg p-4 xpt-3 bg-white shadow-sm">
-                        <!-- Section Title -->
-                        <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
-                            <div class="text-sm font-semibold text-gray-800">
-                                {{ trans('Delivery Notes') }}
-                            </div>
-                        </div>
-
-                        <!-- Delivery Note Items -->
-                        <div v-for="(note, index) in box_stats?.delivery_notes" :key="index"
-                            class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
-
-                            <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
-                                <FontAwesomeIcon :icon="faTruck"
-                                    :class="note.type === 'replacement' ? 'text-red-500' : 'text-blue-500'"
-                                    fixed-width />
-                                <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{
-                                note?.reference
-                                }}
-                                </Link>
-                                <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                                    {{ trans(note?.state?.tooltip) }}
-                                    <Icon :data="note?.state" />
-                                </span>
-                            </div>
-
-                            <!-- Shipments -->
-                            <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
-                                <p class="text-gray-700 font-medium mb-1">{{ trans('Shipments') }}:</p>
-                                <ul class="list-disc pl-4 space-y-1">
-                                    <li v-for="(shipment, i) in note.shipments" :key="i">
-                                        <template v-if="shipment?.formatted_tracking_urls?.length">
-                                            {{ shipment.name }}
-                                            <div v-for="trackingData in shipment.formatted_tracking_urls">
-
-                                                <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
-                                                    class="secondaryLink" v-tooltip="trans('Click to track shipment')">
-                                                    {{ trackingData.tracking }}
-                                                </a>
-                                            </div>
-                                        </template>
-
-                                        <span v-else-if="shipment.name" class="">
-                                            {{ shipment.name }}
-                                        </span>
-                                        <span v-else-if="shipment.name" class="text-gray-400 italic">
-                                            {{ trans("No shipment information") }}
-                                        </span>
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <!--                            <div v-else class="mt-1 text-xs italic text-gray-400">
-                                {{ trans('No shipments') }}
-                            </div>-->
-                        </div>
-                    </div>
+                <div class="">
                     
                     <!-- Field: Billing -->
-                    <dl class="mt-3 relative flex items-start w-full flex-none gap-x-1 py-1">
+                    <dl class="xmt-3 relative flex items-start w-full flex-none gap-x-1 py-1">
                         <!-- <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
@@ -1082,6 +1025,7 @@ const copyToClipboard = async (text: string, label: string) => {
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
                                     :balance="box_stats?.customer?.balance"
+                                    :payments="box_stats?.payments"
                                     :currencyCode="currency.code"
                                     :toBePaidBy="data?.data?.to_be_paid_by"
                                     :order="data?.data"
@@ -1115,14 +1059,22 @@ const copyToClipboard = async (text: string, label: string) => {
                                                 />
                                             </div>
 
-                                            <div v-else class="mx-auto w-fit">
+                                            <div v-else class="mx-auto w-fit flex items-center">
                                                 <Button
-                                                    
+                                                    v-if="data?.data?.to_be_paid_by?.value"
+                                                    @click.prevent="() => onClickPayInvoice(data?.data?.to_be_paid_by?.id)"
+                                                    xtype="secondary"
+                                                    :label="trans('Pay with :toBePaidBy', { toBePaidBy: data?.data?.to_be_paid_by?.label })"
+                                                    size="sm"
+                                                    class="rounded-r-none !border-r-0"
+                                                />
+                                                <Button
                                                     @click.prevent="() => onClickPayInvoice()"
                                                     xtype="secondary"
-                                                    :label="trans('Pay')"
+                                                    icon="far fa-ellipsis-v"
+                                                    xlabel="trans('Pay with other')"
                                                     size="sm"
-                                                    xclass="rounded-l-none"
+                                                    class="rounded-l-none !border-l-0"
                                                 />
                                             </div>
                                         </div>
@@ -1193,6 +1145,67 @@ const copyToClipboard = async (text: string, label: string) => {
                     </dl>
 
                     
+                    <!-- Section: Delivery Notes -->
+                    <div v-if="box_stats?.delivery_notes?.length"
+                        class="mt-4 border rounded-lg p-4 xpt-3 bg-white shadow-sm">
+                        <!-- Section Title -->
+                        <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
+                            <div class="text-sm font-semibold text-gray-800">
+                                {{ trans('Delivery Notes') }}
+                            </div>
+                        </div>
+
+                        <!-- Delivery Note Items -->
+                        <div v-for="(note, index) in box_stats?.delivery_notes" :key="index"
+                            class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
+
+                            <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
+                                <FontAwesomeIcon :icon="faTruck"
+                                    :class="note.type === 'replacement' ? 'text-red-500' : 'text-blue-500'"
+                                    fixed-width />
+                                <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{
+                                note?.reference
+                                }}
+                                </Link>
+                                <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                                    {{ trans(note?.state?.tooltip) }}
+                                    <Icon :data="note?.state" />
+                                </span>
+                            </div>
+
+                            <!-- Shipments -->
+                            <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
+                                <p class="text-gray-700 font-medium mb-1">{{ trans('Shipments') }}:</p>
+                                <ul class="list-disc pl-4 space-y-1">
+                                    <li v-for="(shipment, i) in note.shipments" :key="i">
+                                        <template v-if="shipment?.formatted_tracking_urls?.length">
+                                            {{ shipment.name }}
+                                            <div v-for="trackingData in shipment.formatted_tracking_urls">
+
+                                                <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
+                                                    class="secondaryLink" v-tooltip="trans('Click to track shipment')">
+                                                    {{ trackingData.tracking }}
+                                                </a>
+                                            </div>
+                                        </template>
+
+                                        <span v-else-if="shipment.name" class="">
+                                            {{ shipment.name }}
+                                        </span>
+                                        <span v-else-if="shipment.name" class="text-gray-400 italic">
+                                            {{ trans("No shipment information") }}
+                                        </span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!--                            <div v-else class="mt-1 text-xs italic text-gray-400">
+                                {{ trans('No shipments') }}
+                            </div>-->
+                        </div>
+                    </div>
+
+                    
 
                     <!-- Field: number of order -->
                     <!-- <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
@@ -1249,7 +1262,7 @@ const copyToClipboard = async (text: string, label: string) => {
                 </div> -->
 
                 
-                <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
+                <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-4 lg:mt-0">
                     <div class="border-b border-gray-300 mb-2 pb-2">
                         <!-- Field: weight -->
                         <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
@@ -1342,7 +1355,7 @@ const copyToClipboard = async (text: string, label: string) => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to pay")
                             }}: {{
-                            locale.currencyFormat(box_stats.currency.code,
+                            locale.currencyFormat(currency.code,
                             box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
@@ -1403,7 +1416,7 @@ const copyToClipboard = async (text: string, label: string) => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to refund")
                             }}: {{
-                            locale.currencyFormat(box_stats.currency.code,
+                            locale.currencyFormat(currency.code,
                             box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
