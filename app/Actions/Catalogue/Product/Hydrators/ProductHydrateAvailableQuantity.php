@@ -28,22 +28,26 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         return $product->id;
     }
 
-    public function handle(Product $product): void
+    public function handle(Product $product): Product
     {
         if ($product->state == ProductStateEnum::DISCONTINUED) {
-            UpdateProduct::run($product, [
+            return UpdateProduct::run($product, [
                 'available_quantity' => null,
                 'status'             => ProductStatusEnum::DISCONTINUED,
             ]);
-
-
-            return;
         }
+
+
         $currentQuantity   = $product->available_quantity;
         $availableQuantity = 0;
 
         $numberOrgStocksChecked = 0;
+        $numberOrgStocksHasNeverBeenInWarehouse = 0;
         foreach ($product->orgStocks as $orgStock) {
+
+            if (!$orgStock->has_been_in_warehouse) {
+                $numberOrgStocksHasNeverBeenInWarehouse++;
+            }
 
             if ($orgStock->is_on_demand) {
                 $quantityInStock = 10000;
@@ -81,9 +85,20 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             $dataToUpdate['back_in_stock_since'] = now();
         }
 
-        if (in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK])) {
+        if (in_array($product->status, [
+            ProductStatusEnum::FOR_SALE,
+            ProductStatusEnum::OUT_OF_STOCK,
+            ProductStatusEnum::COMING_SOON
+        ])) {
             if ($availableQuantity == 0) {
                 $status                             = ProductStatusEnum::OUT_OF_STOCK;
+
+                if ($numberOrgStocksChecked == 0 || $numberOrgStocksHasNeverBeenInWarehouse > 0) {
+                    // todo: hold on until orgStocks.has_been_in_warehouse are hydrated
+                    //$status = ProductStatusEnum::COMING_SOON;
+                }
+
+
                 $dataToUpdate['out_of_stock_since'] = now();
             } else {
                 $status = ProductStatusEnum::FOR_SALE;
@@ -91,8 +106,11 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             $dataToUpdate['status'] = $status;
         }
 
+        if (!$product->is_for_sale) {
+            $dataToUpdate['status'] = ProductStatusEnum::NOT_FOR_SALE;
+        }
 
-        UpdateProduct::run($product, $dataToUpdate);
+        return UpdateProduct::run($product, $dataToUpdate);
     }
 
     public string $commandSignature = 'product:hydrate-available-quantity {id?}';
