@@ -64,8 +64,8 @@ Route::prefix("tags")
     ->name("tags.")
     ->group(__DIR__."/tags.php");
 
-Route::prefix("agents")
-    ->name("agents.")
+Route::prefix("crm")
+    ->name("crm.")
     ->group(__DIR__."/agents.php");
 
 Route::get('/show', ShowOrganisation::class)->name('show');

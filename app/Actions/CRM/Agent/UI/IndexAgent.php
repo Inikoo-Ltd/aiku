@@ -5,8 +5,8 @@ namespace App\Actions\CRM\Agent\UI;
 use Closure;
 use App\Actions\OrgAction;
 use App\Services\QueryBuilder;
-use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
+use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
@@ -43,16 +43,8 @@ class IndexAgent extends OrgAction
     public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query
-                    ->orWhereStartWith('is_online', $value)
-                    ->orWhereStartWith('is_available', $value)
-                    ->orWhereStartWith('current_chat_count', $value)
-                    ->orWhereHas('user', function ($q) use ($value) {
-                        $q
-                            ->whereStartWith('contact_name', $value)
-                            ->orWhereStartWith('email', $value);
-                    });
+            $query->whereHas('user', function ($q) use ($value) {
+                $q->whereStartWith('contact_name', $value);
             });
         });
 
@@ -60,31 +52,32 @@ class IndexAgent extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(ChatAgent::class)
-            ->with(['user']);
-
-        return $queryBuilder
-            ->defaultSort('id')
-            ->select([
-                'id',
-                'user_id',
-                'max_concurrent_chats',
-                'current_chat_count',
-                'is_online',
-                'is_available',
-                'auto_accept',
-                'specialization',
-                'created_at'
-            ])
-            ->allowedSorts([
-                'is_online',
-                'is_available',
-                'current_chat_count',
-                'max_concurrent_chats',
-            ])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return QueryBuilder::for(ChatAgent::class)
+          ->join('users', 'chat_agents.user_id', '=', 'users.id')
+          ->without('user')
+          ->select([
+              'chat_agents.id',
+              'chat_agents.user_id',
+              'users.contact_name as name',
+              'chat_agents.max_concurrent_chats',
+              'chat_agents.current_chat_count',
+              'chat_agents.is_online',
+              'chat_agents.is_available',
+              'chat_agents.auto_accept',
+              'chat_agents.specialization',
+              'chat_agents.created_at'
+          ])
+          ->allowedSorts([
+              'is_online',
+              'is_available',
+              'current_chat_count',
+              'max_concurrent_chats',
+              'name',
+              'created_at'
+          ])
+          ->allowedFilters([$globalSearch])
+          ->withPaginator($prefix, tableName: request()->route()->getName())
+          ->withQueryString();
     }
 
     /**
@@ -94,20 +87,23 @@ class IndexAgent extends OrgAction
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix . 'Page');
+                $table
+                    ->name($prefix)
+                    ->pageName($prefix.'Page');
             }
 
             $table
-            ->withModelOperations($modelOperations)
-            ->withGlobalSearch()
-            ->column(key: 'user_contact_name', label: __('Agent Name'), sortable: true, searchable: true)
-            ->column(key: 'is_online', label: __('Online'), sortable: true)
-            ->column(key: 'is_available', label: __('Available'), sortable: true)
-            ->column(key: 'current_chat_count', label: __('Current Chats'), sortable: true)
-            ->column(key: 'max_concurrent_chats', label: __('Max Chats'), sortable: true)
-            ->column(key: 'specialization', label: __('Specialization'))
-            ->column(key: 'action', label: __('Action'))
-            ->defaultSort('user_contact_name');
+               ->withModelOperations($modelOperations)
+               ->withGlobalSearch()
+               ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+               ->column(key: 'is_online', label: __('Status'), canBeHidden: false, sortable: true)
+               ->column(key: 'is_available', label: __('Available'), canBeHidden: false, sortable: true)
+               ->column(key: 'current_chat_count', label: __('Current Chats'), canBeHidden: false, sortable: true)
+               ->column(key: 'max_concurrent_chats', label: __('Max Chats'), canBeHidden: false, sortable: true)
+               ->column(key: 'auto_accept', label: __('Auto Accept'), canBeHidden: false, sortable: true) // TAMBAH INI
+               ->column(key: 'specialization', label: __('Specialization'), canBeHidden: false)
+               ->column(key: 'action', label: __('Action'))
+               ->defaultSort('name');
         };
     }
 

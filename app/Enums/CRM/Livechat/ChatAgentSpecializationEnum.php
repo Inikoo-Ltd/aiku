@@ -29,4 +29,16 @@ enum ChatAgentSpecializationEnum: string
             'general' => __('General Inquiry'),
         ];
     }
+
+
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->map(fn (self $case) => [
+                'label' => self::labels()[$case->value] ?? $case->value,
+                'value' => $case->value,
+            ])
+            ->values()
+            ->toArray();
+    }
 }

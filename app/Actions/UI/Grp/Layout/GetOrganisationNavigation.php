@@ -205,9 +205,9 @@ class GetOrganisationNavigation
             'label'   => __('CRM Agents'),
             'tooltip' => __('CRM Agents'),
             'icon'    => ['fal', 'fa-headset'],
-            'root'    => 'grp.org.agents.show',
+            'root'    => 'grp.org.crm.agents.show',
             'route'   => [
-                'name'       => 'grp.org.agents.show',
+                'name'       => 'grp.org.crm.agents.show',
                 'parameters' => [$organisation->slug],
             ],
             'topMenu' => [],

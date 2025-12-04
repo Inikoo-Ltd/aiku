@@ -1,12 +1,19 @@
 <?php
 
 
+use App\Actions\CRM\Agent\StoreAgent;
 use Illuminate\Support\Facades\Route;
+use App\Actions\CRM\Agent\DeleteAgent;
+use App\Actions\CRM\Agent\UpdateAgent;
+use App\Actions\CRM\Agent\UI\EditAgent;
 use App\Actions\CRM\Agent\UI\ShowAgent;
+use App\Actions\CRM\Agent\UI\CreateAgent;
 
-Route::get('/', ShowAgent::class)->name('show');
-// Route::get('/create', CreateTag::class)->name('create');
-// Route::get('/{tag}/edit', EditTag::class)->name('edit');
-// Route::post('/store', StoreTag::class)->name('store');
-// Route::patch('/update/{tag:id}', UpdateTag::class)->name('update')->withoutScopedBindings();
-// Route::delete('/delete/{tag:id}', DeleteTag::class)->name('delete')->withoutScopedBindings();
+Route::name('agents.')->prefix('agents')->group(function () {
+    Route::get('/', ShowAgent::class)->name('show');
+    Route::get('/create', CreateAgent::class)->name('create');
+    Route::get('/{agentId}/edit', EditAgent::class)->name('edit');
+    Route::post('/store', StoreAgent::class)->name('store');
+    Route::patch('/update/{agent:id}', UpdateAgent::class)->name('update')->withoutScopedBindings();
+    Route::delete('/delete/{agent:id}', DeleteAgent::class)->name('delete')->withoutScopedBindings();
+});

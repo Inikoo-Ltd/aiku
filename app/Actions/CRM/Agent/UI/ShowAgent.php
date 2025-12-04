@@ -10,7 +10,6 @@ use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Http\Resources\CRM\Livechat\ChatAgentResource;
 
 class ShowAgent extends OrgAction
 {
@@ -35,6 +34,10 @@ class ShowAgent extends OrgAction
 
     public function htmlResponse(Organisation|Shop $scope, ActionRequest $request)
     {
+        $indexAgentAction = IndexAgent::make();
+
+        $agents = $indexAgentAction->handle($this->organisation, 'agents');
+
         return Inertia::render(
             'Agent/Agents',
             [
@@ -56,17 +59,17 @@ class ShowAgent extends OrgAction
                             'tooltip' => __('Create CRM Agent'),
                             'label'   => __('Create CRM Agent'),
                             'route'   => [
-                                'name'       => 'grp.org.agents.create',
-                                'organisation' => $this->organisation->slug,
+                                'name'       => 'grp.org.crm.agents.create',
+                                'parameters' => [$this->organisation->slug],
                             ],
                         ],
                     ],
                 ],
-                'data'        => ChatAgentResource::collection(IndexAgent::run($this->organisation, __('Agents'))),
+                'data'        => $agents,
             ],
         )->table(
-            IndexAgent::make()->tableStructure(
-                prefix: 'Agents'
+            $indexAgentAction->tableStructure(
+                prefix: 'agents'
             ),
         );
     }
@@ -83,7 +86,7 @@ class ShowAgent extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.agents.show',
+                                'name'       => 'grp.org.crm.agents.show',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('CRM Agent')
