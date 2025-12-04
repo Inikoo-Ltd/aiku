@@ -197,7 +197,7 @@ class IndexPurchaseOrders extends OrgAction
     {
         $subNavigation = null;
         $actions       = [];
-        $title         = __('purchase orders');
+        $title         = __('Purchase Orders');
 
         $icon       = [
             'icon'  => ['fal', 'fa-clipboard-list'],

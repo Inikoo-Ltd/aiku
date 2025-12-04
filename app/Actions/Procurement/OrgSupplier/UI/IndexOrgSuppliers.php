@@ -219,7 +219,7 @@ class IndexOrgSuppliers extends OrgAction
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('suppliers');
+        $title = __('Suppliers');
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-person-dolly'],
@@ -251,7 +251,7 @@ class IndexOrgSuppliers extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('suppliers'),
+                'title'       => __('Suppliers'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
