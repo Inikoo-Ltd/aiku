@@ -19,8 +19,6 @@ return new class () extends Migration {
         'shop_stats',
         'organisation_catalogue_stats',
         'group_catalogue_stats',
-        'platform_stats',
-        'trade_unit_stats',
     ];
 
     public function up(): void
@@ -29,9 +27,9 @@ return new class () extends Migration {
             if (!Schema::hasTable($tableName)) {
                 continue;
             }
-            if (!Schema::hasColumn($tableName, 'number_products_state_coming_soon')) {
+            if (!Schema::hasColumn($tableName, 'number_products_status_coming_soon')) {
                 Schema::table($tableName, function (Blueprint $table) {
-                    $table->unsignedInteger('number_products_state_coming_soon')->default(0);
+                    $table->unsignedInteger('number_products_status_coming_soon')->default(0);
                 });
             }
         }
@@ -43,9 +41,9 @@ return new class () extends Migration {
             if (!Schema::hasTable($tableName)) {
                 continue;
             }
-            if (Schema::hasColumn($tableName, 'number_products_state_coming_soon')) {
+            if (Schema::hasColumn($tableName, 'number_products_status_coming_soon')) {
                 Schema::table($tableName, function (Blueprint $table) {
-                    $table->dropColumn(['number_products_state_coming_soon']);
+                    $table->dropColumn(['number_products_status_coming_soon']);
                 });
             }
         }

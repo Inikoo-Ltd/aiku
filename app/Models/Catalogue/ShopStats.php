@@ -161,7 +161,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_current_brands
  * @property int $number_tags
  * @property int $number_current_tags
- * @property int $number_products_state_coming_soon
+ * @property int $number_products_status_coming_soon
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dDepartment
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dFamily

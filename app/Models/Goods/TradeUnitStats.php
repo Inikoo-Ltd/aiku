@@ -46,7 +46,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $total_image_size
  * @property float $average_image_size
  * @property float|null $max_image_size
- * @property int $number_products_state_coming_soon
  * @property-read \App\Models\Goods\TradeUnit $tradeUnit
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitStats newQuery()
