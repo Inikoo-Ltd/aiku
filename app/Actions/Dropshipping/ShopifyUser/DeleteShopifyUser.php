@@ -31,7 +31,7 @@ class DeleteShopifyUser extends OrgAction
 
         DeleteWebhooksFromShopify::run($shopifyUser);
 
-        if ($shopifyUser->customerSalesChannel) {
+        if ($shopifyUser->customerSalesChannel && $shopifyUser->shopify_fulfilment_service_id) {
             DeleteFulfilmentService::run($shopifyUser->customerSalesChannel, $shopifyUser->shopify_fulfilment_service_id);
         }
 
