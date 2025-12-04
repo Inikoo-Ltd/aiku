@@ -148,17 +148,17 @@ class UpdateProduct extends OrgAction
 
         if (Arr::hasAny($modelData, ['is_for_sale'])) {
             data_set($modelData, 'not_for_sale_since', $modelData['is_for_sale'] ? null : Carbon::now('UTC'));
-            if (!$modelData['is_for_sale']) {
-                data_set($modelData, 'status', ProductStatusEnum::NOT_FOR_SALE);
-            } else {
-                $modelData = array_merge($modelData, $this->getProductStatus($product));
-            }
             // For auditing | Ignore not_for_sale_since
             $newData = array_merge($newData, Arr::except($modelData, ['not_for_sale_since', 'out_of_stock_since', 'back_in_stock_since']));
         }
 
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
+
+
+        if (Arr::hasAny($changed, ['is_for_sale','state'])) {
+            $product = ProductHydrateAvailableQuantity::run($product);
+        }
 
         if ($product->webpage && !empty($webpageData)) {
             UpdateWebpage::make()->action($product->webpage, $webpageData);
@@ -325,64 +325,6 @@ class UpdateProduct extends OrgAction
         }
 
         return $product;
-    }
-
-    public function getProductStatus(Product $product): array
-    {
-        // Moved function here, since ProductHydrateAvailableQuantity will call this action making it redundant, and some logic needs to be modified
-        $dataToUpdate = [];
-        if ($product->state == ProductStateEnum::DISCONTINUED) {
-            $dataToUpdate['status'] = ProductStatusEnum::DISCONTINUED;
-            return $dataToUpdate;
-        }
-        $currentQuantity   = $product->available_quantity;
-        $availableQuantity = 0;
-
-        $numberOrgStocksChecked = 0;
-        foreach ($product->orgStocks as $orgStock) {
-
-            if ($orgStock->is_on_demand) {
-                $quantityInStock = 10000;
-            } else {
-                $quantityInStock = $orgStock->quantity_available;
-            }
-
-            $productToOrgStockRatio = $orgStock->pivot->quantity;
-            if (!$productToOrgStockRatio || $productToOrgStockRatio == 0) {
-                continue;
-            }
-
-            $availableQuantityFromThisOrgStock = floor($quantityInStock / $productToOrgStockRatio);
-
-            if ($numberOrgStocksChecked == 0) {
-                $availableQuantity = $availableQuantityFromThisOrgStock;
-            } else {
-                $availableQuantity = min($availableQuantityFromThisOrgStock, $availableQuantity);
-            }
-
-            $numberOrgStocksChecked++;
-        }
-
-        if ($availableQuantity < 0) {
-            $availableQuantity = 0;
-        }
-
-        $dataToUpdate['available_quantity'] = $availableQuantity;
-
-        if ($currentQuantity == 0 && $availableQuantity > 0) {
-            $dataToUpdate['back_in_stock_since'] = now();
-        }
-        if (in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::NOT_FOR_SALE, ProductStatusEnum::OUT_OF_STOCK])) {
-            if ($availableQuantity == 0) {
-                $status                             = ProductStatusEnum::OUT_OF_STOCK;
-                $dataToUpdate['out_of_stock_since'] = now();
-            } else {
-                $status = ProductStatusEnum::FOR_SALE;
-            }
-            $dataToUpdate['status'] = $status;
-        }
-
-        return $dataToUpdate;
     }
 
     public function rules(): array
