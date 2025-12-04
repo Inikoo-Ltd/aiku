@@ -69,7 +69,7 @@ import RenderEcommerceProduct from "@/Components/CMS/Webpage/Product/Ecommerce/R
 
 import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
 import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
-
+import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"
 
 
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
@@ -195,6 +195,7 @@ export const getProductRenderB2bComponent = (
 ) => {
 	const components: Record<string, any> = {
 		"product-1": ProductIris1Ecom,
+		"product-2": ProductIris2Ecom,
 	}
 
 	return components[componentName] ?? null
