@@ -64,6 +64,7 @@ import ListProductWorkshop from '@/Components/CMS/Webpage/Products/Dropshipping/
 import ListProductsEcomWorkshop from '@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomWorkshop.vue'
 import RenderDropshippingProductWorkshop from '@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductWorkshop.vue'
 import Product1WorkshopEcom from '@/Components/CMS/Webpage/Product1/Ecommerce/Product1WorkshopEcom.vue'
+import Product2WorkshopEcom from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -167,6 +168,7 @@ export const getProductRenderB2bComponentWorkshop = (
 ) => {
     const components: Record<string, any> = {
         "product-1": Product1WorkshopEcom,
+        "product-2": Product2WorkshopEcom,
     }
 
     return components[componentName] ?? null
