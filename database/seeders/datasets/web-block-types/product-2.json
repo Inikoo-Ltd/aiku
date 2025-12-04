@@ -1,7 +1,7 @@
 {
 	"slug": "product-2",
 	"scope": "webpage",
-	"code": "product-2",
+	"code": "product-1",
 	"name": "Product showcase B",
 	"icon": ["fal", "cube"],
 	"category": "product",
