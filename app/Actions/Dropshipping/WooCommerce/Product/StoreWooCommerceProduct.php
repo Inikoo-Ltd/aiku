@@ -135,7 +135,8 @@ class StoreWooCommerceProduct extends RetinaAction
             ProductStatusEnum::FOR_SALE->value     => 'publish',
             ProductStatusEnum::DISCONTINUED->value => 'pending',
             ProductStatusEnum::IN_PROCESS->value   => 'draft',
-            ProductStatusEnum::OUT_OF_STOCK->value => 'draft'
+            ProductStatusEnum::OUT_OF_STOCK->value => 'draft',
+            ProductStatusEnum::COMING_SOON->value => 'draft'
         ];
 
         return $stateMap[$status] ?? 'draft';
