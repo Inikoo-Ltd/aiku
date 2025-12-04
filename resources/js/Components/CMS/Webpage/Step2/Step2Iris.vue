@@ -30,6 +30,7 @@ import {
 	faClock
 } from "@far";
 import { faLambda } from "@fad";
+import TextRenderIris from "./TextRenderIris.vue";
 
 library.add(
 	faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,
@@ -71,7 +72,7 @@ const emits = defineEmits<{
 					<!-- Left Text -->
 					<div class="order-2 md:order-1 md:col-span-4 md:pr-8 px-4 text-left md:text-right">
 						<!-- <Editor v-model="step.text_left" @update:fieldValue="() => emits('autoSave')" /> -->
-						<div v-html="step.text_left"></div>
+						<TextRenderIris :model-value="step.text_left" :screenType="screenType" />
 					</div>
 
 					<!-- Bullet -->
@@ -93,7 +94,7 @@ const emits = defineEmits<{
 					<!-- Right Text -->
 					<div class="order-3 md:order-3 md:col-span-4 md:pl-8 px-4 text-left">
 						<!-- <Editor v-model="step.text_right" @update:fieldValue="() => emits('autoSave')" /> -->
-						<div v-html="step.text_right"></div>
+						<TextRenderIris :model-value="step.text_right" :screenType="screenType"  />
 					</div>
 				</div>
 

@@ -288,7 +288,7 @@ class Webpage extends Model implements Auditable, HasMedia
         $environment = app()->environment();
 
 
-        if ($environment == 'local') {
+        /* if ($environment == 'local') {
             $localDomain = match (request()->website->shop->type) {
                 ShopTypeEnum::FULFILMENT => 'fulfilment.test',
                 ShopTypeEnum::DROPSHIPPING => 'ds.test',
@@ -299,7 +299,7 @@ class Webpage extends Model implements Auditable, HasMedia
             return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain), '');
         } elseif ($environment == 'staging') {
             return replaceUrlSubdomain($url, 'canary');
-        }
+        } */
 
 
         return $url;
