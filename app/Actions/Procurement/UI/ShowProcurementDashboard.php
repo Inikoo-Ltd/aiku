@@ -45,7 +45,7 @@ class ShowProcurementDashboard extends OrgAction
 
         if ($this->organisation->type === OrganisationTypeEnum::SHOP) {
             $agents = [
-                'name'         => __('agents'),
+                'name'         => __('Agents'),
                 'icon'         => ['fal', 'fa-people-arrows'],
                 'route'         => [
                     'name'       => 'grp.org.procurement.org_agents.index',
@@ -61,7 +61,7 @@ class ShowProcurementDashboard extends OrgAction
             'Procurement/ProcurementDashboard',
             [
                 'breadcrumbs'  => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'        => __('procurement'),
+                'title'        => __('Procurement'),
                 'pageHead'     => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-box-usd'],
@@ -78,7 +78,7 @@ class ShowProcurementDashboard extends OrgAction
                     array_filter([
                         $agents,
                         [
-                            'name'         => __('suppliers'),
+                            'name'         => __('Suppliers'),
                             'icon'         => ['fal', 'fa-person-dolly'],
                             'route'         => [
                                 'name'       => 'grp.org.procurement.org_suppliers.index',
@@ -89,7 +89,7 @@ class ShowProcurementDashboard extends OrgAction
                             ],
                         ],
                         [
-                            'name'         => __('Supplier products'),
+                            'name'         => __('Supplier Products'),
                             'shortName'    => __('Products'),
                             'icon'         => ['fal', 'fa-box-usd'],
                             'route'         => [
@@ -104,7 +104,7 @@ class ShowProcurementDashboard extends OrgAction
 
                     [
                         [
-                            'name'  => __('purchase orders'),
+                            'name'  => __('Purchase Orders'),
                             'icon'  => ['fal', 'fa-clipboard-list'],
                             'route'  => ['name' => 'grp.org.procurement.purchase_orders.index', 'parameters' => ['organisation' => $this->organisation->slug]],
                             'index' => [
@@ -113,7 +113,7 @@ class ShowProcurementDashboard extends OrgAction
 
                         ],
                         [
-                            'name'  => __('Stock deliveries'),
+                            'name'  => __('Stock Deliveries'),
                             'icon'  => ['fal', 'fa-truck-container'],
                             'route'  => ['name' => 'grp.org.procurement.stock_deliveries.index', 'parameters' => ['organisation' => $this->organisation->slug]],
                             'index' => [
