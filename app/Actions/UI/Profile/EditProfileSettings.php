@@ -101,14 +101,14 @@ class EditProfileSettings
                     ],
                     app()->environment('local') ? [
                         "label"  => __("Timezone"),
-                        "icon"   => "fal fa-sliders-v",
+                        "icon"   => "fal fa-clock",
                         "fields" => [
                             "timezones"  =>  [
                                 "type"    => "select_infinite",
                                 "label"   => __("Timezone"),
                                 "information"   => __("Select your timezone to show in the footer"),
                                 "options"   => collect(Arr::get($user->settings, 'timezones', []))
-                                    ->map(fn ($tz) => ['label' => $tz, 'code' => $tz])
+                                    ->map(fn ($tz) => ['label' => $tz, 'value' => $tz])
                                     ->values()
                                     ->toArray(),
                                 "mode"      => "multiple",
