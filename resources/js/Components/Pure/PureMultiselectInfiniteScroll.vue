@@ -225,8 +225,6 @@ defineExpose({
             <slot name="afterlist" />
         </template>
     </Multiselect>
-
-{{ model }}
 </template>
 
 <style src="@vueform/multiselect/themes/default.css"></style>
