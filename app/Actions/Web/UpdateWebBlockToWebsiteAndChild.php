@@ -26,16 +26,16 @@ class UpdateWebBlockToWebsiteAndChild extends OrgAction
     public function handle(WebBlockType $newWebBlock, Website $website, string $marginal): WebBlockType
     {
         $type  = $marginal === 'products' ? 'list_product' : $marginal;
-        $codes = WebBlockType::where('category', $type)->pluck('code')->toArray();
+        $names = WebBlockType::where('category', $type)->pluck('name')->toArray();
 
         $webpages = $website->webpages()
-            ->where(function ($q) use ($codes) {
-                foreach ($codes as $code) {
-                    $q->orWhereRaw("published_layout->'web_blocks' @> '[{\"type\": \"$code\"}]'");
+            ->where(function ($q) use ($names) {
+                foreach ($names as $name) {
+                    $q->orWhereRaw("published_layout->'web_blocks' @> '[{\"name\": \"$name\"}]'");
                 }
-            })->chunkById(500, function ($webpages) use ($codes, $newWebBlock) {
+            })->chunkById(500, function ($webpages) use ($names, $newWebBlock) {
                 foreach ($webpages as $webpage) {
-                    $modified = $this->modifyLayout($webpage->published_layout, $codes, $newWebBlock->slug);
+                    $modified = $this->modifyLayout($webpage->published_layout, $names, $newWebBlock->slug);
                     if (empty($modified)) continue;
 
                     $webpage->updateQuietly(['published_layout' => $modified['layout']]);
@@ -61,9 +61,9 @@ class UpdateWebBlockToWebsiteAndChild extends OrgAction
     }
 
 
-    public function modifyLayout(array $layout, array $codes, string $slug): array
+    public function modifyLayout(array $layout, array $names, string $slug): array
     {
-        $index = collect($layout['web_blocks'] ?? [])->whereIn('type', $codes)->keys()->first();
+        $index = collect($layout['web_blocks'] ?? [])->whereIn('name', $names)->keys()->first();
 
         if ($index === null) return [];
 
