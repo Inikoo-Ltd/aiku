@@ -1,42 +1,40 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, inject } from 'vue'
 import { formatInTimeZone } from 'date-fns-tz'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
 
-const times = ref({
-    Slovakia: '',
-    UK: '',
-    Spain: '',
-    KL: '',
-    Bali: '',
-    India: '',
-    China: '',
-})
 
-const timezones = {
-    Slovakia: 'Europe/Bratislava',
-    UK: 'Europe/London',
-    Spain: 'Europe/Madrid',
-    KL: 'Asia/Kuala_Lumpur',
-    Bali: 'Asia/Makassar',
-    India: 'Asia/Kolkata',
-    China: 'Asia/Shanghai',
-}
+const layout = inject('layout', layoutStructure)
+
+const times = ref<Record<string, string>>({})
 
 const updateTimes = () => {
     const now = new Date()
-    for (const [country, timezone] of Object.entries(timezones)) {
-        times.value[country] = formatInTimeZone(now, timezone, 'HH:mm')
+    const updated: Record<string, string> = {}
+    for (const tz of layout?.user?.settings?.timezones || []) {
+        //  { "Asia/Makassar": "15:04" }
+        updated[tz] = formatInTimeZone(now, tz.timezone, 'HH:mm')
     }
+    console.log('updated', updated)
+    times.value = updated
 }
+
+let intervalId: number | undefined
 
 onMounted(() => {
     updateTimes()
-    setInterval(updateTimes, 60000) // Update every minute
+    intervalId = window.setInterval(updateTimes, 60000)
 })
 
 onBeforeUnmount(() => {
-    clearInterval(updateTimes)
+    if (intervalId) {
+        clearInterval(intervalId)
+    }
 });
+
+watch(() => layout?.user?.settings?.timezones, (newVal) => {
+    updateTimes()
+})
 </script>
 
 <template>

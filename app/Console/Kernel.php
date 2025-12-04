@@ -202,14 +202,15 @@ class Kernel extends ConsoleKernel
         );
 
 
-        $this->logSchedule(
+        // No need for now because it similar like PingActiveWooChannel
+        /*$this->logSchedule(
             $schedule->command('woo:revive_in_active_channel')->daily()->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'ReviveInActiveWooChannel',
             ),
             name: 'ReviveInActiveWooChannel',
             type: 'command',
             scheduledAt: now()->format('H:i')
-        );
+        );*/
 
         $this->logSchedule(
             $schedule->command('ebay:ping')->daily()->withoutOverlapping()->sentryMonitor(
