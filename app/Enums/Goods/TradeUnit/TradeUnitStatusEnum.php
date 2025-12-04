@@ -30,23 +30,23 @@ enum TradeUnitStatusEnum: string
         ];
     }
 
-    public static function stateIcon(): array
+    public static function icon(): array
     {
         return [
             'in_process'   => [
-                'tooltip' => __('in process'),
+                'tooltip' => __('In process'),
                 'icon'    => 'fal fa-seedling',
                 'class'   => 'text-indigo-500'
             ],
             'active'       => [
-                'tooltip' => __('contacted'),
-                'icon'    => 'fal fa-chair',
+                'tooltip' => __('Active'),
+                'icon'    => 'fas fa-check-circle',
                 'class'   => 'text-green-500'
             ],
             'discontinued' => [
-                'tooltip' => __('discontinued'),
-                'icon'    => 'fal fa-laugh',
-                'class'   => 'text-red-500'
+                'tooltip' => __('Discontinued'),
+                'icon'    => 'fas fa-skull',
+                'class'   => 'text-yellow-500'
             ],
             'anomality'    => [
                 'tooltip' => __('anomaly'),

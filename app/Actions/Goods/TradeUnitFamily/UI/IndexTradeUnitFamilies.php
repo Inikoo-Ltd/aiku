@@ -88,13 +88,13 @@ class IndexTradeUnitFamilies extends GrpAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Group' => [
-                            'title' => __("No Trade Units found"),
+                            'title' => __("No trade unit families found"),
                         ],
                         default => null
                     }
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -111,7 +111,7 @@ class IndexTradeUnitFamilies extends GrpAction
                     'type'    => 'button',
                     'style'   => 'create',
                     'tooltip' => __('New trade unit family'),
-                    'label'   => __('trade unit family'),
+                    'label'   => __('Trade unit family'),
                     'route'   => [
                         'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
                         'parameters' => []
@@ -130,7 +130,7 @@ class IndexTradeUnitFamilies extends GrpAction
                     'title'         => __('Trade Unit Families'),
                      'actions'       => $actions,
                     'iconRight'     => [
-                        'icon'  => ['fal', 'fa-atom'],
+                        'icon'  => ['fal', 'fa-atom-alt'],
                         'title' => __('Trade Unit Families'),
                     ],
                 ],
