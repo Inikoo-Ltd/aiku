@@ -15,7 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { Checkbox, Popover as PopoverPrimevue } from 'primevue';
+import { Checkbox, Popover as PopoverPrimevue, Select } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -163,6 +163,9 @@ const props = defineProps<{
                 id: number
             }
         }
+        payments_accounts: {
+
+        }[]
         customer_client?: {
             contact_name: string
             company_name: string
@@ -1349,8 +1352,14 @@ const labelToBePaid = (toBePaidValue: string) => {
                         <span class="text-red-500">*</span> {{ trans("Select payment method") }}
                     </label>
                     <div class="mt-1">
-                        <PureMultiselect v-model="paymentData.payment_method" :options="listPaymentMethod"
-                            :isLoading="isLoadingFetch" label="name" valueProp="id" required caret />
+                        <Select
+                            v-model="paymentData.payment_method"
+                            :options="box_stats?.payments_accounts"
+                            optionLabel="name"
+                            optionValue="id"
+                            fluid
+                            :placeholder="trans('Select payment method')"
+                        />
                     </div>
                 </div>
 
