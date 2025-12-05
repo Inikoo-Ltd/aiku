@@ -12,6 +12,8 @@ import ProductsBlockWorkshop from '@/Components/CMS/Website/ProductsBlock/Produc
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import SubDepartmentWorkshop from '@/Components/CMS/Website/SubDepartmentBlockWorkshop/SubDepartmentWorkshop.vue'
 import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
+import { routeType } from '@/types/route'
+import { notify } from '@kyvg/vue3-notification'
 
 library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -32,6 +34,13 @@ const props = defineProps<{
     department: {}
     sub_department: {}
     collection : {}
+    publishRoute : {
+      website_layout : routeType,
+      sub_department : routeType,
+      families : routeType,
+      products : routeType,
+      product : routeType,
+    }
 }>()
 
 
@@ -51,22 +60,14 @@ const component = computed(() => {
 })
 
 
-const onPublish = (action: {
-  method: 'post' | 'put' | 'patch' | 'delete',
-  route: {
-    name: string,
-    parameters?: Record<string, any>
-  }
-}) => {
-  console.log("Publishing action:", action)
-
-  const currentTab = props.tabs?.current
-  if (!currentTab || !props[currentTab]) {
-    console.warn("No valid tab selected.")
+const onPublish = () => {
+  const action = props.publishRoute[currentTab.value]
+  if (!currentTab || !props[currentTab.value]) {
+    console.error("No valid tab selected.")
     return
   }
 
-  const payload = props[currentTab].layout
+  const payload = props[currentTab.value].layout
 
   router[action.method](
     route(action.name, action.parameters),
@@ -78,10 +79,19 @@ const onPublish = (action: {
         console.log("Publishing started…")
       },
       onSuccess: () => {
-        console.log("Publishing successful.")
+        notify({
+          type: 'success',
+          title: 'Success',
+          text: 'Website section published successfully.'
+        })
       },
       onError: (errors) => {
         console.error("Publishing failed with errors:", errors)
+        notify({
+          type: 'error',
+          title: 'Error',
+          text: 'Failed to publish website section.'
+        })
       },
       onFinish: () => {
         loadingPublish.value = false

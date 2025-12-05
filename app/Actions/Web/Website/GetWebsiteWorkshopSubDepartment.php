@@ -25,7 +25,7 @@ class GetWebsiteWorkshopSubDepartment
 
     public function handle(Website $website): array
     {
-        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get();
+        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->whereJsonContains('website_type', $website->shop->type)->get();;
 
         $families = $website->shop->productCategories()->where('state', ProductCategoryStateEnum::ACTIVE)->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
 

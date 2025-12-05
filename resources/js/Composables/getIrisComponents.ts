@@ -69,7 +69,8 @@ import RenderEcommerceProduct from "@/Components/CMS/Webpage/Product/Ecommerce/R
 
 import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
 import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
-
+import SubDepartement2 from '@/Components/CMS/Webpage/SubDepartment2/SubDepartmentIris.vue'
+import FamiliesIris2 from "@/Components/CMS/Webpage/Families2/FamiliesIris2.vue"
 
 
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
@@ -102,10 +103,12 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 		//sub-department
 		"sub-departments-1": SubDepartmentIris,
+		"sub-departments-2": SubDepartement2,
 
 		//family
 		"family-1": FamilyIris1,
 		"families-1": families1Iris,
+		"families-2": FamiliesIris2,
 
 		//product
 		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,

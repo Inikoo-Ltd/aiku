@@ -36,7 +36,7 @@ const allowMove = () => false
 
         <!-- Nama -->
         <div class="text-xs text-center py-2 font-bold text-gray-700">
-          {{ element.name }}
+          {{ element.code }}
         </div>
       </div>
 

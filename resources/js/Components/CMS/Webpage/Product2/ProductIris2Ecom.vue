@@ -3,15 +3,9 @@ import { ref, inject } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus } from "@fas"
+import { faHeart as fasHeart, faPlus, faMinus } from "@fas"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 
-import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
-import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
-import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
-
-import Image from "@/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
@@ -23,6 +17,7 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import Product2Image from "./Product2Image.vue"
+import { faFileCheck, faFilePdf, faFileWord } from "@fal"
 
 // Register icons
 library.add(faCube, faLink, faPlus, faMinus)
@@ -80,6 +75,42 @@ const onAddFavourite = (p: ProductResource) => emits("setFavorite", p)
 const onUnselectFavourite = (p: ProductResource) => emits("unsetFavorite", p)
 const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)
 const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", p)
+
+const extractFileType = (mime: string) => {
+    if (!mime) return ''
+    const parts = mime.split('/')
+    return parts[1]?.split('+')[0]?.toLowerCase() || ''
+}
+
+const getIcon = (type: string) => {
+    switch (type) {
+        case "pdf":
+            return faFilePdf
+        case "doc":
+        case "docx":
+        case "msword":
+        case "vnd.openxmlformats-officedocument.wordprocessingml.document":
+            return faFileWord
+        default:
+            return faFileCheck
+    }
+}
+
+const groupedAttachments = computed(() => {
+    const allFiles = [
+        ...(product.value.attachments || []),
+    ]
+
+    // Group by label (scope)
+    const grouped = {}
+    allFiles.forEach(file => {
+        if (!grouped[file.label]) grouped[file.label] = []
+        grouped[file.label].push(file)
+    })
+
+    return grouped
+})
+
 </script>
 
 
