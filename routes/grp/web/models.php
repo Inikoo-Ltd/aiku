@@ -262,6 +262,7 @@ use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
+use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
@@ -889,6 +890,8 @@ Route::post('/supplier', StoreSupplier::class)->name('supplier.store');
 Route::patch('/supplier/{supplier:id}', updateOrgSupplier::class)->name('supplier.update');
 
 Route::patch('/org-supplier/{orgSupplier:id}', UpdateOrgSupplier::class)->name('org_supplier.update');
+
+Route::patch('/org-agent/{orgAgent:id}', UpdateOrgAgent::class)->name('org_agent.update');
 
 Route::name('production.')->prefix('production/{production:id}')->group(function () {
     Route::post('job-order', StoreJobOrder::class)->name('job-order.store');
