@@ -593,10 +593,9 @@ onBeforeUnmount(() => {
                 <div :class="'flex gap-3 items-center'">
                     <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
                     <div>
-                        {{ trans("We're having trouble connecting to your site. Could you please confirm whether the site URL is correct? The URL we tried to access is ")}} <span class="underline">{{ customer_sales_channel?.store_url }}</span> {{ trans(". If correct, please feel free to ignore this message and we will try again shortly.") }}
+                        {{ trans("We're unable to update stock due to we currently can't access your store.") }}
                     </div>
                 </div>
-                    <ButtonWithLink type="tertiary" @click="isOpenModalSuspended = true" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
             </div>
     </Message>
 
