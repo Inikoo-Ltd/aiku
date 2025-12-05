@@ -8,6 +8,7 @@
 
 import { Language } from '@/types/Locale'
 
+// Fallback if Pinia Store didn't provided
 export const aikuLocaleStructure = {
     language: {
         id: 68,
@@ -34,8 +35,8 @@ export const aikuLocaleStructure = {
 		}).formatToParts(123).find(part => part.type === 'currency')?.value ?? '';
 	},
     currencyFormat: (currencyCode: string | null, amount: number): string | number => {
+		if (typeof amount === "undefined" || amount === null) return 0
 
-        if (!amount) return 0
 		if (!currencyCode) {
 			return amount || 0
 		}

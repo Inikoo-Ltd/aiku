@@ -1031,7 +1031,14 @@ const labelToBePaid = (toBePaidValue: string) => {
                                 class="text-gray-500" />
                         </dt> -->
 
-                        <div v-if="box_stats.products.payment.pay_status != 'no_need'" class="w-full">
+                        <div v-if="data.data?.state === 'cancelled'" class="">
+                            <div class="text-yellow-600 border-yellow-500 bg-yellow-200 border rounded-md px-3 py-2">
+                                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                                {{ trans("Order cancelled, payments returned to balance") }}
+                            </div>
+                        </div>
+
+                        <div v-else-if="data.data?.state !== 'created' && box_stats.products.payment.pay_status != 'no_need'" class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
                             <div class="w-full xflex xgap-x-2 xborder rounded-md shadow pxb-2 isolate border"
                                 :class="[
@@ -1107,7 +1114,7 @@ const labelToBePaid = (toBePaidValue: string) => {
                                             @click.prevent="() => onClickPayInvoice()"
                                             xtype="secondary"
                                             xicon="far fa-ellipsis-v"
-                                            :label="trans('Pay with other')"
+                                            :label="trans('Pay')"
                                             size="sm"
                                             xclass="rounded-l-none !border-l-0"
                                         />
@@ -1137,24 +1144,9 @@ const labelToBePaid = (toBePaidValue: string) => {
                                     />
                                 </div>
                             </div>
-
-                            
-                            
-                            <!-- <div v-if="last_payment" class="mt-1.5 text-xs text-gray-500">
-                                {{ trans("Last payments:") }}
-                                <Link :href="route('grp.org.accounting.payments.show', {
-                                    organisation: route().params.organisation,
-                                    payment: last_payment?.id
-                                })" class="secondaryLink">{{ last_payment?.reference ?? last_payment?.id }}
-                                </Link>
-                            </div> -->
                         </div>
                         
-                        <div v-else class="text-gray-500">
-                            <div class="border border-gray-300 rounded-md p-2 pr-4">
-                                {{ trans("Order cancelled, payments returned to balance") }}
-                            </div>
-                        </div>
+                        
                     </dl>
 
                     
