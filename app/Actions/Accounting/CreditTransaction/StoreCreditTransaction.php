@@ -42,7 +42,7 @@ class StoreCreditTransaction extends OrgAction
         $creditTransaction = $customer->creditTransactions()->create($modelData);
 
 
-        CustomerHydrateCreditTransactions::run($customer);
+        CustomerHydrateCreditTransactions::run($customer->id);
 
 
         ShopHydrateCreditTransactions::dispatch($creditTransaction->shop)->delay($this->hydratorsDelay);

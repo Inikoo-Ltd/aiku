@@ -26,8 +26,12 @@ class CustomerHydrateDeliveryNotes implements ShouldBeUnique
         return $customerId.'-'.$type->value;
     }
 
-    public function handle(int $customerId, DeliveryNoteTypeEnum $type): void
+    public function handle(int|null $customerId, DeliveryNoteTypeEnum $type): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
         $customer = Customer::find($customerId);
         if (!$customer) {
             return;

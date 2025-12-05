@@ -191,7 +191,7 @@ class StoreInvoice extends OrgAction
 
 
         if ($invoice->customer_id) {
-            CustomerHydrateInvoices::dispatch($invoice->customer)->delay($this->hydratorsDelay);
+            CustomerHydrateInvoices::dispatch($invoice->customer_id)->delay($this->hydratorsDelay);
         }
 
         if ($invoice->customer_client_id) {

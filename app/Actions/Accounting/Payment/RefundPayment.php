@@ -87,9 +87,9 @@ class RefundPayment extends OrgAction
         ]);
 
         if ($this->asAction) {
-            CustomerHydrateCreditTransactions::run($refundPayment->customer);
+            CustomerHydrateCreditTransactions::run($refundPayment->customer_id);
         } else {
-            CustomerHydrateCreditTransactions::dispatch($refundPayment->customer);
+            CustomerHydrateCreditTransactions::dispatch($refundPayment->customer_id);
         }
     }
 

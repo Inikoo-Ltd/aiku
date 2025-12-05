@@ -61,7 +61,7 @@ class DeleteWebUser extends OrgAction
         GroupHydrateWebUsers::dispatch($webUser->group);
         OrganisationHydrateWebUsers::dispatch($webUser->organisation);
         ShopHydrateWebUsers::dispatch($webUser->shop);
-        CustomerHydrateWebUsers::dispatch($webUser->customer);
+        CustomerHydrateWebUsers::dispatch($webUser->customer_id);
 
         return $webUser;
     }

@@ -77,7 +77,7 @@ class RefundPaymentToBalance extends OrgAction
                 'date'       => now(),
                 'type'       => CreditTransactionTypeEnum::PAY_RETURN
             ]);
-            CustomerHydrateCreditTransactions::run($refundPayment->customer);
+            CustomerHydrateCreditTransactions::run($refundPayment->customer_id);
 
             $this->update($payment, [
                 'total_refund' => $payment->total_refund - $refundAmount,

@@ -58,7 +58,7 @@ class StoreRetinaWebUser extends RetinaAction
             return $webUser;
         });
 
-        CustomerHydrateWebUsers::dispatch($webUser->customer);
+        CustomerHydrateWebUsers::dispatch($webUser->customer_id);
 
         return $webUser;
     }

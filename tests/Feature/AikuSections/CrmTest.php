@@ -1150,7 +1150,8 @@ test('withdraw balance customer', function (Customer $customer) {
 
 test('Customer basket hydrator', function () {
     $customer = Customer::find(1);
-    CustomerHydrateBasket::run($customer);
+    CustomerHydrateBasket::run($customer->id);
+    $customer->refresh();
     expect($customer)->toBeInstanceOf(Customer::class)
         ->and($customer->amount_in_basket)->toEqual(0)
         ->and($customer->current_order_in_basket_id)->toBeNull();

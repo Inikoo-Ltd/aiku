@@ -117,7 +117,7 @@ class FetchAuroraOrders extends FetchAuroraAction
         if ($order->customer_client_id) {
             CustomerClientHydrateBasket::run($order->customer_client_id);
         } else {
-            CustomerHydrateBasket::run($order->customer);
+            CustomerHydrateBasket::run($order->customer_id);
         }
 
         DB::connection('aurora')->table('Order Dimension')

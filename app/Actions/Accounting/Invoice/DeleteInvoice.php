@@ -83,7 +83,7 @@ class DeleteInvoice extends OrgAction
     public function postDeleteInvoiceHydrators(Invoice $invoice): void
     {
         $customer = $invoice->customer;
-        CustomerHydrateInvoices::dispatch($customer);
+        CustomerHydrateInvoices::dispatch($invoice->customer_id);
         ShopHydrateInvoices::dispatch($customer->shop);
         ShopHydrateDeletedInvoices::dispatch($customer->shop);
         OrganisationHydrateInvoices::dispatch($customer->organisation);

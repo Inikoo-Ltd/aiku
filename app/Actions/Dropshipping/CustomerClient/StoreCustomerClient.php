@@ -66,7 +66,7 @@ class StoreCustomerClient extends OrgAction
 
 
         CustomerClientRecordSearch::dispatch($customerClient)->delay($this->hydratorsDelay);
-        CustomerHydrateClients::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
+        CustomerHydrateClients::dispatch($customerSalesChannel->customer_id)->delay($this->hydratorsDelay);
         CustomerSalesChannelsHydrateCustomerClients::dispatch($customerSalesChannel);
 
         if ($customerSalesChannel->shop && $customerSalesChannel->platform) {

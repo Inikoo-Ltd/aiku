@@ -30,7 +30,7 @@ class UpdateFavourite extends OrgAction
         $changes = Arr::except($favourite->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (count($changes) > 0) {
-            CustomerHydrateFavourites::run($favourite->customer);
+            CustomerHydrateFavourites::run($favourite->customer_id);
             ProductHydrateCustomersWhoFavourited::dispatch($favourite->product)->delay($this->hydratorsDelay);
             ProductHydrateCustomersWhoFavouritedInCategories::dispatch($favourite->product)->delay($this->hydratorsDelay);
         }

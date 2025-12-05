@@ -33,7 +33,7 @@ class UpdateTopUp extends OrgAction
             GroupHydrateTopUps::dispatch($topUp->group)->delay($this->hydratorsDelay);
             OrganisationHydrateTopUps::dispatch($topUp->organisation)->delay($this->hydratorsDelay);
             ShopHydrateTopUps::dispatch($topUp->shop)->delay($this->hydratorsDelay);
-            CustomerHydrateTopUps::dispatch($topUp->customer)->delay($this->hydratorsDelay);
+            CustomerHydrateTopUps::dispatch($topUp->customer_id)->delay($this->hydratorsDelay);
         }
 
         return $topUp;

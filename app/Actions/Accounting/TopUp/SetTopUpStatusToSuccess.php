@@ -35,7 +35,7 @@ class SetTopUpStatusToSuccess extends OrgAction
         StoreCreditTransaction::make()->action($topUp->customer, $modelData);
         $topUp->refresh();
 
-        CustomerHydrateTopUps::dispatch($topUp->customer);
+        CustomerHydrateTopUps::dispatch($topUp->customer_id);
         ShopHydrateTopUps::dispatch($topUp->shop);
         OrganisationHydrateTopUps::dispatch($topUp->organisation);
         GroupHydrateTopUps::dispatch($topUp->group);

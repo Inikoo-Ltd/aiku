@@ -19,13 +19,23 @@ class CustomerHydrateBackInStockReminders implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int $customerId): string
     {
-        return $customer->id;
+        return (string) $customerId;
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
+
         $stats = [
             'number_reminders' => $customer->backInStockReminder()->whereNull('un_reminded_at')->count(),
             'number_reminders_cancelled' => $customer->backInStockReminder()->whereNotNull('un_reminded_at')->count(),
