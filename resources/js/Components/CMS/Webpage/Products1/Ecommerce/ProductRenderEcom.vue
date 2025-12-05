@@ -76,7 +76,38 @@ const onAddBackInStock = (product: ProductResource) => {
 }
 
 const onUnselectBackInStock = (product: ProductResource) => {
-      emits('unsetBackInStock', product)
+    router.delete(
+        route(props.detachBackInStockRoute.name, {
+            product: product.id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ['iris'],
+            onStart: () => {
+                isLoadingRemindBackInStock.value = true
+            },
+            onSuccess: () => {
+                // notify({
+                //     title: trans("Success"),
+                //     text: trans("Added to portfolio"),
+                //     type: "success"
+                // })
+                product.is_back_in_stock = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove the product from remind back in stock"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingRemindBackInStock.value = false
+                emits('afterOnUnselectBackInStock', product)
+            },
+        }
+    )
 }
 
 
@@ -189,7 +220,6 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                             class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
                             :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
                             <span class="text-xs">
-                                <FontAwesomeIcon :icon="faCircle" class="text-[6px] " />
                                 <FontAwesomeIcon :icon="faCircle" class="text-[6px] " />
                                 {{ product.stock > 10000
                                     ? trans("Unlimited quantity available")
