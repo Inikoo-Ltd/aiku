@@ -63,13 +63,13 @@ class ProductHydrateTagsFromTradeUnits implements ShouldBeUnique
         $chunkSizeOption = (int)($command->option('chunk') ?? 1000);
         $chunkSize = $chunkSizeOption > 0 ? $chunkSizeOption : 1000;
 
-        $total = (int) Product::count();
+        $total = Product::count();
         if ($total === 0) {
             $command->warn('No products found to hydrate.');
             return 0;
         }
 
-        $command->line("Hydrating tags for {$total} products in chunks of {$chunkSize}...");
+        $command->line("Hydrating tags for $total products in chunks of $chunkSize...");
 
         // Setup progress bar with ETA
         $bar = $command->getOutput()->createProgressBar($total);
@@ -92,7 +92,7 @@ class ProductHydrateTagsFromTradeUnits implements ShouldBeUnique
 
         $bar->finish();
         $command->newLine(2);
-        $command->info("Hydrated tags for {$processed} products.");
+        $command->info("Hydrated tags for $processed products.");
         return 0;
     }
 }
