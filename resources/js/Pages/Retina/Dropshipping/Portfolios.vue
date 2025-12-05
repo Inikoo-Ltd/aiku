@@ -587,18 +587,6 @@ onBeforeUnmount(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <!-- Section: Alert if platform not connected yet -->
-    <Message v-if="customer_sales_channel.ban_stock_update_until" severity="error" class="m-4 flex items-center gap-2">
-            <div :class="'flex justify-between gap-3'">
-                <div :class="'flex gap-3 items-center'">
-                    <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
-                    <div>
-                        {{ trans("We're unable to update stock due to we currently can't access your store.") }}
-                    </div>
-                </div>
-                    <ButtonWithLink type="tertiary" @click="isOpenModalSuspended = true" icon="fas fa-sync-alt" :label="trans('Sync Manually')" />
-            </div>
-    </Message>
 
 
     <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
@@ -813,31 +801,6 @@ onBeforeUnmount(() => {
                     />
                 </a>
             </div>
-        </div>
-    </Modal>
-
-    <Modal :isOpen="isOpenModalSuspended" @onClose="isOpenModalSuspended = false"
-           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
-        <div class="mb-8">
-            <h3 class="text-center">{{ trans('If you experience an issue when clicking Sync Manually, your store might be down. You can check it by clicking Test Connection.')}}</h3>
-            <div class="mt-8 flex justify-center items-center gap-2 font-light text-sm" v-if="isTestConnectionSuccess">
-                <Icon class="text-green-500" :data="{
-                icon: 'fas fa-check'
-            }" /> {{ trans('Great! you can sync your products now') }}
-            </div>
-        </div>
-
-        <div class="flex justify-center gap-2">
-            <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.test_connection',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch',
-                        }" @success="data => isTestConnectionSuccess = true" @error="data => isTestConnectionSuccess = data.status" icon="fas fa-check" :label="trans('Test Connection')" />
-            <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.sync_portfolios_manual',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch'
-                        }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Sync Manually')" />
         </div>
     </Modal>
 </template>
