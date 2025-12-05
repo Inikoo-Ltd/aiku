@@ -35,7 +35,7 @@ import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Workshop.vue'
 import Department1Iris from '@/Components/CMS/Webpage/Department1/Department1Iris.vue'
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
-import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop.vue'
+import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Dropshipping/Product1Workshop.vue'
 import SubDepartmentWorkshop1 from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
 import Families2Workshop from '@/Components/CMS/Webpage/Families2/Families2Workshop.vue'
@@ -62,6 +62,9 @@ import CtaImageBackroundWorkshop from '@/Components/CMS/Webpage/CtaImageBackroun
 import TimelineWorkshop2 from '@/Components/CMS/Webpage/Step2/Step2Workshop.vue'
 import ListProductWorkshop from '@/Components/CMS/Webpage/Products/Dropshipping/ListProductsWorkshop.vue'
 import ListProductsEcomWorkshop from '@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomWorkshop.vue'
+import RenderDropshippingProductWorkshop from '@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductWorkshop.vue'
+import Product1WorkshopEcom from '@/Components/CMS/Webpage/Product1/Ecommerce/Product1WorkshopEcom.vue'
+import Product2WorkshopEcom from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -96,11 +99,11 @@ const components = (shop_type?: string): Record<string, Component> => {
         'family-1': FamilyIris1,
 
         //product
-        'product-1': ProductWorkshop1,
-
+        'product-1': shop_type == 'b2b' ? RenderDropshippingProductWorkshop : RenderDropshippingProductWorkshop,
 
         //product list
         'products-1' : shop_type == 'b2b' ? ListProductsEcomWorkshop : ListProductWorkshop,
+        'products-2' : ListProductsEcomWorkshop,
 
         //see-also
         'see-also-1' : SeeAlso1Workshop,
@@ -157,4 +160,28 @@ export const getTranslationComponent = (componentName: string) => {
     }
 
     return components[componentName] ?? NotFoundComponents
+}
+
+export const getProductRenderB2bComponentWorkshop = (
+    componentName: string,
+    options: Record<string, any> = {}
+) => {
+    const components: Record<string, any> = {
+        "product-1": Product1WorkshopEcom,
+        "product-2": Product2WorkshopEcom,
+    }
+
+    return components[componentName] ?? null
+}
+
+
+export const getProductRenderDropshippingComponentWorkshop  = (
+    componentName: string,
+    options: Record<string, any> = {}
+) => {
+    const components: Record<string, any> = {
+        "product-1": ProductWorkshop1,
+    }
+
+    return components[componentName] ?? null
 }
