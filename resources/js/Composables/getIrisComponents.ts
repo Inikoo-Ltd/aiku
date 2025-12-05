@@ -113,6 +113,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 		//product
 		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,
+		"product-2": RenderEcommerceProduct,
 
 		//product list
 		"products-1": shop_type === "b2b" ? ListProductsEcomIris : ListProductsIris,

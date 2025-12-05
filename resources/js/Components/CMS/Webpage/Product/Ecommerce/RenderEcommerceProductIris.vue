@@ -52,127 +52,17 @@ const isLoadingFavourite = ref(false)
 
 
 const onAddFavourite = (product: ProductResource) => {
-    router.post(
-        route("iris.models.favourites.store", {
-            product: product.id
-        }),
-        {
-            // item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ["iris"],
-            onStart: () => {
-                isLoadingFavourite.value = true
-            },
-            onSuccess: () => {
-                set(customerData.value, "is_favourite", true)
-                layout.reload_handle()
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to favourites"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-            }
-        }
-    )
+  
 }
 
 const onUnselectFavourite = (product: ProductResource) => {
-    router.delete(
-        route("iris.models.favourites.delete", {
-            product: product.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ["iris"],
-            onStart: () => {
-                isLoadingFavourite.value = true
-            },
-            onSuccess: () => {
-                set(customerData.value, "is_favourite", false)
-
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from favourites"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-            }
-        }
-    )
 }
 
 const onAddBackInStock = (productData: ProductResource) => {
-    router.post(
-        route("iris.models.remind_back_in_stock.store", {
-            product: productData.id
-        }),
-        {
-            // item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ["iris"],
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                set(product.value, "is_back_in_stock", true)
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingRemindBackInStock.value = false
-            }
-        }
-    )
+
 }
 
 const onUnselectBackInStock = (productData: ProductResource) => {
-    router.delete(
-        route("iris.models.remind_back_in_stock.delete", {
-            product: productData.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ["iris"],
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                set(product.value, "is_back_in_stock", false)
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingRemindBackInStock.value = false
-            }
-        }
-    )
 }
 
 const getOrderingProduct = async () => {

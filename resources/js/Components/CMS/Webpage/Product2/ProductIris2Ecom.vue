@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject } from "vue"
+import { ref, inject, computed } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
@@ -68,6 +68,7 @@ const layout = inject("layout", {})
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
 const locale = useLocaleStore()
+const product = ref(props.fieldValue.product)
 const currency = layout?.iris?.currency
 const toggleExpanded = () => (expanded.value = !expanded.value)
 
