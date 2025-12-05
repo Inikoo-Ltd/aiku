@@ -74,6 +74,17 @@ class ShowOrgAgent extends OrgAction
                         ],
                     'subNavigation' => $this->getOrgAgentNavigation($orgAgent),
                     'title'         => $orgAgent->agent->organisation->name,
+                    'actions'       => [
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'show.edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : false,
+                    ],
                     'create_direct' => $this->canEdit ? [
                         'route' => [
                             'name'       => 'grp.models.org_agent.purchase-order.store',
