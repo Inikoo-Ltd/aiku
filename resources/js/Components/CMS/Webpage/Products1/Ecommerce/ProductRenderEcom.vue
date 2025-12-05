@@ -178,8 +178,8 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <!-- Section: Stock -->
                     <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right"/>
-                        <div v-else
-                    <!-- Section: Stock -->
+                        <div v-else />
+                   
                     <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right"/>
                         <div v-else
