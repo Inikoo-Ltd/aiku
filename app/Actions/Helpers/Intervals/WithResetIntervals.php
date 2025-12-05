@@ -528,7 +528,7 @@ trait WithResetIntervals
                 platform: $platform,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
-            )->delay(now()->addMinutes(15))->onQueue('sales');
+            );
         }
     }
 
@@ -579,11 +579,11 @@ trait WithResetIntervals
         $this->resetOrganisations();
         $this->resetMasterShops();
         $this->resetShops();
+        $this->resetPlatforms();
         $this->resetInvoiceCategories();
         $this->resetProductCategories();
         $this->resetStocks();
         $this->resetStockFamilies();
-        $this->resetPlatforms();
     }
 
 
