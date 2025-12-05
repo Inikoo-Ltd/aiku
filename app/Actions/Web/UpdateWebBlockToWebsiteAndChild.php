@@ -70,16 +70,18 @@ class UpdateWebBlockToWebsiteAndChild extends OrgAction
     public function modifyLayout(array $layout, array $names, string $slug, array $fieldValue): array
     {
         $index = collect($layout['web_blocks'] ?? [])->whereIn('name', $names)->keys()->first();
-        if ($index === null) {
-            data_set($layout, "web_blocks.$index.type", $slug);
-            data_set($layout, "web_blocks.$index.web_block.layout.data.fieldValue", $fieldValue);
 
-            return [
-                'layout' => $layout,
-                'index'  => $index,
-            ];
+        if ($index === null) {
+            return [];
         }
-        return [];
+
+        data_set($layout, "web_blocks.$index.type", $slug);
+        data_set($layout, "web_blocks.$index.web_block.layout.data.fieldValue", $fieldValue);
+
+        return [
+            'layout' => $layout,
+            'index'  => $index,
+        ];
     }
 
 
