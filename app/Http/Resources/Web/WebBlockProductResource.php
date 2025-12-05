@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Web;
 
 use App\Actions\Traits\HasBucketImages;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
@@ -78,6 +79,7 @@ class WebBlockProductResource extends JsonResource
             'updated_at'        => $product->updated_at,
             'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
+            'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
         ];
     }
 
