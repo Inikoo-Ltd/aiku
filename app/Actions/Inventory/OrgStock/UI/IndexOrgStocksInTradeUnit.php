@@ -1,31 +1,30 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 27-05-2025-14h-14m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 04 Dec 2025 23:18:30 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Goods\Stock\UI;
+namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
-use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
+use App\Models\Inventory\OrgStock;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexStocksInTradeUnit extends OrgAction
+class IndexOrgStocksInTradeUnit extends OrgAction
 {
     public function handle(TradeUnit $tradeUnit, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('stocks.code', $value)
-                    ->orWhereAnyWordStartWith('stocks.name', $value);
+                $query->whereStartWith('org_stocks.code', $value)
+                    ->orWhereAnyWordStartWith('org_stocks.name', $value);
             });
         });
 
@@ -33,28 +32,27 @@ class IndexStocksInTradeUnit extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(Stock::class);
-        $queryBuilder->leftjoin('model_has_trade_units', function ($join) use ($tradeUnit) {
-            $join->on('stocks.id', '=', 'model_has_trade_units.model_id')
-                ->where('model_has_trade_units.model_type', class_basename(Stock::class));
+        $queryBuilder = QueryBuilder::for(OrgStock::class);
+        $queryBuilder->leftjoin('model_has_trade_units', function ($join) {
+            $join->on('org_stocks.id', '=', 'model_has_trade_units.model_id')
+                ->where('model_has_trade_units.model_type', 'OrgStock');
         });
         $queryBuilder->where('model_has_trade_units.trade_unit_id', $tradeUnit->id);
-        $queryBuilder->leftJoin('stock_stats', 'stock_stats.stock_id', 'stocks.id');
 
 
         $queryBuilder
-            ->defaultSort('stocks.code')
+            ->defaultSort('org_stocks.code')
             ->select([
-                'stocks.code',
-                'stocks.slug',
-                'stocks.name',
-                'stocks.state',
-                'stock_stats.number_number_org_stocks_state_active',
-                'stock_stats.number_org_stocks'
-
+                'org_stocks.id',
+                'org_stocks.code',
+                'org_stocks.slug',
+                'org_stocks.name',
+                'org_stocks.state',
+                'model_has_trade_units.quantity as quantity',
             ]);
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'number_number_org_stocks_state_active'])
+
+        return $queryBuilder->allowedSorts(['code', 'name', 'quantity'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -79,7 +77,7 @@ class IndexStocksInTradeUnit extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_number_org_stocks_state_active', label: __('Org SKUs'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 }

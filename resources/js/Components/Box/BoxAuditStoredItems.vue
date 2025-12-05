@@ -1,13 +1,9 @@
 <script setup lang='ts'>
 import JsBarcode from 'jsbarcode'
-import { inject, onMounted, ref } from 'vue'
-import { PalletDelivery, BoxStats } from '@/types/Pallet'
+import { inject, onMounted } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
-import { Link, router } from '@inertiajs/vue3'
-
-
-
+import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faNarwhal, faPallet, faQuestionCircle, faEnvelope, faPhone, faIdCardAlt, faPlus, faMinus, faCheck, faLink, faLayerPlus } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -133,12 +129,6 @@ onMounted(() => {
                 <dt class="flex-none">
                     <span class="sr-only">{{ auditData.state_icon.tooltip }}</span>
                     <Icon :data="auditData.state_icon" />
-                    <!-- <FontAwesomeIcon
-                        :icon='auditData.state_icon.icon'
-                        :class='auditData.state_icon.class'
-                        fixed-width
-                        aria-hidden='true'
-                    /> -->
                 </dt>
                 <dd class="text-base" :class='auditData.state_icon.class'>
                     {{ auditData.state_icon.tooltip }}
@@ -147,20 +137,7 @@ onMounted(() => {
             
             <div class="mb-4 h-full w-full py-1 px-2 flex flex-col border-t border-gray-300 items-center">
                 <svg id="palletDeliveryBarcode" class="w-full h-full" ></svg>
-                <!-- <div class="text-xxs text-gray-500">
-                    pad-{{ auditData.reference }}
-                </div> -->
             </div>
-
-            <!-- Stats: count Pallets -->
-            <!-- <div class="border-t border-gray-300 mt-2 pt-2 space-y-0.5">
-                <div v-tooltip="trans('Count of pallets')" class="w-fit flex items-center gap-x-3">
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon='fal fa-pallet' size="xs" class='text-gray-400' fixed-width aria-hidden='true' />
-                    </dt>
-                    <dd class="text-gray-500 text-base font-medium tabular-nums">{{ boxStats.number_pallets }} <span class="text-gray-400 font-normal">{{ boxStats.number_pallets > 1 ? trans('Pallets') : trans('Pallet') }}</span></dd>
-                </div>
-            </div> -->
         </BoxStatPallet>
 
 

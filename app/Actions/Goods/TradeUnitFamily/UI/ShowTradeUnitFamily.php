@@ -42,7 +42,7 @@ class ShowTradeUnitFamily extends GrpAction
         return Inertia::render(
             'Goods/TradeUnitFamily',
             [
-                'title'            => __('Trade Unit Family'),
+                'title'            => __('Trade Unit Family')." $tradeUnitFamily->code",
                 'breadcrumbs'      => $this->getBreadcrumbs(
                     $tradeUnitFamily,
                     $request->route()->getName(),
@@ -54,10 +54,11 @@ class ShowTradeUnitFamily extends GrpAction
                 ],
                 'pageHead'         => [
                     'icon'    => [
-                        'title' => __('Trade unit family'),
-                        'icon'  => 'fal fa-atom'
+                        'title' => __('Trade Unit Family')." $tradeUnitFamily->code",
+                        'icon'  => 'fal fa-atom-alt'
                     ],
                     'title'   => $tradeUnitFamily->code,
+                    'model'   => __('Trade Unit Family'),
                     'actions' => [
                         [
                             'type'  => 'button',
