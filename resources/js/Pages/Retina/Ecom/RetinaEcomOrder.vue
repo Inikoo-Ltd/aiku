@@ -192,6 +192,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
         <FontAwesomeIcon v-if="data?.data?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
     </div>
 
+    <!-- Section: Timelines -->
     <div v-if="timelines"  class="mt-4 py-3 sm:mt-0 border-b border-gray-200 w-full">
         <div class="max-w-5xl mx-auto">
             <Timeline :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
@@ -221,6 +222,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
         :summary
         :balance
         :address_management
+        :order="data?.data"
     />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
