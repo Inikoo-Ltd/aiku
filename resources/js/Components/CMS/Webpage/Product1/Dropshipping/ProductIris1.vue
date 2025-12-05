@@ -102,8 +102,7 @@ const toggleExpanded = () => {
                             <div class="flex items-center gap-[1px]"></div>
                         </div>
 
-                        <div v-if="layout?.iris?.is_logged_in"
-                            class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                        <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                 :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
@@ -171,6 +170,8 @@ const toggleExpanded = () => {
     <div v-else class="block px-4 py-6 text-gray-800">
         <h1 class="text-xl font-bold mb-2">{{ product.name }}</h1>
         <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
+
+
 
         <div class="items-start gap-4 mt-4">
             <ProductPrices :field-value="fieldValue" />

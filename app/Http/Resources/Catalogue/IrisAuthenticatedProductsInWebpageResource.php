@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Helpers\Media;
@@ -121,7 +122,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'profit_per_unit'      => $profitPerUnit,
             'price_per_unit'       => $pricePerUnit,
             'available_quantity'      => $this->available_quantity,
-            'is_coming_soon'       => false,  // TODO: INI-373 (Raul)
+            'is_coming_soon'       => $this->status === ProductStatusEnum::COMING_SOON,
         ];
     }
 
