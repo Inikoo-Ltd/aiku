@@ -148,7 +148,7 @@ class CustomerSalesChannel extends Model implements Authenticatable, Auditable
 
     public function user(): MorphTo
     {
-        return $this->morphTo('platform_user')->withTrashed();
+        return $this->morphTo('platform_user');
     }
 
     public function platform(): BelongsTo
