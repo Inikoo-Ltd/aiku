@@ -38,8 +38,8 @@ import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/Prod
 import ListProductsEcomIris from "@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue"
 
 import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Iris.vue'
-import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
-import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/ProductIris1Ecom.vue'
+import ProductIris1 from '@/Components/CMS/Webpage/Product1/Dropshipping/ProductIris1.vue'
+import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue'
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 import SubDepartmentIris from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentIris.vue'
 import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
@@ -64,13 +64,16 @@ import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Pro
 import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
 import AnnouncementInformation2TransitionText from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue'
 import AnnouncemenPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3.vue'
+import RenderDropshippingProduct from "@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"
+import RenderEcommerceProduct from "@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"
 
 import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
 import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
-
+import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"
 
 
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
+import Products2Render from "@/Components/CMS/Webpage/Products2/Products2Render.vue"
 
 
 const components = (shop_type?: string): Record<string, Component> => {
@@ -105,10 +108,11 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"families-1": families1Iris,
 
 		//product
-		"product-1": shop_type === "b2b" ? ProductIris1Ecom : ProductIris1,
+		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,
 
 		//product list
 		"products-1": shop_type === "b2b" ? ListProductsEcomIris : ListProductsIris,
+		"products-2": ListProductsEcomIris,
 
 		//see-also
 		"see-also-1": SeeAlso1WorkshopIris,
@@ -179,10 +183,36 @@ export const getProductsRenderB2bComponent = (
 ) => {
 	const components: Record<string, any> = {
 		"products-1": ProductRenderEcom,
+		"products-2": Products2Render,
 	}
 
 	return components[componentName] ?? null
 }
+
+export const getProductRenderB2bComponent = (
+	componentName: string,
+	options: Record<string, any> = {}
+) => {
+	const components: Record<string, any> = {
+		"product-1": ProductIris1Ecom,
+		"product-2": ProductIris2Ecom,
+	}
+
+	return components[componentName] ?? null
+}
+
+
+export const getProductRenderDropshippingComponent = (
+	componentName: string,
+	options: Record<string, any> = {}
+) => {
+	const components: Record<string, any> = {
+		"product-1": ProductIris1,
+	}
+
+	return components[componentName] ?? null
+}
+
 
 export const announcementComponent = (shop_type?: string): Record<string, Component> => {
     return {

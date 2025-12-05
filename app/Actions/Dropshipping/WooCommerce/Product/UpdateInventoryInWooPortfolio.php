@@ -24,10 +24,17 @@ class UpdateInventoryInWooPortfolio
     public string $commandSignature = 'woo:update-inventory';
 
 
-    public function handle(): void
+    public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
         $platform              = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
-        $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)->get();
+
+        if ($customerSalesChannel === null) {
+            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)->get();
+        } else {
+            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
+                ->where('id', $customerSalesChannel->id)
+                ->get();
+        }
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {

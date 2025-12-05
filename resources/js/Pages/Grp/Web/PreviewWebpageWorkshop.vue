@@ -104,7 +104,7 @@ const reloadPage = (withkey = false) => {
 provide("reloadPage", reloadPage)
 
 onMounted(() => {
-  layout.app.theme = props.layout?.color,
+  if(props.layout?.color) layout.app.theme = props.layout?.color,
   layout.app.webpage_layout = props.layout
   updateIrisLayout()
   window.addEventListener("message", handleMessage)

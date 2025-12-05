@@ -1,0 +1,118 @@
+{
+	"scope": "webpage",
+	"slug": "products-2",
+	"code": "products-2",
+	"name": "List product",
+	"category": "list_products",
+	"icon": ["fal", "cube"],
+	"website_type": ["b2b", "b2c"],
+	"fixed": true,
+	"data": {
+		"fieldValue": {
+			"filter": {
+				"button": {
+					"properties": {
+						"background": {
+							"type": "color",
+							"color": "rgba(0, 0, 0, 1)",
+							"image": {
+								"original": null
+							}
+						}
+					}
+				}
+			},
+			"container": {
+				"properties": {
+					"background": {
+						"type": "color",
+						"color": "rgba(249, 248, 245, 1)",
+						"image": {
+							"original": null
+						}
+					}
+				}
+			},
+			"search_sort": {
+				"search": {
+					"input": {
+						"properties": {
+							"text": {
+								"color": "#000000",
+								"fontSize": null,
+								"fontStyle": null,
+								"fontFamily": "Avenir, sans-serif"
+							},
+							"border": {
+								"top": {
+									"value": []
+								},
+								"left": {
+									"value": []
+								},
+								"unit": "px",
+								"color": null,
+								"right": {
+									"value": []
+								},
+								"bottom": {
+									"value": []
+								},
+								"rounded": {
+									"unit": "px",
+									"topleft": {
+										"value": 14
+									},
+									"topright": {
+										"value": 14
+									},
+									"bottomleft": {
+										"value": 14
+									},
+									"bottomright": {
+										"value": 14
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"card_product": {
+				"properties": {
+					"border": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"color": null,
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						},
+						"rounded": {
+							"unit": "px",
+							"topleft": {
+								"value": 15
+							},
+							"topright": {
+								"value": 15
+							},
+							"bottomleft": {
+								"value": 15
+							},
+							"bottomright": {
+								"value": 15
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
