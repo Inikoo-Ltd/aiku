@@ -36,6 +36,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $revenue_grp_currency_tdy
  * @property mixed $revenue_grp_currency_ld
  * @property mixed $grp_currency_code
+ * @property mixed $state
+ * @property mixed $number_number_org_stocks_state_active
+ * @property mixed $number_org_stocks
  */
 class StocksResource extends JsonResource
 {
@@ -44,29 +47,32 @@ class StocksResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'                     => $this->slug,
-            'code'                     => $this->code,
-            'name'                     => $this->name,
-            'unit_value'               => $this->unit_value,
-            'family_slug'              => $this->family_slug,
-            'family_code'              => $this->family_code,
-            'revenue_grp_currency_all' => $this->revenue_grp_currency_all,
-            'revenue_grp_currency_1y'  => $this->revenue_grp_currency_1y,
-            'revenue_grp_currency_1q'  => $this->revenue_grp_currency_1q,
-            'revenue_grp_currency_1m'  => $this->revenue_grp_currency_1m,
-            'revenue_grp_currency_1w'  => $this->revenue_grp_currency_1w,
-            'revenue_grp_currency_3d'  => $this->revenue_grp_currency_3d,
-            'revenue_grp_currency_1d'  => $this->revenue_grp_currency_1d,
-            'revenue_grp_currency_ytd' => $this->revenue_grp_currency_ytd,
-            'revenue_grp_currency_qtd' => $this->revenue_grp_currency_qtd,
-            'revenue_grp_currency_mtd' => $this->revenue_grp_currency_mtd,
-            'revenue_grp_currency_wtd' => $this->revenue_grp_currency_wtd,
-            'revenue_grp_currency_tdy' => $this->revenue_grp_currency_tdy,
-            'revenue_grp_currency_lm'  => $this->revenue_grp_currency_lm,
-            'revenue_grp_currency_lw'  => $this->revenue_grp_currency_1w,
-            'revenue_grp_currency_ld'  => $this->revenue_grp_currency_ld,
-            'grp_currency'             => $this->grp_currency_code,
-            'state'                    => $this->state,
+            'slug'                                  => $this->slug,
+            'code'                                  => $this->code,
+            'name'                                  => $this->name,
+            'unit_value'                            => $this->unit_value,
+            'family_slug'                           => $this->family_slug,
+            'family_code'                           => $this->family_code,
+            'revenue_grp_currency_all'              => $this->revenue_grp_currency_all,
+            'revenue_grp_currency_1y'               => $this->revenue_grp_currency_1y,
+            'revenue_grp_currency_1q'               => $this->revenue_grp_currency_1q,
+            'revenue_grp_currency_1m'               => $this->revenue_grp_currency_1m,
+            'revenue_grp_currency_1w'               => $this->revenue_grp_currency_1w,
+            'revenue_grp_currency_3d'               => $this->revenue_grp_currency_3d,
+            'revenue_grp_currency_1d'               => $this->revenue_grp_currency_1d,
+            'revenue_grp_currency_ytd'              => $this->revenue_grp_currency_ytd,
+            'revenue_grp_currency_qtd'              => $this->revenue_grp_currency_qtd,
+            'revenue_grp_currency_mtd'              => $this->revenue_grp_currency_mtd,
+            'revenue_grp_currency_wtd'              => $this->revenue_grp_currency_wtd,
+            'revenue_grp_currency_tdy'              => $this->revenue_grp_currency_tdy,
+            'revenue_grp_currency_lm'               => $this->revenue_grp_currency_lm,
+            'revenue_grp_currency_lw'               => $this->revenue_grp_currency_1w,
+            'revenue_grp_currency_ld'               => $this->revenue_grp_currency_ld,
+            'number_number_org_stocks_state_active' => $this->number_number_org_stocks_state_active,
+            'number_org_stocks'                     => $this->number_org_stocks,
+            'grp_currency'                          => $this->grp_currency_code,
+            'state'                                 => $this->state,
+            'state_icon'                            => $this->state->stateIcon()[$this->state->value],
         ];
     }
 }

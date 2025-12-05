@@ -289,7 +289,7 @@ class Webpage extends Model implements Auditable, HasMedia
 
 
         if ($environment == 'local') {
-            $localDomain = match (request()->website->shop->type) {
+            $localDomain = match ($this->shop->type) {
                 ShopTypeEnum::FULFILMENT => 'fulfilment.test',
                 ShopTypeEnum::DROPSHIPPING => 'ds.test',
                 default => 'ecom.test'
