@@ -9,7 +9,7 @@ import type { Language } from "@/types/Locale"
 import { ref } from "vue"
 
 
-
+// Pinia Store
 export const useLocaleStore = defineStore("locale", () => {
 	const language = ref<Language>({
 		id: 68,
@@ -25,12 +25,12 @@ export const useLocaleStore = defineStore("locale", () => {
 	}
 
 	const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
-		if (!amount) return 0
+		if (typeof amount === "undefined" || amount === null) return 0
 		if (!currencyCode) {
 			return amount || 0
 		}
 
-		const num = typeof amount === "string" ? parseFloat(amount) : amount
+		const num = typeof amount === "string" ? parseFloat(amount) : (amount || 0)
 
 		const formatter = new Intl.NumberFormat(language.value.code, {
 			style: (currencyCode || currencyInertia.value?.code) ? "currency" : "decimal",

@@ -53,6 +53,7 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
                 'trade_units.volume',
                 'trade_units.type',
                 'trade_units.id',
+                'trade_units.status',
                 'trade_unit_stats.number_current_stocks',
                 'trade_unit_stats.number_current_products',
             ]);
@@ -64,9 +65,9 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
             ->withQueryString();
     }
 
-    public function jsonResponse(LengthAwarePaginator $tradeUnit): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnit);
+        return TradeUnitsResource::collection($tradeUnits);
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
@@ -87,11 +88,13 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
                         'title' => __("No Trade Units found"),
                     ],
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'status', label: '', icon: 'fal fa-yin-yang', canBeHidden: false, sortable: true, type: 'avatar')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Unit label'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 

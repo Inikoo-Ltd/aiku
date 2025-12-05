@@ -216,15 +216,16 @@ class EditProduct extends OrgAction
         if ($product->webpage) {
             $webpage           = $product->webpage;
             $webpageNameFields = [
-                'webpage_breadcrumb_label' => [
-                    'type'        => 'input',
-                    'label'       => __('Breadcrumb label').' ('.__('Optional').')',
-                    'information' => __('To be used for the breadcrumbs, will use Meta Title if missing'),
-                    'options'     => [
-                        'counter' => true,
-                    ],
-                    'value'       => $webpage->breadcrumb_label,
-                ],
+                // for now, we're forcing the breadcrumbs to show product code so no need for this
+//                'webpage_breadcrumb_label' => [
+//                    'type'        => 'input',
+//                    'label'       => __('Breadcrumb label').' ('.__('Optional').')',
+//                    'information' => __('To be used for the breadcrumbs, will use Meta Title if missing'),
+//                    'options'     => [
+//                        'counter' => true,
+//                    ],
+//                    'value'       => $webpage->breadcrumb_label,
+//                ],
                 'webpage_title'            => [
                     'type'        => 'input',
                     'label'       => __('Meta Title').' (& '.__('Browser title').')',

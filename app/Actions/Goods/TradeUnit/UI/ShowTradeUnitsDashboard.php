@@ -95,7 +95,7 @@ class ShowTradeUnitsDashboard extends OrgAction
                             'route' => [
                                 'name' => 'grp.trade_units.dashboard'
                             ],
-                            'label' => __('Trade Units'),
+                            'label' => __('Trade Units Dashboard'),
                         ]
                     ]
                 ]

@@ -24,6 +24,7 @@ import LinkIris from "@/Components/Iris/LinkIris.vue"
 import axios from "axios"
 import { ulid } from "ulid"
 import ProductPrices from "./ProductPrices.vue"
+import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 
 library.add(faCube, faLink, faPlus, faMinus)
 
@@ -361,31 +362,31 @@ onUnmounted(() => {
 
                         <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between">
                             <!-- Stock info -->
-                            <div class="flex items-center gap-2 text-sm">
+                            <LabelComingSoon v-if="product.status === 'coming-soon'" :product="product" />
+                            <div v-else class="flex items-center gap-2 text-sm">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                     :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                                 <span>
                                     {{
-                                    customerData?.stock > 0
-                                    ? trans("In stock") +
-                                    ` (${customerData?.stock} ` +
-                                    trans("available") +
-                                    `)`
-                                    : trans("Out Of Stock")
+                                        customerData?.stock > 0
+                                        ? trans("In stock :productStock available", { productStock: customerData?.stock })
+                                        : product.status_label ?? trans("Out of stock")
                                     }}
                                 </span>
                             </div>
+                            
 
                             <!-- Remind me button absolute -->
                             <button v-if="product.stock <= 0 && layout?.app?.environment === 'local'"
+                                v-tooltip="product.is_back_in_stock ? trans('You will be notify via email when the product back in stock') : trans('Click to be notified via email when the product back in stock')"
                                 @click="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
-                                class="absolute right-0 bottom-2 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
+                                class="absolute right-0 bottom-0 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
                                     :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
-                                <span>{{ product.is_back_in_stock ? trans("will be notified when in Stock") :
-                                    trans("Remind me") }}</span>
+                                    :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']"
+                                />
+                                <span>{{ product.is_back_in_stock ? trans("Notified") : trans("Remind me") }}</span>
                             </button>
                         </div>
 
@@ -429,7 +430,7 @@ onUnmounted(() => {
                         />
 
                         <div v-else>
-                            <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled full />
                         </div>
                     </div>
 
@@ -503,8 +504,30 @@ onUnmounted(() => {
         <h1 class="text-xl font-bold mb-2">
             <span v-if="Number(product.units) > 1">{{ Number(product.units) }}x</span> {{ product.name }}
         </h1>
+
+        
+        
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
-        <div class="flex justify-between items-start gap-4 mt-4">
+
+        <!-- Section: Stock info, coming soon label -->
+        <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between mt-4">
+            <!-- Stock info -->
+            <LabelComingSoon v-if="product.status === 'coming-soon'" :product="product" class="w-full text-center" />
+            <div v-else class="flex items-center gap-2 text-sm">
+                <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                <span>
+                    {{
+                        customerData?.stock > 0
+                        ? trans("In stock :productStock available", { productStock: customerData?.stock })
+                        : product.status_label ?? trans("Out of stock")
+                    }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Section: Price, unit info, favourite icon -->
+        <div class="flex justify-between items-start gap-4 mt-2 ">
             <!-- Price + Unit Info -->
             <div v-if="layout?.iris?.is_logged_in">
                 <ProductPrices :field-value="fieldValue" />
@@ -519,6 +542,7 @@ onUnmounted(() => {
         </div>
 
 
+        <!-- Section: Mobile Tags -->
         <div class="flex flex-wrap gap-2 mt-4">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in product.tags"
                 :key="index">
@@ -538,7 +562,7 @@ onUnmounted(() => {
                 <EcomAddToBasketv2 v-if="product.stock > 0" :customerData="customerData" :product="product"  :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                 <div v-else>
-                    <Button :label="trans('Out of stock')" type="tertiary" disabled full  :inject-style="getStyles(fieldValue?.buttonLogin?.properties, screenType)"/>
+                    <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled full  :inject-style="getStyles(fieldValue?.buttonLogin?.properties, screenType)"/>
                 </div>
             </div>
 

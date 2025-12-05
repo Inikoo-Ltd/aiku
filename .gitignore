@@ -112,3 +112,5 @@ rgb.icc
 /get_slim.sh
 /devops/haproxy/haproxy.cfg
 /devops/varnish/warm_up.sh
+/.output.txt
+laradumps.yaml
