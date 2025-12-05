@@ -85,6 +85,8 @@ class EditWebpage extends OrgAction
                 'required'  => true,
             ],
             'breadcrumb_label' => [
+                // for now, we're forcing the breadcrumbs to show product code so no need for this
+                'hidden'      => $webpage->model_type == 'Product',
                 'type'        => 'input',
                 'label'       => __('Breadcrumb label').' ('.__('Optional').')',
                 'information' => __('To be used for the breadcrumbs, will use Meta Title if missing'),

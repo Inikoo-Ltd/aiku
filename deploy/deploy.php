@@ -11,7 +11,7 @@ namespace Deployer;
 set('update_code_strategy', 'clone');
 
 set('bin/php', function () {
-    return '/usr/bin/php8.3';
+    return '/usr/bin/php8.4';
 });
 
 desc('Check for changes in frontend');

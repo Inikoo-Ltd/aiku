@@ -113,3 +113,4 @@ rgb.icc
 /devops/haproxy/haproxy.cfg
 /devops/varnish/warm_up.sh
 /.output.txt
+laradumps.yaml
