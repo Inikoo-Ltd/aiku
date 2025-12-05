@@ -71,6 +71,7 @@ import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/
 import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
 import SubDepartement2 from '@/Components/CMS/Webpage/SubDepartment2/SubDepartmentIris.vue'
 import FamiliesIris2 from "@/Components/CMS/Webpage/Families2/FamiliesIris2.vue"
+import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"
 
 
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
