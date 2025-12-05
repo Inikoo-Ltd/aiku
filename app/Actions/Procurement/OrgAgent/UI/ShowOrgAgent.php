@@ -57,7 +57,7 @@ class ShowOrgAgent extends OrgAction
         return Inertia::render(
             'Procurement/OrgAgent',
             [
-                'title'       => __('agent'),
+                'title'       => __('Agent'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
@@ -66,7 +66,7 @@ class ShowOrgAgent extends OrgAction
                     'next'     => $this->getNext($orgAgent, $request),
                 ],
                 'pageHead'    => [
-                    'model'         => __('agent'),
+                    'model'         => __('Agent'),
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'people-arrows'],
@@ -90,7 +90,7 @@ class ShowOrgAgent extends OrgAction
                             'name'       => 'grp.models.org_agent.purchase-order.store',
                             'parameters' => array_values($request->route()->originalParameters())
                         ],
-                        'label' => __('purchase order')
+                        'label' => __('Purchase Order')
                     ] : false,
 
                     // 'meta' => [
