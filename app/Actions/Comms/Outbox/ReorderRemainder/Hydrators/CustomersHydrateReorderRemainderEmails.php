@@ -87,7 +87,9 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
                 SendReOrderRemainderToCustomerEmail::dispatch($customer, $bulkRun)->delay($sendTime);
             }
 
-            EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun)->delay($lastSentTime);
+            if ($LastBulkRun && $lastSentTime) {
+                EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun)->delay($lastSentTime);
+            }
         }
     }
 
