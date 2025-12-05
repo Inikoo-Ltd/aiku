@@ -21,12 +21,10 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
 {
     public function handle(Order $order, $prefix = null): LengthAwarePaginator
     {
-        $customerSalesChannel = $order->customerSalesChannel;
-        $globalSearch         = AllowedFilter::callback('global', function ($query, $value) {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('products.name', $value)
                     ->orWhereStartWith('products.code', $value);
-                //    ->orWhereStartWith('portfolios.reference', $value);
             });
         });
 
@@ -38,12 +36,6 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
         $query = QueryBuilder::for(Product::class);
         $query->where('products.shop_id', $this->shop->id);
 
-        // DO NOT UNCOMMENT THIS
-        //        $query->join('portfolios', function ($join) use ($customerSalesChannel) {
-        //            $join->on('portfolios.item_id', '=', 'products.id')
-        //                ->where('portfolios.item_type', '=', 'Product')
-        //                ->where('portfolios.customer_sales_channel_id', '=', $customerSalesChannel->id);
-        //        });
 
         $query->leftJoin('transactions', function ($join) use ($order) {
             $join->on('transactions.model_id', '=', 'products.id')
@@ -54,7 +46,6 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
 
 
         if ($this->customer->number_exclusive_products > 0) {
-
             $query->where(function ($query) {
                 $query->where('products.is_for_sale', true)
                     ->orWhere('products.exclusive_for_customer_id', $this->customer->id);
@@ -66,16 +57,21 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
 
         $query->select([
             'products.id',
+            'products.group_id',
+            'products.organisation_id',
+            'products.shop_id',
+            'products.webpage_id',
             'products.code',
             'products.name',
             'products.price',
             'products.current_historic_asset_id as historic_asset_id',
             'products.available_quantity',
             'products.image_id',
-           // 'portfolios.reference as portfolio_reference',
             'transactions.id as transaction_id',
             'transactions.quantity_ordered',
+            'products.web_images',
         ]);
+        $query->selectRaw('\''.$this->website->id.'\' as website_id');
 
 
         return $query->defaultSort('products.code')

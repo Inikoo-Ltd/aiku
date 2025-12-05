@@ -24,7 +24,6 @@ class IndexRetinaDropshippingProductsForEmptyBasket extends RetinaAction
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('products.name', $value)
                     ->orWhereStartWith('products.code', $value);
-                //    ->orWhereStartWith('portfolios.reference', $value);
             });
         });
 
@@ -36,12 +35,7 @@ class IndexRetinaDropshippingProductsForEmptyBasket extends RetinaAction
         $query = QueryBuilder::for(Product::class);
         $query->where('products.shop_id', $this->shop->id);
 
-        // DO NOT UNCOMMENT THIS
-        //        $query->join('portfolios', function ($join) use ($customerSalesChannel) {
-        //            $join->on('portfolios.item_id', '=', 'products.id')
-        //                ->where('portfolios.item_type', '=', 'Product')
-        //                ->where('portfolios.customer_sales_channel_id', '=', $customerSalesChannel->id);
-        //        });
+
 
         if ($this->customer->number_exclusive_products > 0) {
 
@@ -56,14 +50,18 @@ class IndexRetinaDropshippingProductsForEmptyBasket extends RetinaAction
 
         $query->select([
             'products.id',
+            'products.group_id',
+            'products.organisation_id',
+            'products.shop_id',
+            'products.webpage_id',
             'products.code',
             'products.name',
             'products.price',
             'products.current_historic_asset_id as historic_asset_id',
             'products.available_quantity',
-            'products.image_id',
+            'products.web_images',
         ]);
-
+        $query->selectRaw('\''.$this->website->id.'\' as website_id');
 
         return $query->defaultSort('products.code')
             ->allowedFilters([$unUploadedFilter, $globalSearch])
