@@ -160,6 +160,12 @@ class StoreEbayProduct extends RetinaAction
             $width = Arr::get($product->marketing_dimensions, 'w');
             $w = in_array($width, [null, 0]) ? 0.5 : $width;
 
+            $availableQuantity = $product->available_quantity;
+
+            if ($availableQuantity >= 50) {
+                $availableQuantity = 50; // Based on discuss with tomas we agree to limit 50 only
+            }
+
             $inventoryItem = [
                 'sku' => $portfolio->sku,
                 'availability' => [
@@ -167,10 +173,10 @@ class StoreEbayProduct extends RetinaAction
                         'availabilityDistributions' => [
                                 [
                                     'merchantLocationKey' => $ebayUser->location_key,
-                                    'quantity' => $product->available_quantity
+                                    'quantity' => $availableQuantity
                                 ]
                             ],
-                        'quantity' => $product->available_quantity
+                        'quantity' => $availableQuantity
                     ]
                 ],
                 'condition' => 'NEW',
