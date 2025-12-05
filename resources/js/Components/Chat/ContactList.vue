@@ -5,6 +5,7 @@ import { faPaperPlane } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
+import { Contact, SessionAPI } from "@/types/Chat/chat"
 
 const layout: any = inject("layout", {})
 
@@ -16,16 +17,20 @@ const reloadContacts = async () => {
 			params: { statuses: [activeTab.value] },
 		})
 
-		contacts.value = res.data.data.sessions.map((s: any) => ({
-			id: s.ulid,
-			name: s.guest_identifier,
-			avatar: "https://i.pravatar.cc/100",
-			lastMessage: s.last_message?.message ?? "",
-			lastMessageTime: s.last_message?.created_at,
-			lastMessageTimestamp: s.last_message?.created_at_timestamp,
-			unread: s.unread_count,
-			status: s.status,
-		}))
+		contacts.value = res.data.data.sessions.map(
+			(s: SessionAPI): Contact => ({
+				id: s.ulid,
+				name: s.guest_identifier,
+				avatar: "https://i.pravatar.cc/100",
+				lastMessage: s.last_message?.message ?? "",
+				lastMessageTime: s.last_message?.created_at
+					? new Date(s.last_message.created_at)
+					: undefined,
+				lastMessageTimestamp: s.last_message?.created_at_timestamp,
+				unread: s.unread_count,
+				status: s.status,
+			})
+		)
 	} catch (e) {
 		console.error("Failed to reload contacts:", e)
 	}
@@ -44,32 +49,11 @@ onMounted(() => {
 	reloadContacts()
 })
 
-const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+const formatTime = (timestamp: string) => {
+	if (!timestamp) return ""
 
-const formatTimestamp = (timestamp: number) => {
-	const date = new Date(timestamp * 1000)
-	const now = new Date()
-
-	const isToday =
-		date.toLocaleDateString(undefined, { timeZone: userTimeZone }) ===
-		now.toLocaleDateString(undefined, { timeZone: userTimeZone })
-
-	const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-
-	if (isToday && diffHours < 24) {
-		return date.toLocaleTimeString(undefined, {
-			hour: "2-digit",
-			minute: "2-digit",
-			timeZone: userTimeZone,
-		})
-	}
-
-	return date.toLocaleDateString(undefined, {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-		timeZone: userTimeZone,
-	})
+	const date = new Date(timestamp)
+	return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 }
 
 watch(activeTab, () => {
@@ -134,7 +118,7 @@ const filteredContacts = computed(() => contacts.value.filter((c) => c.status ==
 					</div>
 				</div>
 				<span class="text-xs text-gray-400">
-					{{ formatTimestamp(c.lastMessageTimestamp) }}
+					{{ formatTime(c.lastMessageTime) }}
 				</span>
 				<div v-if="c.unread" class="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
 					{{ c.unread }}

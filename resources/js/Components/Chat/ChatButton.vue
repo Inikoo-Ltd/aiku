@@ -153,7 +153,10 @@ const getMessages = async (loadMore = false) => {
 		}
 
 		const response = await axios.get(url)
-		const fetched = response.data?.data?.messages || []
+		const fetched = response.data?.data?.messages.map((msg: ChatMessage) => ({
+			...msg,
+		}))
+		console.log(fetched)
 
 		if (!loadMore) {
 			messages.value = fetched
@@ -206,9 +209,7 @@ const sendMessage = async (messageText: string): Promise<any> => {
 		throw new Error("No active session")
 	}
 
-	// Cegah double submit
 	if (isSending.value) {
-		console.warn("⏳ Message is already being sent, skipping duplicate send...")
 		return
 	}
 
@@ -268,11 +269,14 @@ const initWebSocket = () => {
 
 	// Subscribe with Echo
 	chatChannel = window.Echo.channel(channelName)
-	console.log(chatChannel)
 
-	chatChannel.listen(".message", (eventData: any) => {
-		if (eventData.message) {
-			messages.value.push(eventData.message)
+	chatChannel.listen(".message", (eventData: { message: any }) => {
+		const msg = eventData.message
+		if (msg) {
+			messages.value.push({
+				...msg,
+				created_at: new Date(msg.created_at),
+			})
 			forceScrollBottom()
 		}
 	})

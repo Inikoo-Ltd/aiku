@@ -46,7 +46,7 @@ class ChatSessionListResource extends JsonResource
             'last_message' => $lastMessage ? [
                 'message' => $this->truncateMessage($lastMessage->message_text),
                 'sender_type' => $lastMessage->sender_type,
-                'created_at' => $lastMessage->created_at->format('Y-m-d H:i:s'),
+                'created_at' => $this->created_at->format('Y-m-d H:i'),
                 'created_at_timestamp' => $lastMessage->created_at->timestamp,
                 'is_read' => $lastMessage->is_read,
             ] : [
