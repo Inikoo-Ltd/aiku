@@ -28,7 +28,7 @@ jobs:
         run: |
           echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
       - name: Composer install
-        run: php8.3 /usr/local/bin/composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+        run: php8.4 /usr/local/bin/composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
       - name: Get Next Version
         id: semver
         uses: ietf-tools/semver-action@v1
