@@ -38,6 +38,9 @@ const loading = ref(false)
 
 const isInitialLoad = ref(true)
 const isLoadingMore = ref(false)
+const isSending = ref(false)
+
+const baseUrl = layout?.appUrl ?? ""
 
 const chatSession = ref<{
 	ulid: string
@@ -56,7 +59,7 @@ const saveChatSession = (sessionData: {
 	session_id?: number
 }) => {
 	const data = {
-		ulid: "01KBF41487H4NPAP23TY3Z0A9T",
+		ulid: sessionData.ulid,
 		guest_identifier: sessionData.guest_identifier,
 		session_id: sessionData.session_id,
 		language: 64,
@@ -104,14 +107,12 @@ const createSession = async (): Promise<ChatSessionData | null> => {
 
 	try {
 		const response = await axios.post<{ data: ChatSessionData }>(
-			"https://aiku.test/app/api/chats/sessions",
+			`${baseUrl}/app/api/chats/sessions`,
 			{
 				language_id: 64,
 				priority: "normal",
 			}
 		)
-
-		console.log("📦 Session created:", response.data)
 
 		if (response.data?.data) {
 			const sessionData = response.data.data
@@ -119,7 +120,7 @@ const createSession = async (): Promise<ChatSessionData | null> => {
 			saveChatSession(sessionData)
 
 			chatSession.value = {
-				ulid: "01KBF41487H4NPAP23TY3Z0A9T",
+				ulid: sessionData.ulid,
 				guest_identifier: sessionData.guest_identifier,
 				session_id: sessionData.session_id,
 			}
@@ -144,7 +145,7 @@ const getMessages = async (loadMore = false) => {
 	try {
 		if (loadMore) isLoadingMore.value = true
 
-		let url = `https://aiku.test/app/api/chats/sessions/${chatSession.value.ulid}/messages`
+		let url = `${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/messages`
 
 		if (loadMore && messages.value.length > 0) {
 			const cursor = messages.value[0].created_at
@@ -200,18 +201,28 @@ onBeforeUnmount(() => {
 })
 
 const sendMessage = async (messageText: string): Promise<any> => {
-	if (!chatSession.value?.ulid || !chatSession.value?.guest_identifier) {
+	if (!chatSession.value?.ulid) {
 		console.error("❌ No active session for sending message")
 		throw new Error("No active session")
 	}
 
+	// Cegah double submit
+	if (isSending.value) {
+		console.warn("⏳ Message is already being sent, skipping duplicate send...")
+		return
+	}
+
+	isSending.value = true
+
 	try {
+		const payload = {
+			message_text: messageText,
+			message_type: "text",
+		}
+
 		const response = await axios.post(
-			`https://aiku.test/app/api/chats/messages/${chatSession.value.ulid}/send`,
-			{
-				message_text: messageText,
-				message_type: "text",
-			}
+			`${baseUrl}/app/api/chats/messages/${chatSession.value.ulid}/send`,
+			payload
 		)
 
 		console.log("✅ Message sent:", response.data)
@@ -219,6 +230,8 @@ const sendMessage = async (messageText: string): Promise<any> => {
 	} catch (error) {
 		console.error("❌ Error sending message:", error)
 		throw error
+	} finally {
+		isSending.value = false
 	}
 }
 

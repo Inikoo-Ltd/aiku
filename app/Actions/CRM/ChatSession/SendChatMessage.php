@@ -2,6 +2,7 @@
 
 namespace App\Actions\CRM\ChatSession;
 
+use App\Events\BroadcastChatListEvent;
 use App\Events\BroadcastRealtimeChat;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
@@ -22,25 +23,44 @@ class SendChatMessage
 
     public function handle(ChatSession $chatSession, array $modelData): ChatMessage
     {
-        $chatMessageData = [];
+        $exists = ChatMessage::where('chat_session_id', $chatSession->id)
+            ->where('sender_type', $modelData['sender_type'])
+            ->where('message_text', $modelData['message_text'])
+            ->whereBetween('created_at', [now()->subSeconds(1), now()])
+            ->first();
 
-        data_set($chatMessageData, 'chat_session_id', $chatSession->id);
-        data_set($chatMessageData, 'message_type', $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value);
-        data_set($chatMessageData, 'sender_type', $modelData['sender_type']);
-        data_set($chatMessageData, 'sender_id', $modelData['sender_id'] ?? null);
-        data_set($chatMessageData, 'message_text', $modelData['message_text']);
-        data_set($chatMessageData, 'media_id', $modelData['media_id'] ?? null);
-        data_set($chatMessageData, 'is_read', false);
-        data_set($chatMessageData, 'created_at', now());
-        data_set($chatMessageData, 'updated_at', now());
+        if ($exists) {
+            return $exists;
+        }
+
+        $chatMessageData = [
+            'chat_session_id' => $chatSession->id,
+            'message_type'    => $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => $modelData['sender_type'],
+            'sender_id'       => $modelData['sender_id'] ?? null,
+            'message_text'    => $modelData['message_text'],
+            'media_id'        => $modelData['media_id'] ?? null,
+            'is_read'         => false,
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ];
 
         $chatMessage = ChatMessage::create($chatMessageData);
 
-        $this->updateSessionTimestamps($chatSession, $modelData['sender_type']);
+        $this->updateSessionTimestamps(
+            $chatSession,
+            $modelData['sender_type']
+        );
 
-        $this->logMessageEvent($chatSession, $modelData['sender_type'], $modelData['sender_id'] ?? null, $chatMessage);
+        $this->logMessageEvent(
+            $chatSession,
+            $modelData['sender_type'],
+            $modelData['sender_id'] ?? null,
+            $chatMessage
+        );
 
         BroadcastRealtimeChat::dispatch($chatMessage);
+        BroadcastChatListEvent::dispatch();
 
         return $chatMessage;
     }

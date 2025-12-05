@@ -2,7 +2,6 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use App\Actions\OrgAction;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
@@ -49,7 +48,9 @@ class GetChatSessions
             'assignments.chatAgent.user'
         ])
         ->whereHas('messages')
-        ->latest();
+        ->withLastMessageTime()
+        ->orderBy('last_message_at', 'desc');
+
 
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);

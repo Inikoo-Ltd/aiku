@@ -114,6 +114,11 @@ class ChatAgent extends Model
             && $this->current_chat_count < $this->max_concurrent_chats;
     }
 
+    public function isAvailable()
+    {
+        return $this->current_chat_count < $this->max_concurrent_chats;
+    }
+
 
 
     public function incrementChatCount(): void

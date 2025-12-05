@@ -5,7 +5,6 @@ namespace App\Models\CRM\Livechat;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Language;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\CRM\Livechat\ChatAssignment;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -88,5 +87,16 @@ class ChatSession extends Model
         }
         $this->attributes['rating'] = $value;
     }
+
+    public function scopeWithLastMessageTime($query)
+    {
+        return $query->addSelect([
+            'last_message_at' => ChatMessage::select('created_at')
+                ->whereColumn('chat_session_id', 'chat_sessions.id')
+                ->latest()
+                ->limit(1)
+        ]);
+    }
+
 
 }

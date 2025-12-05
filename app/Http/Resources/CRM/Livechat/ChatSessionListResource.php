@@ -2,8 +2,8 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Models\CRM\Livechat\ChatMessage;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 
 class ChatSessionListResource extends JsonResource
 {
@@ -13,7 +13,7 @@ class ChatSessionListResource extends JsonResource
      * @param  \Illuminate\Http\Request  $request
      * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
      */
-     public function toArray($request)
+    public function toArray($request)
     {
         $lastMessage = null;
         if ($this->relationLoaded('messages') && $this->messages->isNotEmpty()) {
@@ -39,7 +39,7 @@ class ChatSessionListResource extends JsonResource
             'status' => $this->status,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
-            'created_at_timestamp' => $this->created_at->timestamp,
+            'created_at_timestamp' => $this->created_at->copy()->setTimezone('UTC')->timestamp,
 
             'customer' => $userData,
 
@@ -62,9 +62,9 @@ class ChatSessionListResource extends JsonResource
                 'name' => $activeAssignment->chatAgent->user->contact_name ,
             ] : null,
 
-            'unread_count' => $this->relationLoaded('messages')
-                ? $this->messages->where('is_read', false)->count()
-                : 0,
+            'unread_count' => ChatMessage::where('chat_session_id', $this->id)
+                ->where('is_read', false)
+                ->count(),
 
             'message_count' => $this->relationLoaded('messages')
                 ? $this->messages->count()

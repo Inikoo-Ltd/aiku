@@ -5,19 +5,18 @@ namespace App\Events;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Queue\SerializesModels;
 use App\Models\CRM\Livechat\ChatMessage;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 
 class BroadcastRealtimeChat implements ShouldBroadcastNow
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public ChatMessage $message;
-     public string $ulid;
+    public string $ulid;
 
 
     /**
@@ -53,7 +52,7 @@ class BroadcastRealtimeChat implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'message'=> $this->message,
+            'message' => $this->message,
         ];
     }
 

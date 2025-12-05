@@ -109,7 +109,9 @@ Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $
     if ($user instanceof User) {
 
         $agent = ChatAgent::where('user_id', $user->id)->first();
-        if (!$agent) return false;
+        if (!$agent) {
+            return false;
+        }
 
         return ChatAssignment::where('chat_session_id', $session->id)
             ->where('chat_agent_id', $agent->id)
@@ -121,4 +123,11 @@ Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $
     }
 
     return false;
+});
+
+
+Broadcast::channel('chat-list', function ($user) {
+    return $user->chatAgent
+        ? ['id' => $user->id, 'name' => $user->contact_name]
+        : false;
 });

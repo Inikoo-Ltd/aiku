@@ -110,4 +110,39 @@ class UpdateAgent extends OrgAction
             ],
         ];
     }
+
+    public function setOnline(int $userId): ?ChatAgent
+    {
+        $agent = ChatAgent::where('user_id', $userId)->first();
+
+        if (!$agent) {
+            return null;
+        }
+
+        $agent->setOnline(true);
+
+        $agent->update([
+            'is_available' => $agent->isAvailable(),
+        ]);
+
+        return $agent;
+    }
+
+    public function setOffline(int $userId): ?ChatAgent
+    {
+        $agent = ChatAgent::where('user_id', $userId)->first();
+
+        if (!$agent) {
+            return null;
+        }
+
+        $agent->setOnline(false);
+
+        $agent->update([
+            'is_available' => false,
+        ]);
+
+        return $agent;
+    }
+
 }
