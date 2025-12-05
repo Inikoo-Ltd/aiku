@@ -220,12 +220,22 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
-            monitorSlug: 'UpdateWooStockInventories',
+        $this->logSchedule(
+            $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'UpdateWooStockInventories',
+            );
+            name: 'UpdateWooStockInventories',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
         );
 
-        $schedule->command('ebay:update-inventory')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
-            monitorSlug: 'UpdateInventoryInEbayPortfolio',
+        $this->logSchedule(
+            $schedule->command('ebay:update-inventory')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'UpdateInventoryInEbayPortfolio',
+            );
+            name: 'UpdateInventoryInEbayPortfolio',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
         );
 
         $this->logSchedule(
