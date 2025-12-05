@@ -25,6 +25,7 @@ class UpdateInventoryInShopifyPortfolio
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
+        return;
         $platform              = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
         if ($customerSalesChannel === null) {
