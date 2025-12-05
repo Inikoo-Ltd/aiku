@@ -15,6 +15,7 @@ use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\Comms\UI\ShowCommsDashboard;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Comms\Outbox\UI\EditOutboxInShop;
 
 Route::get('', ShowCommsDashboard::class)->name('dashboard');
 Route::get('outboxes', [IndexOutboxes::class, 'inShop'])->name('outboxes.index');
@@ -27,6 +28,7 @@ Route::get('user-notification-outboxes', [IndexOutboxes::class, 'inShopUserNotif
 Route::get('push-outboxes', [IndexOutboxes::class, 'inShopPush'])->name('push_outboxes.index');
 Route::get('test-outboxes', [IndexOutboxes::class, 'inShopTest'])->name('test_outboxes.index');
 Route::get('outboxes/{outbox}', [ShowOutbox::class, 'inShop'])->name('outboxes.show');
+Route::get('outboxes/{outbox}/edit', EditOutboxInShop::class)->name('outboxes.edit');
 Route::get('outboxes/{outbox}/workshop', ShowOutboxWorkshop::class)->name('outboxes.workshop');
 Route::get('outboxes/{outbox}/email-bulk-runs/{emailBulkRun}', [ShowEmailBulkRun::class, 'inOutbox'])->name('outboxes.show.email-bulk-runs.show');
 Route::get('outboxes/{outbox}/dispatched-emails/{dispatchedEmail:id}', [ShowDispatchedEmail::class, 'inOutboxInShop'])->name('outboxes.dispatched-email.show');
