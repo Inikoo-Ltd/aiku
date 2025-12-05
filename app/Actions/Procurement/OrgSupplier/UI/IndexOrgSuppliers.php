@@ -166,12 +166,12 @@ class IndexOrgSuppliers extends OrgAction
                     ]
                 )
                 ->column(key: 'status', label: '', type: 'icon', canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('location'), sortable: true, canBeHidden: false)
-                ->column(key: 'number_org_supplier_products', label: __('products'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_purchase_orders', label: __('purchase orders'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_purchase_orders_delivery_state_in_process', label: __('orders delivery'), canBeHidden: false, sortable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'location', label: __('Location'), sortable: true, canBeHidden: false)
+                ->column(key: 'number_org_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_purchase_orders_delivery_state_in_process', label: __('Orders Delivery'), canBeHidden: false, sortable: true)
                 ->defaultSort('code');
         };
     }
@@ -219,7 +219,7 @@ class IndexOrgSuppliers extends OrgAction
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('suppliers');
+        $title = __('Suppliers');
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-person-dolly'],
@@ -251,7 +251,7 @@ class IndexOrgSuppliers extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('suppliers'),
+                'title'       => __('Suppliers'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,

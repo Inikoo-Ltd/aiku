@@ -116,14 +116,14 @@ class IndexPurchaseOrders extends OrgAction
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'parent_name', label: __('supplier/agents'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'parent_name', label: __('Supplier/Agents'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
             }
-            $table->column(key: 'date', label: __('date Created'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_current_purchase_order_transactions', label: __('items'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'org_total_cost', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency')
+            $table->column(key: 'date', label: __('Date Created'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_current_purchase_order_transactions', label: __('Items'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'org_total_cost', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency')
                 ->defaultSort('reference');
         };
     }
@@ -197,7 +197,7 @@ class IndexPurchaseOrders extends OrgAction
     {
         $subNavigation = null;
         $actions       = [];
-        $title         = __('purchase orders');
+        $title         = __('Purchase Orders');
 
         $icon       = [
             'icon'  => ['fal', 'fa-clipboard-list'],

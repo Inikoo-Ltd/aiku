@@ -26,7 +26,6 @@ class StoreAbnormalOrgStock extends OrgAction
 {
     use WithNoStrictRules;
 
-
     /**
      * @throws \Throwable
      */
@@ -67,7 +66,6 @@ class StoreAbnormalOrgStock extends OrgAction
         }
 
         OrgStockRecordSearch::dispatch($orgStock);
-
 
         return $orgStock;
     }

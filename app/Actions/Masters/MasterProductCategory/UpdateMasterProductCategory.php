@@ -26,11 +26,14 @@ use Illuminate\Validation\Rules\File;
 
 class UpdateMasterProductCategory extends OrgAction
 {
-    use WithMasterProductCategoryAction;
     use WithImageCatalogue;
+    use WithMasterProductCategoryAction;
+
+    private $offersData;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
+        $oldData = $masterProductCategory;
 
         $originalImageId = $masterProductCategory->image_id;
         if (Arr::has($modelData, 'master_department_id')) {
@@ -67,32 +70,32 @@ class UpdateMasterProductCategory extends OrgAction
         if (Arr::has($modelData, 'name_i8n')) {
             UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
                 'translations' => [
-                    'name' => Arr::pull($modelData, 'name_i8n')
-                ]
+                    'name' => Arr::pull($modelData, 'name_i8n'),
+                ],
             ]);
         }
 
         if (Arr::has($modelData, 'description_title_i8n')) {
             UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
                 'translations' => [
-                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
-                ]
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n'),
+                ],
             ]);
         }
 
         if (Arr::has($modelData, 'description_i8n')) {
             UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
                 'translations' => [
-                    'description' => Arr::pull($modelData, 'description_i8n')
-                ]
+                    'description' => Arr::pull($modelData, 'description_i8n'),
+                ],
             ]);
         }
 
         if (Arr::has($modelData, 'description_extra_i8n')) {
             UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
                 'translations' => [
-                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
-                ]
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n'),
+                ],
             ]);
         }
 
@@ -109,10 +112,10 @@ class UpdateMasterProductCategory extends OrgAction
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 $dataToBeUpdated = [];
                 // If name/description/description_title/description_extra is already reviewed / modified, ignore the changes, but change the status back to false
-                // Moved everything to singular check. Just because the name is changed,
+                // Moved everything to singular check. Just becase name is changed,
                 // doesn't mean everything else should be updated at the same time if it doesn't present
                 // Should Family RRP / Offers Data blindly follow master? Even if it has been modified?
-                // And RRP is not included in UpdateProductCategory rules, so it will be ignored. Please delete it if not used
+                // And RRP is not included in UpdateProductCategory rules, so it will be ignored. Please delete if not used
                 if (Arr::has($changed, 'name')) {
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
@@ -143,7 +146,7 @@ class UpdateMasterProductCategory extends OrgAction
 
         $masterProductCategory->refresh();
 
-        if (!$masterProductCategory->image_id && $originalImageId) {
+        if (! $masterProductCategory->image_id && $originalImageId) {
             $masterProductCategory->images()->detach($originalImageId);
         }
 
@@ -163,49 +166,48 @@ class UpdateMasterProductCategory extends OrgAction
         return $masterProductCategory;
     }
 
-
     public function rules(): array
     {
         $rules = [
-            'code'                     => [
+            'code' => [
                 'sometimes',
                 $this->strict ? 'max:32' : 'max:255',
-                new AlphaDashDot(),
+                new AlphaDashDot,
                 new IUnique(
                     table: 'master_product_categories',
                     extraConditions: [
                         ['column' => 'master_shop_id', 'value' => $this->masterShop->id],
                         ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'type', 'value' => $this->masterProductCategory->type, 'operator' => '='],
-                        ['column' => 'id', 'value' => $this->masterProductCategory->id, 'operator' => '!=']
+                        ['column' => 'id', 'value' => $this->masterProductCategory->id, 'operator' => '!='],
 
                     ]
                 ),
             ],
-            'name'                     => ['sometimes', 'max:250', 'string'],
-            'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
-            'status'                   => ['sometimes', 'required', 'boolean'],
-            'description'              => ['sometimes', 'max:65500'],
-            'description_title'        => ['sometimes', 'nullable', 'max:255'],
-            'description_extra'        => ['sometimes', 'nullable', 'max:65500'],
-            'master_department_id'     => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
+            'name' => ['sometimes', 'max:250', 'string'],
+            'image_id' => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
+            'status' => ['sometimes', 'required', 'boolean'],
+            'description' => ['sometimes', 'max:65500'],
+            'description_title' => ['sometimes', 'nullable', 'max:255'],
+            'description_extra' => ['sometimes', 'nullable', 'max:65500'],
+            'master_department_id' => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
             'master_sub_department_id' => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
-            'show_in_website'          => ['sometimes', 'boolean'],
-            'image'                    => [
+            'show_in_website' => ['sometimes', 'boolean'],
+            'image' => [
                 'sometimes',
                 'nullable',
                 File::image()
-                    ->max(12 * 1024)
+                    ->max(12 * 1024),
             ],
-            'name_i8n'                 => ['sometimes', 'array'],
-            'description_title_i8n'    => ['sometimes', 'array'],
-            'description_i8n'          => ['sometimes', 'array'],
-            'description_extra_i8n'    => ['sometimes', 'array'],
-            'vol_gr'                   => ['sometimes', 'array'],
-            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0']
+            'name_i8n' => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n' => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
+            'vol_gr' => ['sometimes', 'array'],
+            'cost_price_ratio' => ['sometimes', 'numeric', 'min:0'],
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
         }
 

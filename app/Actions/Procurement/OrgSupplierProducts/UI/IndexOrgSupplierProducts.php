@@ -90,8 +90,8 @@ class IndexOrgSupplierProducts extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -134,11 +134,11 @@ class IndexOrgSupplierProducts extends OrgAction
     public function htmlResponse(LengthAwarePaginator $orgSupplierProducts, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('Supplier products');
+        $title = __('Supplier Products');
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-box-usd'],
-            'title' => __('Supplier products')
+            'title' => __('Supplier Products')
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -149,7 +149,7 @@ class IndexOrgSupplierProducts extends OrgAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Supplier products')
+                'title' => __('Supplier Products')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-box-usd',
@@ -164,7 +164,7 @@ class IndexOrgSupplierProducts extends OrgAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('Supplier products')
+                'title' => __('Supplier Products')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-box-usd',
@@ -182,7 +182,7 @@ class IndexOrgSupplierProducts extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Supplier products'),
+                'title'       => __('Supplier Products'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,

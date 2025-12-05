@@ -17,36 +17,37 @@ class WarehouseResource extends JsonResource
     {
         /** @var Warehouse $warehouse */
         $warehouse = $this;
+
         return [
-            'id'                     => $warehouse->id,
-            'slug'                   => $warehouse->slug,
-            'name'                   => $warehouse->name,
-            'stats'                  => [
+            'id' => $warehouse->id,
+            'slug' => $warehouse->slug,
+            'name' => $warehouse->name,
+            'stats' => [
                 'locations' => [
                     'label' => 'Location',
-                    'count' => $warehouse->locations()->count()
+                    'count' => $warehouse->locations()->count(),
                 ],
 
                 'pallets' => [
                     'label' => 'Pallets',
-                    'count' => $warehouse->pallets()->count()
+                    'count' => $warehouse->pallets()->count(),
                 ],
 
                 'stored_items' => [
                     'label' => 'Stored Items',
-                    'count' => 0
+                    'count' => 0,
                 ],
 
                 'deliveries' => [
                     'label' => 'Delivery',
-                    'count' => $warehouse->palletDeliveries()->count()
+                    'count' => $warehouse->palletDeliveries()->count(),
                 ],
 
                 'returns' => [
                     'label' => 'Return',
-                    'count' => $warehouse->palletReturns()->count()
+                    'count' => $warehouse->palletReturns()->count(),
                 ],
-            ]
+            ],
         ];
     }
 }

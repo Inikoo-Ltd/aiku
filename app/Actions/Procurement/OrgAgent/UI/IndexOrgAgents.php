@@ -84,14 +84,14 @@ class IndexOrgAgents extends OrgAction
 
                     ]
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('location'), sortable: true, canBeHidden: false)
-                ->column(key: 'number_org_supplier_products', label: __('supplier products'), shortLabel: 'SP', canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_purchase_orders', label: __('purchase orders'), shortLabel: 'PO', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'location', label: __('Location'), sortable: true, canBeHidden: false)
+                ->column(key: 'number_org_supplier_products', label: __('Supplier Products'), shortLabel: 'SP', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), shortLabel: 'PO', canBeHidden: false, sortable: true, searchable: true)
 
-                ->column(key: 'number_org_suppliers', label: __('suppliers'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_stock_deliveries', label: __('delivery stocks'), shortLabel: 'DS', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_org_suppliers', label: __('Suppliers'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_stock_deliveries', label: __('Delivery Stocks'), shortLabel: 'DS', canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }

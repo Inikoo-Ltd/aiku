@@ -11,6 +11,7 @@ namespace App\Actions\Web\WebBlock;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
 use App\Http\Resources\Web\WebBlockProductResource;
+use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -22,17 +23,23 @@ class GetWebBlockProduct
     public function handle(Webpage $webpage, array $webBlock): array
     {
 
-        $permissions =  [];
+        /** @var Product $product */
+        $product = $webpage->model;
+
+        if (! $product->is_for_sale) {
+            abort(404);
+        }
+
+        $permissions = [];
         $attachments = DB::table('media')
             ->join('model_has_attachments', function ($join) use ($webpage) {
                 $join->on('model_has_attachments.media_id', '=', 'media.id')
                     ->where('model_has_attachments.model_type', '=', 'Product')
                     ->where('model_has_attachments.model_id', $webpage->model_id);
             })
-            ->select(['model_has_attachments.caption','model_has_attachments.scope', 'model_has_attachments.media_id', 'media.ulid as media_ulid', 'media.mime_type as mime_type'])
+            ->select(['model_has_attachments.caption', 'model_has_attachments.scope', 'model_has_attachments.media_id', 'media.ulid as media_ulid', 'media.mime_type as mime_type'])
             ->whereIn('model_has_attachments.scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
             ->get();
-
 
         $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
@@ -42,5 +49,4 @@ class GetWebBlockProduct
 
         return $webBlock;
     }
-
 }

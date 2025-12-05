@@ -29,6 +29,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $packed_in
  * @property mixed $quantity_available
  * @property mixed $id
+ * @property mixed $value_in_locations
+ * @property mixed $revenue
+ * @property mixed $dispatched
  */
 class OrgStocksResource extends JsonResource
 {
@@ -40,23 +43,26 @@ class OrgStocksResource extends JsonResource
         }
 
         return [
-            'id'                              => $this->id,
-            'slug'                            => $this->slug,
-            'code'                            => $this->code,
-            'state'                           => $this->state->stateIcon()[$this->state->value],
-            'name'                            => $this->name,
-            'quantity'                        => $this->quantity,
-            'quantity_available'              => $quantityAvailable,
-            'unit_value'                      => $this->unit_value,
-            'number_locations'                => $this->number_location,
-            'quantity_locations'              => $this->quantity_in_locations,
-            'family_slug'                     => $this->family_slug,
-            'family_code'                     => $this->family_code,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'state' => $this->state->stateIcon()[$this->state->value],
+            'name' => $this->name,
+            'quantity' => $this->quantity,
+            'quantity_available' => $quantityAvailable,
+            'unit_value' => $this->unit_value,
+            'value_in_locations' => $this->value_in_locations,
+            'number_locations' => $this->number_location,
+            'quantity_locations' => $this->quantity_in_locations,
+            'family_slug' => $this->family_slug,
+            'family_code' => $this->family_code,
+            'revenue' => $this->revenue,
+            'dispatched' => $this->dispatched,
             'discontinued_in_organisation_at' => $this->discontinued_in_organisation_at,
-            'organisation_name'               => $this->organisation_name,
-            'organisation_slug'               => $this->organisation_slug,
-            'warehouse_slug'                  => $this->warehouse_slug,
-            'pick_fractional'                 => ($this->quantity && $this->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity)), $this->packed_in) : [],
+            'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
+            'warehouse_slug' => $this->warehouse_slug,
+            'pick_fractional' => ($this->quantity && $this->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity)), $this->packed_in) : [],
         ];
     }
 }
