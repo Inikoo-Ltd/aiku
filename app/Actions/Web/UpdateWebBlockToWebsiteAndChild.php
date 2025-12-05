@@ -71,13 +71,15 @@ class UpdateWebBlockToWebsiteAndChild extends OrgAction
     {
         $index = collect($layout['web_blocks'] ?? [])->whereIn('name', $names)->keys()->first();
         if ($index === null) {
-        data_set($layout, "web_blocks.$index.type", $slug);
-        data_set($layout, "web_blocks.$index.web_block.layout.data.fieldValue", $fieldValue);
+            data_set($layout, "web_blocks.$index.type", $slug);
+            data_set($layout, "web_blocks.$index.web_block.layout.data.fieldValue", $fieldValue);
 
-        return [
-            'layout' => $layout,
-            'index'  => $index,
-        ];
+            return [
+                'layout' => $layout,
+                'index'  => $index,
+            ];
+        }
+        return [];
     }
 
 
