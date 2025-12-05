@@ -85,7 +85,7 @@ class IndexCustomerBackInStockReminders extends OrgAction
                 'products.unit',
                 'products.top_seller',
                 'products.web_images',
-                'webpages.url',
+                'webpages.canonical_url',
             ]))
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
