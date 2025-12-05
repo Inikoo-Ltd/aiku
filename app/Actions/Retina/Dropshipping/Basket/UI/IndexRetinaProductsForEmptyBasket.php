@@ -16,7 +16,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexRetinaDropshippingProductsForEmptyBasket extends RetinaAction
+class IndexRetinaProductsForEmptyBasket extends RetinaAction
 {
     public function handle($prefix = null): LengthAwarePaginator
     {
