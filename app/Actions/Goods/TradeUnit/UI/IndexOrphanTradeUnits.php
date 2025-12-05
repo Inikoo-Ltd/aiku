@@ -118,12 +118,12 @@ class IndexOrphanTradeUnits extends GrpAction
     }
 
 
-    public function jsonResponse(LengthAwarePaginator $tradeUnit): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnit);
+        return TradeUnitsResource::collection($tradeUnits);
     }
 
-    public function htmlResponse(LengthAwarePaginator $tradeUnit, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $tradeUnits, ActionRequest $request): Response
     {
         return Inertia::render(
             'Goods/TradeUnits',
@@ -140,7 +140,7 @@ class IndexOrphanTradeUnits extends GrpAction
                         'title' => __('Orphan Trade Units'),
                     ],
                 ],
-                'data'        => TradeUnitsResource::collection($tradeUnit),
+                'data'        => TradeUnitsResource::collection($tradeUnits),
 
             ]
         )->table($this->tableStructure(parent: $this->parent));

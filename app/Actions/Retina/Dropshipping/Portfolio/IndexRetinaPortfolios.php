@@ -139,7 +139,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $channels = $this->customer->customerSalesChannels()
             ->whereNot('id', $this->customerSalesChannel->id)
-            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->whereNot('number_portfolios', 0)
             ->get();
 
         /** @var ShopifyUser|WooCommerceUser|AmazonUser|MagentoUser $platformUser */

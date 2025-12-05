@@ -27,11 +27,16 @@ class CheckWooChannel
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
         $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
+        $connection = $wooCommerceUser->checkConnection();
 
-        if (Arr::has($wooCommerceUser->checkConnection(), 'environment') && !blank($webhooks)) {
+        if (Arr::has($connection, 'environment') && !blank($webhooks)) {
             $platformStatus       = true;
             $canConnectToPlatform = true;
             $existInPlatform      = true;
+        } else {
+            $this->update($wooCommerceUser, [
+                'data' => $connection
+            ]);
         }
 
         $this->update($wooCommerceUser, [

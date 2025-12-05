@@ -38,7 +38,7 @@ class IndexTradeUnits extends GrpAction
         $this->parent = group();
         $this->initialisation($this->parent, $request);
 
-        return $this->handle(bucket: 'all');
+        return $this->handle();
     }
 
     public function inProcess(ActionRequest $request): LengthAwarePaginator
@@ -149,8 +149,8 @@ class IndexTradeUnits extends GrpAction
                         default => null
                     }
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
             $routeName = request()->route()->getName();
 
@@ -161,18 +161,18 @@ class IndexTradeUnits extends GrpAction
             }
 
 
-            $table->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Unit label'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
 
-    public function jsonResponse(LengthAwarePaginator $tradeUnit): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnit);
+        return TradeUnitsResource::collection($tradeUnits);
     }
 
-    public function htmlResponse(LengthAwarePaginator $tradeUnit, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $tradeUnits, ActionRequest $request): Response
     {
         $title = match ($this->bucket) {
             'active' => __('Active Trade Units'),
@@ -198,7 +198,7 @@ class IndexTradeUnits extends GrpAction
                         'title' => $title,
                     ],
                 ],
-                'data'        => TradeUnitsResource::collection($tradeUnit),
+                'data'        => TradeUnitsResource::collection($tradeUnits),
 
             ]
         )->table($this->tableStructure(parent: $this->parent));

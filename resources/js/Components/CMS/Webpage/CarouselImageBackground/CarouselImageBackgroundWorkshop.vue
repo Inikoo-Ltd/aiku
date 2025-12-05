@@ -133,107 +133,68 @@ onMounted(async () => {
 
 <template>
   <div id="carousel-background-image" class="relative w-full">
-    <div
-      :data-refresh="refreshTrigger"
-      :style="{
+    <div :data-refresh="refreshTrigger" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
         ...getStyles(modelValue?.container?.properties, props.screenType),
-      }"
-    >
-      <Swiper
-        v-if="hasCards && navigation"
-        :modules="[Navigation, Autoplay, Thumbs]"
-        :slides-per-view="slidesPerView"
-        :loop="isLooping"
-        :breakpoints="responsiveBreakpoints"
-        :navigation="navigation"
-        :pagination="{ clickable: true }"
-        :autoplay="false"
-        :thumbs="{ swiper: thumbsSwiper }"
-        :key="refreshTrigger"
-        class="w-full"
-        @swiper="(s) => (swiperInstance = s)"
-      >
-        <SwiperSlide
-          v-for="(data, index) in modelValue.carousel_data.cards"
-          :key="index"
-        >
+      }">
+      <Swiper v-if="hasCards && navigation" :modules="[Navigation, Autoplay, Thumbs]" :slides-per-view="slidesPerView"
+        :loop="isLooping" :breakpoints="responsiveBreakpoints" :navigation="navigation"
+        :pagination="{ clickable: true }" :autoplay="false" :thumbs="{ swiper: thumbsSwiper }" :key="refreshTrigger"
+        class="w-full" @swiper="(s) => (swiperInstance = s)">
+        <SwiperSlide v-for="(data, index) in modelValue.carousel_data.cards" :key="index">
           <div class="px-1 md:px-1 lg:px-1 space-card">
-            <article
-              @click.stop="
+            <article @click.stop="
                 () => {
                   sendMessageToParent('activeBlock', indexBlock)
                   sendMessageToParent('activeChildBlock', bKeys[3])
                   sendMessageToParent('activeChildBlockArray', index)
                   sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
                 }
-              "
-              @dblclick.stop="
+              " @dblclick.stop="
                 () =>
                   sendMessageToParent('uploadImage', {
                     ...imageSettings,
                     key: ['carousel_data', 'cards', index, 'image', 'source'],
                   })
               "
-              class="card relative isolate flex items-center justify-center overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300"
-            >
-              <Image
-                :src="data?.image?.source"
-                :alt="data?.image?.alt"
-                :imageCover="true"
-                class="absolute inset-0 -z-10 w-full h-full object-cover"
-              />
+              class="card relative isolate flex items-center justify-center overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
+              <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
+                class="absolute inset-0 -z-10 w-full h-full object-cover" />
 
               <div class="absolute inset-0 flex flex-col justify-between p-6">
                 <div v-html="data.text" class="w-full"></div>
 
-                <div
-                  v-if="modelValue?.carousel_data?.carousel_setting?.button"
-                  class="flex mt-auto"
-                  :style="{
+                <div v-if="modelValue?.carousel_data?.carousel_setting?.button" class="flex mt-auto" :style="{
                     ...getStyles(modelValue?.button?.container_button?.properties, screenType),
                     ...getStyles(data?.button?.container_button?.properties, screenType),
-                  }"
-                >
-                  <Button
-                    :injectStyle="{
+                  }">
+                  <Button :injectStyle="{
                       ...getStyles(modelValue?.button?.container?.properties, screenType),
                       ...getStyles(data?.button?.container?.properties, screenType),
-                    }"
-                    :label="data?.button?.text || modelValue?.button?.text"
-                    @click.stop="
+                    }" :label="data?.button?.text || modelValue?.button?.text" @click.stop="
                       () => {
                         sendMessageToParent('activeBlock', indexBlock)
                         sendMessageToParent('activeChildBlock', bKeys[2])
                       }
-                    "
-                  />
+                    " />
                 </div>
               </div>
             </article>
           </div>
         </SwiperSlide>
-
-        <!-- Navigation Buttons -->
-        <div class="absolute inset-0 pointer-events-none z-50">
-          <div
-            v-if="showButton"
-            ref="prevEl"
-            @click="swiperInstance?.slidePrev()"
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto"
-          >
-            <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft" :style="getStyles(props.modelValue?.carousel_data?.buttonStyle, screenType)" />
-          </div>
-          <div
-            v-if="showButton"
-            ref="nextEl"
-            @click="swiperInstance?.slideNext()"
-            class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto"
-          >
-            <FontAwesomeIcon fixed-width :icon="faChevronCircleRight"  :style="getStyles(props.modelValue?.carousel_data?.buttonStyle, screenType)"/>
-          </div>
-        </div>
       </Swiper>
+    </div>
+    <div class="absolute inset-0 pointer-events-none z-50">
+      <div v-if="showButton" ref="prevEl" @click="swiperInstance?.slidePrev()"
+        class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+        <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft"
+          :style="getStyles(props.modelValue?.carousel_data?.buttonStyle, screenType)" />
+      </div>
+      <div v-if="showButton" ref="nextEl" @click="swiperInstance?.slideNext()"
+        class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+        <FontAwesomeIcon fixed-width :icon="faChevronCircleRight"
+          :style="getStyles(props.modelValue?.carousel_data?.buttonStyle, screenType)" />
+      </div>
     </div>
   </div>
 </template>

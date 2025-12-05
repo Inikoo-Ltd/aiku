@@ -267,7 +267,6 @@ class ShowOrder extends OrgAction
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
-        $readonly = false;
 
 
         return Inertia::render(
@@ -344,7 +343,7 @@ class ShowOrder extends OrgAction
 
                 'notes'                       => $this->getOrderNotes($order),
                 'timelines'                   => $finalTimeline,
-                'readonly'                    => $readonly,
+                'readonly'                    => false,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
                 'contact_address'             => AddressResource::make($order->customer->address)->getArray(),
                 'box_stats'                   => $this->getOrderBoxStats($order),

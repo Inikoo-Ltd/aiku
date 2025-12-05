@@ -28,8 +28,13 @@ class UpdateProfile extends OrgAction
     public function handle(User $user, array $modelData): User
     {
         if (Arr::exists($modelData, 'hide_logo')) {
-            $appTheme                           = Arr::pull($modelData, 'hide_logo');
-            $modelData['settings']['hide_logo'] = $appTheme;
+            $hideLogo                           = Arr::pull($modelData, 'hide_logo');
+            $modelData['settings']['hide_logo'] = $hideLogo;
+        }
+
+        if (Arr::exists($modelData, 'timezones')) {
+            $timezones                           = Arr::pull($modelData, 'timezones');
+            $modelData['settings']['timezones'] = $timezones;
         }
 
         if (Arr::exists($modelData, 'preferred_printer')) {
@@ -77,6 +82,7 @@ class UpdateProfile extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
+            'timezones'         => ['sometimes', 'array'],
             'settings'          => ['sometimes'],
         ];
     }

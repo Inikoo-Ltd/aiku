@@ -32,7 +32,8 @@ class ProductHydrateForSale implements ShouldBeUnique
             &&
             in_array($product->status, [
                 ProductStatusEnum::FOR_SALE,
-                ProductStatusEnum::OUT_OF_STOCK
+                ProductStatusEnum::OUT_OF_STOCK,
+                ProductStatusEnum::COMING_SOON
             ])
             && in_array($product->state, [
                 ProductStateEnum::ACTIVE,
