@@ -596,6 +596,7 @@ onBeforeUnmount(() => {
                         {{ trans("We're unable to update stock due to we currently can't access your store.") }}
                     </div>
                 </div>
+                    <ButtonWithLink type="tertiary" @click="isOpenModalSuspended = true" icon="fas fa-sync-alt" :label="trans('Sync Manually')" />
             </div>
     </Message>
 
@@ -818,11 +819,11 @@ onBeforeUnmount(() => {
     <Modal :isOpen="isOpenModalSuspended" @onClose="isOpenModalSuspended = false"
            width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
         <div class="mb-8">
-            <h3 class="text-center">{{ trans('If you experience an issue when clicking Unsuspend, your store might be down. You can check it by clicking Test Connection.')}}</h3>
+            <h3 class="text-center">{{ trans('If you experience an issue when clicking Sync Manually, your store might be down. You can check it by clicking Test Connection.')}}</h3>
             <div class="mt-8 flex justify-center items-center gap-2 font-light text-sm" v-if="isTestConnectionSuccess">
                 <Icon class="text-green-500" :data="{
                 icon: 'fas fa-check'
-            }" /> {{ trans('Great! your store can connect, now click unsuspend') }}
+            }" /> {{ trans('Great! you can sync your products now') }}
             </div>
         </div>
 
@@ -833,10 +834,10 @@ onBeforeUnmount(() => {
                             method: 'patch',
                         }" @success="data => isTestConnectionSuccess = true" @error="data => isTestConnectionSuccess = data.status" icon="fas fa-check" :label="trans('Test Connection')" />
             <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.unsuspend',
+                            name: 'retina.models.customer_sales_channel.sync_portfolios_manual',
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'patch'
-                        }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
+                        }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Sync Manually')" />
         </div>
     </Modal>
 </template>

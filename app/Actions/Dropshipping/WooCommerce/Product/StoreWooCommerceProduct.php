@@ -33,10 +33,6 @@ class StoreWooCommerceProduct extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
     {
-        if ($wooCommerceUser->customerSalesChannel->ban_stock_update_util && $wooCommerceUser->customerSalesChannel->ban_stock_update_util->gt(now())) {
-            return null;
-        }
-
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
         ]);
