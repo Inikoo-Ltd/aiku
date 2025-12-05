@@ -15,7 +15,6 @@ const updateTimes = () => {
         //  { "Asia/Makassar": "15:04" }
         updated[tz] = formatInTimeZone(now, tz.timezone, 'HH:mm')
     }
-    console.log('updated', updated)
     times.value = updated
 }
 

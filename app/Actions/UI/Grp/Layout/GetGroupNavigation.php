@@ -82,7 +82,7 @@ class GetGroupNavigation
                     ],
                     [
                         'label' => 'Trade Unit Families',
-                        'icon'  => ['fal', 'fa-atom'],
+                        'icon'  => ['fal', 'fa-atom-alt'],
                         'root'  => 'grp.trade_units.families.',
                         'route' => [
                             'name'       => 'grp.trade_units.families.index',

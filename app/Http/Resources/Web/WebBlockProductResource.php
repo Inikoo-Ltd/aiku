@@ -69,6 +69,7 @@ class WebBlockProductResource extends JsonResource
             'price'             => $product->price,
             'price_per_unit'    => $pricePerUnit,
             'status'            => $product->status,
+            'status_label'      => $product->status->labels()[$product->status->value],
             'state'             => $product->state,
             'units'             => $units,
             'unit'              => $product->unit,

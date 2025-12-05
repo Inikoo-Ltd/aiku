@@ -371,7 +371,7 @@ onUnmounted(() => {
                                     ` (${customerData?.stock} ` +
                                     trans("available") +
                                     `)`
-                                    : trans("Out Of Stock")
+                                    : product.status_label??trans("Out of stock")
                                     }}
                                 </span>
                             </div>

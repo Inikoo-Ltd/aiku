@@ -79,8 +79,8 @@ class GetTradeUnitsForTradeUnitFamily extends GrpAction
             ->withQueryString();
     }
 
-    public function jsonResponse(LengthAwarePaginator $tradeUnit): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnit);
+        return TradeUnitsResource::collection($tradeUnits);
     }
 }
