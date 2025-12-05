@@ -8,6 +8,13 @@
 	"website_type" : ["b2b","b2c","dropshipping"],
 	"fixed" : true,
 	"data": {
-		"fieldValue": {}
+		"fieldValue": {
+			"container": {
+				"properties": null
+			},
+			"card_product": {
+				"properties": null
+			}
+		}
 	}
 }

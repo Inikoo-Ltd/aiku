@@ -2,7 +2,7 @@
 	"slug": "families-2",
 	"scope": "webpage",
 	"code": "families-2",
-	"name": "families-2",
+	"name": "families",
 	"category": "family",
 	"fixed": true,
 	"icon": ["fal", "folder"],

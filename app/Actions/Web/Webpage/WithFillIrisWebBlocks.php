@@ -32,15 +32,15 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetBanner::run($webBlock);
         } elseif ($webBlockType == 'departments') { // not used
             $parsedWebBlocks[$key] = GetWebBlockDepartments::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'sub-departments-1') {
+        } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'families-1') {
+        } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'products-1') {
+        } elseif (str_contains($webBlockType, 'products-')) {
             $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock, $isLoggedIn);
         } elseif ($webBlockType == 'family-1') {
             $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'product-1') {
+        } elseif (str_contains($webBlockType, 'product-')) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collections-1') { // not used
             $parsedWebBlocks[$key] = GetWebBlockCollections::run($webpage, $webBlock);
