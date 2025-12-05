@@ -1107,7 +1107,7 @@ const labelToBePaid = (toBePaidValue: string) => {
                                             @click.prevent="() => onClickPayInvoice()"
                                             xtype="secondary"
                                             xicon="far fa-ellipsis-v"
-                                            :label="trans('Pay with other')"
+                                            :label="trans('Pay')"
                                             size="sm"
                                             xclass="rounded-l-none !border-l-0"
                                         />
