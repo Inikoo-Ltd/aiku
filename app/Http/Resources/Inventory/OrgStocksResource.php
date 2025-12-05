@@ -29,6 +29,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $packed_in
  * @property mixed $quantity_available
  * @property mixed $id
+ * @property mixed $value_in_locations
+ * @property mixed $revenue
+ * @property mixed $dispatched
  */
 class OrgStocksResource extends JsonResource
 {
@@ -48,10 +51,13 @@ class OrgStocksResource extends JsonResource
             'quantity' => $this->quantity,
             'quantity_available' => $quantityAvailable,
             'unit_value' => $this->unit_value,
+            'value_in_locations' => $this->value_in_locations,
             'number_locations' => $this->number_location,
             'quantity_locations' => $this->quantity_in_locations,
             'family_slug' => $this->family_slug,
             'family_code' => $this->family_code,
+            'revenue' => $this->revenue,
+            'dispatched' => $this->dispatched,
             'discontinued_in_organisation_at' => $this->discontinued_in_organisation_at,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,

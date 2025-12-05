@@ -27,6 +27,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
+use Google\Service\CloudRedis\AOFConfig;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
@@ -231,6 +232,7 @@ class IndexOrgStocks extends OrgAction
                 'org_stocks.state',
                 'org_stocks.unit_value',
                 'org_stocks.quantity_available',
+                'org_stocks.value_in_locations',
                 'number_locations',
                 'quantity_in_locations',
                 'org_stocks.discontinued_in_organisation_at',
@@ -239,12 +241,16 @@ class IndexOrgStocks extends OrgAction
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'warehouses.slug as warehouse_slug',
+                'org_stock_intervals.dispatched_ytd as dispatched',
+                'org_stock_sales_intervals.revenue_org_currency_ytd as revenue',
             ])
             ->leftJoin('organisations', 'org_stocks.organisation_id', 'organisations.id')
             ->leftJoin('warehouses', 'warehouses.organisation_id', 'organisations.id')
             ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'org_stocks.id')
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
-            ->allowedSorts(['code', 'name', 'family_code', 'unit_value', 'discontinued_in_organisation_at', 'organisation_name'])
+            ->leftJoin('org_stock_intervals', 'org_stock_intervals.org_stock_id', 'org_stocks.id')
+            ->leftJoin('org_stock_sales_intervals', 'org_stock_sales_intervals.org_stock_id', 'org_stocks.id')
+            ->allowedSorts(['code', 'name', 'family_code', 'unit_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available'])
             ->allowedFilters([$globalSearch, AllowedFilter::exact('state')])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -280,10 +286,10 @@ class IndexOrgStocks extends OrgAction
             }
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            if (! $bucket || in_array($bucket, ['active', 'discontinuing'])) {
-                $table->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'revenue', label: __('Revenue'), sortable: true)
-
+            if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
+                $table->column(key: 'value_in_locations', label: __('Stock value'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency')
                     ->column(key: 'dispatched', label: __('Dispatched'), sortable: true);
             }
 
