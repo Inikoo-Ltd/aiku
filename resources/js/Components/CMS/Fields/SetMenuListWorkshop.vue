@@ -136,7 +136,7 @@ const autoSave = async (event) => {
 
                 <button  @click.stop="() => hiddenNavigation(index)"
                     class="px-3 py-2 transition duration-150"
-                    title="hidden menu">
+                    :title="element.hidden ? 'hide menu' : 'show menu'">
                     <FontAwesomeIcon :icon="element.hidden ?  faEyeSlash : faEye" />
                 </button>
 
