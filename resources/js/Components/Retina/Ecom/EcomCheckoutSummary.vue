@@ -174,7 +174,7 @@ const convertToFloat2 = (val: any) => {
             <div v-else-if="order?.state === 'cancelled'" class="mb-2.5">
                 <div class="text-yellow-600 border-yellow-500 bg-yellow-200 border rounded-md px-3 py-2">
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
-                    {{ trans("Order cancelled, payments returned to balance") }}
+                    {{ trans("Order cancelled, any payments made have been returned to your balance") }}
                 </div>
             </div>
 
