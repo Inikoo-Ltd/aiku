@@ -212,13 +212,12 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <!-- Section: Stock -->
                     <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right"/>
-                        <div v-else />
-                   
-                    <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
-                        <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right"/>
                         <div v-else
                             class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
                             :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+
+
+
                             <span class="text-xs">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[6px] " />
                                 {{ product.stock > 10000
@@ -229,27 +228,27 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                             </span>
                         </div>
                     </div>
+
                 </div>
-
             </div>
-        </div>
 
-        <div class="px-3 mt-auto">
-            <Prices :product="product" :currency="currency" />
-        </div>
+            <div class="px-3 mt-auto">
+                <Prices :product="product" :currency="currency" />
+            </div>
 
 
-        <!-- Login Button for Non-Logged In Users -->
-        <div v-if="!layout?.iris?.is_logged_in" class="px-3">
-            <a :href="urlLoginWithRedirect()" class="w-full">
-                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />
-            </a>
-        </div>
+            <!-- Login Button for Non-Logged In Users -->
+            <div v-if="!layout?.iris?.is_logged_in" class="px-3">
+                <a :href="urlLoginWithRedirect()" class="w-full">
+                    <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />
+                </a>
+            </div>
 
-        <div 
-            v-if="idxSlideLoading"
-            class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
-            <LoadingIcon />
+            <div 
+                v-if="idxSlideLoading"
+                class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
+                <LoadingIcon />
+            </div>
         </div>
     </div>
 </template>
