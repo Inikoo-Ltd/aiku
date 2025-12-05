@@ -35,7 +35,7 @@ class CheckWooChannel
             $existInPlatform      = true;
         } else {
             $this->update($wooCommerceUser, [
-                'data' => $connection
+                'data' => $connection ?? []
             ]);
         }
 
