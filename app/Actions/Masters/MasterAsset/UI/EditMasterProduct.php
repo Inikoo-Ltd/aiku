@@ -286,7 +286,7 @@ class EditMasterProduct extends GrpAction
                 ]
             ],
             $masterProduct->masterFamily ? [
-                'label'  => __('Trade unit'),
+                'label'  => __('Trade units'),
                 'icon'   => 'fa-light fa-atom',
                 'fields' => [
                     'trade_units' => [
