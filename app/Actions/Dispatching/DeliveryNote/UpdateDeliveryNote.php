@@ -15,6 +15,7 @@ use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatMetrics;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -22,6 +23,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Helpers\Country;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -62,6 +64,19 @@ class UpdateDeliveryNote extends OrgAction
             if (Arr::has($changes, 'state')) {
                 $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
                 $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
+
+                // Trigger Intrastat metrics hydration for EU deliveries
+                if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED && $deliveryNote->delivery_country_id) {
+                    $deliveryCountry = Country::find($deliveryNote->delivery_country_id);
+                    if ($deliveryCountry &&
+                        Country::isInEU($deliveryCountry->code) &&
+                        $deliveryCountry->code !== $deliveryNote->organisation->country_code) {
+                        OrganisationHydrateIntrastatMetrics::dispatch(
+                            $deliveryNote->organisation,
+                            $deliveryNote->dispatched_at ?? now()
+                        )->delay($this->hydratorsDelay);
+                    }
+                }
             }
 
 
