@@ -27,7 +27,6 @@ class UpdateInventoryInEbayPortfolio
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
-        return;
         $platform              = Platform::where('type', PlatformTypeEnum::EBAY)->first();
 
         if ($customerSalesChannel === null) {

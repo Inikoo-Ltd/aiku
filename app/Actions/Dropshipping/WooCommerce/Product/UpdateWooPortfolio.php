@@ -45,7 +45,6 @@ class UpdateWooPortfolio implements ShouldBeUnique
 
     public function handle(int $portfolioID): void
     {
-        return;
         $portfolio = Portfolio::find($portfolioID);
 
 

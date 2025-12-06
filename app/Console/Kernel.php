@@ -220,22 +220,22 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-//        $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
-//            monitorSlug: 'UpdateWooStockInventories',
-//        );
+        $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'UpdateWooStockInventories',
+        );
 
-//        $schedule->command('ebay:update-inventory')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
-//            monitorSlug: 'UpdateInventoryInEbayPortfolio',
-//        );
+        $schedule->command('ebay:update-inventory')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'UpdateInventoryInEbayPortfolio',
+        );
 
-//        $this->logSchedule(
-//            $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
-//                monitorSlug: 'UpdateInventoryInShopifyPortfolio',
-//            ),
-//            name: 'UpdateInventoryInShopifyPortfolio',
-//            type: 'command',
-//            scheduledAt: now()->format('H:i')
-//        );
+        $this->logSchedule(
+            $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'UpdateInventoryInShopifyPortfolio',
+            ),
+            name: 'UpdateInventoryInShopifyPortfolio',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
 
 
         $this->logSchedule(
