@@ -281,11 +281,12 @@ class EditMasterProduct extends GrpAction
                         'type_label' => 'families',
                         'valueProp'  => 'id',
                         'labelProp'  => 'code',
-                        'value'      => $masterProduct->masterFamily->id ?? null,
+                        'value'      => $masterProduct->master_family_id,
                     ]
                 ]
             ],
-            $masterProduct->masterFamily ? [
+
+            [
                 'label'  => __('Trade units'),
                 'icon'   => 'fa-light fa-atom',
                 'fields' => [
@@ -329,9 +330,11 @@ class EditMasterProduct extends GrpAction
                         'value'        => $tradeUnits,
                     ],
                 ],
-            ] : [],
-            // To do display message that prompts user to edit from trade unit / master
-            $masterProduct->not_for_sale_from_trade_unit ? [] : [
+            ],
+
+            $masterProduct->not_for_sale_from_trade_unit
+                ? []
+                : [
                 'label'  => __('Sale Status'),
                 'icon'   => 'fal fa-cart-arrow-down',
                 'fields' => [
@@ -339,9 +342,9 @@ class EditMasterProduct extends GrpAction
                         'confirmation' => [
                             'description' => __('Changing the sale status of a master product will affect all products linked to it in all shops.'),
                         ],
-                        'type'  => 'toggle',
-                        'label' => __('For Sale'),
-                        'value' => $masterProduct->is_for_sale,
+                        'type'         => 'toggle',
+                        'label'        => __('For Sale'),
+                        'value'        => $masterProduct->is_for_sale,
                     ],
                 ],
             ],
@@ -352,7 +355,7 @@ class EditMasterProduct extends GrpAction
 
     public function getBreadcrumbs(MasterAsset $masterAsset, string $routeName, array $routeParameters): array
     {
-        return ShowMasterProducts::make()->getBreadcrumbs(
+        return ShowMasterProduct::make()->getBreadcrumbs(
             masterAsset: $masterAsset,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,

@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -50,9 +51,13 @@ class UpdateMasterAsset extends OrgAction
             if ($modelData['master_family_id']) {
                 $masterFamily = MasterProductCategory::where('id', $modelData['master_family_id'])->first();
             }
-
-            $masterDepartmentID = $masterFamily?->master_department_id;
-            data_set($modelData, 'master_department_id', $masterDepartmentID);
+            if ($masterFamily) {
+                data_set($modelData, 'master_department_id', $masterFamily->master_department_id);
+                data_set($modelData, 'master_sub_department_id', $masterFamily->master_sub_department_id);
+            } else {
+                data_set($modelData, 'master_department_id', null);
+                data_set($modelData, 'master_sub_department_id', null);
+            }
         }
 
         if (Arr::has($modelData, 'name_i8n')) {
@@ -109,6 +114,7 @@ class UpdateMasterAsset extends OrgAction
                     SyncProductTradeUnits::run($product, $tradeUnits);
                 }
             }
+
             $this->update($masterAsset, $modelData);
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
@@ -126,12 +132,18 @@ class UpdateMasterAsset extends OrgAction
         }
 
 
-        if ($masterAsset->wasChanged('master_family_id') && $masterAsset->masterFamily) {
-            $masterFamilyIds = $masterAsset->masterFamily->productCategories()->pluck('id', 'shop_id');
-            foreach ($masterAsset->products as $product) {
-                if (isset($masterFamilyIds[$product->shop_id])) {
-                    $product->updateQuietly([
-                        'family_id' => $masterFamilyIds[$product->shop_id]
+        if ($masterAsset->wasChanged('master_family_id')) {
+            if ($masterAsset->masterFamily) {
+                foreach ($masterAsset->products as $product) {
+                    $family = $masterAsset->masterFamily->productCategories()->where('shop_id', $product->shop_id)->first();
+                    UpdateProductFamily::run($product, [
+                        'family_id' => $family ? $family->id : null
+                    ]);
+                }
+            } else {
+                foreach ($masterAsset->products as $product) {
+                    UpdateProductFamily::run($product, [
+                        'family_id' => null
                     ]);
                 }
             }
