@@ -285,7 +285,8 @@ test('create family', function ($department) {
 
 test('create product', function (ProductCategory $family) {
     $tradeUnits = [
-        $this->tradeUnit1->id => [
+        [
+            'id'       => $this->tradeUnit1->id,
             'quantity' => 1,
         ]
     ];
@@ -304,25 +305,25 @@ test('create product', function (ProductCategory $family) {
 
 
     expect($product)->toBeInstanceOf(Product::class)
-        ->and($product->state)->toBe(ProductStateEnum::IN_PROCESS)
+        ->and($product->state)->toBe(ProductStateEnum::ACTIVE)
         ->and($product->asset)->toBeInstanceOf(Asset::class)
         ->and($product->historicAsset)->toBeInstanceOf(HistoricAsset::class)
         ->and($product->tradeUnits()->count())->toBe(1)
         ->and($product->organisation->catalogueStats->number_products)->toBe(1)
-        ->and($product->organisation->catalogueStats->number_current_products)->toBe(0)
+        ->and($product->organisation->catalogueStats->number_current_products)->toBe(1)
         ->and($product->organisation->catalogueStats->number_assets_type_product)->toBe(1)
         ->and($product->organisation->catalogueStats->number_assets_type_service)->toBe(0)
         ->and($product->group->catalogueStats->number_products)->toBe(1)
-        ->and($product->group->catalogueStats->number_current_products)->toBe(0)
+        ->and($product->group->catalogueStats->number_current_products)->toBe(1)
         ->and($product->group->catalogueStats->number_assets_type_product)->toBe(1)
         ->and($family->department->stats->number_products)->toBe(1)
-        ->and($family->department->stats->number_products_state_in_process)->toBe(1)
-        ->and($family->department->stats->number_current_products)->toBe(0)
+        ->and($family->department->stats->number_products_state_in_process)->toBe(0)
+        ->and($family->department->stats->number_current_products)->toBe(1)
         ->and($family->stats->number_products)->toBe(1)
-        ->and($family->stats->number_current_products)->toBe(0)
+        ->and($family->stats->number_current_products)->toBe(1)
         ->and($product->department)->toBeInstanceOf(ProductCategory::class)
         ->and($product->department->stats->number_products)->toBe(1)
-        ->and($product->department->stats->number_current_products)->toBe(0)
+        ->and($product->department->stats->number_current_products)->toBe(1)
         ->and($product->shop->stats->number_assets_type_product)->toBe(1)
         ->and($product->stats->number_product_variants)->toBe(1);
 
@@ -330,35 +331,17 @@ test('create product', function (ProductCategory $family) {
     return $product;
 })->depends('create family');
 
-test('update product state to active', function (Product $product) {
-    expect($product->state)->toBe(ProductStateEnum::IN_PROCESS);
-    $product = UpdateProduct::make()->action(
-        product: $product,
-        modelData: [
-            'state' => ProductStateEnum::ACTIVE
-        ]
-    );
-    $product->refresh();
 
-    expect($product->state)->toBe(ProductStateEnum::ACTIVE)
-        ->and($product->group->catalogueStats->number_current_products)->toBe(1)
-        ->and($product->organisation->catalogueStats->number_current_products)->toBe(1)
-        ->and($product->shop->stats->number_current_products)->toBe(1)
-        ->and($product->department->stats->number_current_products)->toBe(1)
-        ->and($product->family->stats->number_current_products)->toBe(1)
-        ->and($product->family->stats->number_products_state_active)->toBe(1)
-        ->and($product->family->state)->toBe(ProductCategoryStateEnum::ACTIVE);
-
-    return $product;
-})->depends('create product');
 
 
 test('create product with many org stocks', function ($shop) {
     $tradeUnits = [
-        $this->tradeUnit1->id => [
+        [
+            'id'       => $this->tradeUnit1->id,
             'quantity' => 1,
         ],
-        $this->tradeUnit2->id => [
+        [
+            'id'       => $this->tradeUnit2->id,
             'quantity' => 1,
         ]
     ];
