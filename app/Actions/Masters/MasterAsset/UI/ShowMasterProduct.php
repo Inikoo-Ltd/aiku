@@ -165,7 +165,7 @@ class ShowMasterProduct extends GrpAction
                                     'masterProduct' => $masterAsset->slug,
                                 ]
                             ],
-                            'tooltip' =>__('Master Product'),
+                            'tooltip' => __('Master Product'),
                             'icon'    => ['fal', 'cube']
                         ],
                     ],
@@ -230,24 +230,24 @@ class ShowMasterProduct extends GrpAction
                 ],
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
-                    fn() => GetMasterProductShowcase::run($masterAsset)
-                    : Inertia::lazy(fn() => GetMasterProductShowcase::run($masterAsset)),
+                    fn () => GetMasterProductShowcase::run($masterAsset)
+                    : Inertia::lazy(fn () => GetMasterProductShowcase::run($masterAsset)),
 
                 MasterAssetTabsEnum::TRADE_UNITS->value => $this->tab == MasterAssetTabsEnum::TRADE_UNITS->value ?
-                    fn() => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))
-                    : Inertia::lazy(fn() => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
+                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))
+                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
 
                 MasterAssetTabsEnum::IMAGES->value => $this->tab == MasterAssetTabsEnum::IMAGES->value ?
-                    fn() => GetMasterProductImages::run($masterAsset)
-                    : Inertia::lazy(fn() => GetMasterProductImages::run($masterAsset)),
+                    fn () => GetMasterProductImages::run($masterAsset)
+                    : Inertia::lazy(fn () => GetMasterProductImages::run($masterAsset)),
 
                 MasterAssetTabsEnum::SALES->value => $this->tab == MasterAssetTabsEnum::SALES->value ?
-                    fn() => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))
-                    : Inertia::lazy(fn() => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
+                    fn () => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
 
                 MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
-                    fn() => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
-                    : Inertia::lazy(fn() => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
+                    fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
 
             ]
         )->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value))

@@ -125,7 +125,7 @@ class IndexTransactions extends OrgAction
                     (!isset($parent->platform) && $parent->value === OrderStateEnum::CREATING)
                     || (isset($parent->platform) && $parent->platform->type === PlatformTypeEnum::MANUAL)
                 )
-                
+
             ) {
                 $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
             }
