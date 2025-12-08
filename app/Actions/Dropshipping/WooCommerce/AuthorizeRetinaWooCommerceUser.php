@@ -76,7 +76,7 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
                             $fail(__('Your WooCommerce API endpoint is not accessible.'));
                         }
                     } catch (\Exception $e) {
-                        $fail(__('Unable to connect to the WooCommerce store.'));
+                        $fail(__('Unable to connect to the WooCommerce store, please check your store url.'));
                     }
                 }
             ]

@@ -50,6 +50,8 @@ const onSubmitWoocommerce = async () => {
 
 const submitForm = async () => {
 	isLoadingStep.value = true
+	errors.value = {};
+
 	try {
 		const {data} = await axios.get(route('retina.models.dropshipping.woocommerce.tmp_user_keys_check'));
 		goNext();
