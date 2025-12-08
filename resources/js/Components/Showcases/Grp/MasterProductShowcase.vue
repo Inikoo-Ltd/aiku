@@ -285,12 +285,14 @@ console.log(props);
 			:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}" 
 			:gpsr="data.gpsr" 
 			:properties="data.properties"
-			:public-attachment="[]" 
+			xpublic-attachment="[]"
+			:attachments="data.attachment_box"
 		/>
 
-		<div>
+		<!-- <div>
+			<pre>{{ data.attachment_box }}</pre>
 			<AttachmentCard :private="data.attachment_box?.private" />
-		</div>
+		</div> -->
 	</div>
 
 	<Modal :isOpen="isModalProductForSale" @onClose="isModalProductForSale = false" width="w-full max-w-lg">
