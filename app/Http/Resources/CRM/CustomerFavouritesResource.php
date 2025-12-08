@@ -37,6 +37,7 @@ use App\Http\Resources\Traits\HasPriceMetrics;
  * @property mixed $top_seller
  * @property mixed $parent_url
  * @property mixed $quantity_ordered
+ * @property mixed $canonical_url
  */
 class CustomerFavouritesResource extends JsonResource
 {
@@ -45,11 +46,7 @@ class CustomerFavouritesResource extends JsonResource
 
     public function toArray($request): array
     {
-        $url = '';
-        if ($this->parent_url) {
-            $url = $this->parent_url.'/';
-        }
-        $url = '/'.$url.$this->url;
+
 
         $favourite = false;
         if ($request->user()) {
@@ -97,7 +94,7 @@ class CustomerFavouritesResource extends JsonResource
             'created_at'           => $this->created_at,
             'updated_at'           => $this->updated_at,
             'unit'                 => $this->unit,
-            'url'                  => $url,
+            'url'                  => $this->canonical_url,
             'slug_product'         => $this->slug,
             'web_images'           => $this->web_images,
             'transaction_id'       => $this->transaction_id ?? null,

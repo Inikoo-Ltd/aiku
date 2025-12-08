@@ -72,7 +72,7 @@ class StocksResource extends JsonResource
             'number_org_stocks'                     => $this->number_org_stocks,
             'grp_currency'                          => $this->grp_currency_code,
             'state'                                 => $this->state,
-            'state_icon'                            => $this->state->stateIcon()[$this->state->value],
+            'state_icon'                            => $this->state ? $this->state->stateIcon()[$this->state->value] : null,
         ];
     }
 }

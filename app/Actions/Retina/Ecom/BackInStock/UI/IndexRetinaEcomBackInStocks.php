@@ -52,8 +52,9 @@ class IndexRetinaEcomBackInStocks extends RetinaAction
             ->get();
 
         $basketTransactions = [];
+        /** @var \App\Models\Ordering\Transaction $transaction */
         foreach ($transactions as $transaction) {
-            // Use product ID as key to match with favorites data (products.id)
+            // Use product ID as a key to match with favorites data (products.id)
             $productId = $transaction->asset?->product?->id;
 
             if ($productId) {
@@ -104,15 +105,6 @@ class IndexRetinaEcomBackInStocks extends RetinaAction
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
-                    // [
-                    //     'type'   => 'simple',
-                    //     'simple' => [
-                    //         'route' => [
-                    //             'name' => 'retina.dropshipping.favourites.index'
-                    //         ],
-                    //         'label'  => __('Favourites'),
-                    //     ]
-                    // ]
                 ]
             );
     }

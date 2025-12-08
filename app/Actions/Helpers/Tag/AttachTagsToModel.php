@@ -11,11 +11,12 @@ namespace App\Actions\Helpers\Tag;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
 use App\Actions\Helpers\Tag\Hydrators\TagHydrateModels;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateTagsFromTradeUnits;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
-use Illuminate\Validation\ValidationException;
+use Exception;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachTagsToModel extends OrgAction
@@ -35,7 +36,7 @@ class AttachTagsToModel extends OrgAction
                 'title'   => __('Success!'),
                 'description' => __('Tags successfully attached.'),
             ]);
-        } catch (ValidationException $e) {
+        } catch (Exception $e) {
             request()->session()->flash('notification', [
                 'status'  => 'error',
                 'title'   => __('Error!'),
@@ -56,7 +57,7 @@ class AttachTagsToModel extends OrgAction
                 'title'   => __('Success!'),
                 'description' => __('Tags successfully attached.'),
             ]);
-        } catch (ValidationException $e) {
+        } catch (Exception $e) {
             request()->session()->flash('notification', [
                 'status'  => 'error',
                 'title'   => __('Error!'),
@@ -78,7 +79,7 @@ class AttachTagsToModel extends OrgAction
                 'title'   => __('Success!'),
                 'description' => __('Tags successfully attached.'),
             ]);
-        } catch (ValidationException $e) {
+        } catch (Exception $e) {
             request()->session()->flash('notification', [
                 'status'  => 'error',
                 'title'   => __('Error!'),
@@ -105,7 +106,7 @@ class AttachTagsToModel extends OrgAction
                 'title'   => __('Success!'),
                 'description' => __('Tags successfully attached.'),
             ]);
-        } catch (ValidationException $e) {
+        } catch (Exception $e) {
             request()->session()->flash('notification', [
                 'status'  => 'error',
                 'title'   => __('Error!'),
