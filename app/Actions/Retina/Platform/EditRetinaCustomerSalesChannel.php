@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Platform;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Helpers\TaxCategory;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -30,8 +31,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
 
         $properties = [];
         $routeName = 'retina.models.customer_sales_channel.update';
-        if ($user instanceof EbayUser) {
-            $routeName = 'retina.models.customer_sales_channel.ebay_update';
+        if (in_array(class_basename($user), [class_basename(EbayUser::class)])) {
             $properties = [
                 [
                     "label"  => __("Pricing"),
@@ -53,6 +53,13 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                         ],
                     ]
                 ],
+            ];
+        }
+
+        if ($user instanceof EbayUser) {
+            $routeName = 'retina.models.customer_sales_channel.ebay_update';
+            $properties = [
+
                 [
                     "label"  => __("Shipping"),
                     'icon'    => 'fa-light fa-truck',
@@ -157,6 +164,23 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                         'type'  => 'input',
                                         'label' => __('store name'),
                                         'value' => $customerSalesChannel->name
+                                    ],
+                                ]
+                            ],
+                            [
+                                "label"  => __("Manage Stock"),
+                                'icon'    => 'fa-light fa-box',
+                                'title'  => __('manage stock'),
+                                'fields' => [
+                                    'stock_update' => [
+                                        'type'  => 'toggle',
+                                        'label' => __('Stock Update'),
+                                        'value' => (bool) $customerSalesChannel->stock_update
+                                    ],
+                                    'stock_threshold' => [
+                                        'type'  => 'input',
+                                        'label' => __('Stock Threshold'),
+                                        'value' => $customerSalesChannel->stock_threshold
                                     ],
                                 ]
                             ],
