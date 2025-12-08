@@ -18,6 +18,7 @@ use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
+use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
@@ -32,6 +33,7 @@ use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\Phone;
@@ -72,15 +74,24 @@ class UpdateCustomer extends OrgAction
                     );
                 }
                 $customer->refresh();
-                // Update the address of all orders (state=CREATING)
 
+                /** @var Order $order */
                 foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
+                    $editDelivery = $order->billing_address_id == $order->delivery_address_id;
+
                     UpdateOrderBillingAddress::make()->action(
                         $order,
                         [
                             'address' => $customer->address->toArray()
                         ]
                     );
+
+                    if ($editDelivery) {
+                        UpdateOrderDeliveryAddress::make()->action($order, [
+                            'address'       => $customer->address->toArray(),
+                            'update_parent' => false
+                        ]);
+                    }
                 }
             }
 
