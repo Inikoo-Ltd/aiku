@@ -8,6 +8,10 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import {InputNumber} from "primevue"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faAsterisk } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faAsterisk)
 
 
 const model = defineModel()
@@ -137,6 +141,7 @@ const onSubmitIncrease = () => {
             <!-- Note -->
             <div>
                 <label for="privateNote" class="block text-gray-700 font-medium mb-2">
+                    <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs align-top mt-1" fixed-width aria-hidden="true" />
                     {{ trans("Private Note") }}
                 </label>
                 <textarea
@@ -171,7 +176,7 @@ const onSubmitIncrease = () => {
                 @click="() => onSubmitIncrease()"
                 full
                 :loading="isLoading"
-                :disabled="amount <= 0 || !increaseReason"
+                :disabled="amount <= 0 || !increaseReason || !privateNote"
                 v-tooltip="amount <= 0 ? trans('Add amount to submit') : ''"
             >
             </Button>
