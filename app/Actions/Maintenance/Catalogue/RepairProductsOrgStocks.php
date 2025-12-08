@@ -10,9 +10,7 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
-use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairProductsOrgStocks extends OrgAction
@@ -27,41 +25,16 @@ class RepairProductsOrgStocks extends OrgAction
         print "$product->slug \n";
         $stocks = [];
         foreach ($tradeUnits as $tradeUnit) {
-
-            //  dd($tradeUnit->id);
-
-
-            //           $orgStocksData= DB::table('model_has_trade_units')
-            //               ->leftjoin('org_stocks', 'org_stocks.id', '=', 'model_has_trade_units.model_id')
-            //               ->select('model_has_trade_units.id')
-            //                ->where('model_has_trade_units.model_type', 'OrgStock')
-            //                ->where('model_has_trade_units.trade_unit_id', $tradeUnit->id)
-            //                ->where('org_stocks.organisation_id', $product->organisation_id)->get();
-            //
-            //           foreach ($orgStocksData as $orgStockData) {
-            //               dd($orgStockData
-            //               );
-            //           }
-
-
-
             foreach ($tradeUnit->orgStocks as $orgStock) {
-
                 if ($orgStock->organisation_id == $product->organisation_id) {
-
                     // dd( $orgStock->pivot,);
 
 
                     if (array_key_exists($orgStock->id, $stocks)) {
                         $stocks[$orgStock->id] = [
-                            'quantity' => (
-                                $tradeUnit->pivot->quantity /
-                                    $orgStock->pivot->quantity
-                            ) + $stocks[$orgStock->id]['quantity'],
+                            'quantity' => ($tradeUnit->pivot->quantity / $orgStock->pivot->quantity) + $stocks[$orgStock->id]['quantity'],
                         ];
                     } else {
-                        $_org_stock = OrgStock::find($orgStock->id);
-                        //   dd($_org_stock->code);
                         $stocks[$orgStock->id] = [
                             'quantity' => $tradeUnit->pivot->quantity /
                                 $orgStock->pivot->quantity,
@@ -79,18 +52,21 @@ class RepairProductsOrgStocks extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'repair:products_org_stocks';
+        return 'repair:products_org_stocks {product?}';
     }
 
     public function asCommand(Command $command): int
     {
-        $product = Product::find(200604);
-        $this->handle($product);
-        exit;
+        if ($command->argument('product')) {
+            $product = Product::where('slug', $command->argument('product'))->firstOrFail();
+            $this->handle($product);
+
+            return 0;
+        }
+
 
         $chunkSize = 100;
-        $count = 0;
-        $matchedCount = 0;
+        $count     = 0;
 
         $totalCount = Product::count();
 
@@ -101,7 +77,7 @@ class RepairProductsOrgStocks extends OrgAction
 
         Product::chunk(
             $chunkSize,
-            function ($products) use (&$count, &$matchedCount, $bar, $command) {
+            function ($products) use (&$count, $bar, $command) {
                 foreach ($products as $product) {
                     $this->handle($product);
                     $count++;
