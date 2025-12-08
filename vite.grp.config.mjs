@@ -19,6 +19,7 @@ export default ({ mode }) => {
       server : {
         cors : true,
         watch: {
+          usePolling: false,
           ignored: ["**/storage/media/**"]
         }
       },
