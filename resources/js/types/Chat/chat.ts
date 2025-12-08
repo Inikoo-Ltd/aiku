@@ -62,3 +62,5 @@ export interface Contact {
 	unread: number
 	status: "waiting" | "active" | "closed" | string
 }
+
+export interface ChatMessage {}
