@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/Editor.vue"
-import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue";
 import Image from "@/Components/Image.vue"
 import { ref } from 'vue'
-import { cloneDeep } from "lodash-es";
 import { getStyles } from "@/Composables/styles";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faImage } from "@fas";
 
 library.add(faCube, faLink)
 
-const props = defineProps<{
+defineProps<{
   modelValue: any
   webpageData?: any
   web_block: Object
@@ -21,43 +18,16 @@ const props = defineProps<{
   properties: {}
 }>()
 
-const emits = defineEmits<{
-  (e: 'update:modelValue', value: string): void
-  (e: 'autoSave'): void
-}>()
 
 const openGallery = ref(false)
 const imagePick = ref<number | null>(null);
-
-const setImage = (e) => {
-  const data = cloneDeep(props.modelValue)
-  data.value[imagePick.value].image = e
-  emits('update:modelValue', data)
-  onCloseGallery()
-  emits('autoSave')
-}
-
-const onUpload = (e) => {
-  if (e.data && e.data.length <= 1) {
-    const data = cloneDeep(props.modelValue)
-    data.value[imagePick.value].image = e.data[0]
-    emits('update:modelValue', data)
-    onCloseGallery();
-    emits('autoSave')
-  } else {
-    console.error('No files or multiple files detected.');
-  }
-};
 
 const onOpenGallery = (index: number) => {
   openGallery.value = true
   imagePick.value = index
 }
 
-const onCloseGallery = () => {
-  openGallery.value = false
-  imagePick.value = null
-}
+
 
 </script>
 
@@ -79,7 +49,7 @@ const onCloseGallery = () => {
         </div>
       </div>
 
-      <!--   maintace data galery from aurora -->
+      <!--   Maintenance data gallery from aurora -->
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         <div v-if="modelValue.value?.gallery" v-for="(product, index) in modelValue.value?.gallery" :key="product.id">
           <div @click="() => onOpenGallery(index)">
@@ -97,10 +67,5 @@ const onCloseGallery = () => {
 
     </div>
   </div>
-
-  <!-- <Gallery :open="openGallery" @on-close="onCloseGallery"
-    :uploadRoutes="route(webpageData?.images_upload_route.name, { modelHasWebBlocks: id })" @onPick="setImage"
-    @onUpload="onUpload">
-  </Gallery> -->
 
 </template>
