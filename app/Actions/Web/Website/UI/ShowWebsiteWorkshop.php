@@ -199,6 +199,7 @@ class ShowWebsiteWorkshop extends OrgAction
                 ],
                 'currency'  => $this->parent instanceof Shop ? CurrencyResource::make($this->parent->currency)->resolve() : null,
                 'settings' => $website->settings,
+                'website_slug' => $website->slug,
                 'publishRoute' => [
                     'website_layout' =>  [
                         'method'     => 'patch',
