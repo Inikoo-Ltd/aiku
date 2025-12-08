@@ -79,6 +79,9 @@ class UpdateCustomerSalesChannel extends OrgAction
             'return_within' => ['sometimes', 'integer'],
             'return_description' => ['sometimes', 'string'],
 
+            'stock_update' => ['sometimes', 'boolean'],
+            'stock_threshold' => ['sometimes', 'numeric'],
+
             'closed_at'         => ['sometimes', 'date']
         ];
     }
