@@ -159,7 +159,6 @@ const onUploadToShopify = () => {
     });
 };
 
-
 const downloadUrl = (type: string, addParams: string = '') => {
     if (props.download_route?.[type]?.name) {
         return route(props.download_route[type].name, {...props.download_route[type].parameters, ...{ids: addParams}});
@@ -211,7 +210,6 @@ const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | num
             onBefore: () => isLoadingClone.value = true,
 
             onError: (error) => {
-                // Keep the ERROR toast. If it fails to start, the user needs to know.
                 notify({
                     title: trans("Something went wrong"),
                     text: "",
@@ -222,14 +220,7 @@ const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | num
             onSuccess: () => {
                 selectedData.products = [];
                 router.reload({only: ["pageHead", "products"]});
-
-                // --- REMOVED THE TOAST FROM HERE ---
-                // The modal opening below acts as the "Success" confirmation.
-
-                // If you modify props directly (as discussed before), keep this:
                 props.step.current = 1;
-
-                // Open the modal to show progress
                 isCloneModalOpen.value = true;
             },
 
