@@ -39,6 +39,7 @@ const currentView = ref("desktop");
 provide("currentView", currentView);
 
 const iframeClass = ref("w-full h-full");
+
 watch(currentView, (view) => {
   switch (view) {
     case "mobile":
@@ -94,6 +95,7 @@ function debounce(fn: Function, delay = 800) {
     timer = setTimeout(() => fn(...args), delay);
   };
 }
+
 const debouncedAutosave = debounce(autosave);
 
 
@@ -132,7 +134,6 @@ console.log("LAYOUT STATE:", layoutState);
 
 
 <template>
-
   <div class="pt-4">
     <div class="mx-6 italic text-amber-700 bg-amber-200 py-1 px-2 border-l-4 border-amber-400 w-fit">
       *This block usually showed in Department page

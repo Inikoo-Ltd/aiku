@@ -18,7 +18,7 @@ use App\Actions\Helpers\TaxNumber\ValidateEuropeanTaxNumber;
 use App\Actions\Helpers\TaxNumber\ValidateGBTaxNumber;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Http\Resources\Sales\OrderResource;
+use App\Http\Resources\Api\OrderResource;
 use Sentry;
 
 class UpdateCustomerOrderVatStatus extends RetinaAction

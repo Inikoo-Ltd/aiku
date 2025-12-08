@@ -5,7 +5,8 @@
 	"name": "Product showcase A",
 	"icon": ["fal", "cube"],
 	"category": "product",
-	"website_type" : ["b2b","b2c"],
+	"website_type" : [],
+	"is_in_test" : true,
 	"fixed": true,
 	"data": {
 		"fieldValue": {

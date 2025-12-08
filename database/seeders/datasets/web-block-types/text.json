@@ -6,6 +6,7 @@
 	"icon": ["fal", "text"],
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
 	"category": "element",
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
 			"value": "<h2 style='text-align: center'><strong><span>New Text</span></strong></h2>",

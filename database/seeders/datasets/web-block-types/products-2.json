@@ -6,6 +6,7 @@
 	"category": "list_products",
 	"icon": ["fal", "cube"],
 	"website_type": ["b2b", "b2c"],
+	"is_in_test" : true,
 	"fixed": true,
 	"data": {
 		"fieldValue": {

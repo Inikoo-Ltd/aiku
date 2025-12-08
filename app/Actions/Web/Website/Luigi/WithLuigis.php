@@ -291,7 +291,7 @@ trait WithLuigis
         $webpage = $product->webpage;
 
         $familyData = [];
-        if ($product->family && $product->family->webpage && $product->family->webpage->state != WebpageStateEnum::LIVE) {
+        if ($product->family && $product->family->webpage && $product->family->webpage->state == WebpageStateEnum::LIVE) {
             $family     = $product->family;
             $familyData = [
                 "type"     => "category",
@@ -308,7 +308,7 @@ trait WithLuigis
 
 
         $departmentData = [];
-        if ($product->department && $product->department->webpage && $product->department->webpage->state != WebpageStateEnum::LIVE) {
+        if ($product->department && $product->department->webpage && $product->department->webpage->state == WebpageStateEnum::LIVE) {
             $department     = $product->department;
             $departmentData = [
                 "type"     => "department",
@@ -325,7 +325,7 @@ trait WithLuigis
 
 
         $subDepartmentData = [];
-        if ($product->subDepartment && $product->subDepartment->webpage && $product->subDepartment->webpage->state != WebpageStateEnum::LIVE) {
+        if ($product->subDepartment && $product->subDepartment->webpage && $product->subDepartment->webpage->state == WebpageStateEnum::LIVE) {
             $subDepartment     = $product->subDepartment;
             $subDepartmentData = [
                 "type"     => "sub_department",
