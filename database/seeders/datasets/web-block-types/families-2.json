@@ -7,6 +7,7 @@
 	"fixed": true,
 	"icon": ["fal", "folder"],
 	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : true,
 	"data": {
 		"fieldValue": {}
 	}

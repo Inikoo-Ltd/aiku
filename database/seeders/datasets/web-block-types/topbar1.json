@@ -5,6 +5,7 @@
 	"name": "Topbar Simple",
 	"component": "topbar",
 	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
 			"key": "Topheader",
