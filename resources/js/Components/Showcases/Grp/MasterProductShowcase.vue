@@ -31,6 +31,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { Link, router } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/layout"
 import { provide } from "vue"
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 
 
 library.add(
@@ -189,22 +190,45 @@ const editRoute = () => {
 	router.visit(url);
 }
 
+const tradeUnitRoute = (tradeUnit: TradeUnit) => {
+    return route(
+        "grp.trade_units.units.show",
+        [tradeUnit.slug])
+}
+
 const isModalProductForSale = ref(false);
+const isModalSKUDetail = ref(false);
+
+console.log(props);
 
 </script>
 
 
 <template>
-	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
-		<span class="text-xl font-semibold whitespace-pre-wrap">
+	<div class="w-full  px-4 py-3 mb-3 shadow-sm grid grid-cols-2">
+		<div class="text-xl font-semibold text-gray-800 whitespace-pre-wrap justify-self-start">
 			<ProductUnitLabel v-if="data.masterProduct?.units" :units="data.masterProduct?.units"
 				:unit="data.masterProduct?.unit" class="mr-2" />
 			<span class="align-middle">
 				{{ data.masterProduct.name }}
 			</span>
-		</span>
-		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center">
-			<span 
+		</div>
+		<div v-if="data.availability_status || data.trade_units.length > 0" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center items-center flex">
+			<div v-tooltip="data.trade_units.length > 1 ? trans('Click to view all trade units detail') : ''" class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer me-2 flex border-green-600" v-on:click="isModalSKUDetail = true">
+				<div v-if="data.trade_units.length !== 1" class="text-teal-600 whitespace-nowrap w-full">
+					<span class=""> &#8623; SKU </span>
+					<span class="font-bold">
+						<FractionDisplay v-if="data.trade_units[0].pick_fractional" :fractionData="data.trade_units[0].pick_fractional" />
+					</span>
+				</div>
+				<div v-else class="text-teal-600 whitespace-nowrap w-full">
+					<span class=""> Multi Trade Units</span>
+				</div>
+				<div class="border-s border-green-600 text-gray-700 whitespace-nowrap font-bold ms-2 ps-2">
+					{{ data.masterProduct.units + " " + data.masterProduct.unit }} 
+				</div>
+			</div>
+			<span v-if="data.availability_status"
 			v-on:click="isModalProductForSale = true"
 			v-tooltip="getTooltips()"
 			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
@@ -290,36 +314,73 @@ const isModalProductForSale = ref(false);
 				/>
 			</div>
         </div>
-			<div class="grid grid-cols-3 mt-3 text-sm font-bold">
-				<div class="text-left">
-					Shop
-				</div>
-				<div class="text-left">
-					Code
-				</div>
-				<div class="text-right">
-				</div>	
-            </div>
-            <div v-for="item in data.availability_status.product" :key="item.id" class="grid grid-cols-3 mt-3 text-sm min-h-8">
-				<div class="text-left">
-					{{ item.shop.code }}
-				</div>
-				<div class="text-left">
-					<Link :href="productRoute(item)" class="primaryLinkxx">
-						{{ item.code }}
-					</Link>
-				</div>
-				<div class="text-right min-h-max" :class="item.is_for_sale ? 'text-green-600' : 'text-red-600'">
-					<span
-					v-on:click="router.visit(productRoute(item, true))"
-					v-tooltip="item.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
-					class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
-					:class="item.is_for_sale ? 'border-green-500' : 'border-red-500'">
-						{{ item.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
-						<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+		<div class="grid grid-cols-3 mt-3 text-sm font-bold">
+			<div class="text-left">
+				Shop
+			</div>
+			<div class="text-left">
+				Code
+			</div>
+			<div class="text-right">
+			</div>	
+		</div>
+		<div v-for="item in data.availability_status.product" :key="item.id" class="grid grid-cols-3 mt-3 text-sm min-h-8">
+			<div class="text-left">
+				{{ item.shop.code }}
+			</div>
+			<div class="text-left">
+				<Link :href="productRoute(item)" class="primaryLinkxx">
+					{{ item.code }}
+				</Link>
+			</div>
+			<div class="text-right min-h-max" :class="item.is_for_sale ? 'text-green-600' : 'text-red-600'">
+				<span
+				v-on:click="router.visit(productRoute(item, true))"
+				v-tooltip="item.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+				:class="item.is_for_sale ? 'border-green-500' : 'border-red-500'">
+					{{ item.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
+					<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+				</span>
+			</div>	
+		</div>
+	</Modal>
+
+	<Modal :isOpen="isModalSKUDetail" @onClose="isModalSKUDetail = false" width="max-w-3xl w-full">
+		<div class="grid grid-cols-2 font-bold mb-4">
+			<div class="text-left text-lg">
+				{{ trans('Trade Unit SKU Details') }}
+			</div>
+        </div>
+		<div class="grid grid-cols-5 mt-3 text-sm font-bold">
+			<div class="text-left">
+				Code
+			</div>
+			<div class="text-left col-span-3">
+				Name
+			</div>
+			<div class="text-right">
+				SKU
+			</div>	
+		</div>
+		<div v-for="tUnit in data.trade_units" :key="tUnit.tradeUnit.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
+			<div class="text-left flex items-center">
+				<Link :href="tradeUnitRoute(tUnit.tradeUnit)" class="primaryLinkxx">
+					{{ tUnit.tradeUnit.code }}
+				</Link>
+			</div>
+			<div class="text-left col-span-3 flex items-center">
+				{{ tUnit.tradeUnit.name }}
+			</div>
+			<div class="justify-items-end text-teal-600 whitespace-nowrap">
+				<span class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer flex border-green-600 w-fit">
+					<span> &#8623; SKU </span>
+					<span class="font-bold ms-2">
+						<FractionDisplay v-if="tUnit.pick_fractional" :fractionData="tUnit.pick_fractional" />
 					</span>
-				</div>	
-            </div>
+				</span>
+			</div>
+		</div>
 	</Modal>
 	
 </template>
@@ -327,16 +388,10 @@ const isModalProductForSale = ref(false);
     .primaryLinkxx {
         background: linear-gradient(to top, var(--theme-color-3), var(--theme-color-3));
 
-        &:hover, &:focus {
+        &:hover {
             color: v-bind('`${layout.app.theme[7]}`');
         }
 
-        @apply focus:ring-0 focus:outline-none focus:border-none
-        bg-no-repeat [background-position:0%_100%]
-        transition-all
-        [background-size:100%_0.2em]
-        motion-safe:transition-all motion-safe:duration-200
-        hover:[background-size:100%_100%]
-        focus:[background-size:100%_100%] px-1 py-1 lg:py-0.5
+        @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] transition-all [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-1 lg:py-0.5
     }
 </style>
