@@ -30,19 +30,20 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
 
     public function handle(Customer $customer, $modelData): string
     {
-        data_set($modelData, 'store_url', Arr::pull($modelData, 'url'));
-        $wooCommerceUser = StoreWooCommerceUser::run($customer, $modelData);
+        data_set($modelData, 'url', Arr::pull($modelData, 'url'));
 
         $endpoint = '/wc-auth/v1/authorize';
         $params = [
             'app_name' => 'AW Connect',
             'scope' => 'read_write',
-            'user_id' => $wooCommerceUser->id,
-            'return_url' => route('retina.dropshipping.customer_sales_channels.index'),
+            'user_id' => $customer->id,
+            'return_url' => route('retina.dropshipping.platform.woo_callback.success'),
             'callback_url' => route('webhooks.woo.callback')
         ];
 
-        return Arr::get($wooCommerceUser, 'settings.credentials.store_url').$endpoint.'?'.http_build_query($params);
+        StoreTemporaryWooUser::run($customer, $modelData);
+
+        return Arr::get($modelData, 'url').$endpoint.'?'.http_build_query($params);
     }
 
     public function jsonResponse(string $url): string
@@ -62,7 +63,6 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('woo_commerce_users', 'name')],
             'url' => [
                 'required',
                 'string',

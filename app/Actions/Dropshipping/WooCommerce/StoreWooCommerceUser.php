@@ -33,7 +33,6 @@ class StoreWooCommerceUser extends OrgAction
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'name', Arr::get($modelData, 'name'));
-        data_set($modelData, 'settings.credentials.store_url', Arr::pull($modelData, 'store_url'));
         data_set($modelData, 'platform_id', $platform->id);
 
         /** @var WooCommerceUser $wooCommerceUser */
