@@ -78,12 +78,11 @@ class SendChatMessage
         if (!empty($updateData)) {
             $chatSession->update($updateData);
         }
-
     }
 
     protected function logMessageEvent(ChatSession $chatSession, string $senderType, ?int $senderId, ChatMessage $message): void
     {
-        $actorType = match($senderType) {
+        $actorType = match ($senderType) {
             ChatActorTypeEnum::AGENT->value => ChatActorTypeEnum::AGENT,
             ChatSenderTypeEnum::USER->value => ChatActorTypeEnum::USER,
             default => ChatActorTypeEnum::GUEST

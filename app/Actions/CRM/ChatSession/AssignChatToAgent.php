@@ -3,10 +3,12 @@
 namespace App\Actions\CRM\ChatSession;
 
 use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use App\Events\BroadcastChatListEvent;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatEvent;
-use Illuminate\Http\Request;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\Livechat\ChatAssignment;
@@ -16,13 +18,14 @@ use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
+use App\Models\SysAdmin\Organisation;
 
 class AssignChatToAgent
 {
     use AsAction;
 
 
-      public function handle(ChatSession $chatSession, int $agentId, int $assignedByAgentId, ?string $transferReason = null): ChatAssignment
+    public function handle(ChatSession $chatSession, int $agentId, int $assignedByAgentId, ?string $transferReason = null): ChatAssignment
     {
         $agent = ChatAgent::findOrFail($agentId);
 
@@ -34,9 +37,11 @@ class AssignChatToAgent
 
         $isTransfer = $previousAssignment && $previousAssignment->chat_agent_id !== $agentId;
 
-        if (!$isSelfAssign &&
+        if (
+            !$isSelfAssign &&
             (!$previousAssignment || $previousAssignment->chat_agent_id !== $agentId) &&
-            !$agent->isAvailableForChat()) {
+            !$agent->isAvailableForChat()
+        ) {
             throw new Exception('Agent is not available for new chats.');
         }
 
@@ -143,7 +148,6 @@ class AssignChatToAgent
                     'note' => $validated['note'] ?? null,
                 ]
             ]);
-
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -174,19 +178,29 @@ class AssignChatToAgent
 
     protected function getCurrentAgent(): ?ChatAgent
     {
-        if (auth()->check()) {
-            $user = auth()->user();
-            return ChatAgent::where('user_id', $user->id)->first();
-        }
+        $user = Auth::user();
 
-        return ChatAgent::where('user_id', 177)->first();
+        // dd($user->chatAgent);
+        if (!$user) {
+            return null;
+        }
+        return $user->chatAgent;
     }
 
 
-    public function assignToSelf(ChatSession $chatSession): JsonResponse
+    public function assignToSelf(Organisation $organisation, string $chatSessionUlid): JsonResponse
     {
-        $this->validateUlid($chatSession->ulid);
+        // Ambil ChatSession berdasarkan ULID
+        $chatSession = ChatSession::where('ulid', $chatSessionUlid)->first();
 
+        if (!$chatSession) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chat session not found'
+            ], 404);
+        }
+
+        // Ambil agent yang sedang login
         $agent = $this->getCurrentAgent();
 
         if (!$agent) {
@@ -196,29 +210,65 @@ class AssignChatToAgent
             ], 403);
         }
 
-        try {
-            $chatAssignment = $this->handle($chatSession, $agent->id, $agent->id, null);
+        // Cek apakah sudah ada assignment aktif
+        $existingActiveAssignment = $chatSession->assignments()
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->first();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Chat assigned to you successfully',
-                'data' => [
-                    'assignment_id' => $chatAssignment->id,
-                    'session_ulid' => $chatSession->ulid,
-                    'session_status' => $chatSession->status->value,
-                    'assigned_agent_id' => $agent->id,
-                    'assigned_agent_name' => $agent->user->name ?? 'Unknown',
-                    'action_type' => 'self_assign',
-                ]
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 422);
+        if ($existingActiveAssignment) {
+            if ($existingActiveAssignment->chat_agent_id === $agent->id) {
+                // Assignment sudah milik agent yang login, return success
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Chat session already assigned to you',
+                    'data' => [
+                        'assignment_id' => $existingActiveAssignment->id,
+                        'session_ulid' => $chatSession->ulid,
+                        'assigned_agent_id' => $agent->id,
+                        'assigned_agent_name' => $agent->user->name ?? 'Unknown',
+                    ]
+                ]);
+            } else {
+                // Assignment aktif milik agent lain, tidak bisa assign by self
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Chat session already assigned to another agent',
+                    'data' => [
+                        'assignment_id' => $existingActiveAssignment->id,
+                        'assigned_agent_id' => $existingActiveAssignment->chat_agent_id,
+                        'assigned_agent_name' => optional($existingActiveAssignment->chatAgent?->user)->name,
+                    ]
+                ], 409);
+            }
         }
+
+        // Belum ada assignment sama sekali, buat baru
+        $newAssignment = $chatSession->assignments()->create([
+            'chat_agent_id' => $agent->id,
+            'status' => ChatAssignmentStatusEnum::ACTIVE->value,
+            'assigned_by' => $agent->id,
+            'notes' => 'Assigned via assign-to-self',
+        ]);
+
+        if ($newAssignment) {
+            BroadcastChatListEvent::dispatch();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Chat session assigned to you successfully',
+            'data' => [
+                'assignment_id' => $newAssignment->id,
+                'session_ulid' => $chatSession->ulid,
+                'session_status' => $chatSession->status->value ?? null,
+                'assigned_agent_id' => $agent->id,
+                'assigned_agent_name' => $agent->user->name ?? 'Unknown',
+                'action_type' => 'self_assign',
+            ]
+        ]);
     }
+
+
 
     protected function logChatEvent(
         ChatSession $chatSession,
@@ -307,13 +357,11 @@ class AssignChatToAgent
 
     protected function getSuccessMessage(string $actionType): string
     {
-        return match($actionType) {
+        return match ($actionType) {
             'self_assign' => 'Chat assigned to you successfully',
             'transfer' => 'Chat transferred successfully',
             'direct_assign' => 'Chat assigned to agent successfully',
             default => 'Chat assignment completed successfully'
         };
     }
-
-
 }

@@ -97,6 +97,4 @@ class ChatSession extends Model
                 ->limit(1)
         ]);
     }
-
-
 }

@@ -4,7 +4,6 @@ import Button from "../Elements/Buttons/Button.vue"
 import { faPaperPlane, faSpinner } from "@fas"
 import { trans } from "laravel-vue-i18n"
 
-// Props dari parent component
 const props = defineProps({
 	messages: {
 		type: Array as () => any[],
@@ -55,9 +54,6 @@ const formatDate = (timestamp: string) => {
 	}
 }
 
-/**
- * Group messages by date
- */
 const groupedMessages = () => {
 	const groups: Record<string, any[]> = {}
 
@@ -170,7 +166,6 @@ onMounted(() => {
 
 <template>
 	<div class="flex flex-col h-full">
-		<!-- Header -->
 		<div
 			class="px-4 py-3 border-b border-gray-200 font-semibold text-gray-700 bg-white shadow-sm flex justify-between items-center">
 			<span>{{ trans("Chat Support") }}</span>

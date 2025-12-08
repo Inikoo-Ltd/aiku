@@ -22,7 +22,8 @@ Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
 Route::post('/sessions', StoreChatSession::class)->name('sessions.store');
 Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
 Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
-->name('sessions.update');
+    ->name('sessions.update');
+
 Route::put('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
 
 Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages');
@@ -30,7 +31,7 @@ Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->nam
 Route::post('/sessions/{chatSession:ulid}/assign', AssignChatToAgent::class)
     ->name('sessions.assign');
 
-Route::post('/sessions/{chatSession:ulid}/assign-to-self', [AssignChatToAgent::class, 'assignToSelf'])
+Route::middleware('web')->post('/sessions/{chatSession:ulid}/assign-to-self', [AssignChatToAgent::class, 'assignToSelf'])
     ->name('sessions.assign.self');
 
 Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
@@ -42,5 +43,4 @@ Route::put('/agents/{chatAgent:id}/update', UpdateChatAgent::class, 'agents.upda
 Route::get('/test-broadcast', function () {
     $chatMessage = ChatMessage::first();
     BroadcastRealtimeChat::dispatch($chatMessage);
-
 });

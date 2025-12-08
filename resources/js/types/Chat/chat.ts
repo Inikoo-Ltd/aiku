@@ -3,7 +3,7 @@
 // --------------------------
 export interface LastMessage {
 	message?: string
-	sender_type: "guest" | "agent" | "system"
+	sender_type: "guest" | "user" | "agent" | "system"
 	created_at?: string // string dari backend
 	created_at_timestamp?: number
 	is_read: boolean
@@ -13,6 +13,7 @@ export interface LastMessage {
 // Session data from API
 // --------------------------
 export interface SessionAPI {
+	id: string
 	ulid: string
 	status: "waiting" | "active" | "closed" | string
 	guest_identifier: string
@@ -55,12 +56,23 @@ export interface ChatSessionsResponse {
 export interface Contact {
 	id: string
 	name: string
+	ulid: string
 	avatar: string
 	lastMessage: string
-	lastMessageTime?: Date
+	lastMessageTime?: string
 	lastMessageTimestamp?: number
 	unread: number
 	status: "waiting" | "active" | "closed" | string
+	messages?: ChatMessage[]
 }
 
-export interface ChatMessage {}
+export interface ChatMessage {
+	id: string
+	message: string
+	ulid: string
+	message_text: string
+	sender_type: "guest" | "user" | "agent" | "system"
+	created_at: string
+	created_at_timestamp: number
+	is_read: boolean
+}
