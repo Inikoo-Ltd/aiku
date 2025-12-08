@@ -73,6 +73,7 @@ use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
 use App\Models\Ordering\Transaction;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Date;
 use Inertia\Testing\AssertableInertia;
 
@@ -153,10 +154,12 @@ test('get order products', function (Order $order) {
 
     $order->refresh();
 
+
     // Test the GetOrderProducts action
     $result = GetOrderProducts::make()->handle($order);
 
-    expect($result)->toBeInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class)
+
+    expect($result)->toBeInstanceOf(LengthAwarePaginator::class)
         ->and($result->count())->toBeGreaterThanOrEqual(1);
 
     // Test that the product data is correctly retrieved

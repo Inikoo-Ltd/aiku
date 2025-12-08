@@ -28,8 +28,8 @@ class ProductHydrateBrandsFromTradeUnits implements ShouldBeUnique
         if (isset($brand->id)) {
             $product->brands()->sync([
                 $brand->id => [
-                    'shop_id'  => $product->shop_id,
-                    'is_for_sale'  => $product->is_for_sale
+                    'shop_id'     => $product->shop_id,
+                    'is_for_sale' => $product->is_for_sale
                 ]
             ]);
         }

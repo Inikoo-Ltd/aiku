@@ -26,8 +26,8 @@ class SyncProductTradeUnits
     public function handle(Product $product, array $tradeUnitsRaw): Product
     {
         $tradeUnits = [];
-        foreach ($tradeUnitsRaw as $tradeUnitID => $tradeUnitData) {
-            $tradeUnit                  = TradeUnit::find($tradeUnitID);
+        foreach ($tradeUnitsRaw as $tradeUnitData) {
+            $tradeUnit                  = TradeUnit::find(Arr::get($tradeUnitData, 'id'));
             $tradeUnits[$tradeUnit->id] = [
                 'quantity' => Arr::get($tradeUnitData, 'quantity')
             ];

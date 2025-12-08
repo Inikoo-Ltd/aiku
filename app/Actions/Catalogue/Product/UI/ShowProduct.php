@@ -264,6 +264,13 @@ class ShowProduct extends OrgAction
             }
         }
 
+        $miniBreadcrumbs[] = [
+            'label'   => $product->code,
+            'to' => null,
+            'tooltip' => __('Product'),
+            'icon'    => ['fal', 'cube']
+        ];
+
         $actions = [];
 
         if ($this->canEdit) {

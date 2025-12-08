@@ -22,7 +22,6 @@ class GetIrisProductsInProductCategory extends IrisAction
     public function handle(ProductCategory $productCategory, $stockMode = 'all', bool $topSeller = false): LengthAwarePaginator
     {
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
-
         $queryBuilder->select($this->getSelect());
         $perPage = null;
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -33,8 +32,6 @@ class GetIrisProductsInProductCategory extends IrisAction
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $queryBuilder->where('sub_department_id', $productCategory->id);
         }
-        $baseUrl = $productCategory->url ?? '';
-        $queryBuilder->selectRaw('\''.$baseUrl.'\' as parent_url');
 
 
         // Section: Sort
@@ -53,6 +50,7 @@ class GetIrisProductsInProductCategory extends IrisAction
                 $queryBuilder->orderBy($column, $direction);
             }
         }
+
 
         return $this->getData($queryBuilder, $perPage);
     }

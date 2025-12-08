@@ -165,7 +165,8 @@ test('create fulfilment shop', function () {
 
 test('create product in fulfilment shop', function (Fulfilment $fulfilment) {
     $tradeUnits = [
-        $this->tradeUnit1->id => [
+        [
+            'id'       => $this->tradeUnit1->id,
             'quantity' => 1,
         ]
     ];
@@ -174,8 +175,8 @@ test('create product in fulfilment shop', function (Fulfilment $fulfilment) {
         Product::factory()->definition(),
         [
             'trade_units' => $tradeUnits,
-            'price'      => 100,
-            'unit'       => 'unit'
+            'price'       => 100,
+            'unit'        => 'unit'
         ]
     );
 

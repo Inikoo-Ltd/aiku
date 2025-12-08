@@ -128,8 +128,7 @@ class ShowIrisWebpage
         if (config('iris.cache.webpage.ttl') == 0) {
             $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
         } else {
-            $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
-
+            $key         = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
             $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths, $loggedIn) {
                 return $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
             });
@@ -311,14 +310,12 @@ class ShowIrisWebpage
 
     public function getBreadcrumbLabel(Webpage $webpage): string
     {
-
-        if($webpage->model_type=='Product'){
+        if ($webpage->model_type == 'Product') {
             /** @var Product $product */
-            $product=$webpage->model;
-            if($product){
+            $product = $webpage->model;
+            if ($product) {
                 return $product->code;
             }
-
         }
 
         $label = $webpage->breadcrumb_label;
