@@ -49,6 +49,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import TableRetinaPlatformPortfolioLogs from "@/Components/Tables/Retina/TableRetinaPlatformPortfolioLogs.vue";
+import CloneProgressModal from "@/Components/Dropshipping/CloneProgressModal.vue";
 
 
 library.add(faFileExcel, faCheck, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
@@ -196,6 +197,8 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
     }
 }
 
+const isCloneModalOpen = ref(false);
+
 // Method: Clone manual portfolios
 const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | number) => {
     router.post(route(
@@ -206,24 +209,30 @@ const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | num
             }
         ), {}, {
             onBefore: () => isLoadingClone.value = true,
+
             onError: (error) => {
+                // Keep the ERROR toast. If it fails to start, the user needs to know.
                 notify({
                     title: trans("Something went wrong"),
                     text: "",
                     type: "error"
                 });
             },
+
             onSuccess: () => {
                 selectedData.products = [];
                 router.reload({only: ["pageHead", "products"]});
-                notify({
-                    title: trans("Success!"),
-                    text: trans(`Portfolios been cloned in the background.`),
-                    type: "success"
-                });
+
+                // --- REMOVED THE TOAST FROM HERE ---
+                // The modal opening below acts as the "Success" confirmation.
+
+                // If you modify props directly (as discussed before), keep this:
                 props.step.current = 1;
-                isLoadingClone.value = false;
+
+                // Open the modal to show progress
+                isCloneModalOpen.value = true;
             },
+
             onFinish: () => {
                 isLoadingClone.value = false;
             }
@@ -797,24 +806,21 @@ onBeforeUnmount(() => {
                         <div as="h3" class="font-semibold text-2xl">
                            Your images are ready for download.
                         </div>
-
-                        <div xv-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
-                            Click the button below to retrieve your files.
-                        </div>
-
                     </div>
                 </div>
-
-
-                <a v-if="linkDownloadImages" :href="linkDownloadImages" target="_blank" download class="mt-5 sm:mt-6 block">
-                    <Button
-                        :label="trans('Download')"
-                        full
-                    />
-                </a>
+                <div class="mt-5 sm:mt-6">
+                    <a v-if="linkDownloadImages" :href="linkDownloadImages">
+                        <Button
+                            :label="trans('Download')"
+                            full
+                        />
+                    </a>
+                </div>
             </div>
         </div>
     </Modal>
+
+    <CloneProgressModal :isOpen="isCloneModalOpen" @close="isCloneModalOpen = false" />
 
     <Modal :isOpen="isOpenModalSuspended" @onClose="isOpenModalSuspended = false"
            width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">

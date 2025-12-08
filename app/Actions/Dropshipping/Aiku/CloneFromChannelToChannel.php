@@ -29,9 +29,8 @@ class CloneFromChannelToChannel implements ShouldBeUnique
     /**
      * @throws \Throwable
      */
-    public function handle(CustomerSalesChannel $fromChannel, CustomerSalesChannel $toChannel): void
+    public function handle(CustomerSalesChannel $fromChannel, CustomerSalesChannel $toChannel, ?int $userId = null): void
     {
-
         if ($fromChannel->id == $toChannel->id) {
             return;
         }
@@ -41,14 +40,56 @@ class CloneFromChannelToChannel implements ShouldBeUnique
         }
 
         $items = $fromChannel->portfolios()->pluck('item_id')->toArray();
+        $total = count($items);
+        $done = 0;
+        $success = 0;
+        $fails = 0;
+        $actionId = time();
 
-        StoreMultiplePortfolios::make()->action($toChannel, [
-            'items' => $items
-        ]);
+        if ($userId) {
+            \App\Events\CloneRetinaPortfolioProgressEvent::dispatch($userId, $actionId, 'Upload', $total, $done, $success, $fails);
+        }
 
+        foreach ($items as $itemID) {
+            try {
+                if ($toChannel->customer->is_fulfilment) {
+                    /** @var \App\Models\Fulfilment\StoredItem $item */
+                    $item = \App\Models\Fulfilment\StoredItem::find($itemID);
+                } else {
+                    /** @var \App\Models\Catalogue\Product $item */
+                    $item = \App\Models\Catalogue\Product::find($itemID);
+                }
 
+                if ($item) {
+                    if ($item->portfolios()->where('customer_sales_channel_id', $toChannel->id)->exists()) {
+                        if ($portfolio = $item->portfolios()->where('customer_sales_channel_id', $toChannel->id)->where('status', false)->first()) {
+                            \App\Actions\Dropshipping\Portfolio\UpdatePortfolio::make()->action($portfolio, [
+                                'status' => true
+                            ]);
+                        }
+                    } else {
+                        \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action(
+                            customerSalesChannel: $toChannel,
+                            item: $item,
+                            modelData: []
+                        );
+                    }
+                    $success++;
+                } else {
+                    $fails++;
+                }
+            } catch (\Exception $e) {
+                $fails++;
+            }
 
+            $done++;
 
+            if ($userId) {
+                \App\Events\CloneRetinaPortfolioProgressEvent::dispatch($userId, $actionId, 'Upload', $total, $done, $success, $fails);
+            }
+        }
+
+        \App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios::run($toChannel);
     }
 
 
