@@ -1,8 +1,8 @@
 {
 	"slug": "product-2",
 	"scope": "webpage",
-	"code": "product-1",
-	"name": "Product showcase B",
+	"code": "product-2",
+	"name": "Product showcase A",
 	"icon": ["fal", "cube"],
 	"category": "product",
 	"website_type" : ["b2b","b2c"],

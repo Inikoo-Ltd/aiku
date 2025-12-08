@@ -22,7 +22,7 @@ class UpdateWebBlockToWebsiteAndChild extends OrgAction
 
     public function handle(WebBlockType $newWebBlock, Website $website, string $marginal, array $fieldValue): WebBlockType
     {
-        $type  = $marginal === 'products' ? 'list_product' : $marginal;
+        $type  = $marginal === 'products' ? 'list_products' : $marginal;
         $names = WebBlockType::where('category', $type)->pluck('name')->toArray();
 
         $webpages = $website->webpages()

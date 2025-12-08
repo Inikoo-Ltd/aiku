@@ -107,6 +107,16 @@ class PublishWebsiteMarginal extends OrgAction
             UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find(data_get($layout, "id")), $website, $marginal, data_get($layout, 'data.fieldValue'));
         }
 
+        if(in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])){
+            // Update webpage, web_blocks & their snapshots (unpublished/published)
+            UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find(data_get($layout, "id")), $website, $marginal, data_get($layout, 'data.fieldValue'));
+        }
+
+        if(in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])){
+            // Update webpage, web_blocks & their snapshots (unpublished/published)
+            UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find(data_get($layout, "id")), $website, $marginal, data_get($layout, 'data.fieldValue'));
+        }
+
         BreakWebsiteCache::run($website);
 
         return $website;
