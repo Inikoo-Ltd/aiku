@@ -144,6 +144,7 @@ console.log
 
 		<!-- Trade Unit Summary -->
 		<TradeUnitMasterProductSummary 
+			:attachments="data.attachment_box"
 			:publicAttachment="data.attachment_box?.public" 
 			:data="data.tradeUnit" 
 			:gpsr="data.gpsr"
@@ -151,8 +152,8 @@ console.log
 		/>
 
 		<!-- Attachments -->
-		<div>
+		<!-- <div>
 			<AttachmentCard :private="data.attachment_box?.private" />
-		</div>
+		</div> -->
 	</div>
 </template>
