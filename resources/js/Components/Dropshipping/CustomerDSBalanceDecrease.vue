@@ -8,6 +8,10 @@ import Button from "../Elements/Buttons/Button.vue"
 import {InputNumber} from "primevue"
 import {notify} from "@kyvg/vue3-notification"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faAsterisk } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faAsterisk)
 
 
 const model = defineModel()
@@ -138,6 +142,7 @@ const onSubmitDecrease = () => {
             <!-- Note -->
             <div>
                 <label for="privateNote" class="block text-gray-700 font-medium mb-2">
+                    <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs align-top mt-1" fixed-width aria-hidden="true" />
                     {{ trans("Private Note") }}
                 </label>
                 <textarea
@@ -154,7 +159,7 @@ const onSubmitDecrease = () => {
         <div v-if="balance" class="bg-indigo-50 py-1 px-3 mt-6 rounded text-gray-700 tabular-nums border border-indigo-300">
             {{ trans("Preview balance") }}:
             <span v-tooltip="trans('Current balance')">{{ locale.currencyFormat(currency.code, Number(balance)) }}</span>
-            - <span v-tooltip="trans('Change')" class="text-green-500">{{ locale.currencyFormat(currency.code, amount) }}</span>
+            - <span v-tooltip="trans('Change')" class="text-red-500">{{ locale.currencyFormat(currency.code, amount) }}</span>
             ➞ <span v-tooltip="trans('Will be final balance')" class="font-bold">{{ locale.currencyFormat(currency.code, Number(balance) - (amount || 0)) }}</span>
         </div>
 
@@ -172,7 +177,7 @@ const onSubmitDecrease = () => {
                 @click="() => onSubmitDecrease()"
                 full
                 :loading="isLoading"
-                :disabled="amount <= 0 || !reasonToDecrease"
+                :disabled="amount <= 0 || !reasonToDecrease || !privateNote"
                 v-tooltip="amount <= 0 ? trans('Submit amount to decrease') : ''"
             >
             </Button>
