@@ -51,18 +51,6 @@ const contentRef = ref(null)
 const expanded = ref(false)
 const showButton = ref(false)
 
-const toggleFavorite = () => {
-    isFavorite.value = !isFavorite.value
-}
-
-const onDescriptionUpdate = (key: string, val: string) => {
-    emits('onDescriptionUpdate', key, val)
-}
-
-
-function formatNumber(value: Number) {
-    return Number.parseFloat(value).toString();
-}
 
 const attrs = useAttrs()
 
