@@ -16,7 +16,6 @@ use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\CRM\Customer;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class IncreaseCreditTransactionCustomer extends OrgAction
@@ -24,6 +23,7 @@ class IncreaseCreditTransactionCustomer extends OrgAction
     use WithCRMEditAuthorisation;
     use WithModelAddressActions;
     use WithNoStrictRules;
+    use WithCreditTransactionRules;
 
 
     /**
@@ -34,35 +34,6 @@ class IncreaseCreditTransactionCustomer extends OrgAction
         return StoreCreditTransaction::make()->action($customer, $modelData);
     }
 
-    public function rules(): array
-    {
-        $rules = [
-            'amount'     => ['required', 'numeric'],
-            'date'       => ['sometimes', 'date'],
-            'type'       => ['required', Rule::enum(CreditTransactionTypeEnum::class)],
-            'reason'     => ['required', Rule::enum(CreditTransactionReasonEnum::class)],
-            'notes'      => ['sometimes'],
-            'payment_id' => [
-                'sometimes',
-                'nullable',
-                Rule::exists('payments', 'id')
-                    ->where('shop_id', $this->shop->id)
-            ],
-            'top_up_id'  => [
-                'sometimes',
-                'nullable',
-                Rule::exists('top_ups', 'id')
-                    ->where('shop_id', $this->shop->id)
-            ],
-        ];
-        if (!$this->strict) {
-            $rules['grp_exchange'] = ['sometimes', 'numeric'];
-            $rules['org_exchange'] = ['sometimes', 'numeric'];
-            $rules                 = $this->noStrictStoreRules($rules);
-        }
-
-        return $rules;
-    }
 
     public function prepareForValidation(ActionRequest $request): void
     {
