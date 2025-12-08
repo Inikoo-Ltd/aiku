@@ -17,6 +17,7 @@ use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
+use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
@@ -70,6 +71,17 @@ class UpdateCustomer extends OrgAction
                         canShip: true
                     );
                 }
+                $customer->refresh();
+                // Update the address of all orders (state=CREATING)
+
+                foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
+                    UpdateOrderBillingAddress::make()->action(
+                        $order,
+                        [
+                            'address' => $customer->address->toArray()
+                        ]
+                    );
+                }
             }
 
             $customer->refresh();
@@ -105,7 +117,6 @@ class UpdateCustomer extends OrgAction
 
 
             if (Arr::get($taxNumberData, 'number')) {
-
                 if (!$customer->taxNumber) {
                     if (!Arr::get($taxNumberData, 'data.name')) {
                         Arr::forget($taxNumberData, 'data.name');
@@ -209,9 +220,9 @@ class UpdateCustomer extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'contact_name'             => ['sometimes', 'nullable', 'string', 'max:255'],
-            'company_name'             => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'                    => [
+            'contact_name'                                          => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_name'                                          => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email'                                                 => [
                 'sometimes',
                 'nullable',
                 $this->strict ? 'email' : 'string:500',
@@ -224,24 +235,24 @@ class UpdateCustomer extends OrgAction
                     ]
                 ),
             ],
-            'phone'                    => [
+            'phone'                                                 => [
                 'sometimes',
                 'nullable',
                 $this->strict ? new Phone() : 'string:255',
             ],
-            'identity_document_number' => ['sometimes', 'nullable', 'string'],
-            'contact_website'          => ['sometimes', 'nullable', 'active_url'],
-            'contact_address'          => ['sometimes', 'required', new ValidAddress()],
-            'delivery_address'         => ['sometimes', 'nullable', new ValidAddress()],
-            'delivery_address_id'      => ['sometimes', 'integer'],
-            'timezone_id'              => ['sometimes', 'nullable', 'exists:timezones,id'],
-            'language_id'              => ['sometimes', 'nullable', 'exists:languages,id'],
-            'balance'                  => ['sometimes', 'nullable'],
-            'internal_notes'           => ['sometimes', 'nullable', 'string'],
-            'warehouse_internal_notes' => ['sometimes', 'nullable', 'string'],
-            'warehouse_public_notes'   => ['sometimes', 'nullable', 'string'],
-            'tax_number'               => ['sometimes', 'nullable', 'array'],
-            'tags'                     => ['sometimes', 'array'],
+            'identity_document_number'                              => ['sometimes', 'nullable', 'string'],
+            'contact_website'                                       => ['sometimes', 'nullable', 'active_url'],
+            'contact_address'                                       => ['sometimes', 'required', new ValidAddress()],
+            'delivery_address'                                      => ['sometimes', 'nullable', new ValidAddress()],
+            'delivery_address_id'                                   => ['sometimes', 'integer'],
+            'timezone_id'                                           => ['sometimes', 'nullable', 'exists:timezones,id'],
+            'language_id'                                           => ['sometimes', 'nullable', 'exists:languages,id'],
+            'balance'                                               => ['sometimes', 'nullable'],
+            'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
+            'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],
+            'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
+            'tax_number'                                            => ['sometimes', 'nullable', 'array'],
+            'tags'                                                  => ['sometimes', 'array'],
             'email_subscriptions'                                   => ['sometimes', 'array'],
             'email_subscriptions.is_subscribed_to_newsletter'       => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_marketing'        => ['sometimes', 'boolean'],
