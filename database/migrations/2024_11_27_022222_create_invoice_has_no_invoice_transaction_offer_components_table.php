@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('invoice_has_no_invoice_transaction_offer_components', function (Blueprint $table) {
@@ -28,14 +29,11 @@ return new class () extends Migration {
             $table->unsignedInteger('offer_component_id');
             $table->foreign('offer_component_id')->references('id')->on('offer_components');
 
-
             $table->decimal('discounted_amount', 12, 2)->default(0);
             $table->decimal('discounted_percentage', 6, 4)->nullable()->default(0);
 
-
             $table->decimal('free_items_value', 12, 2)->default(0);
             $table->decimal('number_of_free_items', 12, 2)->default(0);
-
 
             $table->text('info')->nullable();
             $table->jsonb('data');
@@ -45,7 +43,6 @@ return new class () extends Migration {
             $table->string('source_id')->nullable();
         });
     }
-
 
     public function down(): void
     {

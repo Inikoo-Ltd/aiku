@@ -26,18 +26,17 @@ class StoreRetinaStoredItem extends RetinaAction
         return StoreStoredItem::run($parent, $modelData);
     }
 
-
     public function rules(): array
     {
         return [
-            'reference'    => ['required', 'max:128',  new AlphaDashDotSpaceSlashParenthesisPlus(),
-             new IUnique(
-                 table: 'stored_items',
-                 extraConditions: [
-                     ['column' => 'fulfilment_customer_id', 'value' => $this->fulfilmentCustomer->id],
-                 ]
-             )
-            ]
+            'reference' => ['required', 'max:128',  new AlphaDashDotSpaceSlashParenthesisPlus,
+                new IUnique(
+                    table: 'stored_items',
+                    extraConditions: [
+                        ['column' => 'fulfilment_customer_id', 'value' => $this->fulfilmentCustomer->id],
+                    ]
+                ),
+            ],
         ];
     }
 

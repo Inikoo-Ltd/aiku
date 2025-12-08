@@ -30,11 +30,11 @@ class GroupHydrateSpaces implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_spaces' => $group->spaces()->count()
+            'number_spaces' => $group->spaces()->count(),
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'spaces',
+            model: 'spaces',
             field: 'state',
             enum: SpaceStateEnum::class,
             models: Space::class,

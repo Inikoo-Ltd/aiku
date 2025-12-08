@@ -48,10 +48,10 @@ trait WithHydrateDeliveryNotes
         $numberDeliveryNotes = $model->deliveryNotes()->count();
 
         return [
-            'number_delivery_notes'                    => $numberDeliveryNotes,
-            'last_delivery_note_created_at'            => $model->deliveryNotes()->max('created_at'),
+            'number_delivery_notes' => $numberDeliveryNotes,
+            'last_delivery_note_created_at' => $model->deliveryNotes()->max('created_at'),
             'last_delivery_note_type_order_created_at' => $model->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->max('created_at'),
-            'number_delivery_notes_type_order'         => $model->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->count(),
+            'number_delivery_notes_type_order' => $model->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->count(),
         ];
     }
 
@@ -60,8 +60,8 @@ trait WithHydrateDeliveryNotes
         $numberDeliveryNotes = $model->deliveryNotes()->count();
 
         return [
-            'number_delivery_notes'                          => $numberDeliveryNotes,
-            'number_delivery_notes_type_replacement'         => $model->deliveryNotes()->where('type', DeliveryNoteTypeEnum::REPLACEMENT)->count(),
+            'number_delivery_notes' => $numberDeliveryNotes,
+            'number_delivery_notes_type_replacement' => $model->deliveryNotes()->where('type', DeliveryNoteTypeEnum::REPLACEMENT)->count(),
             'last_delivery_note_type_replacement_created_at' => $model->deliveryNotes()->where('type', DeliveryNoteTypeEnum::REPLACEMENT)->max('created_at'),
         ];
     }
@@ -69,7 +69,7 @@ trait WithHydrateDeliveryNotes
     public function getDispatchedDeliveryNotesStats(Group|Organisation|Shop $model): array
     {
         return [
-            'last_delivery_note_dispatched_at'            => $model->deliveryNotes()->max('dispatched_at'),
+            'last_delivery_note_dispatched_at' => $model->deliveryNotes()->max('dispatched_at'),
             'last_delivery_note_type_order_dispatched_at' => $model->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->max('dispatched_at'),
         ];
     }
@@ -77,7 +77,7 @@ trait WithHydrateDeliveryNotes
     public function getDispatchedReplacementsStats(Group|Organisation|Shop $model): array
     {
         return [
-            'last_delivery_note_dispatched_at'                  => $model->deliveryNotes()->max('dispatched_at'),
+            'last_delivery_note_dispatched_at' => $model->deliveryNotes()->max('dispatched_at'),
             'last_delivery_note_type_replacement_dispatched_at' => $model->deliveryNotes()->where('type', DeliveryNoteTypeEnum::REPLACEMENT)->max('dispatched_at'),
         ];
     }

@@ -26,13 +26,12 @@ class DashboardInvoiceCategoriesSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
-
     protected string $categoryCurrencyCode;
+
     protected string $organisationCurrencyCode;
 
     public function toArray($request): array
     {
-
 
         $currencyCategoryId = $this->category_currency_id;
         $categoryCurrencyCode = Cache::remember('currency_code_'.$currencyCategoryId, 3600 * 24 * 30, function () use ($currencyCategoryId) {
@@ -49,14 +48,14 @@ class DashboardInvoiceCategoriesSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $this->name
-                ]
+                    'formatted_value' => $this->name,
+                ],
             ],
             [
                 'label_minified' => [
                     'formatted_value' => Abbreviate::run($this->name),
-                    'tooltip'         => $this->name
-                ]
+                    'tooltip' => $this->name,
+                ],
             ],
             $this->getDashboardTableColumn($this, 'refunds'),
             $this->getDashboardTableColumn($this, 'refunds_minified'),
@@ -72,12 +71,10 @@ class DashboardInvoiceCategoriesSalesResource extends JsonResource
             $this->getDashboardTableColumn($this, 'sales_org_currency_delta'),
         );
 
-
         return [
-            'slug'    => $this->slug,
-            'state'   => $this->state == InvoiceCategoryStateEnum::ACTIVE ? 'active' : 'inactive',
-            'columns' => $columns
-
+            'slug' => $this->slug,
+            'state' => $this->state == InvoiceCategoryStateEnum::ACTIVE ? 'active' : 'inactive',
+            'columns' => $columns,
 
         ];
     }

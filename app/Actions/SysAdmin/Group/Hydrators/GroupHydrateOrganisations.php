@@ -27,9 +27,8 @@ class GroupHydrateOrganisations implements ShouldBeUnique
 
         $group->update(
             [
-                'number_organisations' => $group->organisations()->where('type', OrganisationTypeEnum::SHOP)->count()
+                'number_organisations' => $group->organisations()->where('type', OrganisationTypeEnum::SHOP)->count(),
             ]
         );
     }
-
 }

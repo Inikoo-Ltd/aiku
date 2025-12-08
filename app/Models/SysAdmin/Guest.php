@@ -65,6 +65,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \App\Models\SysAdmin\User|null $user
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\User> $users
+ *
  * @method static \Database\Factories\SysAdmin\GuestFactory factory($count = null, $state = [])
  * @method static Builder<static>|Guest newModelQuery()
  * @method static Builder<static>|Guest newQuery()
@@ -72,24 +73,24 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Guest query()
  * @method static Builder<static>|Guest withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Guest withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class Guest extends Model implements HasMedia, Auditable
+class Guest extends Model implements Auditable, HasMedia
 {
-    use HasSlug;
-    use InteractsWithMedia;
-    use SoftDeletes;
     use HasFactory;
     use HasHistory;
+    use HasSlug;
     use HasUniversalSearch;
-
+    use InteractsWithMedia;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'          => 'array',
+        'data' => 'array',
         'date_of_birth' => 'datetime:Y-m-d',
-        'status'        => 'boolean',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'status' => 'boolean',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -101,7 +102,7 @@ class Guest extends Model implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'sysadmin'
+            'sysadmin',
         ];
     }
 
@@ -182,5 +183,4 @@ class Guest extends Model implements HasMedia, Auditable
     {
         return $this->morphMany(Clocking::class, 'subject');
     }
-
 }

@@ -46,5 +46,4 @@ class OrganisationHydrateSubscription implements ShouldBeUnique
 
         $organisation->catalogueStats()->update($stats);
     }
-
 }

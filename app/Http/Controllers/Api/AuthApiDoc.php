@@ -25,10 +25,13 @@ class AuthApiDoc extends Controller
      *     description="Login with email and password to get access token",
      *     operationId="login",
      *     tags={"Authentication"},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"email", "password"},
+     *
      *             @OA\Property(
      *                 property="email",
      *                 type="string",
@@ -48,10 +51,13 @@ class AuthApiDoc extends Controller
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Successful login",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(
      *                 property="token",
      *                 type="string",
@@ -63,14 +69,18 @@ class AuthApiDoc extends Controller
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Invalid credentials",
+     *
      *         @OA\JsonContent(ref="#/components/schemas/Error")
      *     ),
+     *
      *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *
      *         @OA\JsonContent(ref="#/components/schemas/Error")
      *     )
      * )
@@ -88,10 +98,13 @@ class AuthApiDoc extends Controller
      *     operationId="logout",
      *     tags={"Authentication"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Successful logout",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(
      *                 property="message",
      *                 type="string",
@@ -99,9 +112,11 @@ class AuthApiDoc extends Controller
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(ref="#/components/schemas/Error")
      *     )
      * )
@@ -118,10 +133,13 @@ class AuthApiDoc extends Controller
      *     description="Register a new user",
      *     operationId="register",
      *     tags={"Authentication"},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"name", "email", "password", "password_confirmation"},
+     *
      *             @OA\Property(
      *                 property="name",
      *                 type="string",
@@ -152,10 +170,13 @@ class AuthApiDoc extends Controller
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=201,
      *         description="User registered successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(
      *                 property="token",
      *                 type="string",
@@ -167,9 +188,11 @@ class AuthApiDoc extends Controller
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *
      *         @OA\JsonContent(ref="#/components/schemas/Error")
      *     )
      * )

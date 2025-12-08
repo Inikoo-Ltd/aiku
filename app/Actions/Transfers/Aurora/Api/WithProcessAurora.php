@@ -26,9 +26,9 @@ trait WithProcessAurora
         $dispatch = Arr::get($modelData, 'bg', false);
 
         if ($dispatch) {
-            $delay = (int)Arr::get($modelData, 'delay', 0);
+            $delay = (int) Arr::get($modelData, 'delay', 0);
 
-            (new $this->fetcher())::dispatch(
+            (new $this->fetcher)::dispatch(
                 $organisation->id,
                 $id,
                 $with,
@@ -37,25 +37,23 @@ trait WithProcessAurora
 
             return [
                 'organisation' => $organisation->slug,
-                'model'        => class_basename($this->fetcher),
-                'id'           => $id,
-                'date'         => now('Asia/Kuala_Lumpur')->format('Y-m-d H:i:s')
+                'model' => class_basename($this->fetcher),
+                'id' => $id,
+                'date' => now('Asia/Kuala_Lumpur')->format('Y-m-d H:i:s'),
             ];
         } else {
-            $model = (new $this->fetcher())::make()->action($organisation->id, $id, $with);
+            $model = (new $this->fetcher)::make()->action($organisation->id, $id, $with);
 
             if ($model) {
 
                 if (is_array($model)) {
 
-
-
                     if (array_key_exists('stock', $model)) {
                         $model = $model['stock'];
-                        if (!$model) {
+                        if (! $model) {
                             return [
                                 'status' => 'error',
-                                'type'   => 'foreground'
+                                'type' => 'foreground',
                             ];
                         }
 
@@ -65,42 +63,39 @@ trait WithProcessAurora
 
                 return [
                     'status' => 'ok',
-                    'type'   => 'foreground',
-                    'model'  => class_basename($model),
-                    'id'     => $model->id
+                    'type' => 'foreground',
+                    'model' => class_basename($model),
+                    'id' => $model->id,
                 ];
             } else {
                 return [
                     'status' => 'error',
-                    'type'   => 'foreground'
+                    'type' => 'foreground',
                 ];
             }
         }
     }
 
-
     public function rules(): array
     {
         return [
-            'id'             => ['required', 'integer'],
-            'with'           => ['sometimes', 'string'],
-            'bg'             => ['sometimes', 'boolean'],
-            'delay'          => ['sometimes', 'integer'],
-            'fetch_stack_id' => ['sometimes', 'integer']
+            'id' => ['required', 'integer'],
+            'with' => ['sometimes', 'string'],
+            'bg' => ['sometimes', 'boolean'],
+            'delay' => ['sometimes', 'integer'],
+            'fetch_stack_id' => ['sometimes', 'integer'],
         ];
     }
-
 
     public function action(Organisation $organisation, array $modelData): array
     {
         $this->asAction = true;
-        $fetcher        = $this->fetcher;// hack to avoid reset of attributes in initialisation
+        $fetcher = $this->fetcher; // hack to avoid reset of attributes in initialisation
         $this->initialisation($organisation, $modelData);
         $this->fetcher = $fetcher;
 
         return $this->handle($organisation, $this->validatedData);
     }
-
 
     public function asController(Organisation $organisation, ActionRequest $request): array
     {

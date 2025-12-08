@@ -36,11 +36,9 @@ class FetchAuroraProduct extends FetchAurora
             return;
         }
 
-
         $this->parsedData['shop'] = $shop;
 
         $this->parsedData['parent'] = $this->parsedData['shop'];
-
 
         $family = null;
         if ($this->auroraModelData->{'Product Family Category Key'}) {
@@ -52,10 +50,8 @@ class FetchAuroraProduct extends FetchAurora
             }
         }
 
-
         $this->parsedData['family'] = $family;
         $this->parsedData['parent'] = $family;
-
 
         if ($this->parsedData['parent'] === null) {
 
@@ -64,18 +60,15 @@ class FetchAuroraProduct extends FetchAurora
 
         }
 
-
         $exclusiveForCustomerID = null;
 
         if ($this->auroraModelData->{'Product Customer Key'}) {
-            $customer               = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Product Customer Key'});
+            $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Product Customer Key'});
             $exclusiveForCustomerID = $customer->id;
         }
 
-
-        $data     = [];
+        $data = [];
         $settings = [];
-
 
         $state = match ($this->auroraModelData->{'Product Status'}) {
             'InProcess' => ProductStateEnum::IN_PROCESS,
@@ -103,33 +96,31 @@ class FetchAuroraProduct extends FetchAurora
             default => ProductTradeConfigEnum::AUTO
         };
 
-
         $units = $this->auroraModelData->{'Product Units Per Case'};
         if ($units == 0) {
             $units = 1;
         }
 
         $created_at = $this->parseDatetime($this->auroraModelData->{'Product Valid From'});
-        if (!$created_at) {
+        if (! $created_at) {
             $created_at = $this->parseDatetime($this->auroraModelData->{'Product For Sale Since Date'});
         }
-        if (!$created_at) {
+        if (! $created_at) {
             $created_at = $this->parseDatetime($this->auroraModelData->{'Product First Sold Date'});
         }
 
-        $unit_price                  = $this->auroraModelData->{'Product Price'} / $units;
+        $unit_price = $this->auroraModelData->{'Product Price'} / $units;
         $data['original_unit_price'] = $unit_price;
-        $price                       = $unit_price * $units;
+        $price = $unit_price * $units;
 
         $this->parsedData['historic_asset_source_id'] = $this->auroraModelData->{'Product Current Key'};
 
         $code = $this->cleanTradeUnitReference($this->auroraModelData->{'Product Code'});
 
         $name = $this->auroraModelData->{'Product Name'};
-        if (!$name) {
+        if (! $name) {
             $name = $code;
         }
-
 
         $rrp = $this->auroraModelData->{'Product RRP'};
         if ($rrp <= 0) {
@@ -138,45 +129,42 @@ class FetchAuroraProduct extends FetchAurora
 
         $this->parsedData['product'] = [
             'exclusive_for_customer_id' => $exclusiveForCustomerID,
-            'is_main'                   => true,
-            'type'                      => AssetTypeEnum::PRODUCT,
-            'code'                      => $code,
-            'name'                      => $name,
-            'price'                     => round($price, 2),
-            'unit_price'                => round($unit_price, 2),
-            'units'                     => $units,
-            'status'                    => $status,
-            'unit'                      => $this->auroraModelData->{'Product Unit Label'},
-            'state'                     => $state,
-            'trade_config'              => $tradeConfig,
-            'data'                      => $data,
-            'settings'                  => $settings,
-            'created_at'                => $created_at,
-            'trade_unit_composition'    => ProductUnitRelationshipType::SINGLE,
-            'source_id'                 => $this->organisation->id.':'.$this->auroraModelData->{'Product ID'},
-            'historic_source_id'        => $this->organisation->id.':'.$this->auroraModelData->{'Product Current Key'},
+            'is_main' => true,
+            'type' => AssetTypeEnum::PRODUCT,
+            'code' => $code,
+            'name' => $name,
+            'price' => round($price, 2),
+            'unit_price' => round($unit_price, 2),
+            'units' => $units,
+            'status' => $status,
+            'unit' => $this->auroraModelData->{'Product Unit Label'},
+            'state' => $state,
+            'trade_config' => $tradeConfig,
+            'data' => $data,
+            'settings' => $settings,
+            'created_at' => $created_at,
+            'trade_unit_composition' => ProductUnitRelationshipType::SINGLE,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Product ID'},
+            'historic_source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Product Current Key'},
 
-            'fetched_at'      => now(),
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
-            'rrp'             => $rrp
+            'rrp' => $rrp,
         ];
-
 
         if ($this->auroraModelData->{'is_variant'} == 'Yes') {
             $this->parsedData['product']['is_main'] = false;
-            $mainProduct                            = $this->parseProduct($this->organisation->id.':'.$this->auroraModelData->{'variant_parent_id'});
+            $mainProduct = $this->parseProduct($this->organisation->id.':'.$this->auroraModelData->{'variant_parent_id'});
 
-
-            $this->parsedData['product']['variant_ratio']      = $units / $mainProduct->units;
+            $this->parsedData['product']['variant_ratio'] = $units / $mainProduct->units;
             $this->parsedData['product']['variant_is_visible'] = $this->auroraModelData->{'Product Show Variant'} == 'Yes';
-            $this->parsedData['product']['main_product_id']    = $mainProduct->id;
+            $this->parsedData['product']['main_product_id'] = $mainProduct->id;
         }
 
         $this->parsedData['au_data'] = $this->auroraModelData;
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Product Dimension')

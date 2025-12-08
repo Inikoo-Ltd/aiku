@@ -61,18 +61,16 @@ class IndexPurgedOrders extends OrgAction
             ->withQueryString();
     }
 
-
     public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
 
-
-            $noResults = __("No purged orders found");
+            $noResults = __('No purged orders found');
 
             $table
                 ->withGlobalSearch()
@@ -81,7 +79,6 @@ class IndexPurgedOrders extends OrgAction
                         'title' => $noResults,
                     ]
                 );
-
 
             $table->column(key: 'order_reference', label: __('order'), sortable: true, canBeHidden: false, searchable: true);
             $table->column(key: 'status', label: __('status'), sortable: true, canBeHidden: false, searchable: true);
@@ -96,7 +93,6 @@ class IndexPurgedOrders extends OrgAction
     {
         return $request->user()->authTo("orders.{$this->shop->id}.view");
     }
-
 
     public function jsonResponse(LengthAwarePaginator $purgedOrders): AnonymousResourceCollection
     {

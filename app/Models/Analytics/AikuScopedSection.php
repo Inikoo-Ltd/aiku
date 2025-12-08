@@ -34,9 +34,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Model|\Eloquent $model
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Analytics\AikuScopedSectionStats|null $stats
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AikuScopedSection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AikuScopedSection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AikuScopedSection query()
+ *
  * @mixin \Eloquent
  */
 class AikuScopedSection extends Model
@@ -45,7 +47,7 @@ class AikuScopedSection extends Model
     use InOrganisation;
 
     protected $cast = [
-        'code' => AikuSectionEnum::class
+        'code' => AikuSectionEnum::class,
     ];
 
     protected $guarded = [
@@ -76,6 +78,4 @@ class AikuScopedSection extends Model
     {
         return $this->morphTo();
     }
-
-
 }

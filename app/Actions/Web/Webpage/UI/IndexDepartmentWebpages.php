@@ -50,7 +50,7 @@ class IndexDepartmentWebpages extends OrgAction
     {
         return [
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     WebpageStateEnum::labels(),
                     WebpageStateEnum::count($parent)
@@ -58,7 +58,7 @@ class IndexDepartmentWebpages extends OrgAction
 
                 'engine' => function ($query, $elements) {
                     $query->whereIn('webpages.state', $elements);
-                }
+                },
 
             ],
 
@@ -104,6 +104,7 @@ class IndexDepartmentWebpages extends OrgAction
                 ->where('webpages.model_type', '=', 'ProductCategory');
         });
         $queryBuilder->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id');
+
         return $queryBuilder
             ->defaultSort('webpages.level')
             ->select([
@@ -136,10 +137,10 @@ class IndexDepartmentWebpages extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
 
-            if (!($parent instanceof Group)) {
+            if (! ($parent instanceof Group)) {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
@@ -149,13 +150,12 @@ class IndexDepartmentWebpages extends OrgAction
                 }
             }
 
-
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                        'title' => __("No webpages found"),
+                        'title' => __('No webpages found'),
                         'count' => $parent->webStats->number_webpages,
                     ]
                 )
@@ -179,7 +179,6 @@ class IndexDepartmentWebpages extends OrgAction
     {
         $subNavigation = [];
 
-
         $subNavigation = $this->getWebpageNavigation($this->website);
 
         $routeCreate = '';
@@ -191,12 +190,12 @@ class IndexDepartmentWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpages'),
-                'pageHead'    => [
-                    'title'         => __('department webpages'),
-                    'icon'          => [
-                        'icon'  => ['fal', 'fa-browser'],
-                        'title' => __('Webpage')
+                'title' => __('Webpages'),
+                'pageHead' => [
+                    'title' => __('department webpages'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-browser'],
+                        'title' => __('Webpage'),
                     ],
                     'subNavigation' => $subNavigation,
                     // 'actions'       => [
@@ -211,32 +210,32 @@ class IndexDepartmentWebpages extends OrgAction
                     //     ]
                     // ]
                 ],
-                'data'        => ProductCategoryWebpagesResource::collection($webpages),
+                'data' => ProductCategoryWebpagesResource::collection($webpages),
 
             ]
         )->table($this->tableStructure(parent: $this->website));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Department Webpages'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
         /** @var Website $website */
         $website = request()->route()->parameter('website');
+
         return match ($routeName) {
-            'grp.org.shops.show.web.webpages.index.sub_type.department' =>
-            array_merge(
+            'grp.org.shops.show.web.webpages.index.sub_type.department' => array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
                     $website,
                     'grp.org.shops.show.web.websites.show',
@@ -244,8 +243,8 @@ class IndexDepartmentWebpages extends OrgAction
                 ),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.department',
-                        'parameters' => $routeParameters
+                        'name' => 'grp.org.shops.show.web.webpages.index.sub_type.department',
+                        'parameters' => $routeParameters,
                     ],
                     $suffix
                 )

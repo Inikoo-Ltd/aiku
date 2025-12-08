@@ -35,20 +35,29 @@ class RetinaApiAction
     use WithAttributes;
     use WithTab;
 
-
     protected Customer $customer;
-    protected WebUser $webUser;
-    protected ShopifyUser|TiktokUser|WebUser|WooCommerceUser|EbayUser|null $platformUser;
-    protected Platform $platform;
-    protected CustomerSalesChannel $customerSalesChannel;
-    protected bool $asPupil = false;
-    protected ?Fulfilment $fulfilment;
-    protected ?FulfilmentCustomer $fulfilmentCustomer;
-    protected Organisation $organisation;
-    protected Shop $shop;
-    protected Group $group;
-    protected bool $asAction = false;
 
+    protected WebUser $webUser;
+
+    protected ShopifyUser|TiktokUser|WebUser|WooCommerceUser|EbayUser|null $platformUser;
+
+    protected Platform $platform;
+
+    protected CustomerSalesChannel $customerSalesChannel;
+
+    protected bool $asPupil = false;
+
+    protected ?Fulfilment $fulfilment;
+
+    protected ?FulfilmentCustomer $fulfilmentCustomer;
+
+    protected Organisation $organisation;
+
+    protected Shop $shop;
+
+    protected Group $group;
+
+    protected bool $asAction = false;
 
     protected array $validatedData;
 
@@ -86,7 +95,6 @@ class RetinaApiAction
 
         return $this;
     }
-
 
     public function authorize(ActionRequest $request): bool
     {

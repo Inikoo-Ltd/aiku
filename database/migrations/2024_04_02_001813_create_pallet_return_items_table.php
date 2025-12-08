@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('pallet_return_items', function (Blueprint $table) {
@@ -36,15 +37,13 @@ return new class () extends Migration {
             $table->unsignedInteger('picking_location_id')->nullable();
             $table->foreign('picking_location_id')->references('id')->on('locations');
 
-
             $table->string('state')->default(PalletReturnItemStateEnum::IN_PROCESS->value);
             $table->timestampsTz();
 
         });
-        DB::statement("CREATE UNIQUE INDEX pallet_return_items_unique ON pallet_return_items (pallet_return_id, pallet_id, stored_item_id) NULLS NOT DISTINCT");
+        DB::statement('CREATE UNIQUE INDEX pallet_return_items_unique ON pallet_return_items (pallet_return_id, pallet_id, stored_item_id) NULLS NOT DISTINCT');
 
     }
-
 
     public function down(): void
     {

@@ -143,14 +143,17 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property-read Group|null $group
  * @property-read \App\Models\Accounting\InvoiceCategory $invoiceCategory
  * @property-read Organisation|null $organisation
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class InvoiceCategorySalesIntervals extends Model
 {
     protected $table = 'invoice_category_sales_intervals';
+
     protected $guarded = [];
 
     public function invoiceCategory(): BelongsTo
@@ -193,6 +196,4 @@ class InvoiceCategorySalesIntervals extends Model
             'currency_id'       // Local key on Shop table
         );
     }
-
-
 }

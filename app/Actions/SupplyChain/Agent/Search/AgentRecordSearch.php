@@ -40,5 +40,4 @@ class AgentRecordSearch implements ShouldBeUnique
             ]
         );
     }
-
 }

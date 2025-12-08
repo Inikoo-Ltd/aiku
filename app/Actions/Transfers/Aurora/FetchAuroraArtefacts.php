@@ -19,15 +19,12 @@ class FetchAuroraArtefacts extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:artefacts {organisations?*} {--s|source_id=} {--N|only_new : Fetch only new}  {--d|db_suffix=}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Artefact
     {
         $artefactData = $organisationSource->fetchArtefact($organisationSourceId);
 
-
         return $this->fetchArtefact($artefactData);
     }
-
 
     public function fetchArtefact($artefactData): ?Artefact
     {
@@ -51,7 +48,6 @@ class FetchAuroraArtefacts extends FetchAuroraAction
                     ->where('Supplier Part Key', $sourceData[1])
                     ->update(['aiku_id' => $artefact->id]);
             }
-
 
             return $artefact;
         }

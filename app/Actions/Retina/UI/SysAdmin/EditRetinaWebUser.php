@@ -39,103 +39,102 @@ class EditRetinaWebUser extends RetinaAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Web user'),
+                'title' => __('Web user'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'           => [
+                'navigation' => [
                     'previous' => $this->getPrevious($webUser, $request),
-                    'next'     => $this->getNext($webUser, $request),
+                    'next' => $this->getNext($webUser, $request),
                 ],
-                'pageHead'    => [
-                    'title'     => __('Edit web user'),
-                    'meta'      => [
+                'pageHead' => [
+                    'title' => __('Edit web user'),
+                    'meta' => [
                         [
-                            'name' => $webUser->username
-                        ]
+                            'name' => $webUser->username,
+                        ],
                     ],
-                    'actions'   => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
                     ],
                 ],
 
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'   => __('properties'),
-                            'label'   => __('properties'),
-                            'icon'    => 'fa-light fa-key',
+                            'title' => __('properties'),
+                            'label' => __('properties'),
+                            'icon' => 'fa-light fa-key',
                             'current' => true,
-                            'fields'  => array_merge([
+                            'fields' => array_merge([
                                 'contact_name' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('contact name'),
-                                    'value' => $webUser->contact_name
+                                    'value' => $webUser->contact_name,
                                 ],
                                 'email' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('email'),
-                                    'value' => $webUser->email
+                                    'value' => $webUser->email,
                                 ],
                                 'username' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('username'),
-                                    'value' => $webUser->username
+                                    'value' => $webUser->username,
                                 ],
                                 'password' => [
-                                    'type'  => 'password',
+                                    'type' => 'password',
                                     'label' => __('password'),
-                                    'value' => ''
+                                    'value' => '',
                                 ],
                             ], $webUser->is_root ? [] : [
                                 'status' => [
-                                    'type'  => 'toggle',
+                                    'type' => 'toggle',
                                     'label' => __('Status'),
-                                    'value' => $webUser->status
-                                ]
-                            ])
+                                    'value' => $webUser->status,
+                                ],
+                            ]),
                         ],
                         [
-                            'label'   => __('Delete'),
-                            'icon'    => 'fa-light fa-trash',
-                            'fields'  => [
+                            'label' => __('Delete'),
+                            'icon' => 'fa-light fa-trash',
+                            'fields' => [
                                 'delete' => [
-                                    'type'  => 'action',
+                                    'type' => 'action',
                                     'action' => [
                                         'label' => 'delete',
                                         'type' => 'delete',
                                         'route' => [
                                             'name' => 'retina.models.web-users.delete',
                                             'parameters' => [
-                                                'webUser' => $webUser->id
+                                                'webUser' => $webUser->id,
                                             ],
-                                            'method'      => 'delete'
-                                        ]
+                                            'method' => 'delete',
+                                        ],
                                     ],
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    'args'      => [
+                    'args' => [
                         'updateRoute' => [
-                            'name'       => 'retina.models.web-users.update',
-                            'parameters' => [$webUser->id]
+                            'name' => 'retina.models.web-users.update',
+                            'parameters' => [$webUser->id],
 
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
@@ -166,7 +165,7 @@ class EditRetinaWebUser extends RetinaAction
 
     private function getNavigation(?WebUser $webUser, string $routeName): ?array
     {
-        if (!$webUser) {
+        if (! $webUser) {
             return null;
         }
 
@@ -174,12 +173,12 @@ class EditRetinaWebUser extends RetinaAction
             'retina.sysadmin.web-users.edit' => [
                 'label' => $webUser->username,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'webUser' => $webUser->slug,
-                    ]
+                    ],
 
-                ]
+                ],
             ],
         };
     }

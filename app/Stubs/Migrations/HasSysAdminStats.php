@@ -20,7 +20,6 @@ trait HasSysAdminStats
         $table->unsignedSmallInteger('number_guests_status_active')->default(0);
         $table->unsignedSmallInteger('number_guests_status_inactive')->default(0);
 
-
         return $table;
     }
 
@@ -44,7 +43,6 @@ trait HasSysAdminStats
     {
         $table->unsignedBigInteger('number_audits')->default(0);
 
-
         foreach (AuditEventEnum::cases() as $case) {
             $table->unsignedBigInteger("number_audits_event_{$case->snake()}")->default(0);
         }
@@ -57,11 +55,10 @@ trait HasSysAdminStats
             foreach (AuditEventEnum::cases() as $case2) {
                 if ($case2 == AuditEventEnum::MIGRATED and $case != AuditUserTypeEnum::SYSTEM) {
                     continue;
-                };
+                }
                 $table->unsignedBigInteger("number_audits_user_type_{$case->snake()}_event_{$case2->snake()}")->default(0);
             }
         }
-
 
         return $table;
     }
@@ -70,15 +67,13 @@ trait HasSysAdminStats
     {
         $table->unsignedBigInteger('number_audits')->default(0);
 
-
         foreach (AuditEventEnum::cases() as $case) {
             if ($case == AuditEventEnum::MIGRATED) {
                 continue;
-            };
+            }
 
             $table->unsignedBigInteger("number_audits_event_{$case->snake()}")->default(0);
         }
-
 
         return $table;
     }

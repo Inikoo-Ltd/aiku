@@ -22,12 +22,10 @@ class SnapshotResource extends JsonResource
     use HasSelfCall;
     use WithGetWebpageWebBlocks;
 
-
     public function toArray($request): array
     {
         /** @var Snapshot $snapshot */
         $snapshot = $this;
-
 
         $comment = $snapshot->comment;
 
@@ -35,7 +33,7 @@ class SnapshotResource extends JsonResource
             $comment = __('First commit');
         }
 
-        $publisher       = '';
+        $publisher = '';
         $publisherAvatar = null;
         if ($snapshot->publisher_id) {
             switch ($snapshot->publisher_type) {
@@ -43,14 +41,14 @@ class SnapshotResource extends JsonResource
                     /** @var \App\Models\CRM\WebUser $webUser */
                     $webUser = $snapshot->publisher;
 
-                    $publisher       = $webUser->contact_name;
+                    $publisher = $webUser->contact_name;
                     $publisherAvatar = $webUser->imageSources(48, 48);
                     break;
                 case 'User':
                     /** @var User $user */
                     $user = $snapshot->publisher;
 
-                    $publisher       = $user->contact_name;
+                    $publisher = $user->contact_name;
                     $publisherAvatar = $user->imageSources(48, 48);
             }
         }
@@ -70,39 +68,39 @@ class SnapshotResource extends JsonResource
         }
 
         return [
-                'id'               => $snapshot->id,
-                'parent_id'        => $snapshot->parent_id,
-                'published_at'     => $snapshot->published_at,
-                'published_until'  => $snapshot->published_until,
-                'first_commit'     => $snapshot->first_commit,
-                'recyclable'       => $snapshot->recyclable,
-                'recyclable_tag'   => $snapshot->recyclable_tag,
-                'layout'           => $webPageLayout ? $webPageLayout : $snapshot->layout,
-                'model_id'              => $webpage ? $webpage->model_id : null,
-                'product_category_id'   => $modelId,
-                'publisher'        => $publisher,
-                'publisher_avatar' => $publisherAvatar,
-                'state_value'      => $snapshot->state->value,
-                'state'            => match ($snapshot->state) {
-                    SnapshotStateEnum::LIVE => [
-                        'tooltip' => __('live'),
-                        'icon'    => 'fal fa-broadcast-tower',
-                        'class'   => 'text-green-600 animate-pulse'
-                    ],
-                    SnapshotStateEnum::UNPUBLISHED => [
-                        'tooltip' => __('unpublished'),
-                        'icon'    => 'fal fa-seedling',
-                        'class'   => 'text-indigo-500'
-                    ],
-                    SnapshotStateEnum::HISTORIC => [
-                        'tooltip' => __('historic'),
-                        'icon'    => 'fal fa-ghost'
-                    ]
-                },
-                'comment'          => $comment,
-                'label'            => $snapshot->label,
-                'web_blocks_parameters'   => $webpage ? WebBlockParametersResource::collection($webpage->webBlocks) : null,
-            ];
+            'id' => $snapshot->id,
+            'parent_id' => $snapshot->parent_id,
+            'published_at' => $snapshot->published_at,
+            'published_until' => $snapshot->published_until,
+            'first_commit' => $snapshot->first_commit,
+            'recyclable' => $snapshot->recyclable,
+            'recyclable_tag' => $snapshot->recyclable_tag,
+            'layout' => $webPageLayout ? $webPageLayout : $snapshot->layout,
+            'model_id' => $webpage ? $webpage->model_id : null,
+            'product_category_id' => $modelId,
+            'publisher' => $publisher,
+            'publisher_avatar' => $publisherAvatar,
+            'state_value' => $snapshot->state->value,
+            'state' => match ($snapshot->state) {
+                SnapshotStateEnum::LIVE => [
+                    'tooltip' => __('live'),
+                    'icon' => 'fal fa-broadcast-tower',
+                    'class' => 'text-green-600 animate-pulse',
+                ],
+                SnapshotStateEnum::UNPUBLISHED => [
+                    'tooltip' => __('unpublished'),
+                    'icon' => 'fal fa-seedling',
+                    'class' => 'text-indigo-500',
+                ],
+                SnapshotStateEnum::HISTORIC => [
+                    'tooltip' => __('historic'),
+                    'icon' => 'fal fa-ghost',
+                ]
+            },
+            'comment' => $comment,
+            'label' => $snapshot->label,
+            'web_blocks_parameters' => $webpage ? WebBlockParametersResource::collection($webpage->webBlocks) : null,
+        ];
 
     }
 }

@@ -18,29 +18,27 @@ use Illuminate\Support\Facades\DB;
 
 class FetchAuroraHistory extends FetchAurora
 {
-    use WithParseUpdateHistory;
     use WithParseCreatedHistory;
+    use WithParseUpdateHistory;
 
     protected function parseModel(): void
     {
 
-        //enum('sold_since','last_sold','first_sold','placed','wrote','deleted','edited','cancelled','charged','merged','created','associated','disassociate','register','login','logout','fail_login','password_request','password_reset','search')
+        // enum('sold_since','last_sold','first_sold','placed','wrote','deleted','edited','cancelled','charged','merged','created','associated','disassociate','register','login','logout','fail_login','password_request','password_reset','search')
         $event = match ($this->auroraModelData->{'Action'}) {
             'edited' => 'updated',
             default => $this->auroraModelData->{'Action'}
         };
 
-
         if ($event == 'created' and $this->auroraModelData->{'Indirect Object'} != '') {
-            print "*** Error: Created with indirect object\n";
+            echo "*** Error: Created with indirect object\n";
             print_r($this->auroraModelData);
 
             return;
         }
 
-
         $auditable = $this->parseAuditableFromHistory();
-        if (!$auditable) {
+        if (! $auditable) {
             return;
         }
 
@@ -49,21 +47,18 @@ class FetchAuroraHistory extends FetchAurora
             return;
         }
 
-
         $tags = $auditable->generateTags();
 
         $user = $this->parseUserFromHistory();
 
         $newValues = $this->parseHistoryNewValues($auditable, $event);
         $oldValues = $this->parseHistoryOldValues($auditable, $event);
-        $data      = $this->parseHistoryData($auditable, $event);
-
+        $data = $this->parseHistoryData($auditable, $event);
 
         $upload = $this->parseHistoryUpload();
         if ($upload) {
             data_set($data, 'upload_id', $upload->id);
         }
-
 
         if ($event == 'updated' and
             (
@@ -93,7 +88,6 @@ class FetchAuroraHistory extends FetchAurora
             }
         }
 
-
         if ($event == 'updated' and
             (
                 count($oldValues) == 0 or
@@ -106,26 +100,24 @@ class FetchAuroraHistory extends FetchAurora
             print_r($this->auroraModelData);
         }
 
-
         $this->parsedData['auditable'] = $auditable;
-        $this->parsedData['history']   =
+        $this->parsedData['history'] =
             [
 
-                'created_at'      => $this->auroraModelData->{'History Date'},
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'History Key'},
-                'fetched_at'      => now(),
+                'created_at' => $this->auroraModelData->{'History Date'},
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'History Key'},
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
-                'event'           => $event,
-                'tags'            => $tags,
-                'new_values'      => $newValues,
-                'old_values'      => $oldValues,
-                'data'            => $data,
+                'event' => $event,
+                'tags' => $tags,
+                'new_values' => $newValues,
+                'old_values' => $oldValues,
+                'data' => $data,
             ];
-
 
         if ($user) {
             $this->parsedData['history']['user_type'] = class_basename($user);
-            $this->parsedData['history']['user_id']   = $user->id;
+            $this->parsedData['history']['user_id'] = $user->id;
         }
 
         //        print_r($this->parsedData['history']);
@@ -137,14 +129,12 @@ class FetchAuroraHistory extends FetchAurora
         //        }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('History Dimension')
             ->where('History Key', $id)->first();
     }
-
 
     protected function parseAuditableFromHistory(): Customer|Location|Product|WarehouseArea|Prospect|null
     {
@@ -158,11 +148,9 @@ class FetchAuroraHistory extends FetchAurora
         };
     }
 
-
     protected function checkIfSkip($auditable, $event): bool
     {
         $skip = false;
-
 
         if ($event == 'updated') {
             $skip = true;
@@ -170,13 +158,13 @@ class FetchAuroraHistory extends FetchAurora
                 case $auditable instanceof Customer:
                     break;
                 case $auditable instanceof Location:
-                    $skip = !in_array($this->auroraModelData->{'Indirect Object'}, ['Location Code', 'Location Max Weight', 'Location Max Volume']);
+                    $skip = ! in_array($this->auroraModelData->{'Indirect Object'}, ['Location Code', 'Location Max Weight', 'Location Max Volume']);
                     break;
                 case $auditable instanceof Product:
-                    $skip = !in_array($this->auroraModelData->{'Indirect Object'}, ['Product Code', 'Product Price', 'Product Name', 'Product Status']);
+                    $skip = ! in_array($this->auroraModelData->{'Indirect Object'}, ['Product Code', 'Product Price', 'Product Name', 'Product Status']);
                     break;
                 case $auditable instanceof WarehouseArea:
-                    $skip = !in_array($this->auroraModelData->{'Indirect Object'}, ['Warehouse Area Code', 'Warehouse Area Name']);
+                    $skip = ! in_array($this->auroraModelData->{'Indirect Object'}, ['Warehouse Area Code', 'Warehouse Area Name']);
                     break;
                 case $auditable instanceof Prospect:
 
@@ -184,38 +172,34 @@ class FetchAuroraHistory extends FetchAurora
                         return true;
                     }
 
-
-                    $skip = !in_array($this->auroraModelData->{'Indirect Object'}, [
+                    $skip = ! in_array($this->auroraModelData->{'Indirect Object'}, [
                         'Prospect Website',
                         'Prospect Main Plain Email',
                         'Prospect Main Contact Name',
                         'Prospect Company Name',
                         'Prospect Contact Address',
-                        'Prospect Preferred Contact Number Formatted Number'
+                        'Prospect Preferred Contact Number Formatted Number',
                     ]);
 
                     if ($skip and
 
-                        !in_array(
+                        ! in_array(
                             $this->auroraModelData->{'Indirect Object'},
                             [
                                 'Prospect Preferred Contact Number',
-                                'Prospect Sticky Note'
+                                'Prospect Sticky Note',
                             ]
                         )
 
-
                     ) {
-                        print "Error unknown indirect object for skipping\n";
+                        echo "Error unknown indirect object for skipping\n";
                         print_r($this->auroraModelData);
 
                     }
 
-
                     break;
             }
         }
-
 
         return $skip;
     }
@@ -229,19 +213,17 @@ class FetchAuroraHistory extends FetchAurora
         return $this->parseHistoryUpdatedOldValues($auditable);
     }
 
-
     protected function parseHistoryUpload(): ?Upload
     {
-        $upload   = null;
+        $upload = null;
         $abstract = $this->auroraModelData->{'History Abstract'};
         if (preg_match('/change_view\(\'upload\/(\d+)/', $abstract, $matches)) {
             $uploadSourceId = $matches[1];
-            $upload         = $this->parseUpload($this->organisation->id.':'.$uploadSourceId);
+            $upload = $this->parseUpload($this->organisation->id.':'.$uploadSourceId);
         }
 
         return $upload;
     }
-
 
     protected function parseHistoryNewValues($auditable, string $event): array
     {
@@ -263,7 +245,6 @@ class FetchAuroraHistory extends FetchAurora
         return [];
     }
 
-
     private function getField()
     {
         return match ($this->auroraModelData->{'Indirect Object'}) {
@@ -282,6 +263,4 @@ class FetchAuroraHistory extends FetchAurora
             default => $this->auroraModelData->{'Indirect Object'}
         };
     }
-
-
 }

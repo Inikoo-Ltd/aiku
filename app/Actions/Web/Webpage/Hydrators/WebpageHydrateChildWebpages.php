@@ -9,8 +9,8 @@
 namespace App\Actions\Web\Webpage\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -33,7 +33,7 @@ class WebpageHydrateChildWebpages implements ShouldBeUnique
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'child_webpages',
+            model: 'child_webpages',
             field: 'state',
             enum: WebpageStateEnum::class,
             models: Webpage::class,
@@ -43,7 +43,7 @@ class WebpageHydrateChildWebpages implements ShouldBeUnique
         ));
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'child_webpages',
+            model: 'child_webpages',
             field: 'type',
             enum: WebpageTypeEnum::class,
             models: Webpage::class,
@@ -53,7 +53,7 @@ class WebpageHydrateChildWebpages implements ShouldBeUnique
         ));
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'child_webpages',
+            model: 'child_webpages',
             field: 'sub_type',
             enum: WebpageSubTypeEnum::class,
             models: Webpage::class,
@@ -64,6 +64,4 @@ class WebpageHydrateChildWebpages implements ShouldBeUnique
 
         $webpage->stats()->update($stats);
     }
-
-
 }

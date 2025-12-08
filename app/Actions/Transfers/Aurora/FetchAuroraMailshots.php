@@ -25,12 +25,11 @@ class FetchAuroraMailshots extends FetchAuroraAction
 
     public string $commandSignature = 'fetch:mailshots {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Mailshot
     {
         $this->organisationSource = $organisationSource;
-        $mailshotData             = $organisationSource->fetchMailshot($organisationSourceId);
-        if (!$mailshotData) {
+        $mailshotData = $organisationSource->fetchMailshot($organisationSourceId);
+        if (! $mailshotData) {
             return null;
         }
 
@@ -77,7 +76,6 @@ class FetchAuroraMailshots extends FetchAuroraAction
             }
         }
 
-
         $organisation = $organisationSource->getOrganisation();
 
         if ($mailshotData['source_template_id']) {
@@ -86,20 +84,18 @@ class FetchAuroraMailshots extends FetchAuroraAction
             if ($email) {
                 $mailshot->update(
                     [
-                        'email_id' => $email->id
+                        'email_id' => $email->id,
                     ]
                 );
             }
         }
 
-
         return $mailshot;
     }
 
-
     public function getModelsQuery(): Builder
     {
-        //enum('Newsletter','Marketing','GR Reminder','AbandonedCart','Invite Mailshot','OOS Notification','Invite Full Mailshot')
+        // enum('Newsletter','Marketing','GR Reminder','AbandonedCart','Invite Mailshot','OOS Notification','Invite Full Mailshot')
         $query = DB::connection('aurora')
             ->table('Email Campaign Dimension')
             ->whereIn('Email Campaign Type', ['Newsletter', 'Marketing', 'Invite Full Mailshot', 'AbandonedCart']);

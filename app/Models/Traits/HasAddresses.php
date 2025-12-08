@@ -18,5 +18,4 @@ trait HasAddresses
     {
         return $this->morphToMany(Address::class, 'model', 'model_has_addresses')->withPivot('scope', 'sub_scope', 'label', 'can_ship', 'is_historic', 'valid_until')->withTimestamps();
     }
-
 }

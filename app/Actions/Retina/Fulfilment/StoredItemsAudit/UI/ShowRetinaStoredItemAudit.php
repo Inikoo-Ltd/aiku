@@ -28,27 +28,25 @@ class ShowRetinaStoredItemAudit extends RetinaAction
         if ($this->customer->fulfilmentCustomer->id == $request->route()->parameter('storedItemAudit')->fulfilment_customer_id) {
             return true;
         }
+
         return false;
     }
-
 
     public function handle(StoredItemAudit $storedItemAudit): StoredItemAudit
     {
         return $storedItemAudit;
     }
 
-
     public function htmlResponse(StoredItemAudit $storedItemAudit, ActionRequest $request): Response
     {
         $subNavigation = [];
 
-        $title      = __("SKUs audit");
-        $icon       = ['fal', 'fa-pallet'];
+        $title = __('SKUs audit');
+        $icon = ['fal', 'fa-pallet'];
         $afterTitle = null;
-        $iconRight  = null;
+        $iconRight = null;
 
         $actions = [];
-
 
         return Inertia::render(
             'Storage/RetinaStoredItemsAudit',
@@ -57,52 +55,50 @@ class ShowRetinaStoredItemAudit extends RetinaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("SKUs audit"),
-                'pageHead'    => [
-                    'title'      => $title,
+                'title' => __('SKUs audit'),
+                'pageHead' => [
+                    'title' => $title,
                     'afterTitle' => $afterTitle,
-                    'iconRight'  => $iconRight,
-                    'icon'       => $icon,
+                    'iconRight' => $iconRight,
+                    'icon' => $icon,
                     'actions' => $actions,
                     'subNavigation' => $subNavigation,
                 ],
 
                 'notes_data' => [
                     [
-                        'label'    => __('Public'),
-                        'note'     => $storedItemAudit->public_notes ?? '',
+                        'label' => __('Public'),
+                        'note' => $storedItemAudit->public_notes ?? '',
                         'editable' => true,
-                        'bgColor'  => 'pink',
-                        'field'    => 'public_notes'
+                        'bgColor' => 'pink',
+                        'field' => 'public_notes',
                     ],
                 ],
 
                 'route_list' => [
                     'update' => [
-                        'name'       => '',
-                        'parameters' => []
-                    ]
+                        'name' => '',
+                        'parameters' => [],
+                    ],
                 ],
 
                 'storedItemsRoute' => [
-                    'index'  => [
-                        'name'       => '',
-                        'parameters' => []
+                    'index' => [
+                        'name' => '',
+                        'parameters' => [],
                     ],
-                    'store'  => [
-                        'name'       => '',
-                        'parameters' => []
+                    'store' => [
+                        'name' => '',
+                        'parameters' => [],
                     ],
                     'delete' => [
-                        'name' => ''
-                    ]
+                        'name' => '',
+                    ],
                 ],
 
-
-
-                'data'                => StoredItemAuditResource::make($storedItemAudit),
-                'pallets'             => PalletsResource::collection(IndexRetinaStoredItemDeltasInProcess::run($storedItemAudit, 'pallets')),
-                'fulfilment_customer' => FulfilmentCustomerResource::make($storedItemAudit->fulfilmentCustomer)->getArray()
+                'data' => StoredItemAuditResource::make($storedItemAudit),
+                'pallets' => PalletsResource::collection(IndexRetinaStoredItemDeltasInProcess::run($storedItemAudit, 'pallets')),
+                'fulfilment_customer' => FulfilmentCustomerResource::make($storedItemAudit->fulfilmentCustomer)->getArray(),
             ]
         )->table(
             IndexRetinaStoredItemDeltasInProcess::make()->tableStructure(fulfilmentCustomer: $storedItemAudit->fulfilmentCustomer, prefix: 'pallets')
@@ -121,11 +117,11 @@ class ShowRetinaStoredItemAudit extends RetinaAction
         $headCrumb = function (StoredItemAudit $storedItemAudit, array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('SKUs Audit')
+                            'label' => __('SKUs Audit'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -133,7 +129,7 @@ class ShowRetinaStoredItemAudit extends RetinaAction
                         ],
 
                     ],
-                    'suffix' => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
@@ -147,13 +143,13 @@ class ShowRetinaStoredItemAudit extends RetinaAction
                     $storedItemAudit,
                     [
                         'index' => [
-                            'name'       => 'retina.fulfilment.storage.stored-items-audits.index',
-                            'parameters' => []
+                            'name' => 'retina.fulfilment.storage.stored-items-audits.index',
+                            'parameters' => [],
                         ],
                         'model' => [
-                            'name'       => 'retina.fulfilment.storage.stored-items-audits.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'retina.fulfilment.storage.stored-items-audits.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )

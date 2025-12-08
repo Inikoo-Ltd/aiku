@@ -99,9 +99,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_org_stock_movements_type_audit
  * @property-read \App\Models\Inventory\OrgStock $orgStock
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats query()
+ *
  * @mixin \Eloquent
  */
 class OrgStockStats extends Model
@@ -109,7 +111,6 @@ class OrgStockStats extends Model
     protected $table = 'org_stock_stats';
 
     protected $guarded = [];
-
 
     public function orgStock(): BelongsTo
     {

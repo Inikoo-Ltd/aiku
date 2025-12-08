@@ -30,10 +30,10 @@ class GetDataTableRetinaBillingDashboard
         /** @var \App\Models\Accounting\Invoice $invoice */
         foreach ($invoices as $invoice) {
             $data[] = [
-                'reference'  => $invoice->reference,
+                'reference' => $invoice->reference,
                 'route' => route('retina.fulfilment.billing.invoices.show', $invoice->slug),
                 'total' => $invoice->total_amount,
-                'format'    => 'currency',
+                'format' => 'currency',
                 'currency_code' => $invoice->currency->code,
             ];
         }

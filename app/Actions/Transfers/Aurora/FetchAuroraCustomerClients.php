@@ -25,7 +25,6 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:customer_clients {organisations?*} {--s|source_id=} {--N|only_new : Fetch only new}  {--d|db_suffix=} {--r|reset}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?CustomerClient
     {
         $customerClientData = $organisationSource->fetchCustomerClient($organisationSourceId);
@@ -48,20 +47,20 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
                 //                    return null;
                 //                }
             } else {
-                //try {
+                // try {
 
-                $customer             = $customerClientData['customer'];
-                $platform             = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+                $customer = $customerClientData['customer'];
+                $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
                 $customerSalesChannel = $customer->customerSalesChannels()
                     ->where('platform_id', $platform->id)
                     ->first();
-                if (!$customerSalesChannel) {
+                if (! $customerSalesChannel) {
                     $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
                         customer: $customer,
                         platform: $platform,
                         modelData: [
-                            'reference' => (string)$customer->id,
-                            'name'      => (string)$customer->name,
+                            'reference' => (string) $customer->id,
+                            'name' => (string) $customer->name,
                         ],
                         hydratorsDelay: $this->hydratorsDelay
                     );
@@ -92,7 +91,6 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
                 //                    return null;
                 //                }
             }
-
 
             return $customerClient;
         }
@@ -138,5 +136,4 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
     {
         DB::connection('aurora')->table('Customer Client Dimension')->update(['aiku_id' => null]);
     }
-
 }

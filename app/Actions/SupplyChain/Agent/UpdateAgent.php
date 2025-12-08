@@ -27,8 +27,8 @@ class UpdateAgent extends GrpAction
 {
     use WithActionUpdate;
 
-
     private Agent $agent;
+
     private bool $action = false;
 
     public function handle(Agent $agent, array $modelData): Agent
@@ -37,18 +37,18 @@ class UpdateAgent extends GrpAction
             'source_id',
             'source_slug',
             'status',
-            'last_fetched_at'
+            'last_fetched_at',
         ]));
 
         $agent = $this->update($agent, Arr::only($modelData, [
             'status',
             'code',
             'name',
-            'last_fetched_at'
+            'last_fetched_at',
         ]));
         if ($agent->wasChanged('status')) {
             foreach ($agent->orgAgents as $orgAgent) {
-                if (!$agent->status) {
+                if (! $agent->status) {
                     UpdateOrgAgent::make()->action($orgAgent, ['status' => false]);
                 }
                 OrganisationHydrateOrgAgents::dispatch($orgAgent->organisation)->delay($this->hydratorsDelay);
@@ -57,7 +57,6 @@ class UpdateAgent extends GrpAction
         }
 
         AgentRecordSearch::dispatch($agent);
-
 
         return $agent;
     }
@@ -68,13 +67,13 @@ class UpdateAgent extends GrpAction
             return true;
         }
 
-        return $request->user()->authTo("supply-chain.".$this->group->id.".edit");
+        return $request->user()->authTo('supply-chain.'.$this->group->id.'.edit');
     }
 
     public function rules(): array
     {
         $rules = [
-            'code'         => [
+            'code' => [
                 'sometimes',
                 'required',
                 'max:12',
@@ -84,26 +83,26 @@ class UpdateAgent extends GrpAction
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->agent->organisation->id
+                            'value' => $this->agent->organisation->id,
                         ],
                     ]
                 ),
             ],
-            'name'         => ['sometimes', 'required', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
             'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'        => ['sometimes', 'nullable', 'email'],
-            'phone'        => ['sometimes', 'nullable', new Phone()],
-            'address'      => ['sometimes', 'required', new ValidAddress()],
-            'currency_id'  => ['sometimes', 'required', 'exists:currencies,id'],
-            'country_id'   => ['sometimes', 'required', 'exists:countries,id'],
-            'timezone_id'  => ['sometimes', 'required', 'exists:timezones,id'],
-            'language_id'  => ['sometimes', 'required', 'exists:languages,id'],
-            'status'       => ['sometimes', 'required', 'boolean'],
+            'email' => ['sometimes', 'nullable', 'email'],
+            'phone' => ['sometimes', 'nullable', new Phone],
+            'address' => ['sometimes', 'required', new ValidAddress],
+            'currency_id' => ['sometimes', 'required', 'exists:currencies,id'],
+            'country_id' => ['sometimes', 'required', 'exists:countries,id'],
+            'timezone_id' => ['sometimes', 'required', 'exists:timezones,id'],
+            'language_id' => ['sometimes', 'required', 'exists:languages,id'],
+            'status' => ['sometimes', 'required', 'boolean'],
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules['last_fetched_at'] = ['sometimes', 'date'];
         }
 
@@ -112,13 +111,13 @@ class UpdateAgent extends GrpAction
 
     public function action(Agent $agent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Agent
     {
-        if (!$audit) {
+        if (! $audit) {
             Agent::disableAuditing();
         }
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->strict         = $strict;
-        $this->agent          = $agent;
-        $this->action         = true;
+        $this->strict = $strict;
+        $this->agent = $agent;
+        $this->action = true;
         $this->initialisation($agent->group, $modelData);
 
         return $this->handle($agent, $this->validatedData);
@@ -131,7 +130,6 @@ class UpdateAgent extends GrpAction
 
         return $this->handle($agent, $this->validatedData);
     }
-
 
     public function jsonResponse(Agent $agent): AgentsResource
     {

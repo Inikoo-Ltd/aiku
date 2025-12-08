@@ -10,14 +10,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ProductCategoriesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class ProductCategoriesExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|ProductCategory|Builder
     {
         return ProductCategory::query();
     }
 
-    /** @var ProductCategory $row */
+    /** @var ProductCategory */
     public function map($row): array
     {
         return [
@@ -26,7 +26,7 @@ class ProductCategoriesExport implements FromQuery, WithMapping, ShouldAutoSize,
             $row->shop->name,
             $row->type,
             $row->state->value,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -39,7 +39,7 @@ class ProductCategoriesExport implements FromQuery, WithMapping, ShouldAutoSize,
             'Type',
             'Is Family',
             'State',
-            'Created At'
+            'Created At',
         ];
     }
 }

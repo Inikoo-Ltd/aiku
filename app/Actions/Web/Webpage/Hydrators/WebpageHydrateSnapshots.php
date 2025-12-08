@@ -45,9 +45,6 @@ class WebpageHydrateSnapshots implements ShouldBeUnique
             )
         );
 
-
         $webpage->stats()->update($stats);
     }
-
-
 }

@@ -23,19 +23,17 @@ class FamiliesSelectResource extends JsonResource
     public function toArray($request): array
     {
 
-
-
         return [
-            'id'                 => $this->id,
-            'slug'               => $this->slug,
-            'code'                     => $this->code,
-            'name'                     => $this->name,
-            'state'              => [
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'state' => [
                 'tooltip' => $this->state->labels()[$this->state->value],
-                'icon'    => $this->state->stateIcon()[$this->state->value]['icon'],
-                'class'   => $this->state->stateIcon()[$this->state->value]['class']
+                'icon' => $this->state->stateIcon()[$this->state->value]['icon'],
+                'class' => $this->state->stateIcon()[$this->state->value]['class'],
             ],
-            'number_current_products'  => $this->number_current_products,
+            'number_current_products' => $this->number_current_products,
 
         ];
     }

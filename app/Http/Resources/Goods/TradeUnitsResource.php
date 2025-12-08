@@ -26,18 +26,18 @@ class TradeUnitsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'                    => $this->slug,
-            'code'                    => $this->code,
-            'name'                    => $this->name,
-            'weight'                  => $this->net_weight !== null ? ($this->net_weight).' g' : null,
-            'type'                    => $this->type,
-            'number_current_stocks'   => $this->number_current_stocks,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'weight' => $this->net_weight !== null ? ($this->net_weight).' g' : null,
+            'type' => $this->type,
+            'number_current_stocks' => $this->number_current_stocks,
             'number_current_products' => $this->number_current_products,
-            'id'                      => $this->id,
-            'quantity'                => $this->quantity ?? null,
-            'status'                  => $this->status,
-            'status_icon'             => $this->status ? $this->status->icon()[$this->status->value] : null,
-            'media'                   => null
+            'id' => $this->id,
+            'quantity' => $this->quantity ?? null,
+            'status' => $this->status,
+            'status_icon' => $this->status ? $this->status->icon()[$this->status->value] : null,
+            'media' => null,
         ];
     }
 }

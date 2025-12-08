@@ -24,7 +24,7 @@ enum ShipperTabsEnum: string
         return match ($this) {
             ShipperTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
         };
     }

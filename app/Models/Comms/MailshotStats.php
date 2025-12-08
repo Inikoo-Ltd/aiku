@@ -45,9 +45,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_opened_interact_failure
  * @property int $number_opened_interact_success
  * @property-read \App\Models\Comms\Mailshot|null $mailshot
+ *
  * @method static Builder<static>|MailshotStats newModelQuery()
  * @method static Builder<static>|MailshotStats newQuery()
  * @method static Builder<static>|MailshotStats query()
+ *
  * @mixin Eloquent
  */
 class MailshotStats extends Model

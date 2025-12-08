@@ -18,13 +18,14 @@ class ImportUserHistoriesFromCsv
 {
     use AsAction;
 
-    public string $commandSignature   = 'import:user_histories {filename}';
+    public string $commandSignature = 'import:user_histories {filename}';
+
     public string $commandDescription = 'Import user histories from old data';
 
     public function handle(string $filename): void
     {
         Excel::import(
-            new HistoryImport(),
+            new HistoryImport,
             Storage::disk('datasets')->path($filename),
             null,
             \Maatwebsite\Excel\Excel::CSV
@@ -33,8 +34,9 @@ class ImportUserHistoriesFromCsv
 
     public function asCommand(Command $command): int
     {
-        if (!Storage::disk('datasets')->exists($command->argument('filename'))) {
+        if (! Storage::disk('datasets')->exists($command->argument('filename'))) {
             $command->error('File doesnt exists');
+
             return 1;
         }
 

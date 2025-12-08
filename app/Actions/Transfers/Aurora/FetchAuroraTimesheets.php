@@ -27,7 +27,7 @@ class FetchAuroraTimesheets extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Timesheet
     {
         if ($timesheetData = $organisationSource->fetchTimesheet($organisationSourceId)) {
-            if (!$timesheetData['employee'] or $timesheetData['employee']->trashed()) {
+            if (! $timesheetData['employee'] or $timesheetData['employee']->trashed()) {
                 return null;
             }
 
@@ -59,7 +59,6 @@ class FetchAuroraTimesheets extends FetchAuroraAction
 
                     return null;
                 }
-
 
             }
 
@@ -121,6 +120,4 @@ class FetchAuroraTimesheets extends FetchAuroraAction
     {
         return DB::connection('aurora')->table('Timesheet Dimension')->count();
     }
-
-
 }

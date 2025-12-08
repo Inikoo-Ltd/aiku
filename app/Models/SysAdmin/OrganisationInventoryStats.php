@@ -81,9 +81,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_org_stock_movements_type_audit
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static Builder<static>|OrganisationInventoryStats newModelQuery()
  * @method static Builder<static>|OrganisationInventoryStats newQuery()
  * @method static Builder<static>|OrganisationInventoryStats query()
+ *
  * @mixin Eloquent
  */
 class OrganisationInventoryStats extends Model

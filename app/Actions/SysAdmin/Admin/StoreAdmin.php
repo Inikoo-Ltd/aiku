@@ -28,9 +28,9 @@ class StoreAdmin
     public function rules(): array
     {
         return [
-            'code'     => ['required', new AlphaDashDot(), 'unique:App\Models\SysAdmin\Admin,code'],
-            'name'     => 'sometimes|required',
-            'email'    => ['required', 'email', 'unique:App\Models\SysAdmin\Admin,email'],
+            'code' => ['required', new AlphaDashDot, 'unique:App\Models\SysAdmin\Admin,code'],
+            'name' => 'sometimes|required',
+            'email' => ['required', 'email', 'unique:App\Models\SysAdmin\Admin,email'],
         ];
     }
 
@@ -38,9 +38,9 @@ class StoreAdmin
     {
         $this->fill($modelData);
         $validatedData = $this->validateAttributes();
+
         return $this->handle($validatedData);
     }
-
 
     public string $commandSignature = 'create:admin
     {code : will be used as username}
@@ -56,24 +56,22 @@ class StoreAdmin
     {
 
         $this->fill([
-            'code'     => $command->argument('code'),
-            'name'     => $command->argument('name'),
-            'email'    => $command->argument('email'),
+            'code' => $command->argument('code'),
+            'name' => $command->argument('name'),
+            'email' => $command->argument('email'),
         ]);
 
         try {
             $validatedData = $this->validateAttributes();
         } catch (Exception $e) {
             $command->error($e->getMessage());
+
             return 1;
         }
 
         $admin = $this->handle($validatedData);
         $command->line(" admin created $admin->code");
 
-
-
         return 0;
     }
-
 }

@@ -14,10 +14,10 @@ use App\Actions\RetinaAction;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Inventory\Warehouse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Redirect;
 
 class StoreRetinaPalletDelivery extends RetinaAction
 {
@@ -26,7 +26,6 @@ class StoreRetinaPalletDelivery extends RetinaAction
         return StorePalletDelivery::run($fulfilmentCustomer, $modelData);
     }
 
-
     public function prepareForValidation(ActionRequest $request): void
     {
         /** @var Warehouse $warehouse */
@@ -34,11 +33,10 @@ class StoreRetinaPalletDelivery extends RetinaAction
         $this->fill(['warehouse_id' => $warehouse->id]);
     }
 
-
     public function rules(): array
     {
         return [
-            'warehouse_id'   => [
+            'warehouse_id' => [
                 'required',
                 'integer',
                 Rule::exists('warehouses', 'id')
@@ -50,25 +48,22 @@ class StoreRetinaPalletDelivery extends RetinaAction
     public function asController(ActionRequest $request): PalletDelivery
     {
         $this->initialisation($request);
+
         return $this->handle($this->customer->fulfilmentCustomer, $this->validatedData);
     }
-
-
 
     public function action(FulfilmentCustomer $fulfilmentCustomer, array $modelData): PalletDelivery
     {
         $this->asAction = true;
         $this->initialisationFulfilmentActions($fulfilmentCustomer, $modelData);
+
         return $this->handle($fulfilmentCustomer, $this->validatedData);
     }
 
-
     public function htmlResponse(PalletDelivery $palletDelivery, ActionRequest $request): Response
     {
-        return  Redirect::route('retina.fulfilment.storage.pallet_deliveries.show', [
-            'palletDelivery' => $palletDelivery->slug
+        return Redirect::route('retina.fulfilment.storage.pallet_deliveries.show', [
+            'palletDelivery' => $palletDelivery->slug,
         ]);
     }
-
-
 }

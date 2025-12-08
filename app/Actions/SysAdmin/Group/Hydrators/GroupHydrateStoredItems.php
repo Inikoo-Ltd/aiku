@@ -30,11 +30,11 @@ class GroupHydrateStoredItems implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_stored_items' => StoredItem::where('group_id', $group->id)->count()
+            'number_stored_items' => StoredItem::where('group_id', $group->id)->count(),
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'stored_items',
+            model: 'stored_items',
             field: 'state',
             enum: StoredItemStateEnum::class,
             models: StoredItem::class,

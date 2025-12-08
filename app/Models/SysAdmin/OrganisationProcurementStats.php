@@ -102,9 +102,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static Builder<static>|OrganisationProcurementStats newModelQuery()
  * @method static Builder<static>|OrganisationProcurementStats newQuery()
  * @method static Builder<static>|OrganisationProcurementStats query()
+ *
  * @mixin Eloquent
  */
 class OrganisationProcurementStats extends Model

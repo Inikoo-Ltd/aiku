@@ -36,12 +36,7 @@ class ShopifyApiResponseException extends Exception
     /**
      * Create a new API response exception.
      *
-     * @param string $message
-     * @param array|string $responseData
-     * @param int|null $statusCode
-     * @param string $service
-     * @param int $code
-     * @param \Throwable|null $previous
+     * @param  array|string  $responseData
      * @return void
      */
     public function __construct(
@@ -50,7 +45,7 @@ class ShopifyApiResponseException extends Exception
         ?int $statusCode = null,
         string $service = 'API',
         int $code = 0,
-        \Throwable $previous = null
+        ?\Throwable $previous = null
     ) {
         parent::__construct($message, $code, $previous);
 
@@ -71,8 +66,6 @@ class ShopifyApiResponseException extends Exception
 
     /**
      * Get the HTTP status code.
-     *
-     * @return int|null
      */
     public function getStatusCode(): ?int
     {
@@ -81,8 +74,6 @@ class ShopifyApiResponseException extends Exception
 
     /**
      * Get the API service name.
-     *
-     * @return string
      */
     public function getService(): string
     {
@@ -92,8 +83,7 @@ class ShopifyApiResponseException extends Exception
     /**
      * Create a new exception instance for Shopify API errors.
      *
-     * @param array|string $errors
-     * @param int|null $statusCode
+     * @param  array|string  $errors
      * @return static
      */
     public static function shopify($errors, ?int $statusCode = null): self
@@ -111,9 +101,7 @@ class ShopifyApiResponseException extends Exception
     /**
      * Create a new exception instance for Magento API errors.
      *
-     * @param string $message
-     * @param array|string $responseData
-     * @param int|null $statusCode
+     * @param  array|string  $responseData
      * @return static
      */
     public static function magento(string $message, $responseData = [], ?int $statusCode = null): self

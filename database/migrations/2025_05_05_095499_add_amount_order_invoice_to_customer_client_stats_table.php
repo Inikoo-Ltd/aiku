@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('customer_client_stats', function (Blueprint $table) {
@@ -21,7 +22,6 @@ return new class () extends Migration {
             $table->decimal('current_orders_amount', 16)->default(0)->comment('Total amount of orders has state submitted, in_warehouse, handling, handling_blocked, packed, finalised');
         });
     }
-
 
     public function down(): void
     {

@@ -36,10 +36,10 @@ beforeAll(function () {
 beforeEach(function () {
 
     $this->organisation = createOrganisation();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
+    $this->adminGuest = createAdminGuest($this->organisation->group);
 
     $production = Production::first();
-    if (!$production) {
+    if (! $production) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
 
@@ -51,7 +51,7 @@ beforeEach(function () {
     $this->production = $production;
 
     $artefact = Artefact::first();
-    if (!$artefact) {
+    if (! $artefact) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
 
@@ -63,7 +63,7 @@ beforeEach(function () {
     $this->artefact = $artefact;
 
     $rawMaterial = RawMaterial::first();
-    if (!$rawMaterial) {
+    if (! $rawMaterial) {
         data_set($storeData, 'type', RawMaterialTypeEnum::CONSUMABLE->value);
         data_set($storeData, 'state', RawMaterialStateEnum::ORPHAN->value);
         data_set($storeData, 'code', 'CODE');
@@ -79,7 +79,7 @@ beforeEach(function () {
     $this->rawMaterial = $rawMaterial;
 
     $manufactureTask = ManufactureTask::first();
-    if (!$manufactureTask) {
+    if (! $manufactureTask) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'name');
         data_set($storeData, 'task_materials_cost', 10);
@@ -129,8 +129,8 @@ test('UI show production', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->production->name)
-                        ->etc()
+                    ->where('title', $this->production->name)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -168,8 +168,8 @@ test('UI show raw material', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->rawMaterial->code)
-                        ->etc()
+                    ->where('title', $this->rawMaterial->code)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -219,8 +219,8 @@ test('UI show artifact', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->artefact->name)
-                        ->etc()
+                    ->where('title', $this->artefact->name)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -232,7 +232,7 @@ test('UI show artifact (manufacture task tab)', function () {
         $this->organisation->slug,
         $this->production->slug,
         $this->artefact->slug,
-        'tab' => 'manufacture_tasks'
+        'tab' => 'manufacture_tasks',
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -242,8 +242,8 @@ test('UI show artifact (manufacture task tab)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->artefact->name)
-                        ->etc()
+                    ->where('title', $this->artefact->name)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -293,8 +293,8 @@ test('UI show production task', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->manufactureTask->name)
-                        ->etc()
+                    ->where('title', $this->manufactureTask->name)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -306,7 +306,7 @@ test('UI show production task (Artefacts tab)', function () {
         $this->organisation->slug,
         $this->production->slug,
         $this->manufactureTask->slug,
-        'tab' => 'artefact'
+        'tab' => 'artefact',
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -316,8 +316,8 @@ test('UI show production task (Artefacts tab)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->manufactureTask->name)
-                        ->etc()
+                    ->where('title', $this->manufactureTask->name)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -339,7 +339,7 @@ test('UI edit manufacture task', function () {
 test('UI get section route craft index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.productions.show.crafts.manufacture_tasks.index', [
         'organisation' => $this->organisation->slug,
-        'production'      => $this->production->slug
+        'production' => $this->production->slug,
     ]);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->organisation_id)->toBe($this->organisation->id)
@@ -350,7 +350,7 @@ test('UI get section route craft index', function () {
 test('UI get section route operation dashboard', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.productions.show.operations.dashboard', [
         'organisation' => $this->organisation->slug,
-        'production'      => $this->production->slug
+        'production' => $this->production->slug,
     ]);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->organisation_id)->toBe($this->organisation->id)

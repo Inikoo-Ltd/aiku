@@ -54,10 +54,9 @@ class ImportSupplierProducts extends GrpAction
     public function rules(): array
     {
         return [
-            'file'             => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
+            'file' => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
         ];
     }
-
 
     public function asController(Supplier $supplier, ActionRequest $request): Upload
     {
@@ -74,6 +73,7 @@ class ImportSupplierProducts extends GrpAction
         if ($supplierSlug = $command->argument('supplier')) {
             $supplier = Supplier::where('slug', $supplierSlug)->first();
         }
+
         return $this->handle($supplier, $file, []);
     }
 

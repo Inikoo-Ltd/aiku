@@ -19,73 +19,71 @@ class CurrencySeeder extends Seeder
 {
     public function run()
     {
-        $currencyRepository = new CurrencyRepository();
+        $currencyRepository = new CurrencyRepository;
 
         foreach ($currencyRepository->getAll() as $currency) {
-            $symbol = match($currency->getCurrencyCode()) {
-                'AFN'   => '؋',
-                'ALL'   => 'L',
-                'DZD'   => 'دج',
-                'AOA'   => 'Kz',
-                'ARS'   => '$',
-                'AMD'   => '֏',
-                'AWG'   => 'ƒ',
-                'AZN'   => '₼',
-                'BSD'   => 'B$',
-                'BHD'   => 'د.ب',
-                'BDT'   => '৳',
-                'BBD'   => 'Bds$',
-                'BZD'   => '$',
-                'BMD'   => '$',
-                'BTN'   => 'Nu.',
-                'VED'   => 'Bs',
-                'BOB'   => 'Bs',
-                'BAM'   => 'KM',
-                'BWP'   => 'P',
-                'BND'   => 'B$',
-                'BGN'   => 'Лв',
-                'BIF'   => 'FBu',
-                'KHR'   => '៛',
-                'CVE'   => 'Esc',
-                'KYD'   => '$',
-                'XPF'   => '₣',
-                'CLP'   => '$',
-                'COP'   => '$',
-                'KMF'   => 'CF',
-                'CDF'   => 'FC',
-                'CRC'   => '₡',
-                'CUC'   => 'CUC$',
-                'CUP'   => '₱',
-                'CZK'   => 'Kč',
-                'DKK'   => 'Kr',
-                'DJF'   => 'Fdj',
-                'DOP'   => 'RD$',
+            $symbol = match ($currency->getCurrencyCode()) {
+                'AFN' => '؋',
+                'ALL' => 'L',
+                'DZD' => 'دج',
+                'AOA' => 'Kz',
+                'ARS' => '$',
+                'AMD' => '֏',
+                'AWG' => 'ƒ',
+                'AZN' => '₼',
+                'BSD' => 'B$',
+                'BHD' => 'د.ب',
+                'BDT' => '৳',
+                'BBD' => 'Bds$',
+                'BZD' => '$',
+                'BMD' => '$',
+                'BTN' => 'Nu.',
+                'VED' => 'Bs',
+                'BOB' => 'Bs',
+                'BAM' => 'KM',
+                'BWP' => 'P',
+                'BND' => 'B$',
+                'BGN' => 'Лв',
+                'BIF' => 'FBu',
+                'KHR' => '៛',
+                'CVE' => 'Esc',
+                'KYD' => '$',
+                'XPF' => '₣',
+                'CLP' => '$',
+                'COP' => '$',
+                'KMF' => 'CF',
+                'CDF' => 'FC',
+                'CRC' => '₡',
+                'CUC' => 'CUC$',
+                'CUP' => '₱',
+                'CZK' => 'Kč',
+                'DKK' => 'Kr',
+                'DJF' => 'Fdj',
+                'DOP' => 'RD$',
                 default => $currency->getSymbol()
             };
             Currency::UpdateOrCreate(
                 ['code' => $currency->getCurrencyCode()],
                 [
-                    'name'            => $currency->getName(),
-                    'symbol'          => $symbol,
+                    'name' => $currency->getName(),
+                    'symbol' => $symbol,
                     'fraction_digits' => $currency->getFractionDigits(),
-
 
                 ]
             );
         }
 
-        $countryRepository = new CountryRepository();
-        $countryList       = $countryRepository->getList('en-GB');
+        $countryRepository = new CountryRepository;
+        $countryList = $countryRepository->getList('en-GB');
         foreach ($countryList as $countryCode => $countryName) {
             if ($country = Country::where('code', $countryCode)->first()) {
                 $_country = $countryRepository->get($countryCode);
-
 
                 if ($currency = Currency::where('code', $_country->getCurrencyCode())->first()) {
                     $country->currency_id = $currency->id;
                     $country->save();
                 } else {
-                    print "Currency not found : {$_country->getCurrencyCode()} for country $countryCode\n";
+                    echo "Currency not found : {$_country->getCurrencyCode()} for country $countryCode\n";
                 }
             }
         }

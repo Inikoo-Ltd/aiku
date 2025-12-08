@@ -50,29 +50,31 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Production\Production $production
  * @property-read \App\Models\Production\RawMaterialStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class RawMaterial extends Model implements Auditable
 {
-    use InProduction;
-    use SoftDeletes;
+    use HasHistory;
     use HasSlug;
     use HasUniversalSearch;
-    use HasHistory;
+    use InProduction;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     protected $casts = [
-        'data'         => 'array',
-        'type'         => RawMaterialTypeEnum::class,
-        'state'        => RawMaterialStateEnum::class,
-        'unit'         => RawMaterialUnitEnum::class,
+        'data' => 'array',
+        'type' => RawMaterialTypeEnum::class,
+        'state' => RawMaterialStateEnum::class,
+        'unit' => RawMaterialUnitEnum::class,
         'stock_status' => RawMaterialStockStatusEnum::class,
     ];
 
@@ -107,5 +109,4 @@ class RawMaterial extends Model implements Auditable
     {
         return $this->belongsTo(Organisation::class);
     }
-
 }

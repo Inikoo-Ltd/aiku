@@ -22,9 +22,8 @@ class ShowSysAdminAnalyticsDashboard extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("sysadmin.view");
+        return $request->user()->authTo('sysadmin.view');
     }
-
 
     public function handle(Group $group): Group
     {
@@ -39,19 +38,19 @@ class ShowSysAdminAnalyticsDashboard extends OrgAction
         return $this->handle($group);
     }
 
-
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
         $subNavigation = $this->getAnalyticsNavigation($this->group, $request);
+
         return Inertia::render(
             'SysAdmin/SysAdminAnalyticsDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('System analytics'),
-                'pageHead'    => [
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-analytics'],
-                        'title' => __('System analytics')
+                'title' => __('System analytics'),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-analytics'],
+                        'title' => __('System analytics'),
                     ],
                     'title' => __('System analytics'),
                     'subNavigation' => $subNavigation,
@@ -71,14 +70,14 @@ class ShowSysAdminAnalyticsDashboard extends OrgAction
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.sysadmin.analytics.dashboard'
+                                'name' => 'grp.sysadmin.analytics.dashboard',
                             ],
                             'label' => __('analytics'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

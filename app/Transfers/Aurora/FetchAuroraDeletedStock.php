@@ -19,14 +19,13 @@ class FetchAuroraDeletedStock extends FetchAurora
     {
         $deleted_at = $this->parseDatetime($this->auroraModelData->{'Part Deleted Date'});
 
-        if (!$deleted_at) {
-            print "Deleted stock no date\n";
+        if (! $deleted_at) {
+            echo "Deleted stock no date\n";
 
             return;
         }
 
         $auroraDeletedData = json_decode(gzuncompress($this->auroraModelData->{'Part Deleted Metadata'}));
-
 
         if ($this->auroraModelData->{'Part Deleted Reference'} == '') {
             $code = 'unknown-'.$this->auroraModelData->{'Part Deleted Key'};
@@ -34,8 +33,8 @@ class FetchAuroraDeletedStock extends FetchAurora
             $code = strtolower($this->auroraModelData->{'Part Deleted Reference'});
         }
 
-        $code       = $this->cleanTradeUnitReference($code);
-        $code       .= '-deleted';
+        $code = $this->cleanTradeUnitReference($code);
+        $code .= '-deleted';
         $sourceSlug = Str::kebab(strtolower($code));
 
         $name = $auroraDeletedData->{'Part Recommended Product Unit Name'} ?? $code;
@@ -43,31 +42,29 @@ class FetchAuroraDeletedStock extends FetchAurora
 
         $this->parsedData['stock'] =
             [
-                'name'            => $name,
-                'code'            => $code,
-                'deleted_at'      => $deleted_at,
-                'created_at'      => $auroraDeletedData->{'Part Valid From'} ?? null,
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Part Deleted Key'},
-                'source_slug'     => $sourceSlug,
-                'state'           => StockStateEnum::DISCONTINUED,
-                'fetched_at'      => now(),
+                'name' => $name,
+                'code' => $code,
+                'deleted_at' => $deleted_at,
+                'created_at' => $auroraDeletedData->{'Part Valid From'} ?? null,
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Part Deleted Key'},
+                'source_slug' => $sourceSlug,
+                'state' => StockStateEnum::DISCONTINUED,
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
             ];
 
-
         $this->parsedData['org_stock'] = [
-            'state'           => OrgStockStateEnum::DISCONTINUED,
+            'state' => OrgStockStateEnum::DISCONTINUED,
             'quantity_status' => 'out-of-stock',
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Part Deleted Key'},
-            'source_slug'     => $sourceSlug,
-            'deleted_at'      => $deleted_at,
-            'fetched_at'      => now(),
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Part Deleted Key'},
+            'source_slug' => $sourceSlug,
+            'deleted_at' => $deleted_at,
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Part Deleted Dimension')

@@ -16,20 +16,20 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class SuppliersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class SuppliersExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|\App\Models\SupplyChain\Supplier|Builder
     {
         return Supplier::query();
     }
 
-    /** @var Supplier $row */
+    /** @var Supplier */
     public function map($row): array
     {
         return [
             $row->id,
             $row->slug,
-            !isset($row->agent),
+            ! isset($row->agent),
             isset($row->agent) ? $row->agent->name : null,
             $row->name,
             $row->email,
@@ -38,7 +38,7 @@ class SuppliersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             $row->currency->code,
             $row->type,
             $row->location,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -56,7 +56,7 @@ class SuppliersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             'Currency',
             'Type',
             'Location',
-            'Created At'
+            'Created At',
         ];
     }
 }

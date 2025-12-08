@@ -34,9 +34,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property-read \App\Models\Inventory\Warehouse $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trolley newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trolley newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trolley query()
+ *
  * @mixin \Eloquent
  */
 class Trolley extends Model

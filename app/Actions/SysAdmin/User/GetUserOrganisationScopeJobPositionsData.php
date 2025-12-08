@@ -22,8 +22,6 @@ class GetUserOrganisationScopeJobPositionsData
 
         $organisationsWhereUserIsEmployee = $user->employees()->pluck('employees.organisation_id')->toArray();
 
-
-
         if (in_array($organisation->id, $organisationsWhereUserIsEmployee)) {
             // get job positions data from the employee
             $employee = $user->employees()->where('employees.organisation_id', $organisation->id)->first();
@@ -31,16 +29,16 @@ class GetUserOrganisationScopeJobPositionsData
             return GetEmployeeJobPositionsData::run($employee);
         } else {
             return $user->pseudoJobPositions()->wherePivot('user_has_pseudo_job_positions.organisation_id', $organisation->id)->get()->map(function ($jobPosition) use ($organisation) {
-                $scopes = collect($jobPosition->pivot->scopes)->mapWithKeys(function ($scopeIds, $scope) use ($jobPosition, $organisation) {
+                $scopes = collect($jobPosition->pivot->scopes)->mapWithKeys(function ($scopeIds, $scope) use ($organisation) {
                     return match ($scope) {
                         'Warehouse' => [
-                            'warehouses' => $organisation->warehouses->whereIn('id', $scopeIds)->pluck('slug')->toArray()
+                            'warehouses' => $organisation->warehouses->whereIn('id', $scopeIds)->pluck('slug')->toArray(),
                         ],
                         'Shop' => [
-                            'shops' => $organisation->shops->whereIn('id', $scopeIds)->pluck('slug')->toArray()
+                            'shops' => $organisation->shops->whereIn('id', $scopeIds)->pluck('slug')->toArray(),
                         ],
                         'Fulfilment' => [
-                            'fulfilments' => $organisation->fulfilments->whereIn('id', $scopeIds)->pluck('slug')->toArray()
+                            'fulfilments' => $organisation->fulfilments->whereIn('id', $scopeIds)->pluck('slug')->toArray(),
                         ],
                         default => []
                     };

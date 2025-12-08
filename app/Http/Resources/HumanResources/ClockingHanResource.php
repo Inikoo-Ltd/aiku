@@ -21,10 +21,11 @@ class ClockingHanResource extends JsonResource
     {
         /** @var Clocking $clocking */
         $clocking = $this;
+
         return [
-            'id'         => $clocking->id,
+            'id' => $clocking->id,
             'clocked_at' => $clocking->clocked_at,
-            'photo'      => $clocking->imageSources()
+            'photo' => $clocking->imageSources(),
         ];
     }
 }

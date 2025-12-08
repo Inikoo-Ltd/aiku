@@ -29,7 +29,7 @@ class FetchAuroraShippers extends FetchAuroraAction
                 ->first()) {
 
                 $shipper = UpdateShipper::make()->action(
-                    shipper:   $shipper,
+                    shipper: $shipper,
                     modelData: $shipperData['shipper'],
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
@@ -60,11 +60,11 @@ class FetchAuroraShippers extends FetchAuroraAction
                         ->update(['aiku_id' => $shipper->id]);
                 } catch (Exception|Throwable $e) {
                     $this->recordError($organisationSource, $e, $shipperData['shipper'], 'Shipper', 'store');
+
                     return null;
                 }
 
             }
-
 
             return $shipper;
         }
@@ -80,7 +80,6 @@ class FetchAuroraShippers extends FetchAuroraAction
             ->where('Shipper Active', 'Yes')
             ->orderBy('source_id');
     }
-
 
     public function count(): ?int
     {

@@ -32,13 +32,14 @@ class ReorderModelHasContent extends OrgAction
     public function rules(): array
     {
         return [
-            'positions' => ['required', 'array']
+            'positions' => ['required', 'array'],
         ];
     }
 
     public function action(Product|ProductCategory $parent, array $modelData)
     {
         $this->initialisationFromShop($parent->shop, $modelData);
+
         return $this->handle($parent, $this->validatedData);
     }
 }

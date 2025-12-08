@@ -14,9 +14,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
     use HasSalesTransactionParents;
+
     public function up(): void
     {
         Schema::create('delivery_notes', function (Blueprint $table) {
@@ -38,7 +40,6 @@ return new class () extends Migration {
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
 
-
             $table->boolean('delivery_locked')->default(false);
 
             $table->unsignedInteger('address_id')->index()->nullable();
@@ -52,10 +53,8 @@ return new class () extends Migration {
 
             $table->boolean('has_out_of_stocks')->default(false);
 
-
             $table->decimal('picking_percentage', 5, 2)->default(0);
             $table->decimal('packing_percentage', 5, 2)->default(0);
-
 
             $table->unsignedSmallInteger('picker_id')->nullable()->index()->comment('Main picker');
             $table->foreign('picker_id')->references('id')->on('employees');
@@ -80,8 +79,6 @@ return new class () extends Migration {
             $table->dateTimeTz('picking_on_hold_time')->nullable()->comment('Time when picking was put on hold (seconds)');
             $table->dateTimeTz('packing_on_hold_time')->nullable()->comment('Time when packing was put on hold (seconds)');
 
-
-
             $table->jsonb('data');
             $table->timestampsTz();
             $table->datetimeTz('fetched_at')->nullable();
@@ -90,7 +87,6 @@ return new class () extends Migration {
             $table->string('source_id')->nullable()->unique();
         });
     }
-
 
     public function down(): void
     {

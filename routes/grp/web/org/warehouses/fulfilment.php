@@ -18,8 +18,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowWarehouseFulfilmentDashboard::class)->name('dashboard');
 
-
-
 Route::prefix('locations')->as('locations.')->group(function () {
     Route::get('', IndexFulfilmentLocations::class)->name('index');
     Route::get('{location}', ShowFulfilmentLocation::class)->name('show');
@@ -33,7 +31,6 @@ Route::prefix('locations')->as('locations.')->group(function () {
     });
 
 });
-
 
 Route::get('deliveries', [IndexPalletDeliveries::class, 'inWarehouse'])->name('pallet-deliveries.index');
 Route::get('deliveries/{palletDelivery}', ShowWarehousePalletDelivery::class)->name('pallet-deliveries.show');

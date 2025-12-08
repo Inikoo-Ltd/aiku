@@ -39,68 +39,67 @@ class WebpageResource extends JsonResource
         }
 
         return [
-            'id'                  => $webpage->id,
-            'slug'                => $webpage->slug,
-            'level'               => $webpage->level,
-            'domain'              => $webpage->website->domain ?? null,
-            'website_layout'      => Arr::get($webpage->website->published_layout, 'theme.layout', 'blog'),
-            'code'                => $webpage->code,
-            'model_id'                               => $webpage->model_id,
-            'product_category_id'                    => $modelId,
-            'product'                                => $webpage->sub_type == WebpageSubTypeEnum::PRODUCT ? [
-                'id'                => $webpage->model?->id,
-                'slug'              => $webpage->model?->slug,
-                'code'              => $webpage->model?->code,
-                'name'              => $webpage->model?->name,
-                'luigi_identity'    => $webpage->model?->getLuigiIdentity(),
+            'id' => $webpage->id,
+            'slug' => $webpage->slug,
+            'level' => $webpage->level,
+            'domain' => $webpage->website->domain ?? null,
+            'website_layout' => Arr::get($webpage->website->published_layout, 'theme.layout', 'blog'),
+            'code' => $webpage->code,
+            'model_id' => $webpage->model_id,
+            'product_category_id' => $modelId,
+            'product' => $webpage->sub_type == WebpageSubTypeEnum::PRODUCT ? [
+                'id' => $webpage->model?->id,
+                'slug' => $webpage->model?->slug,
+                'code' => $webpage->model?->code,
+                'name' => $webpage->model?->name,
+                'luigi_identity' => $webpage->model?->getLuigiIdentity(),
             ] : null,
             // 'url'                 => $webpage->url,
-            'url'                 => $webpage->getUrl(),
-            'canonical_url'       => $webpage->canonical_url,
-            'canonical_url_without_domain'       => $webpage->getCanonicalUrl(),
-            'type'                => $webpage->type,
-            'typeIcon'            => match ($webpage->type) {
+            'url' => $webpage->getUrl(),
+            'canonical_url' => $webpage->canonical_url,
+            'canonical_url_without_domain' => $webpage->getCanonicalUrl(),
+            'type' => $webpage->type,
+            'typeIcon' => match ($webpage->type) {
                 WebpageTypeEnum::STOREFRONT => ['fal', 'fa-home'],
-                WebpageTypeEnum::BLOG       => ['fal', 'fa-newspaper'],
-                default                     => ['fal', 'fa-browser']
+                WebpageTypeEnum::BLOG => ['fal', 'fa-newspaper'],
+                default => ['fal', 'fa-browser']
             },
-            'is_dirty'                   => $webpage->is_dirty,
-            'web_blocks_parameters'      => WebBlockParametersResource::collection($webpage->webBlocks),
-            'layout'                     => $webPageLayout,
-            'sub_type'                   => $webpage->sub_type,
-            'created_at'                 => $webpage->created_at,
-            'updated_at'                 => $webpage->updated_at,
-            'state'                      => $webpage->state,
-            'title'                      => $webpage->title,
+            'is_dirty' => $webpage->is_dirty,
+            'web_blocks_parameters' => WebBlockParametersResource::collection($webpage->webBlocks),
+            'layout' => $webPageLayout,
+            'sub_type' => $webpage->sub_type,
+            'created_at' => $webpage->created_at,
+            'updated_at' => $webpage->updated_at,
+            'state' => $webpage->state,
+            'title' => $webpage->title,
 
             'luigi_data' => [
-                'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
-                'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
-                'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
-                'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
+                'last_reindexed' => Arr::get($website->settings, 'luigisbox.last_reindex_at'),
+                'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
+                'luigisbox_private_key' => Arr::get($website->settings, 'luigisbox.private_key'),
+                'luigisbox_lbx_code' => Arr::get($website->settings, 'luigisbox.lbx_code'),
             ],
 
-            'add_web_block_route'        => [
-                'name'       => 'grp.models.webpage.web_block.store',
-                'parameters' => $webpage->id
+            'add_web_block_route' => [
+                'name' => 'grp.models.webpage.web_block.store',
+                'parameters' => $webpage->id,
             ],
-            'update_model_has_web_blocks_route'        => [
-                'name'       => 'grp.models.model_has_web_block.update',
+            'update_model_has_web_blocks_route' => [
+                'name' => 'grp.models.model_has_web_block.update',
             ],
-            'update_bulk_model_has_web_blocks_route'        => [
-                'name'       => 'grp.models.model_has_web_block.bulk.update',
+            'update_bulk_model_has_web_blocks_route' => [
+                'name' => 'grp.models.model_has_web_block.bulk.update',
             ],
-            'delete_model_has_web_blocks_route'        => [
-                'name'       => 'grp.models.model_has_web_block.delete',
+            'delete_model_has_web_blocks_route' => [
+                'name' => 'grp.models.model_has_web_block.delete',
             ],
             'images_upload_route' => [
-                'name'       => 'grp.models.model_has_web_block.images.store',
+                'name' => 'grp.models.model_has_web_block.images.store',
             ],
-            'reorder_web_blocks_route'        => [
-                'name'       => 'grp.models.webpage.reorder_web_blocks',
-                'parameters' => $webpage->id
+            'reorder_web_blocks_route' => [
+                'name' => 'grp.models.webpage.reorder_web_blocks',
+                'parameters' => $webpage->id,
             ],
         ];
     }
-
 }

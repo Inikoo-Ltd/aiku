@@ -14,13 +14,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasFulfilmentStats;
     use HasGroupOrganisationRelationship;
     use HasSoftDeletes;
+
     public function up(): void
     {
-        if (!Schema::hasTable('fulfilment_customers')) {
+        if (! Schema::hasTable('fulfilment_customers')) {
             Schema::create('fulfilment_customers', function (Blueprint $table) {
                 $table->increments('id');
                 $table = $this->groupOrgRelationship($table);
@@ -43,7 +45,6 @@ return new class () extends Migration {
             });
         }
     }
-
 
     public function down(): void
     {

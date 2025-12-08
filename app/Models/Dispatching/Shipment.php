@@ -62,46 +62,46 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \App\Models\Dispatching\Shipper|null $shipper
  * @property-read Shop|null $shop
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static Builder<static>|Shipment newModelQuery()
  * @method static Builder<static>|Shipment newQuery()
  * @method static Builder<static>|Shipment onlyTrashed()
  * @method static Builder<static>|Shipment query()
  * @method static Builder<static>|Shipment withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Shipment withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Shipment extends Model
 {
-    use SoftDeletes;
-    use HasUniversalSearch;
     use HasFactory;
+    use HasUniversalSearch;
     use InCustomer;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'          => 'array',
-        'api_response'  => 'array',
-        'trackings'     => 'array',
+        'data' => 'array',
+        'api_response' => 'array',
+        'trackings' => 'array',
         'tracking_urls' => 'array',
-        'label_urls'    => 'array',
-        'label_type'    => ShipmentLabelTypeEnum::class,
+        'label_urls' => 'array',
+        'label_type' => ShipmentLabelTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'api_response'  => '{}',
-        'trackings'     => '{}',
+        'data' => '{}',
+        'api_response' => '{}',
+        'trackings' => '{}',
         'tracking_urls' => '{}',
-        'label_urls'    => '{}',
+        'label_urls' => '{}',
     ];
 
     protected $guarded = [];
-
 
     public function shipper(): BelongsTo
     {
         return $this->belongsTo(Shipper::class);
     }
-
 
     public function deliveryNotes(): MorphToMany
     {
@@ -112,6 +112,4 @@ class Shipment extends Model
     {
         return $this->morphedByMany(PalletReturn::class, 'model', 'model_has_shipments');
     }
-
-
 }

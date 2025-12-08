@@ -18,7 +18,6 @@ class UpdateRetinaCustomerComms extends RetinaAction
 {
     use WithActionUpdate;
 
-
     public function handle(CustomerComms $customerComms, array $modelData): CustomerComms
     {
         return UpdateCustomerComms::run($customerComms, $modelData);
@@ -27,15 +26,14 @@ class UpdateRetinaCustomerComms extends RetinaAction
     public function rules(): array
     {
         return [
-            'is_subscribed_to_newsletter'       => ['sometimes', 'boolean'],
-            'is_subscribed_to_marketing'        => ['sometimes', 'boolean'],
-            'is_subscribed_to_abandoned_cart'   => ['sometimes', 'boolean'],
+            'is_subscribed_to_newsletter' => ['sometimes', 'boolean'],
+            'is_subscribed_to_marketing' => ['sometimes', 'boolean'],
+            'is_subscribed_to_abandoned_cart' => ['sometimes', 'boolean'],
             'is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
             'is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
-            'is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
+            'is_subscribed_to_basket_reminder' => ['sometimes', 'boolean'],
         ];
     }
-
 
     public function asController(ActionRequest $request): CustomerComms
     {

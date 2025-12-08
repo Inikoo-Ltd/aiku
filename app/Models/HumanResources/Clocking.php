@@ -53,27 +53,28 @@ use Spatie\MediaLibrary\HasMedia;
  * @property-read Model|\Eloquent|null $subject
  * @property-read \App\Models\HumanResources\Timesheet|null $timesheet
  * @property-read \App\Models\HumanResources\Workplace|null $workplace
+ *
  * @method static Builder<static>|Clocking newModelQuery()
  * @method static Builder<static>|Clocking newQuery()
  * @method static Builder<static>|Clocking onlyTrashed()
  * @method static Builder<static>|Clocking query()
  * @method static Builder<static>|Clocking withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Clocking withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Clocking extends Model implements HasMedia
 {
-    use SoftDeletes;
-    use InOrganisation;
     use HasImage;
+    use InOrganisation;
+    use SoftDeletes;
 
     protected $casts = [
-        'clocked_at'      => 'datetime:Y-m-d H:i:s',
-        'type'            => ClockingTypeEnum::class,
-        'fetched_at'      => 'datetime',
+        'clocked_at' => 'datetime:Y-m-d H:i:s',
+        'type' => ClockingTypeEnum::class,
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
-
 
     protected $guarded = [];
 
@@ -96,6 +97,4 @@ class Clocking extends Model implements HasMedia
     {
         return $this->belongsTo(Timesheet::class);
     }
-
-
 }

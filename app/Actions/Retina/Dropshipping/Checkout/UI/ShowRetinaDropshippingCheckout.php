@@ -26,24 +26,21 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaDropshippingCheckout extends RetinaAction
 {
-    use IsOrder;
     use CalculatesPaymentWithBalance;
+    use IsOrder;
 
     public function handle(Order $order, Customer $customer): array
     {
         $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);
 
-
         $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
 
-
         return [
-            'order'          => $order,
+            'order' => $order,
             'paymentMethods' => $paymentMethods,
-            'balance'        => $customer->balance,
+            'balance' => $customer->balance,
         ];
     }
-
 
     public function asController(Order $order, ActionRequest $request): array
     {
@@ -57,7 +54,6 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         /** @var Order $order */
         $order = Arr::get($checkoutData, 'order');
 
-
         $paymentAmounts = $this->calculatePaymentWithBalance(
             $order->total_amount,
             $this->customer->balance
@@ -67,45 +63,43 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $toPayByBalance = $paymentAmounts['by_balance'];
         $toPayByOther = $paymentAmounts['by_other'];
 
-
-
         return Inertia::render(
             'Dropshipping/RetinaDropshippingCheckout',
             [
-                'breadcrumbs'    => $this->getBreadcrumbs($order),
-                'title'          => __('Checkout'),
-                'pageHead'    => [
-                    'title'      => $order->reference,
-                    'model'      => __('Checkout'),
+                'breadcrumbs' => $this->getBreadcrumbs($order),
+                'title' => __('Checkout'),
+                'pageHead' => [
+                    'title' => $order->reference,
+                    'model' => __('Checkout'),
                 ],
-                'order'          => OrderResource::make($order)->resolve(),
-                'box_stats'      => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
+                'order' => OrderResource::make($order)->resolve(),
+                'box_stats' => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
-                'balance'        => $this->customer->balance,
-                'total_amount'   => $order->total_amount,
-                'currency_code'  => $order->currency->code,
-                'to_pay_data'    => [
-                    'total'      => $toPay,
+                'balance' => $this->customer->balance,
+                'total_amount' => $order->total_amount,
+                'currency_code' => $order->currency->code,
+                'to_pay_data' => [
+                    'total' => $toPay,
                     'by_balance' => $toPayByBalance,
-                    'by_other'   => $toPayByOther
+                    'by_other' => $toPayByOther,
 
                 ],
-                'routes'         => [
+                'routes' => [
                     'pay_with_balance' => [
-                        'name'       => 'retina.models.order.pay_with_balance',
+                        'name' => 'retina.models.order.pay_with_balance',
                         'parameters' => [
-                            'order' => $order->id
+                            'order' => $order->id,
                         ],
-                        'method'     => 'patch'
+                        'method' => 'patch',
                     ],
                     'back_to_basket' => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.basket.show',
+                        'name' => 'retina.dropshipping.customer_sales_channels.basket.show',
                         'parameters' => [
                             'customerSalesChannel' => $order->customerSalesChannel->slug,
-                            'order'                => $order->slug
-                        ]
-                    ]
-                ]
+                            'order' => $order->slug,
+                        ],
+                    ],
+                ],
             ]
         );
     }
@@ -117,17 +111,17 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.checkout.show',
+                                'name' => 'retina.dropshipping.checkout.show',
                                 'parameters' => [
-                                    'order' => $order->slug
-                                ]
+                                    'order' => $order->slug,
+                                ],
                             ],
                             'label' => __('Checkout'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

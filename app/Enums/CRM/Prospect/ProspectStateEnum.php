@@ -17,18 +17,17 @@ enum ProspectStateEnum: string
     use EnumHelperTrait;
 
     case NO_CONTACTED = 'no-contacted';
-    case CONTACTED    = 'contacted';
-    case FAIL         = 'fail';
-    case SUCCESS      = 'success';
-
+    case CONTACTED = 'contacted';
+    case FAIL = 'fail';
+    case SUCCESS = 'success';
 
     public static function labels(): array
     {
         return [
             'no-contacted' => __('No contacted'),
-            'contacted'    => __('Contacted'),
-            'fail'         => __('Fail'),
-            'success'      => __('Success'),
+            'contacted' => __('Contacted'),
+            'fail' => __('Fail'),
+            'success' => __('Success'),
         ];
     }
 
@@ -37,27 +36,26 @@ enum ProspectStateEnum: string
         return [
             'no-contacted' => [
                 'tooltip' => __('no contacted'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-indigo-500'
-
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-indigo-500',
 
             ],
-            'contacted'    => [
+            'contacted' => [
 
                 'tooltip' => __('contacted'),
-                'icon'    => 'fal fa-chair',
+                'icon' => 'fal fa-chair',
             ],
-            'fail'         => [
+            'fail' => [
 
                 'tooltip' => __('fail'),
-                'icon'    => 'fal fa-thumbs-down',
-                'class'   => 'text-red'
+                'icon' => 'fal fa-thumbs-down',
+                'class' => 'text-red',
 
             ],
-            'success'      => [
+            'success' => [
 
                 'tooltip' => __('success'),
-                'icon'    => 'fal fa-laugh'
+                'icon' => 'fal fa-laugh',
 
             ],
 
@@ -71,26 +69,25 @@ enum ProspectStateEnum: string
         if ($opt == 'opt_in') {
             return [
                 'no-contacted' => $stats->number_opt_in_prospects_state_no_contacted,
-                'contacted'    => $stats->number_opt_in_prospects_state_contacted,
-                'fail'         => $stats->number_opt_in_prospects_state_fail,
-                'success'      => $stats->number_opt_in_prospects_state_success,
+                'contacted' => $stats->number_opt_in_prospects_state_contacted,
+                'fail' => $stats->number_opt_in_prospects_state_fail,
+                'success' => $stats->number_opt_in_prospects_state_success,
             ];
         } elseif ($opt == 'opt_out') {
             return [
                 'no-contacted' => $stats->number_opt_out_prospects_state_no_contacted,
-                'contacted'    => $stats->number_opt_out_prospects_state_contacted,
-                'fail'         => $stats->number_opt_out_prospects_state_fail,
-                'success'      => $stats->number_opt_out_prospects_state_success,
+                'contacted' => $stats->number_opt_out_prospects_state_contacted,
+                'fail' => $stats->number_opt_out_prospects_state_fail,
+                'success' => $stats->number_opt_out_prospects_state_success,
             ];
         } else {
             return [
                 'no-contacted' => $stats->number_prospects_state_no_contacted,
-                'contacted'    => $stats->number_prospects_state_contacted,
-                'fail'         => $stats->number_prospects_state_fail,
-                'success'      => $stats->number_prospects_state_success,
+                'contacted' => $stats->number_prospects_state_contacted,
+                'fail' => $stats->number_prospects_state_fail,
+                'success' => $stats->number_prospects_state_success,
             ];
         }
 
     }
-
 }

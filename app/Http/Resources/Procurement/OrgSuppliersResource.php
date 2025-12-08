@@ -28,27 +28,27 @@ class OrgSuppliersResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'org_slug'                     => $this->org_slug,
-            'org_supplier_slug'            => $this->org_supplier_slug,
-            'org_agent_slug'               => $this->agent_slug,
-            'code'                         => $this->code,
-            'status'                         => $this->status,
-            'status_icon'                         => $this->status ? [
+            'org_slug' => $this->org_slug,
+            'org_supplier_slug' => $this->org_supplier_slug,
+            'org_agent_slug' => $this->agent_slug,
+            'code' => $this->code,
+            'status' => $this->status,
+            'status_icon' => $this->status ? [
                 'icon' => 'fal fa-check',
-                'class' => 'text-green-500'
+                'class' => 'text-green-500',
             ] : [
                 'icon' => 'fal fa-times',
-                'class' => 'text-red-500'
+                'class' => 'text-red-500',
             ],
-            'name'                         => $this->name,
-            'agent_name'                   => $this->agent_name,
+            'name' => $this->name,
+            'agent_name' => $this->agent_name,
             'number_org_supplier_products' => $this->number_org_supplier_products,
-            'number_purchase_orders'       => $this->number_purchase_orders,
-            'number_purchase_orders_delivery_state_in_process'       => $this->number_purchase_orders_delivery_state_in_process,
-            'slug'                         => $this->slug,
-            'location'                     => json_decode($this->location),
-            'created_at'                   => $this->created_at,
-            'updated_at'                   => $this->updated_at,
+            'number_purchase_orders' => $this->number_purchase_orders,
+            'number_purchase_orders_delivery_state_in_process' => $this->number_purchase_orders_delivery_state_in_process,
+            'slug' => $this->slug,
+            'location' => json_decode($this->location),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

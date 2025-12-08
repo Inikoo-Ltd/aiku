@@ -28,7 +28,7 @@ class AddRetinaProductToBasket extends RetinaAction
             return UpdateRetinaTransaction::run(
                 $existingTransaction,
                 [
-                    'quantity_ordered' => $existingTransaction->quantity_ordered + 1
+                    'quantity_ordered' => $existingTransaction->quantity_ordered + 1,
                 ]
             );
         } else {
@@ -36,7 +36,7 @@ class AddRetinaProductToBasket extends RetinaAction
                 $order,
                 [
                     'historic_asset_id' => $historicAssetId,
-                    'quantity'          => 1
+                    'quantity' => 1,
                 ]
             );
         }
@@ -71,7 +71,6 @@ class AddRetinaProductToBasket extends RetinaAction
             );
         }
     }
-
 
     public function asController(Order $order, ActionRequest $request): Transaction
     {

@@ -22,11 +22,12 @@ class PollOptionsResource extends JsonResource
     public function toArray($request): array
     {
         $pollOption = $this;
+
         return [
-            'id'                 => $pollOption->id,
-            'slug'               => $pollOption->slug,
-            'value'              => $pollOption->value,
-            'label'              => $pollOption->label,
+            'id' => $pollOption->id,
+            'slug' => $pollOption->slug,
+            'value' => $pollOption->value,
+            'label' => $pollOption->label,
             'number_customers' => $pollOption->number_customers,
             'number_customer_purchases' => $pollOption->number_customer_purchases,
             'total_customer_revenue' => $pollOption->total_customer_revenue,

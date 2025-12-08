@@ -18,15 +18,12 @@ enum EmailBuilderEnum: string
     case BEEFREE = 'beefree';
     case BLADE = 'blade';
 
-
     public static function labels(): array
     {
         return [
             'unlayer' => __('Unlayer'),
             'beefree' => __('BeeFree'),
-            'blade'   => __('Blade (Hard coded)')
+            'blade' => __('Blade (Hard coded)'),
         ];
     }
-
-
 }

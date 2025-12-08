@@ -33,7 +33,6 @@ class OrganisationHydrateRecurringBills implements ShouldBeUnique
             'number_recurring_bills' => $organisation->recurringBills()->count(),
         ];
 
-
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
@@ -49,6 +48,4 @@ class OrganisationHydrateRecurringBills implements ShouldBeUnique
 
         $organisation->fulfilmentStats()->update($stats);
     }
-
-
 }

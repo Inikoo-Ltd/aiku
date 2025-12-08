@@ -16,14 +16,14 @@ class BoxesResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                  => $this->id,
-            'slug'                => $this->slug,
-            'name'                => $this->name,
-            'stock'               => $this->stock,
-            'dimension'           => $this->dimension,
-            'height'              => $this->height,
-            'width'               => $this->width,
-            'depth'               => $this->depth,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'stock' => $this->stock,
+            'dimension' => $this->dimension,
+            'height' => $this->height,
+            'width' => $this->width,
+            'depth' => $this->depth,
         ];
     }
 }

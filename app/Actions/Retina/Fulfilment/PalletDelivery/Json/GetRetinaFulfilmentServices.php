@@ -33,8 +33,6 @@ class GetRetinaFulfilmentServices extends RetinaAction
             });
         });
 
-
-
         $queryBuilder = QueryBuilder::for(Service::class);
         $queryBuilder->where('services.shop_id', $parent->shop_id);
         $queryBuilder->where('services.is_auto_assign', false);
@@ -65,8 +63,7 @@ class GetRetinaFulfilmentServices extends RetinaAction
                 'services.auto_assign_status',
             ]);
 
-
-        return $queryBuilder->allowedSorts(['code','price','name','state'])
+        return $queryBuilder->allowedSorts(['code', 'price', 'name', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator(null)
             ->withQueryString();

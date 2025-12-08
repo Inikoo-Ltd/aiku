@@ -21,10 +21,10 @@ class GroupApiResource extends JsonResource
         $group = $this;
 
         return [
-            'id'         => $group->id,
-            'slug'       => $group->slug,
-            'code'       => $group->code,
-            'name'       => $group->name,
+            'id' => $group->id,
+            'slug' => $group->slug,
+            'code' => $group->code,
+            'name' => $group->name,
             'created_at' => $group->created_at,
             'updated_at' => $group->updated_at,
         ];

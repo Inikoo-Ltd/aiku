@@ -76,9 +76,9 @@ class RetinaRecurringBillTransactionsResource extends JsonResource
                 $desc_model = __('Pallet Delivery');
                 $desc_route = [
                     'name' => 'retina.fulfilment.storage.pallet_deliveries.show',
-                    'parameters'    => [
-                        'palletDelivery'       => $palletDelivery->slug
-                    ]
+                    'parameters' => [
+                        'palletDelivery' => $palletDelivery->slug,
+                    ],
                 ];
             }
 
@@ -89,9 +89,9 @@ class RetinaRecurringBillTransactionsResource extends JsonResource
                 $desc_model = __('Pallet Return');
                 $desc_route = [
                     'name' => 'retina.fulfilment.storage.pallet_returns.show',
-                    'parameters'    => [
-                        'palletReturn'       => $palletReturn->slug
-                    ]
+                    'parameters' => [
+                        'palletReturn' => $palletReturn->slug,
+                    ],
                 ];
             }
         } elseif ($this->item_type === 'Space') {
@@ -113,7 +113,7 @@ class RetinaRecurringBillTransactionsResource extends JsonResource
         }
 
         if ($this->start_date) {
-            $desc_after_title .= Carbon::parse($this->start_date)->format('d M Y') . '-';
+            $desc_after_title .= Carbon::parse($this->start_date)->format('d M Y').'-';
         }
         if ($this->end_date) {
             $desc_after_title .= Carbon::parse($this->end_date)->format('d M Y');
@@ -129,31 +129,31 @@ class RetinaRecurringBillTransactionsResource extends JsonResource
         }
 
         return [
-            'id'                 => $this->id,
-            'type'               => $this->item_type,
-            'type_icon'          => $this->typeIcon($this->item_type),
-            'asset_id'           => $this->asset_id,
-            'asset_slug'         => $this->asset_slug,
-            'asset_code'         => $this->asset_code,
-            'asset_price'        => $this->asset_price,
-            'asset_name'         => $this->asset_name,
-            'asset_unit'         => $this->asset_unit,
-            'asset_units'        => $this->asset_units,
-            'currency_code'      => $this->currency_code,
-            'unit_abbreviation'  => $unitAbbreviation,
-            'unit_label'         => $this->asset_unit,
-            'quantity'           => $this->quantity * $this->temporal_quantity,
-            'total'              => $this->net_amount,
-            'discount'           => (int) $this->discount,
-            'edit_type'          => $editType,
+            'id' => $this->id,
+            'type' => $this->item_type,
+            'type_icon' => $this->typeIcon($this->item_type),
+            'asset_id' => $this->asset_id,
+            'asset_slug' => $this->asset_slug,
+            'asset_code' => $this->asset_code,
+            'asset_price' => $this->asset_price,
+            'asset_name' => $this->asset_name,
+            'asset_unit' => $this->asset_unit,
+            'asset_units' => $this->asset_units,
+            'currency_code' => $this->currency_code,
+            'unit_abbreviation' => $unitAbbreviation,
+            'unit_label' => $this->asset_unit,
+            'quantity' => $this->quantity * $this->temporal_quantity,
+            'total' => $this->net_amount,
+            'discount' => (int) $this->discount,
+            'edit_type' => $editType,
             'fulfilment_transaction_id' => $this->fulfilment_transaction_id,
             // 'description'        => $description,
-            'description'         => [
+            'description' => [
                 'model' => $desc_model,
                 'title' => $desc_title,
                 'route' => $desc_route,
                 'after_title' => $desc_after_title,
-            ]
+            ],
 
         ];
     }
@@ -163,7 +163,7 @@ class RetinaRecurringBillTransactionsResource extends JsonResource
         if ($type == 'Pallet') {
             return [
                 'tooltip' => __('Pallet'),
-                'icon'    => 'fal fa-pallet',
+                'icon' => 'fal fa-pallet',
             ];
         } else {
             return null;

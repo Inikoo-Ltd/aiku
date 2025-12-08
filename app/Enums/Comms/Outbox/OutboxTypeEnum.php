@@ -37,43 +37,42 @@ enum OutboxTypeEnum: string
         };
     }
 
-
     public function icon(): array
     {
         return [
-            OutboxTypeEnum::NEWSLETTER->value             => [
+            OutboxTypeEnum::NEWSLETTER->value => [
                 'tooltip' => __(OutboxTypeEnum::NEWSLETTER->value),
-                'icon'    => 'fal fa-newspaper',
+                'icon' => 'fal fa-newspaper',
             ],
-            OutboxTypeEnum::MARKETING->value              => [
+            OutboxTypeEnum::MARKETING->value => [
                 'tooltip' => __(OutboxTypeEnum::MARKETING->value),
-                'icon'    => 'fal fa-bullhorn',
+                'icon' => 'fal fa-bullhorn',
             ],
             OutboxTypeEnum::MARKETING_NOTIFICATION->value => [
                 'tooltip' => __(OutboxTypeEnum::MARKETING_NOTIFICATION->value),
-                'icon'    => 'fal fa-radio',
+                'icon' => 'fal fa-radio',
             ],
-            OutboxTypeEnum::CUSTOMER_NOTIFICATION->value  => [
+            OutboxTypeEnum::CUSTOMER_NOTIFICATION->value => [
                 'tooltip' => __(OutboxTypeEnum::CUSTOMER_NOTIFICATION->value),
-                'icon'    => 'fal fa-sort-alt',
-                'class'   => 'rotate-90'
+                'icon' => 'fal fa-sort-alt',
+                'class' => 'rotate-90',
             ],
-            OutboxTypeEnum::COLD_EMAIL->value             => [
+            OutboxTypeEnum::COLD_EMAIL->value => [
                 'tooltip' => __(OutboxTypeEnum::COLD_EMAIL->value),
-                'icon'    => 'fal fa-phone-volume',
+                'icon' => 'fal fa-phone-volume',
             ],
-            OutboxTypeEnum::USER_NOTIFICATION->value      => [
+            OutboxTypeEnum::USER_NOTIFICATION->value => [
                 'tooltip' => __(OutboxTypeEnum::USER_NOTIFICATION->value),
-                'icon'    => 'fal fa-bell',
+                'icon' => 'fal fa-bell',
             ],
-            OutboxTypeEnum::TEST->value                   => [
+            OutboxTypeEnum::TEST->value => [
                 'tooltip' => __(OutboxTypeEnum::TEST->value),
-                'icon'    => 'fal fa-vial',
+                'icon' => 'fal fa-vial',
             ],
-            OutboxTypeEnum::PUSH->value                   => [
+            OutboxTypeEnum::PUSH->value => [
                 'tooltip' => __(OutboxTypeEnum::PUSH->value),
-                'icon'    => 'fal fa-project-diagram',
-            ]
+                'icon' => 'fal fa-project-diagram',
+            ],
         ];
     }
 }

@@ -18,23 +18,24 @@ use App\Models\Ordering\Order;
 class AddBalanceFromExcessPaymentOrder extends OrgAction
 {
     use WithActionUpdate;
+
     public function handle(Order $order)
     {
         StoreCreditTransaction::make()->action($order->customer, [
             'amount' => $order->payment_amount - $order->total_amount,
-            'notes' => 'Excess payment from order:'. $order->reference,
+            'notes' => 'Excess payment from order:'.$order->reference,
             'type' => CreditTransactionTypeEnum::FROM_EXCESS,
             'reason' => CreditTransactionReasonEnum::OTHER,
         ]);
 
         $order->refresh();
         $order = $this->update($order, [
-            'payment_amount' => $order->total_amount
+            'payment_amount' => $order->total_amount,
         ]);
 
         request()->session()->flash('modal', [
-            'status'  => 'success',
-            'title'   => __('Success!'),
+            'status' => 'success',
+            'title' => __('Success!'),
             'description' => __('Excess payment has been returned as balance.'),
         ]);
     }

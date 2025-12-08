@@ -2,16 +2,16 @@
 
 namespace App\Actions\Web\Website;
 
-use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
+use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
+use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use Lorisleiva\Actions\Concerns\AsObject;
-use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
-use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 
 class GetWebsiteWorkshopFamily
 {
@@ -24,7 +24,7 @@ class GetWebsiteWorkshopFamily
             ->where('type', ProductCategoryTypeEnum::FAMILY)
             ->first();
 
-        if (!$family) {
+        if (! $family) {
             return [
                 'web_block_types' => [],
                 'products' => [],
@@ -46,13 +46,13 @@ class GetWebsiteWorkshopFamily
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             'products' => $products,
             'top_seller' => $topSeller,
-            'family' =>  $family,
+            'family' => $family,
             'layout' => Arr::get($website->unpublishedFamilySnapshot, 'layout.family', []),
             'autosaveRoute' => [
                 'name' => 'grp.models.website.autosave.family',
                 'parameters' => [
-                    'website' => $website->id
-                ]
+                    'website' => $website->id,
+                ],
             ],
         ];
     }

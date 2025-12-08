@@ -31,30 +31,29 @@ class FulfilmentTransactionsResource extends JsonResource
     {
         if ($this->asset_type == 'service') {
             $unitAbbreviation = 's';
-            $unitLabel        = __('service');
+            $unitLabel = __('service');
         } else {
             $unitAbbreviation = 'u';
-            $unitLabel        = __('unit');
+            $unitLabel = __('unit');
         }
+
         return [
-            'id'                => $this->id,
-            'asset_slug'        => $this->asset_slug,
-            'code'              => $this->code,
-            'name'              => $this->name,
-            'price'             => $this->price,
-            'unit'              => $this->unit,
-            'units'             => $this->units,
-            'currency_code'     => $this->currency_code,
+            'id' => $this->id,
+            'asset_slug' => $this->asset_slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'price' => $this->price,
+            'unit' => $this->unit,
+            'units' => $this->units,
+            'currency_code' => $this->currency_code,
             'unit_abbreviation' => $unitAbbreviation,
-            'unit_label'        => $unitLabel,
-            'quantity'          => (int) $this->quantity,
-            'total'             => $this->net_amount,
-            'edit_type'         => $this->edit_type ?? null,
-            'is_auto_assign'    => $this->is_auto_assign,
-            'discount'          => (int) $this->discount
+            'unit_label' => $unitLabel,
+            'quantity' => (int) $this->quantity,
+            'total' => $this->net_amount,
+            'edit_type' => $this->edit_type ?? null,
+            'is_auto_assign' => $this->is_auto_assign,
+            'discount' => (int) $this->discount,
             // 'historic_assets_id'=> $this->historic_assets_id
-
-
 
         ];
     }

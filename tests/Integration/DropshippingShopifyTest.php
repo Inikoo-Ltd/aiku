@@ -19,7 +19,6 @@ use App\Models\Dropshipping\Portfolio;
 
 uses()->group('integration');
 
-
 beforeAll(function () {
     loadDB();
 });
@@ -28,28 +27,23 @@ beforeEach(function () {
     \Tests\Helpers\setupDropshippingTest($this);
 });
 
-
 test('create shopify channel', function () {
     $platform = $this->group->platforms()->where('type', PlatformTypeEnum::SHOPIFY)->first();
-
 
     expect($this->customer->customerSalesChannels()->count())->toBe(0);
     $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
         $this->customer,
         $platform,
         [
-            'reference' => 'test_shopify_reference'
+            'reference' => 'test_shopify_reference',
         ]
     );
-
 
     $customer = $customerSalesChannel->customer;
     expect($customer->customerSalesChannels()->first())->toBeInstanceOf(CustomerSalesChannel::class);
 
-
     return $customerSalesChannel;
 });
-
 
 test('create customer client', function (CustomerSalesChannel $customerSalesChannel) {
     $customerClient = StoreCustomerClient::make()->action($customerSalesChannel, CustomerClient::factory()->definition());
@@ -61,6 +55,7 @@ test('create customer client', function (CustomerSalesChannel $customerSalesChan
 test('update customer client', function ($customerClient) {
     $customerClient = UpdateCustomerClient::make()->action($customerClient, ['reference' => '001']);
     expect($customerClient->reference)->toBe('001');
+
     return $customerClient;
 })->depends('create customer client');
 

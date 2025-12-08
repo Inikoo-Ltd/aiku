@@ -14,9 +14,8 @@ enum TaxNumberTypeEnum: string
 {
     use EnumHelperTrait;
 
-
     case EU_VAT = 'eu-vat';
     case GB_VAT = 'gb-vat';
-    case OTHER  = 'other';
+    case OTHER = 'other';
     case UNKNOWN = 'unknown';
 }

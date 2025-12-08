@@ -22,13 +22,12 @@ class RawMaterialHydrateUniversalSearch
         $rawMaterial->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'          => $rawMaterial->group_id,
-                'organisation_id'   => $rawMaterial->organisation_id,
+                'group_id' => $rawMaterial->group_id,
+                'organisation_id' => $rawMaterial->organisation_id,
                 'organisation_slug' => $rawMaterial->organisation->slug,
-                'sections'          => ['manufacture'],
-                'haystack_tier_1'   => trim($rawMaterial->code.' '.$rawMaterial->description),
+                'sections' => ['manufacture'],
+                'haystack_tier_1' => trim($rawMaterial->code.' '.$rawMaterial->description),
             ]
         );
     }
-
 }

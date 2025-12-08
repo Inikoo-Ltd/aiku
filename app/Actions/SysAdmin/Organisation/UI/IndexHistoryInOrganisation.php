@@ -54,7 +54,7 @@ class IndexHistoryInOrganisation extends OrgAction
 
         return $queryBuilder
             ->defaultSort('audits.created_at')
-            ->allowedSorts(['ip_address','auditable_id', 'auditable_type', 'user_type', 'url','created_at'])
+            ->allowedSorts(['ip_address', 'auditable_id', 'auditable_type', 'user_type', 'url', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -64,6 +64,7 @@ class IndexHistoryInOrganisation extends OrgAction
     {
         $this->organisation = $organisation;
         $this->initialisation($organisation, $request);
+
         return $this->handle($this->organisation);
     }
 
@@ -99,44 +100,42 @@ class IndexHistoryInOrganisation extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'       => __('Changelog'),
-                'pageHead'    => [
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-history'],
-                        'title' => __('Changelog')
+                'title' => __('Changelog'),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-history'],
+                        'title' => __('Changelog'),
                     ],
-                    'title'     => __('Changelog'),
+                    'title' => __('Changelog'),
                 ],
-                'data'        => HistoryResource::collection($histories),
+                'data' => HistoryResource::collection($histories),
             ]
         )->table($this->tableStructure());
     }
 
-
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Changelog'),
-                        'icon'  => 'fal fa-history'
+                        'icon' => 'fal fa-history',
                     ],
-                    'suffix' => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.org.overview.changelog.index' =>
-            array_merge(
+            'grp.org.overview.changelog.index' => array_merge(
                 ShowOrganisationOverviewHub::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name' => $routeName,
-                        'parameters' => $routeParameters
+                        'parameters' => $routeParameters,
                     ],
                     $suffix
                 ),
@@ -144,6 +143,4 @@ class IndexHistoryInOrganisation extends OrgAction
             default => []
         };
     }
-
-
 }

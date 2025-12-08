@@ -64,9 +64,9 @@ class FetchAuroraClockingMachines extends FetchAuroraAction
                         ->update(['aiku_id' => $clockingMachine->id]);
                 } catch (Exception|Throwable $e) {
                     $this->recordError($organisationSource, $e, $clockingMachineData['clocking-machine'], 'ClockingMachine', 'store');
+
                     return null;
                 }
-
 
             }
 
@@ -88,6 +88,4 @@ class FetchAuroraClockingMachines extends FetchAuroraAction
     {
         return DB::connection('aurora')->table('Clocking Machine Dimension')->count();
     }
-
-
 }

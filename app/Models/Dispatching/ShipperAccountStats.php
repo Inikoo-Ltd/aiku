@@ -19,11 +19,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_shipment_trackings
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperAccountStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperAccountStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperAccountStats query()
+ *
  * @mixin \Eloquent
  */
-class ShipperAccountStats extends Model
-{
-}
+class ShipperAccountStats extends Model {}

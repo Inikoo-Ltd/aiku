@@ -21,8 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShutdownBanner extends OrgAction
 {
-    use WithWebEditAuthorisation;
     use WithActionUpdate;
+    use WithWebEditAuthorisation;
 
     public function handle(Banner $banner, array $modelData): Banner
     {

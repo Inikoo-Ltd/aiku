@@ -19,16 +19,14 @@ class CanVisit extends OrgAction
         return true;
     }
 
-
     public function rules(): array
     {
         return [
-            'route_name'       => ['sometimes', 'string'],
+            'route_name' => ['sometimes', 'string'],
             'route_parameters' => ['sometimes', 'array'],
 
         ];
     }
-
 
     public function asController(ActionRequest $request): bool
     {
@@ -36,6 +34,4 @@ class CanVisit extends OrgAction
 
         return $this->handle($request->user(), $this->validatedData);
     }
-
-
 }

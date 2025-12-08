@@ -100,9 +100,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Catalogue\Asset $asset
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AssetOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AssetOrderingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AssetOrderingStats query()
+ *
  * @mixin \Eloquent
  */
 class AssetOrderingStats extends Model

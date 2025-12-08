@@ -95,9 +95,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Inventory\OrgStockFamily $orgStockFamily
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyIntervals query()
+ *
  * @mixin \Eloquent
  */
 class OrgStockFamilyIntervals extends Model
@@ -105,7 +107,6 @@ class OrgStockFamilyIntervals extends Model
     protected $table = 'org_stock_family_intervals';
 
     protected $guarded = [];
-
 
     public function orgStockFamily(): BelongsTo
     {

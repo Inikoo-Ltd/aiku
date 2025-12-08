@@ -12,6 +12,7 @@ use App\Actions\Api\Retina\Dropshipping\Client\GetClients;
 use App\Actions\Api\Retina\Dropshipping\Client\StoreApiCustomerClient;
 use App\Actions\Api\Retina\Dropshipping\Client\UpdateApiCustomerClient;
 use App\Actions\Api\Retina\Dropshipping\Image\GetImage;
+use App\Actions\Api\Retina\Dropshipping\Image\GetImages;
 use App\Actions\Api\Retina\Dropshipping\Order\DeleteApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\GetOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\GetOrders;
@@ -19,7 +20,6 @@ use App\Actions\Api\Retina\Dropshipping\Order\StoreApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\SubmitApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\UpdateApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\DeleteApiPortfolio;
-use App\Actions\Api\Retina\Dropshipping\Image\GetImages;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\GetPortfolios;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\ShowApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\StoreApiPortfolio;
@@ -49,7 +49,6 @@ Route::prefix('transaction')->as('transaction.')->group(function () {
     Route::delete('{transaction:id}/delete', DeleteApiOrderTransaction::class)->name('delete');
 });
 
-
 Route::prefix('products')->as('products.')->group(function () {
     Route::get('', GetProducts::class)->name('index');
     Route::get('my-products', GetPortfolios::class)->name('my_product.index');
@@ -63,7 +62,6 @@ Route::prefix('images')->as('images.')->group(function () {
     Route::get('{image:id}', GetImage::class)->name('show');
     Route::get('', GetImages::class)->name('index');
 });
-
 
 Route::prefix('clients')->as('clients.')->group(function () {
     Route::get('', GetClients::class)->name('index');

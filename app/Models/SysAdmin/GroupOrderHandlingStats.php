@@ -128,9 +128,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_items_delivery_notes_state_dispatched
  * @property int $number_items_delivery_notes_state_cancelled
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderHandlingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderHandlingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderHandlingStats query()
+ *
  * @mixin \Eloquent
  */
 class GroupOrderHandlingStats extends Model

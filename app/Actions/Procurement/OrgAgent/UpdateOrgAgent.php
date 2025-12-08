@@ -19,7 +19,6 @@ class UpdateOrgAgent extends OrgAction
 {
     use WithActionUpdate;
 
-
     public function handle(OrgAgent $orgAgent, $modelData = []): OrgAgent
     {
 
@@ -37,14 +36,14 @@ class UpdateOrgAgent extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("procurement.".$this->organisation->id.".edit");
+        return $request->user()->authTo('procurement.'.$this->organisation->id.'.edit');
     }
 
     public function rules(ActionRequest $request): array
     {
         return [
-            'source_id'   => 'sometimes|nullable|string|max:64',
-            'status'      => ['sometimes', 'required', 'boolean'],
+            'source_id' => 'sometimes|nullable|string|max:64',
+            'status' => ['sometimes', 'required', 'boolean'],
         ];
     }
 
@@ -57,12 +56,10 @@ class UpdateOrgAgent extends OrgAction
 
     public function action(OrgAgent $orgAgent, $modelData, $hydratorsDelay = 0): OrgAgent
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($orgAgent->organisation, $modelData);
 
         return $this->handle($orgAgent, $this->validatedData);
     }
-
-
 }

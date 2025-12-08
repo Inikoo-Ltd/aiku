@@ -18,8 +18,8 @@ class NaturalLanguage
     public function fileSize($size, $precision = 2, $suffix = null): string
     {
         if ($size > 0) {
-            $size     = (int)$size;
-            $suffixes = array(' bytes', ' KB', ' MB', ' GB', ' TB');
+            $size = (int) $size;
+            $suffixes = [' bytes', ' KB', ' MB', ' GB', ' TB'];
 
             if ($suffix !== null) {
                 // Find the base that corresponds to the provided suffix
@@ -54,8 +54,8 @@ class NaturalLanguage
     public function weight($weight, $precision = 2, $suffix = null): ?string
     {
         if ($weight > 0) {
-            $weight   = (float)$weight;
-            $suffixes = array(' g', ' kg', ' t');
+            $weight = (float) $weight;
+            $suffixes = [' g', ' kg', ' t'];
 
             if ($suffix !== null) {
                 // Find the base that corresponds to the provided suffix
@@ -71,18 +71,18 @@ class NaturalLanguage
                 if ($suffixBase !== null) {
                     $value = $weight / pow(1000, $suffixBase);
                     // Format the value based on whether it's a whole number or not
-                    if ($value == (int)$value) {
-                        return (int)$value.$suffix;
+                    if ($value == (int) $value) {
+                        return (int) $value.$suffix;
                     } else {
                         return rtrim(rtrim(number_format($value, $precision, '.', ''), '0'), '.').$suffix;
                     }
                 }
 
                 // If no matching suffix was found, use the calculated base with the custom suffix
-                $base  = log($weight) / log(1000);
+                $base = log($weight) / log(1000);
                 $value = pow(1000, $base - floor($base));
-                if ($value == (int)$value) {
-                    return (int)$value.$suffix;
+                if ($value == (int) $value) {
+                    return (int) $value.$suffix;
                 } else {
                     return rtrim(rtrim(number_format($value, $precision, '.', ''), '0'), '.').$suffix;
                 }
@@ -92,21 +92,21 @@ class NaturalLanguage
             // Choose the suffix based on the weight value
             if ($weight >= 1000000) {
                 // Convert to tonnes
-                $value  = $weight / 1000000;
+                $value = $weight / 1000000;
                 $suffix = $suffixes[2]; // t
             } elseif ($weight >= 1000) {
                 // Convert to kilograms for weights over 1000g
-                $value  = $weight / 1000;
+                $value = $weight / 1000;
                 $suffix = $suffixes[1]; // kg
             } else {
                 // Use grams for weights under 1000g
-                $value  = $weight;
+                $value = $weight;
                 $suffix = $suffixes[0]; // g
             }
 
             // Format the value based on whether it's a whole number or not
-            if ($value == (int)$value) {
-                return (int)$value.$suffix;
+            if ($value == (int) $value) {
+                return (int) $value.$suffix;
             } else {
                 return rtrim(rtrim(number_format($value, $precision, '.', ''), '0'), '.').$suffix;
             }
@@ -131,7 +131,7 @@ class NaturalLanguage
     public function country($country3letterCode): array
     {
 
-        if (!$country3letterCode) {
+        if (! $country3letterCode) {
             return [];
         }
 
@@ -146,7 +146,4 @@ class NaturalLanguage
             return [];
         }
     }
-
-
-
 }

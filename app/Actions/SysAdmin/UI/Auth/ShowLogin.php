@@ -16,10 +16,8 @@ class ShowLogin
 {
     use AsController;
 
-
     public function handle(): Response
     {
         return Inertia::render('SysAdmin/Login');
     }
-
 }

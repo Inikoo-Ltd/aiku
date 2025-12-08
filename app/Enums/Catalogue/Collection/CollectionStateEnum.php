@@ -22,8 +22,8 @@ enum CollectionStateEnum: string
     {
         return [
             'in_process' => __('In Process'),
-            'active'     => __('Active'),
-            'inactive'   => __('Inactive'),
+            'active' => __('Active'),
+            'inactive' => __('Inactive'),
         ];
     }
 
@@ -32,20 +32,19 @@ enum CollectionStateEnum: string
         return [
             'in_process' => [
                 'tooltip' => __('in process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-gray-400'
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-gray-400',
             ],
-            'active'     => [
+            'active' => [
                 'tooltip' => __('active'),
-                'icon'    => 'fas fa-play',
-                'class'   => 'text-green-700'
+                'icon' => 'fas fa-play',
+                'class' => 'text-green-700',
             ],
-            'inactive'   => [
+            'inactive' => [
                 'tooltip' => __('inactive'),
-                'icon'    => 'fal fa-pause-circle',
-                'class'   => 'text-gray-500'
+                'icon' => 'fal fa-pause-circle',
+                'class' => 'text-gray-500',
             ],
         ];
     }
-
 }

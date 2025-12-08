@@ -16,28 +16,28 @@ class FetchAuroraWarehouse extends FetchAurora
 {
     protected function parseModel(): void
     {
-        $this->parsedData["warehouse"] = [
-            "code"       => Abbreviate::run($this->auroraModelData->{'Warehouse Name'}),
-            "name"       => $this->auroraModelData->{'Warehouse Name'},
-            'state'      => match ($this->auroraModelData->{'Warehouse State'}) {
+        $this->parsedData['warehouse'] = [
+            'code' => Abbreviate::run($this->auroraModelData->{'Warehouse Name'}),
+            'name' => $this->auroraModelData->{'Warehouse Name'},
+            'state' => match ($this->auroraModelData->{'Warehouse State'}) {
                 'Active' => WarehouseStateEnum::OPEN->value,
-                default  => WarehouseStateEnum::CLOSED->value
+                default => WarehouseStateEnum::CLOSED->value
             },
-            'settings'   => [
-                'address_link' => 'Organisation:default'
+            'settings' => [
+                'address_link' => 'Organisation:default',
             ],
-            "source_id"       => $this->organisation->id.':'.$this->auroraModelData->{'Warehouse Key'},
-            "created_at"      => $this->auroraModelData->{'Warehouse Valid From'} ?? null,
-            'fetched_at'      => now(),
-            'last_fetched_at' => now()
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Warehouse Key'},
+            'created_at' => $this->auroraModelData->{'Warehouse Valid From'} ?? null,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
-        return DB::connection("aurora")
-            ->table("Warehouse Dimension")
-            ->where("Warehouse Key", $id)
+        return DB::connection('aurora')
+            ->table('Warehouse Dimension')
+            ->where('Warehouse Key', $id)
             ->first();
     }
 }

@@ -28,38 +28,38 @@ enum FulfilmentInvoiceTabsEnum: string
         return match ($this) {
             FulfilmentInvoiceTabsEnum::REFUNDS => [
                 'title' => __('Refunds'),
-                'icon'  => 'fal fa-arrow-circle-left',
-                'type'  => 'icon',
+                'icon' => 'fal fa-arrow-circle-left',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             FulfilmentInvoiceTabsEnum::PAYMENTS => [
                 'title' => __('Payments'),
-                'type'  => 'icon',
+                'type' => 'icon',
                 'align' => 'right',
-                'icon'  => 'fal fa-credit-card',
+                'icon' => 'fal fa-credit-card',
             ],
 
             FulfilmentInvoiceTabsEnum::EMAIL => [
                 'align' => 'right',
                 'title' => __('Email'),
-                'icon'  => 'fal fa-envelope',
-                'type'  => 'icon'
+                'icon' => 'fal fa-envelope',
+                'type' => 'icon',
             ],
 
             FulfilmentInvoiceTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
 
             FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS => [
                 'title' => __('Transactions'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
             FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS => [
                 'title' => __('Show individual pallets/spaces'),
-                'icon'  => 'fal fa-expand-arrows',
+                'icon' => 'fal fa-expand-arrows',
             ],
         };
     }

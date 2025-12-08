@@ -21,14 +21,14 @@ use App\Stubs\UIDummies\ShowDummy;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowMarketingDashboard::class)->name('dashboard');
-Route::name("newsletters.")->prefix('newsletters')
+Route::name('newsletters.')->prefix('newsletters')
     ->group(function () {
         Route::get('', IndexNewsletterMailshots::class)->name('index');
         Route::get('create', CreateNewsletter::class)->name('create');
         Route::get('{mailshot}', ShowMailshot::class)->name('show');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
     });
-Route::name("mailshots.")->prefix('mailshots')
+Route::name('mailshots.')->prefix('mailshots')
     ->group(function () {
         Route::get('', [IndexMarketingMailshots::class, 'inShop'])->name('index');
         Route::get('create', CreateMailshot::class)->name('create');
@@ -36,7 +36,7 @@ Route::name("mailshots.")->prefix('mailshots')
         Route::get('{mailshot}/workshop', ShowMailshotWorkshop::class)->name('workshop');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
     });
-Route::name("notifications.")->prefix('notifications')
+Route::name('notifications.')->prefix('notifications')
     ->group(function () {
         Route::get('', IndexDummies::class)->name('index');
         Route::get('create', CreateDummy::class)->name('create');

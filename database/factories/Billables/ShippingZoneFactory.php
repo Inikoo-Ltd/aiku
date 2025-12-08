@@ -23,15 +23,15 @@ class ShippingZoneFactory extends Factory
     public function definition()
     {
         return [
-            'code'   => fake()->lexify,
-            'name'   => fake()->name,
+            'code' => fake()->lexify,
+            'name' => fake()->name,
             'status' => fake()->boolean,
-            'price'  => [
-                'amount'   => fake()->randomFloat(2, 1, 100),
-                'currency' => fake()->currencyCode
+            'price' => [
+                'amount' => fake()->randomFloat(2, 1, 100),
+                'currency' => fake()->currencyCode,
             ],
             'territories' => [
-                'territory' => fake()->countryCode
+                'territory' => fake()->countryCode,
             ],
             'position' => fake()->numberBetween(1, 100),
 

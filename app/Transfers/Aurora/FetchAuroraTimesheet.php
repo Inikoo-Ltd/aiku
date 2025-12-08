@@ -16,7 +16,6 @@ class FetchAuroraTimesheet extends FetchAurora
     use WithAuroraImages;
     use WithAuroraParsers;
 
-
     public function fetch(int $id): ?array
     {
         $this->auroraModelData = $this->fetchData($id);
@@ -29,7 +28,6 @@ class FetchAuroraTimesheet extends FetchAurora
 
     protected function parseModel(): void
     {
-
 
         $clockingsData = DB::connection('aurora')
             ->table('Timesheet Record Dimension')
@@ -48,11 +46,10 @@ class FetchAuroraTimesheet extends FetchAurora
             return;
         }
 
-
         $this->parsedData['timesheet'] = [
-            'date'      => $this->auroraModelData->{'Timesheet Date'},
+            'date' => $this->auroraModelData->{'Timesheet Date'},
             'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Timesheet Key'},
-            'fetched_at'      => now(),
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
 
         ];
@@ -60,8 +57,8 @@ class FetchAuroraTimesheet extends FetchAurora
         foreach ($clockingsData as $clockingsDatum) {
             $parsedClocking = [
                 'clocked_at' => $clockingsDatum->{'Timesheet Record Date'},
-                'source_id'  => $this->organisation->id.':'.$clockingsDatum->{'Timesheet Record Key'},
-                'fetched_at'      => now(),
+                'source_id' => $this->organisation->id.':'.$clockingsDatum->{'Timesheet Record Key'},
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
             ];
 
@@ -77,26 +74,23 @@ class FetchAuroraTimesheet extends FetchAurora
             }
 
             $parsedClocking['generator'] = $generator;
-            $parsedClocking['parent']    = $parent;
-
+            $parsedClocking['parent'] = $parent;
 
             $this->parsedData['clockings'][] = [
-                'parent'       => $parent,
-                'generator'    => $generator,
-                'subject'      => $this->parsedData['employee'],
+                'parent' => $parent,
+                'generator' => $generator,
+                'subject' => $this->parsedData['employee'],
                 'clockingData' => $parsedClocking,
 
             ];
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Timesheet Dimension')
             ->leftJoin('Staff Dimension', 'Timesheet Staff Key', '=', 'Staff Key')
             ->where('Timesheet Key', $id)->first();
     }
-
 }

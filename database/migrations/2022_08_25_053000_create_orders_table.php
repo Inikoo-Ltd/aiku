@@ -15,7 +15,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
     use HasOrderAmountTotals;
 
@@ -58,7 +59,6 @@ return new class () extends Migration {
             $table->unsignedInteger('collection_address_id')->index()->nullable();
             $table->foreign('collection_address_id')->references('id')->on('addresses');
 
-
             $table->unsignedSmallInteger('billing_country_id')->index()->nullable();
             $table->foreign('billing_country_id')->references('id')->on('countries');
             $table->unsignedSmallInteger('delivery_country_id')->index()->nullable();
@@ -86,18 +86,15 @@ return new class () extends Migration {
             $table = $this->currencyFields($table);
             $table = $this->orderTotalAmounts($table);
 
-
             $table->jsonb('data');
             $table->datetimeTz('fetched_at')->nullable();
             $table->datetimeTz('last_fetched_at')->nullable();
             $table->timestampstz();
             $table->softDeletesTz();
 
-
             $table->string('source_id')->nullable()->unique();
         });
     }
-
 
     public function down(): void
     {

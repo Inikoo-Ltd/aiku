@@ -28,7 +28,7 @@ class ExportOrgSuppliers
     {
         $type = $modelData['type'];
 
-        return $this->export(new OrgSuppliersExport(), 'org-suppliers', $type);
+        return $this->export(new OrgSuppliersExport, 'org-suppliers', $type);
     }
 
     /**

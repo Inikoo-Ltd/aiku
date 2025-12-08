@@ -19,9 +19,9 @@ use Illuminate\Validation\ValidationException;
 
 class DeleteOrder extends OrgAction
 {
-    use WithOrderingEditAuthorisation;
-    use WithActionUpdate;
     use HasOrderHydrators;
+    use WithActionUpdate;
+    use WithOrderingEditAuthorisation;
 
     public string $commandSignature = 'cancel:delete {id}';
 
@@ -36,7 +36,6 @@ class DeleteOrder extends OrgAction
             $order = $this->update($order, $deletedData, ['data']);
             $order->transactions()->delete();
             $this->orderHandlingHydrators($order, $order->state);
-
 
             return $order;
         }
@@ -54,6 +53,7 @@ class DeleteOrder extends OrgAction
             $order = Order::findOrFail($command->argument('id'));
         } catch (Exception) {
             $command->error('Order not found');
+
             return 1;
         }
 

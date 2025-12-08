@@ -29,6 +29,7 @@ class IndexAgents extends GrpAction
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('supply-chain.edit');
+
         return $request->user()->authTo('supply-chain.view');
     }
 
@@ -37,21 +38,20 @@ class IndexAgents extends GrpAction
         return
             [
                 'status' => [
-                    'label'    => __('Status'),
+                    'label' => __('Status'),
                     'elements' => [
-                        'active'    =>
-                            [
-                                __('Active'),
-                                $group->supplyChainStats->number_active_agents
-                            ],
+                        'active' => [
+                            __('Active'),
+                            $group->supplyChainStats->number_active_agents,
+                        ],
                         'suspended' => [
                             __('Suspended'),
-                            $group->supplyChainStats->number_archived_agents
-                        ]
+                            $group->supplyChainStats->number_archived_agents,
+                        ],
                     ],
-                    'engine'   => function ($query, $elements) {
+                    'engine' => function ($query, $elements) {
                         $query->where('agents.status', array_pop($elements) === 'active');
-                    }
+                    },
 
                 ],
             ];
@@ -72,7 +72,6 @@ class IndexAgents extends GrpAction
 
         $queryBuilder = QueryBuilder::for(Agent::class);
 
-
         foreach ($this->getElementGroups($this->group) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
@@ -81,8 +80,6 @@ class IndexAgents extends GrpAction
                 prefix: $prefix
             );
         }
-
-
 
         return $queryBuilder
             ->leftJoin('organisations', 'organisation_id', 'organisations.id')
@@ -113,23 +110,22 @@ class IndexAgents extends GrpAction
                 );
             }
 
-
             $table
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title'       => __('no agents'),
+                        'title' => __('no agents'),
                         'description' => $this->canEdit ? __('Get started by creating a new agent.') : null,
-                        'count'       => $parent->supplyChainStats->number_agents,
-                        'action'      => $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
+                        'count' => $parent->supplyChainStats->number_agents,
+                        'action' => $this->canEdit ? [
+                            'type' => 'button',
+                            'style' => 'create',
                             'tooltip' => __('New agent'),
-                            'label'   => __('agent'),
-                            'route'   => [
-                                'name'       => 'grp.supply-chain.agents.create',
-                            ]
-                        ] : null
+                            'label' => __('agent'),
+                            'route' => [
+                                'name' => 'grp.supply-chain.agents.create',
+                            ],
+                        ] : null,
                     ]
                 )
 
@@ -141,8 +137,6 @@ class IndexAgents extends GrpAction
                 ->defaultSort('code');
         };
     }
-
-
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
@@ -160,7 +154,6 @@ class IndexAgents extends GrpAction
     public function htmlResponse(LengthAwarePaginator $agent, ActionRequest $request): Response
     {
 
-
         return Inertia::render(
             'SupplyChain/Agents',
             [
@@ -168,28 +161,27 @@ class IndexAgents extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("agents"),
-                'pageHead'    => [
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'fa-people-arrows'],
-                            'title' => __('Agents')
-                        ],
-                    'title'  => __("agents"),
+                'title' => __('agents'),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-people-arrows'],
+                        'title' => __('Agents'),
+                    ],
+                    'title' => __('agents'),
 
                     'actions' => [
                         $this->canEdit && $request->route()->getName() == 'grp.supply-chain.agents.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
+                            'type' => 'button',
+                            'style' => 'create',
                             'tooltip' => __('New agent'),
-                            'label'   => __('agent'),
-                            'route'   => [
-                                'name'       => 'grp.supply-chain.agents.create',
-                            ]
+                            'label' => __('agent'),
+                            'route' => [
+                                'name' => 'grp.supply-chain.agents.create',
+                            ],
                         ] : false,
-                    ]
+                    ],
                 ],
-                'data'        => AgentsResource::collection($agent),
+                'data' => AgentsResource::collection($agent),
             ]
         )->table($this->tableStructure($this->group));
     }
@@ -199,33 +191,32 @@ class IndexAgents extends GrpAction
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Agents'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
+
         return match ($routeName) {
-            'grp.supply-chain.agents.index' =>
-            array_merge(
+            'grp.supply-chain.agents.index' => array_merge(
                 ShowSupplyChainDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => 'grp.supply-chain.agents.index',
-                        'parameters' => []
+                        'parameters' => [],
                     ]
                 )
             ),
-            'grp.overview.procurement.agents.index' =>
-            array_merge(
+            'grp.overview.procurement.agents.index' => array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => $routeName,
-                        'parameters' => $routeParameters
+                        'parameters' => $routeParameters,
                     ]
                 )
             ),

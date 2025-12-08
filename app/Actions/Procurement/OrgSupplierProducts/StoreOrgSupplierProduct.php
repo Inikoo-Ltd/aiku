@@ -26,18 +26,16 @@ class StoreOrgSupplierProduct extends OrgAction
         data_set($modelData, 'group_id', $orgSupplier->group_id);
         data_set($modelData, 'organisation_id', $orgSupplier->organisation_id);
 
-
         data_set($modelData, 'org_agent_id', $orgSupplier->org_agent_id);
         data_set($modelData, 'org_supplier_id', $orgSupplier->id);
 
         $state = match ($supplierProduct->state) {
             SupplierProductStateEnum::DISCONTINUING => OrgSupplierProductStateEnum::DISCONTINUING,
-            SupplierProductStateEnum::DISCONTINUED  => OrgSupplierProductStateEnum::DISCONTINUED,
-            default                                 => OrgSupplierProductStateEnum::ACTIVE
+            SupplierProductStateEnum::DISCONTINUED => OrgSupplierProductStateEnum::DISCONTINUED,
+            default => OrgSupplierProductStateEnum::ACTIVE
         };
         data_set($modelData, 'state', $state);
         data_set($modelData, 'is_available', $supplierProduct->is_available);
-
 
         /** @var OrgSupplierProduct $orgSupplierProduct */
         $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->create($modelData);
@@ -49,10 +47,8 @@ class StoreOrgSupplierProduct extends OrgAction
             OrgAgentHydrateOrgSupplierProducts::dispatch($orgSupplierProduct->orgAgent);
         }
 
-
         return $orgSupplierProduct;
     }
-
 
     public function rules(ActionRequest $request): array
     {
@@ -63,12 +59,10 @@ class StoreOrgSupplierProduct extends OrgAction
 
     public function action(OrgSupplier $orgSupplier, SupplierProduct $supplierProduct, $modelData = [], $hydratorsDelay = 0): OrgSupplierProduct
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($orgSupplier->organisation, $modelData);
 
         return $this->handle($orgSupplier, $supplierProduct, $this->validatedData);
     }
-
-
 }

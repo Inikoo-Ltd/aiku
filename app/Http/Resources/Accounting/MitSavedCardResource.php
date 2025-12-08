@@ -21,30 +21,29 @@ class MitSavedCardResource extends JsonResource
         /** @var MitSavedCard $mitSavedCard */
         $mitSavedCard = $this;
 
-
         return [
-            'id'               => $mitSavedCard->id,
-            'token'            => '****',// Never expose the token,
+            'id' => $mitSavedCard->id,
+            'token' => '****', // Never expose the token,
             'last_four_digits' => $mitSavedCard->last_four_digits,
-            'card_type'        => $mitSavedCard->card_type,
-            'expires_at'       => $mitSavedCard->expires_at?->format('m/y'),
-            'processed_at'     => $mitSavedCard->processed_at,
+            'card_type' => $mitSavedCard->card_type,
+            'expires_at' => $mitSavedCard->expires_at?->format('m/y'),
+            'processed_at' => $mitSavedCard->processed_at,
 
-            'is_default'       => $mitSavedCard->priority === 1,
-             'route_set_to_default' => [
-                 'method' => 'patch',
-                 'name' => 'retina.models.mit_saved_card.set_to_default',
-                 'parameters' => [
-                     'mitSavedCard' => $mitSavedCard->id,
-                 ],
-             ],
-            'priority'       => $mitSavedCard->priority,
-            'state'          => $mitSavedCard->state,
+            'is_default' => $mitSavedCard->priority === 1,
+            'route_set_to_default' => [
+                'method' => 'patch',
+                'name' => 'retina.models.mit_saved_card.set_to_default',
+                'parameters' => [
+                    'mitSavedCard' => $mitSavedCard->id,
+                ],
+            ],
+            'priority' => $mitSavedCard->priority,
+            'state' => $mitSavedCard->state,
             'failure_status' => $mitSavedCard->failure_status,
-            'failure_msg'    => $mitSavedCard->failure_status,
-            'label'          => $mitSavedCard->label,
-            'created_at'     => $mitSavedCard->created_at,
-            'updated_at'     => $mitSavedCard->updated_at,
+            'failure_msg' => $mitSavedCard->failure_status,
+            'label' => $mitSavedCard->label,
+            'created_at' => $mitSavedCard->created_at,
+            'updated_at' => $mitSavedCard->updated_at,
 
         ];
     }

@@ -38,5 +38,4 @@ class ImportRetinaClients extends RetinaAction
 
         $this->handle($customerSalesChannel, $this->validatedData);
     }
-
 }

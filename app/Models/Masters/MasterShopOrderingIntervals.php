@@ -399,9 +399,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $registrations_without_orders_pq4
  * @property int $registrations_without_orders_pq5
  * @property-read \App\Models\Masters\MasterShop $masterShop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingIntervals query()
+ *
  * @mixin \Eloquent
  */
 class MasterShopOrderingIntervals extends Model
@@ -409,6 +411,7 @@ class MasterShopOrderingIntervals extends Model
     protected $table = 'master_shop_ordering_intervals';
 
     protected $guarded = [];
+
     public function masterShop(): BelongsTo
     {
         return $this->belongsTo(MasterShop::class);

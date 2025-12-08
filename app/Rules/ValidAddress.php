@@ -23,7 +23,7 @@ class ValidAddress implements ValidationRule
         }
 
         $query = DB::table('countries');
-        if ($query->where("id", Arr::get($value, 'country_id'))->count() <= 0) {
+        if ($query->where('id', Arr::get($value, 'country_id'))->count() <= 0) {
 
             $fail(__('Invalid address'));
         }

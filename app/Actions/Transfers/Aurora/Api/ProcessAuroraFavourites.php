@@ -22,5 +22,4 @@ class ProcessAuroraFavourites extends OrgAction
     {
         $this->fetcher = FetchAuroraFavourites::class;
     }
-
 }

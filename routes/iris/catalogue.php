@@ -6,7 +6,6 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
 use App\Actions\Iris\Catalogue\GetProductDetail;
 

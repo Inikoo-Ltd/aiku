@@ -15,7 +15,6 @@ trait WithInertia
 {
     use WithAttributes;
 
-
     /**
      * @throws \Exception
      */

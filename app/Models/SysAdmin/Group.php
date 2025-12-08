@@ -262,6 +262,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, WebUser> $webUsers
  * @property-read LaravelCollection<int, Webpage> $webpages
  * @property-read LaravelCollection<int, Website> $websites
+ *
  * @method static \Database\Factories\SysAdmin\GroupFactory factory($count = null, $state = [])
  * @method static Builder<static>|Group newModelQuery()
  * @method static Builder<static>|Group newQuery()
@@ -269,35 +270,36 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Group query()
  * @method static Builder<static>|Group withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Group withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Group extends Authenticatable implements Auditable, HasMedia
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasFactory;
-    use InteractsWithMedia;
-    use HasImage;
     use HasApiTokens;
+    use HasFactory;
     use HasHistory;
+    use HasImage;
+    use HasSlug;
+    use InteractsWithMedia;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     protected function casts(): array
     {
         return [
-            'limits'   => 'array',
-            'data'     => 'array',
+            'limits' => 'array',
+            'data' => 'array',
             'settings' => 'array',
-            'extra_languages' => 'array'
+            'extra_languages' => 'array',
         ];
     }
 
     protected $attributes = [
-        'limits'   => '{}',
-        'data'     => '{}',
+        'limits' => '{}',
+        'data' => '{}',
         'settings' => '{}',
-        'extra_languages' => '{}'
+        'extra_languages' => '{}',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -326,7 +328,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
         'country_id',
         'currency_id',
         'language_id',
-        'timezone_id'
+        'timezone_id',
     ];
 
     public function tradeUnits(): HasMany
@@ -824,6 +826,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->hasMany(EmailAddress::class);
     }
+
     public function purges(): HasMany
     {
         return $this->hasMany(Purge::class);
@@ -848,7 +851,6 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->hasMany(SalesChannel::class);
     }
-
 
     public function invoiceCategories(): HasMany
     {
@@ -899,7 +901,6 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->hasOne(GroupOutboxNewsletterIntervals::class);
     }
-
 
     public function outboxMarketingIntervals(): HasOne
     {
@@ -965,6 +966,4 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->hasMany(PaymentGatewayLog::class);
     }
-
-
 }

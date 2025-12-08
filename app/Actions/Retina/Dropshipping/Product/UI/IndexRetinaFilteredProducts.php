@@ -35,6 +35,7 @@ class IndexRetinaFilteredProducts extends RetinaAction
         if ($customerSalesChannel->customer_id == $this->customer->id) {
             return true;
         }
+
         return false;
     }
 
@@ -44,5 +45,4 @@ class IndexRetinaFilteredProducts extends RetinaAction
 
         return $this->handle($customerSalesChannel);
     }
-
 }

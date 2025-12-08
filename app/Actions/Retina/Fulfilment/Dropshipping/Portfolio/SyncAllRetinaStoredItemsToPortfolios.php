@@ -29,19 +29,18 @@ class SyncAllRetinaStoredItemsToPortfolios extends RetinaAction
 
         if (empty($itemsToSync)) {
             throw ValidationException::withMessages([
-                'messages' => __('All stored items have already been added as portfolios.')
+                'messages' => __('All stored items have already been added as portfolios.'),
             ]);
         }
 
-        if (!empty($itemsToSync)) {
+        if (! empty($itemsToSync)) {
             StoreRetinaProductManual::make()->action($customerSalesChannel, [
-                'items' => $storedItemIds
+                'items' => $storedItemIds,
             ]);
         }
 
         return $customerSalesChannel;
     }
-
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request)
     {

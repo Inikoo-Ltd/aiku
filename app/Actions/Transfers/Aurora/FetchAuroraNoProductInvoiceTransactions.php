@@ -25,7 +25,6 @@ class FetchAuroraNoProductInvoiceTransactions
 {
     use AsAction;
 
-
     public function handle(SourceOrganisationService $organisationSource, int $source_id, Invoice $invoice): ?InvoiceTransaction
     {
         if ($invoiceTransactionData = $organisationSource->fetchNoProductInvoiceTransaction(
@@ -44,7 +43,6 @@ class FetchAuroraNoProductInvoiceTransactions
 
             return $invoiceTransaction;
         }
-
 
         return null;
     }
@@ -90,7 +88,6 @@ class FetchAuroraNoProductInvoiceTransactions
                 data_set($invoiceTransactionData, 'transaction.historic_asset_id', null);
 
             }
-
 
             $invoiceTransaction = UpdateInvoiceTransaction::make()->action(
                 invoiceTransaction: $invoiceTransaction,

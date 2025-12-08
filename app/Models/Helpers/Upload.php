@@ -51,9 +51,11 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read User|null $user
  * @property-read WebUser|null $webUser
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Upload newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Upload newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Upload query()
+ *
  * @mixin \Eloquent
  */
 class Upload extends Model implements Auditable
@@ -65,14 +67,14 @@ class Upload extends Model implements Auditable
     protected $guarded = [];
 
     protected $casts = [
-        'fetched_at'      => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
     public function generateTags(): array
     {
         return [
-            'imports'
+            'imports',
         ];
     }
 

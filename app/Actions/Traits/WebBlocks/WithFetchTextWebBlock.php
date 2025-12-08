@@ -16,56 +16,55 @@ trait WithFetchTextWebBlock
 {
     use AsAction;
 
-
-    public function getTemplateTextColumn($auroraBlock): string|null
+    public function getTemplateTextColumn($auroraBlock): ?string
     {
-        $template = $auroraBlock["template"];
+        $template = $auroraBlock['template'];
         if (is_int($template)) {
-            return $template > 4 ? '4' : (string)$template;
+            return $template > 4 ? '4' : (string) $template;
         }
 
         return null;
     }
 
-    public function processTextColumnData(Webpage $webpage, $auroraBlock, string $template): array|null
+    public function processTextColumnData(Webpage $webpage, $auroraBlock, string $template): ?array
     {
         $layout = null;
-        $text   = $auroraBlock["text_blocks"];
+        $text = $auroraBlock['text_blocks'];
 
         if (count($text) > 0) {
-            $texts         = [];
+            $texts = [];
             $externalLinks = [];
             foreach ($text as $value) {
-                $text   = $value['text'] ?? null;
+                $text = $value['text'] ?? null;
                 $layout = $this->replaceAnchor($webpage, $text, $layout);
 
                 if ($layout) {
                     if (is_string($layout['text'])) {
                         $layout['text'] = [$layout['text']];
                     }
-                    $texts         = array_merge($texts, $layout['text'] ?? ['']);
+                    $texts = array_merge($texts, $layout['text'] ?? ['']);
                     $externalLinks = array_merge($externalLinks, $layout['external_links'] ?? []);
                     data_forget($layout, 'text');
                     data_forget($layout, 'external_links');
                 }
             }
-            data_set($layout, "external_links", $externalLinks);
-            data_set($layout, "data.fieldValue.value.text", $texts);
-            data_set($layout, "data.fieldValue.value.layout_type", $template);
+            data_set($layout, 'external_links', $externalLinks);
+            data_set($layout, 'data.fieldValue.value.text', $texts);
+            data_set($layout, 'data.fieldValue.value.layout_type', $template);
         }
 
         return $layout;
     }
 
-    public function processTextData(Webpage $webpage, $auroraBlock): array|null
+    public function processTextData(Webpage $webpage, $auroraBlock): ?array
     {
         $layout = null;
-        $text   = $auroraBlock["text_blocks"];
-        if (!empty($text)) {
-            $text   = $text[0]['text'] ?? null;
+        $text = $auroraBlock['text_blocks'];
+        if (! empty($text)) {
+            $text = $text[0]['text'] ?? null;
             $layout = $this->replaceAnchor($webpage, $text, $layout);
             if ($layout) {
-                data_set($layout, "data.fieldValue.value", $layout['text']);
+                data_set($layout, 'data.fieldValue.value', $layout['text']);
                 data_forget($layout, 'text');
             }
         }
@@ -75,18 +74,18 @@ trait WithFetchTextWebBlock
 
     public function processPhoneData($auroraBlock): array
     {
-        $text      = $auroraBlock['_text'];
-        $title     = $auroraBlock['_title'];
+        $text = $auroraBlock['_text'];
+        $title = $auroraBlock['_title'];
         $telephone = $auroraBlock['_telephone'];
 
-        $cleanedTitle     = str_replace('&nbsp;', ' ', $title);
+        $cleanedTitle = str_replace('&nbsp;', ' ', $title);
         $cleanedTelephone = str_replace([' ', '(0)', ' '], '', $telephone);
 
         $html = '<p>'.$text.'</p>';
         $html .= '<p style="text-align: center"><strong>'.$cleanedTitle.'</strong></p>';
         $html .= '<h1 style="text-align: center"><mark data-color="#A9FF00" style="background-color: #A9FF00; color: inherit">'.$cleanedTelephone.'</mark></h1>';
 
-        data_set($layout, "data.fieldValue.value", $html);
+        data_set($layout, 'data.fieldValue.value', $html);
 
         return $layout;
     }
@@ -97,13 +96,13 @@ trait WithFetchTextWebBlock
             $patternAnchors = "/<a\s([^>]*?)href=['\"](.*?)['\"]([^>]*)>(.*?)<\/a>/i";
             preg_match_all($patternAnchors, $text, $matches);
             $originalAnchor = $matches[0];
-            $links          = $matches[2];
+            $links = $matches[2];
 
             $attributeBeforeHref = $matches[1];
-            $attributeAfterHref  = $matches[3];
-            $textInsideAnchor    = $matches[4];
+            $attributeAfterHref = $matches[3];
+            $textInsideAnchor = $matches[4];
 
-            if (!$links) {
+            if (! $links) {
                 $layout['text'] = $text;
 
                 return $layout;
@@ -111,7 +110,7 @@ trait WithFetchTextWebBlock
 
             $externalLinks = [];
             foreach ($links as $index => $link) {
-                $originalLink        = FetchAuroraWebBlockLink::run($this->organisationSource, $webpage->website, $link);
+                $originalLink = FetchAuroraWebBlockLink::run($this->organisationSource, $webpage->website, $link);
                 $additionalAttribute = '';
                 if ($originalLink['type'] == 'internal') {
                     $additionalAttribute .=
@@ -137,7 +136,7 @@ trait WithFetchTextWebBlock
                 $text = str_replace($originalAnchor[$index], $customExtensionElement, $text);
             }
             $layout['external_links'] = $externalLinks;
-            $layout['text']           = $text;
+            $layout['text'] = $text;
         }
 
         return $layout;

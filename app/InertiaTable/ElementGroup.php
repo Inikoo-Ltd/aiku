@@ -17,15 +17,14 @@ use Illuminate\Contracts\Support\Arrayable;
         public string $key,
         public string|array $label,
         public array $elements
-    ) {
-    }
+    ) {}
 
     public function toArray(): array
     {
         return [
-            'key'      => $this->key,
-            'label'    => $this->label,
-            'elements' => $this->elements
+            'key' => $this->key,
+            'label' => $this->label,
+            'elements' => $this->elements,
         ];
     }
 }

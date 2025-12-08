@@ -26,13 +26,13 @@ class ShopResource extends JsonResource
         $shop = $this;
 
         return [
-            'id'      => $shop->id,
-            'slug'    => $shop->slug,
-            'code'    => $shop->code,
-            'name'    => $shop->name,
-            'type'    => $shop->type,
-            'state'   => $shop->state,
-            'sales'   => $shop->orderingStats
+            'id' => $shop->id,
+            'slug' => $shop->slug,
+            'code' => $shop->code,
+            'name' => $shop->name,
+            'type' => $shop->type,
+            'state' => $shop->state,
+            'sales' => $shop->orderingStats,
         ];
     }
 }

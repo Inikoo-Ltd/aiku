@@ -32,7 +32,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
     {
         return [
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     PalletDeliveryStateEnum::labels(forElements: true),
                     PalletDeliveryStateEnum::count($fulfilmentCustomer, forElements: true)
@@ -40,9 +40,8 @@ class IndexRetinaPalletDeliveries extends RetinaAction
 
                 'engine' => function ($query, $elements) {
                     $query->whereIn('pallet_deliveries.state', $elements);
-                }
+                },
             ],
-
 
         ];
     }
@@ -72,8 +71,8 @@ class IndexRetinaPalletDeliveries extends RetinaAction
         $queryBuilder->leftJoin('pallet_delivery_stats', 'pallet_deliveries.id', '=', 'pallet_delivery_stats.pallet_delivery_id');
         $queryBuilder->leftJoin('currencies', 'pallet_deliveries.currency_id', '=', 'currencies.id');
         $queryBuilder->leftJoin('organisations', 'pallet_deliveries.organisation_id', '=', 'pallet_deliveries.id')
-        ->leftJoin('fulfilments', 'pallet_deliveries.fulfilment_id', '=', 'fulfilments.id')
-        ->leftJoin('shops', 'fulfilments.shop_id', '=', 'shops.id');
+            ->leftJoin('fulfilments', 'pallet_deliveries.fulfilment_id', '=', 'fulfilments.id')
+            ->leftJoin('shops', 'fulfilments.shop_id', '=', 'shops.id');
 
         foreach ($this->getElementGroups($fulfilmentCustomer) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -105,7 +104,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
         return $queryBuilder
             ->defaultSort('reference')
             ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date'])
-            ->allowedFilters([$globalSearch,AllowedFilter::exact('state')])
+            ->allowedFilters([$globalSearch, AllowedFilter::exact('state')])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -148,36 +147,36 @@ class IndexRetinaPalletDeliveries extends RetinaAction
 
         $actions = [
             $fulfilmentCustomer->pallets_storage ? [
-                    'type'  => 'button',
-                    'style' => 'create',
-                    'label' => __('New Storage or Service'),
-                    'fullLoading'   => true,
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'retina.models.pallet-delivery.store',
-                        'parameters' => []
-                    ]
-                ] : false
-            ];
+                'type' => 'button',
+                'style' => 'create',
+                'label' => __('New Storage or Service'),
+                'fullLoading' => true,
+                'route' => [
+                    'method' => 'post',
+                    'name' => 'retina.models.pallet-delivery.store',
+                    'parameters' => [],
+                ],
+            ] : false,
+        ];
 
         return Inertia::render(
             'Storage/RetinaPalletDeliveries',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Goods in'),
-                'pageHead'    => [
-                    'model'     => __('Storage'),
-                    'title'   => __('Goods In'),
-                    'icon'    => [
-                        'icon'  => ['fal', 'fa-truck'],
-                        'title' => __('Delivery')
+                'title' => __('Goods in'),
+                'pageHead' => [
+                    'model' => __('Storage'),
+                    'title' => __('Goods In'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-truck'],
+                        'title' => __('Delivery'),
                     ],
-                    'actions' => array_filter($actions)
+                    'actions' => array_filter($actions),
                 ],
-                'data'        => PalletDeliveriesResource::collection($deliveries),
+                'data' => PalletDeliveriesResource::collection($deliveries),
                 'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => $navigation
+                    'current' => $this->tab,
+                    'navigation' => $navigation,
                 ],
 
                 PalletDeliveriesTabsEnum::DELIVERIES->value => $this->tab == PalletDeliveriesTabsEnum::DELIVERIES->value ?
@@ -189,7 +188,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
                     : Inertia::lazy(fn () => PalletUploadsResource::collection(IndexRetinaPalletUploads::run($this->webUser, PalletDeliveriesTabsEnum::UPLOADS->value))),
             ]
         )->table($this->tableStructure(fulfilmentCustomer: $this->customer->fulfilmentCustomer, prefix: PalletDeliveriesTabsEnum::DELIVERIES->value))
-        ->table(IndexRetinaPalletUploads::make()->tableStructure(prefix:PalletDeliveriesTabsEnum::UPLOADS->value));
+            ->table(IndexRetinaPalletUploads::make()->tableStructure(prefix: PalletDeliveriesTabsEnum::UPLOADS->value));
     }
 
     public function getBreadcrumbs(): array
@@ -198,16 +197,16 @@ class IndexRetinaPalletDeliveries extends RetinaAction
             ShowRetinaStorageDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
                             'name' => 'retina.fulfilment.storage.pallet_deliveries.index',
                         ],
                         'label' => __('Goods In'),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
                     ],
 
-                ]
+                ],
             ]
         );
     }

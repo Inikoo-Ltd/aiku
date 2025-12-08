@@ -13,9 +13,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopCrmTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopCrmTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopCrmTimeSeries query()
+ *
  * @mixin \Eloquent
  */
 class ShopCrmTimeSeries extends Model

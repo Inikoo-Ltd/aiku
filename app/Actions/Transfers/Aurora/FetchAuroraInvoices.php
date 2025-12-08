@@ -9,9 +9,9 @@
 namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Accounting\Invoice\CategoriseInvoice;
-use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
+use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Maintenance\Accounting\RepairInvoiceFixTaxNumber;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\Invoice;
@@ -40,7 +40,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
 
         $invoiceData = $organisationSource->fetchInvoice($organisationSourceId);
 
-        if (!$invoiceData) {
+        if (! $invoiceData) {
             return null;
         }
 
@@ -76,7 +76,6 @@ class FetchAuroraInvoices extends FetchAuroraAction
                     Arr::except($invoiceData['invoice'], ['fetched_at', 'last_fetched_at', 'source_id'])
                 );
 
-
                 $this->recordNew($organisationSource);
 
                 $sourceData = explode(':', $invoice->source_id);
@@ -90,7 +89,6 @@ class FetchAuroraInvoices extends FetchAuroraAction
             }
         }
 
-
         if ($doTransactions) {
             $this->fetchInvoiceTransactions($organisationSource, $invoice);
             $this->fetchInvoiceNoProductTransactions($organisationSource, $invoice);
@@ -101,14 +99,11 @@ class FetchAuroraInvoices extends FetchAuroraAction
                 ->update(['aiku_all_id' => $invoice->id]);
         }
 
-
         if (in_array('payments', $this->with) or in_array('full', $this->with)) {
             $this->fetchPayments($organisationSource, $invoice);
         }
 
-
         RepairInvoiceFixTaxNumber::run($invoice);
-
 
         return $invoice;
     }
@@ -116,7 +111,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
     private function fetchPayments($organisationSource, Invoice $invoice): void
     {
         $organisation = $organisationSource->getOrganisation();
-        $sourceData   = explode(':', $invoice->source_id);
+        $sourceData = explode(':', $invoice->source_id);
 
         $modelHasPayments = [];
 
@@ -133,7 +128,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
             if ($payment) {
                 $modelHasPayments[$payment->id] = [
                     'amount' => $payment->amount,
-                    'share'  => 1
+                    'share' => 1,
                 ];
             }
         }
@@ -148,13 +143,12 @@ class FetchAuroraInvoices extends FetchAuroraAction
             $invoice->payments()->sync($modelHasPayments);
         }
 
-
         UpdateInvoicePaymentState::run($invoice);
     }
 
     private function fetchInvoiceTransactions($organisationSource, Invoice $invoice): void
     {
-        if (!$invoice->trashed()) {
+        if (! $invoice->trashed()) {
             $trashedInvoiceTransactions = $invoice->invoiceTransactions()->onlyTrashed()->get();
 
             foreach ($trashedInvoiceTransactions as $trashedModel) {
@@ -162,9 +156,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
             }
         }
 
-
         $transactionsToDelete = $invoice->invoiceTransactions()->withTrashed()->whereIn('model_type', ['Product', 'Service', 'Rental'])->pluck('source_id', 'id')->all();
-
 
         $this->allowLegacy = true;
 
@@ -180,7 +172,6 @@ class FetchAuroraInvoices extends FetchAuroraAction
             $transactionsToDelete = array_diff($transactionsToDelete, [$organisationSource->getOrganisation()->id.':'.$auroraData->{'Order Transaction Fact Key'}]);
             FetchAuroraInvoiceTransactions::run($organisationSource, $auroraData->{'Order Transaction Fact Key'}, $invoice);
         }
-
 
         $invoice->invoiceTransactions()->whereIn('id', array_keys($transactionsToDelete))->delete();
     }
@@ -241,7 +232,6 @@ class FetchAuroraInvoices extends FetchAuroraAction
             $query->where('Invoice Type', 'Refund');
         }
 
-
         if ($this->fromDays) {
             $query->where('Invoice Date', '>=', now()->subDays($this->fromDays)->format('Y-m-d'));
         }
@@ -258,6 +248,4 @@ class FetchAuroraInvoices extends FetchAuroraAction
     {
         DB::connection('aurora')->table('Invoice Dimension')->update(['aiku_id' => null]);
     }
-
-
 }

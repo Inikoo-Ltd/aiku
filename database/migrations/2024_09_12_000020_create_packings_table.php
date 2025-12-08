@@ -13,7 +13,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasPicking;
 
     public function up(): void
@@ -32,7 +33,6 @@ return new class () extends Migration {
 
             $table->string('engine')->defaukt(PackingEngineEnum::AIKU->value)->index();
 
-
             $table->jsonb('data');
 
             $table->dateTimeTz('queued_at')->nullable();
@@ -43,7 +43,6 @@ return new class () extends Migration {
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

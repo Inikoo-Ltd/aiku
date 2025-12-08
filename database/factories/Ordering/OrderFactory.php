@@ -19,10 +19,10 @@ class OrderFactory extends Factory
     public function definition(): array
     {
         return [
-            'reference'      => fake()->lexify(),
-            'date'           => fake()->date,
-            'customer_id'    => fake()->numberBetween(1, 100),
-            'state'          => OrderStateEnum::CREATING->value
+            'reference' => fake()->lexify(),
+            'date' => fake()->date,
+            'customer_id' => fake()->numberBetween(1, 100),
+            'state' => OrderStateEnum::CREATING->value,
         ];
     }
 }

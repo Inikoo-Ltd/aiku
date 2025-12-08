@@ -16,14 +16,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class UsersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class UsersExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|User|Builder
     {
         return \App\Models\SysAdmin\User::query();
     }
 
-    /** @var User $row */
+    /** @var User */
     public function map($row): array
     {
         return [
@@ -32,7 +32,7 @@ class UsersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeading
             $row->email,
             $row->contact_name,
             $row->about,
-            $row->status
+            $row->status,
         ];
     }
 

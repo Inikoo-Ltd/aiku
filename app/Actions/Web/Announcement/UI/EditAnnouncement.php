@@ -40,13 +40,13 @@ class EditAnnouncement extends OrgAction
             'label' => __('Detail'),
             'fields' => [
                 'name' => [
-                    'type'        => 'input',
-                    'label'       => __('name'),
+                    'type' => 'input',
+                    'label' => __('name'),
                     'placeholder' => __('Name for announcement'),
-                    'required'    => true,
-                    'value'       => $announcement->name,
+                    'required' => true,
+                    'value' => $announcement->name,
                 ],
-            ]
+            ],
         ];
 
         return Inertia::render(
@@ -56,36 +56,36 @@ class EditAnnouncement extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Announcement'),
-                'pageHead'    => [
-                    'title'   => $announcement->name,
+                'title' => __('Announcement'),
+                'pageHead' => [
+                    'title' => $announcement->name,
                     'model' => __('Edit'),
-                    'icon'    => [
+                    'icon' => [
                         'tooltip' => __('Edit'),
-                        'icon'    => 'fal fa-megaphone'
+                        'icon' => 'fal fa-megaphone',
                     ],
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
-                    ]
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
+                    ],
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => $fields,
-                    'args'     => [
+                    'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.shop.website.announcement.update',
+                            'name' => 'grp.models.shop.website.announcement.update',
                             'parameters' => [
                                 'shop' => $announcement->website->shop_id,
                                 'website' => $announcement->website_id,
                                 'announcement' => $announcement->id,
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
                 ],
             ]
@@ -101,14 +101,12 @@ class EditAnnouncement extends OrgAction
             ),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __("creating banner"),
-                    ]
-                ]
+                        'label' => __('creating banner'),
+                    ],
+                ],
             ]
         );
     }
-
-
 }

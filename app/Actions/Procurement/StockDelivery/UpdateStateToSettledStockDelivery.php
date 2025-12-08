@@ -17,9 +17,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateStateToSettledStockDelivery
 {
-    use WithActionUpdate;
     use AsAction;
     use HasStockDeliveryHydrators;
+    use WithActionUpdate;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -32,7 +32,7 @@ class UpdateStateToSettledStockDelivery
 
         if ($stockDelivery->state === StockDeliveryStateEnum::CHECKED) {
             $data[$stockDelivery->state->value.'_at'] = null;
-            $data['placed_at']                        = now();
+            $data['placed_at'] = now();
 
             $stockDelivery = $this->update($stockDelivery, $data);
 

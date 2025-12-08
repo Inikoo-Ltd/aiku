@@ -32,11 +32,11 @@ class StoredItemsResource extends JsonResource
         $storedItem = $this;
 
         return [
-            'id'             => $storedItem->id,
-            'reference'      => $storedItem->reference,
-            'slug'           => $storedItem->slug,
-            'state'          => $storedItem->state,
-            'name'           => $storedItem->name,
+            'id' => $storedItem->id,
+            'reference' => $storedItem->reference,
+            'slug' => $storedItem->slug,
+            'state' => $storedItem->state,
+            'name' => $storedItem->name,
             'total_quantity' => $storedItem->total_quantity,
         ];
     }

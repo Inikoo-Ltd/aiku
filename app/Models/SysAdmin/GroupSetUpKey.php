@@ -19,9 +19,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<array-key, mixed> $limits
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSetUpKey newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSetUpKey newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSetUpKey query()
+ *
  * @mixin \Eloquent
  */
 class GroupSetUpKey extends Model
@@ -31,15 +33,13 @@ class GroupSetUpKey extends Model
     protected function casts(): array
     {
         return [
-            'state'      => GroupSetUpKeyStateEnum::class,
+            'state' => GroupSetUpKeyStateEnum::class,
             'expires_at' => 'datetime',
-            'limits'     => 'array'
+            'limits' => 'array',
         ];
     }
 
     protected $attributes = [
-        'limits'   => '{}',
+        'limits' => '{}',
     ];
-
-
 }

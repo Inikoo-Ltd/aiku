@@ -43,31 +43,29 @@ class ShowRetinaCurrentRecurringBill extends RetinaAction
         $navigation = RecurringBillTabsEnum::navigation();
         unset($navigation[RecurringBillTabsEnum::HISTORY->value]);
 
-
         return Inertia::render(
             'Billing/RetinaRecurringBill',
             [
-                'title'       => __('recurring bill'),
+                'title' => __('recurring bill'),
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'pageHead'    => [
-                    'icon'  =>
-                        [
-                            'icon'  => ['fa', 'fa-receipt'],
-                            'title' => __('Recurring bill')
-                        ],
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fa', 'fa-receipt'],
+                        'title' => __('Recurring bill'),
+                    ],
                     'model' => __('Bill'),
                     'title' => $recurringBill->slug,
-                    'noCapitalise' => true
+                    'noCapitalise' => true,
                 ],
                 'timeline_rb' => [
                     'start_date' => $recurringBill->start_date,
-                    'end_date'   => $recurringBill->end_date
+                    'end_date' => $recurringBill->end_date,
                 ],
-                'status_rb'   => $recurringBill->status,
-                'currency'    => CurrencyResource::make($recurringBill->currency),
-                'box_stats'   => ShowRecurringBill::make()->getRecurringBillBoxStats($recurringBill, $this->fulfilmentCustomer),
-                'tabs'        => [
-                    'current'    => $this->tab,
+                'status_rb' => $recurringBill->status,
+                'currency' => CurrencyResource::make($recurringBill->currency),
+                'box_stats' => ShowRecurringBill::make()->getRecurringBillBoxStats($recurringBill, $this->fulfilmentCustomer),
+                'tabs' => [
+                    'current' => $this->tab,
                     'navigation' => $navigation,
                 ],
 
@@ -84,23 +82,22 @@ class ShowRetinaCurrentRecurringBill extends RetinaAction
         );
     }
 
-
     public function getBreadcrumbs(): array
     {
         return array_merge(
             ShowRetinaBillingDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
-                        'icon'  => 'fal fa-receipt',
+                        'icon' => 'fal fa-receipt',
                         'label' => __('Next Bill'),
                         'route' => [
-                            'name' => 'retina.fulfilment.billing.next_recurring_bill'
-                        ]
-                    ]
+                            'name' => 'retina.fulfilment.billing.next_recurring_bill',
+                        ],
+                    ],
 
-                ]
+                ],
             ],
         );
     }

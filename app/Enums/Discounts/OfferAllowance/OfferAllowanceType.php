@@ -25,6 +25,4 @@ enum OfferAllowanceType: string
             OfferAllowanceType::PERCENTAGE_OFF => 'off',
         };
     }
-
-
 }

@@ -17,11 +17,11 @@ class BreakAllWebsitesVarnishCache extends OrgAction
 {
     use WithVarnishBan;
 
-    public function handle(Command $command = null): array
+    public function handle(?Command $command = null): array
     {
         return $this->sendVarnishBanHttp(
             [
-                'x-ban-all' => 'all'
+                'x-ban-all' => 'all',
             ],
             $command
         );
@@ -34,7 +34,6 @@ class BreakAllWebsitesVarnishCache extends OrgAction
         return $this->handle();
     }
 
-
     public function getCommandSignature(): string
     {
         return 'varnish';
@@ -43,9 +42,8 @@ class BreakAllWebsitesVarnishCache extends OrgAction
     public function asCommand(Command $command): int
     {
         $this->handle();
-        $command->info("All websites cache cleared");
+        $command->info('All websites cache cleared');
 
         return 0;
     }
-
 }

@@ -12,28 +12,27 @@ namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Http\Resources\Catalogue\FamilyResource;
+use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Models\Web\Website;
-use App\Http\Resources\Web\WebBlockTypesResource;
-use App\Models\Web\WebBlockType;
-use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 
 class ShowWorkshopBlueprint extends OrgAction
 {
     use AsAction;
     use WithFooterSubNavigation;
-
 
     public function handle(Webpage $webpage): Webpage
     {
@@ -48,7 +47,7 @@ class ShowWorkshopBlueprint extends OrgAction
         $productCategory = $webpage->model;
 
         if ($productCategory->type === ProductCategoryTypeEnum::DEPARTMENT) {
-            $families        = FamiliesResource::collection($productCategory->getFamilies());
+            $families = FamiliesResource::collection($productCategory->getFamilies());
             $productCategory = DepartmentResource::make($productCategory);
         } elseif ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
             $productCategory = FamilyResource::make($productCategory);
@@ -63,36 +62,34 @@ class ShowWorkshopBlueprint extends OrgAction
             )->get()
         );
 
-
         return Inertia::render(
             'Org/Web/Workshop/Blueprint/ProductCategoryBlueprint',
             [
-                'breadcrumbs'     => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'           => __('blueprint'),
-                'pageHead'        => [
+                'title' => __('blueprint'),
+                'pageHead' => [
                     'title' => $webpage->code,
-                    'icon'  => [
+                    'icon' => [
                         'title' => __('Blueprint'),
-                        'icon'  => 'fal fa-file-code'
+                        'icon' => 'fal fa-file-code',
                     ],
                 ],
-                'showcase'        => GetBlueprintShowcase::run($webpage),
+                'showcase' => GetBlueprintShowcase::run($webpage),
                 'productCategory' => $productCategory,
-                'families'        => $families,
+                'families' => $families,
                 'web_block_types' => $web_block_types,
-                'updateRoute'     => [
-                    'name'       => 'grp.models.product_category.update',
+                'updateRoute' => [
+                    'name' => 'grp.models.product_category.update',
                     'parameters' => [
-                        'productCategory' => $productCategory->id
-                    ]
+                        'productCategory' => $productCategory->id,
+                    ],
                 ],
             ]
         );
     }
-
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
@@ -109,17 +106,16 @@ class ShowWorkshopBlueprint extends OrgAction
         return $this->handle($webpage);
     }
 
-
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
     {
         $headCrumb = function (array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Workshop')
+                            'label' => __('Workshop'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -127,11 +123,10 @@ class ShowWorkshopBlueprint extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
-
 
         return match ($routeName) {
             'grp.org.shops.show.web.webpages.workshop.footer' => array_merge(
@@ -142,13 +137,13 @@ class ShowWorkshopBlueprint extends OrgAction
                 $headCrumb(
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.web.webpages.workshop',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.shops.show.web.webpages.workshop',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.web.webpages.workshop.footer',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.shops.show.web.webpages.workshop.footer',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -156,5 +151,4 @@ class ShowWorkshopBlueprint extends OrgAction
             default => []
         };
     }
-
 }

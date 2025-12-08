@@ -18,11 +18,11 @@ use Spatie\Sluggable\HasSlug;
 trait IsUserable
 {
     use HasApiTokens;
-    use SoftDeletes;
-    use HasSlug;
     use HasFactory;
-    use HasUniversalSearch;
     use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
+    use SoftDeletes;
 
     public function getRouteKeyName(): string
     {
@@ -33,6 +33,4 @@ trait IsUserable
     {
         return $this->belongsTo(Language::class);
     }
-
-
 }

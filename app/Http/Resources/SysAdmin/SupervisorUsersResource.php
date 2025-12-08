@@ -22,24 +22,24 @@ class SupervisorUsersResource extends JsonResource
         $user = $this;
 
         return [
-            'id'            => $user->id,
-            'username'      => $user->username,
-            'image'         => $user->imageSources(48, 48),
-            'email'         => $user->email,
-            'status'        => match ($user->status) {
+            'id' => $user->id,
+            'username' => $user->username,
+            'image' => $user->imageSources(48, 48),
+            'email' => $user->email,
+            'status' => match ($user->status) {
                 true => [
                     'tooltip' => __('active'),
-                    'icon'    => 'fal fa-check',
-                    'class'   => 'text-green-500'
+                    'icon' => 'fal fa-check',
+                    'class' => 'text-green-500',
                 ],
                 default => [
                     'tooltip' => __('suspended'),
-                    'icon'    => 'fal fa-times',
-                    'class'   => 'text-red-500'
+                    'icon' => 'fal fa-times',
+                    'class' => 'text-red-500',
                 ]
             },
-            'parent_type'   => $user->parent_type,
-            'contact_name'  => $user->contact_name,
+            'parent_type' => $user->parent_type,
+            'contact_name' => $user->contact_name,
         ];
     }
 }

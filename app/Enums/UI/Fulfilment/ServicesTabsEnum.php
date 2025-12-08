@@ -16,21 +16,21 @@ enum ServicesTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SERVICES                       = 'services';
-    case HISTORY                        = 'history';
+    case SERVICES = 'services';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
             ServicesTabsEnum::SERVICES => [
                 'title' => __('Services'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
 
             ServicesTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ]
         };

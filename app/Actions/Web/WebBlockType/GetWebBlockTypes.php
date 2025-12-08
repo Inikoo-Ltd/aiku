@@ -29,7 +29,6 @@ class GetWebBlockTypes extends OrgAction
         return $this->handle(group());
     }
 
-
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
 

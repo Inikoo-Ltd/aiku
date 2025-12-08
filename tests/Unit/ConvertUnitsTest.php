@@ -15,7 +15,7 @@ class ConvertUnitsTest extends TestCase
     /**
      * Test volume conversions
      */
-    public function testVolumeConversions()
+    public function test_volume_conversions()
     {
         // m3 to other units
         $this->assertEquals(1000, convertUnits(1, 'm3', 'l'));
@@ -33,7 +33,7 @@ class ConvertUnitsTest extends TestCase
     /**
      * Test weight conversions
      */
-    public function testWeightConversions()
+    public function test_weight_conversions()
     {
         // Kg to other units
         $this->assertEquals(1000, convertUnits(1, 'Kg', 'g'));
@@ -59,7 +59,7 @@ class ConvertUnitsTest extends TestCase
     /**
      * Test length conversions
      */
-    public function testLengthConversions()
+    public function test_length_conversions()
     {
         // m to other units
         $this->assertEquals(1000, convertUnits(1, 'm', 'mm'));
@@ -92,7 +92,7 @@ class ConvertUnitsTest extends TestCase
     /**
      * Test edge cases
      */
-    public function testEdgeCases()
+    public function test_edge_cases()
     {
         // Same units should return the original value
         $this->assertEquals(5, convertUnits(5, 'm', 'm'));

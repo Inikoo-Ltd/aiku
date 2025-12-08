@@ -26,6 +26,7 @@ class StoreAnnouncement extends OrgAction
     use WithAttributes;
 
     private Website $parent;
+
     private string $scope;
 
     public $commandSignature = 'announcement:create {website}';
@@ -45,15 +46,15 @@ class StoreAnnouncement extends OrgAction
             $announcement,
             [
                 'layout' => [
-                    'container_properties'  => null,
-                    'fields'                => null
-                ]
+                    'container_properties' => null,
+                    'fields' => null,
+                ],
             ],
         );
 
         $announcement->update(
             [
-                'unpublished_snapshot_id' => $snapshot->id
+                'unpublished_snapshot_id' => $snapshot->id,
             ]
         );
 
@@ -68,7 +69,7 @@ class StoreAnnouncement extends OrgAction
             'organisation' => $announcement->website->organisation->slug,
             'shop' => $announcement->website->shop->slug,
             'website' => $announcement->website->slug,
-            'announcement'     => $announcement->ulid
+            'announcement' => $announcement->ulid,
         ]);
     }
 
@@ -80,14 +81,14 @@ class StoreAnnouncement extends OrgAction
     public function rules(): array
     {
         return [
-            'name'                 => ['required', 'string', 'max:255']
+            'name' => ['required', 'string', 'max:255'],
         ];
     }
 
     public function asController(Shop $shop, Website $website, ActionRequest $request): Announcement
     {
-        $this->scope    = 'website';
-        $this->parent   = $website;
+        $this->scope = 'website';
+        $this->parent = $website;
 
         $this->initialisationFromShop($shop, $request);
 
@@ -99,13 +100,13 @@ class StoreAnnouncement extends OrgAction
         $customer = Website::where('slug', $command->argument('website'))->first();
 
         $this->handle($customer, [
-            'name' => "Vika Announcement's"
+            'name' => "Vika Announcement's",
         ]);
     }
 
     public function action(Website $website, array $objectData): Announcement
     {
-        $this->parent   = $website;
+        $this->parent = $website;
         $this->asAction = true;
         $this->initialisation($website->organisation, $objectData);
 

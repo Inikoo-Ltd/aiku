@@ -25,11 +25,11 @@ class GetRetinaDropshippingHomeData
     public function handle(Customer $customer): array
     {
         $latestChannel = [];
-        $metas         = [];
+        $metas = [];
 
         $customerChannels = $customer->customerSalesChannels()->with('platform:id,type')->get();
-        $totalPlatforms   = $customerChannels->count();
-        $manualPlatform   = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
+        $totalPlatforms = $customerChannels->count();
+        $manualPlatform = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
         foreach (PlatformTypeEnum::cases() as $platformType) {
             $platformTypeName = $platformType->value;
 
@@ -38,14 +38,14 @@ class GetRetinaDropshippingHomeData
             });
 
             $metas[] = [
-                'tooltip'   => __($platformType->labels()[$platformTypeName]),
-                'icon'      => [
+                'tooltip' => __($platformType->labels()[$platformTypeName]),
+                'icon' => [
                     'tooltip' => $platform->count() > 0 ? 'active' : 'inactive',
-                    'icon'    => $platform->count() > 0 ? 'fas fa-check-circle' : 'fas fa-times-circle',
-                    'class'   => $platform->count() > 0 ? 'text-green-500' : 'text-red-500'
+                    'icon' => $platform->count() > 0 ? 'fas fa-check-circle' : 'fas fa-times-circle',
+                    'class' => $platform->count() > 0 ? 'text-green-500' : 'text-red-500',
                 ],
                 'logo_icon' => $platformType->value,
-                'count'     => $platform->count(),
+                'count' => $platform->count(),
             ];
         }
 
@@ -59,38 +59,38 @@ class GetRetinaDropshippingHomeData
         }
 
         return [
-            'customer'              => CustomerResource::make($customer)->getArray(),
-            'channels'              => CustomerSalesChannelsResourceTOFIX::collection($customerChannels)->toArray(request()),
-            'stats'                 => [
+            'customer' => CustomerResource::make($customer)->getArray(),
+            'channels' => CustomerSalesChannelsResourceTOFIX::collection($customerChannels)->toArray(request()),
+            'stats' => [
                 [
                     'label' => __('Channels'),
                     'route' => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.index',
-                        'parameters' => []
+                        'name' => 'retina.dropshipping.customer_sales_channels.index',
+                        'parameters' => [],
                     ],
                     'color' => '#E87928',
-                    'icon'  => [
-                        'icon'          => 'fal fa-code-branch',
-                        'tooltip'       => __('Channels'),
+                    'icon' => [
+                        'icon' => 'fal fa-code-branch',
+                        'tooltip' => __('Channels'),
                         'icon_rotation' => '90',
                     ],
                     'value' => $totalPlatforms,
 
-                    'metas' => $metas
+                    'metas' => $metas,
                 ],
             ],
             'last_visited_channels' => $latestChannel,
-            'shortcut'              => [
-                'order'                 => [
-                    'manual_data' => $manualSinglePlatformData
+            'shortcut' => [
+                'order' => [
+                    'manual_data' => $manualSinglePlatformData,
                 ],
                 'create_customer_sales_channel' => [
                     'route_create' => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.create',
-                        'parameters' => []
-                    ]
-                ]
-            ]
+                        'name' => 'retina.dropshipping.customer_sales_channels.create',
+                        'parameters' => [],
+                    ],
+                ],
+            ],
         ];
     }
 }

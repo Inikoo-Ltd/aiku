@@ -18,9 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateSalesChannel extends OrgAction
 {
-    use WithNoStrictRules;
     use WithActionUpdate;
-
+    use WithNoStrictRules;
 
     private SalesChannel $salesChannel;
 
@@ -50,13 +49,13 @@ class UpdateSalesChannel extends OrgAction
                     extraConditions: [
                         [
                             'column' => 'group_id',
-                            'value'  => $this->group->id
+                            'value' => $this->group->id,
                         ],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->salesChannel->id
-                        ]
+                            'value' => $this->salesChannel->id,
+                        ],
                     ]
                 ),
 
@@ -69,21 +68,21 @@ class UpdateSalesChannel extends OrgAction
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->salesChannel->id
-                        ]
+                            'value' => $this->salesChannel->id,
+                        ],
                     ]
-                )
+                ),
             ],
             'is_active' => [
                 'sometimes',
-                'boolean'
+                'boolean',
             ],
         ];
 
-        if (!$this->strict) {
-            $rules             = $this->noStrictUpdateRules($rules);
+        if (! $this->strict) {
+            $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
@@ -98,14 +97,14 @@ class UpdateSalesChannel extends OrgAction
 
     public function action(SalesChannel $salesChannel, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): SalesChannel
     {
-        if (!$audit) {
+        if (! $audit) {
             SalesChannel::disableAuditing();
         }
 
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->salesChannel   = $salesChannel;
+        $this->salesChannel = $salesChannel;
         $this->initialisationFromGroup($salesChannel->group, $modelData);
 
         return $this->handle($salesChannel, $this->validatedData);

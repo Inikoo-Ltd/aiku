@@ -16,23 +16,22 @@ enum ProspectsQueriesTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
+    case LISTS = 'lists';
 
-    case LISTS     = 'lists';
-
-    case HISTORY   = 'history';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
             ProspectsQueriesTabsEnum::LISTS => [
                 'title' => __('Lists'),
-                'icon'  => 'fal fa-code-branch',
+                'icon' => 'fal fa-code-branch',
             ],
             ProspectsQueriesTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
-                'align' => 'right'
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ]
         };
     }

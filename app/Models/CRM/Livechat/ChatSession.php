@@ -2,15 +2,15 @@
 
 namespace App\Models\CRM\Livechat;
 
+use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Language;
-use Illuminate\Database\Eloquent\Model;
-use App\Enums\CRM\Livechat\ChatPriorityEnum;
-use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -32,16 +32,18 @@ use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
  * @property-read Language $language
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatMessage> $messages
  * @property-read WebUser|null $webUser
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatSession newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatSession newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatSession query()
+ *
  * @mixin \Eloquent
  */
 class ChatSession extends Model
 {
     use HasFactory;
-    protected $table = 'chat_sessions';
 
+    protected $table = 'chat_sessions';
 
     protected $casts = [
         'status' => ChatSessionStatusEnum::class,
@@ -52,7 +54,6 @@ class ChatSession extends Model
     ];
 
     protected $guarded = [];
-
 
     public function webUser()
     {
@@ -69,8 +70,7 @@ class ChatSession extends Model
         return $this->hasMany(ChatMessage::class, 'chat_session_id');
     }
 
-
-    public function getRatingAttribute($value): float|null
+    public function getRatingAttribute($value): ?float
     {
         return $value ? round($value, 1) : null;
     }
@@ -82,5 +82,4 @@ class ChatSession extends Model
         }
         $this->attributes['rating'] = $value;
     }
-
 }

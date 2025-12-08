@@ -13,10 +13,10 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ProductsInShopExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class ProductsInShopExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
-    use Exportable;
     use DataFeedsMapping;
+    use Exportable;
 
     protected Shop $shop;
 
@@ -36,5 +36,4 @@ class ProductsInShopExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
             ->orderBy('products.id');
 
     }
-
 }

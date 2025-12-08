@@ -27,8 +27,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaEcomCheckout extends RetinaAction
 {
-    use IsOrder;
     use CalculatesPaymentWithBalance;
+    use IsOrder;
 
     public function handle(Customer $customer): array
     {
@@ -42,24 +42,22 @@ class ShowRetinaEcomCheckout extends RetinaAction
             $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
         }
 
-
         return [
-            'order'          => $order,
+            'order' => $order,
             'paymentMethods' => $paymentMethods,
-            'balance'        => $customer->balance,
+            'balance' => $customer->balance,
         ];
     }
-
 
     public function asController(ActionRequest $request): array
     {
         $this->initialisation($request);
         $order = $this->customer->orderInBasket;
-        if (!$order) {
+        if (! $order) {
             return [
-                'order'          => null,
+                'order' => null,
                 'paymentMethods' => null,
-                'balance'        => null,
+                'balance' => null,
             ];
         } else {
             return $this->handle($this->customer);
@@ -71,7 +69,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
         /** @var Order $order */
         $order = Arr::get($checkoutData, 'order');
 
-        if (!$order) {
+        if (! $order) {
             return Redirect::route('retina.ecom.basket.show');
         }
 
@@ -80,45 +78,45 @@ class ShowRetinaEcomCheckout extends RetinaAction
             $this->customer->balance
         );
 
-        $toPay          = $paymentAmounts['total'];
+        $toPay = $paymentAmounts['total'];
         $toPayByBalance = $paymentAmounts['by_balance'];
-        $toPayByOther   = $paymentAmounts['by_other'];
+        $toPayByOther = $paymentAmounts['by_other'];
 
         return Inertia::render(
             'Ecom/RetinaEcomCheckout',
             [
-                'breadcrumbs'    => $this->getBreadcrumbs(),
-                'title'          => __('Checkout'),
-                'pageHead'       => [
-                    'icon'  => 'fal fa-shopping-cart',
+                'breadcrumbs' => $this->getBreadcrumbs(),
+                'title' => __('Checkout'),
+                'pageHead' => [
+                    'icon' => 'fal fa-shopping-cart',
                     'title' => $order->reference,
                     'model' => __('Checkout'),
                 ],
-                'order'          => OrderResource::make($order)->resolve(),
-                'summary'        => $this->getOrderBoxStats($order),
+                'order' => OrderResource::make($order)->resolve(),
+                'summary' => $this->getOrderBoxStats($order),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
-                'balance'        => $this->customer->balance,
-                'total_amount'   => $order->total_amount,
-                'currency_code'  => $order->currency->code,
-                'to_pay_data'    => [
-                    'total'      => $toPay,
+                'balance' => $this->customer->balance,
+                'total_amount' => $order->total_amount,
+                'currency_code' => $order->currency->code,
+                'to_pay_data' => [
+                    'total' => $toPay,
                     'by_balance' => $toPayByBalance,
-                    'by_other'   => $toPayByOther
+                    'by_other' => $toPayByOther,
 
                 ],
-                'routes'         => [
+                'routes' => [
                     'pay_with_balance' => [
-                        'name'       => 'retina.models.order.pay_with_balance',
+                        'name' => 'retina.models.order.pay_with_balance',
                         'parameters' => [
-                            'order' => $order->id
+                            'order' => $order->id,
                         ],
-                        'method'     => 'patch'
+                        'method' => 'patch',
                     ],
-                    'back_to_basket'   => [
-                        'name'       => 'retina.ecom.basket.show',
-                        'parameters' => []
-                    ]
-                ]
+                    'back_to_basket' => [
+                        'name' => 'retina.ecom.basket.show',
+                        'parameters' => [],
+                    ],
+                ],
             ]
         );
     }
@@ -130,14 +128,14 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.ecom.checkout.show'
+                                'name' => 'retina.ecom.checkout.show',
                             ],
                             'label' => __('Checkout'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

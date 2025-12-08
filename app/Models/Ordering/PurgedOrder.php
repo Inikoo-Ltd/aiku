@@ -37,9 +37,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $source_id
  * @property-read \App\Models\Ordering\Order|null $order
  * @property-read \App\Models\Ordering\Purge $purge
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PurgedOrder newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PurgedOrder newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PurgedOrder query()
+ *
  * @mixin \Eloquent
  */
 class PurgedOrder extends Model
@@ -47,7 +49,7 @@ class PurgedOrder extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'status'       => PurgedOrderStatusEnum::class,
+        'status' => PurgedOrderStatusEnum::class,
     ];
 
     public function purge(): BelongsTo
@@ -59,7 +61,4 @@ class PurgedOrder extends Model
     {
         return $this->belongsTo(Order::class, 'order_id');
     }
-
-
-
 }

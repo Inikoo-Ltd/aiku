@@ -17,29 +17,28 @@ trait WithFooterSubNavigation
     {
         return [
             [
-                'isAnchor'   => true,
-                'label'    => __('Footer'),
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.web.websites.workshop.footer',
-                    'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug]
+                'isAnchor' => true,
+                'label' => __('Footer'),
+                'route' => [
+                    'name' => 'grp.org.shops.show.web.websites.workshop.footer',
+                    'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug],
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-stream'],
-                    'tooltip' => __('Footer')
-                ]
+                    'icon' => ['fal', 'fa-stream'],
+                    'tooltip' => __('Footer'),
+                ],
             ],
             [
-                'label'    => __('Snapshots'),
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.web.websites.workshop.snapshots.footer',
-                    'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug]
+                'label' => __('Snapshots'),
+                'route' => [
+                    'name' => 'grp.org.shops.show.web.websites.workshop.snapshots.footer',
+                    'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug],
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-folder'],
-                    'tooltip' => __('snapshots')
-                ]
+                    'icon' => ['fal', 'fa-folder'],
+                    'tooltip' => __('snapshots'),
+                ],
             ],
         ];
     }
-
 }

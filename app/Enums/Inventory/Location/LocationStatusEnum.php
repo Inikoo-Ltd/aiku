@@ -14,7 +14,6 @@ enum LocationStatusEnum: string
 {
     use EnumHelperTrait;
 
-
-    case OPERATIONAL     = 'operational';
-    case BROKEN          = 'broken';
+    case OPERATIONAL = 'operational';
+    case BROKEN = 'broken';
 }

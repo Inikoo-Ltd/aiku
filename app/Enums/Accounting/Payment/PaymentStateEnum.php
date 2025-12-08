@@ -23,21 +23,21 @@ enum PaymentStateEnum: string
 {
     use EnumHelperTrait;
     case IN_PROCESS = 'in_process';
-    case APPROVING  = 'approving';
-    case COMPLETED  = 'completed';
-    case CANCELLED  = 'cancelled';
-    case ERROR      = 'error';
-    case DECLINED   = 'declined';
+    case APPROVING = 'approving';
+    case COMPLETED = 'completed';
+    case CANCELLED = 'cancelled';
+    case ERROR = 'error';
+    case DECLINED = 'declined';
 
     public static function labels(): array
     {
         return [
-            'in_process'    => __('In Process'),
-            'approving'     => __('Approving'),
-            'completed'     => __('Completed'),
-            'cancelled'     => __('Cancelled'),
-            'error'         => __('Error'),
-            'declined'      => __('Declined'),
+            'in_process' => __('In Process'),
+            'approving' => __('Approving'),
+            'completed' => __('Completed'),
+            'cancelled' => __('Cancelled'),
+            'error' => __('Error'),
+            'declined' => __('Declined'),
         ];
     }
 
@@ -50,13 +50,14 @@ enum PaymentStateEnum: string
         } elseif ($parent instanceof OrgPaymentServiceProvider || $parent instanceof PaymentAccount || $parent instanceof Customer) {
             $stats = $parent->stats;
         }
+
         return [
-            'in_process'                => $stats->number_payments_state_in_process,
-            'approving'                 => $stats->number_payments_state_approving,
-            'completed'                 => $stats->number_payments_state_completed,
-            'cancelled'                 => $stats->number_payments_state_cancelled,
-            'error'                     => $stats->number_payments_state_error,
-            'declined'                  => $stats->number_payments_state_declined,
+            'in_process' => $stats->number_payments_state_in_process,
+            'approving' => $stats->number_payments_state_approving,
+            'completed' => $stats->number_payments_state_completed,
+            'cancelled' => $stats->number_payments_state_cancelled,
+            'error' => $stats->number_payments_state_error,
+            'declined' => $stats->number_payments_state_declined,
         ];
     }
 }

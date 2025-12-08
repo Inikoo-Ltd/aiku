@@ -28,6 +28,5 @@ trait HasStockDeliveryHydrators
             AgentHydrateStockDeliveries::dispatch($parent->agent)->delay($this->hydratorsDelay);
         }
 
-
     }
 }

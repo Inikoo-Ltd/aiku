@@ -22,28 +22,26 @@ enum PalletStatusEnum: string
 {
     use EnumHelperTrait;
 
-
-    case IN_PROCESS   = 'in_process';
-    case RECEIVING    = 'receiving';
+    case IN_PROCESS = 'in_process';
+    case RECEIVING = 'receiving';
     case NOT_RECEIVED = 'not_received';
-    case STORING      = 'storing';
-    case RETURNING    = 'returning';
-    case RETURNED     = 'returned';
-    case INCIDENT     = 'incident';
+    case STORING = 'storing';
+    case RETURNING = 'returning';
+    case RETURNED = 'returned';
+    case INCIDENT = 'incident';
 
     public static function labels(Group|FulfilmentCustomer|Fulfilment|Warehouse|Location|PalletDelivery|PalletReturn|null $parent = null): array
     {
         $labels = [
-            'in_process'   => __('In process'),
-            'receiving'    => __('Receiving'),
+            'in_process' => __('In process'),
+            'receiving' => __('Receiving'),
             'not_received' => __('Not received'),
-            'storing'      => __('Storing'),
-            'returning'    => __('Returning'),
-            'returned'     => __('Returned'),
-            'incident'     => __('Incidents'),
+            'storing' => __('Storing'),
+            'returning' => __('Returning'),
+            'returned' => __('Returned'),
+            'incident' => __('Incidents'),
 
         ];
-
 
         if ($parent instanceof Fulfilment || $parent instanceof Warehouse) {
             unset($labels['in_process']);
@@ -60,75 +58,75 @@ enum PalletStatusEnum: string
     public static function statusIcon(): array
     {
         return [
-            'in_process'   => [
+            'in_process' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
-                'color'   => 'lime',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',  // Color for normal icon (Aiku)
+                'color' => 'lime',  // Color for box (Retina)
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'receiving'    => [
+            'receiving' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
-                'color'   => 'lime',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',  // Color for normal icon (Aiku)
+                'color' => 'lime',  // Color for box (Retina)
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'not_received' => [
                 'tooltip' => __('not received'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'storing'      => [
+            'storing' => [
                 'tooltip' => __('Storing'),
-                'icon'    => 'fal fa-warehouse-alt',
-                'class'   => 'text-purple-500',
-                'color'   => 'purple',
-                'app'     => [
+                'icon' => 'fal fa-warehouse-alt',
+                'class' => 'text-purple-500',
+                'color' => 'purple',
+                'app' => [
                     'name' => 'check-double',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'incident'     => [
+            'incident' => [
                 'tooltip' => __('Incident'),
-                'icon'    => 'fal fa-sad-cry',
-                'class'   => 'text-red-600',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-sad-cry',
+                'class' => 'text-red-600',
+                'color' => 'red',
+                'app' => [
                     'name' => 'sad-cry',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'returning'    => [
+            'returning' => [
                 'tooltip' => __('Returning'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-yellow-400',
-                'color'   => 'yellow',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-yellow-400',
+                'color' => 'yellow',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'returned'     => [
+            'returned' => [
                 'tooltip' => __('Returned'),
-                'icon'    => 'fal fa-arrow-alt-from-left',
-                'class'   => 'text-amber-400',
-                'color'   => 'amber',
-                'app'     => [
-                    'name' => 'check',//todo need to change icon
-                    'type' => 'font-awesome-5'
-                ]
+                'icon' => 'fal fa-arrow-alt-from-left',
+                'class' => 'text-amber-400',
+                'color' => 'amber',
+                'app' => [
+                    'name' => 'check', // todo need to change icon
+                    'type' => 'font-awesome-5',
+                ],
             ],
         ];
     }
@@ -145,15 +143,15 @@ enum PalletStatusEnum: string
         }
 
         $counts = [
-            'in_process'   => $stats->number_pallets_status_in_process,
-            'receiving'    => $stats->number_pallets_status_receiving,
+            'in_process' => $stats->number_pallets_status_in_process,
+            'receiving' => $stats->number_pallets_status_receiving,
             'not_received' => $stats->number_pallets_status_not_received,
-            'storing'      => $stats->number_pallets_status_storing,
-            'returning'    => $stats->number_pallets_status_returning,
-            'incident'     => $stats->number_pallets_status_incident,
-            'returned'     => $stats->number_pallets_status_returned,
+            'storing' => $stats->number_pallets_status_storing,
+            'returning' => $stats->number_pallets_status_returning,
+            'incident' => $stats->number_pallets_status_incident,
+            'returned' => $stats->number_pallets_status_returned,
         ];
-        if ($parent instanceof Fulfilment  || $parent instanceof Warehouse) {
+        if ($parent instanceof Fulfilment || $parent instanceof Warehouse) {
             unset($counts['in_process']);
             unset($counts['not_received']);
             unset($counts['incident']);
@@ -162,8 +160,6 @@ enum PalletStatusEnum: string
             unset($counts['in_process']);
         }
 
-
         return $counts;
     }
-
 }

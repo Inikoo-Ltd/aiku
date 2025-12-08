@@ -32,19 +32,18 @@ class FetchAuroraCollection extends FetchAurora
             ->where('Category Code', 'like', 'Web.%')
             ->get()->pluck('Category Key')->toArray();
 
-
-        if (!in_array($this->auroraModelData->{'Category Root Key'}, $collectionsRootAuroraIDs)) {
+        if (! in_array($this->auroraModelData->{'Category Root Key'}, $collectionsRootAuroraIDs)) {
             return;
         }
 
         $subjects = DB::connection('aurora')
             ->table('Category Bridge')
             ->where('Category Key', $this->auroraModelData->{'Category Key'})->get();
-        $models   = [];
+        $models = [];
         foreach ($subjects as $subject) {
             $modelAuroraType = $subject->{'Subject'};
-            $modelAuroraId   = $subject->{'Subject Key'};
-            $model           = null;
+            $modelAuroraId = $subject->{'Subject Key'};
+            $model = null;
             if ($modelAuroraType == 'Product') {
                 $model = $this->parseProduct($shop->organisation->id.':'.$modelAuroraId);
             } else {
@@ -59,7 +58,6 @@ class FetchAuroraCollection extends FetchAurora
         if (count($models) == 0) {
             return;
         }
-
 
         $code = $this->cleanTradeUnitReference($this->auroraModelData->{'Category Code'});
         $code = trim($code);
@@ -80,21 +78,19 @@ class FetchAuroraCollection extends FetchAurora
         $this->parsedData['shop'] = $shop;
 
         $this->parsedData['collection'] = [
-            'type'            => ProductCategoryTypeEnum::DEPARTMENT,
-            'code'            => $code,
-            'name'            => $this->auroraModelData->{'Category Label'},
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
-            'fetched_at'      => now(),
+            'type' => ProductCategoryTypeEnum::DEPARTMENT,
+            'code' => $code,
+            'name' => $this->auroraModelData->{'Category Label'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
-            'images'          => $this->parseImages(),
+            'images' => $this->parseImages(),
         ];
 
         $createdAt = $this->parseDatetime($this->auroraModelData->{'Product Category Valid From'});
         if ($createdAt) {
             $this->parsedData['collection']['created_at'] = $createdAt;
         }
-
-
 
         $this->parsedData['models'] = $models;
     }
@@ -111,7 +107,7 @@ class FetchAuroraCollection extends FetchAurora
         return $images->toArray();
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Category Dimension')

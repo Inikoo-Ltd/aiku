@@ -17,7 +17,6 @@ class UpdateRetinaCustomerSettings extends RetinaAction
 {
     use WithActionUpdate;
 
-
     public function handle(Customer $customer, array $modelData): Customer
     {
         return $this->update($customer, $modelData, ['settings']);
@@ -33,7 +32,6 @@ class UpdateRetinaCustomerSettings extends RetinaAction
         return [];
     }
 
-
     public function asController(ActionRequest $request): Customer
     {
 
@@ -41,7 +39,4 @@ class UpdateRetinaCustomerSettings extends RetinaAction
 
         return $this->handle($this->customer, $this->validatedData);
     }
-
-
-
 }

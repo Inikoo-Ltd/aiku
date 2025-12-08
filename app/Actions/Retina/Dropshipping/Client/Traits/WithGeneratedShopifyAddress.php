@@ -17,27 +17,27 @@ trait WithGeneratedShopifyAddress
     {
         $country = Country::where('code', Arr::get($address, 'countryCode'))->first();
 
-        if (!blank($address)) {
+        if (! blank($address)) {
             $address = [
                 'address' => [
-                    'address_line_1'      => Arr::get($address, 'address1'),
-                    'address_line_2'      => Arr::get($address, 'address2'),
-                    'sorting_code'        => null,
-                    'postal_code'         => Arr::get($address, 'zip'),
-                    'dependent_locality'  => null,
-                    'locality'            => Arr::get($address, 'city'),
+                    'address_line_1' => Arr::get($address, 'address1'),
+                    'address_line_2' => Arr::get($address, 'address2'),
+                    'sorting_code' => null,
+                    'postal_code' => Arr::get($address, 'zip'),
+                    'dependent_locality' => null,
+                    'locality' => Arr::get($address, 'city'),
                     'administrative_area' => Arr::get($address, 'province'),
-                    'country_code'        => Arr::get($address, 'countryCode'),
-                    'country_id'          => $country->id
-                ]
+                    'country_code' => Arr::get($address, 'countryCode'),
+                    'country_id' => $country->id,
+                ],
             ];
         }
 
         return [
-            'contact_name' => $customerClient['firstName'] . ' ' . Arr::get($customerClient, 'lastName'),
+            'contact_name' => $customerClient['firstName'].' '.Arr::get($customerClient, 'lastName'),
             'email' => $customerClient['email'],
             'phone' => $customerClient['phone'],
-            ...$address
+            ...$address,
         ];
     }
 }

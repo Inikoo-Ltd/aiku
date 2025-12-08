@@ -28,17 +28,17 @@ class WarehouseAreaResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'code'                   => $this->code,
-            'name'                   => $this->name,
-            'picking_position'       => (float) $this->picking_position,
-            'number_locations'       => $this->number_locations,
-            'stock_value'            => (float) $this->stock_value,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'picking_position' => (float) $this->picking_position,
+            'number_locations' => $this->number_locations,
+            'stock_value' => (float) $this->stock_value,
             'number_empty_locations' => $this->number_empty_locations,
-            'warehouse_slug'         => $this->warehouse_slug,
-            'organisation_slug'      => $this->organisation_slug,
-            'organisation_name'      => $this->organisation_name,
+            'warehouse_slug' => $this->warehouse_slug,
+            'organisation_slug' => $this->organisation_slug,
+            'organisation_name' => $this->organisation_name,
         ];
     }
 }

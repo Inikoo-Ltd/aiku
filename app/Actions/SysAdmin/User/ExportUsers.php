@@ -28,7 +28,7 @@ class ExportUsers
     {
         $type = $modelData['type'];
 
-        return $this->export(new UsersExport(), 'users', $type);
+        return $this->export(new UsersExport, 'users', $type);
     }
 
     /**

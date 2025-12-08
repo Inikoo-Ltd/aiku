@@ -58,6 +58,4 @@ class FetchAuroraAdjustments extends FetchAuroraAction
         return DB::connection('aurora')->table('Order No Product Transaction Fact')
             ->where('Transaction Type', 'Adjustment')->count();
     }
-
-
 }

@@ -30,7 +30,7 @@ class ExportOrgAgents extends OrgAction
     {
         $type = $modelData['type'];
 
-        return $this->export(new OrgAgentsExport(), 'org-agents', $type);
+        return $this->export(new OrgAgentsExport, 'org-agents', $type);
     }
 
     /**

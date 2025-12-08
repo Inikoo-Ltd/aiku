@@ -13,7 +13,7 @@ trait HasTabs
     public static function navigation(): array
     {
         return collect(self::cases())->mapWithKeys(function ($case) {
-            return  [$case->value => $case->blueprint()];
+            return [$case->value => $case->blueprint()];
         })->all();
     }
 }

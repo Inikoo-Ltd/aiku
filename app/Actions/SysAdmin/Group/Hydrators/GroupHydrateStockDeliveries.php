@@ -38,7 +38,7 @@ class GroupHydrateStockDeliveries implements ShouldBeUnique
             'number_stock_deliveries' => $queryBase->clone()->count(),
             'number_current_stock_deliveries' => $queryBase->clone()->whereNotIn('state', [
                 StockDeliveryStateEnum::CANCELLED->value,
-                StockDeliveryStateEnum::NOT_RECEIVED->value
+                StockDeliveryStateEnum::NOT_RECEIVED->value,
             ])->count(),
         ];
 
@@ -55,7 +55,6 @@ class GroupHydrateStockDeliveries implements ShouldBeUnique
             )
         );
 
-
         $group->procurementStats->update($stats);
     }
 
@@ -69,5 +68,4 @@ class GroupHydrateStockDeliveries implements ShouldBeUnique
             $this->handle($group);
         }
     }
-
 }

@@ -24,9 +24,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $id
  * @property mixed $org_slug
  * @property mixed $org_code
- *  @property \App\Models\Helpers\Media $media
+ * @property \App\Models\Helpers\Media $media
  * @property \App\Models\SysAdmin\Organisation $organisation
- *
  */
 class OrgPaymentServiceProvidersResource extends JsonResource
 {
@@ -39,16 +38,16 @@ class OrgPaymentServiceProvidersResource extends JsonResource
         }
 
         return [
-            'number_payments'             => $this->number_payments,
-            'number_payment_accounts'     => $this->number_payment_accounts,
-            'slug'                        => $this->slug,
-            'org_id'                      => $this->organisation_id,
-            'org_slug'                    => $this->org_slug,
-            'code'                        => $this->code,
-            'org_code'                    => $this->org_code,
-            'name'                        => $this->name,
-            'state'                       => $this->state,
-            'logo'                        => $logo,
+            'number_payments' => $this->number_payments,
+            'number_payment_accounts' => $this->number_payment_accounts,
+            'slug' => $this->slug,
+            'org_id' => $this->organisation_id,
+            'org_slug' => $this->org_slug,
+            'code' => $this->code,
+            'org_code' => $this->org_code,
+            'name' => $this->name,
+            'state' => $this->state,
+            'logo' => $logo,
         ];
     }
 }

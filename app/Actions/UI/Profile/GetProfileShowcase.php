@@ -18,25 +18,25 @@ class GetProfileShowcase
     public function handle(User $user): array
     {
         return [
-            'id'          => $user->id,
-            'username'    => $user->username,
-            'avatar'      => $user->imageSources(48, 48),
-            'email'       => $user->email,
-            'about'       => $user->about,
-            'status'      => match ($user->status) {
+            'id' => $user->id,
+            'username' => $user->username,
+            'avatar' => $user->imageSources(48, 48),
+            'email' => $user->email,
+            'about' => $user->about,
+            'status' => match ($user->status) {
                 true => [
                     'tooltip' => __('active'),
-                    'icon'    => 'fal fa-check',
-                    'class'   => 'text-green-500'
+                    'icon' => 'fal fa-check',
+                    'class' => 'text-green-500',
                 ],
                 default => [
                     'tooltip' => __('suspended'),
-                    'icon'    => 'fal fa-times',
-                    'class'   => 'text-red-500'
+                    'icon' => 'fal fa-times',
+                    'class' => 'text-red-500',
                 ]
             },
-            'roles'       => $user->getRoleNames()->toArray(),
-            'permissions' => $user->getAllPermissions()->pluck('name')->toArray()
+            'roles' => $user->getRoleNames()->toArray(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
         ];
     }
 }

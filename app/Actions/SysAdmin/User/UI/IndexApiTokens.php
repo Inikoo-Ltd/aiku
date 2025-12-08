@@ -18,15 +18,14 @@ use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Lorisleiva\Actions\ActionRequest;
 use Laravel\Sanctum\PersonalAccessToken;
+use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexApiTokens extends OrgAction
 {
     use WithSysAdminAuthorization;
     use WithUsersSubNavigation;
-
 
     public function handle(User $user, $prefix = null): LengthAwarePaginator
     {
@@ -43,7 +42,7 @@ class IndexApiTokens extends OrgAction
 
         $queryBuilder = QueryBuilder::for(PersonalAccessToken::class);
         $queryBuilder->where('tokenable_type', class_basename($user))
-        ->where('tokenable_id', $user->id);
+            ->where('tokenable_id', $user->id);
 
         return $queryBuilder
             ->defaultSort('-created_at')
@@ -57,6 +56,7 @@ class IndexApiTokens extends OrgAction
     public function asController(User $user, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromGroup($user->group, $request);
+
         return $this->handle($user);
     }
 

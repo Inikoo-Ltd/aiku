@@ -30,9 +30,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $organisation_id
  * @property int|null $webpage_id
  * @property-read WebUser $webUser
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserRequest newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserRequest newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserRequest query()
+ *
  * @mixin \Eloquent
  */
 class WebUserRequest extends Model

@@ -24,8 +24,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowSupplyChainDashboard::class)->name('dashboard');
 
-
-Route::prefix("agents")->name("agents.")->group(
+Route::prefix('agents')->name('agents.')->group(
     function () {
         Route::get('', IndexAgents::class)->name('index');
         Route::get('create', CreateAgent::class)->name('create');
@@ -66,12 +65,11 @@ Route::prefix("agents")->name("agents.")->group(
     }
 );
 
-Route::prefix("suppliers")->name("suppliers")->group(
+Route::prefix('suppliers')->name('suppliers')->group(
     function () {
         Route::get('', IndexSuppliers::class)->name('.index');
         Route::get('create', CreateSupplier::class)->name('.create');
         Route::get('export', ExportSuppliers::class)->name('.export');
-
 
         Route::prefix('{supplier}')->group(function () {
             Route::get('', ShowSupplier::class)->name('.show');
@@ -87,11 +85,10 @@ Route::prefix("suppliers")->name("suppliers")->group(
             });
         });
 
-
     }
 );
 
-Route::prefix("supplier-products")->name("supplier_products.")->group(
+Route::prefix('supplier-products')->name('supplier_products.')->group(
     function () {
         Route::get('', IndexSupplierProducts::class)->name('index');
 

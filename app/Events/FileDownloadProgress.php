@@ -13,9 +13,13 @@ class FileDownloadProgress
     use Dispatchable;
     use InteractsWithSockets;
     use SerializesModels;
+
     public int $userId;
+
     public int $progress;
-    public string|null $fileName;
+
+    public ?string $fileName;
+
     /**
      * Create a new event instance.
      *
@@ -35,7 +39,7 @@ class FileDownloadProgress
      */
     public function broadcastOn(): Channel|PrivateChannel|array
     {
-        return new PrivateChannel('grp.download-progress.' . $this->userId);
+        return new PrivateChannel('grp.download-progress.'.$this->userId);
     }
 
     public function broadcastAs(): string

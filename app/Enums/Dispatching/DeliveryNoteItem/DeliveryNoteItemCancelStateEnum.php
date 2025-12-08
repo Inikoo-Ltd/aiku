@@ -15,7 +15,6 @@ enum DeliveryNoteItemCancelStateEnum: string
 {
     use EnumHelperTrait;
 
-
     case UNASSIGNED = 'unassigned';
     case QUEUED = 'queued';
     case HANDLING = 'handling';
@@ -24,10 +23,10 @@ enum DeliveryNoteItemCancelStateEnum: string
     public static function labels(): array
     {
         return [
-            'unassigned'       => __('Unassigned'),
-            'queued'           => __('In Queue'),
-            'handling'         => __('Handling'),
-            'returned'         => __('Returned'),
+            'unassigned' => __('Unassigned'),
+            'queued' => __('In Queue'),
+            'handling' => __('Handling'),
+            'returned' => __('Returned'),
         ];
     }
 }

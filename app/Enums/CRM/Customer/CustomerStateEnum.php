@@ -26,44 +26,44 @@ enum CustomerStateEnum: string
         return [
             'in_process' => __('In Process'),
             'registered' => __('Registered'),
-            'active'     => __('Active'),
-            'losing'     => __('Potential Comebacks'),
-            'lost'       => __('Dormant'),
+            'active' => __('Active'),
+            'losing' => __('Potential Comebacks'),
+            'lost' => __('Dormant'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'in_process'    => [
+            'in_process' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-circle-notch',
-                'class'   => 'text-lime-500',
-                'color'   => 'lime'
+                'icon' => 'fal fa-circle-notch',
+                'class' => 'text-lime-500',
+                'color' => 'lime',
             ],
-            'registered'    => [
+            'registered' => [
                 'tooltip' => __('Registered'),
-                'icon'    => 'fas fa-exclamation-circle',
-                'class'   => 'text-orange-500',
-                'color'   => 'orange'
+                'icon' => 'fas fa-exclamation-circle',
+                'class' => 'text-orange-500',
+                'color' => 'orange',
             ],
-            'active'        => [
+            'active' => [
                 'tooltip' => __('Active'),
-                'icon'    => 'fas fa-circle',
-                'class'   => 'text-emerald-500',
-                'color'   => 'emerald',
+                'icon' => 'fas fa-circle',
+                'class' => 'text-emerald-500',
+                'color' => 'emerald',
             ],
             'losing' => [
                 'tooltip' => __('Potential Comebacks'),
-                'icon'    => 'fas fa-circle',
-                'class'   => 'text-orange-500',
-                'color'   => 'orange',
+                'icon' => 'fas fa-circle',
+                'class' => 'text-orange-500',
+                'color' => 'orange',
             ],
-            'lost'  => [
+            'lost' => [
                 'tooltip' => __('Dormant'),
-                'icon'    => 'fas fa-circle',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
+                'icon' => 'fas fa-circle',
+                'class' => 'text-red-500',
+                'color' => 'red',
             ],
         ];
     }
@@ -74,11 +74,10 @@ enum CustomerStateEnum: string
 
         return [
             'in_process' => $stats->number_customers_state_in_process,
-            'registered'    => $stats->number_customers_state_registered,
-            'active'         => $stats->number_customers_state_active,
-            'losing'      => $stats->number_customers_state_losing,
-            'lost'      => $stats->number_customers_state_lost,
+            'registered' => $stats->number_customers_state_registered,
+            'active' => $stats->number_customers_state_active,
+            'losing' => $stats->number_customers_state_losing,
+            'lost' => $stats->number_customers_state_lost,
         ];
     }
-
 }

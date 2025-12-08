@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('group_goods_stats', function (Blueprint $table) {
@@ -26,7 +27,7 @@ return new class () extends Migration {
             $table->dropColumn([
                 'number_trade_units_anomality_status_in_process',
                 'number_trade_units_anomality_status_active',
-                'number_trade_units_anomality_status_discontinued'
+                'number_trade_units_anomality_status_discontinued',
             ]);
         });
     }

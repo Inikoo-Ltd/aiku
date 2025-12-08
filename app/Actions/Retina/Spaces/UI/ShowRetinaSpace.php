@@ -37,29 +37,28 @@ class ShowRetinaSpace extends RetinaAction
         return Inertia::render(
             'Space/RetinaSpace',
             [
-                'title'       => __('Space'),
+                'title' => __('Space'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation' => [
                     'previous' => $this->getPrevious($space, $request),
-                    'next'     => $this->getNext($space, $request),
+                    'next' => $this->getNext($space, $request),
                 ],
-                'pageHead'    => [
-                    'title'     => $space->reference,
-                    'model'     => __('Space'),
-                    'icon'      =>
-                        [
-                            'icon'  => ['fal', 'fa-parking'],
-                            'title' => __('Space')
-                        ],
+                'pageHead' => [
+                    'title' => $space->reference,
+                    'model' => __('Space'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-parking'],
+                        'title' => __('Space'),
+                    ],
                 ],
                 'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => SpaceTabsEnum::navigation()
+                    'current' => $this->tab,
+                    'navigation' => SpaceTabsEnum::navigation(),
                 ],
-                'showcase'    => SpaceResource::make($space),
+                'showcase' => SpaceResource::make($space),
 
             ]
         );
@@ -70,17 +69,16 @@ class ShowRetinaSpace extends RetinaAction
         return new SpaceResource($space);
     }
 
-
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
     {
         $headCrumb = function (Space $space, array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Spaces')
+                            'label' => __('Spaces'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -88,17 +86,15 @@ class ShowRetinaSpace extends RetinaAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
 
         $space = Space::where('slug', $routeParameters['space'])->first();
 
-
         return match ($routeName) {
-            'retina.fulfilment.spaces.show' =>
-            array_merge(
+            'retina.fulfilment.spaces.show' => array_merge(
                 IndexRetinaSpaces::make()->getBreadcrumbs(
                     $routeName
                 ),
@@ -106,15 +102,15 @@ class ShowRetinaSpace extends RetinaAction
                     $space,
                     [
                         'index' => [
-                            'name'       => 'retina.fulfilment.spaces.index',
-                            'parameters' => $routeParameters
+                            'name' => 'retina.fulfilment.spaces.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'retina.fulfilment.spaces.show',
+                            'name' => 'retina.fulfilment.spaces.show',
                             'parameters' => [
-                                'space' => $space->slug
-                            ]
-                        ]
+                                'space' => $space->slug,
+                            ],
+                        ],
                     ],
                     $suffix
                 )
@@ -126,6 +122,7 @@ class ShowRetinaSpace extends RetinaAction
     public function getPrevious(Space $space, ActionRequest $request): ?array
     {
         $previous = Space::where('slug', '<', $space->slug)->orderBy('id', 'desc')->first();
+
         return $this->getNavigation($previous, $request->route()->getName());
 
     }
@@ -133,12 +130,13 @@ class ShowRetinaSpace extends RetinaAction
     public function getNext(Space $space, ActionRequest $request): ?array
     {
         $next = Space::where('slug', '>', $space->slug)->orderBy('id')->first();
+
         return $this->getNavigation($next, $request->route()->getName());
     }
 
     private function getNavigation(?Space $space, string $routeName): ?array
     {
-        if (!$space) {
+        if (! $space) {
             return null;
         }
 
@@ -146,12 +144,12 @@ class ShowRetinaSpace extends RetinaAction
             'retina.fulfilment.spaces.show' => [
                 'label' => $space->reference,
                 'route' => [
-                    'name'      => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'space'              => $space->slug
-                    ]
+                        'space' => $space->slug,
+                    ],
 
-                ]
+                ],
             ],
         };
     }

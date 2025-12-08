@@ -36,23 +36,21 @@ class StoreOrganisationAddress extends OrgAction
     {
         return [
 
-            'address' => ['required', new ValidAddress()],
+            'address' => ['required', new ValidAddress],
 
         ];
     }
 
     public function action(Organisation $organisation, array $modelData, int $hydratorsDelay = 0, bool $audit = true): Organisation
     {
-        if (!$audit) {
+        if (! $audit) {
             Organisation::disableAuditing();
         }
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisation($organisation, $modelData);
 
         return $this->handle($organisation, $this->validatedData);
     }
-
-
 }

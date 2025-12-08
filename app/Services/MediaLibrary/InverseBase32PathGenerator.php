@@ -19,18 +19,15 @@ class InverseBase32PathGenerator implements PathGenerator
         return $this->getBasePath($media).'/';
     }
 
-
     public function getPathForConversions(Media $media): string
     {
         return $this->getBasePath($media).'/conversions/';
     }
 
-
     public function getPathForResponsiveImages(Media $media): string
     {
         return $this->getBasePath($media).'/responsive-images/';
     }
-
 
     protected function getBasePath(Media $media): string
     {
@@ -40,13 +37,12 @@ class InverseBase32PathGenerator implements PathGenerator
         }
 
         $base32 = new Base32([
-            "characters" => Base32::CROCKFORD,
-            "padding" => false,
-            "crockford" => true,
+            'characters' => Base32::CROCKFORD,
+            'padding' => false,
+            'crockford' => true,
         ]);
 
-
-        $encodedId = $base32->encode(sprintf("%010d", $media->id));
+        $encodedId = $base32->encode(sprintf('%010d', $media->id));
 
         $path .= substr($encodedId, -2, 2).'/'.substr($encodedId, -4, 2).'/'.$encodedId;
 

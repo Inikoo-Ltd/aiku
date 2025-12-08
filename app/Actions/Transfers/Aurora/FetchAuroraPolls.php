@@ -84,7 +84,6 @@ class FetchAuroraPolls extends FetchAuroraAction
             ->orderBy('source_id');
     }
 
-
     public function count(): ?int
     {
         return DB::connection('aurora')->table('Customer Poll Query Dimension')->count();

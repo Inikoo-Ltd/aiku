@@ -42,7 +42,6 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
     Route::patch('', UpdateTransaction::class)->name('update');
 });
 
-
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::post('pay-with-balance', PayOrderWithCustomerBalance::class)->name('pay_order_with_balance');
 
@@ -81,9 +80,6 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('dispatched', DispatchOrder::class)->name('dispatched');
     });
 });
-
-
-
 
 Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
     Route::patch('update', UpdatePicking::class)->name('update');

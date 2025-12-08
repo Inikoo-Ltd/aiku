@@ -28,21 +28,21 @@ class DepartmentWebsiteResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'               => $this->slug,
-            'shop_slug'          => $this->shop->slug,
-            'shop_code'          => $this->shop->code,
-            'shop_name'          => $this->shop->name,
-            'code'               => $this->code,
-            'name'               => $this->name,
-            'state'              => [
+            'slug' => $this->slug,
+            'shop_slug' => $this->shop->slug,
+            'shop_code' => $this->shop->code,
+            'shop_name' => $this->shop->name,
+            'code' => $this->code,
+            'name' => $this->name,
+            'state' => [
                 'label' => $this->state->labels()[$this->state->value],
-                'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],
-                'class' => $this->state->stateIcon()[$this->state->value]['class']
+                'icon' => $this->state->stateIcon()[$this->state->value]['icon'],
+                'class' => $this->state->stateIcon()[$this->state->value]['class'],
             ],
-            'description'       => $this->description,
-            'created_at'        => $this->created_at,
-            'updated_at'        => $this->updated_at,
-            'follow_master'    =>  $this->follow_master
+            'description' => $this->description,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'follow_master' => $this->follow_master,
             // 'current_families'  => $this->stats->number_families ?? 0,
             // 'current_products'  => $this->stats->number_products ?? 0,
         ];

@@ -62,6 +62,4 @@ class OrganisationHydrateWebUsers implements ShouldBeUnique
 
         $organisation->crmStats()->update($stats);
     }
-
-
 }

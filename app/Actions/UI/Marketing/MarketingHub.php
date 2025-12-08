@@ -27,7 +27,6 @@ class MarketingHub extends InertiaAction
         return $request->user()->authTo('marketing.view');
     }
 
-
     public function inOrganisation(ActionRequest $request): ActionRequest
     {
         $this->initialisation($request);
@@ -43,12 +42,10 @@ class MarketingHub extends InertiaAction
         return $request;
     }
 
-
     public function htmlResponse(ActionRequest $request): Response
     {
-        $routeName       = $request->route()->getName();
+        $routeName = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
-
 
         return Inertia::render(
             'Comms/MailHub',
@@ -57,102 +54,97 @@ class MarketingHub extends InertiaAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('marketing'),
-                'pageHead'    => [
+                'title' => __('marketing'),
+                'pageHead' => [
                     'title' => __('Marketing'),
                 ],
 
-
                 'flatTreeMaps' => match ($routeName) {
-                    'shops.show.mail.hub' =>
-                    [
+                    'shops.show.mail.hub' => [
                         [
                             [
-                                'name'  => __('post room'),
-                                'icon'  => ['fal', 'fa-mailbox'],
-                                'route'  => ['grp.marketing.post_rooms.index'],
+                                'name' => __('post room'),
+                                'icon' => ['fal', 'fa-mailbox'],
+                                'route' => ['grp.marketing.post_rooms.index'],
                                 'index' => [
-                                    'number' => $routeParameters['shop']
-                                ]
+                                    'number' => $routeParameters['shop'],
+                                ],
 
                             ],
                             [
-                                'name'  => __('Outboxes'),
-                                'icon'  => ['fal', 'fa-inbox-out'],
-                                'route'  => ['grp.marketing.outboxes.index'],
+                                'name' => __('Outboxes'),
+                                'icon' => ['fal', 'fa-inbox-out'],
+                                'route' => ['grp.marketing.outboxes.index'],
                                 'index' => [
-                                    'number' => $this->outbox
-                                ]
+                                    'number' => $this->outbox,
+                                ],
 
                             ],
                             [
-                                'name'  => __('Mailshots'),
-                                'icon'  => ['fal', 'fa-mail-bulk'],
-                                'route'  => ['grp.marketing.mailshots.index'],
+                                'name' => __('Mailshots'),
+                                'icon' => ['fal', 'fa-mail-bulk'],
+                                'route' => ['grp.marketing.mailshots.index'],
                                 'index' => [
-                                    'number' => $this->outbox
+                                    'number' => $this->outbox,
 
-                                ]
+                                ],
 
                             ],
                             [
-                                'name'  => __('dispatched emails'),
-                                'icon'  => ['fal', 'fa-envelope'],
-                                'route'  => ['grp.marketing.dispatched-emails.index'],
+                                'name' => __('dispatched emails'),
+                                'icon' => ['fal', 'fa-envelope'],
+                                'route' => ['grp.marketing.dispatched-emails.index'],
                                 'index' => [
-                                    'number' => $this->outbox
-                                ]
+                                    'number' => $this->outbox,
+                                ],
 
                             ],
-                        ]
-
+                        ],
 
                     ],
                     default => [
                         [
                             [
-                                'name'  => __('post room'),
-                                'icon'  => ['fal', 'fa-mailbox'],
-                                'route'  => ['grp.marketing.post_rooms.index'],
+                                'name' => __('post room'),
+                                'icon' => ['fal', 'fa-mailbox'],
+                                'route' => ['grp.marketing.post_rooms.index'],
                                 'index' => [
-                                    'number' => $this->outbox
-                                ]
+                                    'number' => $this->outbox,
+                                ],
 
                             ],
                             [
-                                'name'  => __('Outboxes'),
-                                'icon'  => ['fal', 'fa-inbox-out'],
-                                'route'  => ['grp.marketing.outboxes.index'],
+                                'name' => __('Outboxes'),
+                                'icon' => ['fal', 'fa-inbox-out'],
+                                'route' => ['grp.marketing.outboxes.index'],
                                 'index' => [
-                                    'number' => $this->outbox
-                                ]
+                                    'number' => $this->outbox,
+                                ],
 
                             ],
                             [
-                                'name'  => __('Mailshots'),
-                                'icon'  => ['fal', 'fa-mail-bulk'],
-                                'route'  => ['grp.marketing.mailshots.index'],
+                                'name' => __('Mailshots'),
+                                'icon' => ['fal', 'fa-mail-bulk'],
+                                'route' => ['grp.marketing.mailshots.index'],
                                 'index' => [
-                                    'number' => $this->outbox
+                                    'number' => $this->outbox,
 
-                                ]
+                                ],
 
                             ],
                             [
-                                'name'  => __('dispatched emails'),
-                                'icon'  => ['fal', 'fa-envelope'],
-                                'route'  => ['grp.marketing.dispatched-emails.index'],
+                                'name' => __('dispatched emails'),
+                                'icon' => ['fal', 'fa-envelope'],
+                                'route' => ['grp.marketing.dispatched-emails.index'],
                                 'index' => [
-                                    'number' => $this->outbox
-                                ]
+                                    'number' => $this->outbox,
+                                ],
 
                             ],
-                        ]
-
+                        ],
 
                     ]
-                }
-
+                },
 
             ]
         );
@@ -165,30 +157,29 @@ class MarketingHub extends InertiaAction
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.org.shops.show.marketing.dashboard'
+                                'name' => 'grp.org.shops.show.marketing.dashboard',
                             ],
                             'label' => __('Marketing').' ('.__('all shops').')',
-                            'icon'  => 'fal fa-bullhorn'
+                            'icon' => 'fal fa-bullhorn',
                         ],
                     ],
                 ]
             ),
-            'grp.marketing.shops.show.hub', 'grp.org.shops.show.marketing.mailshots.index', 'grp.org.shops.show.marketing.newsletters.index' =>
-            array_merge(
+            'grp.marketing.shops.show.hub', 'grp.org.shops.show.marketing.mailshots.index', 'grp.org.shops.show.marketing.newsletters.index' => array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.marketing.dashboard',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.shops.show.marketing.dashboard',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Marketing').' ('.$routeParameters['shop'].')',
-                            'icon'  => 'fal fa-bullhorn'
+                            'icon' => 'fal fa-bullhorn',
                         ],
                     ],
                 ]

@@ -22,11 +22,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $last_ordered_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PortfolioStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PortfolioStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PortfolioStats query()
+ *
  * @mixin \Eloquent
  */
-class PortfolioStats extends Model
-{
-}
+class PortfolioStats extends Model {}

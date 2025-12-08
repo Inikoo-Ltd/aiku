@@ -29,8 +29,8 @@ class ImportRetinaPallet extends RetinaAction
     public function rules(): array
     {
         return [
-            'file'             => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
-            'with_stored_item' => ['sometimes', 'required', 'bool']
+            'file' => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
+            'with_stored_item' => ['sometimes', 'required', 'bool'],
         ];
     }
 
@@ -52,9 +52,7 @@ class ImportRetinaPallet extends RetinaAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $request->merge([
-            'with_stored_item' => $request->input('stored_item') == "true"
+            'with_stored_item' => $request->input('stored_item') == 'true',
         ]);
     }
-
-
 }

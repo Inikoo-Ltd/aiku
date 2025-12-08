@@ -19,7 +19,6 @@ class ReindexOrgSupplierSearch extends HydrateModel
 {
     public string $commandSignature = 'search:org_suppliers {organisations?*} {--s|slugs=} ';
 
-
     public function handle(OrgSupplier $orgSupplier): void
     {
         OrgSupplierRecordSearch::run($orgSupplier);
@@ -37,7 +36,7 @@ class ReindexOrgSupplierSearch extends HydrateModel
 
     protected function loopAll(Command $command): void
     {
-        $command->info("Reindex Org Suppliers");
+        $command->info('Reindex Org Suppliers');
         $count = OrgSupplier::count();
 
         $bar = $command->getOutput()->createProgressBar($count);
@@ -52,6 +51,6 @@ class ReindexOrgSupplierSearch extends HydrateModel
         });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
     }
 }

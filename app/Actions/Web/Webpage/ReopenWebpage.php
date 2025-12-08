@@ -20,7 +20,6 @@ class ReopenWebpage extends OrgAction
     use WithActionUpdate;
     use WithWebpageHydrators;
 
-
     public function handle(Webpage $webpage): Webpage
     {
         $webpage->update(
@@ -30,13 +29,10 @@ class ReopenWebpage extends OrgAction
             ]
         );
 
-
-
         $this->dispatchWebpageHydratorsAndRefresh($webpage);
 
         return $webpage;
     }
-
 
     public function asController(Webpage $webpage, ActionRequest $request): Webpage
     {
@@ -44,5 +40,4 @@ class ReopenWebpage extends OrgAction
 
         return $this->handle($webpage);
     }
-
 }

@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('stored_items', function (Blueprint $table) {
@@ -24,7 +25,6 @@ return new class () extends Migration {
             $table->foreign('last_stored_item_audit_id')->references('id')->on('stored_item_audits')->nullOnDelete();
         });
     }
-
 
     public function down(): void
     {

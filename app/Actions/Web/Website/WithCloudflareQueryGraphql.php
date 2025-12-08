@@ -80,7 +80,7 @@ trait WithCloudflareQueryGraphql
         $since = Arr::get($modelData, 'since') ?? Date::now()->subDay()->toIso8601String();
         $until = Arr::get($modelData, 'until') ?? Date::now()->toIso8601String();
 
-        if (!$siteTag || !$accountTag) {
+        if (! $siteTag || ! $accountTag) {
             return [];
         }
 
@@ -103,7 +103,7 @@ trait WithCloudflareQueryGraphql
             'topBrowsers' => 'userAgentBrowser',
             'topOSs' => 'userAgentOS',
             'topDeviceTypes' => 'deviceType',
-            'countries' => 'countryName'
+            'countries' => 'countryName',
         ];
 
         $dimensionsQuery = implode("\n", array_map(function ($key, $value) use ($filter, $order) {
@@ -149,7 +149,6 @@ trait WithCloudflareQueryGraphql
         return $this->getCloudflareAnalytics($modelData, $query);
     }
 
-
     public function getRumPerfAnalyticsTopNs($modelData): array
     {
         $pageLoadFilterVal = ucfirst(Arr::get($modelData, 'filter') ?? 'P50');
@@ -161,7 +160,7 @@ trait WithCloudflareQueryGraphql
         $since = Arr::get($modelData, 'since') ?? Date::now()->subDay()->toIso8601String();
         $until = Arr::get($modelData, 'until') ?? Date::now()->toIso8601String();
 
-        if (!$siteTag || !$accountTag) {
+        if (! $siteTag || ! $accountTag) {
             return [];
         }
 
@@ -186,7 +185,7 @@ trait WithCloudflareQueryGraphql
             'pageRenderTime',
             'loadEventTime',
             'firstPaint',
-            'firstContentfulPaint'
+            'firstContentfulPaint',
         ];
 
         $metricsQuery = implode("\n", array_map(function ($metric) use ($pageLoadFilterVal) {
@@ -200,7 +199,7 @@ trait WithCloudflareQueryGraphql
             'topHosts' => 'requestHost',
             'topBrowsers' => 'userAgentBrowser',
             'topOSs' => 'userAgentOS',
-            'topDeviceTypes' => 'deviceType'
+            'topDeviceTypes' => 'deviceType',
         ];
 
         $dimensionsQuery = implode("\n", array_map(function ($key, $value) use ($filter, $order, $pageLoadAggregation, $pageLoadFilterVal) {
@@ -265,7 +264,7 @@ trait WithCloudflareQueryGraphql
         $since = Arr::get($modelData, 'since') ?? Date::now()->subDay()->toIso8601String();
         $until = Arr::get($modelData, 'until') ?? Date::now()->toIso8601String();
 
-        if (!$siteTag || !$accountTag) {
+        if (! $siteTag || ! $accountTag) {
             return [];
         }
 
@@ -290,7 +289,7 @@ trait WithCloudflareQueryGraphql
             'cls' => 'rumWebVitalsEventsAdaptiveGroups',
             'visitsDelta' => 'rumPageloadEventsAdaptiveGroups',
             'pageviewsDelta' => 'rumPageloadEventsAdaptiveGroups',
-            'performanceDelta' => 'rumPerformanceEventsAdaptiveGroups'
+            'performanceDelta' => 'rumPerformanceEventsAdaptiveGroups',
         ];
 
         $metricsQuery = implode("\n", array_map(function ($key, $value) use ($filter, $since, $until) {
@@ -338,7 +337,7 @@ trait WithCloudflareQueryGraphql
             'deviceType' => 'deviceType',
         ];
         $metricFilter = Arr::get($modelData, 'filter') ?? 'all';
-        $metric = $getMetric[$metricFilter] != '' ? "metric: {$getMetric[$metricFilter]}" : "";
+        $metric = $getMetric[$metricFilter] != '' ? "metric: {$getMetric[$metricFilter]}" : '';
 
         $filterData = Arr::get($modelData, 'filterData') ?? '';
         if ($filterData) {
@@ -356,7 +355,7 @@ trait WithCloudflareQueryGraphql
         $since = Arr::get($modelData, 'since') ?? Date::now()->subDay()->toIso8601String();
         $until = Arr::get($modelData, 'until') ?? Date::now()->toIso8601String();
 
-        if (!$siteTag || !$accountTag) {
+        if (! $siteTag || ! $accountTag) {
             return [];
         }
 
@@ -403,7 +402,7 @@ trait WithCloudflareQueryGraphql
         $since = Arr::get($modelData, 'since') ?? Date::now()->subDay()->toIso8601String();
         $until = Arr::get($modelData, 'until') ?? Date::now()->toIso8601String();
 
-        if (!$siteTag || !$accountTag) {
+        if (! $siteTag || ! $accountTag) {
             return null;
         }
 
@@ -420,7 +419,7 @@ trait WithCloudflareQueryGraphql
         $debugFilters = [
             'lcp' => '{ largestContentfulPaint_neq: -1, largestContentfulPaint_gt: 2500000, largestContentfulPaintElement_neq: "", largestContentfulPaintObjectHost_neq: "", largestContentfulPaintObjectPath_neq: "" }',
             'fid' => '{ firstInputDelay_neq: -1, firstInputDelay_gt: 100000, firstInputDelayElement_neq: "", firstInputDelayName_neq: "" }',
-            'cls' => '{ cumulativeLayoutShift_neq: -1, cumulativeLayoutShift_gt: 0.1, cumulativeLayoutShiftElement_neq: "" }'
+            'cls' => '{ cumulativeLayoutShift_neq: -1, cumulativeLayoutShift_gt: 0.1, cumulativeLayoutShiftElement_neq: "" }',
         ];
 
         $metrics = ['lcp', 'inp', 'fid', 'cls'];
@@ -555,7 +554,7 @@ trait WithCloudflareQueryGraphql
         $since = Arr::get($modelData, 'since') ?? Date::now()->subDay()->toIso8601String();
         $until = Arr::get($modelData, 'until') ?? Date::now()->toIso8601String();
 
-        if (!$siteTag || !$accountTag) {
+        if (! $siteTag || ! $accountTag) {
             return null;
         }
 
@@ -599,9 +598,9 @@ trait WithCloudflareQueryGraphql
 
     private function getCloudflareAnalytics(array $modelData, string $query, $try = 3): ?array
     {
-        $apiToken = Arr::get($modelData, "apiToken");
+        $apiToken = Arr::get($modelData, 'apiToken');
 
-        $urlCloudflareGraphql = "https://api.cloudflare.com/client/v4/graphql";
+        $urlCloudflareGraphql = 'https://api.cloudflare.com/client/v4/graphql';
         if ($try == 0) {
             return [];
         }
@@ -619,7 +618,6 @@ trait WithCloudflareQueryGraphql
             }
             throw $e;
         }
-
 
         return $response->json();
     }

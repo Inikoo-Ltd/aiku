@@ -20,8 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreSubmittedOrder extends OrgAction
 {
-    use WithActionUpdate;
     use HasOrderHydrators;
+    use WithActionUpdate;
     use WithOrderingEditAuthorisation;
 
     /**
@@ -45,10 +45,11 @@ class StoreSubmittedOrder extends OrgAction
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,
-                $order->slug
+                $order->slug,
             ])
         };
     }
+
     /**
      * @throws \Throwable
      */

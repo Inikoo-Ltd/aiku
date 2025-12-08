@@ -65,9 +65,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_current_api_tokens
  * @property int $number_expired_api_tokens
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysAdminStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysAdminStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysAdminStats query()
+ *
  * @mixin \Eloquent
  */
 class GroupSysAdminStats extends Model

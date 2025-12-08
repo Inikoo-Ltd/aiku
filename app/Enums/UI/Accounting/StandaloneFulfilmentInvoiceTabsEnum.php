@@ -17,8 +17,8 @@ enum StandaloneFulfilmentInvoiceTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case ITEMS                  = 'items';
-    case HISTORY                = 'history';
+    case ITEMS = 'items';
+    case HISTORY = 'history';
     case EMAIL = 'email';
 
     public function blueprint(): array
@@ -27,20 +27,20 @@ enum StandaloneFulfilmentInvoiceTabsEnum: string
             StandaloneFulfilmentInvoiceTabsEnum::EMAIL => [
                 'align' => 'right',
                 'title' => __('Email'),
-                'icon'  => 'fal fa-envelope',
-                'type'  => 'icon'
+                'icon' => 'fal fa-envelope',
+                'type' => 'icon',
             ],
 
-            StandaloneFulfilmentInvoiceTabsEnum::HISTORY     => [
+            StandaloneFulfilmentInvoiceTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
 
             StandaloneFulfilmentInvoiceTabsEnum::ITEMS => [
                 'title' => __('Items'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
         };
     }

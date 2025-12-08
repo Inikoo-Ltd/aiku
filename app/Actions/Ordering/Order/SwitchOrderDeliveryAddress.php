@@ -21,7 +21,7 @@ class SwitchOrderDeliveryAddress extends OrgAction
     public function handle(Order $order, array $modelData): Order
     {
         if (isset($modelData['delivery_address_id'])) {
-            $order->delivery_address_id                               = $modelData['delivery_address_id'];
+            $order->delivery_address_id = $modelData['delivery_address_id'];
             $order->save();
         }
 

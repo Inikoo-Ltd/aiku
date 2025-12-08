@@ -31,7 +31,6 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
 
     private CustomerSalesChannel $customerSalesChannel;
 
-
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -57,15 +56,13 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
                 'customer_clients.id',
                 'customer_clients.name',
                 'customer_clients.ulid',
-                'customer_clients.created_at'
+                'customer_clients.created_at',
             ])
             ->allowedSorts(['reference', 'name', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
-
-
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
@@ -74,8 +71,6 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
 
         return $this->handle($customerSalesChannel);
     }
-
-
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
@@ -108,60 +103,58 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
 
         $fetchClientLabel = __('Fetch Client');
 
-
         $actions = [];
 
         if ($this->customerSalesChannel->platform_user_type == 'ShopifyUser') {
             $actions[] = [
-                'type'    => 'button',
-                'style'   => 'create',
+                'type' => 'button',
+                'style' => 'create',
                 'tooltip' => $fetchClientLabel,
-                'label'   => $fetchClientLabel,
-                'route'   => [
-                    'name'       => 'retina.dropshipping.customer_sales_channels.client.fetch',
+                'label' => $fetchClientLabel,
+                'route' => [
+                    'name' => 'retina.dropshipping.customer_sales_channels.client.fetch',
                     'parameters' => [
-                        'platform' => $this->customerSalesChannel->platform->slug
-                    ]
-                ]
+                        'platform' => $this->customerSalesChannel->platform->slug,
+                    ],
+                ],
             ];
         }
 
         if ($this->customerSalesChannel->platform_user_type == 'WooCommerceUser') {
             $actions[] = [
-                'type'    => 'button',
-                'style'   => 'create',
+                'type' => 'button',
+                'style' => 'create',
                 'tooltip' => $fetchClientLabel,
-                'label'   => $fetchClientLabel,
-                'route'   => [
-                    'name'       => 'retina.dropshipping.customer_sales_channels.client.wc-fetch',
+                'label' => $fetchClientLabel,
+                'route' => [
+                    'name' => 'retina.dropshipping.customer_sales_channels.client.wc-fetch',
                     'parameters' => [
-                        'customerSalesChannel' => $this->customerSalesChannel->slug
-                    ]
-                ]
+                        'customerSalesChannel' => $this->customerSalesChannel->slug,
+                    ],
+                ],
             ];
         }
-
 
         $spreadsheetRoute = null;
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $actions[] = [
-                'type'  => 'button',
+                'type' => 'button',
                 'style' => 'create',
                 'label' => __('Create Customer Client'),
                 'route' => [
-                    'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.client.create',
+                    'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.client.create',
                     'parameters' => [
-                        'customerSalesChannel' => $this->customerSalesChannel->slug
-                    ]
-                ]
+                        'customerSalesChannel' => $this->customerSalesChannel->slug,
+                    ],
+                ],
             ];
 
             $spreadsheetRoute = [
-                'event'           => 'action-progress',
-                'channel'         => 'grp.personal.'.$this->organisation->group->id,
-                'required_fields' => ["contact_name", "company_name", "email", "phone", "address_line_1", "address_line_2", "postal_code", "locality", "country_code"],
-                'route'           => [
-                    'upload'   => [
+                'event' => 'action-progress',
+                'channel' => 'grp.personal.'.$this->organisation->group->id,
+                'required_fields' => ['contact_name', 'company_name', 'email', 'phone', 'address_line_1', 'address_line_2', 'postal_code', 'locality', 'country_code'],
+                'route' => [
+                    'upload' => [
                         'name' => 'retina.models.customer_sales_channel.clients.upload',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id,
@@ -171,8 +164,6 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
             ];
         }
 
-
-
         return Inertia::render(
             'Dropshipping/Client/CustomerClients',
             [
@@ -180,18 +171,18 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
                     $request->route()->originalParameters(),
                     $request->route()->getName()
                 ),
-                'title'       => __('customer clients'),
-                'pageHead'    => [
-                    'title'      => $title,
-                    'icon'       => [
-                        'icon'  => ['fal', 'fa-user-friends'],
-                        'title' => __('Customer client')
+                'title' => __('customer clients'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => [
+                        'icon' => ['fal', 'fa-user-friends'],
+                        'title' => __('Customer client'),
                     ],
-                    'actions'    => $actions
+                    'actions' => $actions,
 
                 ],
-                'data'        => CustomerClientResource::collection($customerClients),
-                'upload_spreadsheet' => $spreadsheetRoute
+                'data' => CustomerClientResource::collection($customerClients),
+                'upload_spreadsheet' => $spreadsheetRoute,
 
             ]
         )->table($this->tableStructure());
@@ -204,15 +195,15 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
                 ShowRetinaDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.client.index',
-                                'parameters' => $routeParameters
+                                'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.client.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Clients'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

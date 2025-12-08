@@ -32,9 +32,11 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Dispatching\Shipper|null $shipper
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperAccount newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperAccount newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperAccount query()
+ *
  * @mixin \Eloquent
  */
 class ShipperAccount extends Model implements Auditable
@@ -43,20 +45,21 @@ class ShipperAccount extends Model implements Auditable
     use InOrganisation;
 
     protected $casts = [
-        'data'            => 'array',
-        'credentials'     => 'array',
-        'settings'        => 'array',
-        'status'          => 'boolean',
-        'last_used_at'    => 'datetime',
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'credentials' => 'array',
+        'settings' => 'array',
+        'status' => 'boolean',
+        'last_used_at' => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'        => '{}',
+        'data' => '{}',
         'credentials' => '{}',
-        'settings'    => '{}',
+        'settings' => '{}',
     ];
+
     protected $guarded = [];
 
     public function generateTags(): array
@@ -70,5 +73,4 @@ class ShipperAccount extends Model implements Auditable
     {
         return $this->belongsTo(Shipper::class);
     }
-
 }

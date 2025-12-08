@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('pallet_deliveries', function (Blueprint $table) {
@@ -29,7 +30,6 @@ return new class () extends Migration {
             $table->foreign('deleted_by')->references('id')->on('users')->nullOnDelete();
         });
     }
-
 
     public function down(): void
     {

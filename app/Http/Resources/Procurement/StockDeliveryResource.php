@@ -20,10 +20,10 @@ class StockDeliveryResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'          => $this->slug,
-            'reference'     => $this->reference,
-            'created_at'    => $this->created_at,
-            'updated_at'    => $this->updated_at,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

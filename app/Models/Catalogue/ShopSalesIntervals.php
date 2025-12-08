@@ -365,9 +365,11 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property-read Group|null $group
  * @property-read Organisation|null $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopSalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopSalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class ShopSalesIntervals extends Model
@@ -416,5 +418,4 @@ class ShopSalesIntervals extends Model
             'currency_id'       // Local key on Shop table
         );
     }
-
 }

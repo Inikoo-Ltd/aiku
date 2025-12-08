@@ -41,9 +41,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_opened_interact_failure
  * @property int $number_opened_interact_success
  * @property-read \App\Models\Comms\EmailBulkRun|null $emailBulkRun
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRunStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRunStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRunStats query()
+ *
  * @mixin \Eloquent
  */
 class EmailBulkRunStats extends Model

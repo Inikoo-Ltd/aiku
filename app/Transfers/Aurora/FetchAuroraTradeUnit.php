@@ -22,19 +22,15 @@ class FetchAuroraTradeUnit extends FetchAurora
     {
         $reference = $this->cleanTradeUnitReference($this->auroraModelData->{'Part Reference'});
 
-
         $sourceSlug = Str::lower($reference);
-
 
         $name = $this->auroraModelData->{'Part Recommended Product Unit Name'};
         if ($name == '') {
             $name = $reference;
         }
 
-
-        $grossWeight     = null;
+        $grossWeight = null;
         $marketingWeight = null;
-
 
         if ($this->auroraModelData->{'Part Package Weight'} > 0) {
             $grossWeight = round(1000 * $this->auroraModelData->{'Part Package Weight'} / $this->auroraModelData->{'Part Units Per Package'});
@@ -51,14 +47,13 @@ class FetchAuroraTradeUnit extends FetchAurora
             $dimensions = $this->parseDimension($rawDimensions);
         }
 
-
         $this->parsedData['trade_unit'] = [
-            'name'              => $name,
-            'code'              => $reference,
-            'source_id'         => $this->organisation->id.':'.$this->auroraModelData->{'Part SKU'},
-            'source_slug'       => $sourceSlug,
-            'fetched_at'        => now(),
-            'last_fetched_at'   => now(),
+            'name' => $name,
+            'code' => $reference,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Part SKU'},
+            'source_slug' => $sourceSlug,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
             'origin_country_id' => $this->parseCountryOrigin($this->auroraModelData->{'Part Origin Country Code'}),
         ];
 
@@ -74,9 +69,7 @@ class FetchAuroraTradeUnit extends FetchAurora
             $this->parsedData['trade_unit']['marketing_dimensions'] = $dimensions;
         }
 
-
         $barcodes = [];
-
 
         $auroraBarcodes = DB::connection('aurora')
             ->table('Barcode Asset Bridge')
@@ -87,17 +80,16 @@ class FetchAuroraTradeUnit extends FetchAurora
         foreach ($auroraBarcodes as $auroraBarcode) {
             $barcode = $this->parseBarcode($this->organisation->id.':'.$auroraBarcode->{'Barcode Asset Barcode Key'});
 
-            if (!$barcode) {
+            if (! $barcode) {
                 continue;
             }
 
-
             $barcodeData = [
-                'type'         => 'ean',
-                'status'       => $auroraBarcode->{'Barcode Asset Status'} === 'Assigned',
-                'withdrawn_at' => $this->parseDatetime($auroraBarcode->{'Barcode Asset Withdrawn Date'})
+                'type' => 'ean',
+                'status' => $auroraBarcode->{'Barcode Asset Status'} === 'Assigned',
+                'withdrawn_at' => $this->parseDatetime($auroraBarcode->{'Barcode Asset Withdrawn Date'}),
             ];
-            $createdAt   = $this->parseDatetime($auroraBarcode->{'Barcode Asset Assigned Date'});
+            $createdAt = $this->parseDatetime($auroraBarcode->{'Barcode Asset Assigned Date'});
 
             if ($createdAt) {
                 $barcodeData['created_at'] = $createdAt;
@@ -108,20 +100,17 @@ class FetchAuroraTradeUnit extends FetchAurora
         $this->parsedData['barcodes'] = $barcodes;
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Part Dimension')
             ->where('Part SKU', $id)->first();
     }
 
-
     public function parseCountryOrigin(?string $countryOrigin): ?int
     {
 
-
-        if (!$countryOrigin || is_numeric($countryOrigin)) {
+        if (! $countryOrigin || is_numeric($countryOrigin)) {
             return null;
         }
 
@@ -149,7 +138,6 @@ class FetchAuroraTradeUnit extends FetchAurora
         //        }
 
         return $country?->id;
-
 
     }
 
@@ -192,5 +180,4 @@ class FetchAuroraTradeUnit extends FetchAurora
 
         return $dimensions;
     }
-
 }

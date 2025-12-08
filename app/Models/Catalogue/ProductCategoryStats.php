@@ -92,9 +92,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_collections_products_status_discontinuing
  * @property int $number_collections_products_status_discontinued
  * @property int $number_products_status_coming_soon
+ *
  * @method static Builder<static>|ProductCategoryStats newModelQuery()
  * @method static Builder<static>|ProductCategoryStats newQuery()
  * @method static Builder<static>|ProductCategoryStats query()
+ *
  * @mixin Eloquent
  */
 class ProductCategoryStats extends Model
@@ -102,6 +104,4 @@ class ProductCategoryStats extends Model
     protected $table = 'product_category_stats';
 
     protected $guarded = [];
-
-
 }

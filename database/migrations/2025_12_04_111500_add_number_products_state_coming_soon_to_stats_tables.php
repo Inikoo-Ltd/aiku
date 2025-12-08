@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     private array $tables = [
         'collection_stats',
         'collection_category_stats',
@@ -24,10 +25,10 @@ return new class () extends Migration {
     public function up(): void
     {
         foreach ($this->tables as $tableName) {
-            if (!Schema::hasTable($tableName)) {
+            if (! Schema::hasTable($tableName)) {
                 continue;
             }
-            if (!Schema::hasColumn($tableName, 'number_products_status_coming_soon')) {
+            if (! Schema::hasColumn($tableName, 'number_products_status_coming_soon')) {
                 Schema::table($tableName, function (Blueprint $table) {
                     $table->unsignedInteger('number_products_status_coming_soon')->default(0);
                 });
@@ -38,7 +39,7 @@ return new class () extends Migration {
     public function down(): void
     {
         foreach ($this->tables as $tableName) {
-            if (!Schema::hasTable($tableName)) {
+            if (! Schema::hasTable($tableName)) {
                 continue;
             }
             if (Schema::hasColumn($tableName, 'number_products_status_coming_soon')) {

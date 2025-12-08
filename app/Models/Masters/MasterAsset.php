@@ -168,6 +168,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset onlyTrashed()
@@ -178,40 +179,41 @@ use Spatie\Translatable\HasTranslations;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereLocales(string $column, array $locales)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class MasterAsset extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasUniversalSearch;
     use HasHistory;
     use HasImage;
+    use HasSlug;
     use HasTranslations;
+    use HasUniversalSearch;
+    use SoftDeletes;
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $guarded = [];
 
     protected $casts = [
-        'type'                 => MasterAssetTypeEnum::class,
+        'type' => MasterAssetTypeEnum::class,
         'marketing_dimensions' => 'array',
-        'variant_ratio'        => 'decimal:3',
-        'price'                => 'decimal:2',
-        'rrp'                  => 'decimal:2',
-        'data'                 => 'array',
-        'status'               => 'boolean',
-        'variant_is_visible'   => 'boolean',
-        'fetched_at'           => 'datetime',
-        'last_fetched_at'      => 'datetime',
-        'stocks_status'        => MasterAssetStocksStatusEnum::class,
-        'products_status'      => MasterAssetProductsStatusEnum::class,
-        'offers_data'          => 'array',
+        'variant_ratio' => 'decimal:3',
+        'price' => 'decimal:2',
+        'rrp' => 'decimal:2',
+        'data' => 'array',
+        'status' => 'boolean',
+        'variant_is_visible' => 'boolean',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
+        'stocks_status' => MasterAssetStocksStatusEnum::class,
+        'products_status' => MasterAssetProductsStatusEnum::class,
+        'offers_data' => 'array',
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'offers_data'   => '{}',
+        'data' => '{}',
+        'offers_data' => '{}',
     ];
 
     public function generateTags(): array
@@ -243,7 +245,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
                 $suffix = $this->masterShop?->code;
-                if (!$suffix) {
+                if (! $suffix) {
                     $suffix = $this->group->code;
                 }
 
@@ -293,7 +295,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_family_id');
     }
-
 
     public function stats(): HasOne
     {
@@ -408,7 +409,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
         return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
     }
 
-
     public function tradeUnitTagsViaTradeUnits(): LaravelCollection
     {
         return Tag::whereHas('tradeUnits', function ($query) {
@@ -422,6 +422,4 @@ class MasterAsset extends Model implements Auditable, HasMedia
             $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
         })->first();
     }
-
-
 }

@@ -14,25 +14,25 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasDateIntervalsStats;
 
     public function up(): void
     {
         Schema::table('stock_family_sales_intervals', function (Blueprint $table) {
             $table = $this->decimalDateIntervals($table, [
-                "revenue_grp_currency",
-                "profit_grp_currency",
+                'revenue_grp_currency',
+                'profit_grp_currency',
             ]);
             $this->jsonDateIntervals($table, [
-                "revenue_data",
+                'revenue_data',
             ]);
 
             $this->unsignedIntegerDateIntervals($table, [
-                "number_invoices",
-                "number_customers",
+                'number_invoices',
+                'number_customers',
             ]);
-
 
         });
 
@@ -58,11 +58,10 @@ return new class () extends Migration {
         });
     }
 
-
     public function down(): void
     {
         Schema::table('stock_family_sales_intervals', function (Blueprint $table) {
-            $subjects = ['revenue_grp_currency', 'profit_grp_currency', 'revenue_data','number_invoices','number_customers'];
+            $subjects = ['revenue_grp_currency', 'profit_grp_currency', 'revenue_data', 'number_invoices', 'number_customers'];
             foreach ($subjects as $subject) {
                 $subject = $subject ? $subject.'_' : '';
 
@@ -84,8 +83,8 @@ return new class () extends Migration {
         Schema::table('stock_family_intervals', function (Blueprint $table) {
 
             $this->decimalDateIntervals($table, [
-                "revenue_grp_currency",
-                "profit_grp_currency",
+                'revenue_grp_currency',
+                'profit_grp_currency',
             ]);
         });
     }

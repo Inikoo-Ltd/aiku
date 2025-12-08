@@ -16,10 +16,8 @@ class ShowResetPassword
 {
     use AsController;
 
-
     public function handle(): Response
     {
         return Inertia::render('SysAdmin/ResetUserPassword');
     }
-
 }

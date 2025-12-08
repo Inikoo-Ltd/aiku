@@ -29,9 +29,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Dispatching\Shipper $shipper
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperStats query()
+ *
  * @mixin \Eloquent
  */
 class ShipperStats extends Model
@@ -42,5 +44,4 @@ class ShipperStats extends Model
     {
         return $this->belongsTo(Shipper::class);
     }
-
 }

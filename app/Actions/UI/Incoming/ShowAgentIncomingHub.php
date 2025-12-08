@@ -37,7 +37,6 @@ class ShowAgentIncomingHub extends OrgAction
         return $this->handle($warehouse);
     }
 
-
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
         /** @var Agent $agent */
@@ -49,31 +48,30 @@ class ShowAgentIncomingHub extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => 'incoming',
-                'pageHead'    => [
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-arrow-to-bottom'],
-                        'title' => __('Incoming')
+                'title' => 'incoming',
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-arrow-to-bottom'],
+                        'title' => __('Incoming'),
                     ],
                     'title' => __('Incoming Hub'),
                 ],
-                'box_stats'   => [
+                'box_stats' => [
                     [
-                        'name'  => __('Supplier Deliveries'),
+                        'name' => __('Supplier Deliveries'),
                         // todo add agent_supplier_deliveries  to agent_stats and show it here
                         'value' => $warehouse->organisation->procurementStats->number_stock_deliveries,
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
-                            'parameters' => $request->route()->originalParameters()
+                            'name' => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
+                            'parameters' => $request->route()->originalParameters(),
                         ],
-                        'icon'  => [
-                            'icon'    => 'fal fa-truck-container',
-                            'tooltip' => __('Supplier Deliveries')
-                        ]
+                        'icon' => [
+                            'icon' => 'fal fa-truck-container',
+                            'tooltip' => __('Supplier Deliveries'),
+                        ],
                     ],
 
                 ],
-
 
             ]
         );
@@ -85,17 +83,16 @@ class ShowAgentIncomingHub extends OrgAction
             ShowGroupDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.agent_incoming.backlog',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.warehouses.show.agent_incoming.backlog',
+                            'parameters' => $routeParameters,
                         ],
                         'label' => __('Goods in'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }
-
 }

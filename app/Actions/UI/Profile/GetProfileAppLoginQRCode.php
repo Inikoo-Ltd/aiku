@@ -20,7 +20,6 @@ class GetProfileAppLoginQRCode
 
     private bool $asAction = false;
 
-
     public function handle(User $user): array
     {
 
@@ -28,7 +27,7 @@ class GetProfileAppLoginQRCode
         Cache::put('profile-app-qr-code:'.$code, $user->id, 120);
 
         return [
-            'code' => $code
+            'code' => $code,
         ];
     }
 
@@ -45,6 +44,4 @@ class GetProfileAppLoginQRCode
 
         return $caca;
     }
-
-
 }

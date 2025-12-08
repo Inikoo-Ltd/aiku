@@ -12,8 +12,8 @@ use App\Actions\Transfers\Aurora\FetchAuroraWarehouses;
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Models\Inventory\Warehouse;
 use App\Models\Catalogue\Shop;
+use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -23,20 +23,19 @@ class FetchAuroraShop extends FetchAurora
     {
         $this->auroraModelData = $this->fetchData($id);
 
-        if (!$this->auroraModelData) {
+        if (! $this->auroraModelData) {
             return null;
         }
 
         if (strtolower($this->auroraModelData->{'Store Type'}) == 'fulfilment') {
             $this->parsedData['shop'] = [
-                'fetched_at'      => now(),
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Store Key'},
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Store Key'},
 
             ];
 
             $auroraSettings = json_decode($this->auroraModelData->{'Store Settings'}, true);
-
 
             $this->parsedData['tax_number'] = $this->parseTaxNumber(
                 number: $this->auroraModelData->{'Store VAT Number'},
@@ -46,7 +45,7 @@ class FetchAuroraShop extends FetchAurora
             return $this->parsedData;
         }
 
-        $code     = strtoupper($this->auroraModelData->{'Store Code'});
+        $code = strtoupper($this->auroraModelData->{'Store Code'});
         $sourceId = $this->organisation->id.':'.$this->auroraModelData->{'Store Key'};
         if (Shop::where('code', $code)->whereNot('source_id', $sourceId)->exists()) {
             $code = $code.strtoupper(Abbreviate::run(string: $this->organisation->slug, maximumLength: 2));
@@ -70,16 +69,12 @@ class FetchAuroraShop extends FetchAurora
             return;
         }
 
-
         $masterShopId = null;
 
-
         $this->parsedData['source_department_key'] = $this->auroraModelData->{'Store Department Category Key'};
-        $this->parsedData['source_family_key']     = $this->auroraModelData->{'Store Family Category Key'};
-
+        $this->parsedData['source_family_key'] = $this->auroraModelData->{'Store Family Category Key'};
 
         $auroraSettings = json_decode($this->auroraModelData->{'Store Settings'}, true);
-
 
         $this->parsedData['tax_number'] = $this->parseTaxNumber(
             number: $this->auroraModelData->{'Store VAT Number'},
@@ -89,7 +84,6 @@ class FetchAuroraShop extends FetchAurora
         if ($this->auroraModelData->code == 'AROM') {
             $this->auroraModelData->code = 'AROMA';
         }
-
 
         //        if ($type == ShopTypeEnum::FULFILMENT) {
         //            $masterShopId = $this->organisation->group->masterShops()->where('type', ShopTypeEnum::FULFILMENT)->first()->id;
@@ -104,7 +98,7 @@ class FetchAuroraShop extends FetchAurora
                 $masterShopId = $this->organisation->group->masterShops()->where('type', ShopTypeEnum::B2B)->where('code', 'ac')->first()->id;
             } elseif ($this->auroraModelData->code == 'AROMA') {
                 $masterShopId = $this->organisation->group->masterShops()->where('type', ShopTypeEnum::B2B)->where('code', 'aroma')->first()->id;
-            } elseif (!in_array($this->auroraModelData->code, ['HA', 'AB', 'AWT', 'HH'])) {
+            } elseif (! in_array($this->auroraModelData->code, ['HA', 'AB', 'AWT', 'HH'])) {
                 $masterShopId = $this->organisation->group->masterShops()->where('type', ShopTypeEnum::B2B)->first()->id;
             }
         }
@@ -118,8 +112,8 @@ class FetchAuroraShop extends FetchAurora
         };
 
         $settings = [
-            'can_collect'  => $this->auroraModelData->{'Store Can Collect'} === 'Yes',
-            'address_link' => 'Organisation:default'
+            'can_collect' => $this->auroraModelData->{'Store Can Collect'} === 'Yes',
+            'address_link' => 'Organisation:default',
         ];
 
         $settings['collect_address_link'] = 'Organisation:default';
@@ -130,7 +124,6 @@ class FetchAuroraShop extends FetchAurora
             ->table('Website Dimension')
             ->where('Website Key', $this->auroraModelData->{'Store Website Key'})->first();
 
-
         if ($auroraWebsiteData && $auroraWebsiteData->{'Website Registration Type'} == 'ApprovedOnly') {
             $registrationNeedsApproval = true;
         }
@@ -139,42 +132,39 @@ class FetchAuroraShop extends FetchAurora
             $registrationNeedsApproval = true;
         }
 
-
         $this->parsedData['shop'] = [
             'master_shop_id' => $masterShopId,
-            'code'           => $this->auroraModelData->code,
-            'name'           => $this->auroraModelData->{'Store Name'},
-            'company_name'   => $this->auroraModelData->{'Store Company Name'},
-            'contact_name'   => $this->auroraModelData->{'Store Contact Name'},
-
+            'code' => $this->auroraModelData->code,
+            'name' => $this->auroraModelData->{'Store Name'},
+            'company_name' => $this->auroraModelData->{'Store Company Name'},
+            'contact_name' => $this->auroraModelData->{'Store Contact Name'},
 
             'email' => $this->auroraModelData->{'Store Email'},
             'phone' => $this->auroraModelData->{'Store Telephone'},
 
             'identity_document_number' => $this->auroraModelData->{'Store Company Number'},
-            'state'                    => $state,
+            'state' => $state,
 
             'type' => $type,
 
-            'country_id'                  => $this->parseCountryID($this->auroraModelData->{'Store Home Country Code 2 Alpha'}),
-            'language_id'                 => $this->parseLanguageID($this->auroraModelData->{'Store Locale'}),
-            'currency_id'                 => $this->parseCurrencyID($this->auroraModelData->{'Store Currency Code'}),
-            'timezone_id'                 => $this->parseTimezoneID($this->auroraModelData->{'Store Timezone'}),
-            'open_at'                     => $this->parseDatetime($this->auroraModelData->{'Store Valid From'}),
-            'closed_at'                   => $this->parseDatetime($this->auroraModelData->{'Store Valid To'}),
-            'created_at'                  => $this->parseDatetime($this->auroraModelData->{'Store Valid From'}),
-            'source_id'                   => $this->organisation->id.':'.$this->auroraModelData->{'Store Key'},
-            'settings'                    => $settings,
-            'fetched_at'                  => now(),
-            'last_fetched_at'             => now(),
-            'registration_needs_approval' => $registrationNeedsApproval
+            'country_id' => $this->parseCountryID($this->auroraModelData->{'Store Home Country Code 2 Alpha'}),
+            'language_id' => $this->parseLanguageID($this->auroraModelData->{'Store Locale'}),
+            'currency_id' => $this->parseCurrencyID($this->auroraModelData->{'Store Currency Code'}),
+            'timezone_id' => $this->parseTimezoneID($this->auroraModelData->{'Store Timezone'}),
+            'open_at' => $this->parseDatetime($this->auroraModelData->{'Store Valid From'}),
+            'closed_at' => $this->parseDatetime($this->auroraModelData->{'Store Valid To'}),
+            'created_at' => $this->parseDatetime($this->auroraModelData->{'Store Valid From'}),
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Store Key'},
+            'settings' => $settings,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'registration_needs_approval' => $registrationNeedsApproval,
 
         ];
 
         if ($this->auroraModelData->{'Store Invoice Message'}) {
             $this->parsedData['shop']['invoice_footer'] = $this->auroraModelData->{'Store Invoice Message'};
         }
-
 
         if ($type == ShopTypeEnum::FULFILMENT) {
             foreach (
@@ -188,13 +178,12 @@ class FetchAuroraShop extends FetchAurora
             $this->organisation->refresh();
 
             /** @var Warehouse $warehouse */
-            $warehouse                              = $this->organisation->warehouses()->first();
+            $warehouse = $this->organisation->warehouses()->first();
             $this->parsedData['shop']['warehouses'] = [$warehouse->id];
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Store Dimension')

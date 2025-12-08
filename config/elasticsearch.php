@@ -6,56 +6,55 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-
 return [
-    'host'         => env('ELASTICSEARCH_HOST'),
-    'api_key'      => env('ELASTICSEARCH_API_KEY'),
-    'ca_bundle'    => env('ELASTICSEARCH_CA_BUNDLE'),
+    'host' => env('ELASTICSEARCH_HOST'),
+    'api_key' => env('ELASTICSEARCH_API_KEY'),
+    'ca_bundle' => env('ELASTICSEARCH_CA_BUNDLE'),
     'index_prefix' => env('ELASTICSEARCH_INDEX_PREFIX', 'aiku').'_'.env('APP_ENV', 'production').'_',
-    'indices'      => [
+    'indices' => [
         'mappings' => [
             'universal_search' => [
                 'properties' => [
-                    'group_id'   => [
+                    'group_id' => [
                         'type' => 'keyword',
                     ],
-                    'organisation_id'   => [
+                    'organisation_id' => [
                         'type' => 'keyword',
                     ],
-                    'organisation_slug'   => [
+                    'organisation_slug' => [
                         'type' => 'keyword',
                     ],
-                    'shop_id'         => [
+                    'shop_id' => [
                         'type' => 'keyword',
                     ],
-                    'shop_slug'         => [
+                    'shop_slug' => [
                         'type' => 'keyword',
                     ],
-                    'fulfilment_id'         => [
+                    'fulfilment_id' => [
                         'type' => 'keyword',
                     ],
-                    'fulfilment_slug'         => [
+                    'fulfilment_slug' => [
                         'type' => 'keyword',
                     ],
-                    'website_id'      => [
+                    'website_id' => [
                         'type' => 'keyword',
                     ],
-                    'website_slug'      => [
+                    'website_slug' => [
                         'type' => 'keyword',
                     ],
-                    'customer_id'     => [
+                    'customer_id' => [
                         'type' => 'keyword',
                     ],
-                    'customer_slug'     => [
+                    'customer_slug' => [
                         'type' => 'keyword',
                     ],
-                    'sections'     => [
+                    'sections' => [
                         'type' => 'keyword',
                     ],
-                    'permissions'     => [
+                    'permissions' => [
                         'type' => 'keyword',
                     ],
-                    'haystack_tier_1'       => [
+                    'haystack_tier_1' => [
                         'type' => 'text',
                     ],
                     'haystack_tier_2' => [
@@ -68,28 +67,28 @@ return [
             ],
             'retina_search' => [
                 'properties' => [
-                    'group_id'   => [
+                    'group_id' => [
                         'type' => 'keyword',
                     ],
-                    'organisation_id'   => [
+                    'organisation_id' => [
                         'type' => 'keyword',
                     ],
-                    'website_id'         => [
+                    'website_id' => [
                         'type' => 'keyword',
                     ],
-                    'customer_id'     => [
+                    'customer_id' => [
                         'type' => 'keyword',
                     ],
-                    'web_users'     => [
+                    'web_users' => [
                         'type' => 'keyword',
                     ],
-                    'sections'     => [
+                    'sections' => [
                         'type' => 'keyword',
                     ],
-                    'permissions'     => [
+                    'permissions' => [
                         'type' => 'keyword',
                     ],
-                    'haystack_tier_1'       => [
+                    'haystack_tier_1' => [
                         'type' => 'text',
                     ],
                     'haystack_tier_2' => [
@@ -102,28 +101,28 @@ return [
             ],
             'iris_search' => [
                 'properties' => [
-                    'group_id'   => [
+                    'group_id' => [
                         'type' => 'keyword',
                     ],
-                    'organisation_id'   => [
+                    'organisation_id' => [
                         'type' => 'keyword',
                     ],
-                    'website_id'         => [
+                    'website_id' => [
                         'type' => 'keyword',
                     ],
-                    'customer_id'     => [
+                    'customer_id' => [
                         'type' => 'keyword',
                     ],
-                    'web_users'     => [
+                    'web_users' => [
                         'type' => 'keyword',
                     ],
-                    'sections'     => [
+                    'sections' => [
                         'type' => 'keyword',
                     ],
-                    'permissions'     => [
+                    'permissions' => [
                         'type' => 'keyword',
                     ],
-                    'haystack_tier_1'       => [
+                    'haystack_tier_1' => [
                         'type' => 'text',
                     ],
                     'haystack_tier_2' => [
@@ -136,28 +135,28 @@ return [
             ],
             'web_search' => [
                 'properties' => [
-                    'group_id'   => [
+                    'group_id' => [
                         'type' => 'keyword',
                     ],
-                    'shop_id'         => [
+                    'shop_id' => [
                         'type' => 'keyword',
                     ],
-                    'organisation_id'   => [
+                    'organisation_id' => [
                         'type' => 'keyword',
                     ],
-                    'website_id'         => [
+                    'website_id' => [
                         'type' => 'keyword',
                     ],
-                    'webpage_id'         => [
+                    'webpage_id' => [
                         'type' => 'keyword',
                     ],
-                    'image_id'         => [
+                    'image_id' => [
                         'type' => 'keyword',
                     ],
-                    'sections'     => [
+                    'sections' => [
                         'type' => 'keyword',
                     ],
-                    'haystack_tier_1'       => [
+                    'haystack_tier_1' => [
                         'type' => 'text',
                     ],
                     'haystack_tier_2' => [
@@ -168,6 +167,6 @@ return [
                     ],
                 ],
             ],
-        ]
-    ]
+        ],
+    ],
 ];

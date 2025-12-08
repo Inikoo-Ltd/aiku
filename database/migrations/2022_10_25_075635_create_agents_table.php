@@ -6,12 +6,12 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('agents', function (Blueprint $table) {
@@ -35,7 +35,6 @@ return new class () extends Migration {
             $table->json('sources');
         });
     }
-
 
     public function down(): void
     {

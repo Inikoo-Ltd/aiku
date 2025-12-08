@@ -18,11 +18,8 @@ class ProcessAuroraDeleteInvoice extends OrgAction
 {
     use WithProcessAurora;
 
-
-
     public function __construct()
     {
         $this->fetcher = FetchAuroraDeletedInvoices::class;
     }
-
 }

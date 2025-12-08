@@ -45,32 +45,34 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class WooCommerceUser extends Model
 {
-    use InCustomer;
     use HasSlug;
-    use WithWooCommerceApiRequest;
+    use InCustomer;
     use SoftDeletes;
+    use WithWooCommerceApiRequest;
 
     protected $guarded = [];
 
     protected $casts = [
-        'data'      => 'array',
-        'settings'  => 'array',
-        'state'     => WebUserTypeEnum::class,
+        'data' => 'array',
+        'settings' => 'array',
+        'state' => WebUserTypeEnum::class,
         'auth_type' => WebUserAuthTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 
@@ -89,13 +91,13 @@ class WooCommerceUser extends Model
     {
         return $this->belongsToMany(Product::class, 'wc_user_has_products')
             ->withTimestamps();
-    } //UNUSED
+    } // UNUSED
 
     public function orders(): BelongsToMany
     {
         return $this->belongsToMany(Order::class, 'wc_user_has_orders')
             ->withTimestamps();
-    } //UNUSED
+    } // UNUSED
 
     public function customerSalesChannel(): BelongsTo
     {

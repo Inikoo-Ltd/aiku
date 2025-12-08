@@ -24,16 +24,14 @@ class FetchAuroraDeletedInvoices extends FetchAuroraAction
 
     public string $commandSignature = 'fetch:deleted_invoices {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Invoice
     {
         $deletedInvoiceData = $organisationSource->fetchDeletedInvoice($organisationSourceId);
-        if (!$deletedInvoiceData or !$deletedInvoiceData['invoice']) {
+        if (! $deletedInvoiceData or ! $deletedInvoiceData['invoice']) {
             return null;
         }
 
         $invoice = Invoice::withTrashed()->where('source_id', $deletedInvoiceData['invoice']['source_id'])->first();
-
 
         if ($invoice) {
             //  try {
@@ -66,7 +64,6 @@ class FetchAuroraDeletedInvoices extends FetchAuroraAction
             );
             $this->recordNew($organisationSource);
 
-
             $sourceData = explode(':', $invoice->source_id);
             DB::connection('aurora')->table('Invoice Deleted Dimension')
                 ->where('Invoice Deleted Key', $sourceData[1])
@@ -78,14 +75,11 @@ class FetchAuroraDeletedInvoices extends FetchAuroraAction
             //            }
         }
 
-
         DB::table('invoice_transactions')->where('invoice_id', $invoice->id)
             ->whereNull('deleted_at')->delete();
 
-
         return $invoice;
     }
-
 
     public function getModelsQuery(): Builder
     {

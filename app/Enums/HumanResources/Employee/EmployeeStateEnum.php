@@ -17,18 +17,18 @@ enum EmployeeStateEnum: string
 {
     use EnumHelperTrait;
 
-    case HIRED   = 'hired';
+    case HIRED = 'hired';
     case WORKING = 'working';
     case LEAVING = 'leaving';
-    case LEFT    = 'left';
+    case LEFT = 'left';
 
     public static function labels(): array
     {
         return [
-            'hired'         => __('Hired'),
-            'working'       => __('Working'),
-            'leaving'       => __('Leaving'),
-            'left'          => __('Left'),
+            'hired' => __('Hired'),
+            'working' => __('Working'),
+            'leaving' => __('Leaving'),
+            'left' => __('Left'),
         ];
     }
 
@@ -41,39 +41,37 @@ enum EmployeeStateEnum: string
             $stats = $parent->humanResourcesStats;
         }
 
-
         return [
-            'hired'         => $stats->number_employees_state_hired,
-            'working'       => $stats->number_employees_state_working,
-            'leaving'       => $stats->number_employees_state_leaving,
-            'left'          => $stats->number_employees_state_left,
+            'hired' => $stats->number_employees_state_hired,
+            'working' => $stats->number_employees_state_working,
+            'leaving' => $stats->number_employees_state_leaving,
+            'left' => $stats->number_employees_state_left,
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'hired'   => [
+            'hired' => [
 
                 'tooltip' => __('hired'),
-                'icon'    => 'fal fa-hand-holding-seedling',
-
+                'icon' => 'fal fa-hand-holding-seedling',
 
             ],
             'working' => [
                 'tooltip' => __('working'),
-                'icon'    => 'fal fa-handshake',
+                'icon' => 'fal fa-handshake',
 
             ],
             'leaving' => [
                 'tooltip' => __('leaving'),
-                'icon'    => 'fal fa-handshake-alt-slash',
-                'class'   => 'animate-pulse',
+                'icon' => 'fal fa-handshake-alt-slash',
+                'class' => 'animate-pulse',
 
             ],
-            'left'    => [
+            'left' => [
                 'tooltip' => __('ex-worker'),
-                'icon'    => 'fal fa-handshake-alt-slash'
+                'icon' => 'fal fa-handshake-alt-slash',
 
             ],
 

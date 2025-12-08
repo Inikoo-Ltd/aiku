@@ -17,5 +17,4 @@ enum SubscriptionEventTypeEnum: string
     case SUBSCRIBE = 'subscribe';
     case UNSUBSCRIBE = 'unsubscribe';
 
-
 }

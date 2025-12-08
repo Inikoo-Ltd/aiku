@@ -30,8 +30,8 @@ class FetchAuroraNoProductTransactions
     public function handle(SourceOrganisationService $organisationSource, int $source_id, Order $order): ?Transaction
     {
         $this->organisationSource = $organisationSource;
-        $transactionData          = $organisationSource->fetchNoProductTransaction(id: $source_id, order: $order);
-        if (!$transactionData) {
+        $transactionData = $organisationSource->fetchNoProductTransaction(id: $source_id, order: $order);
+        if (! $transactionData) {
             return null;
         }
 
@@ -39,7 +39,7 @@ class FetchAuroraNoProductTransactions
             $transactionData['transaction']['submitted_at'] = $order->submitted_at;
         }
 
-        $transactionData['transaction']['state']  = $order->state->value;
+        $transactionData['transaction']['state'] = $order->state->value;
         $transactionData['transaction']['status'] = $order->status->value;
 
         if ($transactionData['type'] == 'Adjustment') {
@@ -51,7 +51,6 @@ class FetchAuroraNoProductTransactions
         } else {
             dd($transactionData['type']);
         }
-
 
         return $transaction;
     }
@@ -116,7 +115,6 @@ class FetchAuroraNoProductTransactions
                 ->update(['aiku_id' => $transaction->id]);
         }
 
-
         return $transaction;
     }
 
@@ -155,5 +153,4 @@ class FetchAuroraNoProductTransactions
 
         return $transaction;
     }
-
 }

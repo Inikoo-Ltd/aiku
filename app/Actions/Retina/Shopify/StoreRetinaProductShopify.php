@@ -24,8 +24,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class StoreRetinaProductShopify extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     /**
      * @throws \Throwable
@@ -39,7 +39,7 @@ class StoreRetinaProductShopify extends RetinaAction
             }
         });
 
-        if (!$shopifyUser->customer_id) {
+        if (! $shopifyUser->customer_id) {
             return;
         }
 
@@ -49,7 +49,7 @@ class StoreRetinaProductShopify extends RetinaAction
     public function rules(): array
     {
         return [
-            'items' => ['required', 'array']
+            'items' => ['required', 'array'],
         ];
     }
 

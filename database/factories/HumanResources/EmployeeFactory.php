@@ -17,13 +17,13 @@ class EmployeeFactory extends Factory
     public function definition(): array
     {
         return [
-            'state'         => EmployeeStateEnum::WORKING,
-            'alias'         => fake()->unique()->name,
-            'contact_name'  => fake()->name,
+            'state' => EmployeeStateEnum::WORKING,
+            'alias' => fake()->unique()->name,
+            'contact_name' => fake()->name,
             'date_of_birth' => fake()->date,
-            'email'         => fake()->email,
+            'email' => fake()->email,
             'worker_number' => fake()->unique()->numberBetween(1000, 9999),
-            'type'          => EmployeeTypeEnum::EMPLOYEE,
+            'type' => EmployeeTypeEnum::EMPLOYEE,
         ];
     }
 }

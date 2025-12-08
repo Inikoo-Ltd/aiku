@@ -20,26 +20,25 @@ class FetchAuroraDeletedInvoice extends FetchAurora
 
         if ($this->auroraModelData->{'Invoice Deleted Order Key'} && $order = $this->parseOrder($this->organisation->id.':'.$this->auroraModelData->{'Invoice Deleted Order Key'})) {
             $this->parsedData['parent'] = $order;
-            $currencyID                 = $order->currency_id;
+            $currencyID = $order->currency_id;
         } elseif ($auroraDeletedData->{'Invoice Customer Key'}) {
             $customer = $this->parseCustomer($this->organisation->id.':'.$auroraDeletedData->{'Invoice Customer Key'});
-            if (!$customer) {
+            if (! $customer) {
                 return;
             }
             $this->parsedData['parent'] = $customer;
-            $currencyID                 = $customer->shop->currency_id;
+            $currencyID = $customer->shop->currency_id;
         } else {
             return;
         }
-
 
         $deleted_at = $this->auroraModelData->{'Invoice Deleted Date'};
         if ($deleted_at == '0000-00-00 00:00:00') {
             $deleted_at = $auroraDeletedData->{'Invoice Date'};
         }
 
-        if (!$deleted_at) {
-            print "Deleted invoice no date\n";
+        if (! $deleted_at) {
+            echo "Deleted invoice no date\n";
 
             return;
         }
@@ -47,33 +46,31 @@ class FetchAuroraDeletedInvoice extends FetchAurora
         $items = [];
         if (isset($auroraDeletedData->items)) {
             $items = $auroraDeletedData->items;
-            if (!$items) {
+            if (! $items) {
                 $items = [];
             }
         }
 
-
         $data = [
             'deleted' => [
                 'legacy' => [
-                    'items' => $items
-                ]
-            ]
+                    'items' => $items,
+                ],
+            ],
         ];
 
         $billingAddressData = $this->parseAddress(prefix: 'Invoice', auAddressData: $auroraDeletedData);
 
-        if (!$billingAddressData['country_id']) {
+        if (! $billingAddressData['country_id']) {
             $billingAddressData['country_id'] = $this->parsedData['parent']->shop->country_id;
         }
-
 
         $billingAddress = new Address($billingAddressData);
 
         $date = $this->parseDatetime($auroraDeletedData->{'Invoice Date'});
 
         $taxLiabilityAt = $this->parseDatetime($auroraDeletedData->{'Invoice Tax Liability Date'});
-        if (!$taxLiabilityAt) {
+        if (! $taxLiabilityAt) {
             $taxLiabilityAt = $date;
         }
 
@@ -82,39 +79,37 @@ class FetchAuroraDeletedInvoice extends FetchAurora
             $taxCategory = $this->parseTaxCategory($auroraDeletedData->{'Invoice Tax Category Key'});
         }
 
-
         $deletedBy = $this->parseUser($this->organisation->id.':'.$this->auroraModelData->{'Invoice Deleted User Key'});
 
         $this->parsedData['invoice'] =
             [
-                'reference'        => $this->auroraModelData->{'Invoice Deleted Public ID'},
-                'type'             => strtolower($this->auroraModelData->{'Invoice Deleted Type'}),
-                'created_at'       => $date,
-                'date'             => $date,
+                'reference' => $this->auroraModelData->{'Invoice Deleted Public ID'},
+                'type' => strtolower($this->auroraModelData->{'Invoice Deleted Type'}),
+                'created_at' => $date,
+                'date' => $date,
                 'tax_liability_at' => $taxLiabilityAt,
-                'org_exchange'     => GetHistoricCurrencyExchange::run($this->parsedData['parent']->shop->currency, $this->parsedData['parent']->organisation->currency, $date),
-                'grp_exchange'     => GetHistoricCurrencyExchange::run($this->parsedData['parent']->shop->currency, $this->parsedData['parent']->group->currency, $date),
-                'gross_amount'     => $auroraDeletedData->{'Invoice Items Gross Amount'},
-                'goods_amount'     => $auroraDeletedData->{'Invoice Items Net Amount'},
-                'shipping_amount'  => $auroraDeletedData->{'Invoice Shipping Net Amount'},
-                'charges_amount'   => $auroraDeletedData->{'Invoice Charges Net Amount'},
+                'org_exchange' => GetHistoricCurrencyExchange::run($this->parsedData['parent']->shop->currency, $this->parsedData['parent']->organisation->currency, $date),
+                'grp_exchange' => GetHistoricCurrencyExchange::run($this->parsedData['parent']->shop->currency, $this->parsedData['parent']->group->currency, $date),
+                'gross_amount' => $auroraDeletedData->{'Invoice Items Gross Amount'},
+                'goods_amount' => $auroraDeletedData->{'Invoice Items Net Amount'},
+                'shipping_amount' => $auroraDeletedData->{'Invoice Shipping Net Amount'},
+                'charges_amount' => $auroraDeletedData->{'Invoice Charges Net Amount'},
                 'insurance_amount' => $auroraDeletedData->{'Invoice Insurance Net Amount'},
-                'net_amount'       => $auroraDeletedData->{'Invoice Total Net Amount'},
-                'tax_amount'       => $auroraDeletedData->{'Invoice Total Tax Amount'},
-                'total_amount'     => $auroraDeletedData->{'Invoice Total Amount'},
-                'source_id'        => $this->organisation->id.':'.$this->auroraModelData->{'Invoice Deleted Key'},
-                'data'             => $data,
-                'billing_address'  => $billingAddress,
-                'currency_id'      => $currencyID,
+                'net_amount' => $auroraDeletedData->{'Invoice Total Net Amount'},
+                'tax_amount' => $auroraDeletedData->{'Invoice Total Tax Amount'},
+                'total_amount' => $auroraDeletedData->{'Invoice Total Amount'},
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Invoice Deleted Key'},
+                'data' => $data,
+                'billing_address' => $billingAddress,
+                'currency_id' => $currencyID,
 
-                'fetched_at'      => now(),
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
 
-
-                'deleted_at'                         => $deleted_at,
-                'deleted_note'                       => $this->auroraModelData->{'Invoice Deleted Note'},
+                'deleted_at' => $deleted_at,
+                'deleted_note' => $this->auroraModelData->{'Invoice Deleted Note'},
                 'deleted_from_deleted_invoice_fetch' => true,
-                'deleted_by'                         => $deletedBy?->id
+                'deleted_by' => $deletedBy?->id,
             ];
 
         if ($taxCategory) {
@@ -122,8 +117,7 @@ class FetchAuroraDeletedInvoice extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Invoice Deleted Dimension')

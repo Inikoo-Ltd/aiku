@@ -17,7 +17,7 @@ enum PhysicalGoodsTabsEnum: string
     use HasTabs;
 
     case PHYSICAL_GOODS = 'physical_goods';
-    case HISTORY        = 'history';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
@@ -25,13 +25,13 @@ enum PhysicalGoodsTabsEnum: string
 
             PhysicalGoodsTabsEnum::PHYSICAL_GOODS => [
                 'title' => __('Goods'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
 
             PhysicalGoodsTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ]
         };

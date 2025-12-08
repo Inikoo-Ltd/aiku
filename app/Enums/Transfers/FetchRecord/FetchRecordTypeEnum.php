@@ -14,10 +14,9 @@ enum FetchRecordTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case STORE       = 'store';
-    case UPDATE      = 'update';
-    case ERROR       = 'error';
+    case STORE = 'store';
+    case UPDATE = 'update';
+    case ERROR = 'error';
     case FETCH_ERROR = 'fetch_error';
-
 
 }

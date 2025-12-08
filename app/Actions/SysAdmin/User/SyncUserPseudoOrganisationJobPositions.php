@@ -24,8 +24,8 @@ class SyncUserPseudoOrganisationJobPositions
 
         $currentJobPositions = $user->pseudoJobPositions()->where('job_positions.organisation_id', $organisation->id)->pluck('job_positions.id')->all();
 
-        $newJobPositionsIds   = array_diff($jobPositionsIds, $currentJobPositions);
-        $removeJobPositions   = array_diff($currentJobPositions, $jobPositionsIds);
+        $newJobPositionsIds = array_diff($jobPositionsIds, $currentJobPositions);
+        $removeJobPositions = array_diff($currentJobPositions, $jobPositionsIds);
         $jobPositionsToUpdate = array_intersect($jobPositionsIds, $currentJobPositions);
 
         $user->pseudoJobPositions()->detach($removeJobPositions);
@@ -33,10 +33,10 @@ class SyncUserPseudoOrganisationJobPositions
             $user->pseudoJobPositions()->attach(
                 [
                     $jobPositionId => [
-                        'group_id'        => $user->group_id,
+                        'group_id' => $user->group_id,
                         'organisation_id' => $organisation->id,
-                        'scopes'          => $jobPositions[$jobPositionId]
-                    ]
+                        'scopes' => $jobPositions[$jobPositionId],
+                    ],
                 ],
             );
         }
@@ -45,7 +45,7 @@ class SyncUserPseudoOrganisationJobPositions
             $user->pseudoJobPositions()->updateExistingPivot(
                 $jobPositionId,
                 [
-                    'scopes' => $jobPositions[$jobPositionId]
+                    'scopes' => $jobPositions[$jobPositionId],
                 ]
             );
         }

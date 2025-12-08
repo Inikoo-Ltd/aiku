@@ -14,6 +14,6 @@ enum WebUserAuthTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case DEFAULT             = 'default';
-    case AURORA              = 'aurora';
+    case DEFAULT = 'default';
+    case AURORA = 'aurora';
 }

@@ -18,17 +18,17 @@ class HydrateGuest
 {
     use WithHydrateCommand;
 
-
     public string $commandSignature = 'hydrate:guests';
+
     public function __construct()
     {
         $this->model = Guest::class;
     }
+
     public function handle(Guest $guest): void
     {
         GuestHydrateTimesheets::run($guest);
         GuestHydrateClockings::run($guest);
         GuestHydrateTimeTracker::run($guest);
     }
-
 }

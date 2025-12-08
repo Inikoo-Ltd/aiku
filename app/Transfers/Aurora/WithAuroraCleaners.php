@@ -12,7 +12,7 @@ trait WithAuroraCleaners
 {
     public function sanitiseText($string): string
     {
-        return str_replace("\0", "", $string);
+        return str_replace("\0", '', $string);
     }
 
     public function clearTextWithHtml($string): string
@@ -35,27 +35,25 @@ trait WithAuroraCleaners
         $reference = str_replace('(', '-', $reference);
         $reference = str_replace(')', '-', $reference);
         $reference = str_replace("'", '', $reference);
-        $reference = str_replace(",", '', $reference);
-        $reference = str_replace("/", '-', $reference);
-        $reference = str_replace("*", '_', $reference);
-        $reference = str_replace("[", '', $reference);
-        $reference = str_replace("]", '', $reference);
-        $reference = str_replace("#", '_', $reference);
-        $reference = str_replace(":", '_', $reference);
-        $reference = str_replace("ň", 'n', $reference);
-        $reference = str_replace("%", 'pct', $reference);
-        $reference = str_replace("€", 'eur', $reference);
-        $reference = str_replace("$", 'usd', $reference);
-        $reference = str_replace("£", 'gbp', $reference);
-
+        $reference = str_replace(',', '', $reference);
+        $reference = str_replace('/', '-', $reference);
+        $reference = str_replace('*', '_', $reference);
+        $reference = str_replace('[', '', $reference);
+        $reference = str_replace(']', '', $reference);
+        $reference = str_replace('#', '_', $reference);
+        $reference = str_replace(':', '_', $reference);
+        $reference = str_replace('ň', 'n', $reference);
+        $reference = str_replace('%', 'pct', $reference);
+        $reference = str_replace('€', 'eur', $reference);
+        $reference = str_replace('$', 'usd', $reference);
+        $reference = str_replace('£', 'gbp', $reference);
 
         $reference = preg_replace('/_+/', '_', $reference);
         $reference = preg_replace('/-+/', '-', $reference);
 
-
         /** @noinspection PhpDuplicateArrayKeysInspection */
         /** @noinspection DuplicatedCode */
-        $normalizeChars = array(
+        $normalizeChars = [
             'Š' => 'S',
             'š' => 's',
             'Ð' => 'Dj',
@@ -136,8 +134,8 @@ trait WithAuroraCleaners
             'Â' => 'A',
             'Ș' => 'S',
             'Ț' => 'T',
-            'č' => 'c'
-        );
+            'č' => 'c',
+        ];
 
         $reference = str_replace('_-_', '-', $reference);
         $reference = str_replace('_+_', '-', $reference);
@@ -156,12 +154,11 @@ trait WithAuroraCleaners
         $string = str_replace('!', '_', $string);
         $string = str_replace('?', '_', $string);
         $string = str_replace("'", '', $string);
-        $string = str_replace("%", 'pct', $string);
-
+        $string = str_replace('%', 'pct', $string);
 
         /** @noinspection PhpDuplicateArrayKeysInspection */
         /** @noinspection DuplicatedCode */
-        $normalizeChars = array(
+        $normalizeChars = [
             'Š' => 'S',
             'š' => 's',
             'Ð' => 'Dj',
@@ -242,12 +239,11 @@ trait WithAuroraCleaners
             'Â' => 'A',
             'Ș' => 'S',
             'Ț' => 'T',
-            'č' => 'c'
-        );
+            'č' => 'c',
+        ];
 
         return strtr($string, $normalizeChars);
     }
-
 
     protected function cleanOfferCode($code)
     {
@@ -260,5 +256,4 @@ trait WithAuroraCleaners
 
         return $code;
     }
-
 }

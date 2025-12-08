@@ -17,9 +17,10 @@ class ProductionResource extends JsonResource
     {
         /** @var Production $production */
         $production = $this;
+
         return [
-            'id'      => $production->id,
-            'slug'    => $production->slug,
+            'id' => $production->id,
+            'slug' => $production->slug,
 
         ];
     }

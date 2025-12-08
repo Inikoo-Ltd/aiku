@@ -26,10 +26,10 @@ class GetWebBlockHistories extends OrgAction
         $queryBuilder = QueryBuilder::for(WebBlockHistory::class);
         if ($scope instanceof WebBlock) {
             $queryBuilder->where('web_block_id', $scope->id)
-                         ->where('webpage_id', $parent->id);
+                ->where('webpage_id', $parent->id);
         } elseif ($scope instanceof WebBlockType) {
             $queryBuilder->where('web_block_type_id', $scope->id)
-                        ->where('webpage_id', $parent->id);
+                ->where('webpage_id', $parent->id);
         } else {
             $queryBuilder->where('webpage_id', $parent->id);
         }
@@ -55,17 +55,21 @@ class GetWebBlockHistories extends OrgAction
     public function asController(Webpage $webpage, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($webpage->shop, $request);
+
         return $this->handle(parent: $webpage, scope: null);
     }
+
     public function inWebBlock(Webpage $webpage, WebBlock $webBlock, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($webpage->shop, $request);
+
         return $this->handle(parent: $webpage, scope: $webBlock);
     }
+
     public function inWebBlockType(Webpage $webpage, WebBlockType $webBlockType, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($webpage->shop, $request);
+
         return $this->handle(parent: $webpage, scope: $webBlockType);
     }
-
 }

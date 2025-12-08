@@ -31,11 +31,11 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         return match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => [
                 'title' => __('Shop'),
-                'icon'  => 'fal fa-store-alt',
+                'icon' => 'fal fa-store-alt',
             ],
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
                 'title' => __('Invoice categories'),
-                'icon'  => 'fal fa-sitemap',
+                'icon' => 'fal fa-sitemap',
             ],
         };
     }
@@ -59,8 +59,8 @@ enum OrganisationDashboardSalesTableTabsEnum: string
 
         return [
             'header' => $header,
-            'body'   => $body,
-            'totals' => $totals
+            'body' => $body,
+            'totals' => $totals,
         ];
     }
 

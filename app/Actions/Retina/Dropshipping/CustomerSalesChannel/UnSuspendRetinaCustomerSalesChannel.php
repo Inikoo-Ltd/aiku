@@ -13,8 +13,8 @@ use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\WooCommerce\CheckWooChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
 class UnSuspendRetinaCustomerSalesChannel extends RetinaAction
@@ -37,12 +37,12 @@ class UnSuspendRetinaCustomerSalesChannel extends RetinaAction
             default => null
         };
 
-        if (!$result) {
+        if (! $result) {
             return null;
         }
 
         return $this->update($customerSalesChannel, [
-            'ban_stock_update_util' => $result->platform_status ? null : now()->addDays(3)
+            'ban_stock_update_util' => $result->platform_status ? null : now()->addDays(3),
         ]);
     }
 

@@ -34,7 +34,6 @@ Route::prefix('feeds')->as('feeds.')->group(function () {
     Route::get('feeds/collection/{collection}/download', [DownloadProduct::class, 'inCollection'])->name('collection.download');
 });
 
-
 Route::prefix('sub-departments')->as('sub_departments.')->group(function () {
     Route::get('/', IndexRetinaSubDepartments::class)->name('index');
     Route::get('{subDepartment}', ShowRetinaSubDepartment::class)->name('show');

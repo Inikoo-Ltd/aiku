@@ -23,7 +23,7 @@ class ReindexWebsiteLuigiAsync extends OrgAction
         ReindexWebsiteLuigi::dispatch($website);
 
         UpdateWebsite::run($website, [
-            'last_reindex_at' => now()
+            'last_reindex_at' => now(),
         ]);
     }
 

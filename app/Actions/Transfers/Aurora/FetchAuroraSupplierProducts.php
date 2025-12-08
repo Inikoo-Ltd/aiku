@@ -25,36 +25,30 @@ class FetchAuroraSupplierProducts extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:supplier_products {organisations?*} {--s|source_id=} {--N|only_new : Fetch only new}  {--d|db_suffix=}';
 
-
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?SupplierProduct
     {
         $supplierProductData = $organisationSource->fetchSupplierProduct($organisationSourceId);
 
-
         $supplierProduct = $this->fetchSupplierProduct($supplierProductData, $organisationSource);
-
 
         if ($supplierProduct) {
             $supplierProduct->refresh();
             $organisation = $organisationSource->getOrganisation();
 
             $orgSupplierProduct = OrgSupplierProduct::where('organisation_id', $organisation->id)->where('supplier_product_id', $supplierProduct->id)->first();
-            if (!$orgSupplierProduct) {
+            if (! $orgSupplierProduct) {
                 StoreOrgSupplierProduct::make()->action(
                     orgSupplier: $supplierProductData['orgSupplier'],
                     supplierProduct: $supplierProduct,
                     modelData: [
-                        'source_id' => $supplierProductData['supplierProduct']['source_id']
+                        'source_id' => $supplierProductData['supplierProduct']['source_id'],
                     ]
                 );
             }
 
-
             $this->updateSupplierProductSources($supplierProduct, $supplierProductData['supplierProduct']['source_id']);
 
         }
-
 
         return $supplierProduct;
     }
@@ -64,7 +58,6 @@ class FetchAuroraSupplierProducts extends FetchAuroraAction
         $supplierProduct = null;
         if ($supplierProductData) {
             $isPrincipal = false;
-
 
             if ($supplierProduct = SupplierProduct::withTrashed()->where('source_id', $supplierProductData['supplierProduct']['source_id'])->first()) {
                 try {
@@ -85,29 +78,24 @@ class FetchAuroraSupplierProducts extends FetchAuroraAction
                 }
             }
 
-            if (!$supplierProduct) {
+            if (! $supplierProduct) {
                 $supplierProduct = SupplierProduct::withTrashed()->whereJsonContains('sources->supplier_parts', $supplierProductData['supplierProduct']['source_id'])->first();
             }
-            if (!$supplierProduct) {
+            if (! $supplierProduct) {
                 $supplierProduct = SupplierProduct::withTrashed()->where('source_slug', $supplierProductData['supplierProduct']['source_slug'])->first();
             }
 
-            if (!$supplierProduct) {
+            if (! $supplierProduct) {
                 $supplierProduct = SupplierProduct::whereRaw('LOWER(code)=? ', [trim(strtolower($supplierProductData['supplierProduct']['code']))])->first();
 
             }
 
-
-
-
-            if (!$supplierProduct) {
+            if (! $supplierProduct) {
 
                 if (SupplierProduct::withTrashed()->where('supplier_id', $supplierProductData['supplier']->id)->where('code', $supplierProductData['supplierProduct']['code'])->exists()) {
                     data_set($supplierProductData, 'supplierProduct.code', $supplierProductData['supplierProduct']['code'].'-duplicated-'.uniqid());
 
-
                 }
-
 
                 try {
                     $supplierProduct = StoreSupplierProduct::make()->action(
@@ -139,12 +127,11 @@ class FetchAuroraSupplierProducts extends FetchAuroraAction
                 $historicSupplierProduct = FetchAuroraHistoricSupplierProducts::run($organisationSource, $supplierProductData['historicSupplierProductSourceID']);
                 $supplierProduct->updateQuietly(['current_historic_supplier_product_id' => $historicSupplierProduct->id]);
 
-
                 $tradeUnit = $supplierProductData['trade_unit'];
                 SyncSupplierProductTradeUnits::run($supplierProduct, [
                     $tradeUnit->id => [
-                        'quantity' => $supplierProductData['supplierProduct']['units_per_pack']
-                    ]
+                        'quantity' => $supplierProductData['supplierProduct']['units_per_pack'],
+                    ],
                 ]);
             }
         }
@@ -152,17 +139,16 @@ class FetchAuroraSupplierProducts extends FetchAuroraAction
         return $supplierProduct;
     }
 
-
     public function updateSupplierProductSources(SupplierProduct $supplierProduct, string $source): void
     {
-        $sources   = Arr::get($supplierProduct->sources, 'supplier_parts', []);
+        $sources = Arr::get($supplierProduct->sources, 'supplier_parts', []);
         $sources[] = $source;
-        $sources   = array_unique($sources);
+        $sources = array_unique($sources);
 
         $supplierProduct->updateQuietly([
             'sources' => [
                 'supplier_parts' => $sources,
-            ]
+            ],
         ]);
     }
 

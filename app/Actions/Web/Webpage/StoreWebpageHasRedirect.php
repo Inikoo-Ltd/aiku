@@ -23,7 +23,6 @@ class StoreWebpageHasRedirect extends OrgAction
 
     private Webpage $webpage;
 
-
     public function handle(Webpage $webpage, array $modelData): array
     {
         // $redirectStr = Arr::get($modelData, 'data.redirecturl');
@@ -42,7 +41,6 @@ class StoreWebpageHasRedirect extends OrgAction
         //             $webpage->redirects()->saveMany($redirectData);
         //         }
         //     });
-
 
         //     // if(count($redirects) >= 10) {
         //     //     // remove the redirects data

@@ -31,6 +31,4 @@ class GuestHydrateClockings implements ShouldBeUnique
 
         $guest->stats()->update($stats);
     }
-
-
 }

@@ -25,7 +25,6 @@ class GroupHydrateDeletedInvoices implements ShouldBeUnique
     public function handle(Group $group): void
     {
 
-
         $group->orderingStats()->update(
             [
                 'number_deleted_invoices' => Invoice::onlyTrashed()
@@ -34,6 +33,4 @@ class GroupHydrateDeletedInvoices implements ShouldBeUnique
             ]
         );
     }
-
-
 }

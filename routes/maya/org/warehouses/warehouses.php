@@ -22,26 +22,24 @@ Route::prefix('{warehouse:id}')
             ->group(function () {
 
                 Route::prefix('agent-inventory')->name('.agent_inventory.')
-                    ->group(__DIR__."/agent_inventory.php");
+                    ->group(__DIR__.'/agent_inventory.php');
 
                 Route::prefix('inventory')->name('.inventory.')
-                    ->group(__DIR__."/inventory.php");
+                    ->group(__DIR__.'/inventory.php');
 
                 Route::prefix('incoming')->name('.incoming.')
-                    ->group(__DIR__."/incoming.php");
+                    ->group(__DIR__.'/incoming.php');
 
                 Route::prefix('dispatching')->name('.dispatching.')
-                    ->group(__DIR__."/dispatching.php");
+                    ->group(__DIR__.'/dispatching.php');
 
                 Route::name('.infrastructure.')
-                    ->group(__DIR__."/infrastructure.php");
-
+                    ->group(__DIR__.'/infrastructure.php');
 
             });
     });
 
-
-Route::prefix("{warehouse:id}")->name("warehouses.")
+Route::prefix('{warehouse:id}')->name('warehouses.')
     ->group(function () {
         Route::get('/', ShowWarehouse::class)->name('show')->withoutScopedBindings();
         Route::get('scanners/{ulid}', ShowUniversalScan::class)->name('universal.scan.show');

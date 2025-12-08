@@ -3,11 +3,11 @@
 namespace App\Models\CRM\Livechat;
 
 use App\Models\SysAdmin\User;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatAssignment> $assignments
  * @property-read User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent available()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newQuery()
@@ -32,6 +33,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent withSpecialization(string $specialization)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class ChatAgent extends Model
@@ -52,7 +54,6 @@ class ChatAgent extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
-
 
     protected static function booted(): void
     {
@@ -94,19 +95,15 @@ class ChatAgent extends Model
         return $this->restore();
     }
 
-
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-
     public function assignments(): HasMany
     {
         return $this->hasMany(ChatAssignment::class, 'chat_agent_id');
     }
-
-
 
     public function isAvailableForChat(): bool
     {
@@ -115,51 +112,42 @@ class ChatAgent extends Model
             && $this->current_chat_count < $this->max_concurrent_chats;
     }
 
-
-
     public function incrementChatCount(): void
     {
         $this->increment('current_chat_count');
     }
-
 
     public function decrementChatCount(): void
     {
         $this->decrement('current_chat_count');
     }
 
-
     public function setOnline(bool $online = true): void
     {
         $this->update(['is_online' => $online]);
     }
-
 
     public function hasSpecialization(string $specialization): bool
     {
         return in_array($specialization, $this->specialization ?? []);
     }
 
-
     public function scopeOnline($query)
     {
         return $query->where('is_online', true);
     }
 
-
     public function scopeAvailable($query)
     {
         return $query->where('is_available', true)
-                    ->where('is_online', true)
-                    ->whereColumn('current_chat_count', '<', 'max_concurrent_chats');
+            ->where('is_online', true)
+            ->whereColumn('current_chat_count', '<', 'max_concurrent_chats');
     }
-
 
     public function scopeWithSpecialization($query, string $specialization)
     {
         return $query->whereJsonContains('specialization', $specialization);
     }
-
 
     public static function findAvailableAgent(?array $requiredSpecializations = null): ?self
     {
@@ -174,12 +162,10 @@ class ChatAgent extends Model
         return $query->inRandomOrder()->first();
     }
 
-
     public function getAvailableSlots(): int
     {
         return max(0, $this->max_concurrent_chats - $this->current_chat_count);
     }
-
 
     public function getStats(): array
     {

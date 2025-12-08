@@ -30,9 +30,7 @@ class UpdateSupplierProduct extends GrpAction
     use WithActionUpdate;
     use WithNoStrictRules;
 
-
     public bool $skipHistoric = false;
-
 
     private SupplierProduct $supplierProduct;
 
@@ -48,36 +46,34 @@ class UpdateSupplierProduct extends GrpAction
 
         $supplierProduct = $this->update($supplierProduct, $modelData, ['data', 'settings']);
 
-
-        if (!$skipHistoric and $supplierProduct->wasChanged(
-            [ 'code', 'cbm', 'units_per_pack','units_per_pack']
+        if (! $skipHistoric and $supplierProduct->wasChanged(
+            ['code', 'cbm', 'units_per_pack', 'units_per_pack']
         )) {
-
 
             $historicProduct = StoreHistoricSupplierProduct::make()->action($supplierProduct, [
                 'status' => true,
             ]);
             $supplierProduct->update(
                 [
-                    'current_historic_supplier_product_id' => $historicProduct->id
+                    'current_historic_supplier_product_id' => $historicProduct->id,
                 ]
             );
         }
 
-        if (!$skipHistoric and $supplierProduct->wasChanged(
+        if (! $skipHistoric and $supplierProduct->wasChanged(
             ['state', 'is_available']
         )) {
             foreach ($supplierProduct->orgSupplierProducts as $orgSupplierProduct) {
                 UpdateOrgSupplierProduct::run(
                     $orgSupplierProduct,
                     [
-                        'state'        => $supplierProduct->state,
-                        'is_available' => $supplierProduct->is_available
+                        'state' => $supplierProduct->state,
+                        'is_available' => $supplierProduct->is_available,
                     ]
                 );
                 GroupHydrateSupplierProducts::dispatch($supplierProduct->group)->delay($this->hydratorsDelay);
                 SupplierHydrateSupplierProducts::dispatch($supplierProduct->supplier)->delay($this->hydratorsDelay);
-                AgentHydrateSupplierProducts::dispatchIf((bool)$supplierProduct->agent_id, $supplierProduct->agent)->delay($this->hydratorsDelay);
+                AgentHydrateSupplierProducts::dispatchIf((bool) $supplierProduct->agent_id, $supplierProduct->agent)->delay($this->hydratorsDelay);
             }
         }
 
@@ -85,40 +81,38 @@ class UpdateSupplierProduct extends GrpAction
             SupplierProductRecordSearch::dispatch($supplierProduct);
         }
 
-
         return $supplierProduct;
     }
 
     public function rules(): array
     {
         $rules = [
-            'code'         => [
+            'code' => [
                 'sometimes',
                 'required',
                 $this->strict ? 'max:64' : 'max:255',
-                $this->strict ? new AlphaDashDotSpaceSlashParenthesisPlus() : 'string',
+                $this->strict ? new AlphaDashDotSpaceSlashParenthesisPlus : 'string',
                 Rule::notIn(['export', 'create', 'upload']),
                 new IUnique(
                     table: 'supplier_products',
                     extraConditions: [
                         ['column' => 'supplier_id', 'value' => $this->supplierProduct->supplier_id],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->supplierProduct->id
+                            'value' => $this->supplierProduct->id,
                         ],
                     ]
                 ),
             ],
-            'name'            => ['sometimes', 'required', 'string', 'max:255'],
-            'cost'            => ['sometimes', 'required'],
-            'state'           => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
-            'is_available'    => ['sometimes', 'required', 'boolean'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'cost' => ['sometimes', 'required'],
+            'state' => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
+            'is_available' => ['sometimes', 'required', 'boolean'],
 
         ];
 
-
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
         }
 
@@ -127,13 +121,13 @@ class UpdateSupplierProduct extends GrpAction
 
     public function action(SupplierProduct $supplierProduct, array $modelData, bool $skipHistoric = false, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): SupplierProduct
     {
-        if (!$audit) {
+        if (! $audit) {
             SupplierProduct::disableAuditing();
         }
-        $this->strict          = $strict;
-        $this->asAction        = true;
-        $this->hydratorsDelay  = $hydratorsDelay;
-        $this->skipHistoric    = $skipHistoric;
+        $this->strict = $strict;
+        $this->asAction = true;
+        $this->hydratorsDelay = $hydratorsDelay;
+        $this->skipHistoric = $skipHistoric;
         $this->supplierProduct = $supplierProduct;
         $this->initialisation($supplierProduct->group, $modelData);
 

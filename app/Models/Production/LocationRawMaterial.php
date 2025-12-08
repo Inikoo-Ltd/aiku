@@ -19,9 +19,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property RawMaterialTypeEnum $type
  * @property-read Location|null $location
  * @property-read \App\Models\Production\RawMaterial|null $rawMaterial
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationRawMaterial newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationRawMaterial newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationRawMaterial query()
+ *
  * @mixin \Eloquent
  */
 class LocationRawMaterial extends Pivot
@@ -29,13 +31,13 @@ class LocationRawMaterial extends Pivot
     public $incrementing = true;
 
     protected $casts = [
-        'data'     => 'array',
+        'data' => 'array',
         'settings' => 'array',
-        'type'     => RawMaterialTypeEnum::class
+        'type' => RawMaterialTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 

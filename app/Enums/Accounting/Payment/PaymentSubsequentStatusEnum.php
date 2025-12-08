@@ -14,7 +14,7 @@ enum PaymentSubsequentStatusEnum: string
 {
     use EnumHelperTrait;
 
-    case UNCHANGED   = 'unchanged';
-    case REFUNDED    = 'refunded';
+    case UNCHANGED = 'unchanged';
+    case REFUNDED = 'refunded';
     case WITH_REFUND = 'with_refund';
 }

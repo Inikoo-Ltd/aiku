@@ -31,9 +31,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $deleted_at
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FetchStack newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FetchStack newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FetchStack query()
+ *
  * @mixin \Eloquent
  */
 class FetchStack extends Model
@@ -41,21 +43,20 @@ class FetchStack extends Model
     use InOrganisation;
 
     protected $casts = [
-        'result'           => 'array',
-        'errors'           => 'array',
-        'state'            => FetchStackStateEnum::class,
-        'submitted_at'     => 'datetime',
+        'result' => 'array',
+        'errors' => 'array',
+        'state' => FetchStackStateEnum::class,
+        'submitted_at' => 'datetime',
         'send_to_queue_at' => 'datetime',
-        'start_fetch_at'   => 'datetime',
-        'finish_fetch_at'  => 'datetime',
-        'error_at'         => 'datetime',
+        'start_fetch_at' => 'datetime',
+        'finish_fetch_at' => 'datetime',
+        'error_at' => 'datetime',
     ];
 
     protected $attributes = [
         'result' => '{}',
-        'errors' => '{}'
+        'errors' => '{}',
     ];
 
     protected $guarded = [];
-
 }

@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Retina\UI\Profile\ShowRetinaProfile;
 
 Route::get('/', ShowRetinaProfile::class)->name('show');

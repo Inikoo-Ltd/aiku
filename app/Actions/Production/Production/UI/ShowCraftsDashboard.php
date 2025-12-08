@@ -33,9 +33,8 @@ class ShowCraftsDashboard extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit   = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
+        $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
         $this->canDelete = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
-
 
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
@@ -55,40 +54,36 @@ class ShowCraftsDashboard extends OrgAction
         return $this->handle($production);
     }
 
-
     public function htmlResponse(Production $production, ActionRequest $request): Response
     {
 
         return Inertia::render(
             'Org/Production/CraftsDashboard',
             [
-                'title'                            => __('Crafts'),
-                'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'navigation'                       => [
+                'title' => __('Crafts'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'navigation' => [
                     'previous' => $this->getPrevious($production, $request),
-                    'next'     => $this->getNext($production, $request),
+                    'next' => $this->getNext($production, $request),
                 ],
-                'pageHead'                         => [
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'fa-flask-potion'],
-                            'title' => __('Craft')
-                        ],
-                        'iconRight' => [
-                            'icon'  => ['fal', 'fa-chart-network'],
-                            'title' => __('Craft')
-                        ],
-                    'title'   => __('Crafts'),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-flask-potion'],
+                        'title' => __('Craft'),
+                    ],
+                    'iconRight' => [
+                        'icon' => ['fal', 'fa-chart-network'],
+                        'title' => __('Craft'),
+                    ],
+                    'title' => __('Crafts'),
                     'actions' => [
-
 
                     ],
 
-
                 ],
-                'tabs'                             => [
+                'tabs' => [
 
-                    'current'    => $this->tab,
+                    'current' => $this->tab,
                     'navigation' => ProductionTabsEnum::navigation(),
                 ],
 
@@ -96,18 +91,13 @@ class ShowCraftsDashboard extends OrgAction
                     fn () => GetProductionShowcase::run($production)
                     : Inertia::lazy(fn () => GetProductionShowcase::run($production)),
 
-
-
-
-
                 ProductionTabsEnum::HISTORY->value => $this->tab == ProductionTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($production))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($production)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($production))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));
     }
-
 
     public function jsonResponse(Production $production): ProductionResource
     {
@@ -119,29 +109,29 @@ class ShowCraftsDashboard extends OrgAction
         $production = Production::where('slug', $routeParameters['production'])->first();
 
         return array_merge(
-            (new ShowOrganisationDashboard())->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
+            (new ShowOrganisationDashboard)->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.index',
-                                'parameters' => $routeParameters['organisation']
+                                'name' => 'grp.org.productions.index',
+                                'parameters' => $routeParameters['organisation'],
                             ],
                             'label' => __('Factories'),
-                            'icon'  => 'fal fa-bars'
+                            'icon' => 'fal fa-bars',
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $production?->code,
-                            'icon'  => 'fal fa-bars'
+                            'icon' => 'fal fa-bars',
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
             ]
@@ -164,7 +154,7 @@ class ShowCraftsDashboard extends OrgAction
 
     private function getNavigation(?Production $production, string $routeName): ?array
     {
-        if (!$production) {
+        if (! $production) {
             return null;
         }
 
@@ -172,13 +162,13 @@ class ShowCraftsDashboard extends OrgAction
             'grp.org.productions.show.crafts.dashboard' => [
                 'label' => $production->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $this->organisation->slug,
-                        'production'    => $production->slug
-                    ]
+                        'organisation' => $this->organisation->slug,
+                        'production' => $production->slug,
+                    ],
 
-                ]
+                ],
             ]
         };
     }

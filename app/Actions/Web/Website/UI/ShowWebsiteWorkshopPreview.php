@@ -23,7 +23,6 @@ class ShowWebsiteWorkshopPreview extends OrgAction
 {
     use WithWebAuthorisation;
 
-
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
         $this->initialisation($organisation, $request)->withTab(WebsiteWorkshopTabsEnum::values());
@@ -39,42 +38,41 @@ class ShowWebsiteWorkshopPreview extends OrgAction
         return $website;
     }
 
-
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
         return Inertia::render(
             'Web/PreviewWorkshop',
             [
-                'title'       => __("Website's preview"),
+                'title' => __("Website's preview"),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $website,
                     str_replace('preview', 'show', $request->route()->getName()),
                     $request->route()->originalParameters()
                 ),
-                'pageHead'    => [
+                'pageHead' => [
 
                     'title' => __('Preview'),
 
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exit',
                             'label' => __('Exit Preview'),
                             'route' => [
-                                'name'       => str_replace('preview', 'show', $request->route()->getName()),
+                                'name' => str_replace('preview', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
-                            ]
+                            ],
                         ],
 
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'label' => __('Workshop'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
+                            'icon' => ['fal', 'fa-drafting-compass'],
                             'route' => [
-                                'name'       => str_replace('preview', 'workshop', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => str_replace('preview', 'workshop', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : [],
                     ],
                 ],
@@ -91,6 +89,4 @@ class ShowWebsiteWorkshopPreview extends OrgAction
             suffix: '('.__('preview').')'
         );
     }
-
-
 }

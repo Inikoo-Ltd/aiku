@@ -12,13 +12,12 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
-use ZipArchive;
 use Sentry\Laravel\Facade as Sentry;
+use ZipArchive;
 
 class CreateCustomerSalesChannelPortfolioImagesZip
 {
     use AsAction;
-
 
     /**
      * @throws \Exception
@@ -26,12 +25,12 @@ class CreateCustomerSalesChannelPortfolioImagesZip
     public function handle(CustomerSalesChannel $customerSalesChannel, string $filename): array
     {
 
-        $tempDir = sys_get_temp_dir() . '/' . uniqid('portfolios_zip_export_');
-        if (!file_exists($tempDir)) {
+        $tempDir = sys_get_temp_dir().'/'.uniqid('portfolios_zip_export_');
+        if (! file_exists($tempDir)) {
             mkdir($tempDir, 0755, true);
         }
 
-        $tempZipPath = sys_get_temp_dir() . '/' . $filename;
+        $tempZipPath = sys_get_temp_dir().'/'.$filename;
 
         $processId = StorePortfolioZipImagesProcess::run([
             'customer_sales_channel_id' => $customerSalesChannel->id,
@@ -39,7 +38,7 @@ class CreateCustomerSalesChannelPortfolioImagesZip
             'file_start_create_at' => now(),
         ]);
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($tempZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new \RuntimeException("Cannot create ZIP file at $tempZipPath");
         }
@@ -52,13 +51,13 @@ class CreateCustomerSalesChannelPortfolioImagesZip
                 $disk = Storage::disk($image->disk);
                 $filePath = $image->getPathRelativeToRoot();
 
-                if (!$disk->exists($filePath)) {
+                if (! $disk->exists($filePath)) {
                     continue;
                 }
 
                 try {
                     $stream = $disk->readStream($filePath);
-                    if (!$stream) {
+                    if (! $stream) {
                         continue;
                     }
 
@@ -77,7 +76,6 @@ class CreateCustomerSalesChannelPortfolioImagesZip
                     ]);
                 }
             }
-
 
             if ($zip->count() === 0) {
                 $zip->addFromString('error.txt', 'No images were found to include in the zip file.');
@@ -117,9 +115,7 @@ class CreateCustomerSalesChannelPortfolioImagesZip
     {
         $imagesData = [];
 
-
         $portfolios = $customerSalesChannel->portfolios()->where('status', true)->get();
-
 
         /** @var \App\Models\Dropshipping\Portfolio $portfolio */
         foreach ($portfolios as $portfolio) {
@@ -129,8 +125,8 @@ class CreateCustomerSalesChannelPortfolioImagesZip
 
                 foreach ($product->images as $image) {
                     $imagesData[$image->id] = [
-                        'filename' => strtolower($product->code) . '__' . $image->id . '.' . $image->extension,
-                        'image'    => $image,
+                        'filename' => strtolower($product->code).'__'.$image->id.'.'.$image->extension,
+                        'image' => $image,
                     ];
                 }
             }

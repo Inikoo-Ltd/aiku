@@ -15,9 +15,8 @@ class PurchaseOrderTransactionFactory extends Factory
     public function definition(): array
     {
 
-
         return [
-            'quantity_ordered'       => fake()->numberBetween(1, 100)
+            'quantity_ordered' => fake()->numberBetween(1, 100),
         ];
     }
 }

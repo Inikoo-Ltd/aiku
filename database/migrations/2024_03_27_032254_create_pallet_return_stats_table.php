@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasFulfilmentStats;
 
     public function up(): void
@@ -21,7 +22,6 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('pallet_return_id');
             $table->foreign('pallet_return_id')->references('id')->on('pallet_returns')->onUpdate('cascade')->onDelete('cascade');
             $table = $this->fulfilmentAssetsStats($table);
-
 
             $table->unsignedInteger('number_transactions')->default(0);
             $table->unsignedInteger('number_services')->default(0);
@@ -33,7 +33,6 @@ return new class () extends Migration {
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

@@ -19,34 +19,34 @@ class GetAgentShowcase
     public function handle(Agent $agent): array
     {
         return [
-            "contactCard" => AgentResource::make($agent)->getArray(),
-            "stats" => [
+            'contactCard' => AgentResource::make($agent)->getArray(),
+            'stats' => [
                 [
-                    "label" => __("suppliers"),
-                    "count" => $agent->stats->number_active_suppliers,
-                    "orther_counts" => [
+                    'label' => __('suppliers'),
+                    'count' => $agent->stats->number_active_suppliers,
+                    'orther_counts' => [
                         [
-                            "icon" => [
-                                "icon" => ["fal", "fa-tombstone"],
-                                "title" => __("Archived Suppliers"),
-                                "class" => "text-gray-500"
+                            'icon' => [
+                                'icon' => ['fal', 'fa-tombstone'],
+                                'title' => __('Archived Suppliers'),
+                                'class' => 'text-gray-500',
                             ],
-                            "count" => $agent->stats->number_archived_suppliers,
+                            'count' => $agent->stats->number_archived_suppliers,
                         ],
                     ],
                 ],
 
                 [
-                    "label" => __("products"),
-                    "count" => $agent->stats->number_supplier_products,
-                    "orther_counts" => [
+                    'label' => __('products'),
+                    'count' => $agent->stats->number_supplier_products,
+                    'orther_counts' => [
                         [
-                            "icon" => [
-                                "icon" => ["fal", "fa-tombstone"],
-                                "title" => __("Archived Products"),
-                                "class" => "text-gray-500"
+                            'icon' => [
+                                'icon' => ['fal', 'fa-tombstone'],
+                                'title' => __('Archived Products'),
+                                'class' => 'text-gray-500',
                             ],
-                            "count" => $agent->stats->number_archived_products,
+                            'count' => $agent->stats->number_archived_products,
                         ],
                     ],
                 ],

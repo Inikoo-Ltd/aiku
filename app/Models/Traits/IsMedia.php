@@ -26,12 +26,10 @@ trait IsMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
-
     public function getRouteKeyName(): string
     {
         return 'slug';
     }
-
 
     public function getImgProxyFilename(): string
     {
@@ -46,6 +44,4 @@ trait IsMedia
     {
         return 'local://media/'.$this->getPathRelativeToRoot();
     }
-
-
 }

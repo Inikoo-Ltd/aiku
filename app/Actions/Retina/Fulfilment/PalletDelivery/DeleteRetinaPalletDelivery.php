@@ -12,9 +12,9 @@ use App\Actions\Fulfilment\PalletDelivery\DeletePalletDelivery;
 use App\Actions\RetinaAction;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\SysAdmin\Organisation;
-use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
+use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRetinaPalletDelivery extends RetinaAction
 {
@@ -32,7 +32,7 @@ class DeleteRetinaPalletDelivery extends RetinaAction
     public function rules(): array
     {
         return [
-            'delete_comment' => ['sometimes', 'nullable']
+            'delete_comment' => ['sometimes', 'nullable'],
         ];
     }
 
@@ -52,5 +52,4 @@ class DeleteRetinaPalletDelivery extends RetinaAction
         $this->initialisation($request);
         $this->handle($palletDelivery, $this->validatedData);
     }
-
 }

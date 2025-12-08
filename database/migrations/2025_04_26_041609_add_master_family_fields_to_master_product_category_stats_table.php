@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('master_product_category_stats', function (Blueprint $table) {
@@ -20,12 +21,10 @@ return new class () extends Migration {
             $table->unsignedInteger('number_master_product_categories_type_sub_department')->default(0);
             $table->unsignedInteger('number_current_master_product_categories_type_sub_department')->default(0);
 
-
             $table->unsignedInteger('number_master_product_categories_type_family')->default(0);
             $table->unsignedInteger('number_current_master_product_categories_type_family')->default(0);
         });
     }
-
 
     public function down(): void
     {

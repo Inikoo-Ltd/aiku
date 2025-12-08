@@ -22,7 +22,6 @@ class ProcessUpdateWebpageUrl
 {
     use AsAction;
 
-
     public function handle(Webpage $webpage, string $oldUrl): void
     {
         $model = $webpage->model;
@@ -40,7 +39,6 @@ class ProcessUpdateWebpageUrl
             ]);
         }
 
-
         $key = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($webpage->url);
         Cache::forget($key);
         $key = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($oldUrl);
@@ -49,6 +47,4 @@ class ProcessUpdateWebpageUrl
         UpdateWebpageCanonicalUrl::run($webpage);
         BreakWebpageCache::run($webpage);
     }
-
-
 }

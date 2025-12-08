@@ -21,7 +21,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class FulfilmentInvoiceTransactionsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class FulfilmentInvoiceTransactionsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     protected $invoice;
 
@@ -30,13 +30,12 @@ class FulfilmentInvoiceTransactionsExport implements FromQuery, WithMapping, Sho
         $this->invoice = $invoice;
     }
 
-
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|InvoiceTransaction|Builder
     {
         return InvoiceTransaction::query()->where('invoice_id', $this->invoice->id);
     }
 
-    /** @var Location $row */
+    /** @var Location */
     public function map($row): array
     {
         $palletData = 'no data';
@@ -61,7 +60,7 @@ class FulfilmentInvoiceTransactionsExport implements FromQuery, WithMapping, Sho
             $palletData,
             $palletRef,
             $row->quantity,
-            $row->invoice->currency->symbol . $row->net_amount,
+            $row->invoice->currency->symbol.$row->net_amount,
         ];
     }
 

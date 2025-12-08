@@ -32,7 +32,7 @@ class AgentHydrateStockDeliveries implements ShouldBeUnique
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'stock_deliveries',
+            model: 'stock_deliveries',
             field: 'state',
             enum: StockDeliveryStateEnum::class,
             models: StockDelivery::class,
@@ -41,10 +41,6 @@ class AgentHydrateStockDeliveries implements ShouldBeUnique
             }
         ));
 
-
-
         $agent->stats()->update($stats);
     }
-
-
 }

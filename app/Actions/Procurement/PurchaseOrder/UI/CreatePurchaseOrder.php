@@ -24,54 +24,53 @@ class CreatePurchaseOrder extends OrgAction
         return Inertia::render(
             'CreateModel',
             [
-                'title'    => __('New purchase order'),
+                'title' => __('New purchase order'),
                 'pageHead' => [
-                    'title'   => __('New purchase order'),
+                    'title' => __('New purchase order'),
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_suppliers.show.purchase_orders.index',
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => 'grp.org.procurement.org_suppliers.show.purchase_orders.index',
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('purchase order'),
+                            'title' => __('purchase order'),
                             'fields' => [
 
                                 'number' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('number'),
-                                    'value' => ''
+                                    'value' => '',
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    'route'     => match (class_basename($parent)) {
+                    'route' => match (class_basename($parent)) {
                         'OrgSupplier' => [
-                            'name'       => 'grp.models.org-supplier.purchase-order.store',
+                            'name' => 'grp.models.org-supplier.purchase-order.store',
                             'parameters' => [$parent->id],
                         ],
                         'OrgAgent' => [
-                            'name'       => 'grp.models.org-agent.purchase-order.store',
+                            'name' => 'grp.models.org-agent.purchase-order.store',
                             'parameters' => [$parent->id],
                         ],
                         'OrgPartner' => [
-                            'name'       => 'grp.models.org-partner.purchase-order.store',
+                            'name' => 'grp.models.org-partner.purchase-order.store',
                             'parameters' => [$parent->id],
                         ]
-                    }
+                    },
                 ],
             ]
         );
     }
-
 
     public function asController(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): Response
     {
@@ -86,11 +85,11 @@ class CreatePurchaseOrder extends OrgAction
             IndexPurchaseOrders::make()->getBreadcrumbs(),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __("creating purchase order"),
-                    ]
-                ]
+                        'label' => __('creating purchase order'),
+                    ],
+                ],
             ]
         );
     }

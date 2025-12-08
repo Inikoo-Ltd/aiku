@@ -6,8 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
+use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowFulfilmentInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
@@ -99,7 +99,6 @@ Route::get('accounting-dashboard/accounts', [IndexPaymentAccountShops::class, 'i
 Route::get('accounting-dashboard/payments', [IndexPayments::class, 'inFulfilment'])->name('accounting.payments.index');
 Route::get('accounting-dashboard/customer-balances', [IndexCustomerBalances::class, 'inFulfilment'])->name('accounting.customer_balances.index');
 
-
 Route::prefix('statements')->as('invoices')->group(function () {
     Route::get('', [IndexInvoices::class, 'inFulfilment'])->name('.all.index');
 
@@ -116,7 +115,6 @@ Route::prefix('statements')->as('invoices')->group(function () {
     Route::get('/{invoice}/refunds/{refund}', [ShowRefund::class, 'inFulfilmentInvoice'])->name('.show.refunds.show');
 });
 
-
-Route::prefix("comms")
-    ->name("comms.")
-    ->group(__DIR__."/comms.php");
+Route::prefix('comms')
+    ->name('comms.')
+    ->group(__DIR__.'/comms.php');

@@ -34,9 +34,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Comms\DispatchedEmail $dispatchedEmail
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static Builder<static>|EmailTrackingEvent newModelQuery()
  * @method static Builder<static>|EmailTrackingEvent newQuery()
  * @method static Builder<static>|EmailTrackingEvent query()
+ *
  * @mixin Eloquent
  */
 class EmailTrackingEvent extends Model
@@ -44,8 +46,8 @@ class EmailTrackingEvent extends Model
     use inOrganisation;
 
     protected $casts = [
-        'data'  => 'array',
-        'type'  => EmailTrackingEventTypeEnum::class
+        'data' => 'array',
+        'type' => EmailTrackingEventTypeEnum::class,
     ];
 
     protected $attributes = [

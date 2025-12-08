@@ -48,32 +48,32 @@ class CustomersResource extends JsonResource
     public function toArray($request): array
     {
         $data = [
-            'id'                              => $this->id,
-            'slug'                            => $this->slug,
-            'reference'                       => $this->reference,
-            'name'                            => $this->name,
-            'email'                           => $this->email,
-            'phone'                           => $this->phone,
-            'state'                           => $this->state,
-            'status'                          => $this->status,
-            'approved_at'                     => $this->approved_at ?? null,
-            'address'                         => AddressResource::make($this->address),
-            'is_dropshipping'                 => $this->is_dropshipping,
-            'contact_name'                    => $this->contact_name,
-            'company_name'                    => $this->company_name,
-            'location'                        => is_string($this->location) ? json_decode($this->location, true) : $this->location,
-            'created_at'                      => $this->created_at,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'name' => $this->name,
+            'email' => $this->email,
+            'phone' => $this->phone,
+            'state' => $this->state,
+            'status' => $this->status,
+            'approved_at' => $this->approved_at ?? null,
+            'address' => AddressResource::make($this->address),
+            'is_dropshipping' => $this->is_dropshipping,
+            'contact_name' => $this->contact_name,
+            'company_name' => $this->company_name,
+            'location' => is_string($this->location) ? json_decode($this->location, true) : $this->location,
+            'created_at' => $this->created_at,
             'number_current_customer_clients' => $this->number_current_customer_clients,
-            'number_current_portfolios'       => $this->number_current_portfolios,
-            'number_customer_sales_channels'  => $this->number_customer_sales_channels,
-            'last_invoiced_at'                => $this->last_invoiced_at,
-            'number_invoices_type_invoice'    => $this->number_invoices_type_invoice,
-            'sales_all'                       => $this->sales_all,
-            'sales_org_currency_all'          => $this->sales_org_currency_all,
-            'sales_grp_currency_all'          => $this->sales_grp_currency_all,
-            'currency_code'                   => $this->currency_code,
-            'balance'                         => $this->balance,
-            'tags'                            => $this->whenLoaded('tags', fn () => TagsResource::collection($this->tags)->toArray(request())),
+            'number_current_portfolios' => $this->number_current_portfolios,
+            'number_customer_sales_channels' => $this->number_customer_sales_channels,
+            'last_invoiced_at' => $this->last_invoiced_at,
+            'number_invoices_type_invoice' => $this->number_invoices_type_invoice,
+            'sales_all' => $this->sales_all,
+            'sales_org_currency_all' => $this->sales_org_currency_all,
+            'sales_grp_currency_all' => $this->sales_grp_currency_all,
+            'currency_code' => $this->currency_code,
+            'balance' => $this->balance,
+            'tags' => $this->whenLoaded('tags', fn () => TagsResource::collection($this->tags)->toArray(request())),
         ];
 
         if ($this->organisation_name) {
@@ -88,7 +88,6 @@ class CustomersResource extends JsonResource
             data_set($data, 'shop_slug', $this->shop_name);
             data_forget($data, 'location');
         }
-
 
         return $data;
     }

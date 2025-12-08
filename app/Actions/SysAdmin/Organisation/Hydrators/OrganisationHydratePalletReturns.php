@@ -30,11 +30,11 @@ class OrganisationHydratePalletReturns implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_pallet_returns' => PalletReturn::where('organisation_id', $organisation->id)->count()
+            'number_pallet_returns' => PalletReturn::where('organisation_id', $organisation->id)->count(),
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'pallet_returns',
+            model: 'pallet_returns',
             field: 'state',
             enum: PalletReturnStateEnum::class,
             models: PalletReturn::class,

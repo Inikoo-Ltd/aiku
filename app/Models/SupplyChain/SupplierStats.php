@@ -62,9 +62,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SupplyChain\Supplier $supplier
+ *
  * @method static Builder<static>|SupplierStats newModelQuery()
  * @method static Builder<static>|SupplierStats newQuery()
  * @method static Builder<static>|SupplierStats query()
+ *
  * @mixin Eloquent
  */
 class SupplierStats extends Model

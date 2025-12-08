@@ -22,8 +22,8 @@ enum PlatformPortfolioLogsTypeEnum: string
     {
         return [
             'update-stock' => 'Update Stock',
-            'upload'       => 'Upload',
-            'match'        => 'Match'
+            'upload' => 'Upload',
+            'match' => 'Match',
         ];
     }
 }

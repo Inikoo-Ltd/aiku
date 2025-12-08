@@ -53,17 +53,14 @@ class IndexMarketplaceAgents extends OrgAction
         }
         */
 
-
-
         return $queryBuilder
             ->leftJoin('agent_stats', 'agent_stats.agent_id', '=', 'agents.id')
             ->defaultSort('agents.code')
-            ->select(['code', 'name', 'slug', 'number_suppliers', 'number_supplier_products', 'location'
-          //  DB::raw(' (select count(*) from org_agents where org_agents.agent_id=agents.id and  org_agents.organisation_id=? )  as adoption',$this->organisation->id)
+            ->select(['code', 'name', 'slug', 'number_suppliers', 'number_supplier_products', 'location',
+                //  DB::raw(' (select count(*) from org_agents where org_agents.agent_id=agents.id and  org_agents.organisation_id=? )  as adoption',$this->organisation->id)
             ])
             ->selectRaw('
                 (select count(*) from org_agents where org_agents.agent_id=agents.id and  org_agents.organisation_id=? )  as adoption', [$this->organisation->id])
-
 
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['code', 'name', 'number_suppliers', 'number_supplier_products'])
@@ -85,25 +82,25 @@ class IndexMarketplaceAgents extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title'       => __('no agents'),
+                        'title' => __('no agents'),
                         'description' => $this->canCreateAgent ? __('Get started by creating a new agent.') : null,
-                        'count'       => $this->organisation->procurementStats->number_agents,
-                        'action'      => $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
+                        'count' => $this->organisation->procurementStats->number_agents,
+                        'action' => $this->canEdit ? [
+                            'type' => 'button',
+                            'style' => 'create',
                             'tooltip' => __('New agent'),
-                            'label'   => __('agent'),
-                            'route'   => [
-                                'name'       => 'grp.supply-chain.org_agents.create',
+                            'label' => __('agent'),
+                            'route' => [
+                                'name' => 'grp.supply-chain.org_agents.create',
 
-                            ]
-                        ] : null
+                            ],
+                        ] : null,
                     ]
                 )
                 ->column(key: 'adoption', label: [
-                    'type'   => 'icon',
-                    'data'   => ['fal','fa-yin-yang'],
-                    'tooltip' => __('adoption')
+                    'type' => 'icon',
+                    'data' => ['fal', 'fa-yin-yang'],
+                    'tooltip' => __('adoption'),
                 ], canBeHidden: false)
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
@@ -116,8 +113,9 @@ class IndexMarketplaceAgents extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit        = $request->user()->authTo("procurement.{$this->organisation->id}.view");
-        $this->canCreateAgent = $request->user()->authTo("supply-chain.edit");
+        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.view");
+        $this->canCreateAgent = $request->user()->authTo('supply-chain.edit');
+
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
@@ -129,39 +127,36 @@ class IndexMarketplaceAgents extends OrgAction
         return $this->handle();
     }
 
-
     public function jsonResponse(LengthAwarePaginator $agent): AnonymousResourceCollection
     {
         return MarketplaceAgentResource::collection($agent);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $agent, ActionRequest $request): Response
     {
-
 
         return Inertia::render(
             'Procurement/MarketplaceAgents',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __("agent's marketplace"),
-                'pageHead'    => [
-                    'title'  => __("agent's marketplace"),
+                'title' => __("agent's marketplace"),
+                'pageHead' => [
+                    'title' => __("agent's marketplace"),
 
                     'actions' => [
                         $this->canEdit && $request->route()->getName() == 'grp.org.procurement.marketplace.org_agents.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
+                            'type' => 'button',
+                            'style' => 'create',
                             'tooltip' => __('New agent'),
-                            'label'   => __('agent'),
-                            'route'   => [
-                                'name'       => 'grp.org.procurement.marketplace.org_agents.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                            'label' => __('agent'),
+                            'route' => [
+                                'name' => 'grp.org.procurement.marketplace.org_agents.create',
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
-                    ]
+                    ],
                 ],
-                'data'        => MarketplaceAgentResource::collection($agent),
+                'data' => MarketplaceAgentResource::collection($agent),
             ]
         )->table($this->tableStructure());
     }
@@ -173,16 +168,16 @@ class IndexMarketplaceAgents extends OrgAction
                 ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.marketplace.org_agents.index',
-                                'parameters' => array_values($routeParameters)
+                                'name' => 'grp.org.procurement.marketplace.org_agents.index',
+                                'parameters' => array_values($routeParameters),
                             ],
                             'label' => __("Agent's marketplace"),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             );
     }

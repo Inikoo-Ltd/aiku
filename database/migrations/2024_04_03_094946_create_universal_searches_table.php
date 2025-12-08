@@ -11,8 +11,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasSearchFields;
+
     public function up(): void
     {
         Schema::create('universal_searches', function (Blueprint $table) {
@@ -40,10 +42,8 @@ return new class () extends Migration {
 
             return $this->searchFields($table);
 
-
         });
     }
-
 
     public function down(): void
     {

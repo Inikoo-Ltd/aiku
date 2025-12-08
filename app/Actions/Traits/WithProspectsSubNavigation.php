@@ -19,37 +19,37 @@ trait WithProspectsSubNavigation
         $meta = [];
 
         $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.prospects.index',
+            'route' => [
+                'name' => 'grp.org.shops.show.crm.prospects.index',
                 'parameters' => array_merge(
                     $request->route()->originalParameters(),
                     [
                         '_query' => [
-                            'tab' => 'prospects'
-                        ]
+                            'tab' => 'prospects',
+                        ],
                     ]
-                )
+                ),
             ],
-            'number'   => $shop->crmStats->number_prospects,
-            'label'    => __('Prospects'),
+            'number' => $shop->crmStats->number_prospects,
+            'label' => __('Prospects'),
             'leftIcon' => [
-                'icon'    => 'fal fa-transporter',
-                'tooltip' => __('Prospects')
-            ]
+                'icon' => 'fal fa-transporter',
+                'tooltip' => __('Prospects'),
+            ],
         ];
 
         if ($shop->crmStats->number_prospects > 0) {
             $meta[] = [
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.prospects.mailshots.index',
-                    'parameters' => $request->route()->originalParameters()
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.prospects.mailshots.index',
+                    'parameters' => $request->route()->originalParameters(),
                 ],
-                'number'   => $shop->commsStats->number_mailshots_type_prospect_mailshot,
-                'label'    => __('Mailshots'),
+                'number' => $shop->commsStats->number_mailshots_type_prospect_mailshot,
+                'label' => __('Mailshots'),
                 'leftIcon' => [
-                    'icon'    => 'fal fa-mail-bulk',
-                    'tooltip' => __('Mailshots')
-                ]
+                    'icon' => 'fal fa-mail-bulk',
+                    'tooltip' => __('Mailshots'),
+                ],
             ];
         }
 
@@ -58,15 +58,13 @@ trait WithProspectsSubNavigation
             //     'name'       => 'grp.org.shops.show.crm.prospects.lists.index',
             //     'parameters' => $request->route()->originalParameters()
             // ],
-            'number'   => $shop->crmStats->number_prospect_queries,
-            'label'    => __('Lists'),
+            'number' => $shop->crmStats->number_prospect_queries,
+            'label' => __('Lists'),
             'leftIcon' => [
-                'icon'    => 'fal fa-code-branch',
-                'tooltip' => __('lists')
-            ]
+                'icon' => 'fal fa-code-branch',
+                'tooltip' => __('lists'),
+            ],
         ];
-
-
 
         return $meta;
     }

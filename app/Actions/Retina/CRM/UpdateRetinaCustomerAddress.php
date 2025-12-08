@@ -25,7 +25,7 @@ class UpdateRetinaCustomerAddress extends RetinaAction
     public function rules(): array
     {
         return [
-            'address'             => ['sometimes'],
+            'address' => ['sometimes'],
         ];
     }
 

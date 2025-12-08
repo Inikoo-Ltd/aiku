@@ -290,9 +290,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Comms\Outbox|null $outbox
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutboxIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutboxIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutboxIntervals query()
+ *
  * @mixin \Eloquent
  */
 class OutboxIntervals extends Model

@@ -20,9 +20,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $flag
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Language newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Language newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Language query()
+ *
  * @mixin \Eloquent
  */
 class Language extends Model

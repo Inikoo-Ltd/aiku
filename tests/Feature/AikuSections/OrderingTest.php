@@ -84,18 +84,18 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    list(
+    [
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
+    ] = createShop();
 
     $this->group = $this->organisation->group;
 
-    list(
+    [
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+    ] = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
 
@@ -108,16 +108,13 @@ beforeEach(function () {
     actingAs($this->user);
 });
 
-
-
 test('create order', function () {
-    $billingAddress  = new Address(Address::factory()->definition());
+    $billingAddress = new Address(Address::factory()->definition());
     $deliveryAddress = new Address(Address::factory()->definition());
 
     $modelData = Order::factory()->definition();
     data_set($modelData, 'billing_address', $billingAddress);
     data_set($modelData, 'delivery_address', $deliveryAddress);
-
 
     $order = StoreOrder::make()->action($this->customer, $modelData);
     $this->customer->refresh();
@@ -177,7 +174,6 @@ test('get order products', function (Order $order) {
     return $order;
 })->depends('create order');
 
-
 test('delete previous transaction', function (Order $order) {
     $transaction = $order->transactions()->first();
     UpdateTransaction::make()->action(
@@ -192,15 +188,13 @@ test('delete previous transaction', function (Order $order) {
     return $order;
 })->depends('get order products');
 
-
 test('create transaction', function ($order) {
     $transactionData = Transaction::factory()->definition();
-    $historicAsset   = $this->product->historicAsset;
+    $historicAsset = $this->product->historicAsset;
     expect($historicAsset)->toBeInstanceOf(HistoricAsset::class);
     $transaction = StoreTransaction::make()->action($order, $historicAsset, $transactionData);
 
     $order->refresh();
-
 
     expect($transaction)->toBeInstanceOf(Transaction::class)
         ->and($transaction->order->stats->number_item_transactions_at_submission)->toBe(1)
@@ -213,14 +207,14 @@ test('create transaction from adjustment', function (Order $order) {
     $adjustment = StoreAdjustment::make()->action(
         $order->shop,
         [
-            'type'       => AdjustmentTypeEnum::CREDIT,
+            'type' => AdjustmentTypeEnum::CREDIT,
             'net_amount' => 10,
         ],
         strict: false
     );
     expect($adjustment)->toBeInstanceOf(Adjustment::class);
     $transaction = StoreTransactionFromAdjustment::make()->action($order, $adjustment, [
-        'date'             => Carbon::now(),
+        'date' => Carbon::now(),
         'quantity_ordered' => 1,
     ]);
 
@@ -241,7 +235,7 @@ test('update adjustment', function () {
     $adjustment = StoreAdjustment::make()->action(
         $this->shop,
         [
-            'type'       => AdjustmentTypeEnum::CREDIT,
+            'type' => AdjustmentTypeEnum::CREDIT,
             'net_amount' => 10,
         ],
         strict: false
@@ -262,17 +256,17 @@ test('update adjustment', function () {
 
 test('create transaction from charge', function (Order $order) {
     $charge = StoreCharge::make()->action($order->shop, [
-        'code'        => 'charge-1',
-        'name'        => 'charge 1',
+        'code' => 'charge-1',
+        'name' => 'charge 1',
         'description' => 'charge 1 description',
-        'state'       => ChargeStateEnum::ACTIVE,
-        'trigger'     => ChargeTriggerEnum::ORDER,
-        'type'        => ChargeTypeEnum::TRACKING,
+        'state' => ChargeStateEnum::ACTIVE,
+        'trigger' => ChargeTriggerEnum::ORDER,
+        'type' => ChargeTypeEnum::TRACKING,
     ]);
 
     expect($charge)->toBeInstanceOf(Charge::class);
     $transaction = StoreTransactionFromCharge::make()->action($order, $charge, [
-        'date'             => Carbon::now(),
+        'date' => Carbon::now(),
         'quantity_ordered' => 1,
     ]);
 
@@ -289,52 +283,52 @@ test('create transaction from shipping', function (Order $order) {
     $shippingZoneSchema = StoreShippingZoneSchema::make()->action($order->shop, [
         'name' => 'schema 1',
     ]);
-    $shipping           = StoreShippingZone::make()->action($shippingZoneSchema, [
-        'code'        => 'SHIP-1',
-        'name'        => 'shipping 1',
-        'status'      => true,
-        'price'       => [
-            'type'  => "Step Order Items Net Amount",
-            "steps" => [
+    $shipping = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code' => 'SHIP-1',
+        'name' => 'shipping 1',
+        'status' => true,
+        'price' => [
+            'type' => 'Step Order Items Net Amount',
+            'steps' => [
                 [
-                    "to"    => 175,
-                    "from"  => 0,
-                    "price" => 20
+                    'to' => 175,
+                    'from' => 0,
+                    'price' => 20,
                 ],
                 [
-                    "to"    => 450,
-                    "from"  => 175,
-                    "price" => 40
+                    'to' => 450,
+                    'from' => 175,
+                    'price' => 40,
                 ],
                 [
-                    "to"    => 975,
-                    "from"  => 450,
-                    "price" => 60
+                    'to' => 975,
+                    'from' => 450,
+                    'price' => 60,
                 ],
                 [
-                    "to"    => "INF",
-                    "from"  => 975,
-                    "price" => 0
-                ]
-            ]
+                    'to' => 'INF',
+                    'from' => 975,
+                    'price' => 0,
+                ],
+            ],
         ],
         'territories' => [
             [
-                "country_code" => "FR"
+                'country_code' => 'FR',
             ],
             [
-                "country_code" => "BE"
+                'country_code' => 'BE',
             ],
             [
-                "country_code" => "LU"
-            ]
+                'country_code' => 'LU',
+            ],
         ],
-        'position'    => 1,
+        'position' => 1,
         'is_failover' => false,
     ]);
     expect($shipping)->toBeInstanceOf(ShippingZone::class);
     $transaction = StoreTransactionFromShipping::make()->action($order, $shipping, [
-        'date'             => Carbon::now(),
+        'date' => Carbon::now(),
         'quantity_ordered' => 1,
     ]);
 
@@ -357,7 +351,6 @@ test('update transaction', function ($transaction) {
 
     expect($transaction)->toBeInstanceOf(Transaction::class);
 })->depends('create transaction');
-
 
 test('update order', function ($order) {
     $order = UpdateOrder::make()->action($order, Order::factory()->definition());
@@ -413,12 +406,12 @@ test('update order state to Finalised ', function (Order $order) {
 })->depends('update order state to Handling');
 
 test('create customer client', function () {
-    $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $shop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
     $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
     $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
     $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
-        'reference' => 'test_manual_reference'
+        'reference' => 'test_manual_reference',
     ]);
 
     StoreCustomerSalesChannel::make()->action($customer, $platform, []);
@@ -453,7 +446,7 @@ test('create invoice from customer', function () {
 
 test('update invoice from customer', function ($invoice) {
     $invoice = UpdateInvoice::make()->action($invoice, [
-        'reference' => '00001a'
+        'reference' => '00001a',
 
     ]);
     expect($invoice->reference)->toBe('00001a');
@@ -464,15 +457,15 @@ test('create invoice from order', function (Order $order) {
     $invoiceData = Invoice::factory()->definition();
     data_set($invoiceData, 'billing_address', new Address(Address::factory()->definition()));
     data_set($invoiceData, 'reference', '00002');
-    $invoice            = StoreInvoice::make()->action($order, $invoiceData);
+    $invoice = StoreInvoice::make()->action($order, $invoiceData);
     $invoiceTransaction = StoreInvoiceTransaction::make()->action($invoice, $transaction, [
-        'date'            => now(),
+        'date' => now(),
         'tax_category_id' => $transaction->tax_category_id,
-        'quantity'        => 10,
-        'gross_amount'    => 1000,
-        'net_amount'      => 1000,
+        'quantity' => 10,
+        'gross_amount' => 1000,
+        'net_amount' => 1000,
     ]);
-    $customer           = $invoice->customer;
+    $customer = $invoice->customer;
     $this->shop->refresh();
     expect($invoice)->toBeInstanceOf(Invoice::class)
         ->and($customer)->toBeInstanceOf(Customer::class)
@@ -482,14 +475,13 @@ test('create invoice from order', function (Order $order) {
         ->and($this->shop->orderingStats->number_invoices)->toBe(3)
         ->and($invoiceTransaction)->toBeInstanceOf(InvoiceTransaction::class);
 
-
     return $invoice;
 })->depends('create order', 'update invoice from customer');
 
 test('update invoice transaction', function (Invoice $invoice) {
-    $transaction        = $invoice->invoiceTransactions->first();
+    $transaction = $invoice->invoiceTransactions->first();
     $updatedTransaction = UpdateInvoiceTransaction::make()->action($transaction, [
-        'quantity' => 100
+        'quantity' => 100,
     ]);
     expect($updatedTransaction)->toBeInstanceOf(InvoiceTransaction::class)
         ->and(intval($updatedTransaction->quantity))->toBe(100);
@@ -508,7 +500,7 @@ test('delete invoice transaction', function (InvoiceTransaction $invoiceTransact
 })->depends('update invoice transaction');
 
 test('create old order', function () {
-    $billingAddress  = new Address(Address::factory()->definition());
+    $billingAddress = new Address(Address::factory()->definition());
     $deliveryAddress = new Address(Address::factory()->definition());
 
     $modelData = Order::factory()->definition();
@@ -517,9 +509,8 @@ test('create old order', function () {
 
     $order = StoreOrder::make()->action(parent: $this->customer, modelData: $modelData);
 
-
     $transactionData = Transaction::factory()->definition();
-    $historicAsset   = $this->product->historicAsset;
+    $historicAsset = $this->product->historicAsset;
     expect($historicAsset)->toBeInstanceOf(HistoricAsset::class);
     $transaction = StoreTransaction::make()->action($order, $historicAsset, $transactionData);
 
@@ -535,17 +526,17 @@ test('create old order', function () {
     $shop = $order->shop;
     $shop->refresh();
     $order->update([
-        'updated_at' => Date::now()->subDays(40)->toDateString()
+        'updated_at' => Date::now()->subDays(40)->toDateString(),
     ]);
 
     return $order;
 });
 
 test('create purge', function (Order $order) {
-    $shop  = $order->shop;
+    $shop = $order->shop;
     $purge = StorePurge::make()->action($shop, [
-        'type'          => PurgeTypeEnum::MANUAL,
-        'scheduled_at'  => now(),
+        'type' => PurgeTypeEnum::MANUAL,
+        'scheduled_at' => now(),
         'inactive_days' => 30,
     ]);
 
@@ -558,8 +549,8 @@ test('create purge', function (Order $order) {
 
 test('update purge', function (Purge $purge) {
     $newSchedule = Date::now()->addDays(5);
-    $purge       = UpdatePurge::make()->action($purge, [
-        'scheduled_at' => $newSchedule
+    $purge = UpdatePurge::make()->action($purge, [
+        'scheduled_at' => $newSchedule,
     ]);
 
     expect($purge)->toBeInstanceOf(Purge::class)
@@ -569,9 +560,9 @@ test('update purge', function (Purge $purge) {
 })->depends('create purge');
 
 test('update purge order', function (Purge $purge) {
-    $purgedOrder        = $purge->purgedOrders->first();
+    $purgedOrder = $purge->purgedOrders->first();
     $updatedPurgedOrder = UpdatePurgedOrder::make()->action($purgedOrder, [
-        'error_message' => 'error test'
+        'error_message' => 'error test',
     ]);
 
     expect($updatedPurgedOrder)->toBeInstanceOf(PurgedOrder::class)
@@ -694,10 +685,10 @@ test('UI create ordering purge', function () {
             ->has('breadcrumbs', 4)
             ->has('formData', fn ($page) => $page
                 ->where('route', [
-                    'name'       => 'grp.models.purge.store',
+                    'name' => 'grp.models.purge.store',
                     'parameters' => [
                         'shop' => $this->shop->id,
-                    ]
+                    ],
                 ])
                 ->etc())
             ->has(
@@ -721,8 +712,8 @@ test('UI edit ordering purge', function () {
             ->has('formData', fn ($page) => $page
                 ->where('args', [
                     'updateRoute' => [
-                        'name'       => 'grp.models.purge.update',
-                        'parameters' => $purge->id
+                        'name' => 'grp.models.purge.update',
+                        'parameters' => $purge->id,
 
                     ],
                 ])
@@ -739,7 +730,7 @@ test('UI edit ordering purge', function () {
 test('UI get section route index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.ordering.orders.index', [
         'organisation' => $this->organisation->slug,
-        'shop'         => $this->shop->slug
+        'shop' => $this->shop->slug,
     ]);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->organisation_id)->toBe($this->organisation->id)

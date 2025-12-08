@@ -21,50 +21,49 @@ class CreateUser extends InertiaAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
-                'title'       => __('New user'),
-                'pageHead'    => [
-                    'title'   => __('New user'),
+                'title' => __('New user'),
+                'pageHead' => [
+                    'title' => __('New user'),
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.sysadmin.users.index',
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => 'grp.sysadmin.users.index',
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Create marketplace agent'),
+                            'title' => __('Create marketplace agent'),
                             'fields' => [
 
                                 'username' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('username'),
-                                    'value' => ''
+                                    'value' => '',
                                 ],
-                                'name'     => [
-                                    'type'  => 'input',
+                                'name' => [
+                                    'type' => 'input',
                                     'label' => __('name'),
-                                    'value' => ''
+                                    'value' => '',
                                 ],
-                                'type'     => [
-                                    'type'  => 'input',
+                                'type' => [
+                                    'type' => 'input',
                                     'label' => __('type'),
-                                    'value' => ''
+                                    'value' => '',
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    'route'     => [
+                    'route' => [
                         'name' => 'grp.models.user.update',
-                    ]
+                    ],
                 ],
-
 
             ]
         );
@@ -74,7 +73,6 @@ class CreateUser extends InertiaAction
     {
         return $request->user()->authTo('sysadmin.users.edit');
     }
-
 
     public function asController(ActionRequest $request): Response
     {
@@ -89,11 +87,11 @@ class CreateUser extends InertiaAction
             IndexUsers::make()->getBreadcrumbs(routeName: preg_replace('/create$/', 'index', $routeName)),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating user'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

@@ -67,5 +67,4 @@ class AddRetinaAddressToPalletReturn extends RetinaAction
     {
         return back();
     }
-
 }

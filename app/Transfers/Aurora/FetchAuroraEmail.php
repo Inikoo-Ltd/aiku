@@ -19,24 +19,23 @@ class FetchAuroraEmail extends FetchAurora
     {
         $parent = null;
 
-        $snapshotState      = null;
+        $snapshotState = null;
         $snapshotRecyclable = false;
-        $publishedAt        = null;
-        $firstCommit        = false;
+        $publishedAt = null;
+        $firstCommit = false;
 
         $builder = EmailBuilderEnum::BEEFREE;
 
         $outbox = $this->parseOutbox($this->organisation->id.':'.$this->auroraModelData->{'Email Template Email Campaign Type Key'});
 
-
         if ($this->auroraModelData->{'Email Template Scope'} == 'EmailCampaign' or $this->auroraModelData->{'Email Template Scope'} == 'Mailshot') {
             $emailCampaignData = DB::connection('aurora')->table('Email Campaign Dimension')->where('Email Campaign Key', $this->auroraModelData->{'Email Template Scope Key'})->first();
-            if (!$emailCampaignData) {
+            if (! $emailCampaignData) {
                 return;
             }
             if (in_array($emailCampaignData->{'Email Campaign Type'}, ['Newsletter', 'Marketing', 'Invite Full Mailshot', 'AbandonedCart'])) {
                 $mailshot = $this->parseMailshot($this->organisation->id.':'.$emailCampaignData->{'Email Campaign Key'});
-                if (!$mailshot) {
+                if (! $mailshot) {
                     dd($emailCampaignData);
                 }
 
@@ -45,21 +44,18 @@ class FetchAuroraEmail extends FetchAurora
                     default => SnapshotStateEnum::LIVE
                 };
 
-
                 $firstCommit = $snapshotState == SnapshotStateEnum::LIVE;
-
 
                 if ($mailshot->state == MailshotStateEnum::SENT) {
                     $snapshotRecyclable = true;
                 }
                 $publishedAt = $mailshot->ready_at;
 
-
                 $outbox = $mailshot->outbox;
                 $parent = $mailshot;
             } else {
                 $emailRun = $this->parseEmailRun($this->organisation->id.':'.$emailCampaignData->{'Email Campaign Key'});
-                if (!$emailRun) {
+                if (! $emailRun) {
                     dd($emailCampaignData);
                 }
 
@@ -70,11 +66,9 @@ class FetchAuroraEmail extends FetchAurora
             return;
         }
 
-
-        if (!$outbox) {
+        if (! $outbox) {
             dd($this->auroraModelData);
         }
-
 
         $subject = trim($this->auroraModelData->{'Email Template Subject'});
         $subject = preg_replace('/\s+/', ' ', $subject);
@@ -83,26 +77,24 @@ class FetchAuroraEmail extends FetchAurora
             $subject = '⚠️ No subject 😕';
         }
 
-        if (!$parent) {
+        if (! $parent) {
             dd($this->auroraModelData);
         }
 
-
         $this->parsedData['outbox'] = $outbox;
         $this->parsedData['parent'] = $parent;
-        $this->parsedData['email']  = [
+        $this->parsedData['email'] = [
 
-            'subject'               => $subject,
-            'builder'               => $builder,
-            'source_id'             => $this->organisation->id.':'.$this->auroraModelData->{'Email Template Key'},
-            'fetched_at'            => now(),
-            'last_fetched_at'       => now(),
-            'layout'                => json_decode($this->auroraModelData->{'Email Template Editing JSON'}, true),
-            'snapshot_state'        => $snapshotState,
-            'snapshot_recyclable'   => $snapshotRecyclable,
+            'subject' => $subject,
+            'builder' => $builder,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Email Template Key'},
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'layout' => json_decode($this->auroraModelData->{'Email Template Editing JSON'}, true),
+            'snapshot_state' => $snapshotState,
+            'snapshot_recyclable' => $snapshotRecyclable,
             'snapshot_first_commit' => $firstCommit,
-            'snapshot_source_id'    => $this->organisation->id.':'.$this->auroraModelData->{'Email Template Key'},
-
+            'snapshot_source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Email Template Key'},
 
         ];
 
@@ -110,14 +102,12 @@ class FetchAuroraEmail extends FetchAurora
             $this->parsedData['email']['snapshot_published_at'] = $publishedAt;
         }
 
-
         if ($this->auroraModelData->{'Email Template HTML'} and $this->auroraModelData->{'Email Template HTML'} != 0) {
             $this->parsedData['email']['compiled_layout'] = $this->auroraModelData->{'Email Template HTML'};
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Email Template Dimension')

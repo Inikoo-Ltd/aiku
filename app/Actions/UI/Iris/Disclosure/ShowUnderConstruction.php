@@ -22,7 +22,7 @@ class ShowUnderConstruction
     public function handle(ActionRequest $request): Response|RedirectResponse
     {
         if ($request->get('website')->status) {
-            return  Redirect::route('iris.home');
+            return Redirect::route('iris.home');
 
         }
 

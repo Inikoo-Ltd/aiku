@@ -21,13 +21,12 @@ class JobPositionResource extends JsonResource
         /** @var JobPosition $jobPosition */
         $jobPosition = $this;
 
-
         return [
-            'id'               => $jobPosition->id,
-            'slug'             => $jobPosition->slug,
-            'name'             => $jobPosition->name,
+            'id' => $jobPosition->id,
+            'slug' => $jobPosition->slug,
+            'name' => $jobPosition->name,
             'number_employees' => $jobPosition->stats->number_employees,
-            'scope'            => $jobPosition->scope,
+            'scope' => $jobPosition->scope,
 
         ];
     }

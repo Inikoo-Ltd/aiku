@@ -9,13 +9,13 @@
 use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
-use App\Actions\Masters\MasterAsset\UI\ShowMasterProducts;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithNoFamily;
+use App\Actions\Masters\MasterAsset\UI\ShowMasterProducts;
 use App\Actions\Masters\MasterCollection\UI\CreateMasterCollection;
+use App\Actions\Masters\MasterCollection\UI\EditMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollectionsInMasterProductCategory;
 use App\Actions\Masters\MasterCollection\UI\ShowMasterCollection;
-use App\Actions\Masters\MasterCollection\UI\EditMasterCollection;
 use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterSubDepartment;
@@ -26,6 +26,7 @@ use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartmentsWorkshop;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartmentWorkshop;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
@@ -34,19 +35,15 @@ use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartmentsWorkshop;
 
-require_once __DIR__ . '/common/trade_units.php';
-require_once __DIR__ . '/common/trade_unit_families.php';
+require_once __DIR__.'/common/trade_units.php';
+require_once __DIR__.'/common/trade_unit_families.php';
 
 Route::get('/', ShowMastersDashboard::class)->name('dashboard');
-
-
 
 Route::get('/master-products', IndexMasterProducts::class)->name('master_products.index');
 Route::get('/master-departments', [IndexMasterDepartments::class, 'inGroup'])->name('master_departments.index');
 Route::delete('/master-departments/{masterProductCategory}/delete', DeleteMasterProductCategory::class)->name('master_departments.delete');
-
 
 Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.show')->group(function () {
     Route::get('', [ShowMasterDepartment::class, 'inGroup'])->name('');
@@ -59,7 +56,7 @@ Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.
             Route::get('edit', [EditMasterFamily::class, 'inMaserDepartment'])->name('edit');
             Route::get('', [ShowMasterFamily::class, 'inMasterDepartment'])->name('show');
 
-            Route::name("show.master_products.")->prefix('master-products')
+            Route::name('show.master_products.')->prefix('master-products')
                 ->group(function () {
                     Route::get('', [IndexMasterProducts::class, 'inMasterFamilyInMasterDepartment'])->name('index');
                 });
@@ -81,15 +78,12 @@ Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.
     Route::get('/master-sub-departments/{masterSubDepartment}/master-families/{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartmentInMasterDepartment'])->name('.master_sub_departments.show.master_families.show');
 });
 
-
 Route::get('/master-families', [IndexMasterFamilies::class, 'inGroup'])->name('master_families.index');
 Route::get('/master-families/{masterFamily}', [ShowMasterFamily::class, 'inGroup'])->name('master_families.show');
 
 Route::get('/master-collections', [IndexMasterCollections::class, 'inGroup'])->name('master_collections.index');
 
-
-
-Route::name("master_shops")->prefix('master-shops')
+Route::name('master_shops')->prefix('master-shops')
     ->group(function () {
 
         Route::get('', IndexMasterShops::class)->name('.index');
@@ -106,10 +100,8 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('{masterDepartment}/blueprint', ShowMasterDepartmentWorkshop::class)->name('blueprint');
                 Route::get('{masterDepartment}/edit', EditMasterDepartment::class)->name('edit');
 
-
                 Route::prefix('{masterDepartment}')->name('show')->group(function () {
                     Route::get('', ShowMasterDepartment::class);
-
 
                     Route::prefix('master-families')->as('.master_families.')->group(function () {
                         Route::get('', [IndexMasterFamilies::class, 'inMasterDepartmentInMasterShop'])->name('index');
@@ -155,10 +147,6 @@ Route::name("master_shops")->prefix('master-shops')
                     });
 
                 });
-
-
-
-
 
             });
 
@@ -212,11 +200,7 @@ Route::name("master_shops")->prefix('master-shops')
             });
         });
 
-
-
     });
-
-
 
 // Use the common trade units routes
 tradeUnitsRoutes();

@@ -28,6 +28,4 @@ class OrganisationHydrateOrgSupplierProducts implements ShouldBeUnique
         $stats = $this->getOrgSupplierProductsStats($organisation);
         $organisation->procurementStats()->update($stats);
     }
-
-
 }

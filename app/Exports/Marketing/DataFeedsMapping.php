@@ -16,9 +16,9 @@ trait DataFeedsMapping
 {
     public function map($row): array
     {
-        $dimensions      = NaturalLanguage::make()->dimensions($row->marketing_dimensions);
+        $dimensions = NaturalLanguage::make()->dimensions($row->marketing_dimensions);
         $htmlDescription = trim($row->description_title.' '.$row->description.' '.$row->description_extra);
-        $description     = strip_tags($htmlDescription);
+        $description = strip_tags($htmlDescription);
 
         $images = '';
 
@@ -33,11 +33,9 @@ trait DataFeedsMapping
         }
         $images = preg_replace('/ $/', '', $images);
 
-
-        $status       = $row->state;
-        $statusString = (string)$status;
-        $status       = Str::studly($statusString);
-
+        $status = $row->state;
+        $statusString = (string) $status;
+        $status = Str::studly($statusString);
 
         $availableQuantity = $row->available_quantity;
         if ($availableQuantity < 0) {
@@ -58,7 +56,6 @@ trait DataFeedsMapping
                 $availabilityStatus = 'Low';
             }
         }
-
 
         return [
             $status,
@@ -88,12 +85,10 @@ trait DataFeedsMapping
             $row->available_quantity_updated_at ?? '',
             $row->price_updated_at ?? '',
             $row->images_updated_at ?? '',
-            $availableQuantity
-
+            $availableQuantity,
 
         ];
     }
-
 
     public function headings(): array
     {
@@ -125,9 +120,7 @@ trait DataFeedsMapping
             'Stock updated',
             'Price updated',
             'Images updated',
-            'Available Quantity'
+            'Available Quantity',
         ];
     }
-
-
 }

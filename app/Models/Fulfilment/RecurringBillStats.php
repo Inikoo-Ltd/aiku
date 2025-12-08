@@ -25,9 +25,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_transactions_type_spaces
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillStats query()
+ *
  * @mixin \Eloquent
  */
 class RecurringBillStats extends Model

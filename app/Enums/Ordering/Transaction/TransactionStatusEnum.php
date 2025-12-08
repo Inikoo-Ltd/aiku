@@ -14,9 +14,8 @@ enum TransactionStatusEnum: string
 {
     use EnumHelperTrait;
 
-
-    case CREATING   = 'creating';
+    case CREATING = 'creating';
     case PROCESSING = 'processing';
-    case SETTLED    = 'settled';
+    case SETTLED = 'settled';
 
 }

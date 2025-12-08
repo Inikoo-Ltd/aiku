@@ -31,7 +31,7 @@ class GroupHydrateClockingMachines implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_clocking_machines' => $group->clockingMachines()->count()
+            'number_clocking_machines' => $group->clockingMachines()->count(),
         ];
         $stats = array_merge(
             $stats,

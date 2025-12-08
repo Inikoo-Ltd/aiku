@@ -22,30 +22,30 @@ class GetMarketplaceAgentShowcase
             'contactCard' => [
                 'company' => $agent->company_name,
                 'contact' => $agent->contact_name,
-                'email'   => $agent->email,
-                'phone'   => $agent->phone,
+                'email' => $agent->email,
+                'phone' => $agent->phone,
                 'address' => AddressResource::make($agent->getAddress('contact'))->getArray(),
-                'photo'   => $agent->getPhoto()
+                'photo' => $agent->getPhoto(),
             ],
-            'stats'       => [
+            'stats' => [
                 [
                     'label' => __('suppliers'),
-                    'count' => $agent->stats->number_suppliers
+                    'count' => $agent->stats->number_suppliers,
                 ],
                 [
                     'label' => __('products'),
-                    'count' => $agent->stats->number_supplier_products
+                    'count' => $agent->stats->number_supplier_products,
                 ],
                 [
                     'label' => __('purchase orders'),
-                    'count' => $agent->stats->number_purchase_orders
+                    'count' => $agent->stats->number_purchase_orders,
                 ],
                 [
                     'label' => __('deliveries'),
-                    'count' => $agent->stats->number_stock_deliveries
+                    'count' => $agent->stats->number_stock_deliveries,
                 ],
 
-            ]
+            ],
         ];
     }
 }

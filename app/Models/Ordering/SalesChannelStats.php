@@ -27,9 +27,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Ordering\SalesChannel $salesChannel
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannelStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannelStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannelStats query()
+ *
  * @mixin \Eloquent
  */
 class SalesChannelStats extends Model

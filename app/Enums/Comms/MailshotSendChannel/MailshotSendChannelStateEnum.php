@@ -14,9 +14,9 @@ enum MailshotSendChannelStateEnum: string
 {
     use EnumHelperTrait;
 
-    case READY      = 'ready';
-    case SENDING    = 'sending';
-    case SENT       = 'sent';
-    case STOPPED    = 'stopped';
+    case READY = 'ready';
+    case SENDING = 'sending';
+    case SENT = 'sent';
+    case STOPPED = 'stopped';
 
 }

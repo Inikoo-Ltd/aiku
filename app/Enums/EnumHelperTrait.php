@@ -31,5 +31,4 @@ trait EnumHelperTrait
 
         return $shortLabels;
     }
-
 }

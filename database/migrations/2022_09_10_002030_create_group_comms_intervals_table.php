@@ -13,14 +13,14 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasCommsIntervals;
 
     public function up(): void
     {
         foreach (OutboxTypeEnum::cases() as $case) {
             $outboxType = Str::snake(str_replace('-', '_', $case->value));
-
 
             Schema::create('group_outbox_'.$outboxType.'_intervals', function (Blueprint $table) use ($case) {
                 $table->smallIncrements('id');
@@ -32,7 +32,6 @@ return new class () extends Migration {
         }
 
     }
-
 
     public function down(): void
     {

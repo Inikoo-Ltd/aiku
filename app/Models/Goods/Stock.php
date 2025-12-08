@@ -87,6 +87,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Goods\StockTimeSeries> $timeSeries
  * @property-read Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Goods\StockFactory factory($count = null, $state = [])
  * @method static Builder<static>|Stock newModelQuery()
  * @method static Builder<static>|Stock newQuery()
@@ -94,34 +95,35 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Stock query()
  * @method static Builder<static>|Stock withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Stock withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class Stock extends Model implements HasMedia, Auditable
+class Stock extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasUniversalSearch;
-    use HasImage;
     use HasFactory;
     use HasHistory;
+    use HasImage;
+    use HasSlug;
+    use HasUniversalSearch;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'                   => 'array',
-        'settings'               => 'array',
-        'sources'                => 'array',
-        'activated_at'           => 'datetime',
-        'discontinuing_at'       => 'datetime',
-        'discontinued_at'        => 'datetime',
-        'state'                  => StockStateEnum::class,
+        'data' => 'array',
+        'settings' => 'array',
+        'sources' => 'array',
+        'activated_at' => 'datetime',
+        'discontinuing_at' => 'datetime',
+        'discontinued_at' => 'datetime',
+        'state' => StockStateEnum::class,
         'trade_unit_composition' => StockTradeUnitCompositionEnum::class,
-        'fetched_at'             => 'datetime',
-        'last_fetched_at'        => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
-        'sources'  => '{}',
+        'sources' => '{}',
     ];
 
     protected $guarded = [];
@@ -129,7 +131,7 @@ class Stock extends Model implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'goods'
+            'goods',
         ];
     }
 
@@ -227,12 +229,11 @@ class Stock extends Model implements HasMedia, Auditable
 
     public function getMainSupplierProduct(): SupplierProduct
     {
-        return$this->supplierProducts()->where('available', true)->orderBy('priority', 'desc')->first();
+        return $this->supplierProducts()->where('available', true)->orderBy('priority', 'desc')->first();
     }
 
     public function timeSeries(): HasMany
     {
         return $this->hasMany(StockTimeSeries::class);
     }
-
 }

@@ -40,7 +40,6 @@ class StoreSupplier extends OrgAction
     use WithModelAddressActions;
     use WithNoStrictRules;
 
-
     /**
      * @throws \Throwable
      */
@@ -67,14 +66,12 @@ class StoreSupplier extends OrgAction
 
             $supplier = $this->addAddressToModelFromArray($supplier, $addressData, 'contact');
 
-
-
             $supplier->refresh();
             if ($supplier->agent_id) {
                 StoreOrgSupplierFromSupplierInAgent::make()->action(
                     $supplier,
                     [
-                        'source_id' => $supplier->source_id
+                        'source_id' => $supplier->source_id,
                     ],
                     $this->hydratorsDelay,
                     $this->strict
@@ -85,7 +82,6 @@ class StoreSupplier extends OrgAction
         });
 
         GroupHydrateSuppliers::dispatch($group)->delay($this->hydratorsDelay);
-
 
         if ($supplier->agent_id) {
             AgentHydrateSuppliers::dispatch($supplier->agent)->delay($this->hydratorsDelay);
@@ -102,16 +98,14 @@ class StoreSupplier extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("procurement.".$this->group->id.".edit");
+        return $request->user()->authTo('procurement.'.$this->group->id.'.edit');
     }
 
     public function rules(): array
     {
 
-
-
         $rules = [
-            'code'         => [
+            'code' => [
                 'required',
                 'max:32',
                 'alpha_dash',
@@ -125,21 +119,21 @@ class StoreSupplier extends OrgAction
             'contact_name' => ['nullable', 'string', 'max:255'],
             'contact_website' => ['nullable', 'string', 'max:255'],
             'company_name' => ['nullable', 'string', 'max:255'],
-            'email'        => ['nullable', 'email'],
-            'phone'        => ['nullable', new Phone()],
-            'address'      => ['required', new ValidAddress()],
-            'currency_id'  => ['required', 'exists:currencies,id'],
-            'status'       => ['sometimes', 'required', 'boolean'],
-            'scope_type'   => ['string', Rule::in(['Group', 'Organisation'])],
-            'scope_id'     => ['integer']
+            'email' => ['nullable', 'email'],
+            'phone' => ['nullable', new Phone],
+            'address' => ['required', new ValidAddress],
+            'currency_id' => ['required', 'exists:currencies,id'],
+            'status' => ['sometimes', 'required', 'boolean'],
+            'scope_type' => ['string', Rule::in(['Group', 'Organisation'])],
+            'scope_id' => ['integer'],
 
         ];
 
-        if (!$this->strict) {
-            $rules['phone']       = ['sometimes', 'nullable', 'max:255'];
+        if (! $this->strict) {
+            $rules['phone'] = ['sometimes', 'nullable', 'max:255'];
             $rules['source_slug'] = ['sometimes', 'nullable', 'string'];
             $rules['archived_at'] = ['sometimes', 'nullable', 'date'];
-            $rules                = $this->noStrictStoreRules($rules);
+            $rules = $this->noStrictStoreRules($rules);
         }
 
         return $rules;
@@ -147,14 +141,14 @@ class StoreSupplier extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->get('contact_name') && !$this->get('company_name')) {
+        if (! $this->get('contact_name') && ! $this->get('company_name')) {
             $validator->errors()->add('contact_name', 'contact name or company name is required');
         }
     }
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (!$this->get('scope_type')) {
+        if (! $this->get('scope_type')) {
             $this->set('scope_type', 'Group');
             $this->set('scope_id', $this->group->id);
         }
@@ -165,11 +159,11 @@ class StoreSupplier extends OrgAction
      */
     public function action(Group|Agent $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Supplier
     {
-        if (!$audit) {
+        if (! $audit) {
             Supplier::disableAuditing();
         }
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
 
         if (class_basename($parent) == 'Agent') {

@@ -24,8 +24,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowBillablesDashboard::class)->name('dashboard');
 
-
-Route::name("shipping.")->prefix('shipping')
+Route::name('shipping.')->prefix('shipping')
     ->group(function () {
         Route::get('', IndexShippingZoneSchemas::class)->name('index');
         Route::get('create', CreateShippingZoneSchema::class)->name('create');
@@ -40,7 +39,7 @@ Route::name("shipping.")->prefix('shipping')
         });
     });
 
-Route::name("charges.")->prefix('charges')
+Route::name('charges.')->prefix('charges')
     ->group(function () {
         Route::get('', IndexCharges::class)->name('index');
         Route::get('create', CreateCharge::class)->name('create');
@@ -51,8 +50,7 @@ Route::name("charges.")->prefix('charges')
         });
     });
 
-
-Route::name("services.")->prefix('services')
+Route::name('services.')->prefix('services')
     ->group(function () {
         Route::get('', IndexShopServices::class)->name('index');
         Route::get('create', EditDummy::class)->name('create');

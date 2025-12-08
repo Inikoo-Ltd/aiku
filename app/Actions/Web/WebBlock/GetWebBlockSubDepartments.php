@@ -39,7 +39,7 @@ class GetWebBlockSubDepartments
                     'product_categories.name',
                     'product_categories.web_images',
                     'product_categories.image_id',
-                    'webpages.url as url'
+                    'webpages.url as url',
                 ]
             )
             ->selectRaw('\''.$department->url.'\' as parent_url')
@@ -52,11 +52,11 @@ class GetWebBlockSubDepartments
 
         $productRoute = [
             'workshop' => [
-                'name'       => 'grp.json.product_category.products.index',
+                'name' => 'grp.json.product_category.products.index',
                 'parameters' => [$department->slug],
             ],
-            'iris'     => [
-                'name'       => 'iris.json.product_category.products.index',
+            'iris' => [
+                'name' => 'iris.json.product_category.products.index',
                 'parameters' => [$department->slug],
             ],
         ];
@@ -71,5 +71,4 @@ class GetWebBlockSubDepartments
 
         return $webBlock;
     }
-
 }

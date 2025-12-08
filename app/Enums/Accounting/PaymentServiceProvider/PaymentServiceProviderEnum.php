@@ -30,16 +30,16 @@ enum PaymentServiceProviderEnum: string
     {
         return [
             'accounts' => __('Account'),
-            'cash'     => __('Cash'),
-            'bank'     => __('Bank'),
-            'btree'    => 'Btree',
+            'cash' => __('Cash'),
+            'bank' => __('Bank'),
+            'btree' => 'Btree',
             'checkout' => 'Checkout',
-            'hokodo'   => 'Hokodo',
-            'paypal'   => 'Paypal',
-            'sofort'   => 'Sofort',
-            'pastpay'  => 'Pastpay',
+            'hokodo' => 'Hokodo',
+            'paypal' => 'Paypal',
+            'sofort' => 'Sofort',
+            'pastpay' => 'Pastpay',
             'worldpay' => 'Worldpay',
-            'cond'     => __('Cash on delivery')
+            'cond' => __('Cash on delivery'),
         ];
     }
 
@@ -47,16 +47,16 @@ enum PaymentServiceProviderEnum: string
     {
         return [
             'accounts' => PaymentServiceProviderTypeEnum::ACCOUNT,
-            'cash'     => PaymentServiceProviderTypeEnum::CASH,
-            'bank'     => PaymentServiceProviderTypeEnum::BANK,
-            'btree'    => PaymentServiceProviderTypeEnum::ELECTRONIC_PAYMENT_SERVICE,
+            'cash' => PaymentServiceProviderTypeEnum::CASH,
+            'bank' => PaymentServiceProviderTypeEnum::BANK,
+            'btree' => PaymentServiceProviderTypeEnum::ELECTRONIC_PAYMENT_SERVICE,
             'checkout' => PaymentServiceProviderTypeEnum::ELECTRONIC_PAYMENT_SERVICE,
-            'hokodo'   => PaymentServiceProviderTypeEnum::BUY_NOW_PAY_LATER,
-            'paypal'   => PaymentServiceProviderTypeEnum::ELECTRONIC_PAYMENT_SERVICE,
-            'sofort'   => PaymentServiceProviderTypeEnum::ELECTRONIC_BANKING_E_PAYMENT,
-            'pastpay'  => PaymentServiceProviderTypeEnum::BUY_NOW_PAY_LATER,
+            'hokodo' => PaymentServiceProviderTypeEnum::BUY_NOW_PAY_LATER,
+            'paypal' => PaymentServiceProviderTypeEnum::ELECTRONIC_PAYMENT_SERVICE,
+            'sofort' => PaymentServiceProviderTypeEnum::ELECTRONIC_BANKING_E_PAYMENT,
+            'pastpay' => PaymentServiceProviderTypeEnum::BUY_NOW_PAY_LATER,
             'worldpay' => PaymentServiceProviderTypeEnum::ELECTRONIC_PAYMENT_SERVICE,
-            'cond'     => PaymentServiceProviderTypeEnum::CASH_ON_DELIVERY
+            'cond' => PaymentServiceProviderTypeEnum::CASH_ON_DELIVERY,
 
         ];
     }

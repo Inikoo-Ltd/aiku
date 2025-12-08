@@ -24,7 +24,6 @@ trait HasAssetModel
         $table->string('name', 255)->nullable();
         $table->text('description')->nullable()->fulltext();
 
-
         if ($table->getTable() != 'charges') {
             $table->decimal('price', 18)->nullable();
             $table->decimal('units', 9, 3)->default(1);
@@ -90,7 +89,7 @@ trait HasAssetModel
         if ($table->getTable() != 'adjustments') {
             $table->softDeletes();
         }
-        if (!in_array($table->getTable(), ['subscriptions', 'charges'])) {
+        if (! in_array($table->getTable(), ['subscriptions', 'charges'])) {
             $table->string('historic_source_id')->nullable()->unique();
         }
         if ($table->getTable() != 'subscriptions') {
@@ -99,6 +98,4 @@ trait HasAssetModel
 
         return $table;
     }
-
-
 }

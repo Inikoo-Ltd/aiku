@@ -19,18 +19,18 @@ class ShopsNavigationResource extends JsonResource
         $shop = $this;
 
         return [
-            'id'     => $shop->id,
-            'slug'   => $shop->slug,
-            'code'   => $shop->code,
-            'label'  => $shop->name,
-            'state'  => $shop->state,
-            'type'   => $shop->type,
-            'route'  => [
-                'name'       => 'grp.org.shops.show.dashboard.show',
+            'id' => $shop->id,
+            'slug' => $shop->slug,
+            'code' => $shop->code,
+            'label' => $shop->name,
+            'state' => $shop->state,
+            'type' => $shop->type,
+            'route' => [
+                'name' => 'grp.org.shops.show.dashboard.show',
                 'parameters' => [
                     $shop->organisation->slug,
-                    $shop->slug
-                ]
+                    $shop->slug,
+                ],
             ],
 
         ];

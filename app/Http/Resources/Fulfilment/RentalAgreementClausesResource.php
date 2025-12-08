@@ -29,17 +29,18 @@ class RentalAgreementClausesResource extends JsonResource
     {
 
         return [
-            'id'             => $this->id,
-            'asset_code'     => $this->asset_code,
-            'asset_name'     => $this->asset_name,
-            'asset_type'     => $this->asset_type,
-            'asset_price'    => $this->asset_price,
-            'asset_units'    => $this->asset_units,
-            'asset_unit'     => $this->asset_unit,
+            'id' => $this->id,
+            'asset_code' => $this->asset_code,
+            'asset_name' => $this->asset_name,
+            'asset_type' => $this->asset_type,
+            'asset_price' => $this->asset_price,
+            'asset_units' => $this->asset_units,
+            'asset_unit' => $this->asset_unit,
             'percentage_off' => $this->percentage_off,
-            'agreed_price'   => $this->calculateAgreedPrice($this->asset_price, $this->percentage_off),
+            'agreed_price' => $this->calculateAgreedPrice($this->asset_price, $this->percentage_off),
         ];
     }
+
     private function calculateAgreedPrice($price, $percentageOff)
     {
 

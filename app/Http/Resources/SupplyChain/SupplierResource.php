@@ -28,17 +28,17 @@ class SupplierResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'org_slug'                 => $this->org_slug,
-            'agent_slug'               => $this->agent_slug,
-            'code'                     => $this->code,
-            'name'                     => $this->name,
-            'agent_name'               => $this->agent_name,
+            'org_slug' => $this->org_slug,
+            'agent_slug' => $this->agent_slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'agent_name' => $this->agent_name,
             'number_supplier_products' => $this->number_supplier_products,
-            'number_purchase_orders'   => $this->number_purchase_orders,
-            'slug'                     => $this->slug,
-            'supplier_locations'       => json_decode($this->supplier_locations),
-            'created_at'               => $this->created_at,
-            'updated_at'               => $this->updated_at,
+            'number_purchase_orders' => $this->number_purchase_orders,
+            'slug' => $this->slug,
+            'supplier_locations' => json_decode($this->supplier_locations),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

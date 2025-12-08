@@ -53,33 +53,35 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Production\ProductionStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, StockDelivery> $stockDeliveries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Production newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Production newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Production onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Production query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Production withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Production withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Production extends Model implements Auditable
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
     use InOrganisation;
+    use SoftDeletes;
 
     protected $casts = [
-        'state'    => WarehouseStateEnum::class,
-        'data'     => 'array',
+        'state' => WarehouseStateEnum::class,
+        'data' => 'array',
         'settings' => 'array',
-        'sources'  => 'array',
+        'sources' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
-        'sources'  => '{}',
+        'sources' => '{}',
     ];
 
     protected $guarded = [];
@@ -101,7 +103,7 @@ class Production extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'production'
+            'production',
         ];
     }
 
@@ -144,6 +146,4 @@ class Production extends Model implements Auditable
     {
         return $this->morphToMany(AikuSection::class, 'model', 'aiku_scoped_sections');
     }
-
-
 }

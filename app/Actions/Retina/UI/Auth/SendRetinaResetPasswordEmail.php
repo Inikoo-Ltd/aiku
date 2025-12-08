@@ -23,7 +23,6 @@ class SendRetinaResetPasswordEmail extends RetinaAction
 {
     use AsController;
 
-
     public function handle(array $modelData): void
     {
         $webUser = WebUser::where('website_id', $this->website->id)->where('email', $modelData['email'])->first();
@@ -33,14 +32,12 @@ class SendRetinaResetPasswordEmail extends RetinaAction
 
         $url = route('retina.reset-password.show', [
             'token' => $token,
-            'id' => $webUserPasswordReset->id
+            'id' => $webUserPasswordReset->id,
         ]);
-
 
         SendResetPasswordEmail::run($webUser, [
-            'url' => $url
+            'url' => $url,
         ]);
-
 
     }
 
@@ -69,11 +66,10 @@ class SendRetinaResetPasswordEmail extends RetinaAction
                     ->where(
                         'website_id',
                         $this->website->id
-                    )
+                    ),
             ],
         ];
     }
-
 
     public function asController(ActionRequest $request): void
     {

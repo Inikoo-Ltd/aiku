@@ -37,6 +37,7 @@ class FetchAuroraShippingZones extends FetchAuroraAction
                     $this->recordChange($organisationSource, $shippingZone->wasChanged());
                 } catch (Exception $e) {
                     $this->recordError($organisationSource, $e, $shippingZoneData['shipping-zone'], 'ShippingZone', 'update');
+
                     return null;
                 }
             } else {
@@ -62,6 +63,7 @@ class FetchAuroraShippingZones extends FetchAuroraAction
                         ->update(['aiku_id' => $shippingZone->id]);
                 } catch (Exception|Throwable $e) {
                     $this->recordError($organisationSource, $e, $shippingZoneData['shipping-zone'], 'ShippingZone', 'store');
+
                     return null;
                 }
             }
@@ -84,6 +86,4 @@ class FetchAuroraShippingZones extends FetchAuroraAction
     {
         return DB::connection('aurora')->table('Shipping Zone Dimension')->count();
     }
-
-
 }

@@ -24,7 +24,6 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             $orgStock = $this->parseOrgStock($this->organisation->id.':'.$this->auroraModelData->{'Part SKU'});
         }
 
-
         $auroraTransaction = $this->organisation->id.':'.$this->auroraModelData->{'Map To Order Transaction Fact Key'};
 
         $transaction = $this->parseTransaction($auroraTransaction);
@@ -32,7 +31,6 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
         $type = $this->auroraModelData->{'Inventory Transaction Type'};
 
         $this->parsedData['type'] = $type;
-
 
         if ($type == 'Sale') {
             $state = DeliveryNoteItemStateEnum::DISPATCHED;
@@ -62,10 +60,8 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             dd($this->auroraModelData);
         }
 
-
-        $quantity_required   = $this->auroraModelData->{'Required'};
+        $quantity_required = $this->auroraModelData->{'Required'};
         $quantity_dispatched = -$this->auroraModelData->{'Inventory Transaction Quantity'};
-
 
         $transactionID = $transaction?->id;
 
@@ -75,12 +71,11 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
             $stock = Stock::withTrashed()->find($orgStock->stock_id);
         }
 
-
         $createdAt = $this->parseDatetime($this->auroraModelData->{'Date Created'});
-        if (!$createdAt) {
+        if (! $createdAt) {
             $createdAt = $this->parseDatetime($this->auroraModelData->{'Date'});
         }
-        if (!$createdAt) {
+        if (! $createdAt) {
             $createdAt = $deliveryNote->created_at;
         }
 
@@ -88,58 +83,56 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
 
         $estimatedRequiredWeight = $this->auroraModelData->{'Inventory Transaction Weight'};
         $estimatedRequiredWeight = abs($estimatedRequiredWeight);
-        $estimatedRequiredWeight = (int)floor($estimatedRequiredWeight * 1000);
+        $estimatedRequiredWeight = (int) floor($estimatedRequiredWeight * 1000);
 
         if ($quantity_required != 0) {
-            $estimatedPickedWeight = (int)floor($this->auroraModelData->{'Picked'} * $estimatedRequiredWeight / $quantity_required);
+            $estimatedPickedWeight = (int) floor($this->auroraModelData->{'Picked'} * $estimatedRequiredWeight / $quantity_required);
         }
-
 
         $revenueAmount = $this->auroraModelData->{'Amount In'};
 
-        $revenueAmountOrgCurrency   = $revenueAmount * GetHistoricCurrencyExchange::run($deliveryNote->shop->currency, $deliveryNote->organisation->currency, $deliveryNote->date);
+        $revenueAmountOrgCurrency = $revenueAmount * GetHistoricCurrencyExchange::run($deliveryNote->shop->currency, $deliveryNote->organisation->currency, $deliveryNote->date);
         $revenueAmountGroupCurrency = $revenueAmount * GetHistoricCurrencyExchange::run($deliveryNote->shop->currency, $deliveryNote->group->currency, $deliveryNote->date);
 
-
         $this->parsedData['delivery_note_item'] = [
-            'transaction_id'            => $transactionID,
-            'state'                     => $state,
-            'quantity_required'         => $quantity_required,
-            'quantity_picked'           => $this->auroraModelData->{'Picked'},
-            'quantity_packed'           => $this->auroraModelData->{'Packed'},
-            'quantity_dispatched'       => $quantity_dispatched,
-            'source_id'                 => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
-            'created_at'                => $createdAt,
-            'fetched_at'                => now(),
-            'last_fetched_at'           => now(),
-            'org_stock_id'              => $orgStock?->id,
-            'org_stock_family_id'       => $orgStock?->org_stock_family_id,
-            'stock_id'                  => $stock ? $stock->id : null,
-            'stock_family_id'           => $stock ? $stock->stock_family_id : null,
-            'weight'                    => $estimatedRequiredWeight / 1000,
+            'transaction_id' => $transactionID,
+            'state' => $state,
+            'quantity_required' => $quantity_required,
+            'quantity_picked' => $this->auroraModelData->{'Picked'},
+            'quantity_packed' => $this->auroraModelData->{'Packed'},
+            'quantity_dispatched' => $quantity_dispatched,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
+            'created_at' => $createdAt,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'org_stock_id' => $orgStock?->id,
+            'org_stock_family_id' => $orgStock?->org_stock_family_id,
+            'stock_id' => $stock ? $stock->id : null,
+            'stock_family_id' => $stock ? $stock->stock_family_id : null,
+            'weight' => $estimatedRequiredWeight / 1000,
             'estimated_required_weight' => $estimatedRequiredWeight,
-            'estimated_picked_weight'   => $estimatedPickedWeight,
-            'date'                      => $deliveryNote->date,
-            'queued_at'                 => $deliveryNote->queued_at,
-            'handling_at'               => $deliveryNote->handling_at,
-            'handling_blocked_at'       => $deliveryNote->handling_blocked_at,
-            'packed_at'                 => $deliveryNote->packed_at,
-            'finalised_at'              => $deliveryNote->finalised_at,
-            'dispatched_at'             => $deliveryNote->dispatched_at,
-            'cancelled_at'              => $deliveryNote->cancelled_at,
-            'start_picking'             => $deliveryNote->start_picking,
-            'end_picking'               => $deliveryNote->end_picking,
-            'start_packing'             => $deliveryNote->start_packing,
-            'end_packing'               => $deliveryNote->end_packing,
-            'revenue_amount'            => $revenueAmount,
-            'org_revenue_amount'        => $revenueAmountOrgCurrency,
-            'grp_revenue_amount'        => $revenueAmountGroupCurrency,
+            'estimated_picked_weight' => $estimatedPickedWeight,
+            'date' => $deliveryNote->date,
+            'queued_at' => $deliveryNote->queued_at,
+            'handling_at' => $deliveryNote->handling_at,
+            'handling_blocked_at' => $deliveryNote->handling_blocked_at,
+            'packed_at' => $deliveryNote->packed_at,
+            'finalised_at' => $deliveryNote->finalised_at,
+            'dispatched_at' => $deliveryNote->dispatched_at,
+            'cancelled_at' => $deliveryNote->cancelled_at,
+            'start_picking' => $deliveryNote->start_picking,
+            'end_picking' => $deliveryNote->end_picking,
+            'start_packing' => $deliveryNote->start_packing,
+            'end_packing' => $deliveryNote->end_packing,
+            'revenue_amount' => $revenueAmount,
+            'org_revenue_amount' => $revenueAmountOrgCurrency,
+            'grp_revenue_amount' => $revenueAmountGroupCurrency,
         ];
 
         if ($transaction) {
-            $this->parsedData['delivery_note_item']['order_id']    = $transaction->order_id;
+            $this->parsedData['delivery_note_item']['order_id'] = $transaction->order_id;
             $this->parsedData['delivery_note_item']['customer_id'] = $transaction->customer_id;
-            $this->parsedData['delivery_note_item']['invoice_id']  = $transaction->invoice_id;
+            $this->parsedData['delivery_note_item']['invoice_id'] = $transaction->invoice_id;
         }
     }
 
@@ -154,7 +147,7 @@ class FetchAuroraDeliveryNoteItem extends FetchAurora
         return $this->parsedData;
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Inventory Transaction Fact')

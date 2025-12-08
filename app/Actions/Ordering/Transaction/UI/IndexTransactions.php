@@ -12,9 +12,9 @@ use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
-use App\Models\CRM\Customer;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -86,7 +86,7 @@ class IndexTransactions extends OrgAction
                 'products.available_quantity as available_quantity',
                 'currencies.code as currency_code',
                 'orders.id as order_id',
-                'transactions.offers_data'
+                'transactions.offers_data',
             ])
             ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered'])
             ->allowedFilters([$globalSearch])
@@ -107,7 +107,7 @@ class IndexTransactions extends OrgAction
             $table
                 ->withEmptyState(
                     [
-                        'title' => __("No transactions found"),
+                        'title' => __('No transactions found'),
                     ]
                 );
 
@@ -119,11 +119,9 @@ class IndexTransactions extends OrgAction
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             if ($parent instanceof Order &&
-                (!isset($parent->platform) || $parent->platform->type === PlatformTypeEnum::MANUAL)) {
+                (! isset($parent->platform) || $parent->platform->type === PlatformTypeEnum::MANUAL)) {
                 $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
     }
-
-
 }

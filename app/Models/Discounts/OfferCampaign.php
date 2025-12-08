@@ -57,6 +57,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Discounts\OfferCampaignStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Discounts\OfferCampaignFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign newQuery()
@@ -64,28 +65,28 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class OfferCampaign extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
     use HasFactory;
-    use InShop;
     use HasHistory;
+    use HasSlug;
     use HasUniversalSearch;
-
+    use InShop;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'     => 'array',
+        'data' => 'array',
         'settings' => 'array',
-        'state'    => OfferCampaignStateEnum::class,
-        'type'     => OfferCampaignTypeEnum::class
+        'state' => OfferCampaignStateEnum::class,
+        'type' => OfferCampaignTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'settings' => '{}'
+        'data' => '{}',
+        'settings' => '{}',
     ];
 
     protected $guarded = [];

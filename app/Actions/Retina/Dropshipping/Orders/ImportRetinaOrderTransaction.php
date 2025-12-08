@@ -20,8 +20,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class ImportRetinaOrderTransaction extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     public function handle(Order $order, array $modelData): Order
     {
@@ -38,7 +38,7 @@ class ImportRetinaOrderTransaction extends RetinaAction
     public function rules(): array
     {
         return [
-            'file'             => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
+            'file' => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
         ];
     }
 

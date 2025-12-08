@@ -38,8 +38,8 @@ class SyncRetinaStoredItemToPallet extends RetinaAction
     public function rules(): array
     {
         return [
-            'stored_item_ids'             => ['sometimes', 'array'],
-            'stored_item_ids.*.quantity'  => ['required', 'integer', 'min:1'],
+            'stored_item_ids' => ['sometimes', 'array'],
+            'stored_item_ids.*.quantity' => ['required', 'integer', 'min:1'],
         ];
     }
 
@@ -47,8 +47,8 @@ class SyncRetinaStoredItemToPallet extends RetinaAction
     {
         return [
             'stored_item_ids.*.quantity.required' => __('The quantity is required'),
-            'stored_item_ids.*.quantity.integer'  => __('The quantity must be an integer'),
-            'stored_item_ids.*.quantity.min'      => __('The quantity must be at least 1'),
+            'stored_item_ids.*.quantity.integer' => __('The quantity must be an integer'),
+            'stored_item_ids.*.quantity.min' => __('The quantity must be at least 1'),
         ];
     }
 

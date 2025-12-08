@@ -50,12 +50,13 @@ class StoreRetinaCustomerClient extends RetinaAction
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
             return Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.client.show', [
                 $customerClient->salesChannel->slug,
-                $customerClient->ulid
+                $customerClient->ulid,
             ]);
         }
+
         return Redirect::route('retina.dropshipping.customer_sales_channels.client.show', [
-                $customerClient->salesChannel->slug,
-                $customerClient->ulid
+            $customerClient->salesChannel->slug,
+            $customerClient->ulid,
         ]);
     }
 
@@ -68,6 +69,4 @@ class StoreRetinaCustomerClient extends RetinaAction
 
         return $this->handle($customerSalesChannel, $this->validatedData);
     }
-
-
 }

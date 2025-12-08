@@ -48,12 +48,10 @@ class RecurringBillTransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $desc_model       = '';
-        $desc_title       = '';
+        $desc_model = '';
+        $desc_title = '';
         $desc_after_title = '';
-        $desc_route       = null;
-
-
+        $desc_route = null;
 
         if ($this->item_type == 'Pallet') {
             $pallet = Pallet::find($this->item_id);
@@ -62,13 +60,13 @@ class RecurringBillTransactionsResource extends JsonResource
 
                 $desc_model = __('Storage');
                 $desc_route = [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
                     'parameters' => [
-                        'organisation'       => $request->route()->originalParameters()['organisation'],
-                        'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
+                        'organisation' => $request->route()->originalParameters()['organisation'],
+                        'fulfilment' => $request->route()->originalParameters()['fulfilment'],
                         'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
-                        'pallet'             => $pallet->slug
-                    ]
+                        'pallet' => $pallet->slug,
+                    ],
                 ];
             }
         } elseif ($this->pallet_delivery_id) {
@@ -77,13 +75,13 @@ class RecurringBillTransactionsResource extends JsonResource
                 $desc_title = $palletDelivery->reference;
                 $desc_model = __('Pallet Delivery');
                 $desc_route = [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
                     'parameters' => [
-                        'organisation'       => $request->route()->originalParameters()['organisation'],
-                        'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
+                        'organisation' => $request->route()->originalParameters()['organisation'],
+                        'fulfilment' => $request->route()->originalParameters()['fulfilment'],
                         'fulfilmentCustomer' => $palletDelivery->fulfilmentCustomer->slug,
-                        'palletDelivery'     => $palletDelivery->slug
-                    ]
+                        'palletDelivery' => $palletDelivery->slug,
+                    ],
                 ];
             }
         } elseif ($this->pallet_return_id) {
@@ -92,13 +90,13 @@ class RecurringBillTransactionsResource extends JsonResource
                 $desc_title = $palletReturn->reference;
                 $desc_model = __('Pallet Return');
                 $desc_route = [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
                     'parameters' => [
-                        'organisation'       => $request->route()->originalParameters()['organisation'],
-                        'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
+                        'organisation' => $request->route()->originalParameters()['organisation'],
+                        'fulfilment' => $request->route()->originalParameters()['fulfilment'],
                         'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                        'palletReturn'       => $palletReturn->slug
-                    ]
+                        'palletReturn' => $palletReturn->slug,
+                    ],
                 ];
             }
         } elseif ($this->item_type === 'Space') {
@@ -107,13 +105,13 @@ class RecurringBillTransactionsResource extends JsonResource
                 $desc_model = __('Space (parking)');
                 $desc_title = $space->reference;
                 $desc_route = [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.spaces.show',
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.spaces.show',
                     'parameters' => [
-                        'organisation'       => $request->route()->originalParameters()['organisation'],
-                        'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
+                        'organisation' => $request->route()->originalParameters()['organisation'],
+                        'fulfilment' => $request->route()->originalParameters()['fulfilment'],
                         'fulfilmentCustomer' => $space->fulfilmentCustomer->slug,
-                        'space'              => $space->slug
-                    ]
+                        'space' => $space->slug,
+                    ],
                 ];
             }
         }
@@ -128,66 +126,64 @@ class RecurringBillTransactionsResource extends JsonResource
         }
 
         $unitAbbreviation = Abbreviate::run($this->asset_unit);
-        $editType         = null;
+        $editType = null;
         if ($this->item_type == 'Service') {
-            $service  = Service::find($this->item_id);
+            $service = Service::find($this->item_id);
             $editType = $service->edit_type ?? null;
 
             $palletID = Arr::get($this->data, 'pallet_id');
 
             if ($service->is_pallet_handling and $palletID) {
 
-
-
                 /** @var Pallet $pallet */
-                $pallet           = PalletResource::make(Pallet::find($palletID));
-                $desc_title       = $pallet->reference;
+                $pallet = PalletResource::make(Pallet::find($palletID));
+                $desc_title = $pallet->reference;
                 $desc_after_title = '';
                 if (Arr::get($this->data, 'date')) {
                     $desc_after_title = Carbon::parse($this->data['date'])->format('d M Y');
                 }
-                $desc_model       = __('Handling');
-                $desc_route       = [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
+                $desc_model = __('Handling');
+                $desc_route = [
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
                     'parameters' => [
-                        'organisation'       => $request->route()->originalParameters()['organisation'],
-                        'fulfilment'         => $request->route()->originalParameters()['fulfilment'],
+                        'organisation' => $request->route()->originalParameters()['organisation'],
+                        'fulfilment' => $request->route()->originalParameters()['fulfilment'],
                         'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
-                        'pallet'             => $pallet->slug
-                    ]
+                        'pallet' => $pallet->slug,
+                    ],
                 ];
             }
         }
 
         return [
-            'id'                        => $this->id,
-            'type'                      => $this->item_type,
-            'type_icon'                 => $this->typeIcon($this->item_type),
-            'asset_id'                  => $this->asset_id,
-            'asset_slug'                => $this->asset_slug,
-            'asset_code'                => $this->asset_code,
-            'asset_price'               => $this->asset_price,
-            'asset_name'                => $this->asset_name,
-            'asset_unit'                => $this->asset_unit,
-            'asset_units'               => $this->asset_units,
-            'currency_code'             => $this->currency_code,
-            'unit_abbreviation'         => $unitAbbreviation,
-            'unit_label'                => $this->asset_unit,
-            'quantity'                  => match ($this->item_type) {
+            'id' => $this->id,
+            'type' => $this->item_type,
+            'type_icon' => $this->typeIcon($this->item_type),
+            'asset_id' => $this->asset_id,
+            'asset_slug' => $this->asset_slug,
+            'asset_code' => $this->asset_code,
+            'asset_price' => $this->asset_price,
+            'asset_name' => $this->asset_name,
+            'asset_unit' => $this->asset_unit,
+            'asset_units' => $this->asset_units,
+            'currency_code' => $this->currency_code,
+            'unit_abbreviation' => $unitAbbreviation,
+            'unit_label' => $this->asset_unit,
+            'quantity' => match ($this->item_type) {
                 'Pallet', 'Space' => $this->temporal_quantity,
                 default => $this->quantity
             },
-            'total'                     => $this->net_amount,
-            'discount'                  => (int)$this->discount,
-            'edit_type'                 => $editType,
+            'total' => $this->net_amount,
+            'discount' => (int) $this->discount,
+            'edit_type' => $editType,
             'fulfilment_transaction_id' => $this->fulfilment_transaction_id,
             // 'description'        => $description,
-            'description'               => [
-                'model'       => $desc_model,
-                'title'       => $desc_title,
-                'route'       => $desc_route,
+            'description' => [
+                'model' => $desc_model,
+                'title' => $desc_title,
+                'route' => $desc_route,
                 'after_title' => $desc_after_title,
-            ]
+            ],
 
         ];
     }
@@ -197,7 +193,7 @@ class RecurringBillTransactionsResource extends JsonResource
         if ($type == 'Pallet') {
             return [
                 'tooltip' => __('Pallet'),
-                'icon'    => 'fal fa-pallet',
+                'icon' => 'fal fa-pallet',
                 // 'app'     => [
                 //     'name' => 'bell',
                 //     'type' => 'font-awesome-5'

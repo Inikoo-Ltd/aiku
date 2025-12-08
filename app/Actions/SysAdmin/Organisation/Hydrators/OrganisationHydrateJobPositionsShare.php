@@ -24,15 +24,14 @@ class OrganisationHydrateJobPositionsShare implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
 
-        $share           = [];
+        $share = [];
         $shareWithGuests = [];
         /** @var JobPosition $jobPosition */
         foreach ($organisation->jobPositions as $jobPosition) {
-            $share[$jobPosition->id]           = $jobPosition->number_employee_work_time;
+            $share[$jobPosition->id] = $jobPosition->number_employee_work_time;
             $shareWithGuests[$jobPosition->id] = $jobPosition->number_employee_work_time + $jobPosition->number_guest_work_time;
 
         }
@@ -40,17 +39,16 @@ class OrganisationHydrateJobPositionsShare implements ShouldBeUnique
         foreach ($employeeShares as $id => $share) {
             JobPosition::find($id)->stats()->update(
                 [
-                    'share_work_time' => $share
+                    'share_work_time' => $share,
                 ]
             );
         }
-
 
         $employeeWithGuestsShares = $this->normalise(collect($shareWithGuests));
         foreach ($employeeWithGuestsShares as $id => $share) {
             JobPosition::find($id)->stats()->update(
                 [
-                    'share_work_time_including_guests' => $share
+                    'share_work_time_including_guests' => $share,
                 ]
             );
         }

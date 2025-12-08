@@ -27,6 +27,7 @@ class UpdateSupplier extends GrpAction
     use WithNoStrictRules;
 
     private Supplier $supplier;
+
     private bool $action = false;
 
     public function handle(Supplier $supplier, array $modelData): Supplier
@@ -37,7 +38,7 @@ class UpdateSupplier extends GrpAction
             UpdateAddress::run($supplier->address, $addressData);
             $supplier->updateQuietly(
                 [
-                    'location' => $supplier->address->getLocation()
+                    'location' => $supplier->address->getLocation(),
                 ]
             );
         }
@@ -49,7 +50,7 @@ class UpdateSupplier extends GrpAction
                 $orgSupplier->update(
                     [
                         'code' => $supplier->code,
-                        'name' => $supplier->name
+                        'name' => $supplier->name,
                     ]
                 );
             }
@@ -66,13 +67,13 @@ class UpdateSupplier extends GrpAction
             return true;
         }
 
-        return $request->user()->authTo("procurement.".$this->group->id.".edit");
+        return $request->user()->authTo('procurement.'.$this->group->id.'.edit');
     }
 
     public function rules(): array
     {
         $rules = [
-            'code'         => [
+            'code' => [
                 'sometimes',
                 'required',
                 'max:32',
@@ -82,9 +83,9 @@ class UpdateSupplier extends GrpAction
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->supplier->id
+                            'value' => $this->supplier->id,
                         ],
                     ]
                 ),
@@ -92,16 +93,16 @@ class UpdateSupplier extends GrpAction
             'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'        => ['sometimes', 'nullable', 'email'],
-            'phone'        => ['sometimes', 'nullable', new Phone()],
-            'address'      => ['sometimes', 'required', new ValidAddress()],
-            'currency_id'  => ['sometimes', 'required', 'exists:currencies,id'],
+            'email' => ['sometimes', 'nullable', 'email'],
+            'phone' => ['sometimes', 'nullable', new Phone],
+            'address' => ['sometimes', 'required', new ValidAddress],
+            'currency_id' => ['sometimes', 'required', 'exists:currencies,id'],
         ];
 
-        if (!$this->strict) {
-            $rules['phone']       = ['sometimes', 'nullable', 'max:255'];
+        if (! $this->strict) {
+            $rules['phone'] = ['sometimes', 'nullable', 'max:255'];
             $rules['archived_at'] = ['sometimes', 'nullable', 'date'];
-            $rules                = $this->noStrictUpdateRules($rules);
+            $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
@@ -109,12 +110,12 @@ class UpdateSupplier extends GrpAction
 
     public function action(Supplier $supplier, array $modelData, int $hydratorsDelay = 0, $strict = true, bool $audit = true): Supplier
     {
-        if (!$audit) {
+        if (! $audit) {
             Supplier::disableAuditing();
         }
-        $this->supplier       = $supplier;
-        $this->action         = true;
-        $this->strict         = $strict;
+        $this->supplier = $supplier;
+        $this->action = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($supplier->group, $modelData);
 
@@ -128,7 +129,6 @@ class UpdateSupplier extends GrpAction
 
         return $this->handle($supplier, $this->validatedData);
     }
-
 
     public function jsonResponse(Supplier $supplier): SupplierResource
     {

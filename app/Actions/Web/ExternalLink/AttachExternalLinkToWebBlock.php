@@ -29,16 +29,15 @@ class AttachExternalLinkToWebBlock extends OrgAction
         $webBlock->externalLinks()->attach(
             $externalLink->id,
             [
-                'group_id'        => $externalLink->group_id,
+                'group_id' => $externalLink->group_id,
                 'organisation_id' => $webpage->organisation_id,
-                'webpage_id'      => $webpage->id,
-                'website_id'      => $webpage->website_id,
-                'show'            => Arr::get($modelData, 'show', true)
+                'webpage_id' => $webpage->id,
+                'website_id' => $webpage->website_id,
+                'show' => Arr::get($modelData, 'show', true),
             ]
         );
 
-
-        //todo convert following lines in ExternalLinkHydrateWebsites,ExternalLinkHydrateWebpages,ExternalLinkHydrateWebBlocks
+        // todo convert following lines in ExternalLinkHydrateWebsites,ExternalLinkHydrateWebpages,ExternalLinkHydrateWebBlocks
 
         ExternalLinkHydrateWebsites::run($externalLink);
         ExternalLinkHydrateWebpages::run($externalLink);
@@ -48,10 +47,9 @@ class AttachExternalLinkToWebBlock extends OrgAction
     public function rules(): array
     {
         return [
-            'show' => ['required', 'boolean']
+            'show' => ['required', 'boolean'],
         ];
     }
-
 
     public function action(Webpage $webpage, WebBlock $webBlock, ExternalLink $externalLink, array $modelData): void
     {

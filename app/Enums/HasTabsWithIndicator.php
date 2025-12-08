@@ -15,7 +15,7 @@ trait HasTabsWithIndicator
     public static function navigation(DeliveryNote $parent): array
     {
         return collect(self::cases())->mapWithKeys(function ($case) use ($parent) {
-            return  [$case->value => $case->blueprint($parent)];
+            return [$case->value => $case->blueprint($parent)];
         })->all();
     }
 }

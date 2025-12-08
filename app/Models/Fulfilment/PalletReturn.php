@@ -126,38 +126,41 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Fulfilment\FulfilmentTransaction> $transactions
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class PalletReturn extends Model implements HasMedia
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasUniversalSearch;
-    use HasRetinaSearch;
     use HasAddress;
     use HasAddresses;
     use HasAttachments;
+    use HasRetinaSearch;
+    use HasSlug;
+    use HasUniversalSearch;
+    use SoftDeletes;
 
     protected $guarded = [];
+
     protected $casts = [
-        'parcels'          => 'array',
-        'state'            => PalletReturnStateEnum::class,
-        'type'             => PalletReturnTypeEnum::class,
+        'parcels' => 'array',
+        'state' => PalletReturnStateEnum::class,
+        'type' => PalletReturnTypeEnum::class,
         'not_setup_reason' => PalletReturnItemNoSetReasonStateEnum::class,
-        'in_process_at'    => 'datetime',
-        'submitted_at'     => 'datetime',
-        'confirmed_at'     => 'datetime',
-        'picking_at'       => 'datetime',
-        'picked_at'        => 'datetime',
-        'dispatched_at'    => 'datetime',
-        'cancel_at'        => 'datetime',
-        'data'             => 'array'
+        'in_process_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'picking_at' => 'datetime',
+        'picked_at' => 'datetime',
+        'dispatched_at' => 'datetime',
+        'cancel_at' => 'datetime',
+        'data' => 'array',
     ];
 
     protected $attributes = [
@@ -190,7 +193,6 @@ class PalletReturn extends Model implements HasMedia
             get: fn (mixed $value, array $attributes) => $this->gross_amount - $this->net_amount
         );
     }
-
 
     public function warehouse(): BelongsTo
     {
@@ -287,10 +289,8 @@ class PalletReturn extends Model implements HasMedia
         return $this->morphToMany(Address::class, 'model', 'model_has_fixed_addresses')->withTimestamps();
     }
 
-
     public function customerSaleChannel(): BelongsTo
     {
         return $this->belongsTo(CustomerSalesChannel::class, 'customer_sales_channel_id');
     }
-
 }

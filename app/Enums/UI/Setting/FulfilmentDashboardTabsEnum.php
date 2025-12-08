@@ -23,7 +23,7 @@ enum FulfilmentDashboardTabsEnum: string
         return match ($this) {
             FulfilmentDashboardTabsEnum::DASHBOARD => [
                 'title' => __('Dashboard'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

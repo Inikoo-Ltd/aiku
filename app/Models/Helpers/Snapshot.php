@@ -53,9 +53,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read Model|\Eloquent|null $publisher
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Slide> $slides
  * @property-read \App\Models\Helpers\SnapshotStats|null $stats
+ *
  * @method static Builder<static>|Snapshot newModelQuery()
  * @method static Builder<static>|Snapshot newQuery()
  * @method static Builder<static>|Snapshot query()
+ *
  * @mixin \Eloquent
  */
 class Snapshot extends Model
@@ -63,18 +65,19 @@ class Snapshot extends Model
     use InGroup;
 
     protected $dateFormat = 'Y-m-d H:i:s P';
+
     protected array $dates = ['published_at', 'published_until'];
 
     protected $casts = [
-        'layout'  => 'array',
-        'state'   => SnapshotStateEnum::class,
-        'scope'   => SnapshotScopeEnum::class,
+        'layout' => 'array',
+        'state' => SnapshotStateEnum::class,
+        'scope' => SnapshotScopeEnum::class,
         'builder' => SnapshotBuilderEnum::class,
         'published_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'layout' => '{}'
+        'layout' => '{}',
     ];
 
     protected $guarded = [];
@@ -98,7 +101,7 @@ class Snapshot extends Model
         'unit',
         'barcode',
         'rrp',
-        'unit_relationship_type'
+        'unit_relationship_type',
     ];
 
     public function parent(): MorphTo
@@ -125,7 +128,7 @@ class Snapshot extends Model
     {
         switch (class_basename($this->parent)) {
             case 'Banner':
-                $slides         = $this->slides()->where('visibility', true)->get();
+                $slides = $this->slides()->where('visibility', true)->get();
                 $compiledLayout = $this->layout;
                 data_set($compiledLayout, 'components', json_decode(SlideResource::collection($slides)->toJson(), true));
                 data_set($compiledLayout, 'type', $this->parent->type);

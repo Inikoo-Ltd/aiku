@@ -28,18 +28,18 @@ class GetPupilFirstLoadProps
         } else {
             $language = Language::where('code', App::currentLocale())->first();
         }
-        if (!$language) {
+        if (! $language) {
             $language = Language::where('code', 'en')->first();
         }
 
         return
             [
                 'localeData' => [
-                    'language'        => LanguageResource::make($language)->getArray(),
+                    'language' => LanguageResource::make($language)->getArray(),
                     'languageOptions' => GetLanguagesOptions::make()->translated(),
                 ],
-                'layout'   => [
-                    'navigation'    => GetPupilDropshippingNavigation::run($shopifyUser),
+                'layout' => [
+                    'navigation' => GetPupilDropshippingNavigation::run($shopifyUser),
                 ],
                 'environment' => app()->environment(),
             ];

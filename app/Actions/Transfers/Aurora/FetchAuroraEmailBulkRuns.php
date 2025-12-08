@@ -23,50 +23,46 @@ class FetchAuroraEmailBulkRuns extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:email_bulk_runs {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?EmailBulkRun
     {
         $emailRunData = $organisationSource->fetchEmailBulkRun($organisationSourceId);
-        if (!$emailRunData) {
+        if (! $emailRunData) {
             return null;
         }
 
-        $snapshotId      = null;
+        $snapshotId = null;
         $emailOnGoingRun = $emailRunData['email_ongoing_run'];
-
 
         if (Arr::has($emailRunData, 'snapshot')) {
             if ($emailOnGoingRun->email->unpublishedSnapshot->checksum == $emailRunData['snapshot']['checksum']) {
                 $snapshotId = $emailOnGoingRun->email->unpublished_snapshot_id;
             }
 
-            if (!$snapshotId) {
+            if (! $snapshotId) {
                 $snapshot = $emailOnGoingRun->email->snapshots()->where('checksum', $emailRunData['snapshot']['checksum'])->first();
                 if ($snapshot) {
-                    print "Historic Snapshot Taken\n";
+                    echo "Historic Snapshot Taken\n";
                     $snapshotId = $snapshot->id;
                 }
             }
 
-            if (!$snapshotId) {
-                $snapshot   = StoreEmailSnapshot::make()->action(
+            if (! $snapshotId) {
+                $snapshot = StoreEmailSnapshot::make()->action(
                     email: $emailOnGoingRun->email,
                     modelData: $emailRunData['snapshot'],
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                 );
                 $snapshotId = $snapshot->id;
-                print "New Snapshot\n";
+                echo "New Snapshot\n";
             }
         } else {
             $snapshotId = $emailOnGoingRun->email->snapshot_id;
         }
 
-
-        if (!$snapshotId) {
+        if (! $snapshotId) {
             dd($emailRunData);
         }
-
 
         $emailRunData['email_bulk_run']['snapshot_id'] = $snapshotId;
 
@@ -106,14 +102,12 @@ class FetchAuroraEmailBulkRuns extends FetchAuroraAction
             }
         }
 
-
         return $emailRun;
     }
 
-
     public function getModelsQuery(): Builder
     {
-        //enum('Newsletter','Marketing','GR Reminder','AbandonedCart','Invite Mailshot','OOS Notification','Invite Full Mailshot')
+        // enum('Newsletter','Marketing','GR Reminder','AbandonedCart','Invite Mailshot','OOS Notification','Invite Full Mailshot')
         $query = DB::connection('aurora')
             ->table('Email Campaign Dimension')
             ->whereIn('Email Campaign Type', ['GR Reminder', 'OOS Notification']);

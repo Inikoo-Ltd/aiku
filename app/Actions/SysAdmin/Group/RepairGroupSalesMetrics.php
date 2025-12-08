@@ -30,22 +30,23 @@ class RepairGroupSalesMetrics
             ->orderBy('date')
             ->first();
 
-        if (!$firstOrder) {
+        if (! $firstOrder) {
             $command->error('No orders found. Nothing to repair.');
+
             return 0;
         }
 
         $start = Carbon::parse($firstOrder->date)->startOfDay();
-        $end   = Carbon::now()->endOfDay();
+        $end = Carbon::now()->endOfDay();
 
         $period = CarbonPeriod::create($start, $end);
 
-        $totalDays  = iterator_count($period);
+        $totalDays = iterator_count($period);
         $totalGroups = $groups->count();
 
         $totalSteps = $totalDays * $totalGroups;
 
-        $command->info("Repairing Group Sales Metrics...");
+        $command->info('Repairing Group Sales Metrics...');
         $command->info("Total days: $totalDays | Groups: $totalGroups | Steps: $totalSteps");
 
         $bar = $command->getOutput()->createProgressBar($totalSteps);
@@ -60,8 +61,8 @@ class RepairGroupSalesMetrics
         }
 
         $bar->finish();
-        $command->info("");
-        $command->info("Completed.");
+        $command->info('');
+        $command->info('Completed.');
 
         return 0;
     }

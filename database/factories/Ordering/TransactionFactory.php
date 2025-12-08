@@ -16,12 +16,12 @@ class TransactionFactory extends Factory
     {
 
         $grossAmount = fake()->randomFloat(2, 0, 100);
-        return [
-            'quantity_bonus'   => fake()->numberBetween(0, 10),
-            'quantity_ordered' => fake()->numberBetween(0, 10),
-            'gross_amount'     => $grossAmount,
-            'net_amount'       => $grossAmount,
 
+        return [
+            'quantity_bonus' => fake()->numberBetween(0, 10),
+            'quantity_ordered' => fake()->numberBetween(0, 10),
+            'gross_amount' => $grossAmount,
+            'net_amount' => $grossAmount,
 
         ];
     }

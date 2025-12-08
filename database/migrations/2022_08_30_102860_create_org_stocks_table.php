@@ -13,7 +13,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasAssetCodeDescription;
     use HasGroupOrganisationRelationship;
 
@@ -26,7 +27,6 @@ return new class () extends Migration {
             $table->foreign('stock_id')->references('id')->on('stocks')->onUpdate('cascade')->onDelete('cascade');
             $table->unsignedInteger('org_stock_family_id')->index()->nullable();
             $table->foreign('org_stock_family_id')->references('id')->on('org_stock_families');
-
 
             $table->unsignedInteger('customer_id')->index()->nullable();
             $table->foreign('customer_id')->references('id')->on('customers')->onUpdate('cascade')->onDelete('cascade');
@@ -47,7 +47,6 @@ return new class () extends Migration {
             $table->decimal('value_in_locations', 16)->default(0);
             $table->float('available_forecast')->nullable()->comment('days');
 
-
             $table->jsonb('data');
             $table->timestampsTz();
             $table->dateTimeTz('activated_in_organisation_at')->nullable();
@@ -59,7 +58,6 @@ return new class () extends Migration {
             $table->string('source_id')->nullable()->unique();
         });
     }
-
 
     public function down(): void
     {

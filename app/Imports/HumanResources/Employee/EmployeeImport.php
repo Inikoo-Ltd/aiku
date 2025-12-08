@@ -24,7 +24,7 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class EmployeeImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class EmployeeImport implements SkipsOnFailure, ToCollection, WithEvents, WithHeadingRow, WithValidation
 {
     use WithImport;
 
@@ -46,7 +46,6 @@ class EmployeeImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         $row->put('contact_name', $row->get('name'));
         $row->put('employment_start_at', $row->get('starting_date'));
 
-
         $fields =
             array_merge(
                 array_keys(
@@ -56,10 +55,9 @@ class EmployeeImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
                     )
                 ),
                 [
-                    'contact_name','employment_start_at'
+                    'contact_name', 'employment_start_at',
                 ]
             );
-
 
         try {
             $modelData = $row->only($fields)->all();
@@ -67,11 +65,9 @@ class EmployeeImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
             data_set($modelData, 'email', null, overwrite: false);
 
             data_set($modelData, 'data.bulk_import', [
-                'id'   => $this->upload->id,
+                'id' => $this->upload->id,
                 'type' => 'Upload',
             ]);
-
-
 
             StoreEmployee::make()->action(
                 $this->parent,
@@ -90,34 +86,30 @@ class EmployeeImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         if (Arr::exists($data, 'username')) {
             $data['username'] = Str::lower($data['username']);
         }
-        if (!Arr::exists($data, 'state')) {
+        if (! Arr::exists($data, 'state')) {
             $data['state'] = EmployeeStateEnum::WORKING->value;
         }
 
         $data['positions'] = explode(',', Arr::get($data, 'positions'));
 
-
         return $data;
     }
-
 
     public function rules(): array
     {
         return [
-            'worker_number'  => ['required', 'max:64', 'unique:employees', 'alpha_dash:ascii'],
-            'date_of_birth'  => ['sometimes', 'nullable', 'date', 'before_or_equal:today'],
-            'work_email'     => ['sometimes', 'required', 'email'],
-            'alias'          => ['required', 'unique:employees', 'string', 'max:16'],
-            'name'           => ['required', 'string', 'max:256'],
-            'job_title'      => ['required', 'string', 'max:256'],
-            'positions'      => ['required', 'array'],
-            'starting_date'  => ['required', 'date'],
-            'username'       => ['sometimes', 'unique:users', 'alpha_dash:ascii'],
-            'password'       => ['sometimes', 'string', 'min:8', 'max:64'],
+            'worker_number' => ['required', 'max:64', 'unique:employees', 'alpha_dash:ascii'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before_or_equal:today'],
+            'work_email' => ['sometimes', 'required', 'email'],
+            'alias' => ['required', 'unique:employees', 'string', 'max:16'],
+            'name' => ['required', 'string', 'max:256'],
+            'job_title' => ['required', 'string', 'max:256'],
+            'positions' => ['required', 'array'],
+            'starting_date' => ['required', 'date'],
+            'username' => ['sometimes', 'unique:users', 'alpha_dash:ascii'],
+            'password' => ['sometimes', 'string', 'min:8', 'max:64'],
             'reset_password' => ['sometimes', 'boolean'],
-            'state'          => ['required', new Enum(EmployeeStateEnum::class)]
+            'state' => ['required', new Enum(EmployeeStateEnum::class)],
         ];
     }
-
-
 }

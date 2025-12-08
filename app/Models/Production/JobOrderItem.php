@@ -35,41 +35,43 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Production\JobOrder $jobOrder
  * @property-read Organisation $organisation
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem withoutTrashed()
+ *
  * @mixin \Eloquent
  */
-
 class JobOrderItem extends Model
 {
     use HasSlug;
-    use SoftDeletes;
     use HasUniversalSearch;
+    use SoftDeletes;
 
     protected $guarded = [];
-    protected $casts   = [
-        'data'                     => 'array',
-        'state'                    => JobOrderItemStateEnum::class,
-        'status'                   => JobOrderItemStatusEnum::class,
-        'set_as_not_received_at'   => 'datetime',
-        'received_at'              => 'datetime',
-        'booking_in_at'            => 'datetime',
-        'booked_in_at'             => 'datetime',
-        'storing_at'               => 'datetime',
-        'requested_for_return_at'  => 'datetime',
-        'picking_at'               => 'datetime',
-        'picked_at'                => 'datetime',
-        'set_as_incident_at'       => 'datetime',
-        'dispatched_at'            => 'datetime',
+
+    protected $casts = [
+        'data' => 'array',
+        'state' => JobOrderItemStateEnum::class,
+        'status' => JobOrderItemStatusEnum::class,
+        'set_as_not_received_at' => 'datetime',
+        'received_at' => 'datetime',
+        'booking_in_at' => 'datetime',
+        'booked_in_at' => 'datetime',
+        'storing_at' => 'datetime',
+        'requested_for_return_at' => 'datetime',
+        'picking_at' => 'datetime',
+        'picked_at' => 'datetime',
+        'set_as_incident_at' => 'datetime',
+        'dispatched_at' => 'datetime',
 
     ];
 
     protected $attributes = [
-        'data'  => '{}',
+        'data' => '{}',
         'notes' => '',
     ];
 

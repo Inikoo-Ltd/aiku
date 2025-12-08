@@ -32,7 +32,7 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
     public function rules(): array
     {
         return [
-            'reference'          => [
+            'reference' => [
                 'sometimes',
                 'required',
                 'max:255',
@@ -42,20 +42,20 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
                     extraConditions: [
                         ['column' => 'customer_id', 'value' => $this->customerSalesChannel->customer_id],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->customerSalesChannel->id
-                        ]
+                            'value' => $this->customerSalesChannel->id,
+                        ],
                     ]
                 ),
             ],
             'is_vat_adjustment' => ['sometimes', 'boolean'],
-            'tax_category_id'   => ['sometimes', 'nullable', 'integer', Rule::exists('tax_categories', 'id')],
-            'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
+            'tax_category_id' => ['sometimes', 'nullable', 'integer', Rule::exists('tax_categories', 'id')],
+            'status' => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'name' => ['sometimes', 'string', 'max:255'],
-            'shipping_service'              => ['sometimes', 'string'],
-            'shipping_price'              => ['sometimes', 'integer'],
-            'shipping_max_dispatch_time'              => ['sometimes', 'integer'],
+            'shipping_service' => ['sometimes', 'string'],
+            'shipping_price' => ['sometimes', 'integer'],
+            'shipping_max_dispatch_time' => ['sometimes', 'integer'],
 
             'return_policy_id' => ['sometimes', 'string'],
             'payment_policy_id' => ['sometimes', 'string'],
@@ -64,7 +64,7 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
             'return_accepted' => ['sometimes', 'boolean'],
             'return_payer' => ['sometimes', 'string'],
             'return_within' => ['sometimes', 'integer'],
-            'return_description' => ['nullable', 'string']
+            'return_description' => ['nullable', 'string'],
         ];
     }
 

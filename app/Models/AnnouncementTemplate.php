@@ -23,9 +23,11 @@ use Spatie\MediaLibrary\HasMedia;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read Media|null $screenshot
  * @property-read Media|null $seoImage
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementTemplate newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementTemplate newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementTemplate query()
+ *
  * @mixin \Eloquent
  */
 class AnnouncementTemplate extends Model implements HasMedia

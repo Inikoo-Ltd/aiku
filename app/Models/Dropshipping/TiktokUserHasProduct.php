@@ -21,9 +21,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $portfolio_id
  * @property-read \App\Models\Dropshipping\Portfolio|null $portfolio
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasProduct query()
+ *
  * @mixin \Eloquent
  */
 class TiktokUserHasProduct extends Model

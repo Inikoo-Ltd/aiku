@@ -53,6 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\TiktokUserHasProduct> $products
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser onlyTrashed()
@@ -61,12 +62,13 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser withoutPermission($permissions)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class TiktokUser extends Model
 {
-    use HasPermissions;
     use HasEmail;
+    use HasPermissions;
     use InCustomer;
     use SoftDeletes;
     use WithTiktokApiServices;
@@ -74,25 +76,25 @@ class TiktokUser extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'data'      => 'array',
-        'settings'  => 'array',
-        'state'     => WebUserTypeEnum::class,
+        'data' => 'array',
+        'settings' => 'array',
+        'state' => WebUserTypeEnum::class,
         'auth_type' => WebUserAuthTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 
     public function generateTags(): array
     {
-        return ['crm','websites'];
+        return ['crm', 'websites'];
     }
 
     protected array $auditInclude = [
         'username',
-        'name'
+        'name',
     ];
 
     public function getSlugOptions(): SlugOptions

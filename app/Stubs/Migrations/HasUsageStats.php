@@ -13,6 +13,7 @@ use Illuminate\Database\Schema\Blueprint;
 trait HasUsageStats
 {
     use HasAmounts;
+
     public function usageStats(Blueprint $table): Blueprint
     {
         $table->timestampTz('first_used_at')->nullable();
@@ -28,7 +29,6 @@ trait HasUsageStats
         $table->unsignedInteger('number_invoices')->default(0);
         $table->unsignedInteger('number_delivery_notes')->default(0);
 
-
         $allowedCurrencies = $this->allowedCurrencies($table);
 
         if ($allowedCurrencies['shop']) {
@@ -43,8 +43,6 @@ trait HasUsageStats
             $table->decimal('grp_amount')->default(0);
         }
 
-
         return $table;
     }
-
 }

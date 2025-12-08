@@ -38,16 +38,14 @@ class UserAddRoles
         return $user;
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         if ($this->trusted) {
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit");
+        return $request->user()->authTo('sysadmin.edit');
     }
-
 
     public function rules(): array
     {
@@ -70,12 +68,9 @@ class UserAddRoles
             }
         }
 
-
         $this->set('roles', $roles);
 
-
     }
-
 
     public function asController(User $user, ActionRequest $request): User
     {
@@ -87,13 +82,11 @@ class UserAddRoles
         $this->trusted = true;
         $this->setRawAttributes(
             [
-                'role_names' => $roleNames
+                'role_names' => $roleNames,
             ]
         );
         $this->validateAttributes();
 
         return $this->handle($user, $this->get('roles'));
     }
-
-
 }

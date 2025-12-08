@@ -25,7 +25,6 @@ class GroupHydrateEmailAddresses implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
         $stats = [
@@ -34,6 +33,4 @@ class GroupHydrateEmailAddresses implements ShouldBeUnique
 
         $group->commsStats()->update($stats);
     }
-
-
 }

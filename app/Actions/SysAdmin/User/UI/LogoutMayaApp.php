@@ -20,12 +20,12 @@ class LogoutMayaApp
 
     private bool $asAction = false;
 
-    public function handle(User $user): bool|null
+    public function handle(User $user): ?bool
     {
         return $user->currentAccessToken()->delete();
     }
 
-    public function asController(ActionRequest $request): bool|null
+    public function asController(ActionRequest $request): ?bool
     {
         return $this->handle($request->user());
     }

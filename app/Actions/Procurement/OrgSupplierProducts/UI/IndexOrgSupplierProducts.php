@@ -34,6 +34,7 @@ class IndexOrgSupplierProducts extends OrgAction
 {
     use WithOrgAgentSubNavigation;
     use WithOrgSupplierSubNavigation;
+
     private OrgSupplier|OrgAgent|Organisation $parent;
 
     public function handle(Organisation|OrgAgent|OrgSupplier $parent, $prefix = null): LengthAwarePaginator
@@ -51,10 +52,9 @@ class IndexOrgSupplierProducts extends OrgAction
         $queryBuilder = QueryBuilder::for(OrgSupplierProduct::class);
         $queryBuilder->leftJoin('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id');
 
-
         if (class_basename($parent) == 'OrgAgent') {
             $queryBuilder->leftJoin('org_agents', 'org_agents.id', 'org_supplier_products.org_agent_id');
-            //$queryBuilder->leftJoin('agents', 'agents.id', 'org_agents.agent_id');
+            // $queryBuilder->leftJoin('agents', 'agents.id', 'org_agents.agent_id');
 
             $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id);
             $queryBuilder->addSelect('org_agents.slug as org_agent_slug');
@@ -64,13 +64,12 @@ class IndexOrgSupplierProducts extends OrgAction
             $queryBuilder->where('org_supplier_products.organisation_id', $this->organisation->id);
         }
 
-
         return $queryBuilder
             ->defaultSort('supplier_products.code')
             ->select([
                 'org_supplier_products.slug',
                 'supplier_products.code',
-                'supplier_products.name'
+                'supplier_products.name',
             ])
             ->leftJoin('org_supplier_product_stats', 'org_supplier_product_stats.org_supplier_product_id', 'org_supplier_products.id')
             ->allowedSorts(['code', 'name'])
@@ -79,9 +78,9 @@ class IndexOrgSupplierProducts extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|OrgAgent|OrgSupplier $parent, array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Organisation|OrgAgent|OrgSupplier $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -107,6 +106,7 @@ class IndexOrgSupplierProducts extends OrgAction
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
+
         return $this->handle($organisation);
     }
 
@@ -114,6 +114,7 @@ class IndexOrgSupplierProducts extends OrgAction
     {
         $this->parent = $orgAgent;
         $this->initialisation($organisation, $request);
+
         return $this->handle($orgAgent);
     }
 
@@ -121,24 +122,23 @@ class IndexOrgSupplierProducts extends OrgAction
     {
         $this->parent = $orgSupplier;
         $this->initialisation($organisation, $request);
+
         return $this->handle($orgSupplier);
     }
-
 
     public function jsonResponse(LengthAwarePaginator $orgSupplierProducts): AnonymousResourceCollection
     {
         return OrgSupplierProductsResource::collection($orgSupplierProducts);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $orgSupplierProducts, ActionRequest $request): Response
     {
         $subNavigation = null;
         $title = __('Supplier Products');
         $model = '';
-        $icon  = [
-            'icon'  => ['fal', 'fa-box-usd'],
-            'title' => __('Supplier Products')
+        $icon = [
+            'icon' => ['fal', 'fa-box-usd'],
+            'title' => __('Supplier Products'),
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -147,31 +147,31 @@ class IndexOrgSupplierProducts extends OrgAction
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
             $title = $this->parent->agent->organisation->name;
             $model = '';
-            $icon  = [
-                'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Supplier Products')
+            $icon = [
+                'icon' => ['fal', 'fa-people-arrows'],
+                'title' => __('Supplier Products'),
             ];
-            $iconRight    = [
+            $iconRight = [
                 'icon' => 'fal fa-box-usd',
             ];
             $afterTitle = [
 
-                'label'     => __('Supplier Products')
+                'label' => __('Supplier Products'),
             ];
         } elseif ($this->parent instanceof OrgSupplier) {
             $subNavigation = $this->getOrgSupplierNavigation($this->parent);
             $title = $this->parent->supplier->name;
             $model = '';
-            $icon  = [
-                'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('Supplier Products')
+            $icon = [
+                'icon' => ['fal', 'fa-person-dolly'],
+                'title' => __('Supplier Products'),
             ];
-            $iconRight    = [
+            $iconRight = [
                 'icon' => 'fal fa-box-usd',
             ];
             $afterTitle = [
 
-                'label'     => __('Supplier Products')
+                'label' => __('Supplier Products'),
             ];
         }
 
@@ -182,68 +182,62 @@ class IndexOrgSupplierProducts extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Supplier Products'),
-                'pageHead'    => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => __('Supplier Products'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                     'subNavigation' => $subNavigation,
                 ],
-                'data'        => OrgSupplierProductsResource::collection($orgSupplierProducts),
-
+                'data' => OrgSupplierProductsResource::collection($orgSupplierProducts),
 
             ]
         )->table($this->tableStructure($this->parent));
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Supplier products'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.org.procurement.org_supplier_products.index' =>
-            array_merge(
+            'grp.org.procurement.org_supplier_products.index' => array_merge(
                 ShowProcurementDashboard::make()->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.procurement.org_supplier_products.index',
-                        'parameters' => Arr::only($routeParameters, 'organisation')
+                        'name' => 'grp.org.procurement.org_supplier_products.index',
+                        'parameters' => Arr::only($routeParameters, 'organisation'),
                     ]
                 ),
             ),
 
-
-            'grp.org.procurement.org_agents.show.supplier_products.index' =>
-            array_merge(
-                (new ShowOrgAgent())->getBreadcrumbs($routeParameters),
+            'grp.org.procurement.org_agents.show.supplier_products.index' => array_merge(
+                (new ShowOrgAgent)->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.procurement.org_agents.show.supplier_products.index',
-                        'parameters' => $routeParameters
+                        'name' => 'grp.org.procurement.org_agents.show.supplier_products.index',
+                        'parameters' => $routeParameters,
                     ]
                 )
             ),
-            'grp.org.procurement.org_suppliers.show.supplier_products.index' =>
-            array_merge(
-                (new ShowOrgSupplier())->getBreadcrumbs($routeName, $routeParameters),
+            'grp.org.procurement.org_suppliers.show.supplier_products.index' => array_merge(
+                (new ShowOrgSupplier)->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.procurement.org_suppliers.show.supplier_products.index',
-                        'parameters' => $routeParameters
+                        'name' => 'grp.org.procurement.org_suppliers.show.supplier_products.index',
+                        'parameters' => $routeParameters,
                     ]
                 )
             ),

@@ -22,11 +22,10 @@ enum ChatAssignmentStatusEnum: string
     public static function labels(): array
     {
         return [
-            'pending'  => __('Pending'),
-            'active'   => __('Active'),
+            'pending' => __('Pending'),
+            'active' => __('Active'),
             'resolved' => __('Resolved'),
-            'rejected' => __('Rejected')
+            'rejected' => __('Rejected'),
         ];
     }
-
 }

@@ -53,9 +53,8 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
                 'customer_sales_channels.number_orders as number_orders',
                 'customer_sales_channels.platform_id',
 
-
             ])
-            ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios','number_orders'])
+            ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios', 'number_orders'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -63,15 +62,15 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
-        $icon          = ['fal', 'fa-user'];
-        $title         = $this->customer->name;
-        $iconRight     = [
-            'icon'  => ['fal', 'fa-user-friends'],
-            'title' => $title
+        $icon = ['fal', 'fa-user'];
+        $title = $this->customer->name;
+        $iconRight = [
+            'icon' => ['fal', 'fa-user-friends'],
+            'title' => $title,
         ];
-        $afterTitle    = [
+        $afterTitle = [
 
-            'label' => __('Sales Channels')
+            'label' => __('Sales Channels'),
         ];
 
         return Inertia::render(
@@ -81,24 +80,24 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Sales Channels'),
-                'pageHead'    => [
-                    'title'         => $title,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'icon'          => $icon,
-                    'actions'       => [
+                'title' => __('Sales Channels'),
+                'pageHead' => [
+                    'title' => $title,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
+                    'icon' => $icon,
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'create',
                             'label' => 'Add Sales Channel',
                             'route' => [
-                                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.create',
-                            ]
-                        ]
-                    ]
+                                'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.create',
+                            ],
+                        ],
+                    ],
                 ],
-                'data'        => CustomerSalesChannelsResourceTOFIX::collection($platforms),
+                'data' => CustomerSalesChannelsResourceTOFIX::collection($platforms),
             ]
         )->table($this->tableStructure());
     }
@@ -108,8 +107,7 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
         return CustomerSalesChannelsResourceTOFIX::collection($platforms);
     }
 
-
-    public function tableStructure(array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
@@ -146,15 +144,15 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
                                 'name' => 'retina.dropshipping.customer_sales_channels.show',
-                                'parameters'  => ['manual']  // TODO: change to correct one
+                                'parameters' => ['manual'],  // TODO: change to correct one
                             ],
                             'label' => __('Channel Dashboard'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
 

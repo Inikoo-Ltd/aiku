@@ -23,8 +23,8 @@ class DashboardOffersResource extends JsonResource
             [
                 'label' => [
                     'formatted_value' => 'Dummy',
-                    'align'           => 'left'
-                ]
+                    'align' => 'left',
+                ],
             ],
             //            $this->getDashboardTableColumn($this, 'customers'),
             //            $this->getDashboardTableColumn($this, 'orders')
@@ -33,10 +33,10 @@ class DashboardOffersResource extends JsonResource
         );
 
         return [
-            'slug'      => 'dummy',
-            'state'     => 'active',
-            'columns'   => $columns,
-            'colour'    => ''
+            'slug' => 'dummy',
+            'state' => 'active',
+            'columns' => $columns,
+            'colour' => '',
         ];
     }
 
@@ -52,7 +52,7 @@ class DashboardOffersResource extends JsonResource
             $columns[$interval->value] = [
                 'raw_value' => $rawValue,
                 'tooltip' => '',
-                'formatted_value' => Number::format($rawValue)
+                'formatted_value' => Number::format($rawValue),
             ];
         }
 

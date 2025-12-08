@@ -24,14 +24,14 @@ class ClockingsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                    => $this->id,
-            'type'                  => $this->type,
-            'notes'                 => $this->notes,
-            'workplace_slug'        => $this->workplace_slug,
-            'clocked_at'            => $this->clocked_at,
-            'media_slug'            => $this->media_slug,
-            'media_id'              => $this->media_id,
-            'clocking_machine_slug' => $this->clocking_machine_slug
+            'id' => $this->id,
+            'type' => $this->type,
+            'notes' => $this->notes,
+            'workplace_slug' => $this->workplace_slug,
+            'clocked_at' => $this->clocked_at,
+            'media_slug' => $this->media_slug,
+            'media_id' => $this->media_id,
+            'clocking_machine_slug' => $this->clocking_machine_slug,
         ];
     }
 }

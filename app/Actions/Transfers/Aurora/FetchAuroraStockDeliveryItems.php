@@ -28,7 +28,6 @@ class FetchAuroraStockDeliveryItems
     {
         $transactionData = $organisationSource->fetchStockDeliveryItem(id: $organisationSourceId, stockDelivery: $stockDelivery);
 
-
         if ($transactionData) {
             if ($stockDeliveryItem = StockDeliveryItem::where('source_id', $transactionData['stock_delivery_item']['source_id'])->first()) {
                 try {
@@ -75,12 +74,11 @@ class FetchAuroraStockDeliveryItems
     {
         $organisationSource->fetch->records()->create([
             'model_data' => $modelData,
-            'data'       => $e->getMessage(),
-            'type'       => FetchRecordTypeEnum::ERROR,
-            'source_id'  => Arr::get($modelData, 'source_id'),
+            'data' => $e->getMessage(),
+            'type' => FetchRecordTypeEnum::ERROR,
+            'source_id' => Arr::get($modelData, 'source_id'),
             'model_type' => $modelType,
-            'error_on'   => $errorOn
+            'error_on' => $errorOn,
         ]);
     }
-
 }

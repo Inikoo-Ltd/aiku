@@ -18,17 +18,17 @@ class PalletDeliveryStatusResource extends JsonResource
     public function toArray($request): array
     {
         /** @var PalletDelivery $palletDelivery */
-        $palletDelivery              = $this;
+        $palletDelivery = $this;
         $numberPalletsStateBookingIn = $palletDelivery->pallets()->where('state', PalletStateEnum::BOOKING_IN)->count();
-        $numberPalletsRentalNotSet   = $palletDelivery->pallets()->whereNull('rental_id')->count();
+        $numberPalletsRentalNotSet = $palletDelivery->pallets()->whereNull('rental_id')->count();
 
         return [
-            'id'                            => $palletDelivery->id,
-            'slug'                          => $palletDelivery->slug,
-            'state'                         => $palletDelivery->state->value,
-            'number_pallets_received'       => $numberPalletsStateBookingIn,
+            'id' => $palletDelivery->id,
+            'slug' => $palletDelivery->slug,
+            'state' => $palletDelivery->state->value,
+            'number_pallets_received' => $numberPalletsStateBookingIn,
             'number_pallets_rental_not_set' => $numberPalletsRentalNotSet,
-            'can_finish_booking_in'         => $palletDelivery->state == PalletDeliveryStateEnum::BOOKING_IN && $numberPalletsStateBookingIn == 0 and $numberPalletsRentalNotSet == 0
+            'can_finish_booking_in' => $palletDelivery->state == PalletDeliveryStateEnum::BOOKING_IN && $numberPalletsStateBookingIn == 0 and $numberPalletsRentalNotSet == 0,
 
         ];
     }

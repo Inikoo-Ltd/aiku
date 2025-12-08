@@ -12,7 +12,7 @@ class GetWebsiteWorkshopFooterPreview
     public function handle(Website $website): array
     {
         return [
-            'footer' => $website->unpublishedFooterSnapshot->layout
+            'footer' => $website->unpublishedFooterSnapshot->layout,
         ];
     }
 }

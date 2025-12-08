@@ -19,8 +19,8 @@ trait WithWarehouseSupervisorAuthorisation
         }
 
         return $request->user()->authTo([
-            "supervisor-locations.".$this->warehouse->id,
-            'org-supervisor.'.$this->organisation->id
+            'supervisor-locations.'.$this->warehouse->id,
+            'org-supervisor.'.$this->organisation->id,
         ]);
     }
 }

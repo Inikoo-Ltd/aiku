@@ -29,7 +29,7 @@ class OrganisationHydrateDeliveryNotesState implements ShouldBeUnique
     public function handle(int $organisationId, DeliveryNoteStateEnum $state): void
     {
         $organisation = Organisation::find($organisationId);
-        if (!$organisation) {
+        if (! $organisation) {
             return;
         }
 
@@ -41,6 +41,4 @@ class OrganisationHydrateDeliveryNotesState implements ShouldBeUnique
         }
         $organisation->orderHandlingStats()->update($stats);
     }
-
-
 }

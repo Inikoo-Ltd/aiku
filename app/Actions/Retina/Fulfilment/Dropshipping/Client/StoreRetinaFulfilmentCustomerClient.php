@@ -24,11 +24,7 @@ class StoreRetinaFulfilmentCustomerClient extends RetinaAction
     use WithModelAddressActions;
     use WithNoStrictRules;
 
-    /**
-     * @var \App\Models\Dropshipping\CustomerSalesChannel
-     */
     private CustomerSalesChannel $scope;
-
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerClient
     {
@@ -53,7 +49,7 @@ class StoreRetinaFulfilmentCustomerClient extends RetinaAction
     public function htmlResponse(CustomerClient $customerClient): RedirectResponse
     {
         return Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.client.index', [
-            'customerSalesChannel' => $this->scope->slug
+            'customerSalesChannel' => $this->scope->slug,
         ]);
     }
 
@@ -67,6 +63,4 @@ class StoreRetinaFulfilmentCustomerClient extends RetinaAction
 
         return $this->handle($customerSalesChannel, $this->validatedData);
     }
-
-
 }

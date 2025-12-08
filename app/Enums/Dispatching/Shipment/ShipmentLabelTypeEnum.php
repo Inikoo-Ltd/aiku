@@ -24,8 +24,8 @@ enum ShipmentLabelTypeEnum: string
     {
         return [
             self::HTML->value => __('HTML'),
-            self::PDF->value  => __('PDF'),
-            self::NA->value   => __('Not Applicable'),
+            self::PDF->value => __('PDF'),
+            self::NA->value => __('Not Applicable'),
         ];
     }
 
@@ -34,19 +34,19 @@ enum ShipmentLabelTypeEnum: string
         return [
             self::HTML->value => [
                 'tooltip' => __('HTML'),
-                'icon'    => 'fal fa-code',
-                'class'   => 'text-blue-500'
+                'icon' => 'fal fa-code',
+                'class' => 'text-blue-500',
             ],
             self::PDF->value => [
                 'tooltip' => __('PDF'),
-                'icon'    => 'fal fa-file-pdf',
-                'class'   => 'text-red-500'
+                'icon' => 'fal fa-file-pdf',
+                'class' => 'text-red-500',
             ],
             self::NA->value => [
                 'tooltip' => __('Not Applicable'),
-                'icon'    => 'fal fa-ban',
-                'class'   => 'text-gray-500'
-            ]
+                'icon' => 'fal fa-ban',
+                'class' => 'text-gray-500',
+            ],
         ];
     }
 }

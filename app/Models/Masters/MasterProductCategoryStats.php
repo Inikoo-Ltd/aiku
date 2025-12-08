@@ -94,9 +94,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_collections_state_inactive
  * @property int $number_pending_master_assets
  * @property int $number_products_status_coming_soon
+ *
  * @method static Builder<static>|MasterProductCategoryStats newModelQuery()
  * @method static Builder<static>|MasterProductCategoryStats newQuery()
  * @method static Builder<static>|MasterProductCategoryStats query()
+ *
  * @mixin Eloquent
  */
 class MasterProductCategoryStats extends Model
@@ -104,6 +106,4 @@ class MasterProductCategoryStats extends Model
     protected $table = 'master_product_category_stats';
 
     protected $guarded = [];
-
-
 }

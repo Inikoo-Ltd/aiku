@@ -25,7 +25,6 @@ class FetchAuroraUsers extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:users {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
-
     /**
      * @throws \Throwable
      */
@@ -66,15 +65,9 @@ class FetchAuroraUsers extends FetchAuroraAction
                     return User::where('id', $foundUserData->user_id)->first();
                 }
 
-
-
-
-
-                if (!$userData['parent']) {
+                if (! $userData['parent']) {
                     $group_id = $organisationSource->getOrganisation()->group_id;
-                    $user     = User::withTrashed()->where('group_id', $group_id)->where('username', $userData['related_username'])->first();
-
-
+                    $user = User::withTrashed()->where('group_id', $group_id)->where('username', $userData['related_username'])->first();
 
                     if ($user) {
                         //                        if ($userData['user']['status']) {
@@ -113,7 +106,6 @@ class FetchAuroraUsers extends FetchAuroraAction
                         return $this->updateUserSources($user, $userData);
                     }
 
-
                     if ($userData['add_guest']) {
                         try {
                             $guest = StoreGuest::make()->action(
@@ -132,7 +124,6 @@ class FetchAuroraUsers extends FetchAuroraAction
 
                             $this->recordNew($organisationSource);
 
-
                             return $guest->getUser();
                         } catch (Exception|Throwable $e) {
                             $this->recordError($organisationSource, $e, $userData['guest'], 'Guest', 'store');
@@ -141,34 +132,31 @@ class FetchAuroraUsers extends FetchAuroraAction
                         }
                     }
 
-
                     return $user;
                 }
             }
 
-
             return $user;
         }
-
 
         return null;
     }
 
     public function updateUserSources(User $user, array $userData): User
     {
-        $sourcesUsers   = Arr::get($user->sources, 'users', []);
+        $sourcesUsers = Arr::get($user->sources, 'users', []);
         $sourcesParents = Arr::get($user->sources, 'parents', []);
         $sourcesUsers[] = $userData['user']['source_id'];
         if ($userData['parentSource']) {
             $sourcesParents[] = $userData['parentSource'];
         }
-        $sourcesUsers   = array_unique($sourcesUsers);
+        $sourcesUsers = array_unique($sourcesUsers);
         $sourcesParents = array_unique($sourcesParents);
         $user->updateQuietly([
             'sources' => [
-                'users'   => $sourcesUsers,
-                'parents' => $sourcesParents
-            ]
+                'users' => $sourcesUsers,
+                'parents' => $sourcesParents,
+            ],
         ]);
 
         return $user;
@@ -189,6 +177,4 @@ class FetchAuroraUsers extends FetchAuroraAction
 
         return $query->count();
     }
-
-
 }

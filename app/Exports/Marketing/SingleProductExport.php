@@ -12,10 +12,10 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class SingleProductExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class SingleProductExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
-    use Exportable;
     use DataFeedsMapping;
+    use Exportable;
 
     protected Product $product;
 

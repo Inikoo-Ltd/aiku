@@ -12,16 +12,16 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\UI\WithInertia;
 use App\Enums\UI\SysAdmin\ProfileTabsEnum;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Models\SysAdmin\User;
 
 class ShowProfileIndexTodo extends OrgAction
 {
     use AsAction;
-    use WithInertia;
     use WithActionButtons;
+    use WithInertia;
 
     public function asController(ActionRequest $request): User
     {

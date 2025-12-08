@@ -19,7 +19,6 @@ class ReindexOrgPartnerSearch extends HydrateModel
 {
     public string $commandSignature = 'search:org_partners {organisations?*} {--s|slugs=} ';
 
-
     public function handle(OrgPartner $orgPartner): void
     {
         OrgPartnerRecordSearch::run($orgPartner);
@@ -37,7 +36,7 @@ class ReindexOrgPartnerSearch extends HydrateModel
 
     protected function loopAll(Command $command): void
     {
-        $command->info("Reindex Org Partners");
+        $command->info('Reindex Org Partners');
         $count = OrgPartner::count();
 
         $bar = $command->getOutput()->createProgressBar($count);
@@ -52,6 +51,6 @@ class ReindexOrgPartnerSearch extends HydrateModel
         });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
     }
 }

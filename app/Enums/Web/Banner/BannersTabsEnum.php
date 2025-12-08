@@ -16,8 +16,8 @@ enum BannersTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case BANNERS              = 'banners';
-    case CHANGELOG            = 'changelog';
+    case BANNERS = 'banners';
+    case CHANGELOG = 'changelog';
 
     public function blueprint(): array
     {
@@ -27,8 +27,8 @@ enum BannersTabsEnum: string
             ],
             BannersTabsEnum::CHANGELOG => [
                 'title' => __('Changelog'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
         };

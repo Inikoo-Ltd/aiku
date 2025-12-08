@@ -35,14 +35,17 @@ class FetchAction implements ShouldBeUnique
     use WithSaveMigrationHistory;
 
     protected int $counter = 0;
+
     protected ?ProgressBar $progressBar;
 
     protected bool $allowLegacy = false;
 
-
     protected int $number_stores = 0;
+
     protected int $number_updates = 0;
+
     protected int $number_no_changes = 0;
+
     protected int $number_errors = 0;
 
     protected AuroraOrganisationService|WowsbarOrganisationService|SourceOrganisationService|null $organisationSource = null;
@@ -50,26 +53,35 @@ class FetchAction implements ShouldBeUnique
     protected int $hydratorsDelay = 5;
 
     protected ?Shop $shop;
+
     protected array $with;
+
     protected bool $onlyNew = false;
+
     protected bool $basket = false;
+
     protected bool $onlyCancelled = false;
+
     protected bool $fetchAll = false;
+
     protected string $dbSuffix = '';
+
     protected ?array $model = null;
 
     protected bool $onlyOrdersNoTransactions = false;
-    protected ?int $fromDays = null;
-    protected bool $orderDesc = false;
-    protected bool $onlyRefunds = false;
 
+    protected ?int $fromDays = null;
+
+    protected bool $orderDesc = false;
+
+    protected bool $onlyRefunds = false;
 
     public function __construct()
     {
 
         $this->progressBar = null;
-        $this->shop        = null;
-        $this->with        = [];
+        $this->shop = null;
+        $this->with = [];
     }
 
     protected function getFetchType(Command $command): FetchTypeEnum
@@ -87,12 +99,12 @@ class FetchAction implements ShouldBeUnique
         return null;
     }
 
-    public function fetchAll(SourceOrganisationService $organisationSource, Command $command = null): void
+    public function fetchAll(SourceOrganisationService $organisationSource, ?Command $command = null): void
     {
         $this->getModelsQuery()->chunk(10000, function ($chunkedData) use ($command, $organisationSource) {
             foreach ($chunkedData as $auroraData) {
                 if ($command && $command->getOutput()->isDebug()) {
-                    $command->line("Fetching: ".$auroraData->{'source_id'});
+                    $command->line('Fetching: '.$auroraData->{'source_id'});
                 }
                 $model = $this->handle($organisationSource, $auroraData->{'source_id'});
                 unset($model);
@@ -106,9 +118,7 @@ class FetchAction implements ShouldBeUnique
         return null;
     }
 
-    public function reset(): void
-    {
-    }
+    public function reset(): void {}
 
     protected function getOrganisations(Command $command): Collection
     {
@@ -120,22 +130,16 @@ class FetchAction implements ShouldBeUnique
         return $query->get();
     }
 
+    protected function preProcessCommand(Command $command) {}
 
-    protected function preProcessCommand(Command $command)
-    {
-    }
-
-    protected function doReset(Command $command)
-    {
-    }
+    protected function doReset(Command $command) {}
 
     public function asCommand(Command $command): int
     {
         $this->hydratorsDelay = 120;
 
-
         $organisations = $this->getOrganisations($command);
-        $exitCode      = 0;
+        $exitCode = 0;
 
         foreach ($organisations as $organisation) {
             $this->preProcessCommand($command);
@@ -150,33 +154,31 @@ class FetchAction implements ShouldBeUnique
         return $exitCode;
     }
 
-
     public function recordError($organisationSource, $e, $modelData, $modelType = null, $errorOn = null): void
     {
 
         \Sentry\captureException($e);
 
-        if (!$organisationSource->fetch) {
+        if (! $organisationSource->fetch) {
             return;
         }
 
         $this->number_errors++;
 
-
         UpdateFetch::run($organisationSource->fetch, ['number_errors' => $this->number_errors]);
         $organisationSource->fetch->records()->create([
             'model_data' => $modelData,
-            'data'       => $e->getMessage(),
-            'type'       => FetchRecordTypeEnum::ERROR,
-            'source_id'  => Arr::get($modelData, 'source_id'),
+            'data' => $e->getMessage(),
+            'type' => FetchRecordTypeEnum::ERROR,
+            'source_id' => Arr::get($modelData, 'source_id'),
             'model_type' => $modelType,
-            'error_on'   => $errorOn
+            'error_on' => $errorOn,
         ]);
     }
 
     public function recordFetchError($organisationSource, $modelData, $modelType = null, $errorOn = null, $data = []): void
     {
-        if (!$organisationSource->fetch) {
+        if (! $organisationSource->fetch) {
             return;
         }
 
@@ -184,17 +186,17 @@ class FetchAction implements ShouldBeUnique
         UpdateFetch::run($organisationSource->fetch, ['number_errors' => $this->number_errors]);
         $organisationSource->fetch->records()->create([
             'model_data' => $modelData,
-            'data'       => $data,
-            'type'       => FetchRecordTypeEnum::FETCH_ERROR,
-            'source_id'  => Arr::get($modelData, 'source_id'),
+            'data' => $data,
+            'type' => FetchRecordTypeEnum::FETCH_ERROR,
+            'source_id' => Arr::get($modelData, 'source_id'),
             'model_type' => $modelType,
-            'error_on'   => $errorOn
+            'error_on' => $errorOn,
         ]);
     }
 
     public function recordChange($organisationSource, $wasChanged): void
     {
-        if (!$organisationSource->fetch) {
+        if (! $organisationSource->fetch) {
             return;
         }
 
@@ -236,13 +238,12 @@ class FetchAction implements ShouldBeUnique
             [
                 'type' => $this->getFetchType($command),
                 'data' => [
-                    'command'   => $command->getName(),
+                    'command' => $command->getName(),
                     'arguments' => $command->arguments(),
-                    'options'   => $command->options(),
-                ]
+                    'options' => $command->options(),
+                ],
             ]
         );
-
 
         $command->info('');
 
@@ -259,7 +260,7 @@ class FetchAction implements ShouldBeUnique
                 UpdateFetch::run($this->organisationSource->fetch, ['number_items' => $numberItems]);
             }
 
-            if (!$command->option('quiet') and !$command->getOutput()->isDebug()) {
+            if (! $command->option('quiet') and ! $command->getOutput()->isDebug()) {
                 $info = '✊ '.$command->getName().' '.$organisation->slug;
                 if ($this->shop) {
                     $info .= ' shop:'.$this->shop->slug;
@@ -281,6 +282,4 @@ class FetchAction implements ShouldBeUnique
 
         return 0;
     }
-
-
 }

@@ -26,12 +26,11 @@ class SeedOrgPostRooms extends OrgAction
         foreach ($organisation->group->postRooms as $postRoom) {
             $orgPostRoom = $organisation->orgPostRooms()->where('type', $postRoom->code->value)->first();
 
-
             if ($orgPostRoom) {
                 UpdateOrgPostRoom::make()->action(
                     $orgPostRoom,
                     [
-                        'name' => $postRoom->name
+                        'name' => $postRoom->name,
                     ]
                 );
             } else {
@@ -45,6 +44,4 @@ class SeedOrgPostRooms extends OrgAction
     }
 
     public string $commandSignature = 'org:seed_org_post_rooms {organisation? : The organisation slug}';
-
-
 }

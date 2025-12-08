@@ -27,10 +27,11 @@ class GroupHydrateProducts implements ShouldBeUnique
     {
         return $group->id;
     }
+
     public function handle(Group $group): void
     {
 
-        $stats         = [
+        $stats = [
             'number_products' => $group->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count(),
         ];
 
@@ -52,7 +53,5 @@ class GroupHydrateProducts implements ShouldBeUnique
 
         $group->catalogueStats()->update($stats);
 
-
     }
-
 }

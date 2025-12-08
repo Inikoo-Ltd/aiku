@@ -25,14 +25,13 @@ enum ProductTradeConfigEnum: string
     case FORCE_OUT_OF_STOCK = 'force-out-of-stock';
     case FORCE_FOR_SALE = 'force-for-sale';
 
-
     public static function labels(): array
     {
         return [
             'auto' => __('Auto'),
             'force-offline' => __('Force Offline'),
             'force-out-of-stock' => __('Force Out of Stock'),
-            'force-for-sale' => __('Force For Sale')
+            'force-for-sale' => __('Force For Sale'),
         ];
     }
 
@@ -41,44 +40,44 @@ enum ProductTradeConfigEnum: string
         return [
             'auto' => [
                 'tooltip' => __('Auto'),
-                'icon'    => 'fal fa-sync',
-                'class'   => 'text-blue-500',
-                'color'   => 'blue',
-                'app'     => [
+                'icon' => 'fal fa-sync',
+                'class' => 'text-blue-500',
+                'color' => 'blue',
+                'app' => [
                     'name' => 'sync',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'force-offline' => [
                 'tooltip' => __('Force Offline'),
-                'icon'    => 'fal fa-ban',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-ban',
+                'class' => 'text-red-500',
+                'color' => 'red',
+                'app' => [
                     'name' => 'ban',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'force-out-of-stock' => [
                 'tooltip' => __('Force Out of Stock'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'force-for-sale' => [
                 'tooltip' => __('Force For Sale'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-emerald-500',
-                'color'   => 'emerald',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-emerald-500',
+                'color' => 'emerald',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
-            ]
+                    'type' => 'font-awesome-5',
+                ],
+            ],
         ];
     }
 
@@ -94,10 +93,8 @@ enum ProductTradeConfigEnum: string
             'auto' => $stats->number_products_trade_config_auto,
             'force-offline' => $stats->number_products_trade_config_force_offline,
             'force-out-of-stock' => $stats->number_products_trade_config_force_out_of_stock,
-            'force-for-sale' => $stats->number_products_trade_config_force_for_sale
+            'force-for-sale' => $stats->number_products_trade_config_force_for_sale,
 
         ];
     }
-
-
 }

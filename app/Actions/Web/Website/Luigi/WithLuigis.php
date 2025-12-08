@@ -55,8 +55,7 @@ trait WithLuigis
         $content_type = 'application/json; charset=utf-8';
 
         $offsetSeconds = 0;
-        $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
-
+        $date = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
 
         if ($parent instanceof Website) {
             $website = $parent;
@@ -77,14 +76,14 @@ trait WithLuigis
 
         $header = [
             'Accept-Encoding' => 'gzip',
-            'Content-Type'    => $content_type,
-            'Date'            => $date,
-            'Authorization'   => "Hello $publicKey:$signature",
+            'Content-Type' => $content_type,
+            'Date' => $date,
+            'Authorization' => "Hello $publicKey:$signature",
         ];
 
         if ($compressed) {
             $header['Content-Encoding'] = 'gzip';
-            $body                       = gzencode(json_encode($body), 9);
+            $body = gzencode(json_encode($body), 9);
         } else {
             $body = json_encode($body);
         }
@@ -96,12 +95,10 @@ trait WithLuigis
                 'https://live.luigisbox.com/'.$endPoint
             );
 
-
         if ($response->failed()) {
             throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
         }
     }
-
 
     public function getWebpageUrl(Webpage $webpage): string
     {
@@ -111,7 +108,7 @@ trait WithLuigis
         $segments = [];
 
         if ($model instanceof Product) {
-            $family     = $model->family;
+            $family = $model->family;
             $department = $family?->department;
 
             $segments = collect([
@@ -143,27 +140,26 @@ trait WithLuigis
         return '/'.collect($segments)->implode('/');
     }
 
-
     public function reindexTags(Webpage|Website $parent, LaravelCollection $tags): void
     {
         $objects = [];
         foreach ($tags as $tag) {
-            $url       = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
+            $url = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
             $objects[] = [
-                "identity" => $url,
-                "type"     => "tag",
-                "fields"   => array_filter([
-                    "slug"       => $this->getIdentityTag($tag),
-                    "title"      => $tag->name,
-                    "web_url"    => $url,
-                    "image_link" => Arr::get($tag->imageSources(200, 200), 'original'),
+                'identity' => $url,
+                'type' => 'tag',
+                'fields' => array_filter([
+                    'slug' => $this->getIdentityTag($tag),
+                    'title' => $tag->name,
+                    'web_url' => $url,
+                    'image_link' => Arr::get($tag->imageSources(200, 200), 'original'),
                 ]),
             ];
         }
 
         if ($objects) {
             $body = [
-                'objects' => $objects
+                'objects' => $objects,
             ];
             $this->request($parent, '/v1/content', $body);
         }
@@ -176,22 +172,22 @@ trait WithLuigis
     {
         $objects = [];
         foreach ($brands as $brand) {
-            $url       = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
+            $url = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
             $objects[] = [
-                "identity" => $url,
-                "type"     => "brand",
-                "fields"   => array_filter([
-                    "slug"       => $this->getIdentityBrand($brand),
-                    "title"      => $brand->name,
-                    "web_url"    => $url,
-                    "image_link" => Arr::get($brand->imageSources(200, 200), 'original'),
+                'identity' => $url,
+                'type' => 'brand',
+                'fields' => array_filter([
+                    'slug' => $this->getIdentityBrand($brand),
+                    'title' => $brand->name,
+                    'web_url' => $url,
+                    'image_link' => Arr::get($brand->imageSources(200, 200), 'original'),
                 ]),
             ];
         }
 
         if ($objects) {
             $body = [
-                'objects' => $objects
+                'objects' => $objects,
             ];
             $this->request($parent, '/v1/content', $body);
         }
@@ -213,11 +209,11 @@ trait WithLuigis
                 }
                 if ($batch) {
                     $compressed = count($batch) >= 1000;
-                    $body       = [
-                        'objects' => $batch
+                    $body = [
+                        'objects' => $batch,
                     ];
                     $this->request($website, '/v1/content/delete', $body, 'delete', $compressed);
-                    print "Deleted count ".count($batch)." from website: $website->name\n";
+                    echo 'Deleted count '.count($batch)." from website: $website->name\n";
                 }
             });
     }
@@ -231,24 +227,24 @@ trait WithLuigis
         if ($webpage->model instanceof Product) {
             $objects = [
                 [
-                    "type"     => "item",
-                    "identity" => $this->getWebpageUrl($webpage),
-                    //todo: "identity" => $this->getIdentity($webpage)
+                    'type' => 'item',
+                    'identity' => $this->getWebpageUrl($webpage),
+                    // todo: "identity" => $this->getIdentity($webpage)
                 ],
             ];
 
             $body = [
-                'objects' => $objects
+                'objects' => $objects,
             ];
         } else {
             $body = [
                 'objects' => [
                     [
-                        "type"     => 'category',
-                        "identity" => $webpage->url,
-                        //todo: "identity" => $this->getIdentity($webpage)
-                    ]
-                ]
+                        'type' => 'category',
+                        'identity' => $webpage->url,
+                        // todo: "identity" => $this->getIdentity($webpage)
+                    ],
+                ],
             ];
         }
         $this->request($website, '/v1/content/delete', $body, 'delete');
@@ -264,8 +260,8 @@ trait WithLuigis
             '/v1/content/delete',
             [
                 'objects' => [
-                    $object
-                ]
+                    $object,
+                ],
             ],
             'delete'
         );
@@ -292,83 +288,81 @@ trait WithLuigis
 
         $familyData = [];
         if ($product->family && $product->family->webpage && $product->family->webpage->state != WebpageStateEnum::LIVE) {
-            $family     = $product->family;
+            $family = $product->family;
             $familyData = [
-                "type"     => "category",
-                "identity" => $this->getWebpageUrl($family->webpage),
-                "fields"   => array_filter([
-                    "slug"        => $this->getIdentity($family->webpage),
-                    "title"       => $family->webpage->title,
-                    "web_url"     => $family->webpage->getCanonicalUrl(),
-                    "description" => $family->webpage->description,
-                    "image_link"  => Arr::get($family->imageSources(200, 200), 'original'),
-                ])
+                'type' => 'category',
+                'identity' => $this->getWebpageUrl($family->webpage),
+                'fields' => array_filter([
+                    'slug' => $this->getIdentity($family->webpage),
+                    'title' => $family->webpage->title,
+                    'web_url' => $family->webpage->getCanonicalUrl(),
+                    'description' => $family->webpage->description,
+                    'image_link' => Arr::get($family->imageSources(200, 200), 'original'),
+                ]),
             ];
         }
-
 
         $departmentData = [];
         if ($product->department && $product->department->webpage && $product->department->webpage->state != WebpageStateEnum::LIVE) {
-            $department     = $product->department;
+            $department = $product->department;
             $departmentData = [
-                "type"     => "department",
-                "identity" => $this->getWebpageUrl($department->webpage),
-                "fields"   => array_filter([
-                    "slug"        => $this->getIdentity($department->webpage),
-                    "title"       => $department->webpage->title,
-                    "web_url"     => $department->webpage->getCanonicalUrl(),
-                    "description" => $department->webpage->description,
-                    "image_link"  => Arr::get($department->imageSources(200, 200), 'original'),
+                'type' => 'department',
+                'identity' => $this->getWebpageUrl($department->webpage),
+                'fields' => array_filter([
+                    'slug' => $this->getIdentity($department->webpage),
+                    'title' => $department->webpage->title,
+                    'web_url' => $department->webpage->getCanonicalUrl(),
+                    'description' => $department->webpage->description,
+                    'image_link' => Arr::get($department->imageSources(200, 200), 'original'),
                 ]),
             ];
         }
-
 
         $subDepartmentData = [];
         if ($product->subDepartment && $product->subDepartment->webpage && $product->subDepartment->webpage->state != WebpageStateEnum::LIVE) {
-            $subDepartment     = $product->subDepartment;
+            $subDepartment = $product->subDepartment;
             $subDepartmentData = [
-                "type"     => "sub_department",
-                "identity" => $this->getWebpageUrl($subDepartment->webpage),
-                "fields"   => array_filter([
-                    "slug"        => $this->getIdentity($subDepartment->webpage),
-                    "title"       => $subDepartment->webpage->title,
-                    "web_url"     => $subDepartment->webpage->getCanonicalUrl(),
-                    "description" => $subDepartment?->webpage->description,
-                    "image_link"  => Arr::get($subDepartment->imageSources(200, 200), 'original'),
+                'type' => 'sub_department',
+                'identity' => $this->getWebpageUrl($subDepartment->webpage),
+                'fields' => array_filter([
+                    'slug' => $this->getIdentity($subDepartment->webpage),
+                    'title' => $subDepartment->webpage->title,
+                    'web_url' => $subDepartment->webpage->getCanonicalUrl(),
+                    'description' => $subDepartment?->webpage->description,
+                    'image_link' => Arr::get($subDepartment->imageSources(200, 200), 'original'),
                 ]),
             ];
         }
 
-        $brand       = $product->getBrand();
+        $brand = $product->getBrand();
         $brandObject = [];
         if ($brand) {
-            $url         = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
+            $url = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
             $brandObject = [
-                "identity" => $url,
-                "type"     => "brand",
-                "fields"   => array_filter([
-                    "slug"       => $this->getIdentityBrand($brand),
-                    "title"      => $brand->name,
-                    "web_url"    => $url,
-                    "image_link" => Arr::get($brand->imageSources(200, 200), 'original'),
+                'identity' => $url,
+                'type' => 'brand',
+                'fields' => array_filter([
+                    'slug' => $this->getIdentityBrand($brand),
+                    'title' => $brand->name,
+                    'web_url' => $url,
+                    'image_link' => Arr::get($brand->imageSources(200, 200), 'original'),
                 ]),
             ];
         }
 
-        $tags       = $product->tradeUnitTagsViaTradeUnits();
+        $tags = $product->tradeUnitTagsViaTradeUnits();
         $tagsObject = [];
         if ($tags->isNotEmpty()) {
             foreach ($tags as $tag) {
-                $url          = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
+                $url = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
                 $tagsObject[] = [
-                    "identity" => $url,
-                    "type"     => "tag",
-                    "fields"   => array_filter([
-                        "slug"       => $this->getIdentityTag($tag),
-                        "title"      => $tag->name,
-                        "web_url"    => $url,
-                        "image_link" => Arr::get($tag->imageSources(200, 200), 'original'),
+                    'identity' => $url,
+                    'type' => 'tag',
+                    'fields' => array_filter([
+                        'slug' => $this->getIdentityTag($tag),
+                        'title' => $tag->name,
+                        'web_url' => $url,
+                        'image_link' => Arr::get($tag->imageSources(200, 200), 'original'),
                     ]),
                 ];
             }
@@ -376,31 +370,31 @@ trait WithLuigis
         $identity = "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:{$webpage->website->id}:$webpage->id";
 
         return [
-            "identity" => $identity,
-            "type"     => "item",
-            "fields"   => array_filter([
-                "slug"            => $this->getIdentity($webpage),
-                "title"           => $webpage->title,
-                "web_url"         => $webpage->getCanonicalUrl(),
-                "availability"    => intval($product->state == ProductStateEnum::ACTIVE) && $product->available_quantity > 0,
-                "stock_qty"       => $product->available_quantity ?? 0,
-                "price"           => (float)$product->price ?? 0,
-                "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,
-                "image_link"      => Arr::get($product->imageSources(200, 200), 'original'),
-                "product_code"    => $product->code,
-                "product_id"      => $product->id,
-                "introduced_at"   => $product->created_at ? $product->created_at->format('c') : null,
-                "description"     => $product->description,
-                'website_id'      => $webpage->website_id,
-                'webpage_id'      => $webpage->id,
+            'identity' => $identity,
+            'type' => 'item',
+            'fields' => array_filter([
+                'slug' => $this->getIdentity($webpage),
+                'title' => $webpage->title,
+                'web_url' => $webpage->getCanonicalUrl(),
+                'availability' => intval($product->state == ProductStateEnum::ACTIVE) && $product->available_quantity > 0,
+                'stock_qty' => $product->available_quantity ?? 0,
+                'price' => (float) $product->price ?? 0,
+                'formatted_price' => $product->currency->symbol.$product->price.'/'.$product->unit,
+                'image_link' => Arr::get($product->imageSources(200, 200), 'original'),
+                'product_code' => $product->code,
+                'product_id' => $product->id,
+                'introduced_at' => $product->created_at ? $product->created_at->format('c') : null,
+                'description' => $product->description,
+                'website_id' => $webpage->website_id,
+                'webpage_id' => $webpage->id,
             ]),
             ...(count($familyData) || count($departmentData) || count($subDepartmentData) || count($brandObject) || count($tagsObject) ? [
-                "nested" => array_values(array_filter([
+                'nested' => array_values(array_filter([
                     ...$tagsObject,
                     $brandObject,
                     $familyData,
                     $subDepartmentData,
-                    $departmentData
+                    $departmentData,
                 ])),
             ] : []),
 
@@ -416,8 +410,8 @@ trait WithLuigis
             return $this->getProductObjectFromWebpage($model);
         } else {
             $modelWebpage = $model?->webpage;
-            $type         = null;
-            if (!$modelWebpage) {
+            $type = null;
+            if (! $modelWebpage) {
                 if ($webpage->type == WebpageTypeEnum::BLOG) {
                     $type = 'news';
                 } else {
@@ -426,14 +420,14 @@ trait WithLuigis
             }
 
             return [
-                "identity" => $this->getWebpageUrl($modelWebpage),
-                "type"     => $type ?? $this->getType($model),
-                "fields"   => array_filter([
-                    "slug"        => $this->getIdentity($modelWebpage),
-                    "title"       => $modelWebpage->title,
-                    "web_url"     => $modelWebpage->getCanonicalUrl(),
-                    "description" => $modelWebpage->description,
-                    "image_link"  => Arr::get($model->imageSources(200, 200), 'original'),
+                'identity' => $this->getWebpageUrl($modelWebpage),
+                'type' => $type ?? $this->getType($model),
+                'fields' => array_filter([
+                    'slug' => $this->getIdentity($modelWebpage),
+                    'title' => $modelWebpage->title,
+                    'web_url' => $modelWebpage->getCanonicalUrl(),
+                    'description' => $modelWebpage->description,
+                    'image_link' => Arr::get($model->imageSources(200, 200), 'original'),
                 ]),
             ];
         }

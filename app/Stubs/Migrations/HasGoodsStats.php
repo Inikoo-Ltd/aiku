@@ -36,7 +36,6 @@ trait HasGoodsStats
         return $table;
     }
 
-
     public function masterProductCategoriesStatsFields(Blueprint $table): Blueprint
     {
         $table->unsignedInteger('number_master_product_categories')->default(0);
@@ -49,7 +48,6 @@ trait HasGoodsStats
 
         return $table;
     }
-
 
     public function masterAssetsStatsFields(Blueprint $table): Blueprint
     {
@@ -107,6 +105,4 @@ trait HasGoodsStats
 
         return $table;
     }
-
-
 }

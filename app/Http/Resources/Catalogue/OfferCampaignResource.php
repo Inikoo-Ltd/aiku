@@ -18,18 +18,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property string $name
- *
  */
 class OfferCampaignResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'shop_id'    => $this->shop_id,
-            'slug'       => $this->slug,
-            'code'       => $this->code,
-            'name'       => $this->name,
-            'data'       => $this->data,
+            'shop_id' => $this->shop_id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'data' => $this->data,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

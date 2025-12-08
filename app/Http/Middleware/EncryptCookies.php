@@ -21,6 +21,6 @@ class EncryptCookies extends Middleware
         'language',
         'aiku_tsd',
         'aiku_lts',
-        'iris_vua'
+        'iris_vua',
     ];
 }

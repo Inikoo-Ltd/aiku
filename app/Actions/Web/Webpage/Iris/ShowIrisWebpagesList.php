@@ -27,7 +27,7 @@ class ShowIrisWebpagesList
     {
         $domain = 'https://www.'.$website->domain.'/';
 
-        $callback = function () use ($website, $domain, $mode) {
+        $callback = function () use ($website, $mode) {
             // Build the base query
             $query = DB::table('webpages')
                 ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url'])
@@ -42,7 +42,7 @@ class ShowIrisWebpagesList
                     ->leftJoin('products', 'webpages.model_id', '=', 'products.id')
                     ->leftJoin('assets', 'products.asset_id', '=', 'assets.id')
                     ->leftJoin('asset_sales_intervals', 'assets.id', '=', 'asset_sales_intervals.asset_id')
-                    ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url','sales_1q'])
+                    ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url', 'sales_1q'])
                     ->where('webpages.website_id', $website->id)
                     ->whereNull('webpages.deleted_at')
                     ->where('webpages.state', WebpageStateEnum::LIVE->value)
@@ -54,7 +54,7 @@ class ShowIrisWebpagesList
                 $query = DB::table('webpages')
                     ->leftJoin('product_categories', 'webpages.model_id', '=', 'product_categories.id')
                     ->leftJoin('product_category_sales_intervals', 'product_categories.id', '=', 'product_category_sales_intervals.product_category_id')
-                    ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url','sales_1q'])
+                    ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url', 'sales_1q'])
                     ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE->value)
                     ->where('webpages.website_id', $website->id)
                     ->whereNull('webpages.deleted_at')
@@ -67,10 +67,9 @@ class ShowIrisWebpagesList
                 $query->whereNotIn('webpages.sub_type', ['product', 'family']);
             }
 
-
             // Iterate using a cursor (no chunkById)
             foreach ($query->get() as $row) {
-                print "$row->canonical_url\n";
+                echo "$row->canonical_url\n";
                 //                $url = $domain . $row->url;
                 //                if ($url != $row->canonical_url) {
                 //                    print $url . "\n";
@@ -86,7 +85,7 @@ class ShowIrisWebpagesList
         };
 
         return response()->stream($callback, 200, [
-            'Content-Type'  => 'text/plain; charset=UTF-8',
+            'Content-Type' => 'text/plain; charset=UTF-8',
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
         ]);
     }

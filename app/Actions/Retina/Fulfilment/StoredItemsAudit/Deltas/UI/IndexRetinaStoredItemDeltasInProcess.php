@@ -25,20 +25,18 @@ class IndexRetinaStoredItemDeltasInProcess extends RetinaAction
     public function handle(StoredItemAudit $storedItemAudit, $prefix = null): LengthAwarePaginator
     {
         $fulfilmentCustomer = $storedItemAudit->fulfilmentCustomer;
-        $globalSearch       = AllowedFilter::callback('global', function ($query, $value) {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('pallets.customer_reference', $value)
                     ->orWhereWith('pallets.reference', $value);
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
         $query = QueryBuilder::for(Pallet::class);
-
 
         $query->where('fulfilment_customer_id', $fulfilmentCustomer->id);
         $query->where('pallets.status', PalletStatusEnum::STORING);
@@ -70,7 +68,6 @@ class IndexRetinaStoredItemDeltasInProcess extends RetinaAction
                 'warehouses.slug as warehouse_slug',
             )->selectRaw("$storedItemAudit->id. as stored_item_audit_id");
 
-
         return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name'])
             ->allowedFilters([$globalSearch, 'customer_reference', 'reference'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -86,21 +83,17 @@ class IndexRetinaStoredItemDeltasInProcess extends RetinaAction
                     ->pageName($prefix.'Page');
             }
 
-
             $emptyStateData = [
-                'icons'       => ['fal fa-pallet'],
-                'title'       => __('No pallets found'),
-                'count'       => $fulfilmentCustomer->number_pallets,
-                'description' => __("This customer don't have any pallets")
+                'icons' => ['fal fa-pallet'],
+                'title' => __('No pallets found'),
+                'count' => $fulfilmentCustomer->number_pallets,
+                'description' => __("This customer don't have any pallets"),
             ];
-
 
             $table->withGlobalSearch();
 
-
             $table->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
-
 
             $table->column(key: 'location_code', label: __('location'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
@@ -112,6 +105,4 @@ class IndexRetinaStoredItemDeltasInProcess extends RetinaAction
             $table->defaultSort('reference');
         };
     }
-
-
 }

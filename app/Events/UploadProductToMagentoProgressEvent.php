@@ -23,21 +23,22 @@ class UploadProductToMagentoProgressEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
-
     public MagentoUser $magentoUser;
+
     public Portfolio $portfolio;
 
     public function __construct(MagentoUser $magentoUser, Portfolio $portfolio)
     {
         $this->magentoUser = $magentoUser;
-        $this->portfolio       = $portfolio;
+        $this->portfolio = $portfolio;
     }
 
     public function broadcastOn(): array
     {
         Log::info('Broadcasting Magento upload progress', $this->portfolio->toArray());
+
         return [
-            new PrivateChannel("magento.{$this->magentoUser->id}.upload-product.{$this->portfolio->id}")
+            new PrivateChannel("magento.{$this->magentoUser->id}.upload-product.{$this->portfolio->id}"),
 
         ];
     }
@@ -46,7 +47,7 @@ class UploadProductToMagentoProgressEvent implements ShouldBroadcastNow
     {
         Log::info('Broadcasting WooCommerce upload progress', [
             'magentoUserId' => $this->magentoUser->id,
-            'portfolioId'       => $this->portfolio->id,
+            'portfolioId' => $this->portfolio->id,
         ]);
 
         return [

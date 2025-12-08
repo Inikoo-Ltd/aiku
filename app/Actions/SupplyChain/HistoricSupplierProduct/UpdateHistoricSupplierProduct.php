@@ -23,15 +23,13 @@ class UpdateHistoricSupplierProduct extends GrpAction
         return $this->update($historicSupplierProduct, $modelData);
     }
 
-
     public function rules(): array
     {
         $rules = [];
-        if (!$this->strict) {
-            $rules['units_per_pack']   = ['sometimes', 'required', 'numeric'];
+        if (! $this->strict) {
+            $rules['units_per_pack'] = ['sometimes', 'required', 'numeric'];
             $rules['units_per_carton'] = ['sometimes', 'required', 'numeric'];
-            $rules['cbm']              = ['sometimes', 'required', 'numeric'];
-
+            $rules['cbm'] = ['sometimes', 'required', 'numeric'];
 
             $rules = $this->noStrictUpdateRules($rules);
         }
@@ -41,8 +39,8 @@ class UpdateHistoricSupplierProduct extends GrpAction
 
     public function action(HistoricSupplierProduct $historicSupplierProduct, array $modelData, int $hydratorsDelay = 0, bool $strict = true): HistoricSupplierProduct
     {
-        $this->strict         = $strict;
-        $this->asAction       = true;
+        $this->strict = $strict;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisation($historicSupplierProduct->group, $modelData);

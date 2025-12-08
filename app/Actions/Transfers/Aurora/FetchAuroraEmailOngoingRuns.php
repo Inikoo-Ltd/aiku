@@ -27,31 +27,27 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:email_ongoing_runs {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new}';
 
-
     /**
      * @throws \Throwable
      */
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?EmailOngoingRun
     {
         $emailOngoingRunData = $organisationSource->fetchEmailOngoingRun($organisationSourceId);
-        if (!$emailOngoingRunData) {
+        if (! $emailOngoingRunData) {
             return null;
         }
 
-
         $emailOngoingRun = EmailOngoingRun::where('source_id', $emailOngoingRunData['email_ongoing_run']['source_id'])->first();
 
-        if (!$emailOngoingRun) {
+        if (! $emailOngoingRun) {
             $emailOngoingRun = EmailOngoingRun::where('shop_id', $emailOngoingRunData['shop']->id)
                 ->where('code', $emailOngoingRunData['email_ongoing_run']['code'])
                 ->first();
         }
 
-
-        if (!$emailOngoingRun) {
+        if (! $emailOngoingRun) {
             return null;
         }
-
 
         if ($emailOngoingRun->fetched_at) {
             data_forget($emailOngoingRunData, 'email_ongoing_run.fetched_at');
@@ -71,21 +67,20 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
             ->where('Email Campaign Type Key', $sourceData[1])
             ->update(['aiku_id' => $emailOngoingRun->id]);
 
-
         if ($emailOngoingRun->type == EmailOngoingRunTypeEnum::PUSH) {
             $emailOngoingRun = $this->processPushEmail($emailOngoingRun, $emailOngoingRunData);
             UpdateEmailOngoingRun::make()->action(
                 $emailOngoingRun,
                 [
-                    'status' => EmailOngoingRunStatusEnum::ACTIVE
+                    'status' => EmailOngoingRunStatusEnum::ACTIVE,
                 ]
             );
 
             UpdateOutbox::make()->action(
                 $emailOngoingRun->outbox,
                 [
-                    'state'    => OutboxStateEnum::ACTIVE,
-                    'model_id' => $emailOngoingRun->id
+                    'state' => OutboxStateEnum::ACTIVE,
+                    'model_id' => $emailOngoingRun->id,
                 ]
             );
 
@@ -95,20 +90,17 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
         }
     }
 
-
     private function processEmail(EmailOngoingRun $emailOngoingRun, array $emailOngoingRunData): EmailOngoingRun
     {
         $email = $emailOngoingRun->email;
 
-
-        if (!$email) {
+        if (! $email) {
             data_forget($emailOngoingRunData, 'snapshot.last_fetched_at');
 
             if ($emailOngoingRunData['snapshot']['builder'] == EmailBuilderEnum::BLADE) {
                 print_r($emailOngoingRunData);
                 dd('This can not happen');
             }
-
 
             $email = StoreEmail::make()->action(
                 $emailOngoingRun,
@@ -123,20 +115,19 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
             $this->processEditableSnapshots($email->unpublishedSnapshot, $email->liveSnapshot, $emailOngoingRun, $emailOngoingRunData);
         }
 
-
         UpdateEmailOngoingRun::make()->action(
             $emailOngoingRun,
             [
                 'email_id' => $email->id,
-                'status'   => EmailOngoingRunStatusEnum::ACTIVE
+                'status' => EmailOngoingRunStatusEnum::ACTIVE,
             ]
         );
 
         UpdateOutbox::make()->action(
             $emailOngoingRun->outbox,
             [
-                'state'    => OutboxStateEnum::ACTIVE,
-                'model_id' => $emailOngoingRun->id
+                'state' => OutboxStateEnum::ACTIVE,
+                'model_id' => $emailOngoingRun->id,
             ]
         );
 
@@ -147,8 +138,7 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
     {
         $email = $emailOngoingRun->email()->where('identifier', $emailOngoingRunData['snapshot']['identifier'])->first();
 
-
-        if (!$email) {
+        if (! $email) {
             data_forget($emailOngoingRunData, 'snapshot.last_fetched_at');
 
             StoreEmail::make()->action(
@@ -161,7 +151,6 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
         } else {
             $this->processEditableSnapshots($email->unpublishedSnapshot, $email->liveSnapshot, $emailOngoingRun, $emailOngoingRunData);
         }
-
 
         return $emailOngoingRun;
     }
@@ -181,7 +170,6 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
             strict: false
         );
     }
-
 
     private function processEditableSnapshots(Snapshot $unpublishedSnapshot, ?Snapshot $liveSnapshot, EmailOngoingRun $emailOngoingRun, array $emailOngoingRunData): void
     {
@@ -209,10 +197,9 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
         }
     }
 
-
     public function getModelsQuery(): Builder
     {
-        //enum('Newsletter','Marketing','GR Reminder','AbandonedCart','Invite EmailOngoingRun','OOS Notification','Invite Full EmailOngoingRun')
+        // enum('Newsletter','Marketing','GR Reminder','AbandonedCart','Invite EmailOngoingRun','OOS Notification','Invite Full EmailOngoingRun')
         $query = DB::connection('aurora')
             ->table('Email Campaign Type Dimension');
         //            ->whereIn(

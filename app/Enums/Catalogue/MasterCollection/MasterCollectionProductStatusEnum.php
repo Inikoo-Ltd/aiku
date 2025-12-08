@@ -22,29 +22,29 @@ enum MasterCollectionProductStatusEnum: string
     public static function labels(): array
     {
         return [
-            'normal'        => __('Normal'),
+            'normal' => __('Normal'),
             'discontinuing' => __('Discontinuing'),
-            'discontinued'  => __('Discontinued'),
+            'discontinued' => __('Discontinued'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'normal'        => [
+            'normal' => [
                 'tooltip' => __('normal'),
-                'icon'    => 'fas fa-play',
-                'class'   => 'text-green-700'
+                'icon' => 'fas fa-play',
+                'class' => 'text-green-700',
             ],
             'discontinuing' => [
                 'tooltip' => __('discontinuing'),
-                'icon'    => 'fal fa-sunset',
-                'class'   => 'text-amber-500'
+                'icon' => 'fal fa-sunset',
+                'class' => 'text-amber-500',
             ],
-            'discontinued'  => [
+            'discontinued' => [
                 'tooltip' => __('discontinued'),
-                'icon'    => 'fal fa-skull',
-                'class'   => 'text-red-700'
+                'icon' => 'fal fa-skull',
+                'class' => 'text-red-700',
             ],
         ];
     }
@@ -54,10 +54,9 @@ enum MasterCollectionProductStatusEnum: string
         $stats = $parent->stats;
 
         return [
-            'normal'         => $stats->number_collections_products_status_normal,
-            'discontinuing'  => $stats->number_collections_products_status_discontinuing,
-            'discontinued'   => $stats->number_collections_products_status_discontinued,
+            'normal' => $stats->number_collections_products_status_normal,
+            'discontinuing' => $stats->number_collections_products_status_discontinuing,
+            'discontinued' => $stats->number_collections_products_status_discontinued,
         ];
     }
-
 }

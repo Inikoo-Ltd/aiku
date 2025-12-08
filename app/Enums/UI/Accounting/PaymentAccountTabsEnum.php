@@ -16,32 +16,31 @@ enum PaymentAccountTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case OVERVIEW         = 'overview';
-    case STATS            = 'stats';
+    case OVERVIEW = 'overview';
+    case STATS = 'stats';
     // case PAYMENTS         = 'payments';
-    case HISTORY          = 'history';
-
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
-            PaymentAccountTabsEnum::STATS             => [
+            PaymentAccountTabsEnum::STATS => [
                 'title' => __('Stats'),
-                'icon'  => 'fal fa-chart-line',
+                'icon' => 'fal fa-chart-line',
             ],
             // PaymentAccountTabsEnum::PAYMENTS     => [
             //     'title' => __('Payments'),
             //     'icon'  => 'fal fa-coins',
             // ],
-            PaymentAccountTabsEnum::HISTORY     => [
+            PaymentAccountTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             PaymentAccountTabsEnum::OVERVIEW => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt',
+                'icon' => 'fal fa-tachometer-alt',
             ],
         };
     }

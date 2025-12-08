@@ -29,9 +29,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_customers_status_pre_registration
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollStat newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollStat newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollStat query()
+ *
  * @mixin \Eloquent
  */
 class PollStat extends Model
@@ -43,5 +45,4 @@ class PollStat extends Model
     ];
 
     protected $guarded = [];
-
 }

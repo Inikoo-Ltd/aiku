@@ -33,7 +33,7 @@ Route::prefix('analytics')->as('analytics.')->group(function () {
 });
 
 Route::prefix('users')->as('users.')->group(function () {
-    Route::get('active', [IndexUsers::class,'inActive'])->name('index');
+    Route::get('active', [IndexUsers::class, 'inActive'])->name('index');
     Route::get('suspended', [IndexUsers::class, 'inSuspended'])->name('suspended.index');
     Route::get('all', IndexUsers::class)->name('all.index');
     Route::get('export', ExportUsers::class)->name('export');

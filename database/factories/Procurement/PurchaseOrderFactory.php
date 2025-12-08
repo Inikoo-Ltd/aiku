@@ -19,8 +19,8 @@ class PurchaseOrderFactory extends Factory
         $currency = Currency::where('code', 'USD')->firstOrFail();
 
         return [
-            'reference'   => fake()->numberBetween(100, 999),
-            'date'        => fake()->date,
+            'reference' => fake()->numberBetween(100, 999),
+            'date' => fake()->date,
             'currency_id' => $currency->id,
         ];
     }

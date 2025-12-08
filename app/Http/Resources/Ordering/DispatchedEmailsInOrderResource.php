@@ -26,7 +26,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
  * @property mixed $id
- *
  */
 class DispatchedEmailsInOrderResource extends JsonResource
 {
@@ -35,23 +34,23 @@ class DispatchedEmailsInOrderResource extends JsonResource
         /** @var Mailshot $mailshot */
         $mailshot = $this;
 
-        return array(
-            'id'                           => $this->id,
-            'number_clicks'                => $this->number_clicks,
-            'number_reads'                 => $this->number_reads,
-            'state'                        => $mailshot->state->stateIcon()[$mailshot->state->value],
-            'subject'                      => $this->subject,
-            'sent_at'                      => $this->sent_at,
-            'email_address'                => $this->email_address,
-            'mask_as_spam'                 => $this->mask_as_spam ?
+        return [
+            'id' => $this->id,
+            'number_clicks' => $this->number_clicks,
+            'number_reads' => $this->number_reads,
+            'state' => $mailshot->state->stateIcon()[$mailshot->state->value],
+            'subject' => $this->subject,
+            'sent_at' => $this->sent_at,
+            'email_address' => $this->email_address,
+            'mask_as_spam' => $this->mask_as_spam ?
                 [
                     'tooltip' => __('Spam'),
-                    'icon'    => 'fal fa-dumpster',
+                    'icon' => 'fal fa-dumpster',
                 ] : [],
             'number_email_tracking_events' => $this->number_email_tracking_events,
             'body_preview' => $this->is_body_encoded ? $this->decodeBodySafely($this->body_preview) : $this->body_preview,
 
-        );
+        ];
     }
 
     private function decodeBodySafely($body): string
@@ -63,10 +62,10 @@ class DispatchedEmailsInOrderResource extends JsonResource
             }
 
             // Check if the decoded string is valid UTF-8
-            if (!mb_check_encoding($decoded, 'UTF-8')) {
+            if (! mb_check_encoding($decoded, 'UTF-8')) {
                 // Try to fix encoding issues
                 $decoded = mb_convert_encoding($decoded, 'UTF-8', 'UTF-8');
-                if (!mb_check_encoding($decoded, 'UTF-8')) {
+                if (! mb_check_encoding($decoded, 'UTF-8')) {
                     return '[Encoding Error]';
                 }
             }

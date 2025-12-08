@@ -8,8 +8,8 @@
 
 namespace App\Transfers\Aurora;
 
-use App\Actions\Transfers\Aurora\FetchAuroraWarehouses;
 use App\Actions\Transfers\Aurora\FetchAuroraWarehouseAreas;
+use App\Actions\Transfers\Aurora\FetchAuroraWarehouses;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraLocation extends FetchAurora
@@ -21,7 +21,7 @@ class FetchAuroraLocation extends FetchAurora
         if (is_numeric($this->auroraModelData->{'Location Warehouse Area Key'})) {
             $parent = FetchAuroraWarehouseAreas::run($this->organisationSource, $this->auroraModelData->{'Location Warehouse Area Key'});
         }
-        if (!$parent) {
+        if (! $parent) {
             $parent = FetchAuroraWarehouses::run($this->organisationSource, $this->auroraModelData->{'Location Warehouse Key'});
         }
 
@@ -39,19 +39,18 @@ class FetchAuroraLocation extends FetchAurora
             $code = 'Affinity-Goods2';
         }
 
-        $this->parsedData['parent']   = $parent;
+        $this->parsedData['parent'] = $parent;
         $this->parsedData['location'] = [
-            'code'            => $code,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Location Key'},
-            'fetched_at'      => now(),
+            'code' => $code,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Location Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
-            'max_weight'      => $this->auroraModelData->{'Location Max Weight'} == 0 ? null : $this->auroraModelData->{'Location Max Weight'},
-            'max_volume'      => $this->auroraModelData->{'Location Max Volume'} == 0 ? null : $this->auroraModelData->{'Location Max Volume'},
+            'max_weight' => $this->auroraModelData->{'Location Max Weight'} == 0 ? null : $this->auroraModelData->{'Location Max Weight'},
+            'max_volume' => $this->auroraModelData->{'Location Max Volume'} == 0 ? null : $this->auroraModelData->{'Location Max Volume'},
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Location Dimension')

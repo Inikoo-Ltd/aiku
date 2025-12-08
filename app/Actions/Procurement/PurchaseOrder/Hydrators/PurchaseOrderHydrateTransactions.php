@@ -16,14 +16,13 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
 {
     use AsAction;
 
-
     public function handle(PurchaseOrder $purchaseOrder): void
     {
         $stats = [
             'number_of_items' => $purchaseOrder->purchaseOrderTransactions()->count(),
-            'cost_items'      => $this->getTotalCostItem($purchaseOrder),
-            'gross_weight'    => $this->getGrossWeight($purchaseOrder),
-            'net_weight'      => $this->getNetWeight($purchaseOrder)
+            'cost_items' => $this->getTotalCostItem($purchaseOrder),
+            'gross_weight' => $this->getGrossWeight($purchaseOrder),
+            'net_weight' => $this->getNetWeight($purchaseOrder),
         ];
 
         $purchaseOrder->update($stats);

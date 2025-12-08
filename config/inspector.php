@@ -200,7 +200,7 @@ return [
 
     'hidden_parameters' => [
         'password',
-        'password_confirmation'
+        'password_confirmation',
     ],
 
     /*
@@ -250,7 +250,7 @@ return [
         'vendor/telescope*',
         'horizon*',
         'vendor/horizon*',
-        'nova*'
+        'nova*',
     ],
 
     /*
@@ -264,6 +264,6 @@ return [
     */
 
     'ignore_jobs' => [
-        //\App\Jobs\MyJob::class
+        // \App\Jobs\MyJob::class
     ],
 ];

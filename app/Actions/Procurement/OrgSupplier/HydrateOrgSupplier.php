@@ -31,9 +31,8 @@ class HydrateOrgSupplier
     public function asCommand(Command $command): int
     {
 
-
         $count = OrgSupplier::count();
-        $bar   = $command->getOutput()->createProgressBar($count);
+        $bar = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');
         $bar->start();
         OrgSupplier::chunk(1000, function (Collection $models) use ($bar) {

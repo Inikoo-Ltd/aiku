@@ -27,10 +27,9 @@ class AuthoriseUserWithLegacyPassword
             return false;
         }
 
-        if (!$user->status) {
+        if (! $user->status) {
             return false;
         }
-
 
         if (hash('sha256', $plain) == $user->legacy_password) {
             UpdateUser::run(
@@ -38,7 +37,7 @@ class AuthoriseUserWithLegacyPassword
                 [
                     'password' => $plain,
                     'legacy_password' => null,
-                    'auth_type' => UserAuthTypeEnum::DEFAULT
+                    'auth_type' => UserAuthTypeEnum::DEFAULT,
                 ]
             );
 
@@ -47,5 +46,4 @@ class AuthoriseUserWithLegacyPassword
 
         return false;
     }
-
 }

@@ -51,7 +51,7 @@ trait WithImportModel
     public function rules(): array
     {
         return [
-            'file' => ['required', 'file', 'mimes:xlsx,csv,xls']
+            'file' => ['required', 'file', 'mimes:xlsx,csv,xls'],
         ];
     }
 
@@ -61,13 +61,13 @@ trait WithImportModel
     public function asCommand(Command $command): int
     {
         $this->isSync = true;
-        $filename     = $command->argument('filename');
-        $newFileName  = now()->timestamp.".xlsx";
+        $filename = $command->argument('filename');
+        $newFileName = now()->timestamp.'.xlsx';
 
         if ($command->option('g_drive')) {
             $googleDisk = Storage::disk('google');
 
-            if (!$googleDisk->exists($filename)) {
+            if (! $googleDisk->exists($filename)) {
                 $command->error("$filename do not found in GDrive");
 
                 return 1;
@@ -75,13 +75,13 @@ trait WithImportModel
 
             $content = $googleDisk->get($filename);
             Storage::disk('local')->put("tmp/$newFileName", $content);
-            $filename = "storage/app/tmp/".$newFileName;
+            $filename = 'storage/app/tmp/'.$newFileName;
         }
 
         $file = ConvertUploadedFile::run($filename);
         $upload = $this->runImportForCommand($file, $command);
 
-        Storage::disk('local')->delete("tmp/".$newFileName);
+        Storage::disk('local')->delete('tmp/'.$newFileName);
 
         $command->table(
             ['', 'Success', 'Fail'],
@@ -89,8 +89,8 @@ trait WithImportModel
                 [
                     $command->getName(),
                     $upload->number_success,
-                    $upload->number_fails
-                ]
+                    $upload->number_fails,
+                ],
             ]
         );
 
@@ -107,5 +107,4 @@ trait WithImportModel
 
         return 0;
     }
-
 }

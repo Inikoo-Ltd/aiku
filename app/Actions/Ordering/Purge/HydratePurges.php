@@ -18,7 +18,6 @@ class HydratePurges
 
     public string $commandSignature = 'hydrate:purges {organisations?*} {--s|slugs=}';
 
-
     public function handle(Purge $purge): void
     {
         PurgeHydratePurgedOrders::run($purge);

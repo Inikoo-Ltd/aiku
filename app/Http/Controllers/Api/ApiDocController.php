@@ -15,10 +15,12 @@ use App\Http\Controllers\Controller;
  *     title="Aiku API Documentation",
  *     version="1.0.0",
  *     description="API documentation for the Aiku application",
+ *
  *     @OA\Contact(
  *         email="raul@inikoo.com",
  *         name="Aiku Support"
  *     ),
+ *
  *     @OA\License(
  *         name="MIT",
  *         url="https://opensource.org/licenses/MIT"
@@ -42,12 +44,10 @@ use App\Http\Controllers\Controller;
  *     name="Authentication",
  *     description="API endpoints for user authentication"
  * )
- *
  * @OA\Tag(
  *     name="Retina",
  *     description="Retina API endpoints"
  * )
- *
  * @OA\Tag(
  *     name="Aurora",
  *     description="Aurora integration API endpoints"

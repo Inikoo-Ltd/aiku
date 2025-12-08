@@ -32,10 +32,10 @@ class DeleteCustomerAccessToken extends RetinaAction
             $customer->auditEvent = 'delete';
             $customer->isCustomEvent = true;
             $customer->auditCustomOld = [
-                'api_token' => $token->name
+                'api_token' => $token->name,
             ];
             $customer->auditCustomNew = [
-                'api_token' => __('Api token deleted')
+                'api_token' => __('Api token deleted'),
             ];
 
             Event::dispatch(new AuditCustom($customer));
@@ -43,7 +43,6 @@ class DeleteCustomerAccessToken extends RetinaAction
 
         }
     }
-
 
     public function asController(PersonalAccessToken $token, ActionRequest $request)
     {

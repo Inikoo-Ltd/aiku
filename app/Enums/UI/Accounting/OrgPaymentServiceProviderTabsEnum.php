@@ -16,37 +16,36 @@ enum OrgPaymentServiceProviderTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE         = 'showcase';
+    case SHOWCASE = 'showcase';
     case PAYMENT_ACCOUNTS = 'payment_accounts';
-    case PAYMENTS         = 'payments';
-    case INVOICES         = 'invoices';
-    case HISTORY          = 'history';
-
+    case PAYMENTS = 'payments';
+    case INVOICES = 'invoices';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
             OrgPaymentServiceProviderTabsEnum::PAYMENT_ACCOUNTS => [
                 'title' => __('Payment accounts'),
-                'icon'  => 'fal fa-money-check-alt',
+                'icon' => 'fal fa-money-check-alt',
             ],
-            OrgPaymentServiceProviderTabsEnum::PAYMENTS     => [
+            OrgPaymentServiceProviderTabsEnum::PAYMENTS => [
                 'title' => __('Payments'),
-                'icon'  => 'fal fa-coins',
+                'icon' => 'fal fa-coins',
             ],
-            OrgPaymentServiceProviderTabsEnum::INVOICES     => [
+            OrgPaymentServiceProviderTabsEnum::INVOICES => [
                 'title' => __('Invoices'),
-                'icon'  => 'fal fa-file-invoice-dollar',
+                'icon' => 'fal fa-file-invoice-dollar',
             ],
-            OrgPaymentServiceProviderTabsEnum::HISTORY     => [
-                'title'  => __('history'),
-                'icon'   => 'fal fa-clock',
-                'type'   => 'icon',
-                'align'  => 'right',
+            OrgPaymentServiceProviderTabsEnum::HISTORY => [
+                'title' => __('history'),
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ],
             OrgPaymentServiceProviderTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

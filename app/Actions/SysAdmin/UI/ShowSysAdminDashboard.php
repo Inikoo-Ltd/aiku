@@ -19,9 +19,8 @@ class ShowSysAdminDashboard extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("sysadmin.view");
+        return $request->user()->authTo('sysadmin.view');
     }
-
 
     public function handle(Group $group): Group
     {
@@ -42,26 +41,26 @@ class ShowSysAdminDashboard extends OrgAction
             'SysAdmin/SysAdminDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('system Administration'),
-                'pageHead'    => [
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-users-cog'],
-                        'title' => __('System Administration')
+                'title' => __('system Administration'),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-users-cog'],
+                        'title' => __('System Administration'),
                     ],
                     'title' => __('System Administration'),
                 ],
-                'stats'       => [
+                'stats' => [
                     [
-                        'name'  => __('Users'),
-                        'stat'  => $group->sysadminStats->number_users_status_active,
-                        'route' => ['name' => 'grp.sysadmin.users.index']
+                        'name' => __('Users'),
+                        'stat' => $group->sysadminStats->number_users_status_active,
+                        'route' => ['name' => 'grp.sysadmin.users.index'],
                     ],
                     [
-                        'name'  => __('Guests'),
-                        'stat'  => $group->sysadminStats->number_guests_status_active,
-                        'route' => ['name' => 'grp.sysadmin.guests.index']
-                    ]
-                ]
+                        'name' => __('Guests'),
+                        'stat' => $group->sysadminStats->number_guests_status_active,
+                        'route' => ['name' => 'grp.sysadmin.guests.index'],
+                    ],
+                ],
             ]
         );
     }
@@ -72,14 +71,14 @@ class ShowSysAdminDashboard extends OrgAction
             ShowGroupDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => 'grp.sysadmin.dashboard'
+                            'name' => 'grp.sysadmin.dashboard',
                         ],
                         'label' => __('System Administration'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

@@ -20,24 +20,22 @@ class FetchAuroraEmailCopy extends FetchAurora
         }
         $dispatchedEmail = $this->parseDispatchedEmail($this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Email Copy Key'});
 
-        if (!$dispatchedEmail) {
+        if (! $dispatchedEmail) {
             return;
         }
 
         $this->parsedData['dispatchedEmail'] = $dispatchedEmail;
 
-
         $this->parsedData['emailCopy'] = [
-            'subject'         => $this->auroraModelData->{'Email Tracking Email Copy Subject'},
-            'body'            => $body,
-            'fetched_at'      => now(),
+            'subject' => $this->auroraModelData->{'Email Tracking Email Copy Subject'},
+            'body' => $body,
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Email Copy Key'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Email Copy Key'},
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Email Tracking Email Copy')

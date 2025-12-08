@@ -14,13 +14,13 @@ use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 
 class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 {
@@ -47,7 +47,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
     {
         $title = __('Channel Dashboard');
 
-        $step     = [];
+        $step = [];
         $timeline = null;
 
         $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL ? 'Dropshipping/Platform/PlatformManualDashboard' : 'Dropshipping/Platform/PlatformDashboard';
@@ -67,50 +67,50 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         $isShowActions = $customerSalesChannel->status != CustomerSalesChannelStatusEnum::CLOSED;
 
         return Inertia::render($renderPage, [
-            'title'                   => $title,
-            'breadcrumbs'             => $this->getBreadcrumbs($customerSalesChannel),
-            'pageHead'                => [
+            'title' => $title,
+            'breadcrumbs' => $this->getBreadcrumbs($customerSalesChannel),
+            'pageHead' => [
 
-                'title'   => $customerSalesChannel->name ?? $customerSalesChannel->reference,
-                'model'   => $customerSalesChannel->platform->name,
-                'icon'    => [
-                    'icon'          => ['fal', 'fa-code-branch'],
+                'title' => $customerSalesChannel->name ?? $customerSalesChannel->reference,
+                'model' => $customerSalesChannel->platform->name,
+                'icon' => [
+                    'icon' => ['fal', 'fa-code-branch'],
                     'icon_rotation' => 90,
-                    'title'         => $title
+                    'title' => $title,
                 ],
                 'actions' => [
                     $isShowActions ? [
-                        'type'  => 'button',
+                        'type' => 'button',
                         'style' => 'edit',
                         'label' => __('Edit'),
                         'route' => [
-                            'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.edit' : 'retina.dropshipping.customer_sales_channels.edit',
+                            'name' => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.edit' : 'retina.dropshipping.customer_sales_channels.edit',
                             'parameters' => [
                                 'customerSalesChannel' => $customerSalesChannel->slug,
                             ],
-                            'method'     => 'get'
-                        ]
-                    ] : []
-                ]
+                            'method' => 'get',
+                        ],
+                    ] : [],
+                ],
 
             ],
-            'timeline'                => $timeline,
-            'headline'                => [
-                'title'       => __('Web/API order management'),
-                'description' => '<p><span>First, add desired products to your </span><strong>My Products</strong><span> using the </span><strong>Add Products</strong><span> button. When an order comes in, find the client under the </span><strong>Clients</strong><span> tab (add them if new), then click </span><strong>Create Order.</strong><span> Finally, enter product codes and quantities to complete the order.</span></p>'
+            'timeline' => $timeline,
+            'headline' => [
+                'title' => __('Web/API order management'),
+                'description' => '<p><span>First, add desired products to your </span><strong>My Products</strong><span> using the </span><strong>Add Products</strong><span> button. When an order comes in, find the client under the </span><strong>Clients</strong><span> tab (add them if new), then click </span><strong>Create Order.</strong><span> Finally, enter product codes and quantities to complete the order.</span></p>',
             ],
-            'portfolios_count'        => $customerSalesChannel->portfolios->count(),
-            'customer_sales_channel'  => RetinaCustomerSalesChannelResource::make($customerSalesChannel)->toArray(request()),
-            'platform'                => $customerSalesChannel->platform,
-            'platform_logo'           => $this->getPlatformLogo($customerSalesChannel->platform->code),
-            'platformData'            => $this->getPlatformData($customerSalesChannel),
+            'portfolios_count' => $customerSalesChannel->portfolios->count(),
+            'customer_sales_channel' => RetinaCustomerSalesChannelResource::make($customerSalesChannel)->toArray(request()),
+            'platform' => $customerSalesChannel->platform,
+            'platform_logo' => $this->getPlatformLogo($customerSalesChannel->platform->code),
+            'platformData' => $this->getPlatformData($customerSalesChannel),
             'can_connect_to_platform' => $canConnectToPlatform,
-            'exist_in_platform'       => $existInPlatform,
-            'platform_status'         => $platformStatus,
+            'exist_in_platform' => $existInPlatform,
+            'platform_status' => $platformStatus,
 
             'error_captcha' => Arr::get($customerSalesChannel->user?->data ?? [], 'error_data'),
 
-            'step'                    => $step
+            'step' => $step,
         ]);
     }
 
@@ -123,44 +123,44 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         $isManual = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL;
 
         $stats['orders'] = [
-            'label'       => __('Orders'),
-            'icon'        => 'fal fa-shopping-cart',
-            'count'       => $customerSalesChannel->number_orders,
+            'label' => __('Orders'),
+            'icon' => 'fal fa-shopping-cart',
+            'count' => $customerSalesChannel->number_orders,
             'description' => __('total orders'),
-            'route'       => [
-                'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.orders.index' : 'retina.dropshipping.customer_sales_channels.orders.index',
+            'route' => [
+                'name' => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.orders.index' : 'retina.dropshipping.customer_sales_channels.orders.index',
                 'parameters' => [
                     'customerSalesChannel' => $customerSalesChannel->slug,
-                ]
-            ]
+                ],
+            ],
         ];
 
         if ($isManual) {
             $stats['clients'] = [
-                'label'       => __('Clients'),
-                'icon'        => 'fal fa-user-friends',
-                'count'       => $customerSalesChannel->number_customer_clients,
+                'label' => __('Clients'),
+                'icon' => 'fal fa-user-friends',
+                'count' => $customerSalesChannel->number_customer_clients,
                 'description' => __('total clients'),
-                'route'       => [
-                    'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.client.index' : 'retina.dropshipping.customer_sales_channels.client.index',
+                'route' => [
+                    'name' => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.client.index' : 'retina.dropshipping.customer_sales_channels.client.index',
                     'parameters' => [
                         'customerSalesChannel' => $customerSalesChannel->slug,
-                    ]
-                ]
+                    ],
+                ],
             ];
         }
 
         $stats['portfolios'] = [
-            'label'       => __('Products'),
-            'icon'        => 'fal fa-cube',
-            'count'       => $customerSalesChannel->number_portfolios,
+            'label' => __('Products'),
+            'icon' => 'fal fa-cube',
+            'count' => $customerSalesChannel->number_portfolios,
             'description' => __('total products'),
-            'route'       => [
-                'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index' : 'retina.dropshipping.customer_sales_channels.portfolios.index',
+            'route' => [
+                'name' => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index' : 'retina.dropshipping.customer_sales_channels.portfolios.index',
                 'parameters' => [
                     'customerSalesChannel' => $customerSalesChannel->slug,
-                ]
-            ]
+                ],
+            ],
         ];
 
         return $stats;
@@ -173,15 +173,15 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 IndexRetinaDropshippingCustomerSalesChannels::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.customer_sales_channels.show',
-                                'parameters' => [$customerSalesChannel->slug]
+                                'name' => 'retina.dropshipping.customer_sales_channels.show',
+                                'parameters' => [$customerSalesChannel->slug],
                             ],
                             'label' => $customerSalesChannel->name.' ('.$customerSalesChannel->platform->type->labels()[$customerSalesChannel->platform->type->value].')',
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

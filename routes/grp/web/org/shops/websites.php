@@ -12,13 +12,13 @@ use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
+use App\Actions\Helpers\Snapshot\UI\ShowSnapshot;
+use App\Actions\Helpers\Snapshot\UI\ShowSnapshotPreview;
 use App\Actions\Web\Announcement\UI\CreateAnnouncement;
 use App\Actions\Web\Announcement\UI\EditAnnouncement;
 use App\Actions\Web\Announcement\UI\IndexAnnouncements;
 use App\Actions\Web\Announcement\UI\ShowAnnouncement;
 use App\Actions\Web\Announcement\UI\ShowAnnouncementWorkshop;
-use App\Actions\Helpers\Snapshot\UI\ShowSnapshot;
-use App\Actions\Helpers\Snapshot\UI\ShowSnapshotPreview;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
@@ -67,7 +67,7 @@ Route::name('websites.')->group(function () {
             Route::get('outboxes', [IndexOutboxes::class, 'inWebsite'])->name('outboxes');
             Route::get('outboxes/{outbox}', [ShowOutbox::class, 'inWebsite'])->name('outboxes.show');
             Route::get('outboxes/{outbox}/workshop', [ShowOutboxWorkshop::class, 'inWebsite'])->name('outboxes.workshop');
-            Route::name("outboxes.mailshots.")->prefix('outboxes/{outbox}/mailshots')
+            Route::name('outboxes.mailshots.')->prefix('outboxes/{outbox}/mailshots')
                 ->group(function () {
                     Route::get('{mailshot}', [ShowMailshot::class, 'inOutboxInWebsite'])->name('show');
                 });
@@ -96,7 +96,6 @@ Route::name('websites.')->group(function () {
         });
 });
 
-
 Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('', IndexWebpages::class)->name('index');
     Route::get('tree', ShowWebpagesTree::class)->name('tree');
@@ -115,8 +114,6 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/sub-type/family', IndexFamilyWebpages::class)->name('index.sub_type.family');
     Route::get('/sub-type/family/{scope}/products', [IndexProductWebpages::class, 'inFamilyWebpages'])->name('index.sub_type.family.products');
     Route::get('/sub-type/product', IndexProductWebpages::class)->name('index.sub_type.product');
-
-
 
     Route::get('create', CreateWebpage::class)->name('create');
     Route::prefix('{webpage}')

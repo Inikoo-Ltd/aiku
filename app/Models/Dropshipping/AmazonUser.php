@@ -40,28 +40,30 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AmazonUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AmazonUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AmazonUser query()
+ *
  * @mixin \Eloquent
  */
 class AmazonUser extends Model
 {
-    use InCustomer;
     use HasSlug;
+    use InCustomer;
     use WithAmazonApiRequest;
 
     protected $guarded = [];
 
     protected $casts = [
-        'data'      => 'array',
-        'settings'  => 'array',
-        'state'     => WebUserTypeEnum::class,
+        'data' => 'array',
+        'settings' => 'array',
+        'state' => WebUserTypeEnum::class,
         'auth_type' => WebUserAuthTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 

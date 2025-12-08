@@ -39,18 +39,18 @@ class GetWebsiteWorkshopDepartment
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'departments'   => WebsiteDepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
-            'layout'    => Arr::get($website->unpublishedDepartmentSnapshot, 'layout.department', []),
+            'departments' => WebsiteDepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
+            'layout' => Arr::get($website->unpublishedDepartmentSnapshot, 'layout.department', []),
             'autosaveRoute' => [
-                'name'       => 'grp.models.website.autosave.department',
+                'name' => 'grp.models.website.autosave.department',
                 'parameters' => [
-                    'website' => $website->id
-                ]
+                    'website' => $website->id,
+                ],
             ],
             'update_sub_department_route' => [
                 'name' => 'grp.models.product_category.update',
-                'parameters' => []
-            ]
+                'parameters' => [],
+            ],
         ];
     }
 }

@@ -24,9 +24,9 @@ enum InvoiceCategoryStateEnum: string
     {
         return [
             'in_process' => __('in process'),
-            'active'     => __('active'),
-            'closed'     => __('closed'),
-            'cooldown'   => __('cooldown'),
+            'active' => __('active'),
+            'closed' => __('closed'),
+            'cooldown' => __('cooldown'),
         ];
     }
 
@@ -35,47 +35,47 @@ enum InvoiceCategoryStateEnum: string
         return [
             'in_process' => [
                 'tooltip' => __('In process'),
-                'label'  => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',
-                'color'   => 'lime',
-                'app'     => [
+                'label' => __('In process'),
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',
+                'color' => 'lime',
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'active' => [
                 'tooltip' => __('Active'),
                 'label' => __('Active'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-green-500',
-                'color'   => 'green',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-green-500',
+                'color' => 'green',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'closed' => [
                 'tooltip' => __('Closed'),
                 'label' => __('Closed'),
-                'icon'    => 'fal fa-times-circle',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-times-circle',
+                'class' => 'text-red-500',
+                'color' => 'red',
+                'app' => [
                     'name' => 'times-circle',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'cooldown' => [
                 'tooltip' => __('Cooldown'),
                 'label' => __('Cooldown'),
-                'icon'    => 'fal fa-thermometer-empty',
-                'class'   => 'text-blue-500',
-                'color'   => 'blue',
-                'app'     => [
+                'icon' => 'fal fa-thermometer-empty',
+                'class' => 'text-blue-500',
+                'color' => 'blue',
+                'app' => [
                     'name' => 'thermometer-empty',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
         ];
     }

@@ -12,9 +12,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use HasPaymentStats;
+return new class extends Migration
+{
     use HasCreditsStats;
+    use HasPaymentStats;
 
     public function up(): void
     {
@@ -29,11 +30,9 @@ return new class () extends Migration {
             $table = $this->getCreditTransactionsStats($table);
             $table = $this->getTopUpsStats($table);
 
-
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

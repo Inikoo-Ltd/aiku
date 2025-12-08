@@ -31,6 +31,7 @@ class ShowRetinaFamily extends RetinaAction
     {
 
         $this->initialisation($request)->withTab(RetinaFamilyTabsEnum::values());
+
         return $this->handle($family);
     }
 
@@ -39,25 +40,25 @@ class ShowRetinaFamily extends RetinaAction
         return Inertia::render(
             'Catalogue/RetinaFamily',
             [
-                'title'       => __('family'),
+                'title' => __('family'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($family, $request),
-                    'next'     => $this->getNext($family, $request),
+                    'next' => $this->getNext($family, $request),
                 ],
-                'pageHead'    => [
-                    'title'         => $family->name,
-                    'model'        => __('Family'),
-                    'icon'          => [
-                        'icon'  => ['fal', 'fa-folder'],
-                        'title' => __('Family')
+                'pageHead' => [
+                    'title' => $family->name,
+                    'model' => __('Family'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-folder'],
+                        'title' => __('Family'),
                     ],
                     'iconRight' => $family->state->stateIcon()[$family->state->value],
                     'actions' => [
-                        /* [
+                    /* [
                             'route' => [
                                 'name' => 'retina.models.portfolio.store_to_multi_channels',
                                 'parameters' => [
@@ -73,39 +74,39 @@ class ShowRetinaFamily extends RetinaAction
                             'routes' => [
                                 [
                                     'label' => 'CSV',
-                                    'key'   => 'csv',
+                                    'key' => 'csv',
                                     'icon' => ['fal', 'fa-file-csv'],
                                     'popover' => false,
                                     'route' => [
                                         'name' => 'retina.catalogue.feeds.product_category.download',
                                         'parameters' => [
                                             'productCategory' => $family->slug,
-                                            'type'       => 'products_csv'
-                                        ]
+                                            'type' => 'products_csv',
+                                        ],
                                     ],
                                 ],
                                 [
                                     'label' => 'images',
-                                    'key'   => 'images',
+                                    'key' => 'images',
                                     'icon' => ['fal', 'fa-images'],
                                     'inside_popover' => true,
                                     'route' => [
                                         'name' => 'retina.catalogue.feeds.product_category.download',
                                         'parameters' => [
                                             'productCategory' => $family->slug,
-                                            'type'       => 'products_images'
-                                        ]
+                                            'type' => 'products_images',
+                                        ],
                                     ],
                                 ],
-                            ]
-                        ]
-                    ]
+                            ],
+                        ],
+                    ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => RetinaFamilyTabsEnum::navigation($family)
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => RetinaFamilyTabsEnum::navigation($family),
                 ],
-                "data" => [
+                'data' => [
                     'showcase' => $family->id,
                     'products' => ProductsResource::collection(
                         IndexRetinaProductsInCatalogue::run($family)
@@ -139,7 +140,6 @@ class ShowRetinaFamily extends RetinaAction
         );
     }
 
-
     public function jsonResponse(ProductCategory $family): DepartmentsResource
     {
         return new DepartmentsResource($family);
@@ -151,18 +151,18 @@ class ShowRetinaFamily extends RetinaAction
             return [
 
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Family')
+                            'label' => __('Family'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
                             'label' => $family->code,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
 
@@ -173,20 +173,19 @@ class ShowRetinaFamily extends RetinaAction
 
         return match ($routeName) {
 
-            'retina.catalogue.families.show' =>
-            array_merge(
+            'retina.catalogue.families.show' => array_merge(
                 ShowRetinaCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $department,
                     [
                         'index' => [
-                            'name'       => 'retina.catalogue.families.index',
-                            'parameters' => $routeParameters
+                            'name' => 'retina.catalogue.families.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'retina.catalogue.families.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'retina.catalogue.families.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -211,7 +210,7 @@ class ShowRetinaFamily extends RetinaAction
 
     private function getNavigation(?ProductCategory $family, string $routeName): ?array
     {
-        if (!$family) {
+        if (! $family) {
             return null;
         }
 
@@ -220,11 +219,11 @@ class ShowRetinaFamily extends RetinaAction
             'retina.catalogue.families.show' => [
                 'label' => $family->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'family'   => $family->slug
-                    ]
-                ]
+                        'family' => $family->slug,
+                    ],
+                ],
             ],
         };
     }

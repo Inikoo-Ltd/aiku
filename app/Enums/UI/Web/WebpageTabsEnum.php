@@ -16,55 +16,51 @@ enum WebpageTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE             = 'showcase';
-    case EXTERNAL_LINKS        = 'external_links';
-    case WEBPAGES             = 'webpages';
-    case ANALYTICS            = 'analytics';
+    case SHOWCASE = 'showcase';
+    case EXTERNAL_LINKS = 'external_links';
+    case WEBPAGES = 'webpages';
+    case ANALYTICS = 'analytics';
 
-
-
-    case SNAPSHOTS            = 'snapshots';
-    case REDIRECTS            = 'redirects';
-    case LABELED_SNAPSHOTS    = 'labeled_snapshots';
-    case CHANGELOG            = 'changelog';
-
-
+    case SNAPSHOTS = 'snapshots';
+    case REDIRECTS = 'redirects';
+    case LABELED_SNAPSHOTS = 'labeled_snapshots';
+    case CHANGELOG = 'changelog';
 
     public function blueprint(): array
     {
         return match ($this) {
             WebpageTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
             WebpageTabsEnum::EXTERNAL_LINKS => [
                 'title' => __('External links'),
-                'icon'  => 'fal fa-external-link',
+                'icon' => 'fal fa-external-link',
             ],
             WebpageTabsEnum::WEBPAGES => [
                 'title' => __('Child webpages'),
-                'icon'  => 'fal fa-browser',
+                'icon' => 'fal fa-browser',
             ],
             WebpageTabsEnum::ANALYTICS => [
                 'title' => __('Analytics'),
-                'icon'  => 'fal fa-analytics',
+                'icon' => 'fal fa-analytics',
             ],
             WebpageTabsEnum::SNAPSHOTS => [
                 'title' => __('Snapshots'),
-                'icon'  => 'fal fa-layer-group',
+                'icon' => 'fal fa-layer-group',
             ],
             WebpageTabsEnum::REDIRECTS => [
                 'title' => __('Redirects'),
-                'icon'  => 'fal fa-layer-group',
+                'icon' => 'fal fa-layer-group',
             ],
             WebpageTabsEnum::LABELED_SNAPSHOTS => [
                 'title' => __('Labeled Snapshots'),
-                'icon'  => 'fal fa-layer-group',
+                'icon' => 'fal fa-layer-group',
             ],
             WebpageTabsEnum::CHANGELOG => [
                 'title' => __('Changelog'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
         };

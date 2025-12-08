@@ -41,7 +41,6 @@ class IndexRetinaFulfilmentCustomerNotification extends RetinaAction
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -56,6 +55,7 @@ class IndexRetinaFulfilmentCustomerNotification extends RetinaAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
+
         return $this->handle($this->fulfilmentCustomer, 'notifications');
     }
 
@@ -69,24 +69,23 @@ class IndexRetinaFulfilmentCustomerNotification extends RetinaAction
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('notifications'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.notifications' =>
-            array_merge(
+            'grp.notifications' => array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => 'retina.fulfilment.notifications',
-                        null
+                        null,
                     ]
                 ),
             ),

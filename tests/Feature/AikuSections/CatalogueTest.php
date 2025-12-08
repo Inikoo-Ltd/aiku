@@ -76,27 +76,25 @@ beforeAll(function () {
     loadDB();
 });
 
-
 beforeEach(function () {
     ReindexWebpageLuigiData::shouldRun();
     ReindexWebpageLuigiData::mock()
         ->shouldReceive('getJobUniqueId')
         ->andReturn(1);
     $this->organisation = createOrganisation();
-    $this->guest        = createAdminGuest($this->organisation->group);
-    $this->warehouse    = createWarehouse();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
-    $this->group        = $this->organisation->group;
+    $this->guest = createAdminGuest($this->organisation->group);
+    $this->warehouse = createWarehouse();
+    $this->adminGuest = createAdminGuest($this->organisation->group);
+    $this->group = $this->organisation->group;
 
-    $stocks          = createStocks($this->group);
-    $orgStocks       = createOrgStocks($this->organisation, $stocks);
+    $stocks = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, $stocks);
     $this->orgStock1 = $orgStocks[0];
     $this->orgStock2 = $orgStocks[1];
 
     $tradeUnits = createTradeUnits($this->group);
     $this->tradeUnit1 = $tradeUnits[0];
     $this->tradeUnit2 = $tradeUnits[1];
-
 
     Config::set(
         'inertia.testing.page_paths',
@@ -109,12 +107,12 @@ beforeEach(function () {
 
 test('create shop', function () {
     $organisation = $this->organisation;
-    $storeData    = Shop::factory()->definition();
+    $storeData = Shop::factory()->definition();
     data_set($storeData, 'type', ShopTypeEnum::B2B->value);
     $shop = StoreShop::make()->action($this->organisation, $storeData);
     $organisation->refresh();
 
-    $shopRoles       = Role::where('scope_type', 'Shop')->where('scope_id', $shop->id)->get();
+    $shopRoles = Role::where('scope_type', 'Shop')->where('scope_id', $shop->id)->get();
     $shopPermissions = Permission::where('scope_type', 'Shop')->where('scope_id', $shop->id)->get();
 
     expect($shop)->toBeInstanceOf(Shop::class)
@@ -127,12 +125,10 @@ test('create shop', function () {
         ->and($shopRoles->count())->toBe(12)
         ->and($shopPermissions->count())->toBe(28);
 
-
     $user = $this->guest->getUser();
     $user->refresh();
 
     expect($user->hasAllRoles(["shop-admin-$shop->id"]))->toBeTrue();
-
 
     return $shop;
 });
@@ -154,10 +150,10 @@ test('create shop by command', function () {
     $organisation = $this->organisation;
     $this->artisan('shop:create', [
         'organisation' => $organisation->slug,
-        'name'         => 'Test Shop',
-        'code'         => 'TEST',
-        'type'         => ShopTypeEnum::FULFILMENT->value,
-        '--warehouses' => [$this->warehouse->id]
+        'name' => 'Test Shop',
+        'code' => 'TEST',
+        'type' => ShopTypeEnum::FULFILMENT->value,
+        '--warehouses' => [$this->warehouse->id],
     ])->assertExitCode(0);
     $organisation->refresh();
 
@@ -170,8 +166,8 @@ test('update shop', function (Shop $shop) {
     expect($shop->state)->toBe(ShopStateEnum::IN_PROCESS)
         ->and($shop->organisation->catalogueStats->number_shops_state_in_process)->toBe(2);
     $updateData = [
-        'name'  => 'Test Shop Updated',
-        'state' => ShopStateEnum::OPEN
+        'name' => 'Test Shop Updated',
+        'state' => ShopStateEnum::OPEN,
     ];
 
     $shop = UpdateShop::make()->action($shop, $updateData);
@@ -189,8 +185,6 @@ test('seed shop permissions from command', function () {
     $this->artisan('shop:seed-permissions')->assertExitCode(0);
 })->depends('create shop by command');
 
-
-
 test('create department', function ($shop) {
     $departmentData = ProductCategory::factory()->definition();
     data_set($departmentData, 'type', ProductCategoryTypeEnum::DEPARTMENT->value);
@@ -206,7 +200,6 @@ test('create department', function ($shop) {
         ->and($department->shop->stats->number_departments)->toBe(1)
         ->and($department->shop->stats->number_departments_state_in_process)->toBe(1);
 
-
     return $department;
 })->depends('create shop');
 
@@ -215,8 +208,8 @@ test('create product category webpage', function (ProductCategory $department) {
     $department->refresh();
 
     expect($webpage)->toBeInstanceOf(Webpage::class)
-    ->and($webpage->model_type)->toBe('ProductCategory')
-    ->and(intval($webpage->model_id))->toBe($department->id);
+        ->and($webpage->model_type)->toBe('ProductCategory')
+        ->and(intval($webpage->model_id))->toBe($department->id);
 
     return $department;
 })->depends('create department');
@@ -250,11 +243,11 @@ test('create second department', function ($shop) {
 })->depends('create shop');
 
 test('update department', function ($department) {
-    $newName    = 'Updated Department Name';
+    $newName = 'Updated Department Name';
     $department = UpdateProductCategory::make()->action(
         $department,
         [
-            'name' => $newName
+            'name' => $newName,
         ]
     );
 
@@ -270,7 +263,6 @@ test('create family', function ($department) {
     $family = StoreProductCategory::make()->action($department, $familyData);
     $department->refresh();
 
-
     expect($family)->toBeInstanceOf(ProductCategory::class)
         ->and($family->type)->toBe(ProductCategoryTypeEnum::FAMILY)
         ->and($family->group->catalogueStats->number_families)->toBe(1)
@@ -284,26 +276,24 @@ test('create family', function ($department) {
     return $family;
 })->depends('update department');
 
-
 test('create product', function (ProductCategory $family) {
     $tradeUnits = [
         $this->tradeUnit1->id => [
             'quantity' => 1,
-        ]
+        ],
     ];
 
     $productData = array_merge(
         Product::factory()->definition(),
         [
             'trade_units' => $tradeUnits,
-            'price'      => 100,
-            'unit'       => 'unit'
+            'price' => 100,
+            'unit' => 'unit',
         ]
     );
 
     $product = StoreProduct::make()->action($family, $productData);
     $product->refresh();
-
 
     expect($product)->toBeInstanceOf(Product::class)
         ->and($product->state)->toBe(ProductStateEnum::IN_PROCESS)
@@ -328,7 +318,6 @@ test('create product', function (ProductCategory $family) {
         ->and($product->shop->stats->number_assets_type_product)->toBe(1)
         ->and($product->stats->number_product_variants)->toBe(1);
 
-
     return $product;
 })->depends('create family');
 
@@ -337,7 +326,7 @@ test('update product state to active', function (Product $product) {
     $product = UpdateProduct::make()->action(
         $product,
         [
-            'state' => ProductStateEnum::ACTIVE
+            'state' => ProductStateEnum::ACTIVE,
         ]
     );
     $product->refresh();
@@ -354,27 +343,24 @@ test('update product state to active', function (Product $product) {
     return $product;
 })->depends('create product');
 
-
 test('create product with many org stocks', function ($shop) {
     $tradeUnits = [
-        $this->tradeUnit1->id  => [
+        $this->tradeUnit1->id => [
             'quantity' => 1,
         ],
         $this->tradeUnit2->id => [
             'quantity' => 1,
-        ]
+        ],
     ];
-
 
     $productData = array_merge(
         Product::factory()->definition(),
         [
-            'trade_units'  => $tradeUnits,
-            'price'       => 99,
-            'unit'        => 'pack'
+            'trade_units' => $tradeUnits,
+            'price' => 99,
+            'unit' => 'pack',
         ]
     );
-
 
     $product = StoreProduct::make()->action($shop, $productData);
     $shop->refresh();
@@ -395,11 +381,11 @@ test('update product', function (Product $product) {
     expect($product->name)->not->toBe('Updated Asset Name')
         ->and($product->asset->stats->number_historic_assets)->toBe(1);
     $productData = [
-        'name'        => 'Updated Asset Name',
+        'name' => 'Updated Asset Name',
         'description' => 'Updated Asset Description',
-        'rrp'         => 99.99
+        'rrp' => 99.99,
     ];
-    $product     = UpdateProduct::make()->action($product, $productData);
+    $product = UpdateProduct::make()->action($product, $productData);
     $product->refresh();
     /** @var Asset $asset */
     $asset = $product->asset;
@@ -419,15 +405,14 @@ test('add variant to product', function (Product $product) {
     $productVariant = StoreProductVariant::run(
         $product,
         [
-            'code'    => $product->code.'-v1',
-            'ratio'   => 2,
-            'price'   => 99,
-            'name'    => $product->name.' variant 1',
-            'is_main' => false
+            'code' => $product->code.'-v1',
+            'ratio' => 2,
+            'price' => 99,
+            'name' => $product->name.' variant 1',
+            'is_main' => false,
         ]
     );
     $product->refresh();
-
 
     expect($productVariant)->toBeInstanceOf(Product::class)
         ->and($productVariant->asset)->toBeInstanceOf(Asset::class)
@@ -435,7 +420,6 @@ test('add variant to product', function (Product $product) {
         ->and($productVariant->mainProduct->id)->toBe($product->id)
         ->and($product->stats->number_product_variants)->toBe(2)
         ->and($product->asset->stats->number_historic_assets)->toBe(2);
-
 
     return $productVariant;
 })
@@ -446,9 +430,9 @@ test('update second product variant', function (Product $productVariant) {
     $product = $productVariant->mainProduct;
     expect($product->stats->number_product_variants)->toBe(2);
     $modelData = [
-        'name'  => 'Updated Product Sec Name',
-        'code'  => 'sec_code',
-        'price' => 99.99
+        'name' => 'Updated Product Sec Name',
+        'code' => 'sec_code',
+        'price' => 99.99,
     ];
 
     $productVariant = UpdateProduct::make()->action($productVariant, $modelData);
@@ -478,7 +462,6 @@ test('store product webpage', function (Product $product) {
 test('delete product', function ($product) {
     $shop = $product->shop;
 
-
     expect($shop->stats->number_products)->toBe(2)
         ->and($product->stats->number_product_variants)->toBe(2)
         ->and($shop->group->catalogueStats->number_assets)->toBe(2)
@@ -501,15 +484,15 @@ test('create service', function (Shop $shop) {
         Service::factory()->definition(),
         [
             'price' => 100,
-            'unit'  => 'job',
+            'unit' => 'job',
         ]
     );
 
     $service = StoreService::make()->action($shop, $serviceData);
     $shop->refresh();
-    $group        = $shop->group;
+    $group = $shop->group;
     $organisation = $shop->organisation;
-    $asset        = $service->asset;
+    $asset = $service->asset;
 
     expect($service)->toBeInstanceOf(Service::class)
         ->and($asset)->toBeInstanceOf(Asset::class)
@@ -532,11 +515,11 @@ test('create service', function (Shop $shop) {
 test('update service', function (Service $service) {
     expect($service->name)->not->toBe('Updated Service Name');
     $productData = [
-        'name'        => 'Updated Service Name',
+        'name' => 'Updated Service Name',
         'description' => 'Updated Service Description',
-        'rrp'         => 99.99
+        'rrp' => 99.99,
     ];
-    $service     = UpdateService::make()->action(service: $service, modelData: $productData);
+    $service = UpdateService::make()->action(service: $service, modelData: $productData);
 
     $service->refresh();
 
@@ -547,14 +530,13 @@ test('update service', function (Service $service) {
     return $service;
 })->depends('create service');
 
-
 test('create collection', function ($shop) {
     $collection = StoreCollection::make()->action(
         $shop,
         [
-            'code'        => 'MyFColl',
-            'name'        => 'My first collection',
-            'description' => 'My first collection description'
+            'code' => 'MyFColl',
+            'name' => 'My first collection',
+            'description' => 'My first collection description',
         ]
     );
     $shop->refresh();
@@ -563,38 +545,34 @@ test('create collection', function ($shop) {
         ->and($shop->organisation->catalogueStats->number_collections)->toBe(1)
         ->and($shop->group->catalogueStats->number_collections)->toBe(1);
 
-
     return $collection;
 })->depends('create shop');
-
 
 test('update collection', function ($collection) {
     expect($collection->name)->not->toBe('Updated Collection Name');
 
     $collectionData = [
-        'name'        => 'Updated Collection Name',
+        'name' => 'Updated Collection Name',
         'description' => 'Updated Collection Description',
     ];
-    $collection     = UpdateCollection::make()->action($collection, $collectionData);
+    $collection = UpdateCollection::make()->action($collection, $collectionData);
 
     expect($collection->name)->toBe('Updated Collection Name');
 
     return $collection;
 })->depends('create collection');
 
-
-
 test('create charge', function ($shop) {
     $charge = StoreCharge::make()->action(
         $shop,
         [
-            'code'        => 'MyFColl',
-            'name'        => 'My first charge',
-            'type'        => ChargeTypeEnum::HANGING,
-            'trigger'     => ChargeTriggerEnum::ORDER,
+            'code' => 'MyFColl',
+            'name' => 'My first charge',
+            'type' => ChargeTypeEnum::HANGING,
+            'trigger' => ChargeTriggerEnum::ORDER,
             'description' => 'Charge description',
-            'price'       => fake()->numberBetween(100, 2000),
-            'unit'        => 'charge',
+            'price' => fake()->numberBetween(100, 2000),
+            'unit' => 'charge',
         ]
     );
     $shop->refresh();
@@ -603,7 +581,6 @@ test('create charge', function ($shop) {
         ->and($shop->organisation->catalogueStats->number_assets_type_charge)->toBe(1)
         ->and($shop->group->catalogueStats->number_assets_type_charge)->toBe(1);
 
-
     return $charge;
 })->depends('create shop');
 
@@ -611,11 +588,11 @@ test('update charge', function ($charge) {
     $updatedCharge = UpdateCharge::make()->action(
         $charge,
         [
-            'code'  => 'MyFColl2',
-            'name'  => 'Charge1',
+            'code' => 'MyFColl2',
+            'name' => 'Charge1',
             'price' => fake()->numberBetween(100, 2000),
-            'unit'  => 'charge',
-            'state' => ChargeStateEnum::ACTIVE
+            'unit' => 'charge',
+            'state' => ChargeStateEnum::ACTIVE,
         ]
     );
     $updatedCharge->refresh();
@@ -627,14 +604,13 @@ test('update charge', function ($charge) {
         ->and($updatedCharge->organisation->catalogueStats->number_assets_type_charge)->toBe(1)
         ->and($updatedCharge->group->catalogueStats->number_assets_type_charge)->toBe(1);
 
-
     return $updatedCharge;
 })->depends('create charge');
 
 test('add items to collection', function (Collection $collection) {
     $data = [
-        'families'    => [4],
-        'products'    => [2]
+        'families' => [4],
+        'products' => [2],
     ];
 
     $collection = AttachModelsToCollection::make()->action($collection, $data);
@@ -647,7 +623,7 @@ test('add items to collection', function (Collection $collection) {
 
 test('remove items to collection', function (Collection $collection) {
 
-    /** @var ProductCategory  $family */
+    /** @var ProductCategory $family */
     $family = ProductCategory::find(4);
 
     $collection = DetachModelFromCollection::make()->action(
@@ -686,11 +662,10 @@ test('hydrate products', function () {
     $this->artisan('hydrate:products')->assertExitCode(0);
 });
 
-
 test('can show catalogue', function (Shop $shop) {
     $response = get(route('grp.org.shops.show.catalogue.dashboard', [
         $shop->organisation->slug,
-        $shop->slug
+        $shop->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -730,10 +705,10 @@ test('Billables: rentals search', function () {
     StoreRental::make()->action(
         Shop::first(),
         [
-            'code'        => 'MyFColl',
-            'name'        => 'My first rental',
-            'price'       => fake()->numberBetween(100, 2000),
-            'unit'        => RentalUnitEnum::DAY->value,
+            'code' => 'MyFColl',
+            'name' => 'My first rental',
+            'price' => fake()->numberBetween(100, 2000),
+            'unit' => RentalUnitEnum::DAY->value,
         ]
     );
 
@@ -764,13 +739,13 @@ test('update shop setting', function ($shop) {
 
     $modelData = [
         'company_name' => 'new company name',
-        'code' => "NEW",
-        'name' => "new_name",
+        'code' => 'NEW',
+        'name' => 'new_name',
         'type' => ShopTypeEnum::DROPSHIPPING,
         'country_id' => $c->id,
         'language_id' => $l->id,
-        'email' => "test@gmail.com",
-        'phone' => "08912312313"
+        'email' => 'test@gmail.com',
+        'phone' => '08912312313',
 
     ];
     $shop = UpdateShop::make()->action($shop, $modelData);

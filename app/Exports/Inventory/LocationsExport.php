@@ -10,23 +10,24 @@ namespace App\Exports\Inventory;
 
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class LocationsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class LocationsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     protected Warehouse $warehouse;
+
     protected array $columns;
 
     public function __construct(Warehouse $warehouse, array $columns)
     {
         $this->warehouse = $warehouse;
-        $this->columns   = $columns;
+        $this->columns = $columns;
     }
 
     public function query(): Relation|Builder|QueryBuilder
@@ -36,7 +37,7 @@ class LocationsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             ->with(['warehouse', 'warehouseArea']);
     }
 
-    /** @var Location $row */
+    /** @var Location */
     public function map($row): array
     {
         return [
@@ -47,7 +48,7 @@ class LocationsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             $row->stock_value,
             $row->is_empty,
             $row->status->value,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -61,7 +62,7 @@ class LocationsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             'Stock Value',
             'Is Empty',
             'Status',
-            'Created At'
+            'Created At',
         ];
     }
 }

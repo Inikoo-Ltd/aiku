@@ -8,11 +8,11 @@
 
 return [
     'groups' => [
-        'grp'         => ['grp.*'],
-        'iris'        => ['iris.*'],
-        'retina'      => ['retina.*'],
+        'grp' => ['grp.*'],
+        'iris' => ['iris.*'],
+        'retina' => ['retina.*'],
         'aiku-public' => ['aiku-public.*'],
-        'cornea'      => ['cornea.*'],
-        'pupil'      => ['pupil.*'],
+        'cornea' => ['cornea.*'],
+        'pupil' => ['pupil.*'],
     ],
 ];

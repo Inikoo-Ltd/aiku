@@ -19,7 +19,6 @@ class GroupHydrateLocations implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public string $jobQueue = 'low-priority';
 
     public function getJobUniqueId(Group $group): string
@@ -27,20 +26,16 @@ class GroupHydrateLocations implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
-        $locations            = $group->locations()->count();
+        $locations = $group->locations()->count();
         $operationalLocations = $group->locations()->where('status', LocationStatusEnum::OPERATIONAL)->count();
 
-
         $stats = [
-            'number_locations'                    => $locations,
+            'number_locations' => $locations,
             'number_locations_status_operational' => $operationalLocations,
-            'number_locations_status_broken'      => $locations - $operationalLocations
+            'number_locations_status_broken' => $locations - $operationalLocations,
         ];
-
-
 
         $group->inventoryStats()->update($stats);
     }

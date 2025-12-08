@@ -16,14 +16,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class WorkplacesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class WorkplacesExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Workplace|Builder
     {
         return Workplace::query();
     }
 
-    /** @var Workplace $row */
+    /** @var Workplace */
     public function map($row): array
     {
         return [
@@ -32,7 +32,7 @@ class WorkplacesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHe
             $row->name,
             $row->type,
             $row->timezone->name,
-            $row->location
+            $row->location,
         ];
     }
 
@@ -44,7 +44,7 @@ class WorkplacesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHe
             'Name',
             'Type',
             'Timezone',
-            'Location'
+            'Location',
         ];
     }
 }

@@ -16,36 +16,34 @@ enum OrgStockFamilyTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
-    case SHOWCASE   = 'showcase';
+    case SHOWCASE = 'showcase';
     case ORG_STOCKS = 'org_stocks';
-    case HISTORY    = 'history';
-    case IMAGES     = 'images';
-
+    case HISTORY = 'history';
+    case IMAGES = 'images';
 
     public function blueprint(): array
     {
         return match ($this) {
             OrgStockFamilyTabsEnum::ORG_STOCKS => [
                 'title' => __('Stocks'),
-                'icon'  => 'fal fa-box',
+                'icon' => 'fal fa-box',
             ],
 
             OrgStockFamilyTabsEnum::HISTORY => [
                 'align' => 'right',
                 'title' => __('Changelog'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
             ],
             OrgStockFamilyTabsEnum::IMAGES => [
                 'align' => 'right',
                 'title' => __('Images'),
-                'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
+                'icon' => 'fal fa-camera-retro',
+                'type' => 'icon',
             ],
             OrgStockFamilyTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

@@ -75,37 +75,39 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\CollectionStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Collection extends Model implements Auditable, HasMedia
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
-    use InShop;
     use HasImage;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InShop;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     protected $casts = [
-        'data'              => 'array',
-        'web_images'        => 'array',
-        'state'             => CollectionStateEnum::class,
-        'products_status'   => CollectionProductsStatusEnum::class,
-        'offers_data'       => 'array',
+        'data' => 'array',
+        'web_images' => 'array',
+        'state' => CollectionStateEnum::class,
+        'products_status' => CollectionProductsStatusEnum::class,
+        'offers_data' => 'array',
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'web_images'    => '{}',
-        'offers_data'   => '{}',
+        'data' => '{}',
+        'web_images' => '{}',
+        'offers_data' => '{}',
     ];
 
     public function getRouteKeyName(): string
@@ -180,11 +182,8 @@ class Collection extends Model implements Auditable, HasMedia
             ->withTimestamps();
     }
 
-
     public function webpage(): MorphOne
     {
         return $this->morphOne(Webpage::class, 'model');
     }
-
-
 }

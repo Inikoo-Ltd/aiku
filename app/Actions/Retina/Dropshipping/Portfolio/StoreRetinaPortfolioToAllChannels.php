@@ -20,7 +20,6 @@ class StoreRetinaPortfolioToAllChannels extends RetinaAction
 {
     use WithActionUpdate;
 
-
     /**
      * @throws \Throwable
      */
@@ -31,7 +30,6 @@ class StoreRetinaPortfolioToAllChannels extends RetinaAction
         foreach ($customerSalesChannels as $salesChannel) {
             /** @var Product $items */
             $items = Product::whereIn('id', Arr::get($modelData, 'item_id'))->get();
-
 
             foreach ($items as $item) {
                 if ($salesChannel->portfolios()
@@ -50,7 +48,7 @@ class StoreRetinaPortfolioToAllChannels extends RetinaAction
     {
         return [
             'item_id' => 'required|array|min:1',
-            'item_id.*' => 'required|integer|exists:products,id'
+            'item_id.*' => 'required|integer|exists:products,id',
         ];
     }
 

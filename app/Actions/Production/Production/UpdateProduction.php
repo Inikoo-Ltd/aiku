@@ -42,13 +42,13 @@ class UpdateProduction extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("inventory.productions.edit");
+        return $request->user()->authTo('inventory.productions.edit');
     }
 
     public function rules(): array
     {
         return [
-            'code'               => [
+            'code' => [
                 'sometimes',
                 'required',
                 'max:16',
@@ -57,24 +57,22 @@ class UpdateProduction extends OrgAction
                     table: 'productions',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->organisation->group_id],
-                        ['column' => 'id', 'value' => $this->production->id, 'operation' => '!=']
+                        ['column' => 'id', 'value' => $this->production->id, 'operation' => '!='],
                     ]
                 ),
             ],
-            'name'               => ['sometimes', 'required', 'max:250', 'string'],
-            'state'              => ['sometimes', Rule::enum(ProductionStateEnum::class)],
-            'allow_stock'        => ['sometimes', 'required', 'boolean'],
-            'allow_fulfilment'   => ['sometimes', 'required', 'boolean'],
-            'allow_dropshipping' => ['sometimes', 'required', 'boolean']
+            'name' => ['sometimes', 'required', 'max:250', 'string'],
+            'state' => ['sometimes', Rule::enum(ProductionStateEnum::class)],
+            'allow_stock' => ['sometimes', 'required', 'boolean'],
+            'allow_fulfilment' => ['sometimes', 'required', 'boolean'],
+            'allow_dropshipping' => ['sometimes', 'required', 'boolean'],
         ];
     }
-
 
     public function asController(Production $production, ActionRequest $request): Production
     {
         $this->production = $production;
         $this->initialisation($production->organisation, $request);
-
 
         return $this->handle(
             production: $production,
@@ -84,10 +82,9 @@ class UpdateProduction extends OrgAction
 
     public function action(Production $production, $modelData): Production
     {
-        $this->asAction   = true;
+        $this->asAction = true;
         $this->production = $production;
         $this->initialisation($production->organisation, $modelData);
-
 
         return $this->handle(
             production: $production,

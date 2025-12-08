@@ -22,5 +22,4 @@ class ProcessAuroraWebUser extends OrgAction
     {
         $this->fetcher = FetchAuroraWebUsers::class;
     }
-
 }

@@ -23,10 +23,10 @@ trait WithPrepareTaxNumberValidation
         if ($request->has('tax_number')) {
             $taxNumberValue = (string) Arr::get($request->get('tax_number'), 'value');
             if ($taxNumberValue) {
-                $countryCode   = Arr::get($request->get('tax_number'), 'country.isoCode.short');
-                $country       = Country::where('code', $countryCode)->first();
+                $countryCode = Arr::get($request->get('tax_number'), 'country.isoCode.short');
+                $country = Country::where('code', $countryCode)->first();
                 $taxNumberData = [
-                    'number'     => (string) Arr::get($request->get('tax_number'), 'value'),
+                    'number' => (string) Arr::get($request->get('tax_number'), 'value'),
                     'country_id' => $country?->id,
                 ];
             } else {

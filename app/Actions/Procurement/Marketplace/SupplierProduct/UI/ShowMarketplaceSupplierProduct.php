@@ -27,12 +27,11 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
         return $supplierProduct;
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('procurement.org_suppliers.edit');
 
-        return $request->user()->authTo("procurement.view");
+        return $request->user()->authTo('procurement.view');
     }
 
     public function asController(SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct
@@ -69,40 +68,40 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
     public function getOrderNotes(): array
     {
         return [
-            "note_list" => [
+            'note_list' => [
                 [
-                    "label"       => __("Delivery Instructions"),
-                    "note"        => '',
-                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
-                    "editable"    => true,
-                    "bgColor"     => "#38bdf8",
-                    "field"       => "shipping_notes"
+                    'label' => __('Delivery Instructions'),
+                    'note' => '',
+                    'information' => __('This note is from the customer. Will be printed in the shipping label.'),
+                    'editable' => true,
+                    'bgColor' => '#38bdf8',
+                    'field' => 'shipping_notes',
                 ],
                 [
-                    "label"       => __("Customer"),
-                    "note"        => '',
-                    "information" => __("This note is from customer in the platform. Not editable."),
-                    "editable"    => false,
-                    "bgColor"     => "#FF7DBD",
-                    "field"       => "customer_notes"
+                    'label' => __('Customer'),
+                    'note' => '',
+                    'information' => __('This note is from customer in the platform. Not editable.'),
+                    'editable' => false,
+                    'bgColor' => '#FF7DBD',
+                    'field' => 'customer_notes',
                 ],
                 [
-                    "label"       => __("Public"),
-                    "note"        =>  '',
-                    "information" => __("This note will be visible to public, both staff and the customer can see."),
-                    "editable"    => true,
-                    "bgColor"     => "#94DB84",
-                    "field"       => "public_notes"
+                    'label' => __('Public'),
+                    'note' => '',
+                    'information' => __('This note will be visible to public, both staff and the customer can see.'),
+                    'editable' => true,
+                    'bgColor' => '#94DB84',
+                    'field' => 'public_notes',
                 ],
                 [
-                    "label"       => __("Private"),
-                    "note"        => '',
-                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
-                    "editable"    => true,
-                    "bgColor"     => "#FCF4A3",
-                    "field"       => "internal_notes"
-                ]
-            ]
+                    'label' => __('Private'),
+                    'note' => '',
+                    'information' => __('This note is only visible to staff members. You can communicate each other about the order.'),
+                    'editable' => true,
+                    'bgColor' => '#FCF4A3',
+                    'field' => 'internal_notes',
+                ],
+            ],
         ];
     }
 
@@ -111,41 +110,39 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
         return Inertia::render(
             'Procurement/MarketplaceSupplierProduct',
             [
-                'title'       => __('supplier product marketplaces'),
+                'title' => __('supplier product marketplaces'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($supplierProduct, $request),
-                    'next'     => $this->getNext($supplierProduct, $request),
+                    'next' => $this->getNext($supplierProduct, $request),
                 ],
-                'notes'                       => $this->getOrderNotes(),
-                'pageHead'    => [
-                    'icon'          =>
-                        [
-                            'icon'  => ['fal', 'box-usd'],
-                            'title' => __('Supplier product marketplaces')
-                        ],
+                'notes' => $this->getOrderNotes(),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'box-usd'],
+                        'title' => __('Supplier product marketplaces'),
+                    ],
                     'title' => $supplierProduct->name,
 
-                    'edit' => $this->canEdit &&  $request->route()->getName() == 'grp.org.procurement.marketplace.org_agents.show.org_suppliers.show.org_supplier_products.edit' ? [
+                    'edit' => $this->canEdit && $request->route()->getName() == 'grp.org.procurement.marketplace.org_agents.show.org_suppliers.show.org_supplier_products.edit' ? [
                         'route' => [
-                            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                            'parameters' => array_values($request->route()->originalParameters())
-                        ]
+                            'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                            'parameters' => array_values($request->route()->originalParameters()),
+                        ],
                     ] : false,
 
                 ],
-                'tabs'                                     => [
-                    'current'    => $this->tab,
-                    'navigation' => MarketplaceSupplierProductTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => MarketplaceSupplierProductTabsEnum::navigation(),
                 ],
 
             ]
         );
     }
-
 
     public function jsonResponse(SupplierProduct $supplierProduct): MarketplaceSupplierProductResource
     {
@@ -158,11 +155,11 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
             return [
                 [
 
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Supplier product marketplaces')
+                            'label' => __('Supplier product marketplaces'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -170,7 +167,7 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
 
                 ],
             ];
@@ -179,7 +176,7 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
         //        dd($routeName);
         return match ($routeName) {
             'grp.org.procurement.marketplace.org_suppliers.show.org_supplier_products.show' => array_merge(
-                (new ShowMarketplaceSupplier())->getBreadcrumbs(
+                (new ShowMarketplaceSupplier)->getBreadcrumbs(
                     'grp.org.procurement.marketplace.org_suppliers.show.org_supplier_products.show',
                     ['supplier' => $routeParameters['supplier']]
                 ),
@@ -187,61 +184,60 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
                     $routeParameters['supplierProduct'],
                     [
                         'index' => [
-                            'name'       => 'grp.org.procurement.marketplace.org_suppliers.show.org_supplier_products.index',
-                            'parameters' => [
-                                $routeParameters['supplier']->slug
-                            ]
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.procurement.marketplace.org_suppliers.show.org_supplier_products.show',
+                            'name' => 'grp.org.procurement.marketplace.org_suppliers.show.org_supplier_products.index',
                             'parameters' => [
                                 $routeParameters['supplier']->slug,
-                                $routeParameters['supplierProduct']->slug
-                            ]
-                        ]
+                            ],
+                        ],
+                        'model' => [
+                            'name' => 'grp.org.procurement.marketplace.org_suppliers.show.org_supplier_products.show',
+                            'parameters' => [
+                                $routeParameters['supplier']->slug,
+                                $routeParameters['supplierProduct']->slug,
+                            ],
+                        ],
                     ],
                     $suffix
                 )
             ),
 
-
             'grp.org.procurement.marketplace.org_supplier_products.show' => array_merge(
-                (new ShowProcurementDashboard())->getBreadcrumbs(),
+                (new ShowProcurementDashboard)->getBreadcrumbs(),
                 $headCrumb(
                     $routeParameters['supplierProduct'],
                     [
                         'index' => [
-                            'name'       => 'grp.org.procurement.marketplace.org_supplier_products.index',
-                            'parameters' => []
+                            'name' => 'grp.org.procurement.marketplace.org_supplier_products.index',
+                            'parameters' => [],
                         ],
                         'model' => [
-                            'name'       => 'grp.org.procurement.marketplace.org_supplier_products.show',
-                            'parameters' => [$routeParameters['supplierProduct']->slug]
-                        ]
+                            'name' => 'grp.org.procurement.marketplace.org_supplier_products.show',
+                            'parameters' => [$routeParameters['supplierProduct']->slug],
+                        ],
                     ],
                     $suffix
                 )
             ),
             'grp.org.procurement.marketplace.org_agents.show.org_supplier_products.show' => array_merge(
-                (new \App\Actions\SupplyChain\Agent\UI\ShowAgent())->getBreadcrumbs(
+                (new \App\Actions\SupplyChain\Agent\UI\ShowAgent)->getBreadcrumbs(
                     ['agent' => $routeParameters['agent']]
                 ),
                 $headCrumb(
                     $routeParameters['supplierProduct'],
                     [
                         'index' => [
-                            'name'       => 'grp.org.procurement.marketplace.org_agents.show.org_supplier_products.index',
-                            'parameters' => [
-                                $routeParameters['agent']->slug
-                            ]
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.procurement.marketplace.org_agents.show.org_supplier_products.show',
+                            'name' => 'grp.org.procurement.marketplace.org_agents.show.org_supplier_products.index',
                             'parameters' => [
                                 $routeParameters['agent']->slug,
-                                $routeParameters['supplierProduct']->slug
-                            ]
-                        ]
+                            ],
+                        ],
+                        'model' => [
+                            'name' => 'grp.org.procurement.marketplace.org_agents.show.org_supplier_products.show',
+                            'parameters' => [
+                                $routeParameters['agent']->slug,
+                                $routeParameters['supplierProduct']->slug,
+                            ],
+                        ],
                     ],
                     $suffix
                 )
@@ -265,7 +261,6 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
 
         $previous = $query->orderBy('code', 'desc')->first();
 
-
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
@@ -288,32 +283,31 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
 
     private function getNavigation(?SupplierProduct $supplierProduct, string $routeName): ?array
     {
-        if (!$supplierProduct) {
+        if (! $supplierProduct) {
             return null;
         }
-
 
         return match ($routeName) {
             'grp.org.procurement.marketplace.org_supplier_products.show' => [
                 'label' => $supplierProduct->code,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'supplierProduct' => $supplierProduct->slug
-                    ]
+                        'supplierProduct' => $supplierProduct->slug,
+                    ],
 
-                ]
+                ],
             ],
             'grp.org.procurement.marketplace.org_agents.show.org_supplier_products.show' => [
                 'label' => $supplierProduct->code,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'agent'           => $supplierProduct->agent->slug,
-                        'supplierProduct' => $supplierProduct->slug
-                    ]
+                        'agent' => $supplierProduct->agent->slug,
+                        'supplierProduct' => $supplierProduct->slug,
+                    ],
 
-                ]
+                ],
             ]
         };
     }

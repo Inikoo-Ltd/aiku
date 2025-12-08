@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('webpages', function (Blueprint $table) {
@@ -18,7 +19,6 @@ return new class () extends Migration {
             $table->foreign('redirect_webpage_id')->references('id')->on('webpages');
         });
     }
-
 
     public function down(): void
     {

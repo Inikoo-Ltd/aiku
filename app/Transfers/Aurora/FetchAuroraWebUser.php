@@ -23,13 +23,12 @@ class FetchAuroraWebUser extends FetchAurora
 
         $customer = Customer::withTrashed()->where('source_id', $this->organisation->id.':'.$this->auroraModelData->{'Website User Customer Key'})->first();
 
-        if (!$customer) {
+        if (! $customer) {
             sleep(2);
             $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Website User Customer Key'});
         }
 
-
-        if (!$customer) {
+        if (! $customer) {
             return;
         }
 
@@ -37,8 +36,7 @@ class FetchAuroraWebUser extends FetchAurora
             return;
         }
 
-
-        if (!$customer->shop->website) {
+        if (! $customer->shop->website) {
             return;
         }
 
@@ -55,25 +53,24 @@ class FetchAuroraWebUser extends FetchAurora
             }
 
             $data['legacy_password'] = $legacyPassword;
-            $password                = null;
+            $password = null;
         } else {
             $authType = WebUserAuthTypeEnum::DEFAULT->value;
             $password = (app()->isLocal() || app()->environment('testing') ? 'hello' : wordwrap(Str::random(), 4, '-', true));
         }
 
-
         $this->parsedData['webUser'] =
             [
-                'status'          => $this->auroraModelData->{'Website User Active'} == 'Yes',
-                'type'            => WebUserTypeEnum::WEB->value,
-                'auth_type'       => $authType,
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Website User Key'},
-                'data'            => $data,
-                'username'        => $this->auroraModelData->{'Website User Handle'},
-                'email'           => $this->auroraModelData->{'Website User Handle'},
-                'created_at'      => $this->parseDatetime($this->auroraModelData->{'Website User Created'}),
-                'is_root'         => true,
-                'fetched_at'      => now(),
+                'status' => $this->auroraModelData->{'Website User Active'} == 'Yes',
+                'type' => WebUserTypeEnum::WEB->value,
+                'auth_type' => $authType,
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Website User Key'},
+                'data' => $data,
+                'username' => $this->auroraModelData->{'Website User Handle'},
+                'email' => $this->auroraModelData->{'Website User Handle'},
+                'created_at' => $this->parseDatetime($this->auroraModelData->{'Website User Created'}),
+                'is_root' => true,
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
             ];
 
@@ -84,14 +81,14 @@ class FetchAuroraWebUser extends FetchAurora
 
     protected function isSha256($hash): bool
     {
-        if (preg_match("/^([a-f0-9]{64})$/", $hash) == 1) {
+        if (preg_match('/^([a-f0-9]{64})$/', $hash) == 1) {
             return true;
         } else {
             return false;
         }
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Website User Dimension')

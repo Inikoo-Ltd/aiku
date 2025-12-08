@@ -24,9 +24,9 @@ class ShowIrisSitemap
     {
         /** @var Website $website */
         $website = $request->get('website');
-        $filePath = 'sitemaps/sitemap-' . $website->id . '.xml';
+        $filePath = 'sitemaps/sitemap-'.$website->id.'.xml';
 
-        if (!Storage::disk('local')->exists($filePath)) {
+        if (! Storage::disk('local')->exists($filePath)) {
             abort(404);
         }
 

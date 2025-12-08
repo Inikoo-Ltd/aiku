@@ -25,15 +25,15 @@ enum MailshotTabsEnum: string
         return match ($this) {
             MailshotTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fal fa-tachometer-alt',
+                'icon' => 'fal fa-tachometer-alt',
             ],
             MailshotTabsEnum::RECIPIENTS => [
                 'title' => __('Recipients'),
-                'icon'  => 'fal fa-users',
+                'icon' => 'fal fa-users',
             ],
             MailshotTabsEnum::DISPATCHED_EMAILS => [
                 'title' => __('Dispatched Emails'),
-                'icon'  => 'fal fa-paper-plane',
+                'icon' => 'fal fa-paper-plane',
             ],
         };
     }

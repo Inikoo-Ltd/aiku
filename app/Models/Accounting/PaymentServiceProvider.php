@@ -49,6 +49,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Accounting\OrgPaymentServiceProvider> $orgPaymentServiceProviders
  * @property-read Collection<int, \App\Models\Accounting\Payment> $payments
  * @property-read \App\Models\Accounting\PaymentServiceProviderStats|null $stats
+ *
  * @method static \Database\Factories\Accounting\PaymentServiceProviderFactory factory($count = null, $state = [])
  * @method static Builder<static>|PaymentServiceProvider newModelQuery()
  * @method static Builder<static>|PaymentServiceProvider newQuery()
@@ -56,19 +57,20 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|PaymentServiceProvider query()
  * @method static Builder<static>|PaymentServiceProvider withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|PaymentServiceProvider withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class PaymentServiceProvider extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasHistory;
     use HasFactory;
+    use HasHistory;
+    use HasSlug;
     use InteractsWithMedia;
+    use SoftDeletes;
 
     protected $casts = [
         'data' => 'array',
-        'type' => PaymentServiceProviderTypeEnum::class
+        'type' => PaymentServiceProviderTypeEnum::class,
     ];
 
     protected $attributes = [
@@ -85,7 +87,7 @@ class PaymentServiceProvider extends Model implements Auditable, HasMedia
     public function generateTags(): array
     {
         return [
-            'accounting'
+            'accounting',
         ];
     }
 
@@ -121,7 +123,6 @@ class PaymentServiceProvider extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(PaymentServiceProviderStats::class);
     }
-
 
     public function group(): BelongsTo
     {

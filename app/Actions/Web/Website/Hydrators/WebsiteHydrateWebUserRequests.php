@@ -16,7 +16,6 @@ class WebsiteHydrateWebUserRequests implements ShouldBeUnique
 {
     use AsAction;
 
-
     public string $jobQueue = 'low-priority';
 
     public function getJobUniqueId(int $websiteID): string
@@ -27,13 +26,10 @@ class WebsiteHydrateWebUserRequests implements ShouldBeUnique
     public function handle(int $websiteID): void
     {
         $website = Website::findOrFail($websiteID);
-        $stats   = [
+        $stats = [
             'number_web_user_requests' => $website->webUserRequests()->count(),
         ];
 
-
         $website->webStats->update($stats);
     }
-
-
 }

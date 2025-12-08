@@ -31,7 +31,7 @@ class StoreRetinaTransaction extends RetinaAction
             return UpdateRetinaTransaction::run(
                 $existingTransaction,
                 [
-                    'quantity_ordered' => Arr::get($modelData, 'quantity')
+                    'quantity_ordered' => Arr::get($modelData, 'quantity'),
                 ]
             );
         }
@@ -39,9 +39,8 @@ class StoreRetinaTransaction extends RetinaAction
         $historicAsset = HistoricAsset::find($historicAssetId);
 
         $transaction = StoreTransaction::make()->action($order, $historicAsset, [
-            'quantity_ordered' => Arr::get($modelData, 'quantity')
+            'quantity_ordered' => Arr::get($modelData, 'quantity'),
         ]);
-
 
         /** @var Product $product */
         $product = $historicAsset->model;
@@ -49,19 +48,19 @@ class StoreRetinaTransaction extends RetinaAction
         $gtm = [
             'ecommerce' => [
                 'transaction_id' => $order->id,
-                'value'          => (float)$order->total_amount,
-                'currency'       => $order->shop->currency->code,
-                'items'          => [
+                'value' => (float) $order->total_amount,
+                'currency' => $order->shop->currency->code,
+                'items' => [
                     [
-                        'item_id' => $product->getLuigiIdentity()
-                    ]
-                ]
-            ]
+                        'item_id' => $product->getLuigiIdentity(),
+                    ],
+                ],
+            ],
         ];
         request()->session()->flash('gtm', [
-            'key'            => 'retina_add_to_cart',
-            'event'          => 'add_to_cart',
-            'data_to_submit' => $gtm
+            'key' => 'retina_add_to_cart',
+            'event' => 'add_to_cart',
+            'data_to_submit' => $gtm,
         ]);
 
         return $transaction;
@@ -70,7 +69,7 @@ class StoreRetinaTransaction extends RetinaAction
     public function rules(): array
     {
         return [
-            'quantity'          => ['required', 'numeric', 'min:0'],
+            'quantity' => ['required', 'numeric', 'min:0'],
             'historic_asset_id' => ['required', Rule::exists('historic_assets', 'id')],
         ];
     }
@@ -97,7 +96,6 @@ class StoreRetinaTransaction extends RetinaAction
             );
         }
     }
-
 
     public function asController(Order $order, ActionRequest $request): Transaction
     {

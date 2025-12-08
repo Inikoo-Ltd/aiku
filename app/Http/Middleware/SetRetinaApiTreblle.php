@@ -16,8 +16,8 @@ class SetRetinaApiTreblle
     public function handle(Request $request, Closure $next)
     {
         config([
-            'treblle.enable'     => config('treblle.retina.enable'),
-            'treblle.api_key'    => config('treblle.retina.api_key'),
+            'treblle.enable' => config('treblle.retina.enable'),
+            'treblle.api_key' => config('treblle.retina.api_key'),
             'treblle.project_id' => config('treblle.retina.project_id'),
         ]);
 

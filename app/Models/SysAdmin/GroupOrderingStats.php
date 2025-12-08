@@ -131,9 +131,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $lost_revenue_other_amount_org_currency
  * @property string $lost_revenue_other_amount_grp_currency
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingStats query()
+ *
  * @mixin \Eloquent
  */
 class GroupOrderingStats extends Model

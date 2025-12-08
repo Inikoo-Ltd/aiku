@@ -20,25 +20,25 @@ class GetRetinaB2BHomeData
     public function handle(Customer $customer): array
     {
         return [
-            'customer'        => CustomerResource::make($customer)->getArray(),
-            'status'          => $customer->status,
+            'customer' => CustomerResource::make($customer)->getArray(),
+            'status' => $customer->status,
             'additional_data' => $customer->data,
-            'addresses'       => [
-                'isCannotSelect'              => true,
-                'pinned_address_id'           => $customer->delivery_address_id,
-                'home_address_id'             => $customer->address_id,
+            'addresses' => [
+                'isCannotSelect' => true,
+                'pinned_address_id' => $customer->delivery_address_id,
+                'home_address_id' => $customer->address_id,
                 'current_selected_address_id' => $customer->delivery_address_id,
-                'routes_list'                 => [
+                'routes_list' => [
                     'pinned_route' => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.customer.delivery-address.update',
+                        'method' => 'patch',
+                        'name' => 'grp.models.customer.delivery-address.update',
                         'parameters' => [
-                            'customer' => $customer->id
-                        ]
+                            'customer' => $customer->id,
+                        ],
                     ],
-                ]
+                ],
             ],
-            'currency_code'   => $customer->shop->currency->code,
+            'currency_code' => $customer->shop->currency->code,
         ];
     }
 }

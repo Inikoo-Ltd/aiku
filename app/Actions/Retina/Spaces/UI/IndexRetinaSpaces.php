@@ -41,7 +41,6 @@ class IndexRetinaSpaces extends RetinaAction
         $query = QueryBuilder::for(Space::class);
         $query->where('spaces.fulfilment_customer_id', $fulfilmentCustomer->id);
 
-
         $query->leftjoin('rentals', 'spaces.rental_id', '=', 'rentals.id');
         $query->leftjoin('currencies', 'rentals.currency_id', '=', 'currencies.id');
         $query->leftjoin('recurring_bills', 'spaces.current_recurring_bill_id', '=', 'recurring_bills.id');
@@ -67,18 +66,16 @@ class IndexRetinaSpaces extends RetinaAction
             ->withQueryString();
     }
 
-
     public function tableStructure(FulfilmentCustomer $fulfilmentCustomer, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($fulfilmentCustomer, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
 
-
-            $noResults = __("No purges found");
+            $noResults = __('No purges found');
 
             $table
                 ->withGlobalSearch()
@@ -87,7 +84,6 @@ class IndexRetinaSpaces extends RetinaAction
                         'title' => $noResults,
                     ]
                 );
-
 
             $table->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false);
@@ -108,7 +104,6 @@ class IndexRetinaSpaces extends RetinaAction
         $icon = ['fal', 'fa-parking'];
         $title = __('Spaces');
 
-
         return Inertia::render(
             'Space/RetinaSpaces',
             [
@@ -118,7 +113,7 @@ class IndexRetinaSpaces extends RetinaAction
                     'title' => $title,
                     'icon' => $icon,
                 ],
-                'data' => SpacesResource::collection($spaces)
+                'data' => SpacesResource::collection($spaces),
             ]
         )->table(
             $this->tableStructure(
@@ -141,18 +136,16 @@ class IndexRetinaSpaces extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.fulfilment.spaces.index',
+                                'name' => 'retina.fulfilment.spaces.index',
                             ],
                             'label' => __('Spaces'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
-
-
 
     }
 }

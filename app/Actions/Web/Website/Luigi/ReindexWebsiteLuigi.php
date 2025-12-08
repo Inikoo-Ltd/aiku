@@ -47,20 +47,19 @@ class ReindexWebsiteLuigi
                     }
                 }
 
-                $body       = [
-                    'objects' => $objects
+                $body = [
+                    'objects' => $objects,
                 ];
                 $compressed = count($objects) >= 1000;
                 try {
                     $this->request($website, '/v1/content', $body, 'post', $compressed);
                 } catch (Exception $e) {
-                    print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
+                    echo "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
 
                     return;
                 }
             });
     }
-
 
     /**
      * @throws \Laravel\Octane\Exceptions\DdException

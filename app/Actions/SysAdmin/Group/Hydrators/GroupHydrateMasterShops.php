@@ -24,14 +24,12 @@ class GroupHydrateMasterShops implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
         $stats = [
-            'number_master_shops'         => DB::table('master_shops')->where('group_id', $group->id)->count(),
-            'number_current_master_shops' => DB::table('master_shops')->where('group_id', $group->id)->where('status', true)->count()
+            'number_master_shops' => DB::table('master_shops')->where('group_id', $group->id)->count(),
+            'number_current_master_shops' => DB::table('master_shops')->where('group_id', $group->id)->where('status', true)->count(),
         ];
-
 
         $group->goodsStats()->update($stats);
     }

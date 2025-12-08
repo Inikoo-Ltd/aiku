@@ -20,5 +20,4 @@ class ShowSetNewPassword
     {
         return Inertia::render('Auth/SetNewPassword');
     }
-
 }

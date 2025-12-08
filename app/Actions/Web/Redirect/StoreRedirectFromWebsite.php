@@ -29,11 +29,11 @@ class StoreRedirectFromWebsite extends OrgAction
 
         $fromUrl = Arr::get($modelData, 'from_url', '');
 
-        if (!str_starts_with($fromUrl, '/')) {
-            $fromUrl = '/' . ltrim($fromUrl, '/');
+        if (! str_starts_with($fromUrl, '/')) {
+            $fromUrl = '/'.ltrim($fromUrl, '/');
         }
 
-        $url = 'https://' . $website->domain . $fromUrl;
+        $url = 'https://'.$website->domain.$fromUrl;
         $toUrl = Arr::pull($modelData, 'to_url');
 
         data_set($modelData, 'from_url', $url);
@@ -46,7 +46,7 @@ class StoreRedirectFromWebsite extends OrgAction
     public function rules(): array
     {
         return [
-            'from_url'                => ['required', 'string', 'max:2048'],
+            'from_url' => ['required', 'string', 'max:2048'],
             'to_url' => [
                 'required',
                 Rule::exists(Webpage::class, 'id')->where('website_id', $this->shop->website->id)->where('state', WebpageStateEnum::LIVE),
@@ -63,7 +63,7 @@ class StoreRedirectFromWebsite extends OrgAction
                     'organisation' => $redirect->organisation->slug,
                     'fulfilment' => $redirect->shop->fulfilment->slug,
                     'website' => $redirect->website->slug,
-                    'tab' => WebsiteTabsEnum::REDIRECTS->value
+                    'tab' => WebsiteTabsEnum::REDIRECTS->value,
                 ]
             );
         }
@@ -74,14 +74,14 @@ class StoreRedirectFromWebsite extends OrgAction
                 'organisation' => $redirect->organisation->slug,
                 'shop' => $redirect->shop->slug,
                 'website' => $redirect->website->slug,
-                'tab' => WebsiteTabsEnum::REDIRECTS->value
+                'tab' => WebsiteTabsEnum::REDIRECTS->value,
             ]
         );
     }
 
     public function action(Website $website, array $modelData): Redirect
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisationFromShop($website->shop, $modelData);
 
         return $this->handle($website, $this->validatedData);

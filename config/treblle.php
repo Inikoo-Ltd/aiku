@@ -8,7 +8,6 @@ return [
      */
     'url' => null,
 
-
     'grp' => [
         'enable' => env('TREBLLE_GRP_ENABLE', false),
         'api_key' => env('TREBLLE_GRP_API_KEY'),
@@ -19,7 +18,6 @@ return [
         'api_key' => env('TREBLLE_RETINA_API_KEY'),
         'project_id' => env('TREBLLE_RETINA_PROJECT_ID'),
     ],
-
 
     /*
      * Define which environments should Treblle ignore and not monitor

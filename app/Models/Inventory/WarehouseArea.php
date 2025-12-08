@@ -53,6 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Inventory\WarehouseAreaTimeSeries> $timeSeries
  * @property-read UniversalSearch|null $universalSearch
  * @property-read \App\Models\Inventory\Warehouse $warehouse
+ *
  * @method static \Database\Factories\Inventory\WarehouseAreaFactory factory($count = null, $state = [])
  * @method static Builder<static>|WarehouseArea newModelQuery()
  * @method static Builder<static>|WarehouseArea newQuery()
@@ -60,21 +61,22 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|WarehouseArea query()
  * @method static Builder<static>|WarehouseArea withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|WarehouseArea withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class WarehouseArea extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
     use InWarehouse;
+    use SoftDeletes;
 
     protected $casts = [
-        'unit_quantity'   => 'decimal:2',
-        'value'           => 'decimal:2',
-        'fetched_at'      => 'datetime',
+        'unit_quantity' => 'decimal:2',
+        'value' => 'decimal:2',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
@@ -83,15 +85,14 @@ class WarehouseArea extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'warehouse'
+            'warehouse',
         ];
     }
 
     protected array $auditInclude = [
         'code',
-        'name'
+        'name',
     ];
-
 
     public function getSlugOptions(): SlugOptions
     {

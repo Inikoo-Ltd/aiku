@@ -54,7 +54,7 @@ class IndexHistoryInGroup extends GrpAction
 
         return $queryBuilder
             ->defaultSort('audits.created_at')
-            ->allowedSorts(['ip_address','auditable_id', 'auditable_type', 'user_type', 'url','created_at'])
+            ->allowedSorts(['ip_address', 'auditable_id', 'auditable_type', 'user_type', 'url', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -63,6 +63,7 @@ class IndexHistoryInGroup extends GrpAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation(app('group'), $request);
+
         return $this->handle($this->group);
     }
 
@@ -98,43 +99,42 @@ class IndexHistoryInGroup extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Changelog'),
-                'pageHead'    => [
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-history'],
-                        'title' => __('Changelog')
+                'title' => __('Changelog'),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-history'],
+                        'title' => __('Changelog'),
                     ],
-                    'title'     => __('Changelog'),
+                    'title' => __('Changelog'),
                 ],
-                'data'        => HistoryResource::collection($histories),
+                'data' => HistoryResource::collection($histories),
             ]
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Changelog'),
-                        'icon'  => 'fal fa-history'
+                        'icon' => 'fal fa-history',
                     ],
-                    'suffix' => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.overview.sysadmin.changelog.index' =>
-            array_merge(
+            'grp.overview.sysadmin.changelog.index' => array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => $routeName,
-                        'parameters' => $routeParameters
+                        'parameters' => $routeParameters,
                     ],
                     $suffix
                 ),

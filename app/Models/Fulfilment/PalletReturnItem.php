@@ -37,9 +37,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Fulfilment\PalletStoredItem|null $palletStoredItem
  * @property-read Location|null $pickingLocation
  * @property-read \App\Models\Fulfilment\StoredItem|null $storedItem
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnItem newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnItem query()
+ *
  * @mixin \Eloquent
  */
 class PalletReturnItem extends Model
@@ -47,15 +49,15 @@ class PalletReturnItem extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'state'              => PalletReturnItemStateEnum::class,
-        'in_process_at'      => 'datetime',
-        'submitted_at'       => 'datetime',
-        'confirmed_at'       => 'datetime',
-        'picking_at'         => 'datetime',
-        'picked_at'          => 'datetime',
-        'not_picked_at'      => 'datetime',
-        'dispatched_at'      => 'datetime',
-        'cancel_at'          => 'datetime',
+        'state' => PalletReturnItemStateEnum::class,
+        'in_process_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'picking_at' => 'datetime',
+        'picked_at' => 'datetime',
+        'not_picked_at' => 'datetime',
+        'dispatched_at' => 'datetime',
+        'cancel_at' => 'datetime',
     ];
 
     public function pallet(): BelongsTo
@@ -82,5 +84,4 @@ class PalletReturnItem extends Model
     {
         return $this->belongsTo(Location::class, 'picking_location_id');
     }
-
 }

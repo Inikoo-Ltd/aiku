@@ -89,6 +89,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierProduct> $supplierProducts
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierTimeSeries> $timeSeries
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\SupplyChain\SupplierFactory factory($count = null, $state = [])
  * @method static Builder<static>|Supplier newModelQuery()
  * @method static Builder<static>|Supplier newQuery()
@@ -96,34 +97,35 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Supplier query()
  * @method static Builder<static>|Supplier withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Supplier withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class Supplier extends Model implements HasMedia, Auditable
+class Supplier extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
     use HasAddress;
     use HasAddresses;
-    use HasSlug;
-    use HasUniversalSearch;
-    use HasImage;
+    use HasAttachments;
     use HasFactory;
     use HasHistory;
-    use HasAttachments;
+    use HasImage;
+    use HasSlug;
+    use HasUniversalSearch;
     use InGroup;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'               => 'array',
-        'settings'           => 'array',
-        'location'           => 'array',
-        'sources'           => 'array',
-        'status'             => 'boolean',
-        'archived_at'        => 'datetime',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data' => 'array',
+        'settings' => 'array',
+        'location' => 'array',
+        'sources' => 'array',
+        'status' => 'boolean',
+        'archived_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
         'location' => '{}',
         'sources' => '{}',
@@ -145,7 +147,7 @@ class Supplier extends Model implements HasMedia, Auditable
         );
 
         static::updated(function (Supplier $supplier) {
-            if (!$supplier->wasRecentlyCreated  && $supplier->wasChanged(['contact_name', 'company_name'])) {
+            if (! $supplier->wasRecentlyCreated && $supplier->wasChanged(['contact_name', 'company_name'])) {
                 $supplier->name = $supplier->company_name == '' ? $supplier->contact_name : $supplier->company_name;
             }
 
@@ -163,7 +165,7 @@ class Supplier extends Model implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'supply-chain'
+            'supply-chain',
         ];
     }
 
@@ -177,7 +179,7 @@ class Supplier extends Model implements HasMedia, Auditable
         'identity_document_type',
         'identity_document_number',
         'contact_website',
-        'archived_at'
+        'archived_at',
     ];
 
     public function stats(): HasOne
@@ -224,6 +226,4 @@ class Supplier extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(SupplierTimeSeries::class);
     }
-
-
 }

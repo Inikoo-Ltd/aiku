@@ -50,42 +50,43 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Media|null $screenshot
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate query()
+ *
  * @mixin \Eloquent
  */
-class EmailTemplate extends Model implements HasMedia, Auditable
+class EmailTemplate extends Model implements Auditable, HasMedia
 {
     use HasFactory;
-    use InShop;
     use HasHistory;
-    use HasSlug;
     use HasImage;
+    use HasSlug;
+    use InShop;
 
     protected $guarded = [];
 
     protected $casts = [
-        'data'         => 'array',
-        'layout'       => 'array',
-        'arguments'       => 'array',
-        'state'        => EmailTemplateStateEnum::class,
-        'builder'      => EmailTemplateBuilderEnum::class,
-        'active_at'    => 'datetime',
+        'data' => 'array',
+        'layout' => 'array',
+        'arguments' => 'array',
+        'state' => EmailTemplateStateEnum::class,
+        'builder' => EmailTemplateBuilderEnum::class,
+        'active_at' => 'datetime',
         'suspended_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'   => '{}',
+        'data' => '{}',
         'layout' => '{}',
         'arguments' => '{}',
     ];
 
-
     public function generateTags(): array
     {
         return [
-            'comms'
+            'comms',
         ];
     }
 
@@ -119,5 +120,4 @@ class EmailTemplate extends Model implements HasMedia, Auditable
     {
         return $this->belongsTo(Media::class, 'screenshot_id');
     }
-
 }

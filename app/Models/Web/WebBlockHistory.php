@@ -32,9 +32,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Web\WebBlockType $webBlockType
  * @property-read \App\Models\Web\Webpage $webpage
  * @property-read \App\Models\Web\Website $website
+ *
  * @method static Builder<static>|WebBlockHistory newModelQuery()
  * @method static Builder<static>|WebBlockHistory newQuery()
  * @method static Builder<static>|WebBlockHistory query()
+ *
  * @mixin \Eloquent
  */
 class WebBlockHistory extends Model
@@ -43,16 +45,15 @@ class WebBlockHistory extends Model
 
     protected $casts = [
         'layout' => 'object',
-        'data'  => 'object',
+        'data' => 'object',
     ];
 
     protected $attributes = [
         'layout' => '{}',
-        'data'   => '{}',
+        'data' => '{}',
     ];
 
     protected $guarded = [];
-
 
     public function webBlockType(): BelongsTo
     {

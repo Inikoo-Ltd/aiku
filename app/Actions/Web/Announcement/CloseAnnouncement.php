@@ -20,13 +20,15 @@ class CloseAnnouncement extends OrgAction
     use WithActionUpdate;
 
     private Customer|Website $parent;
+
     private string $scope;
+
     private Customer $customer;
 
     public function handle(Announcement $announcement): void
     {
         $this->update($announcement, [
-            'closed_at' => now()
+            'closed_at' => now(),
         ]);
     }
 
@@ -36,13 +38,13 @@ class CloseAnnouncement extends OrgAction
             return true;
         }
 
-        return $request->get('customerUser')->hasPermissionTo("portfolio.banners.edit");
+        return $request->get('customerUser')->hasPermissionTo('portfolio.banners.edit');
     }
 
     public function asController(Website $website, Announcement $announcement, ActionRequest $request): void
     {
-        $this->scope    = 'website';
-        $this->parent   = $website;
+        $this->scope = 'website';
+        $this->parent = $website;
 
         $this->handle($announcement);
     }

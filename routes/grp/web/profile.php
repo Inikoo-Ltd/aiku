@@ -28,7 +28,6 @@ Route::get('/settings', EditProfileSettings::class)->name('settings');
 Route::post('/', UpdateProfile::class)->name('update');
 Route::get('/can-visit', CanVisit::class)->name('can_visit');
 
-
 Route::get('/notifications', IndexNotification::class)->name('notifications.index');
 
 Route::get('/page-head-tabs', ShowProfilePageHeadTabs::class)->name('page-head-tabs.show');

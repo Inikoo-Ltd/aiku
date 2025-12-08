@@ -19,8 +19,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $id
  * @property mixed $location
  * @property mixed $registered_at
- *
- *
  */
 class FulfilmentCustomersPendingApprovalResource extends JsonResource
 {
@@ -28,13 +26,13 @@ class FulfilmentCustomersPendingApprovalResource extends JsonResource
     {
         // dd($this);
         return [
-            'id'            => $this->id,
-            'slug'          => $this->slug,
-            'reference'     => $this->reference,
-            'name'          => $this->name,
-            'email'         => $this->email,
-            'phone'         => $this->phone,
-            'location'      => json_decode($this->location ?? ''),
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'name' => $this->name,
+            'email' => $this->email,
+            'phone' => $this->phone,
+            'location' => json_decode($this->location ?? ''),
             'registered_at' => $this->registered_at,
 
         ];

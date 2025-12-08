@@ -26,14 +26,14 @@ enum PlatformTypeEnum: string
     public function labels(): array
     {
         return [
-            'shopify'     => 'Shopify',
-            'tiktok'      => 'Tiktok',
+            'shopify' => 'Shopify',
+            'tiktok' => 'Tiktok',
             'woocommerce' => 'Woo',
-            'ebay'        => 'Ebay',
-            'amazon'      => 'Amazon',
-            'manual'      => 'Web/API',
-            'magento'     => 'Magento',
-            'wix'         => 'Wix',
+            'ebay' => 'Ebay',
+            'amazon' => 'Amazon',
+            'manual' => 'Web/API',
+            'magento' => 'Magento',
+            'wix' => 'Wix',
         ];
     }
 }

@@ -31,7 +31,7 @@ class GroupHydrateCustomers implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_customers' => $group->customers()->count()
+            'number_customers' => $group->customers()->count(),
         ];
 
         $stats = array_merge(

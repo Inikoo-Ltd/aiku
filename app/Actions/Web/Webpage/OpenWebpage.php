@@ -22,7 +22,6 @@ class OpenWebpage extends OrgAction
     use AsAction;
     use WithAttributes;
 
-
     public function handle(Webpage $webpage): Webpage
     {
         $webpage->redirectedTo->delete();

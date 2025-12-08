@@ -30,7 +30,6 @@ class GetSupervisorUsers extends OrgAction
         return $this->handle($fulfilment);
     }
 
-
     public function handle(Fulfilment $scope, $prefix = null): LengthAwarePaginator
     {
 
@@ -44,9 +43,8 @@ class GetSupervisorUsers extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-
         if ($scope instanceof Fulfilment) {
-            $role = Role::where('name', "fulfilment-shop-supervisor-".$scope->id)->first();
+            $role = Role::where('name', 'fulfilment-shop-supervisor-'.$scope->id)->first();
         }
 
         $queryBuilder = QueryBuilder::for(User::class);

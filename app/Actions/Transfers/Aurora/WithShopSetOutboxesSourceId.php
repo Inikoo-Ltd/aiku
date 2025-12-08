@@ -28,18 +28,15 @@ trait WithShopSetOutboxesSourceId
 
             if ($outbox) {
 
-
-                $sources   = Arr::get($outbox->sources, 'outboxes', []);
+                $sources = Arr::get($outbox->sources, 'outboxes', []);
                 $sources[] = $shop->organisation->id.':'.$auroraOutboxes->{'Email Campaign Type Key'};
-                $sources   = array_unique($sources);
+                $sources = array_unique($sources);
 
                 $outbox->updateQuietly([
                     'sources' => [
                         'outboxes' => $sources,
-                    ]
+                    ],
                 ]);
-
-
 
             }
         }
@@ -48,7 +45,7 @@ trait WithShopSetOutboxesSourceId
 
     private function mapAuroraOutboxCode($auroraCode): OutboxCodeEnum
     {
-        return match($auroraCode) {
+        return match ($auroraCode) {
             'New Customer' => OutboxCodeEnum::NEW_CUSTOMER,
             'AbandonedCart' => OutboxCodeEnum::ABANDONED_CART,
             'Basket Low Stock' => OutboxCodeEnum::BASKET_LOW_STOCK,
@@ -70,6 +67,4 @@ trait WithShopSetOutboxesSourceId
             'Invoice Deleted' => OutboxCodeEnum::INVOICE_DELETED,
         };
     }
-
-
 }

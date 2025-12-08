@@ -13,12 +13,12 @@ use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\HistoricAsset;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Discounts\Offer;
-use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferAllowance;
+use App\Models\Discounts\OfferCampaign;
 use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Feedback;
 use App\Models\Traits\InCustomer;
 use Eloquent;
@@ -98,6 +98,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \App\Models\Ordering\Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Shop $shop
+ *
  * @method static \Database\Factories\Ordering\TransactionFactory factory($count = null, $state = [])
  * @method static Builder<static>|Transaction newModelQuery()
  * @method static Builder<static>|Transaction newQuery()
@@ -105,52 +106,51 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|Transaction query()
  * @method static Builder<static>|Transaction withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Transaction withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Transaction extends Model
 {
-    use SoftDeletes;
     use HasFactory;
     use InCustomer;
+    use SoftDeletes;
 
     protected $table = 'transactions';
 
     protected $casts = [
-        'quantity'                  => 'decimal:3',
-        'data'                      => 'array',
-        'offers_data'               => 'array',
-        'state'                     => TransactionStateEnum::class,
-        'status'                    => TransactionStatusEnum::class,
-        'out_of_stock_in_basket'    => 'boolean',
-        'date'                      => 'datetime',
-        'submitted_at'              => 'datetime',
-        'in_warehouse_at'           => 'datetime',
-        'settled_at'                => 'datetime',
+        'quantity' => 'decimal:3',
+        'data' => 'array',
+        'offers_data' => 'array',
+        'state' => TransactionStateEnum::class,
+        'status' => TransactionStatusEnum::class,
+        'out_of_stock_in_basket' => 'boolean',
+        'date' => 'datetime',
+        'submitted_at' => 'datetime',
+        'in_warehouse_at' => 'datetime',
+        'settled_at' => 'datetime',
         'out_of_stock_in_basket_at' => 'datetime',
-        'fetched_at'                => 'datetime',
-        'last_fetched_at'           => 'datetime',
-        'quantity_ordered'          => 'decimal:3',
-        'quantity_bonus'            => 'decimal:3',
-        'quantity_dispatched'       => 'decimal:3',
-        'quantity_fail'             => 'decimal:3',
-        'quantity_cancelled'        => 'decimal:3',
-        'gross_amount'              => 'decimal:2',
-        'net_amount'                => 'decimal:2',
-        'grp_net_amount'            => 'decimal:2',
-        'org_net_amount'            => 'decimal:2',
-        'grp_exchange'              => 'decimal:4',
-        'org_exchange'              => 'decimal:4',
-
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
+        'quantity_ordered' => 'decimal:3',
+        'quantity_bonus' => 'decimal:3',
+        'quantity_dispatched' => 'decimal:3',
+        'quantity_fail' => 'decimal:3',
+        'quantity_cancelled' => 'decimal:3',
+        'gross_amount' => 'decimal:2',
+        'net_amount' => 'decimal:2',
+        'grp_net_amount' => 'decimal:2',
+        'org_net_amount' => 'decimal:2',
+        'grp_exchange' => 'decimal:4',
+        'org_exchange' => 'decimal:4',
 
     ];
 
     protected $attributes = [
-        'data'             => '{}',
-        'offers_data'      => '{}',
+        'data' => '{}',
+        'offers_data' => '{}',
     ];
 
     protected $guarded = [];
-
 
     public function model(): MorphTo
     {
@@ -211,5 +211,4 @@ class Transaction extends Model
     {
         return $this->belongsTo(Invoice::class);
     }
-
 }

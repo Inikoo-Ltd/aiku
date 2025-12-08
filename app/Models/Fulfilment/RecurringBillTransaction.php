@@ -56,25 +56,27 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Model|\Eloquent|null $item
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Fulfilment\RecurringBill $recurringBill
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class RecurringBillTransaction extends Model
 {
-    use SoftDeletes;
     use inFulfilmentCustomer;
+    use SoftDeletes;
 
     protected $table = 'recurring_bill_transactions';
 
     protected $casts = [
         'data' => 'array',
         'start_date' => 'datetime',
-        'end_date'   => 'datetime',
+        'end_date' => 'datetime',
     ];
 
     protected $attributes = [
@@ -112,5 +114,4 @@ class RecurringBillTransaction extends Model
     {
         return $this->belongsTo(FulfilmentTransaction::class);
     }
-
 }

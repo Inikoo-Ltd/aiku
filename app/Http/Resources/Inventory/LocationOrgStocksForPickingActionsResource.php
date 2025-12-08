@@ -28,12 +28,12 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
     public function toArray($request): array
     {
         $quantityPicked = 0;
-        $pickingId      = null;
+        $pickingId = null;
         if ($this->pickings_data) {
-            $pickingsData   = preg_split('/;/', $this->pickings_data);
+            $pickingsData = preg_split('/;/', $this->pickings_data);
             $quantityPicked = $pickingsData[0] ?? 0;
-            $pickingsIds    = preg_split('/,/', $pickingsData[1] ?? []);
-            if (!empty($pickingsIds)) {
+            $pickingsIds = preg_split('/,/', $pickingsData[1] ?? []);
+            if (! empty($pickingsIds)) {
                 $pickingId = $pickingsIds[0];
             }
         }
@@ -47,11 +47,11 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
         $quantity = floor($this->quantity * 100) / 100; // Always round up to 3 decimal places
 
         return [
-            'id'                  => $this->id,
-            'location_id'         => $this->location_id,
-            'location_code'       => $this->location_code,
-            'location_slug'       => $this->location_slug,
-            'quantity'            => $this->quantity,
+            'id' => $this->id,
+            'location_id' => $this->location_id,
+            'location_code' => $this->location_code,
+            'location_slug' => $this->location_slug,
+            'quantity' => $this->quantity,
             'quantity_fractional' => riseDivisor(
                 divideWithRemainder(
                     findSmallestFactors($quantity)
@@ -59,9 +59,9 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
                 $orgStockPackedIn
             ),
 
-            'type'            => $this->type,
+            'type' => $this->type,
             'quantity_picked' => $quantityPicked,
-            'picking_id'      => $pickingId,
+            'picking_id' => $pickingId,
         ];
     }
 }

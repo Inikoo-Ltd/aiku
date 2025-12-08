@@ -16,19 +16,19 @@ enum FulfilmentCustomerStatusEnum: string
     use EnumHelperTrait;
 
     case NO_RENTAL_AGREEMENT = 'no_rental_agreement';
-    case ACTIVE              = 'active';
-    case UNACCOMPLISHED      = 'unaccomplished';
-    case INACTIVE            = 'inactive';
-    case LOST                = 'lost';
+    case ACTIVE = 'active';
+    case UNACCOMPLISHED = 'unaccomplished';
+    case INACTIVE = 'inactive';
+    case LOST = 'lost';
 
     public static function labels(): array
     {
         return [
             'no_rental_agreement' => __('No Rental Agreement'),
-            'active'              => __('Active'),
-            'unaccomplished'      => __('Unaccomplished'),
-            'inactive'            => __('Losing'),
-            'lost'                => __('Lost'),
+            'active' => __('Active'),
+            'unaccomplished' => __('Unaccomplished'),
+            'inactive' => __('Losing'),
+            'lost' => __('Lost'),
         ];
     }
 
@@ -36,13 +36,12 @@ enum FulfilmentCustomerStatusEnum: string
     {
         $stats = $parent->stats;
 
-
         return [
             'no_rental_agreement' => $stats->number_customers_status_no_rental_agreement,
-            'unaccomplished'      => $stats->number_customers_status_unaccomplished,
-            'active'              => $stats->number_customers_status_active,
-            'inactive'            => $stats->number_customers_status_inactive,
-            'lost'                => $stats->number_customers_status_lost,
+            'unaccomplished' => $stats->number_customers_status_unaccomplished,
+            'active' => $stats->number_customers_status_active,
+            'inactive' => $stats->number_customers_status_inactive,
+            'lost' => $stats->number_customers_status_lost,
         ];
     }
 
@@ -51,55 +50,54 @@ enum FulfilmentCustomerStatusEnum: string
         return [
             'no_rental_agreement' => [
                 'tooltip' => __('No Rental Agreement'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',
-                'color'   => 'lime',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',
+                'color' => 'lime',  // Color for box (Retina)
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'unaccomplished'      => [
+            'unaccomplished' => [
                 'tooltip' => __('Unaccomplished'),
-                'icon'    => 'fal fa-skull-cow',
-                'class'   => 'text-yellow-500',
-                'color'   => 'yellow',
-                'app'     => [
+                'icon' => 'fal fa-skull-cow',
+                'class' => 'text-yellow-500',
+                'color' => 'yellow',
+                'app' => [
                     'name' => 'skull-cow',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'inactive'            => [
+            'inactive' => [
                 'tooltip' => __('Inactive'),
-                'icon'    => 'fal fa-share',
-                'class'   => 'text-gray-400',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-share',
+                'class' => 'text-gray-400',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'share',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'active'              => [
+            'active' => [
                 'tooltip' => __('Active'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-green-500',
-                'color'   => 'green',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-green-500',
+                'color' => 'green',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'lost'                => [
+            'lost' => [
                 'tooltip' => __('Lost'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
-            ]
+                    'type' => 'font-awesome-5',
+                ],
+            ],
         ];
     }
-
 }

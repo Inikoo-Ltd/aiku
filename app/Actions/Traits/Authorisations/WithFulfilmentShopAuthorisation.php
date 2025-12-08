@@ -19,21 +19,21 @@ trait WithFulfilmentShopAuthorisation
         }
 
         $this->isSupervisor = $request->user()->authTo([
-            "supervisor-fulfilment-shop.".$this->fulfilment->id
+            'supervisor-fulfilment-shop.'.$this->fulfilment->id,
         ]);
 
         $this->canEdit = $request->user()->authTo([
             "fulfilment-shop.{$this->fulfilment->id}.edit",
-            "supervisor-fulfilment-shop.".$this->fulfilment->id
+            'supervisor-fulfilment-shop.'.$this->fulfilment->id,
         ]);
 
         $this->canDelete = $this->canEdit;
 
         return $request->user()->authTo([
             "fulfilment-shop.{$this->fulfilment->id}.view",
-            "supervisor-fulfilment-shop.".$this->fulfilment->id,
+            'supervisor-fulfilment-shop.'.$this->fulfilment->id,
             "accounting.{$this->organisation->id}.view",
-            "group-webmaster.view"
+            'group-webmaster.view',
         ]);
     }
 }

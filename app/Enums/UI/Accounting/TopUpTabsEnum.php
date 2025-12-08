@@ -17,8 +17,8 @@ enum TopUpTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE          = 'showcase';
-    case DATA          = 'data';
+    case SHOWCASE = 'showcase';
+    case DATA = 'data';
     case HISTORY_NOTES = 'history_notes';
 
     public function blueprint(): array
@@ -26,20 +26,20 @@ enum TopUpTabsEnum: string
         return match ($this) {
             TopUpTabsEnum::DATA => [
                 'title' => __('Data'),
-                'icon'  => 'fal fa-database',
-                'type'  => 'icon',
+                'icon' => 'fal fa-database',
+                'type' => 'icon',
                 'align' => 'right',
             ],
 
             TopUpTabsEnum::HISTORY_NOTES => [
                 'title' => __('History, notes'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             TopUpTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
         };
     }

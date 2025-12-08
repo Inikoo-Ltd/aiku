@@ -24,22 +24,19 @@ class HandleInertiaGrpRequests extends Middleware
     public function share(Request $request): array
     {
 
-
         $routeName = $request->route()->getName();
         if (str_starts_with($routeName, 'grp.json.')) {
             return [];
         }
-
 
         /** @var User $user */
         $user = $request->user();
 
         $firstLoadOnlyProps = [];
 
+        if (! $request->inertia() || Session::get('reloadLayout')) {
 
-        if (!$request->inertia() || Session::get('reloadLayout')) {
-
-            $firstLoadOnlyProps          = GetFirstLoadProps::run($user);
+            $firstLoadOnlyProps = GetFirstLoadProps::run($user);
             $firstLoadOnlyProps['ziggy'] = function () use ($request) {
                 return array_merge((new Ziggy('grp'))->toArray(), [
                     'location' => $request->url(),
@@ -53,16 +50,15 @@ class HandleInertiaGrpRequests extends Middleware
             }
         }
 
-
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'auth'  => [
+                'auth' => [
                     'user' => $request->user() ? LoggedUserResource::make($request->user())->getArray() : null,
                 ],
                 'flash' => [
                     'notification' => fn () => $request->session()->get('notification'),
-                    'modal'        => fn () => $request->session()->get('modal')
+                    'modal' => fn () => $request->session()->get('modal'),
                 ],
                 'ziggy' => [
                     'location' => $request->url(),

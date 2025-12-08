@@ -16,30 +16,27 @@ enum BannerTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE              = 'showcase';
-    case SNAPSHOTS             = 'snapshots';
+    case SHOWCASE = 'showcase';
+    case SNAPSHOTS = 'snapshots';
 
-
-    case CHANGELOG            = 'changelog';
-
-
+    case CHANGELOG = 'changelog';
 
     public function blueprint(): array
     {
         return match ($this) {
             BannerTabsEnum::SHOWCASE => [
                 'title' => __('Banner'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
             BannerTabsEnum::SNAPSHOTS => [
                 'title' => __('Snapshots'),
-                'icon'  => 'fal fa-layer-group',
+                'icon' => 'fal fa-layer-group',
             ],
 
             BannerTabsEnum::CHANGELOG => [
                 'title' => __('Changelog'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
         };

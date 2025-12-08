@@ -31,7 +31,6 @@ class PdfProformaInvoice extends OrgAction
     use WithExportData;
     use WithInvoicesExport;
 
-
     public function handle(Order $order, array $options): Response
     {
 
@@ -44,49 +43,44 @@ class PdfProformaInvoice extends OrgAction
 
             $totalNet = $totalItemsNet + $totalShipping;
 
-
             $transactionModel = $order->transactions->where('model_type', 'Product');
 
-
             $transactions = $transactionModel->map(function ($transaction) {
-                if (!empty($transaction->data['date'])) {
+                if (! empty($transaction->data['date'])) {
                     $transaction->handling_date = Carbon::parse($transaction->data['date'])->format('d M Y');
                 }
 
                 return $transaction;
             });
 
-
             $config = [
-                'title'                  => $order->reference,
-                'margin_left'            => 8,
-                'margin_right'           => 8,
-                'margin_top'             => 2,
-                'margin_bottom'          => 2,
-                'auto_page_break'        => true,
+                'title' => $order->reference,
+                'margin_left' => 8,
+                'margin_right' => 8,
+                'margin_top' => 2,
+                'margin_bottom' => 2,
+                'auto_page_break' => true,
                 'auto_page_break_margin' => 10,
             ];
 
-
             $filename = $order?->slug.'-'.now()->format('Y-m-d');
-            $pdf      = PDF::loadView('invoices.templates.pdf.proforma-invoice', [
-                'shop'                 => $order->shop,
-                'order'                => $order,
-                'transactions'         => $transactions,
-                'pro_mode'             => Arr::get($options, 'pro_mode', false),
-                'country_of_origin'    => Arr::get($options, 'country_of_origin', false),
-                'rrp'                  => Arr::get($options, 'rrp', false),
-                'parts'                => Arr::get($options, 'parts', false),
-                'commodity_codes'      => Arr::get($options, 'commodity_codes', false),
-                'weight'               => Arr::get($options, 'weight', false),
-                'barcode'              => Arr::get($options, 'barcode', false),
-                'hide_payment_status'  => Arr::get($options, 'hide_payment_status', false),
-                'cpnp'                 => Arr::get($options, 'cpnp', false),
+            $pdf = PDF::loadView('invoices.templates.pdf.proforma-invoice', [
+                'shop' => $order->shop,
+                'order' => $order,
+                'transactions' => $transactions,
+                'pro_mode' => Arr::get($options, 'pro_mode', false),
+                'country_of_origin' => Arr::get($options, 'country_of_origin', false),
+                'rrp' => Arr::get($options, 'rrp', false),
+                'parts' => Arr::get($options, 'parts', false),
+                'commodity_codes' => Arr::get($options, 'commodity_codes', false),
+                'weight' => Arr::get($options, 'weight', false),
+                'barcode' => Arr::get($options, 'barcode', false),
+                'hide_payment_status' => Arr::get($options, 'hide_payment_status', false),
+                'cpnp' => Arr::get($options, 'cpnp', false),
                 'group_by_tariff_code' => Arr::get($options, 'group_by_tariff_code', false),
 
                 'totalNet' => number_format($totalNet, 2, '.', ''),
             ], [], $config);
-
 
             return response($pdf->stream($filename.'.pdf'), 200)
                 ->header('Content-Type', 'application/pdf')
@@ -101,15 +95,15 @@ class PdfProformaInvoice extends OrgAction
     public function rules(): array
     {
         return [
-            'pro_mode'             => ['sometimes', 'boolean'],
-            'country_of_origin'    => ['sometimes', 'boolean'],
-            'rrp'                  => ['sometimes', 'boolean'],
-            'parts'                => ['sometimes', 'boolean'],
-            'commodity_codes'      => ['sometimes', 'boolean'],
-            'weight'               => ['sometimes', 'boolean'],
-            'barcode'              => ['sometimes', 'boolean'],
-            'cpnp'                 => ['sometimes', 'boolean'],
-            'hide_payment_status'  => ['sometimes', 'boolean'],
+            'pro_mode' => ['sometimes', 'boolean'],
+            'country_of_origin' => ['sometimes', 'boolean'],
+            'rrp' => ['sometimes', 'boolean'],
+            'parts' => ['sometimes', 'boolean'],
+            'commodity_codes' => ['sometimes', 'boolean'],
+            'weight' => ['sometimes', 'boolean'],
+            'barcode' => ['sometimes', 'boolean'],
+            'cpnp' => ['sometimes', 'boolean'],
+            'hide_payment_status' => ['sometimes', 'boolean'],
             'group_by_tariff_code' => ['sometimes', 'boolean'],
         ];
     }

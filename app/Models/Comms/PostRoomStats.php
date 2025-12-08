@@ -84,9 +84,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_pallet_return_deleted
  * @property int $number_outboxes_type_pallet_deleted
  * @property-read \App\Models\Comms\PostRoom|null $postRoom
+ *
  * @method static Builder<static>|PostRoomStats newModelQuery()
  * @method static Builder<static>|PostRoomStats newQuery()
  * @method static Builder<static>|PostRoomStats query()
+ *
  * @mixin Eloquent
  */
 class PostRoomStats extends Model

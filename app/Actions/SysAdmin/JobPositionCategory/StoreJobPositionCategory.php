@@ -21,42 +21,37 @@ class StoreJobPositionCategory extends GrpAction
     {
         /** @var JobPositionCategory $jobPositionCategory */
         $jobPositionCategory = $group->jobPositionCategories()->create($modelData);
+
         return $jobPositionCategory;
     }
-
 
     public function rules(): array
     {
         return [
-            'code'       => [
+            'code' => [
                 'required',
                 new IUnique(
                     table: 'job_position_categories',
                     extraConditions: [
-                        ['column' => 'group_id', 'value' => $this->group->id]
+                        ['column' => 'group_id', 'value' => $this->group->id],
                     ],
                 ),
                 'max:16',
-                'alpha_dash'
+                'alpha_dash',
             ],
-            'name'       => ['required', 'max:255'],
-            'scope'      => ['required', Rule::enum(JobPositionScopeEnum::class)],
+            'name' => ['required', 'max:255'],
+            'scope' => ['required', Rule::enum(JobPositionScopeEnum::class)],
             'department' => ['sometimes', 'nullable', 'string'],
-            'team'       => ['sometimes', 'nullable', 'string']
+            'team' => ['sometimes', 'nullable', 'string'],
         ];
     }
-
-
 
     public function action(Group $group, array $modelData): JobPositionCategory
     {
         $this->asAction = true;
 
-
         $this->initialisation($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }
-
-
 }

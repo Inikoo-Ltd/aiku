@@ -53,7 +53,7 @@ class IndexOrgPartners extends OrgAction
                 'organisations.code',
                 'organisations.slug',
                 'organisations.name',
-                'organisations.email'
+                'organisations.email',
             ])
             ->allowedSorts(['code', 'organisations.name', 'email', 'name'])
             ->allowedFilters([$globalSearch])
@@ -61,14 +61,14 @@ class IndexOrgPartners extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation $parent, array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Organisation $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $canEdit) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
 
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
 
             $table
@@ -107,7 +107,6 @@ class IndexOrgPartners extends OrgAction
         return OrgPartnersResource::collection($partners);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $partners, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -117,14 +116,13 @@ class IndexOrgPartners extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('partners'),
-                'pageHead'    => [
-                    'model'       => __('procurement'),
-                    'icon'        => ['fal', 'fa-users-class'],
-                    'title'       => __('partners'),
+                'title' => __('partners'),
+                'pageHead' => [
+                    'model' => __('procurement'),
+                    'icon' => ['fal', 'fa-users-class'],
+                    'title' => __('partners'),
                 ],
-                'data'        => OrgPartnersResource::collection($partners),
-
+                'data' => OrgPartnersResource::collection($partners),
 
             ]
         )->table($this->tableStructure($this->parent));
@@ -137,16 +135,16 @@ class IndexOrgPartners extends OrgAction
                 ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_partners.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.org_partners.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Partners'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
         };

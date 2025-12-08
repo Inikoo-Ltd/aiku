@@ -23,7 +23,6 @@ enum RetinaDepartmentTabsEnum: string
     case FAMILIES = 'families';
     case PRODUCTS = 'products';
 
-
     public function blueprint(ProductCategory $parent): array
     {
         $subDepartments = $parent->stats->number_sub_departments_state_active + $parent->stats->number_sub_departments_state_discontinuing;
@@ -34,27 +33,27 @@ enum RetinaDepartmentTabsEnum: string
         return match ($this) {
             RetinaDepartmentTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             RetinaDepartmentTabsEnum::SUB_DEPARTMENTS => [
-                'title' => __('Sub departments'). " ({$subDepartments})",
-                'icon'  => 'fal fa-dot-circle',
-                'type'  => 'icon',
+                'title' => __('Sub departments')." ({$subDepartments})",
+                'icon' => 'fal fa-dot-circle',
+                'type' => 'icon',
             ],
             RetinaDepartmentTabsEnum::FAMILIES => [
-                'title' => __('Families'). " ({$families})",
-                'icon'  => 'fal fa-folder',
-                'type'  => 'icon',
+                'title' => __('Families')." ({$families})",
+                'icon' => 'fal fa-folder',
+                'type' => 'icon',
             ],
             RetinaDepartmentTabsEnum::PRODUCTS => [
-                'title' => __('Products'). " ({$products})",
-                'icon'  => 'fal fa-cube',
-                'type'  => 'icon',
+                'title' => __('Products')." ({$products})",
+                'icon' => 'fal fa-cube',
+                'type' => 'icon',
             ],
             RetinaDepartmentTabsEnum::COLLECTIONS => [
-                'title' => __('Collections'). " ({$collection})",
-                'icon'  => 'fal fa-album-collection',
-                'type'  => 'icon',
+                'title' => __('Collections')." ({$collection})",
+                'icon' => 'fal fa-album-collection',
+                'type' => 'icon',
             ],
 
         };

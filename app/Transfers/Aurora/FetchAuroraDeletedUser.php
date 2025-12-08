@@ -17,13 +17,12 @@ class FetchAuroraDeletedUser extends FetchAurora
     protected function parseModel(): void
     {
 
-        if (!$this->auroraModelData->{'User Deleted Metadata'}) {
-            $auroraDeletedData = new stdClass();
+        if (! $this->auroraModelData->{'User Deleted Metadata'}) {
+            $auroraDeletedData = new stdClass;
         } else {
             $auroraDeletedData = json_decode(gzuncompress($this->auroraModelData->{'User Deleted Metadata'}));
             $auroraDeletedData = $auroraDeletedData->data;
         }
-
 
         $parent = null;
         if ($auroraDeletedData->{'User Type'} == 'Staff') {
@@ -32,9 +31,8 @@ class FetchAuroraDeletedUser extends FetchAurora
         $parentSource = $this->organisation->id.':'.$auroraDeletedData->{'User Parent Key'};
 
         $data = [
-            'deleted' => ['source' => 'aurora']
+            'deleted' => ['source' => 'aurora'],
         ];
-
 
         $relatedUsername = $this->auroraModelData->{'User Deleted Handle'};
         if ($this->auroraModelData->aiku_alt_username) {
@@ -44,7 +42,6 @@ class FetchAuroraDeletedUser extends FetchAurora
 
         $username = $auroraDeletedData->{'User Handle'}.'-deleted_aurora_'.$this->organisation->id.'_'.$this->auroraModelData->{'User Deleted Key'};
 
-
         $this->parsedData['parent'] = $parent;
         $this->parsedData['parentSource'] = $parentSource;
 
@@ -52,19 +49,19 @@ class FetchAuroraDeletedUser extends FetchAurora
 
         $this->parsedData['user'] =
             [
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'User Deleted Key'},
-                'username'        => Str::kebab(Str::lower($username)),
-                'status'          => false,
-                'pivot_status'    => false,
-                'created_at'      => $auroraDeletedData->{'User Created'},
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'User Deleted Key'},
+                'username' => Str::kebab(Str::lower($username)),
+                'status' => false,
+                'pivot_status' => false,
+                'created_at' => $auroraDeletedData->{'User Created'},
                 'legacy_password' => Str::random(60),
-                'language_id'     => $this->parseLanguageID($auroraDeletedData->{'User Preferred Locale'}),
-                'reset_password'  => false,
-                'data'            => $data,
-                'deleted_at'      => $this->auroraModelData->{'User Deleted Date'},
-                'fetched_at'        => now(),
-                'last_fetched_at'   => now(),
-                'password'         => Str::random(60),
+                'language_id' => $this->parseLanguageID($auroraDeletedData->{'User Preferred Locale'}),
+                'reset_password' => false,
+                'data' => $data,
+                'deleted_at' => $this->auroraModelData->{'User Deleted Date'},
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
+                'password' => Str::random(60),
             ];
 
         if ($this->parsedData['add_guest']) {
@@ -75,21 +72,20 @@ class FetchAuroraDeletedUser extends FetchAurora
     protected function getGuestData($auroraDeletedData): array
     {
 
-
         return [
-            'code'            => $auroraDeletedData->{'User Handle'},
-            'contact_name'    => $auroraDeletedData->{'User Alias'},
-            'phone'           => $auroraDeletedData->{'User Password Recovery Mobile'},
-            'email'           => $auroraDeletedData->{'User Password Recovery Email'},
-            'source_id'       => $this->organisation->id.':'.$auroraDeletedData->{'User Parent Key'},
-            'status'          => false,
-            'fetched_at'      => now(),
+            'code' => $auroraDeletedData->{'User Handle'},
+            'contact_name' => $auroraDeletedData->{'User Alias'},
+            'phone' => $auroraDeletedData->{'User Password Recovery Mobile'},
+            'email' => $auroraDeletedData->{'User Password Recovery Email'},
+            'source_id' => $this->organisation->id.':'.$auroraDeletedData->{'User Parent Key'},
+            'status' => false,
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
-            'user'            => $this->parsedData['user']
+            'user' => $this->parsedData['user'],
         ];
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('User Deleted Dimension')

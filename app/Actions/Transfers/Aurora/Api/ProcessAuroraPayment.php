@@ -22,5 +22,4 @@ class ProcessAuroraPayment extends OrgAction
     {
         $this->fetcher = FetchAuroraPayments::class;
     }
-
 }

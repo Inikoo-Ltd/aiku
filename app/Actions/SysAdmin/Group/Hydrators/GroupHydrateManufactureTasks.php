@@ -28,14 +28,11 @@ class GroupHydrateManufactureTasks implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
         $stats = [
-            'number_manufacture_tasks' => $group->manufactureTasks()->count()
+            'number_manufacture_tasks' => $group->manufactureTasks()->count(),
         ];
-
-
 
         $stats = array_merge(
             $stats,
@@ -62,7 +59,6 @@ class GroupHydrateManufactureTasks implements ShouldBeUnique
                 }
             )
         );
-
 
         $group->manufactureStats()->update($stats);
     }

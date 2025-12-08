@@ -15,18 +15,20 @@ class FetchAurora
 {
     use WithAuroraParsers;
 
-
     protected Organisation $organisation;
+
     protected ?array $parsedData;
+
     protected ?object $auroraModelData;
+
     protected SourceOrganisationService $organisationSource;
 
     public function __construct(SourceOrganisationService $organisationSource)
     {
-        $this->organisationSource    = $organisationSource;
-        $this->organisation          = $organisationSource->organisation;
-        $this->parsedData            = null;
-        $this->auroraModelData       = null;
+        $this->organisationSource = $organisationSource;
+        $this->organisation = $organisationSource->organisation;
+        $this->parsedData = null;
+        $this->auroraModelData = null;
     }
 
     public function fetch(int $id): ?array
@@ -40,12 +42,10 @@ class FetchAurora
         return $this->parsedData;
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return null;
     }
 
-    protected function parseModel(): void
-    {
-    }
+    protected function parseModel(): void {}
 }

@@ -32,28 +32,27 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read \App\Models\Procurement\OrgPartnerStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\StockDelivery> $stockDeliveries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartner newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartner newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartner query()
+ *
  * @mixin \Eloquent
  */
 class OrgPartner extends Model
 {
-    use InOrganisation;
     use HasUniversalSearch;
+    use InOrganisation;
 
     protected $casts = [
-        'sources'           => 'array',
+        'sources' => 'array',
     ];
 
     protected $attributes = [
         'sources' => '{}',
     ];
 
-
     protected $guarded = [];
-
-
 
     public function stats(): HasOne
     {
@@ -74,6 +73,4 @@ class OrgPartner extends Model
     {
         return $this->belongsTo(Organisation::class, 'partner_id');
     }
-
-
 }

@@ -26,16 +26,13 @@ class FetchAuroraIngredients extends FetchAuroraAction
     {
         $ingredientData = $organisationSource->fetchIngredient($organisationSourceId);
 
-
-        if (!$ingredientData) {
+        if (! $ingredientData) {
             return null;
         }
 
-
         $ingredient = Ingredient::whereRaw('LOWER(name)=? ', [trim(strtolower($ingredientData['ingredient']['name']))])->first();
 
-
-        if (!$ingredient) {
+        if (! $ingredient) {
             if ($ingredient = Ingredient::where('source_id', $ingredientData['ingredient']['source_id'])
                 ->first()) {
                 try {
@@ -47,7 +44,6 @@ class FetchAuroraIngredients extends FetchAuroraAction
                         audit: false
                     );
 
-
                     $this->recordChange($organisationSource, $ingredient->wasChanged());
                 } catch (Exception $e) {
                     $this->recordError($organisationSource, $e, $ingredientData['ingredient'], 'Ingredient', 'update');
@@ -57,12 +53,11 @@ class FetchAuroraIngredients extends FetchAuroraAction
             }
         }
 
-        if (!$ingredient) {
+        if (! $ingredient) {
             $ingredient = Ingredient::whereJsonContains('sources->ingredients', $ingredientData['ingredient']['source_id'])->first();
         }
 
-
-        if (!$ingredient) {
+        if (! $ingredient) {
             try {
                 $ingredient = StoreIngredient::make()->action(
                     group: group(),
@@ -98,49 +93,46 @@ class FetchAuroraIngredients extends FetchAuroraAction
                 $this->updateTradeUnitArgs($ingredient, $ingredientData['ingredient']['source_id'], $ingredientData['trade_unit_args']);
             }
 
-
             $this->updateExtraIngredients($ingredient, $ingredientData['ingredient']['source_id'], $ingredientData['extra_ingredients']);
         }
-
 
         return $ingredient;
     }
 
     public function updateExtraIngredients(Ingredient $ingredient, string $source, array $data): void
     {
-        $extraIngredients          = $ingredient->source_extra_ingredients;
+        $extraIngredients = $ingredient->source_extra_ingredients;
         $extraIngredients[$source] = $data;
 
         $ingredient->updateQuietly([
-            'source_extra_ingredients' => $extraIngredients
+            'source_extra_ingredients' => $extraIngredients,
         ]);
     }
 
     public function updateTradeUnitArgs(Ingredient $ingredient, string $source, array $data): void
     {
-        $tradeUnitArgs          = Arr::get($ingredient->source_data, 'trade_unt_args', []);
+        $tradeUnitArgs = Arr::get($ingredient->source_data, 'trade_unt_args', []);
         $tradeUnitArgs[$source] = $data;
 
         $ingredient->updateQuietly([
             'source_data' => [
-                'trade_unt_args' => $tradeUnitArgs
-            ]
+                'trade_unt_args' => $tradeUnitArgs,
+            ],
         ]);
     }
 
     public function updateIngredientSources(Ingredient $ingredient, string $source): void
     {
-        $sources   = Arr::get($ingredient->sources, 'ingredients', []);
+        $sources = Arr::get($ingredient->sources, 'ingredients', []);
         $sources[] = $source;
-        $sources   = array_unique($sources);
+        $sources = array_unique($sources);
 
         $ingredient->updateQuietly([
             'sources' => [
                 'ingredients' => $sources,
-            ]
+            ],
         ]);
     }
-
 
     public function getModelsQuery(): Builder
     {
@@ -149,7 +141,6 @@ class FetchAuroraIngredients extends FetchAuroraAction
             ->select('Material Key as source_id')
             ->orderBy('source_id');
     }
-
 
     public function count(): ?int
     {

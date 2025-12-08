@@ -19,16 +19,18 @@ class GroupHydrateServices implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
+
     public string $jobQueue = 'low-priority';
 
     public function getJobUniqueId(Group $group): string
     {
         return $group->id;
     }
+
     public function handle(Group $group): void
     {
 
-        $stats         = [
+        $stats = [
             'number_services' => $group->services()->count(),
         ];
 
@@ -48,5 +50,4 @@ class GroupHydrateServices implements ShouldBeUnique
         $group->catalogueStats()->update($stats);
 
     }
-
 }

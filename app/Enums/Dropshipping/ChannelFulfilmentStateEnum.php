@@ -22,40 +22,40 @@ enum ChannelFulfilmentStateEnum: string
     public static function labels(): array
     {
         return [
-            'open'       => __('Open'),
-            'hold'       => __('Hold'),
+            'open' => __('Open'),
+            'hold' => __('Hold'),
             'incomplete' => __('Incomplete'),
-            'dispatched' => __('Dispatched')
+            'dispatched' => __('Dispatched'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'open'       => [
+            'open' => [
                 'tooltip' => __('Open'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',
-                'color'   => 'lime'
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',
+                'color' => 'lime',
             ],
-            'hold'       => [
+            'hold' => [
                 'tooltip' => __('Hold'),
-                'icon'    => 'fal fa-share',
-                'class'   => 'text-indigo-400',
-                'color'   => 'indigo'
+                'icon' => 'fal fa-share',
+                'class' => 'text-indigo-400',
+                'color' => 'indigo',
             ],
             'incomplete' => [
                 'tooltip' => __('Incomplete'),
-                'icon'    => 'fal fa-spell-check',
-                'class'   => 'text-red-500',
-                'color'   => 'emerald'
+                'icon' => 'fal fa-spell-check',
+                'class' => 'text-red-500',
+                'color' => 'emerald',
             ],
             'dispatched' => [
                 'tooltip' => __('Dispatched'),
-                'icon'    => 'fal fa-spell-check',
-                'class'   => 'text-emerald-500',
-                'color'   => 'emerald'
-            ]
+                'icon' => 'fal fa-spell-check',
+                'class' => 'text-emerald-500',
+                'color' => 'emerald',
+            ],
         ];
     }
 }

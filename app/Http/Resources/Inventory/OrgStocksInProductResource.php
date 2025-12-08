@@ -18,17 +18,17 @@ class OrgStocksInProductResource extends JsonResource
 
         return [
             // 'id'                              => $this->id,
-            'org_stock_id'                              => $this->id,
-            'slug'                            => $this->slug,
-            'code'                            => $this->code,
-            'name'                            => $this->name,
-            'notes'                            => $this->pivot_notes,
-            'unit_value'                      => $this->unit_value,
+            'org_stock_id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'notes' => $this->pivot_notes,
+            'unit_value' => $this->unit_value,
             'discontinued_in_organisation_at' => $this->discontinued_in_organisation_at,
-            'family_slug'                     => $this->family_slug,
-            'family_code'                     => $this->family_code,
+            'family_slug' => $this->family_slug,
+            'family_code' => $this->family_code,
             // 'pivot_quantity'                  => $this->pivot_quantity,
-            'quantity'                  => $this->pivot_quantity,
+            'quantity' => $this->pivot_quantity,
         ];
     }
 }

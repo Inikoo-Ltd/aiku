@@ -13,7 +13,7 @@ class GetWebsiteWorkshopHeader
     public function handle(Website $website): array
     {
         return [
-            'data' => Arr::get($website->unpublishedHeaderSnapshot->layout, 'header')
+            'data' => Arr::get($website->unpublishedHeaderSnapshot->layout, 'header'),
         ];
     }
 }

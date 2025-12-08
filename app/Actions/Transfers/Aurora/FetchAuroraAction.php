@@ -22,6 +22,7 @@ class FetchAuroraAction extends FetchAction
     use WithAuroraOrganisationsArgument;
 
     public string $jobQueue = 'aurora';
+
     public int $jobTimeout = 60 * 60 * 12;
 
     protected function preProcessCommand(Command $command): void
@@ -29,62 +30,61 @@ class FetchAuroraAction extends FetchAction
         $this->dbSuffix = $command->option('db_suffix') ?? '';
 
         if ($command->getName() == 'fetch:webpages') {
-            $this->fetchAll = (bool)$command->option('all');
+            $this->fetchAll = (bool) $command->option('all');
         }
 
         if (in_array($command->getName(), [
-                'fetch:invoices',
-            ]) and $command->option('only_refunds')) {
-            $this->onlyRefunds = (bool)$command->option('only_refunds');
+            'fetch:invoices',
+        ]) and $command->option('only_refunds')) {
+            $this->onlyRefunds = (bool) $command->option('only_refunds');
         }
 
         if (in_array($command->getName(), [
-                'fetch:orders',
-                'fetch:invoices',
-                'fetch:delivery_notes',
-                'fetch:dispatched_emails',
-                'fetch:email_tracking_events',
-                'fetch:histories'
-            ]) and $command->option('order')) {
-            $this->orderDesc = (bool)$command->option('order') == 'desc';
+            'fetch:orders',
+            'fetch:invoices',
+            'fetch:delivery_notes',
+            'fetch:dispatched_emails',
+            'fetch:email_tracking_events',
+            'fetch:histories',
+        ]) and $command->option('order')) {
+            $this->orderDesc = (bool) $command->option('order') == 'desc';
         }
 
         if (in_array($command->getName(), [
-                'fetch:orders',
-                'fetch:invoices',
-                'fetch:delivery_notes',
-            ]) and $command->option('only_orders_no_transactions')) {
-            $this->onlyOrdersNoTransactions = (bool)$command->option('only_orders_no_transactions');
+            'fetch:orders',
+            'fetch:invoices',
+            'fetch:delivery_notes',
+        ]) and $command->option('only_orders_no_transactions')) {
+            $this->onlyOrdersNoTransactions = (bool) $command->option('only_orders_no_transactions');
         }
 
         if (in_array($command->getName(), [
-                'fetch:orders',
-                'fetch:invoices',
-                'fetch:delivery_notes',
-                'fetch:dispatched_emails',
-                'fetch:email_tracking_events',
-                'fetch:histories'
-            ]) and $command->option('days')) {
-            $this->fromDays = (int)$command->option('days');
+            'fetch:orders',
+            'fetch:invoices',
+            'fetch:delivery_notes',
+            'fetch:dispatched_emails',
+            'fetch:email_tracking_events',
+            'fetch:histories',
+        ]) and $command->option('days')) {
+            $this->fromDays = (int) $command->option('days');
         }
 
-
         if (in_array($command->getName(), [
-                'fetch:customers',
-                'fetch:web_users',
-                'fetch:products',
-                'fetch:webpages',
-                'fetch:invoices',
-                'fetch:orders',
-                'fetch:delivery_notes',
-                'fetch:products',
-                'fetch:services',
-                'fetch:portfolios',
-                'fetch:favourites',
-                'fetch:offer_components',
-                'fetch:product_org_stocks',
-                'fetch:prospects',
-            ]) and $command->option('shop')) {
+            'fetch:customers',
+            'fetch:web_users',
+            'fetch:products',
+            'fetch:webpages',
+            'fetch:invoices',
+            'fetch:orders',
+            'fetch:delivery_notes',
+            'fetch:products',
+            'fetch:services',
+            'fetch:portfolios',
+            'fetch:favourites',
+            'fetch:offer_components',
+            'fetch:product_org_stocks',
+            'fetch:prospects',
+        ]) and $command->option('shop')) {
             $this->shop = Shop::where('slug', $command->option('shop'))->firstOrFail();
         }
 
@@ -121,11 +121,10 @@ class FetchAuroraAction extends FetchAction
             'fetch:queries',
             'fetch:subscription_events',
             'fetch:offer_components',
-            'fetch:credits'
+            'fetch:credits',
         ])) {
-            $this->onlyNew = (bool)$command->option('only_new');
+            $this->onlyNew = (bool) $command->option('only_new');
         }
-
 
         if (in_array($command->getName(), [
             'fetch:customers',
@@ -135,7 +134,7 @@ class FetchAuroraAction extends FetchAction
             'fetch:purchase_orders',
             'fetch:stock_deliveries',
             'fetch:webpages',
-            'fetch:dispatched_emails'
+            'fetch:dispatched_emails',
         ])) {
             $this->with = $command->option('with');
         }
@@ -143,7 +142,6 @@ class FetchAuroraAction extends FetchAction
         if ($command->getName() == 'fetch:orders') {
             $this->basket = $command->option('basket') ?? false;
             $this->onlyCancelled = $command->option('only_cancelled') ?? false;
-
 
         }
 
@@ -157,13 +155,12 @@ class FetchAuroraAction extends FetchAction
                 default => null
             };
 
-            if (!$model) {
+            if (! $model) {
                 $command->error('Invalid history model');
                 exit();
             } else {
                 $command->info('Fetching histories for: '.implode(',', $model));
             }
-
 
             $this->model = $model;
         }
@@ -172,19 +169,19 @@ class FetchAuroraAction extends FetchAction
     protected function doReset(Command $command): void
     {
         if (in_array($command->getName(), [
-                'fetch:stocks',
-                'fetch:products',
-                'fetch:orders',
-                'fetch:invoices',
-                'fetch:customers',
-                'fetch:web_users',
-                'fetch:delivery_notes',
-                'fetch:purchase-orders',
-                'fetch:web_users',
-                'fetch:prospects',
-                'fetch:deleted_customers',
-                'fetch:webpages'
-            ]) and $command->option('reset')) {
+            'fetch:stocks',
+            'fetch:products',
+            'fetch:orders',
+            'fetch:invoices',
+            'fetch:customers',
+            'fetch:web_users',
+            'fetch:delivery_notes',
+            'fetch:purchase-orders',
+            'fetch:web_users',
+            'fetch:prospects',
+            'fetch:deleted_customers',
+            'fetch:webpages',
+        ]) and $command->option('reset')) {
             $this->reset();
         }
     }
@@ -193,7 +190,6 @@ class FetchAuroraAction extends FetchAction
     {
         return $command->option('db_suffix') ?? '';
     }
-
 
     public function getJobUniqueId(int $organisationID, int $organisationSourceId, array $with): string
     {
@@ -206,11 +202,11 @@ class FetchAuroraAction extends FetchAction
     public function asJob(int $organisationID, int $organisationSourceId, array $with, ?int $fetchStackId = null): void
     {
         $organisation = Organisation::find($organisationID);
-        if (!$organisation) {
+        if (! $organisation) {
             throw new \Exception('Invalid Organisation ID');
         }
 
-        $this->with               = $with;
+        $this->with = $with;
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 
@@ -222,7 +218,7 @@ class FetchAuroraAction extends FetchAction
                 $fetchStack->update(
                     [
                         'finish_fetch_at' => now(),
-                        'state'           => FetchStackStateEnum::SUCCESS
+                        'state' => FetchStackStateEnum::SUCCESS,
                     ]
                 );
             }
@@ -235,29 +231,28 @@ class FetchAuroraAction extends FetchAction
     public function action(int $organisationID, int $organisationSourceId, array $with): Model|array|null
     {
         $organisation = Organisation::find($organisationID);
-        if (!$organisation) {
+        if (! $organisation) {
             throw new \Exception('Invalid Organisation ID');
         }
 
-        $this->with               = $with;
+        $this->with = $with;
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 
         return $this->handle($this->organisationSource, $organisationSourceId);
     }
 
-
     public function jsonResponse($model): array
     {
         if ($model) {
             return [
-                'model'     => $model->getMorphClass(),
-                'id'        => $model->id,
+                'model' => $model->getMorphClass(),
+                'id' => $model->id,
                 'source_id' => $model->source_id,
             ];
         } else {
             return [
-                'error' => 'model not returned'
+                'error' => 'model not returned',
             ];
         }
     }
@@ -275,6 +270,4 @@ class FetchAuroraAction extends FetchAction
             default => FetchTypeEnum::BASE,
         };
     }
-
-
 }

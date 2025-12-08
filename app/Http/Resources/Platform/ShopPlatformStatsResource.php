@@ -22,11 +22,11 @@ class ShopPlatformStatsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'      => $this->id,
-            'code'    => $this->platform->code,
-            'slug'    => $this->platform->slug,
-            'name'    => $this->platform->name,
-            'type'    => $this->platform->type,
+            'id' => $this->id,
+            'code' => $this->platform->code,
+            'slug' => $this->platform->slug,
+            'name' => $this->platform->name,
+            'type' => $this->platform->type,
             'number_customers' => $this->number_customers,
             'number_customer_sales_channels' => $this->number_customer_sales_channels,
             'number_customer_sales_channel_broken' => $this->number_customer_sales_channel_broken,

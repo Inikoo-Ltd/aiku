@@ -14,7 +14,6 @@ enum DashboardDeltaIconType: string
 {
     use EnumHelperTrait;
 
-
     case DECREASE = 'decrease';
     case INCREASE = 'increase';
     case NO_CHANGE = 'neutral';
@@ -54,5 +53,4 @@ enum DashboardDeltaIconType: string
             ],
         };
     }
-
 }

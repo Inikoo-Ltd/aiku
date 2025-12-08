@@ -36,5 +36,4 @@ trait InAssetModel
     {
         return $this->belongsTo(Currency::class);
     }
-
 }

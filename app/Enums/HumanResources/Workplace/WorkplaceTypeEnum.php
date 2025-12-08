@@ -14,25 +14,24 @@ enum WorkplaceTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case HQ              = 'hq';
-    case BRANCH          = 'branch';
-    case HOME            = 'home';
+    case HQ = 'hq';
+    case BRANCH = 'branch';
+    case HOME = 'home';
     case GROUP_PREMISSES = 'group-premisses';
     case CLIENT_PREMISES = 'client-premises';
-    case ROAD            = 'road';
-    case OTHER           = 'other';
+    case ROAD = 'road';
+    case OTHER = 'other';
 
     public static function labels(): array
     {
         return [
-            'hq'                => __('HQ'),
-            'branch'            => __('Branch'),
-            'home'              => __('Home'),
-            'group-premisses'   => __('Group Premisses'),
-            'client-premises'   => __('Client Premisses'),
-            'road'              => __('Road'),
-            'other'             => __('Other'),
+            'hq' => __('HQ'),
+            'branch' => __('Branch'),
+            'home' => __('Home'),
+            'group-premisses' => __('Group Premisses'),
+            'client-premises' => __('Client Premisses'),
+            'road' => __('Road'),
+            'other' => __('Other'),
         ];
     }
-
 }

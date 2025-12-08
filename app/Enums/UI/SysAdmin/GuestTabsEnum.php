@@ -16,9 +16,8 @@ enum GuestTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE                       = 'showcase';
-    case HISTORY                        = 'history';
-
+    case SHOWCASE = 'showcase';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
@@ -26,13 +25,13 @@ enum GuestTabsEnum: string
 
             GuestTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             GuestTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

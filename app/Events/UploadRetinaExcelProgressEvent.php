@@ -23,21 +23,20 @@ class UploadRetinaExcelProgressEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
-
     public Upload $data;
+
     public ?WebUser $webUser;
 
     public function __construct(Upload $upload, ?WebUser $webUser)
     {
-        $this->webUser      = $webUser;
-        $this->data         = $upload;
+        $this->webUser = $webUser;
+        $this->data = $upload;
     }
-
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('retina.personal.' . $this->webUser->id)
+            new PrivateChannel('retina.personal.'.$this->webUser->id),
         ];
     }
 

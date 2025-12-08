@@ -26,7 +26,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
  * @property mixed $id
- *
  */
 class DispatchedEmailsResource extends JsonResource
 {
@@ -35,25 +34,25 @@ class DispatchedEmailsResource extends JsonResource
         /** @var Mailshot $mailshot */
         $mailshot = $this;
 
-        return array(
-            'id'                           => $this->id,
-            'number_clicks'                => $this->number_clicks,
-            'number_reads'                 => $this->number_reads,
-            'state'                        => $mailshot->state->stateIcon()[$mailshot->state->value],
-            'created_at'                   => $this->created_at,
-            'updated_at'                   => $this->updated_at,
-            'sent_at'                      => $this->sent_at,
-            'email_address'                => $this->email_address,
-            'mask_as_spam'                 => $this->mask_as_spam ?
+        return [
+            'id' => $this->id,
+            'number_clicks' => $this->number_clicks,
+            'number_reads' => $this->number_reads,
+            'state' => $mailshot->state->stateIcon()[$mailshot->state->value],
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'sent_at' => $this->sent_at,
+            'email_address' => $this->email_address,
+            'mask_as_spam' => $this->mask_as_spam ?
                 [
                     'tooltip' => __('Spam'),
-                    'icon'    => 'fal fa-dumpster',
+                    'icon' => 'fal fa-dumpster',
                 ] : [],
             'number_email_tracking_events' => $this->number_email_tracking_events,
-            'shop_code'                    => $this->shop_code,
-            'shop_slug'                    => $this->shop_slug,
-            'organisation_name'            => $this->organisation_name,
-            'organisation_slug'            => $this->organisation_slug,
-        );
+            'shop_code' => $this->shop_code,
+            'shop_slug' => $this->shop_slug,
+            'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
+        ];
     }
 }

@@ -55,33 +55,34 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Production\Production $production
  * @property-read \App\Models\Production\ManufactureTaskStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask withoutTrashed()
+ *
  * @mixin \Eloquent
  */
-
 class ManufactureTask extends Model implements Auditable
 {
-    use InProduction;
-    use SoftDeletes;
+    use HasHistory;
     use HasSlug;
     use HasUniversalSearch;
-    use HasHistory;
+    use InProduction;
+    use SoftDeletes;
 
     protected $guarded = [];
 
-    protected $casts   = [
-        'data'                                => 'array',
-        'operative_reward_terms'              => ManufactureTaskOperativeRewardTermsEnum::class,
-        'operative_reward_allowance_type'     => ManufactureTaskOperativeRewardAllowanceTypeEnum::class,
+    protected $casts = [
+        'data' => 'array',
+        'operative_reward_terms' => ManufactureTaskOperativeRewardTermsEnum::class,
+        'operative_reward_allowance_type' => ManufactureTaskOperativeRewardAllowanceTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
     ];
 
     public function getSlugOptions(): SlugOptions

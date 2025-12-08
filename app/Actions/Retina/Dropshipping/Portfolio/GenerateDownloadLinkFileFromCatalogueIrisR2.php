@@ -22,18 +22,20 @@ class GenerateDownloadLinkFileFromCatalogueIrisR2
         try {
             $fileExists = CheckCatalogueFileExistsInR2::run($filePath);
 
-            if (!$fileExists) {
-                Log::warning("File not found in R2: " . $filePath);
+            if (! $fileExists) {
+                Log::warning('File not found in R2: '.$filePath);
+
                 return null;
             }
 
             // Build URL manually using your R2 public domain
             $publicDomain = config('filesystems.disks.catalogue-iris-r2.url');
-            return rtrim($publicDomain, '/') . '/' . ltrim($filePath, '/');
 
+            return rtrim($publicDomain, '/').'/'.ltrim($filePath, '/');
 
         } catch (Exception $e) {
-            Log::error('R2 Generate Download Link Error: ' . $e->getMessage());
+            Log::error('R2 Generate Download Link Error: '.$e->getMessage());
+
             return null;
         }
     }
@@ -52,13 +54,13 @@ class GenerateDownloadLinkFileFromCatalogueIrisR2
 
         if ($url === null) {
             $command->error("❌ Failed to generate download link for file: {$filePath}");
+
             return 1; // Non-zero exit code for error
         }
 
-        $command->info("✅ Successfully generated download link");
-        $command->line("🔗 Download URL: " . $url);
+        $command->info('✅ Successfully generated download link');
+        $command->line('🔗 Download URL: '.$url);
 
         return 0; // Zero exit code for success
     }
-
 }

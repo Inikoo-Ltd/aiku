@@ -103,6 +103,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read User|null $user
  * @property-read Collection<int, User> $users
  * @property-read Collection<int, \App\Models\HumanResources\Workplace> $workplaces
+ *
  * @method static \Database\Factories\HumanResources\EmployeeFactory factory($count = null, $state = [])
  * @method static Builder<static>|Employee newModelQuery()
  * @method static Builder<static>|Employee newQuery()
@@ -110,44 +111,45 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Employee query()
  * @method static Builder<static>|Employee withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Employee withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class Employee extends Model implements HasMedia, Auditable
+class Employee extends Model implements Auditable, HasMedia
 {
-    use HasSlug;
     use HasAddress;
     use HasAddresses;
-    use SoftDeletes;
-    use HasUniversalSearch;
-    use HasImage;
     use HasAttachments;
     use HasFactory;
     use HasHistory;
+    use HasImage;
+    use HasSlug;
+    use HasUniversalSearch;
     use InOrganisation;
+    use SoftDeletes;
 
     protected $casts = [
         'week_working_hours' => 'decimal:2',
-        'data'               => 'array',
-        'errors'             => 'array',
-        'salary'             => 'array',
-        'working_hours'      => 'array',
-        'migration_data'     => 'array',
-        'date_of_birth'      => 'datetime:Y-m-d',
-        'gender'             => GenderEnum::class,
-        'state'              => EmployeeStateEnum::class,
-        'type'               => EmployeeTypeEnum::class,
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data' => 'array',
+        'errors' => 'array',
+        'salary' => 'array',
+        'working_hours' => 'array',
+        'migration_data' => 'array',
+        'date_of_birth' => 'datetime:Y-m-d',
+        'gender' => GenderEnum::class,
+        'state' => EmployeeStateEnum::class,
+        'type' => EmployeeTypeEnum::class,
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
 
     ];
-    //ss
+    // ss
 
     protected $attributes = [
-        'data'           => '{}',
-        'errors'         => '{}',
-        'salary'         => '{}',
-        'working_hours'  => '{}',
-        'migration_data' => '{}'
+        'data' => '{}',
+        'errors' => '{}',
+        'salary' => '{}',
+        'working_hours' => '{}',
+        'migration_data' => '{}',
     ];
 
     protected $guarded = [];
@@ -174,13 +176,12 @@ class Employee extends Model implements HasMedia, Auditable
         'employment_start_at',
         'employment_end_at',
         'emergency_contact',
-        'pin'
+        'pin',
     ];
 
     protected array $attributeModifiers = [
         'pin' => EmployeePinRedactor::class,
     ];
-
 
     public static function boot(): void
     {
@@ -261,5 +262,4 @@ class Employee extends Model implements HasMedia, Auditable
     {
         return $this->morphMany(Task::class, 'assigner');
     }
-
 }

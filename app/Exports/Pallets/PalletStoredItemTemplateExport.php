@@ -16,7 +16,7 @@ class PalletStoredItemTemplateExport implements FromArray
     public function array(): array
     {
         return [
-            ['pallet_type','pallet_customer_reference', 'pallet_notes', 'sku_reference', 'sku_quantity', 'sku_name']
+            ['pallet_type', 'pallet_customer_reference', 'pallet_notes', 'sku_reference', 'sku_quantity', 'sku_name'],
         ];
     }
 }

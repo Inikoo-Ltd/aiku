@@ -19,7 +19,6 @@ class UpdateBannerImage
     use AsAction;
     use HasBannerCommand;
 
-
     public function handle(Banner $banner): Banner
     {
         $snapshot = match ($banner->state) {
@@ -28,10 +27,10 @@ class UpdateBannerImage
         };
 
         /** @var Slide $slide */
-        $slide    = $snapshot->slides()->where('visibility', true)->first();
+        $slide = $snapshot->slides()->where('visibility', true)->first();
         $image_id = $slide?->image_id;
 
-        if (!$image_id and $banner->state == BannerStateEnum::UNPUBLISHED) {
+        if (! $image_id and $banner->state == BannerStateEnum::UNPUBLISHED) {
             $image_id = Arr::get($banner->data, 'unpublished_image_id');
         }
 
@@ -53,10 +52,11 @@ class UpdateBannerImage
             $banner = $this->handle($banner);
 
             $command->info("Done! banner $banner->name image updated  🥳");
+
             return 0;
         }
+
         return 1;
 
     }
-
 }

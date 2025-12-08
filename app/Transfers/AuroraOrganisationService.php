@@ -112,6 +112,7 @@ use Illuminate\Support\Facades\DB;
 class AuroraOrganisationService implements SourceOrganisationService
 {
     public Organisation $organisation;
+
     public ?Fetch $fetch = null;
 
     public function initialisation(Organisation $organisation, string $databaseSuffix = ''): void
@@ -350,7 +351,6 @@ class AuroraOrganisationService implements SourceOrganisationService
         return (new FetchAuroraPayment($this))->fetch($id);
     }
 
-
     public function fetchMailshot($id): ?array
     {
         return (new FetchAuroraMailshot($this))->fetch($id);
@@ -585,5 +585,4 @@ class AuroraOrganisationService implements SourceOrganisationService
     {
         return (new FetchAuroraCollection($this))->fetch($id);
     }
-
 }

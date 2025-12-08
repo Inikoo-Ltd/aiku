@@ -48,34 +48,34 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscription newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscription newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscription onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscription query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscription withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscription withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Subscription extends Model implements Auditable
 {
-    use SoftDeletes;
+    use HasHistory;
     use HasUniversalSearch;
     use InAssetModel;
-    use HasHistory;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     protected $casts = [
-        'state'                  => ServiceStateEnum::class,
-        'status'                 => 'boolean',
-        'data'                   => 'array',
-        'settings'               => 'array',
+        'state' => ServiceStateEnum::class,
+        'status' => 'boolean',
+        'data' => 'array',
+        'settings' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
-
-
 }

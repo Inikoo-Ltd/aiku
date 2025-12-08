@@ -48,8 +48,7 @@ trait WithAuroraAttachments
 
         $temporaryDirectory = TemporaryDirectory::make();
 
-        $mimes = new MimeTypes();
-
+        $mimes = new MimeTypes;
 
         $temporalName = $auroraAttachmentData->{'Attachment Key'}.'.'.$auroraAttachmentData->{'Attachment File Checksum'};
 
@@ -59,29 +58,27 @@ trait WithAuroraAttachments
             $temporalName .= '.'.$extension;
         }
 
-
         file_put_contents($temporaryDirectory->path($temporalName), $content);
-
 
         return [
             'temporaryDirectory' => $temporaryDirectory,
-            'is_public'          => $auroraAttachmentData->{'Attachment Public'} == 'Yes',
-            'modelData'          => [
-                'path'            => $temporaryDirectory->path($temporalName),
-                'originalName'    => $auroraAttachmentData->{'Attachment File Original Name'},
-                'scope'           => $auroraAttachmentData->{'Attachment Subject Type'},
-                'caption'         => $auroraAttachmentData->{'Attachment Caption'},
-                'fetched_at'      => now(),
+            'is_public' => $auroraAttachmentData->{'Attachment Public'} == 'Yes',
+            'modelData' => [
+                'path' => $temporaryDirectory->path($temporalName),
+                'originalName' => $auroraAttachmentData->{'Attachment File Original Name'},
+                'scope' => $auroraAttachmentData->{'Attachment Subject Type'},
+                'caption' => $auroraAttachmentData->{'Attachment Caption'},
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
-                'source_id'       => $organisationID.':'.$auroraAttachmentData->{'Attachment Bridge Key'},
+                'source_id' => $organisationID.':'.$auroraAttachmentData->{'Attachment Bridge Key'},
 
-            ]
+            ],
         ];
     }
 
     protected function processFetchAttachments(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|null $model, string $modelType, string $modelSourceID): void
     {
-        if (!$model) {
+        if (! $model) {
             return;
         }
         $attachmentModelType = class_basename($model);
@@ -92,7 +89,6 @@ trait WithAuroraAttachments
         }
 
         $attachmentsToDelete = $model->attachments()->pluck('source_id', 'model_has_attachments.id')->all();
-
 
         foreach ($this->parseAttachments($modelSourceID, $modelType) as $attachmentData) {
             if ($attachmentData === null) {
@@ -108,28 +104,25 @@ trait WithAuroraAttachments
 
             $modelAttachment = $model->attachments()->where('media_id', $media->id)->first();
 
-
             $sources = json_decode($modelAttachment->pivot->sources, true);
 
-            $bridgeSources     = Arr::get($sources, 'bridge', []);
-            $bridgeSources[]   = $attachmentData['modelData']['source_id'];
-            $bridgeSources     = array_unique($bridgeSources);
+            $bridgeSources = Arr::get($sources, 'bridge', []);
+            $bridgeSources[] = $attachmentData['modelData']['source_id'];
+            $bridgeSources = array_unique($bridgeSources);
             $sources['bridge'] = $bridgeSources;
 
-            $modelSources                  = Arr::get($sources, $attachmentModelType, []);
-            $modelSources[]                = $model->source_id;
-            $modelSources                  = array_unique($modelSources);
+            $modelSources = Arr::get($sources, $attachmentModelType, []);
+            $modelSources[] = $model->source_id;
+            $modelSources = array_unique($modelSources);
             $sources[$attachmentModelType] = $modelSources;
 
             $model->attachments()->updateExistingPivot(
                 $media->id,
                 [
-                    "sources" =>
-                        json_encode($sources)
+                    'sources' => json_encode($sources),
 
                 ]
             );
-
 
             $attachmentsToDelete = array_diff($attachmentsToDelete, [$attachmentData['modelData']['source_id']]);
             if ($delete) {
@@ -145,7 +138,7 @@ trait WithAuroraAttachments
                 try {
                     DeleteAttachment::make()->action($attachment);
                 } catch (Throwable) {
-                    //do nothing
+                    // do nothing
                 }
             }
         }
@@ -154,7 +147,7 @@ trait WithAuroraAttachments
     protected function parseAttachments($modelSource, $auroraModelName): array
     {
         $modelSourceData = explode(':', $modelSource);
-        $attachments     = $this->getModelAttachmentsCollection(
+        $attachments = $this->getModelAttachmentsCollection(
             $auroraModelName,
             $modelSourceData[1]
         )->map(function ($auroraAttachment) use ($modelSourceData) {

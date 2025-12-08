@@ -17,27 +17,26 @@ enum InvoiceCategoryTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case OVERVIEW         = 'overview';
-    case STATS            = 'stats';
-    case HISTORY          = 'history';
-
+    case OVERVIEW = 'overview';
+    case STATS = 'stats';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
-            InvoiceCategoryTabsEnum::STATS       => [
+            InvoiceCategoryTabsEnum::STATS => [
                 'title' => __('Stats'),
-                'icon'  => 'fal fa-chart-line',
+                'icon' => 'fal fa-chart-line',
             ],
-            InvoiceCategoryTabsEnum::HISTORY     => [
+            InvoiceCategoryTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             InvoiceCategoryTabsEnum::OVERVIEW => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt',
+                'icon' => 'fal fa-tachometer-alt',
             ],
         };
     }

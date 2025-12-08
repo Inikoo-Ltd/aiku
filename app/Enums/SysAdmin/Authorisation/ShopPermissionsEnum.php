@@ -14,41 +14,40 @@ enum ShopPermissionsEnum: string
 {
     case SHOP_ADMIN = 'shop-admin';
 
-    case PRODUCTS      = 'products';
+    case PRODUCTS = 'products';
     case PRODUCTS_EDIT = 'products.edit';
     case PRODUCTS_VIEW = 'products.view';
 
-    case CRM      = 'crm';
+    case CRM = 'crm';
     case CRM_EDIT = 'crm.edit';
     case CRM_VIEW = 'crm.view';
 
-
-    case CRM_PROSPECTS      = 'crm.prospects';
+    case CRM_PROSPECTS = 'crm.prospects';
     case CRM_PROSPECTS_EDIT = 'crm.prospects.edit';
     case CRM_PROSPECTS_VIEW = 'crm.prospects.view';
 
-    case WEB      = 'web';
+    case WEB = 'web';
     case WEB_EDIT = 'web.edit';
     case WEB_VIEW = 'web.view';
 
-    case ORDERS      = 'orders';
+    case ORDERS = 'orders';
     case ORDERS_EDIT = 'orders.edit';
     case ORDERS_VIEW = 'orders.view';
 
-    case DISCOUNTS      = 'discounts';
+    case DISCOUNTS = 'discounts';
     case DISCOUNTS_EDIT = 'discounts.edit';
     case DISCOUNTS_VIEW = 'discounts.view';
 
-    case MARKETING      = 'marketing';
+    case MARKETING = 'marketing';
     case MARKETING_EDIT = 'marketing.edit';
     case MARKETING_VIEW = 'marketing.view';
 
-    case SUPERVISOR_PRODUCTS     = 'supervisor-products';
-    case SUPERVISOR_CRM          = 'supervisor-crm';
-    case SUPERVISOR_WEB          = 'supervisor-web';
-    case SUPERVISOR_ORDERS       = 'supervisor-orders';
-    case SUPERVISOR_DISCOUNTS    = 'supervisor-discounts';
-    case SUPERVISOR_MARKETING    = 'supervisor-marketing';
+    case SUPERVISOR_PRODUCTS = 'supervisor-products';
+    case SUPERVISOR_CRM = 'supervisor-crm';
+    case SUPERVISOR_WEB = 'supervisor-web';
+    case SUPERVISOR_ORDERS = 'supervisor-orders';
+    case SUPERVISOR_DISCOUNTS = 'supervisor-discounts';
+    case SUPERVISOR_MARKETING = 'supervisor-marketing';
 
     public static function getAllValues(Shop $shop): array
     {
@@ -67,7 +66,6 @@ enum ShopPermissionsEnum: string
         $permissionComponents = explode('.', $rawName);
         $permissionComponents = array_merge(array_slice($permissionComponents, 0, 1), [$shop->id], array_slice($permissionComponents, 1));
 
-        return join('.', $permissionComponents);
+        return implode('.', $permissionComponents);
     }
-
 }

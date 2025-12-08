@@ -16,21 +16,21 @@ enum ManufactureTasksTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case MANUFACTURE_TASKS                       = 'manufacture_tasks';
-    case MANUFACTURE_TASKS_HISTORIES             = 'manufacture_tasks_histories';
+    case MANUFACTURE_TASKS = 'manufacture_tasks';
+    case MANUFACTURE_TASKS_HISTORIES = 'manufacture_tasks_histories';
 
     public function blueprint(): array
     {
         return match ($this) {
             ManufactureTasksTabsEnum::MANUFACTURE_TASKS => [
                 'title' => __('Tasks'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
             ManufactureTasksTabsEnum::MANUFACTURE_TASKS_HISTORIES => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
-                'align' => 'right'
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ],
         };
     }

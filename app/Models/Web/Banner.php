@@ -9,9 +9,6 @@
 namespace App\Models\Web;
 
 use App\Actions\Utils\Abbreviate;
-
-;
-
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Media;
@@ -70,35 +67,37 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedSnapshot
  * @property-read \App\Models\Web\Website $website
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner withoutTrashed()
+ *
  * @mixin \Eloquent
  */
-class Banner extends Model implements HasMedia, Auditable
+class Banner extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
-    use HasSlug;
     use HasFactory;
-    use InWebsite;
+    use HasHistory;
+    use HasSlug;
     use HasUniversalSearch;
     use InteractsWithMedia;
-    use HasHistory;
+    use InWebsite;
+    use SoftDeletes;
 
     protected $dateFormat = 'Y-m-d H:i:s P';
 
     protected $casts = [
         'compiled_layout' => 'array',
-        'data'            => 'array',
-        'state'           => BannerStateEnum::class
+        'data' => 'array',
+        'state' => BannerStateEnum::class,
     ];
 
     protected $attributes = [
         'compiled_layout' => '{}',
-        'data'            => '{}',
+        'data' => '{}',
     ];
 
     protected $guarded = [];
@@ -106,12 +105,12 @@ class Banner extends Model implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'portfolio','banners'
+            'portfolio', 'banners',
         ];
     }
 
     protected array $auditExclude = [
-        'compiled_layout','unpublished_snapshot_id'
+        'compiled_layout', 'unpublished_snapshot_id',
     ];
 
     public function getRouteKeyName(): string
@@ -123,7 +122,7 @@ class Banner extends Model implements HasMedia, Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return Abbreviate::run(string:$this->name);
+                return Abbreviate::run(string: $this->name);
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug')
@@ -164,5 +163,4 @@ class Banner extends Model implements HasMedia, Auditable
     {
         return $this->morphMany(Deployment::class, 'model');
     }
-
 }

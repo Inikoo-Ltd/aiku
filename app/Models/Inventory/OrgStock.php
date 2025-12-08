@@ -115,11 +115,11 @@ class OrgStock extends Model implements Auditable
         'data' => 'array',
         'activated_in_organisation_at' => 'datetime',
         'discontinuing_in_organisation_at' => 'datetime',
-        'discontinued_in_organisation_at'  => 'datetime',
-        'state'                            => OrgStockStateEnum::class,
-        'quantity_status'                  => OrgStockQuantityStatusEnum::class,
-        'fetched_at'                       => 'datetime',
-        'last_fetched_at'                  => 'datetime',
+        'discontinued_in_organisation_at' => 'datetime',
+        'state' => OrgStockStateEnum::class,
+        'quantity_status' => OrgStockQuantityStatusEnum::class,
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [

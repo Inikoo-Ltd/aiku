@@ -9,7 +9,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::dropIfExists('collection_collection_category');
@@ -18,7 +19,6 @@ return new class () extends Migration {
         Schema::dropIfExists('collection_categories');
 
     }
-
 
     public function down(): void
     {

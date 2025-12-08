@@ -31,10 +31,9 @@ class AttachPaymentToOrder extends OrgAction
     public function rules(): array
     {
         return [
-            'amount'    => ['sometimes', 'numeric'],
+            'amount' => ['sometimes', 'numeric'],
         ];
     }
-
 
     public function action(Order $order, Payment $payment, array $modelData): void
     {

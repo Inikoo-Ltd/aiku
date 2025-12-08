@@ -22,7 +22,7 @@ class FetchAuroraInvoiceCategory extends FetchAurora
      */
     protected function parseModel(): void
     {
-        if (!$this->auroraModelData->{'Invoice Category Key'}) {
+        if (! $this->auroraModelData->{'Invoice Category Key'}) {
             return;
         }
 
@@ -33,7 +33,7 @@ class FetchAuroraInvoiceCategory extends FetchAurora
 
         $settings = [
         ];
-        $type     = null;
+        $type = null;
         switch ($this->auroraModelData->{'Invoice Category Function Code'}) {
             case 'store':
                 $type = InvoiceCategoryTypeEnum::SHOP_FALLBACK;
@@ -56,7 +56,7 @@ class FetchAuroraInvoiceCategory extends FetchAurora
                 $type = $this->auroraModelData->{'Invoice Category Function Code'} == 'country' ? InvoiceCategoryTypeEnum::IN_COUNTRY : InvoiceCategoryTypeEnum::NOT_IN_COUNTRY;
 
                 $country_codes = explode(',', $this->auroraModelData->{'Invoice Category Function Argument'});
-                $country_ids   = [];
+                $country_ids = [];
                 foreach ($country_codes as $country_code) {
                     $country_ids[] = $this->parseCountryID($country_code);
                 }
@@ -83,7 +83,7 @@ class FetchAuroraInvoiceCategory extends FetchAurora
                 $salesChannelIds = [];
                 foreach ($args as $arg) {
                     $salesChannel = $this->parseSalesChannel($this->organisation->id.':'.$arg);
-                    if (!$salesChannel) {
+                    if (! $salesChannel) {
                         dd('Sales Channel not found', $arg);
                     }
                     $salesChannelIds[] = $salesChannel->id;
@@ -92,7 +92,7 @@ class FetchAuroraInvoiceCategory extends FetchAurora
                 data_set($settings, 'sales_channel_ids', $salesChannelIds);
                 break;
             case 'customers':
-                $type             = InvoiceCategoryTypeEnum::IN_ORGANISATION;
+                $type = InvoiceCategoryTypeEnum::IN_ORGANISATION;
                 $organisation_ids = [];
                 if ($this->auroraModelData->{'Invoice Category Function Argument'} == '[6]') {
                     $organisation_ids[] = Organisation::where('slug', 'aw')->first()->id;
@@ -114,34 +114,32 @@ class FetchAuroraInvoiceCategory extends FetchAurora
             $currencyID = $this->organisation->currency_id;
         } else {
             $currencyID = $this->parseCurrencyID($this->auroraModelData->{'Invoice Category Currency Code'});
-            if (!$currencyID) {
+            if (! $currencyID) {
                 dd('Currency not found', $this->auroraModelData->{'Invoice Category Currency Code'});
             }
         }
 
-
         $this->parsedData['invoice_category'] = [
-            'code'               => $code,
-            'name'               => $this->auroraModelData->{'Category Label'},
-            'state'              => match ($this->auroraModelData->{'Invoice Category Status'}) {
+            'code' => $code,
+            'name' => $this->auroraModelData->{'Category Label'},
+            'state' => match ($this->auroraModelData->{'Invoice Category Status'}) {
                 'InProcess' => InvoiceCategoryStateEnum::IN_PROCESS,
                 'Normal' => InvoiceCategoryStateEnum::ACTIVE,
                 'ClosingDown' => InvoiceCategoryStateEnum::COOLDOWN,
                 default => InvoiceCategoryStateEnum::CLOSED
             },
-            'source_id'          => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
-            'source_slug'        => $sourceSlug,
-            'fetched_at'         => now(),
-            'last_fetched_at'    => now(),
-            'priority'           => $this->auroraModelData->{'Invoice Category Function Order'},
-            'settings'           => $settings,
-            'type'               => $type,
-            'currency_id'        => $currencyID,
-            'show_in_dashboards' => !($this->auroraModelData->{'Invoice Category Hide Dashboard'} == 'Yes'),
-            'organisation_id'    => $this->organisation->id,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
+            'source_slug' => $sourceSlug,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'priority' => $this->auroraModelData->{'Invoice Category Function Order'},
+            'settings' => $settings,
+            'type' => $type,
+            'currency_id' => $currencyID,
+            'show_in_dashboards' => ! ($this->auroraModelData->{'Invoice Category Hide Dashboard'} == 'Yes'),
+            'organisation_id' => $this->organisation->id,
 
         ];
-
 
         if ($settings == []) {
             unset($this->parsedData['invoice_category']['settings']);
@@ -153,13 +151,11 @@ class FetchAuroraInvoiceCategory extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Category Dimension')
             ->leftJoin('Invoice Category Dimension', 'Invoice Category Key', 'Category Key')
             ->where('Category Key', $id)->first();
     }
-
 }

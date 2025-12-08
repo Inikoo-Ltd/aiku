@@ -20,8 +20,8 @@ class TimezoneResource extends JsonResource
     {
         if ($this->resource === null) {
             return [
-                'id'     => null,
-                'name'   => null,
+                'id' => null,
+                'name' => null,
                 'offset' => null,
             ];
         }
@@ -30,10 +30,9 @@ class TimezoneResource extends JsonResource
         $timezone = $this;
 
         return [
-            'id'     => $timezone->id,
-            'name'   => $timezone->name,
+            'id' => $timezone->id,
+            'name' => $timezone->name,
             'offset' => $timezone->offset,
         ];
     }
-
 }

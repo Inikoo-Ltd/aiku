@@ -12,11 +12,9 @@ use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- *
  * @property string $code
  * @property string $iso3
  * @property string $name
- *
  */
 class CountryResource extends JsonResource
 {
@@ -31,5 +29,4 @@ class CountryResource extends JsonResource
             'name' => $this->name,
         ];
     }
-
 }

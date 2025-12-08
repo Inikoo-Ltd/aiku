@@ -26,7 +26,7 @@ class EditOrganisation extends GrpAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("sysadmin.view");
+        return $request->user()->authTo('sysadmin.view');
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
@@ -36,84 +36,82 @@ class EditOrganisation extends GrpAction
         return $this->handle($organisation);
     }
 
-
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
 
-        return Inertia::render("EditModel", [
-            "title"       => __("Organisation"),
-            "breadcrumbs" => $this->getBreadcrumbs(
+        return Inertia::render('EditModel', [
+            'title' => __('Organisation'),
+            'breadcrumbs' => $this->getBreadcrumbs(
                 $request->route()->getName(),
                 $request->route()->originalParameters()
             ),
-            "pageHead" => [
-                "title"   => $organisation->name,
-                "actions" => [
+            'pageHead' => [
+                'title' => $organisation->name,
+                'actions' => [
                     [
-                        "type"  => "button",
-                        "style" => "exitEdit",
-                        "route" => [
-                            "name"       => preg_replace('/edit$/', "show", $request->route()->getName()),
-                            "parameters" => array_values($request->route()->originalParameters()),
+                        'type' => 'button',
+                        'style' => 'exitEdit',
+                        'route' => [
+                            'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                            'parameters' => array_values($request->route()->originalParameters()),
                         ],
                     ],
                 ],
             ],
 
-
-            "formData" => [
-                "blueprint" => [
+            'formData' => [
+                'blueprint' => [
                     [
-                        "label"   => __("Details"),
-                        "title"   => __("Id"),
-                        "icon"    => "fal fa-fingerprint",
-                        "current" => true,
-                        "fields"  => [
-                            "name" => [
-                                "type"        => "input",
-                                "label"       => __("name"),
-                                "value"       => $organisation->name ?? '',
+                        'label' => __('Details'),
+                        'title' => __('Id'),
+                        'icon' => 'fal fa-fingerprint',
+                        'current' => true,
+                        'fields' => [
+                            'name' => [
+                                'type' => 'input',
+                                'label' => __('name'),
+                                'value' => $organisation->name ?? '',
                             ],
-                            "ui_name" => [
-                                "type"  => "input",
-                                "label" => __("UI display name"),
-                                "value" => Arr::get($organisation->settings, 'ui.name', $organisation->name)
+                            'ui_name' => [
+                                'type' => 'input',
+                                'label' => __('UI display name'),
+                                'value' => Arr::get($organisation->settings, 'ui.name', $organisation->name),
                             ],
-                            "contact_name" => [
-                                "type"  => "input",
-                                "label" => __("Contact name"),
-                                "value" => $organisation->contact_name
+                            'contact_name' => [
+                                'type' => 'input',
+                                'label' => __('Contact name'),
+                                'value' => $organisation->contact_name,
                             ],
-                            "email" => [
-                                "type"        => "input",
-                                "label"       => __("email"),
-                                "value"       => $organisation->email ?? '',
+                            'email' => [
+                                'type' => 'input',
+                                'label' => __('email'),
+                                'value' => $organisation->email ?? '',
                             ],
-                            "phone" => [
-                                "type"        => "input",
-                                "label"       => __("phone"),
-                                "value"       => $organisation->phone ?? '',
+                            'phone' => [
+                                'type' => 'input',
+                                'label' => __('phone'),
+                                'value' => $organisation->phone ?? '',
                             ],
                             'address' => [
-                                'type'    => 'address',
-                                'label'   => __('Address'),
-                                'value'   => AddressFormFieldsResource::make($organisation->address)->getArray(),
+                                'type' => 'address',
+                                'label' => __('Address'),
+                                'value' => AddressFormFieldsResource::make($organisation->address)->getArray(),
                                 'options' => [
-                                    'countriesAddressData' => GetAddressData::run()
-                                ]
+                                    'countriesAddressData' => GetAddressData::run(),
+                                ],
                             ],
-                            "image" => [
-                                "type"  => "avatar",
-                                "label" => __("Logo"),
-                                "value" => $organisation->imageSources(320, 320)
+                            'image' => [
+                                'type' => 'avatar',
+                                'label' => __('Logo'),
+                                'value' => $organisation->imageSources(320, 320),
                             ],
                         ],
                     ],
                 ],
-                "args" => [
-                    "updateRoute" => [
-                        "name"       => "grp.models.organisation.update",
-                        "parameters" => [$organisation->id],
+                'args' => [
+                    'updateRoute' => [
+                        'name' => 'grp.models.organisation.update',
+                        'parameters' => [$organisation->id],
                     ],
                 ],
             ],
@@ -123,9 +121,9 @@ class EditOrganisation extends GrpAction
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return ShowOrganisation::make()->getBreadcrumbs(
-            routeName: preg_replace('/edit$/', "show", $routeName),
+            routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: "(" . __("editing") . ")"
+            suffix: '('.__('editing').')'
         );
     }
 }

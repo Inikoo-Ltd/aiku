@@ -28,6 +28,7 @@ class GetWebsiteGoogleCloud extends OrgAction
     use WithNoStrictRules;
 
     private Website $website;
+
     private bool $saveSecret = false;
 
     /**
@@ -37,16 +38,16 @@ class GetWebsiteGoogleCloud extends OrgAction
     {
         $settings = $website->group->settings;
         $oauthClientSecret = Arr::get($settings, 'gcp.oauthClientSecret');
-        if (!$oauthClientSecret) {
+        if (! $oauthClientSecret) {
             $oauthClientSecret = config('app.analytics.google.client_oauth_secret');
-            if (!$oauthClientSecret) {
+            if (! $oauthClientSecret) {
                 dd("secret is empty \n");
             }
-            data_set($settings, "gcp.oauthClientSecret", $oauthClientSecret);
+            data_set($settings, 'gcp.oauthClientSecret', $oauthClientSecret);
             $website->group->update(['settings' => $settings]);
         }
 
-        $client = new Client();
+        $client = new Client;
         $gcpOauthClientSecretDecoded = base64_decode($oauthClientSecret);
         $client->setAuthConfig(json_decode($gcpOauthClientSecretDecoded, true));
         $client->addScope(Webmasters::WEBMASTERS_READONLY);
@@ -54,9 +55,9 @@ class GetWebsiteGoogleCloud extends OrgAction
 
         $websiteData = $website->data;
         $siteUrl = Arr::get($websiteData, 'gcp.siteUrl');
-        if (!$siteUrl) {
+        if (! $siteUrl) {
             $siteEntry = $service->sites->listSites()->getSiteEntry();
-            $listSite = Arr::pluck($siteEntry, "siteUrl");
+            $listSite = Arr::pluck($siteEntry, 'siteUrl');
             $siteUrl = Arr::where($listSite, function (string $value) use ($website) {
                 return str_contains($value, $website->domain);
             });
@@ -72,7 +73,7 @@ class GetWebsiteGoogleCloud extends OrgAction
             return [];
         }
 
-        $query = new SearchAnalyticsQueryRequest();
+        $query = new SearchAnalyticsQueryRequest;
         $currentDate = Date::now();
         $query->startDate = Arr::get($modelData, 'startDate') ?? $currentDate->copy()->subWeek()->toDateString();
         $query->endDate = Arr::get($modelData, 'endDate') ?? $currentDate->toDateString();
@@ -80,12 +81,14 @@ class GetWebsiteGoogleCloud extends OrgAction
         $query->searchType = Arr::get($modelData, 'searchType') ?? 'web';
 
         $res = $service->searchanalytics->query($siteUrl, $query);
+
         return $res->getRows();
     }
 
     public function asController(Website $website, ActionRequest $request): array
     {
         $this->initialisationFromShop($website->shop, $request);
+
         return $this->action($website, $this->validatedData);
     }
 
@@ -100,13 +103,13 @@ class GetWebsiteGoogleCloud extends OrgAction
             'startDate' => ['sometimes', 'date'],
             'endDate' => ['sometimes', 'date'],
             'dimensions' => ['sometimes'],
-            'searchType' => ['sometimes']
+            'searchType' => ['sometimes'],
         ];
     }
 
     public function action(Website $website, array $modelData, bool $strict = true): array
     {
-        $this->strict   = $strict;
+        $this->strict = $strict;
         $this->asAction = true;
         $this->setRawAttributes($modelData);
         $validatedData = $this->validateAttributes();
@@ -114,7 +117,7 @@ class GetWebsiteGoogleCloud extends OrgAction
         return $this->handle($website, $validatedData);
     }
 
-    public string $commandSignature = "gcp-website:search-result {website?} {--saveSecret}";
+    public string $commandSignature = 'gcp-website:search-result {website?} {--saveSecret}';
 
     /**
      * @throws \Exception
@@ -122,28 +125,26 @@ class GetWebsiteGoogleCloud extends OrgAction
     public function asCommand($command): int
     {
 
-        $this->saveSecret = $command->option("saveSecret");
+        $this->saveSecret = $command->option('saveSecret');
 
-        if ($command->argument("website")) {
+        if ($command->argument('website')) {
             try {
                 /** @var Website $website */
-                $website = Website::where("slug", $command->argument("website"))->firstOrFail();
+                $website = Website::where('slug', $command->argument('website'))->firstOrFail();
             } catch (Exception) {
-                $command->error("website not found");
+                $command->error('website not found');
                 exit();
             }
 
-            $command->line("Website ".$website->slug." fetched");
+            $command->line('Website '.$website->slug.' fetched');
 
         } else {
             foreach (Website::orderBy('id')->get() as $website) {
-                $command->line("Website ".$website->slug." fetched");
+                $command->line('Website '.$website->slug.' fetched');
                 $this->action($website, []);
             }
         }
 
         return 0;
     }
-
-
 }

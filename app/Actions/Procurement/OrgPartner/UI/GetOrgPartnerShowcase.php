@@ -20,34 +20,35 @@ class GetOrgPartnerShowcase
     public function handle(OrgPartner $orgPartner): array
     {
         $partner = $orgPartner->partner;
+
         return [
             'contactCard' => [
-                'company'  => $partner->name,
-                'contact'  => $partner->contact_name,
-                'email'    => $partner->email,
-                'phone'    => $partner->phone,
+                'company' => $partner->name,
+                'contact' => $partner->contact_name,
+                'email' => $partner->email,
+                'phone' => $partner->phone,
                 'location' => $partner->location,
                 // 'address'  => AddressResource::make($agent->organisation->address)->getArray(),
-                'photo'    => $partner->imageSources()
+                'photo' => $partner->imageSources(),
             ],
-            'stats'       => [
+            'stats' => [
                 [
                     'label' => __('purchase orders'),
                     'count' => $partner->procurementStats->number_purchase_orders,
-                    'full'  => true
+                    'full' => true,
                 ],
                 [
                     'label' => __('stocks'),
                     'count' => $partner->inventoryStats->number_org_stocks,
-                    'full'  => true
+                    'full' => true,
                 ],
                 [
                     'label' => __('deliveries'),
                     'count' => $partner->inventoryStats->number_deliveries,
-                    'full'  => true
+                    'full' => true,
                 ],
 
-            ]
+            ],
         ];
     }
 }

@@ -18,14 +18,14 @@ class AddressFactory extends Factory
         $country = Country::latest()->first();
 
         return [
-            'address_line_1'      => fake()->streetAddress,
-            'address_line_2'      => fake()->buildingNumber,
-            'sorting_code'        => '',
-            'postal_code'         => fake()->postcode,
-            'locality'            => fake()->city,
-            'dependent_locality'  => '',
-            'administrative_area' => fake('en_US')->state() ,
-            'country_id'          => $country->id
+            'address_line_1' => fake()->streetAddress,
+            'address_line_2' => fake()->buildingNumber,
+            'sorting_code' => '',
+            'postal_code' => fake()->postcode,
+            'locality' => fake()->city,
+            'dependent_locality' => '',
+            'administrative_area' => fake('en_US')->state(),
+            'country_id' => $country->id,
         ];
     }
 }

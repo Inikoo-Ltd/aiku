@@ -15,8 +15,8 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
-use ZipStream\ZipStream;
 use Sentry\Laravel\Facade as Sentry;
+use ZipStream\ZipStream;
 
 class PortfoliosZipExport
 {
@@ -28,26 +28,25 @@ class PortfoliosZipExport
     public function handle(CustomerSalesChannel $customerSalesChannel, $ids = []): void
     {
         $zipFileName = 'images_'.Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference).'.zip';
-        $zip         = new ZipStream(
+        $zip = new ZipStream(
             sendHttpHeaders: true,
             outputName: $zipFileName,
         );
 
-
         $imagesData = $this->getImages($customerSalesChannel, $ids);
-
 
         foreach ($imagesData as $imageId => $imageData) {
             $image = $imageData['image'];
-            $disk  = Storage::disk($image->disk);
-            if (!$disk->exists($image->getPathRelativeToRoot())) {
+            $disk = Storage::disk($image->disk);
+            if (! $disk->exists($image->getPathRelativeToRoot())) {
                 unset($imagesData[$imageId]);
+
                 continue;
             }
 
             try {
                 $stream = $disk->readStream($image->getPathRelativeToRoot());
-                if (!$stream) {
+                if (! $stream) {
                     continue;
                 }
 
@@ -57,9 +56,9 @@ class PortfoliosZipExport
             } catch (\Exception $e) {
                 Sentry::captureException($e, [
                     'extra' => [
-                        'image_id'  => $imageId,
-                        'file_path' => $image->getPathRelativeToRoot()
-                    ]
+                        'image_id' => $imageId,
+                        'file_path' => $image->getPathRelativeToRoot(),
+                    ],
                 ]);
             } finally {
                 if (isset($stream) && is_resource($stream)) {
@@ -70,7 +69,6 @@ class PortfoliosZipExport
 
         $zip->finish();
     }
-
 
     public function getImages(CustomerSalesChannel $customerSalesChannel, $ids = []): array
     {
@@ -89,7 +87,7 @@ class PortfoliosZipExport
                 foreach ($product->images as $image) {
                     $imagesData[$image->id] = [
                         'filename' => strtolower($product->code).'__'.$image->id.'.'.$image->extension,
-                        'image'    => $image
+                        'image' => $image,
                     ];
                 }
             }
@@ -97,5 +95,4 @@ class PortfoliosZipExport
 
         return $imagesData;
     }
-
 }

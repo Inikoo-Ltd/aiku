@@ -22,21 +22,19 @@ class SetWebUserLocale
         if ($webUser = auth()->user()) {
             /** @var Language $language */
             $language = Language::find($webUser->language_id);
-            $locale  = $language->code;
+            $locale = $language->code;
         } else {
 
             $locale = $request->cookie('aiku_guest_locale');
         }
 
-
-
-        if (!$locale) {
+        if (! $locale) {
             $locale = $request->get('website')->shop->language->code;
         }
 
-
         Cookie::queue('aiku_guest_locale', $locale, 60 * 24 * 120);
         app()->setLocale($locale);
+
         return $next($request);
     }
 }

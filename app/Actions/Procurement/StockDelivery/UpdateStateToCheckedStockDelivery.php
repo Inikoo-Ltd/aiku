@@ -17,9 +17,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateStateToCheckedStockDelivery
 {
-    use WithActionUpdate;
     use AsAction;
     use HasStockDeliveryHydrators;
+    use WithActionUpdate;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -31,8 +31,8 @@ class UpdateStateToCheckedStockDelivery
         ];
 
         if (in_array($stockDelivery->state, [StockDeliveryStateEnum::RECEIVED, StockDeliveryStateEnum::PLACED])) {
-            $data[$stockDelivery->state->value . '_at']    = null;
-            $data['checked_at']                            = now();
+            $data[$stockDelivery->state->value.'_at'] = null;
+            $data['checked_at'] = now();
 
             $stockDelivery = $this->update($stockDelivery, $data);
 

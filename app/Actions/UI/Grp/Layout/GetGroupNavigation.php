@@ -20,16 +20,16 @@ class GetGroupNavigation
         $groupNavigation = [];
 
         $groupNavigation['group'] = [
-            'label'   => __('Group'),
-            'icon'    => ['fal', 'fa-city'],
-            'root'    => 'grp.dashboard.show',
-            'route'   => [
-                'name' => 'grp.dashboard.show'
+            'label' => __('Group'),
+            'icon' => ['fal', 'fa-city'],
+            'root' => 'grp.dashboard.show',
+            'route' => [
+                'name' => 'grp.dashboard.show',
             ],
-            'topMenu' => []
+            'topMenu' => [],
         ];
 
-        if ($user->hasAnyPermission(['goods.view','masters.view'])) {
+        if ($user->hasAnyPermission(['goods.view', 'masters.view'])) {
             $groupNavigation['trade-units'] = $this->getTradeUnitsNavs();
         }
 
@@ -63,69 +63,69 @@ class GetGroupNavigation
     private function getTradeUnitsNavs(): array
     {
         return [
-            'label'   => __('Trade Units'),
-            'icon'    => ['fal', 'fa-atom'],
-            'root'    => 'grp.trade_units.',
-            'route'   => [
-                'name' => 'grp.trade_units.dashboard'
+            'label' => __('Trade Units'),
+            'icon' => ['fal', 'fa-atom'],
+            'root' => 'grp.trade_units.',
+            'route' => [
+                'name' => 'grp.trade_units.dashboard',
             ],
             'topMenu' => [
                 'subSections' => [
                     [
                         'label' => 'Trade Units',
-                        'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.trade_units.units.',
+                        'icon' => ['fal', 'fa-atom'],
+                        'root' => 'grp.trade_units.units.',
                         'route' => [
-                            'name'       => 'grp.trade_units.units.active',
-                            'parameters' => []
-                        ]
+                            'name' => 'grp.trade_units.units.active',
+                            'parameters' => [],
+                        ],
                     ],
                     [
                         'label' => 'Trade Unit Families',
-                        'icon'  => ['fal', 'fa-atom-alt'],
-                        'root'  => 'grp.trade_units.families.',
+                        'icon' => ['fal', 'fa-atom-alt'],
+                        'root' => 'grp.trade_units.families.',
                         'route' => [
-                            'name'       => 'grp.trade_units.families.index',
-                            'parameters' => []
-                        ]
+                            'name' => 'grp.trade_units.families.index',
+                            'parameters' => [],
+                        ],
                     ],
-                ]
-            ]
+                ],
+            ],
         ];
     }
 
     private function getMastersNavs(): array
     {
         return [
-            'label'   => __('Masters'),
-            'icon'    => ['fab', 'fa-octopus-deploy'],
-            'root'    => 'grp.masters.',
-            'route'   => [
-                'name' => 'grp.masters.dashboard'
+            'label' => __('Masters'),
+            'icon' => ['fab', 'fa-octopus-deploy'],
+            'root' => 'grp.masters.',
+            'route' => [
+                'name' => 'grp.masters.dashboard',
             ],
             'topMenu' => [
                 'subSections' => [
                     [
-                        "tooltip" => __("Master Catalogue"),
-                        "icon"    => ["fal", "fa-books"],
-                        'root'    => 'grp.masters.dashboard',
-                        "route"   => [
-                            "name"       => 'grp.masters.dashboard',
-                            "parameters" => [],
+                        'tooltip' => __('Master Catalogue'),
+                        'icon' => ['fal', 'fa-books'],
+                        'root' => 'grp.masters.dashboard',
+                        'route' => [
+                            'name' => 'grp.masters.dashboard',
+                            'parameters' => [],
                         ],
                     ],
                     [
                         'label' => __('Master Shops'),
                         'tooltip' => __('Master shops'),
-                        'icon'  => ['fal', 'fa-store-alt'],
-                        'root'  => 'grp.masters.master_shops.',
+                        'icon' => ['fal', 'fa-store-alt'],
+                        'root' => 'grp.masters.master_shops.',
                         'route' => [
-                            'name'       => 'grp.masters.master_shops.index',
-                            'parameters' => []
-                        ]
+                            'name' => 'grp.masters.master_shops.index',
+                            'parameters' => [],
+                        ],
                     ],
-                ]
-            ]
+                ],
+            ],
 
         ];
     }
@@ -133,43 +133,43 @@ class GetGroupNavigation
     private function getMGoodsNavs(): array
     {
         return [
-            'label'   => __('Goods'),
-            'icon'    => ['fal', 'fa-cloud-rainbow'],
-            'root'    => 'grp.goods.',
-            'route'   => [
-                'name' => 'grp.goods.dashboard'
+            'label' => __('Goods'),
+            'icon' => ['fal', 'fa-cloud-rainbow'],
+            'root' => 'grp.goods.',
+            'route' => [
+                'name' => 'grp.goods.dashboard',
             ],
             'topMenu' => [
                 'subSections' => [
                     [
                         'label' => __('Master SKUs families'),
-                        'icon'  => ['fal', 'fa-boxes-alt'],
-                        'root'  => 'grp.goods.stock-families.',
+                        'icon' => ['fal', 'fa-boxes-alt'],
+                        'root' => 'grp.goods.stock-families.',
                         'route' => [
-                            'name'       => 'grp.goods.stock-families.index',
-                            'parameters' => []
-                        ]
+                            'name' => 'grp.goods.stock-families.index',
+                            'parameters' => [],
+                        ],
                     ],
                     [
                         'label' => __('Master SKUs'),
-                        'icon'  => ['fal', 'fa-box'],
-                        'root'  => 'grp.goods.stocks.',
+                        'icon' => ['fal', 'fa-box'],
+                        'root' => 'grp.goods.stocks.',
                         'route' => [
-                            'name'       => 'grp.goods.stocks.active_stocks.index',
-                            'parameters' => []
-                        ]
+                            'name' => 'grp.goods.stocks.active_stocks.index',
+                            'parameters' => [],
+                        ],
                     ],
                     [
                         'label' => 'Ingredients',
-                        'icon'  => ['fal', 'fa-apple-crate'],
-                        'root'  => 'grp.goods.ingredients.',
+                        'icon' => ['fal', 'fa-apple-crate'],
+                        'root' => 'grp.goods.ingredients.',
                         'route' => [
-                            'name'       => 'grp.goods.ingredients.index',
-                            'parameters' => []
-                        ]
+                            'name' => 'grp.goods.ingredients.index',
+                            'parameters' => [],
+                        ],
                     ],
-                ]
-            ]
+                ],
+            ],
 
         ];
     }
@@ -177,130 +177,130 @@ class GetGroupNavigation
     private function getSupplyChainNavs(): array
     {
         return [
-            'label'   => __('Supply Chain'),
-            'icon'    => ['fal', 'fa-box-usd'],
-            'root'    => 'grp.supply-chain.',
-            'route'   => [
-                'name' => 'grp.supply-chain.dashboard'
+            'label' => __('Supply Chain'),
+            'icon' => ['fal', 'fa-box-usd'],
+            'root' => 'grp.supply-chain.',
+            'route' => [
+                'name' => 'grp.supply-chain.dashboard',
             ],
             'topMenu' => [
                 'subSections' => [
                     [
-                        'icon'  => ['fal', 'fa-chart-network'],
-                        'root'  => 'grp.supply-chain.dashboard',
+                        'icon' => ['fal', 'fa-chart-network'],
+                        'root' => 'grp.supply-chain.dashboard',
                         'route' => [
                             'name' => 'grp.supply-chain.dashboard',
-                        ]
+                        ],
                     ],
                     [
                         'label' => __('Agents'),
-                        'icon'  => ['fal', 'fa-people-arrows'],
-                        'root'  => 'grp.supply-chain.agents.',
+                        'icon' => ['fal', 'fa-people-arrows'],
+                        'root' => 'grp.supply-chain.agents.',
                         'route' => [
                             'name' => 'grp.supply-chain.agents.index',
-                        ]
+                        ],
                     ],
                     [
                         'label' => __('Suppliers'),
-                        'icon'  => ['fal', 'fa-person-dolly'],
-                        'root'  => 'grp.supply-chain.suppliers.',
+                        'icon' => ['fal', 'fa-person-dolly'],
+                        'root' => 'grp.supply-chain.suppliers.',
                         'route' => [
                             'name' => 'grp.supply-chain.suppliers.index',
-                        ]
+                        ],
                     ],
                     [
                         'label' => __('Supplier products'),
-                        'icon'  => ['fal', 'fa-box-usd'],
-                        'root'  => 'grp.supply-chain.supplier_products.',
+                        'icon' => ['fal', 'fa-box-usd'],
+                        'root' => 'grp.supply-chain.supplier_products.',
                         'route' => [
                             'name' => 'grp.supply-chain.supplier_products.index',
-                        ]
+                        ],
                     ],
 
-                ]
-            ]
+                ],
+            ],
         ];
     }
 
     private function getOrganisationsNavs(): array
     {
         return [
-            'label'   => __('Organisations'),
-            'icon'    => ['fal', 'fa-building'],
-            'root'    => 'grp.organisations.',
-            'route'   => [
-                'name' => 'grp.organisations.index'
+            'label' => __('Organisations'),
+            'icon' => ['fal', 'fa-building'],
+            'root' => 'grp.organisations.',
+            'route' => [
+                'name' => 'grp.organisations.index',
             ],
-            'topMenu' => []
+            'topMenu' => [],
         ];
     }
 
     private function getOverviewNavs(): array
     {
         return [
-            'label'   => __('Overview'),
-            'icon'    => ['fal', 'fa-mountains'],
-            'root'    => 'grp.overview.',
-            'route'   => [
-                'name' => 'grp.overview.hub'
+            'label' => __('Overview'),
+            'icon' => ['fal', 'fa-mountains'],
+            'root' => 'grp.overview.',
+            'route' => [
+                'name' => 'grp.overview.hub',
             ],
-            'topMenu' => []
+            'topMenu' => [],
         ];
     }
 
     private function getSysAdminNavs(): array
     {
         return [
-            'label'   => __('Sysadmin'),
-            'icon'    => ['fal', 'fa-users-cog'],
-            'root'    => 'grp.sysadmin.',
-            'route'   => [
-                'name' => 'grp.sysadmin.dashboard'
+            'label' => __('Sysadmin'),
+            'icon' => ['fal', 'fa-users-cog'],
+            'root' => 'grp.sysadmin.',
+            'route' => [
+                'name' => 'grp.sysadmin.dashboard',
             ],
             'topMenu' => [
                 'subSections' => [
                     [
                         'label' => __('Users'),
-                        'icon'  => ['fal', 'fa-user-circle'],
-                        'root'  => 'grp.sysadmin.users.',
+                        'icon' => ['fal', 'fa-user-circle'],
+                        'root' => 'grp.sysadmin.users.',
                         'route' => [
                             'name' => 'grp.sysadmin.users.index',
-                        ]
+                        ],
                     ],
                     [
                         'label' => __('Guests'),
-                        'icon'  => ['fal', 'fa-user-alien'],
-                        'root'  => 'grp.sysadmin.guests.',
+                        'icon' => ['fal', 'fa-user-alien'],
+                        'root' => 'grp.sysadmin.guests.',
                         'route' => [
                             'name' => 'grp.sysadmin.guests.index',
-                        ]
+                        ],
                     ],
                     [
                         'label' => __('Analytics'),
-                        'icon'  => ['fal', 'fa-analytics'],
-                        'root'  => 'grp.sysadmin.analytics.',
+                        'icon' => ['fal', 'fa-analytics'],
+                        'root' => 'grp.sysadmin.analytics.',
                         'route' => [
                             'name' => 'grp.sysadmin.analytics.dashboard',
-                        ]
+                        ],
                     ],
                     [
                         'label' => __('Scheduled Tasks'),
-                        'icon'  => ['fal', 'fa-clock'],
-                        'root'  => 'grp.sysadmin.scheduled-tasks.',
+                        'icon' => ['fal', 'fa-clock'],
+                        'root' => 'grp.sysadmin.scheduled-tasks.',
                         'route' => [
                             'name' => 'grp.sysadmin.scheduled-tasks.index',
-                        ]
+                        ],
                     ],
                     [
                         'label' => __('System Settings'),
-                        'icon'  => ['fal', 'fa-cog'],
-                        'root'  => 'grp.sysadmin.settings.',
+                        'icon' => ['fal', 'fa-cog'],
+                        'root' => 'grp.sysadmin.settings.',
                         'route' => [
                             'name' => 'grp.sysadmin.settings.edit',
-                        ]
+                        ],
                     ],
-                ]
-            ]
+                ],
+            ],
         ];
     }
 }

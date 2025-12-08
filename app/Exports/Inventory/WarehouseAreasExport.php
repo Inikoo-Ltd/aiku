@@ -16,14 +16,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class WarehouseAreasExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class WarehouseAreasExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|WarehouseArea|Builder
     {
         return WarehouseArea::query();
     }
 
-    /** @var WarehouseArea $row */
+    /** @var WarehouseArea */
     public function map($row): array
     {
         return [
@@ -33,7 +33,7 @@ class WarehouseAreasExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
             $row->name,
             $row->unit_quantity,
             $row->value,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -46,7 +46,7 @@ class WarehouseAreasExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
             'Name',
             'Unit Quantity',
             'Value',
-            'Created At'
+            'Created At',
         ];
     }
 }

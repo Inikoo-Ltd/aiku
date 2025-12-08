@@ -16,7 +16,7 @@ trait WithStoreOfferRules
     public function rules(): array
     {
         return [
-            'code'         => [
+            'code' => [
                 'required',
                 new IUnique(
                     table: 'offers',
@@ -26,15 +26,15 @@ trait WithStoreOfferRules
                 ),
 
                 'max:64',
-                'alpha_dash'
+                'alpha_dash',
             ],
-            'name'         => ['required', 'max:250', 'string'],
-            'data'         => ['sometimes', 'required'],
-            'settings'     => ['sometimes', 'required'],
+            'name' => ['required', 'max:250', 'string'],
+            'data' => ['sometimes', 'required'],
+            'settings' => ['sometimes', 'required'],
             'trigger_data' => ['sometimes', 'required'],
-            'start_at'     => ['sometimes', 'date'],
-            'end_at'       => ['sometimes', 'nullable', 'date'],
-            'type'         => ['required', 'string'],
+            'start_at' => ['sometimes', 'date'],
+            'end_at' => ['sometimes', 'nullable', 'date'],
+            'type' => ['required', 'string'],
             'trigger_type' => ['sometimes', Rule::in(['Order'])],
         ];
     }

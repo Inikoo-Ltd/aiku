@@ -13,7 +13,7 @@ class GetWebsiteWorkshopFooter
     public function handle(Website $website): array
     {
         return [
-            'data' => Arr::get($website->unpublishedFooterSnapshot->layout, 'footer')
+            'data' => Arr::get($website->unpublishedFooterSnapshot->layout, 'footer'),
         ];
     }
 }

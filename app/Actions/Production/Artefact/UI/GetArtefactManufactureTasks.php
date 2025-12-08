@@ -22,7 +22,6 @@ class GetArtefactManufactureTasks
         // Fetch the artefacts related to the manufacture task from the pivot table
         $manufactureTasks = $artefact->manufactureTasks()->get();
 
-
         $manufactureTaskData = ManufactureTasksResource::collection($manufactureTasks)->toArray($request);
 
         return $manufactureTaskData;

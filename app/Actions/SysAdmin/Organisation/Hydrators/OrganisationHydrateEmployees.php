@@ -11,8 +11,8 @@ namespace App\Actions\SysAdmin\Organisation\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
-use App\Models\SysAdmin\Organisation;
 use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -29,7 +29,7 @@ class OrganisationHydrateEmployees implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_employees' => $organisation->employees()->count()
+            'number_employees' => $organisation->employees()->count(),
         ];
 
         $stats = array_merge(
@@ -58,7 +58,6 @@ class OrganisationHydrateEmployees implements ShouldBeUnique
             )
         );
         $stats['number_employees_currently_working'] = $stats['number_employees_state_working'] + $stats['number_employees_state_leaving'];
-
 
         $organisation->humanResourcesStats()->update($stats);
     }

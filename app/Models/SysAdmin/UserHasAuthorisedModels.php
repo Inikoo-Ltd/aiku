@@ -24,9 +24,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read Model|\Eloquent $model
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\SysAdmin\User|null $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserHasAuthorisedModels newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserHasAuthorisedModels newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserHasAuthorisedModels query()
+ *
  * @mixin \Eloquent
  */
 class UserHasAuthorisedModels extends Model
@@ -49,5 +51,4 @@ class UserHasAuthorisedModels extends Model
     {
         return $this->morphTo();
     }
-
 }

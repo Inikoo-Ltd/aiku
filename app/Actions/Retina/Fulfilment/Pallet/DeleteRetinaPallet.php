@@ -41,6 +41,7 @@ class DeleteRetinaPallet extends RetinaAction
     {
         $this->pallet = $pallet;
         $this->initialisation($request);
+
         return $this->handle($pallet);
     }
 

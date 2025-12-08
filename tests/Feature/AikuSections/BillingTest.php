@@ -24,18 +24,18 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    list(
+    [
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
+    ] = createShop();
 
     $this->group = $this->organisation->group;
 
-    list(
+    [
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+    ] = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
 
@@ -47,7 +47,6 @@ beforeEach(function () {
     );
     actingAs($this->user);
 });
-
 
 test('create shipping zone schema', function () {
     $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
@@ -72,7 +71,6 @@ test('update shipping zone', function ($shippingZone) {
     $shippingZone = UpdateShippingZone::make()->action($shippingZone, ShippingZone::factory()->definition());
     $this->assertModelExists($shippingZone);
 })->depends('create shipping zone');
-
 
 test('shipping zone schemas hydrators', function () {
     $shippingZoneSchema = ShippingZoneSchema::first();

@@ -32,7 +32,7 @@ class FetchAuroraOrder extends FetchAurora
             return;
         }
 
-        $platform               = null;
+        $platform = null;
         $customerSalesChannelID = null;
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
@@ -51,12 +51,10 @@ class FetchAuroraOrder extends FetchAurora
             }
         }
 
-
-        if ($this->auroraModelData->{'Order Customer Client Key'} != "") {
+        if ($this->auroraModelData->{'Order Customer Client Key'} != '') {
             $parent = $this->parseCustomerClient($this->organisation->id.':'.$this->auroraModelData->{'Order Customer Client Key'});
 
-
-            if ($parent == null and $this->auroraModelData->{'Order State'} == "Cancelled") {
+            if ($parent == null and $this->auroraModelData->{'Order State'} == 'Cancelled') {
                 return;
             }
 
@@ -67,71 +65,66 @@ class FetchAuroraOrder extends FetchAurora
             );
         }
 
-
-
-        $this->parsedData["parent"] = $parent;
-        if (!$parent) {
+        $this->parsedData['parent'] = $parent;
+        if (! $parent) {
             $this->parsedData = null;
 
             return;
         }
 
-        if ($parent->deleted_at and $this->auroraModelData->{'Order State'} == "Cancelled") {
+        if ($parent->deleted_at and $this->auroraModelData->{'Order State'} == 'Cancelled') {
             $this->parsedData = null;
 
             return;
         }
 
         $state = match ($this->auroraModelData->{'Order State'}) {
-            "InWarehouse", "Packed" => OrderStateEnum::HANDLING,
-            "PackedDone" => OrderStateEnum::PACKED,
-            "Approved" => OrderStateEnum::FINALISED,
-            "Dispatched" => OrderStateEnum::DISPATCHED,
-            "InBasket" => OrderStateEnum::CREATING,
-            "Cancelled" => OrderStateEnum::CANCELLED,
+            'InWarehouse', 'Packed' => OrderStateEnum::HANDLING,
+            'PackedDone' => OrderStateEnum::PACKED,
+            'Approved' => OrderStateEnum::FINALISED,
+            'Dispatched' => OrderStateEnum::DISPATCHED,
+            'InBasket' => OrderStateEnum::CREATING,
+            'Cancelled' => OrderStateEnum::CANCELLED,
             default => OrderStateEnum::SUBMITTED,
         };
 
-
         $status = match ($this->auroraModelData->{'Order State'}) {
-            "Cancelled", "Dispatched" => OrderStatusEnum::SETTLED,
-            "InBasket" => OrderStatusEnum::CREATING,
+            'Cancelled', 'Dispatched' => OrderStatusEnum::SETTLED,
+            'InBasket' => OrderStatusEnum::CREATING,
             default => OrderStatusEnum::PROCESSING,
         };
 
-
         $data = [
-            "delivery_data" => $deliveryData
+            'delivery_data' => $deliveryData,
         ];
 
         $cancelled_at = null;
-        if ($this->auroraModelData->{'Order State'} == "Cancelled") {
+        if ($this->auroraModelData->{'Order State'} == 'Cancelled') {
             $cancelled_at = $this->auroraModelData->{'Order Cancelled Date'};
-            if (!$cancelled_at) {
+            if (! $cancelled_at) {
                 $cancelled_at = $this->auroraModelData->{'Order Date'};
             }
 
             if (
-                $this->auroraModelData->{'Order Invoiced Date'} != "" or
-                $this->auroraModelData->{'Order Dispatched Date'} != ""
+                $this->auroraModelData->{'Order Invoiced Date'} != '' or
+                $this->auroraModelData->{'Order Dispatched Date'} != ''
             ) {
                 $stateWhenCancelled = OrderStateEnum::FINALISED;
             } elseif (
-                $this->auroraModelData->{'Order Packed Date'} != "" or
-                $this->auroraModelData->{'Order Packed Done Date'} != ""
+                $this->auroraModelData->{'Order Packed Date'} != '' or
+                $this->auroraModelData->{'Order Packed Done Date'} != ''
             ) {
                 $stateWhenCancelled = OrderStateEnum::PACKED;
             } elseif (
-                $this->auroraModelData->{'Order Send to Warehouse Date'} != ""
+                $this->auroraModelData->{'Order Send to Warehouse Date'} != ''
             ) {
                 $stateWhenCancelled = OrderStateEnum::HANDLING;
             } else {
                 $stateWhenCancelled = OrderStateEnum::CREATING;
             }
 
-
             $data['cancelled'] = [
-                'state' => $stateWhenCancelled
+                'state' => $stateWhenCancelled,
             ];
         }
 
@@ -141,10 +134,10 @@ class FetchAuroraOrder extends FetchAurora
         }
 
         $deliveryLocked = false;
-        $billingLocked  = false;
+        $billingLocked = false;
         if (in_array($this->auroraModelData->{'Order State'}, ['Cancelled', 'Approved', 'Dispatched'])) {
             $deliveryLocked = true;
-            $billingLocked  = true;
+            $billingLocked = true;
         }
 
         $taxCategory = $this->parseTaxCategory($this->auroraModelData->{'Order Tax Category Key'});
@@ -164,7 +157,6 @@ class FetchAuroraOrder extends FetchAurora
             $salesChannel = $this->parseSalesChannel($this->organisation->id.':'.$this->auroraModelData->{'Order Source Key'});
         }
 
-
         $totalAmount = $this->auroraModelData->{'Order Total Amount'};
 
         $paymentAmount = null;
@@ -175,7 +167,7 @@ class FetchAuroraOrder extends FetchAurora
                 ->where('Order Key', $this->auroraModelData->{'Order Key'})
                 ->exists();
 
-            if ($state == OrderStateEnum::DISPATCHED and !$hasPayments) {
+            if ($state == OrderStateEnum::DISPATCHED and ! $hasPayments) {
                 $paymentAmount = $totalAmount;
             }
 
@@ -184,67 +176,66 @@ class FetchAuroraOrder extends FetchAurora
             ]);
         }
 
-        $weight          = $this->auroraModelData->{'Order Weight'};
+        $weight = $this->auroraModelData->{'Order Weight'};
         $estimatedWeight = $this->auroraModelData->{'Order Estimated Weight'};
 
-        $this->parsedData["order"] = [
-            'date'                   => $date,
-            'submitted_at'           => $this->parseDatetime($this->auroraModelData->{'Order Submitted by Customer Date'}),
-            'in_warehouse_at'        => $this->parseDatetime($this->auroraModelData->{'Order Send to Warehouse Date'}),
-            'packed_at'              => $this->parseDatetime($this->auroraModelData->{'Order Packed Date'}),
-            'finalised_at'           => $this->parseDatetime($this->auroraModelData->{'Order Packed Done Date'}),
-            'dispatched_at'          => $this->parseDatetime($this->auroraModelData->{'Order Dispatched Date'}),
+        $this->parsedData['order'] = [
+            'date' => $date,
+            'submitted_at' => $this->parseDatetime($this->auroraModelData->{'Order Submitted by Customer Date'}),
+            'in_warehouse_at' => $this->parseDatetime($this->auroraModelData->{'Order Send to Warehouse Date'}),
+            'packed_at' => $this->parseDatetime($this->auroraModelData->{'Order Packed Date'}),
+            'finalised_at' => $this->parseDatetime($this->auroraModelData->{'Order Packed Done Date'}),
+            'dispatched_at' => $this->parseDatetime($this->auroraModelData->{'Order Dispatched Date'}),
             'updated_by_customer_at' => $this->parseDatetime($this->auroraModelData->{'Order Last Updated by Customer'}),
-            'handing_type'           => $handingType,
-            'billing_locked'         => $billingLocked,
-            'delivery_locked'        => $deliveryLocked,
-            'tax_category_id'        => $taxCategory->id,
+            'handing_type' => $handingType,
+            'billing_locked' => $billingLocked,
+            'delivery_locked' => $deliveryLocked,
+            'tax_category_id' => $taxCategory->id,
 
-            "reference"          => $this->auroraModelData->{'Order Public ID'},
-            'customer_reference' => (string)$this->auroraModelData->{'Order Customer Purchase Order ID'},
-            "state"              => $state,
-            "status"             => $status,
-            "source_id"          => $this->organisation->id.':'.$this->auroraModelData->{'Order Key'},
+            'reference' => $this->auroraModelData->{'Order Public ID'},
+            'customer_reference' => (string) $this->auroraModelData->{'Order Customer Purchase Order ID'},
+            'state' => $state,
+            'status' => $status,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Order Key'},
 
-            "created_at"   => $this->auroraModelData->{'Order Created Date'},
-            "cancelled_at" => $cancelled_at,
-            "data"         => $data,
+            'created_at' => $this->auroraModelData->{'Order Created Date'},
+            'cancelled_at' => $cancelled_at,
+            'data' => $data,
             'org_exchange' => $orgExchange,
             'grp_exchange' => $grpExchange,
 
-            'gross_amount'     => $this->auroraModelData->{'Order Items Gross Amount'},
-            'goods_amount'     => $this->auroraModelData->{'Order Items Net Amount'},
-            'shipping_amount'  => $this->auroraModelData->{'Order Shipping Net Amount'},
-            'charges_amount'   => $this->auroraModelData->{'Order Charges Net Amount'},
+            'gross_amount' => $this->auroraModelData->{'Order Items Gross Amount'},
+            'goods_amount' => $this->auroraModelData->{'Order Items Net Amount'},
+            'shipping_amount' => $this->auroraModelData->{'Order Shipping Net Amount'},
+            'charges_amount' => $this->auroraModelData->{'Order Charges Net Amount'},
             'insurance_amount' => $this->auroraModelData->{'Order Insurance Net Amount'},
 
-
-            'net_amount'   => $this->auroraModelData->{'Order Total Net Amount'},
-            'tax_amount'   => $this->auroraModelData->{'Order Total Tax Amount'},
+            'net_amount' => $this->auroraModelData->{'Order Total Net Amount'},
+            'tax_amount' => $this->auroraModelData->{'Order Total Tax Amount'},
             'total_amount' => $totalAmount,
 
-            'fetched_at'      => now(),
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
 
         ];
 
         if ($weight && $weight < 10000000) {
-            $weight                              = (int)ceil($weight * 1000);
-            $this->parsedData["order"]['weight'] = $weight;
+            $weight = (int) ceil($weight * 1000);
+            $this->parsedData['order']['weight'] = $weight;
         }
 
         if ($estimatedWeight && $estimatedWeight < 10000000) {
-            $estimatedWeight                               = (int)ceil($estimatedWeight * 1000);
-            $this->parsedData["order"]['estimated_weight'] = $estimatedWeight;
+            $estimatedWeight = (int) ceil($estimatedWeight * 1000);
+            $this->parsedData['order']['estimated_weight'] = $estimatedWeight;
         }
 
         if ($platform) {
-            $this->parsedData["order"]['platform_id']               = $platform->id;
-            $this->parsedData["order"]['customer_sales_channel_id'] = $customerSalesChannelID;
+            $this->parsedData['order']['platform_id'] = $platform->id;
+            $this->parsedData['order']['customer_sales_channel_id'] = $customerSalesChannelID;
         }
 
         if ($paymentAmount) {
-            $this->parsedData["order"]['payment_amount'] = $paymentAmount;
+            $this->parsedData['order']['payment_amount'] = $paymentAmount;
         }
 
         if ($salesChannel) {
@@ -252,23 +243,22 @@ class FetchAuroraOrder extends FetchAurora
         }
 
         $billingAddressData = $this->parseAddress(
-            prefix: "Order Invoice",
+            prefix: 'Order Invoice',
             auAddressData: $this->auroraModelData,
         );
 
-        if (!$billingAddressData['country_id']) {
+        if (! $billingAddressData['country_id']) {
             $billingAddressData['country_id'] = $parent->addresses->first()->country_id;
         }
 
         $deliveryAddressData = $this->parseAddress(
-            prefix: "Order Delivery",
+            prefix: 'Order Delivery',
             auAddressData: $this->auroraModelData,
         );
 
-        if (!$deliveryAddressData['country_id']) {
+        if (! $deliveryAddressData['country_id']) {
             $deliveryAddressData['country_id'] = $parent->addresses->first()->country_id;
         }
-
 
         if ($billingAddressData['address_line_1'] == '' and
             $billingAddressData['address_line_2'] == '' and
@@ -297,27 +287,26 @@ class FetchAuroraOrder extends FetchAurora
             $deliveryAddressData = $billingAddressData;
         }
 
-
-        $this->parsedData['order']["billing_address"] = new Address($billingAddressData);
+        $this->parsedData['order']['billing_address'] = new Address($billingAddressData);
 
         if ($handingType == OrderHandingTypeEnum::SHIPPING) {
-            $this->parsedData['order']["delivery_address"] = new Address(
+            $this->parsedData['order']['delivery_address'] = new Address(
                 $deliveryAddressData,
             );
         } else {
             $collectionAddress = $shop->collectionAddress;
 
-            $this->parsedData['order']["delivery_address"] = $collectionAddress;
-            $this->parsedData['order']["shipping_engine"]  = OrderShippingEngineEnum::NO_APPLICABLE;
+            $this->parsedData['order']['delivery_address'] = $collectionAddress;
+            $this->parsedData['order']['shipping_engine'] = OrderShippingEngineEnum::NO_APPLICABLE;
         }
 
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
-        return DB::connection("aurora")
-            ->table("Order Dimension")
-            ->where("Order Key", $id)
+        return DB::connection('aurora')
+            ->table('Order Dimension')
+            ->where('Order Key', $id)
             ->first();
     }
 }

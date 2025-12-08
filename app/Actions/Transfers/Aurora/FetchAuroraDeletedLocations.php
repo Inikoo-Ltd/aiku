@@ -69,7 +69,6 @@ class FetchAuroraDeletedLocations extends FetchAuroraAction
                 }
             }
 
-
             return $location;
         }
 
@@ -93,7 +92,6 @@ class FetchAuroraDeletedLocations extends FetchAuroraAction
 
         return $query;
     }
-
 
     public function count(): ?int
     {

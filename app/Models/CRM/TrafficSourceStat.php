@@ -2,8 +2,8 @@
 
 namespace App\Models\CRM;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -17,9 +17,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\CRM\TrafficSource $trafficSource
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceStat newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceStat newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceStat query()
+ *
  * @mixin \Eloquent
  */
 class TrafficSourceStat extends Model

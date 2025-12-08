@@ -15,7 +15,7 @@ trait HasBucketAttachment
         $attachments = $model->attachments()->get()->keyBy(fn ($att) => $att->pivot->scope);
 
         $attachmentConfigs = [
-            'public'  => [
+            'public' => [
                 ['label' => 'IFRA', 'scope' => 'ifra', 'enum' => TradeAttachmentScopeEnum::IFRA],
                 ['label' => 'SDS', 'scope' => 'sds', 'enum' => TradeAttachmentScopeEnum::SDS],
                 ['label' => __('Allergen Declarations'), 'scope' => 'allergen_declarations', 'enum' => TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS],
@@ -36,25 +36,25 @@ trait HasBucketAttachment
                 $attachment = $attachments->get($config['enum']->value ?? $config['enum']);
 
                 return [
-                    'label'          => $config['label'],
-                    'scope'          => $config['scope'],
-                    'attachment'     => $attachment ?? null,
+                    'label' => $config['label'],
+                    'scope' => $config['scope'],
+                    'attachment' => $attachment ?? null,
                     'download_route' => [
-                        'name'       => 'grp.media.download',
+                        'name' => 'grp.media.download',
                         'parameters' => [
                             'media' => $attachment->ulid ?? null,
                         ],
-                        'method'     => 'get'
+                        'method' => 'get',
                     ],
                 ];
             }, $configs);
         };
 
-        $public  = $mapAttachments($attachmentConfigs['public']);
+        $public = $mapAttachments($attachmentConfigs['public']);
         $private = $mapAttachments($attachmentConfigs['private']);
 
         return [
-            'public'  => $public,
+            'public' => $public,
             'private' => $private,
         ];
     }

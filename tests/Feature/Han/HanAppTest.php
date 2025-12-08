@@ -23,7 +23,7 @@ use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use Laravel\Sanctum\Sanctum;
 
-use function Pest\Laravel\{postJson};
+use function Pest\Laravel\postJson;
 
 beforeAll(function () {
     loadDB();
@@ -31,8 +31,8 @@ beforeAll(function () {
 
 beforeEach(function () {
     $this->organisation = createOrganisation();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
-    $this->user         = $this->adminGuest->getUser();
+    $this->adminGuest = createAdminGuest($this->organisation->group);
+    $this->user = $this->adminGuest->getUser();
 
     Config::set(
         'inertia.testing.page_paths',
@@ -42,32 +42,30 @@ beforeEach(function () {
 
     $workplace = $this->organisation->workplaces()->first();
 
-    if (!$workplace) {
+    if (! $workplace) {
         $workplace = StoreWorkplace::make()->action($this->organisation, [
-            'name'        => 'office',
-            'type'        => WorkplaceTypeEnum::BRANCH,
-            'address'     => Address::factory()->definition(),
-            'timezone_id' => Timezone::where('name', 'Asia/Kuala_Lumpur')->first()->id
+            'name' => 'office',
+            'type' => WorkplaceTypeEnum::BRANCH,
+            'address' => Address::factory()->definition(),
+            'timezone_id' => Timezone::where('name', 'Asia/Kuala_Lumpur')->first()->id,
         ]);
 
         StoreClockingMachine::run($workplace, [
             'name' => 'ABC',
-            'type' => ClockingMachineTypeEnum::MOBILE_APP
+            'type' => ClockingMachineTypeEnum::MOBILE_APP,
         ]);
-
 
         StoreEmployee::make()->action($this->organisation, Employee::factory()->definition());
     }
 
     $this->workplace = $workplace;
     /** @var ClockingMachine $clockingMachine */
-    $clockingMachine       = $this->workplace->clockingMachines()->first();
+    $clockingMachine = $this->workplace->clockingMachines()->first();
     $this->clockingMachine = $clockingMachine;
     /** @var Employee $employee */
-    $employee       = $this->organisation->employees()->first();
+    $employee = $this->organisation->employees()->first();
     $this->employee = $employee;
 });
-
 
 test('connect clocking machine to han', function () {
     $qrCode = $this->clockingMachine->qr_code;
@@ -76,9 +74,9 @@ test('connect clocking machine to han', function () {
         route(
             'han.connect',
             [
-                'qr_code'     => $qrCode,
+                'qr_code' => $qrCode,
                 'device_name' => 'test device',
-                'device_uuid' => Str::uuid()->toString()
+                'device_uuid' => Str::uuid()->toString(),
             ]
         )
     );
@@ -86,7 +84,7 @@ test('connect clocking machine to han', function () {
     $response->assertOk();
     $response->assertJsonStructure([
         'token',
-        'data'
+        'data',
     ]);
 });
 
@@ -94,19 +92,19 @@ test('find employee by pin', function () {
     Sanctum::actingAs($this->clockingMachine);
 
     $response = $this->postJson(route('han.employee.pin.validate'), [
-        'pin' => $this->employee->pin
+        'pin' => $this->employee->pin,
     ]);
 
     $response
         ->assertStatus(200)
         ->assertJson([
             'data' => [
-                'id'            => $this->employee->id,
-                'alias'         => $this->employee->alias,
-                'contact_name'  => $this->employee->contact_name,
+                'id' => $this->employee->id,
+                'alias' => $this->employee->alias,
+                'contact_name' => $this->employee->contact_name,
                 'worker_number' => $this->employee->worker_number,
-                'state'         => $this->employee->state->value,
-            ]
+                'state' => $this->employee->state->value,
+            ],
         ]);
 });
 
@@ -118,7 +116,7 @@ test('save clocking', function () {
     $response = $this->postJson(route(
         'han.employee.clocking.store',
         [
-            'employee' => $this->employee->id
+            'employee' => $this->employee->id,
         ]
     ));
     $this->employee->refresh();
@@ -128,11 +126,10 @@ test('save clocking', function () {
 
 });
 
-
 test('do not find employee using wrong pin', function () {
     Sanctum::actingAs($this->clockingMachine);
     $response = $this->postJson(route('han.employee.pin.validate'), [
-        'pin' => 'XX11XX'
+        'pin' => 'XX11XX',
     ]);
     $response->assertStatus(422);
 
@@ -141,14 +138,14 @@ test('do not find employee using wrong pin', function () {
 test('can not find employees from another organisation', function () {
     Sanctum::actingAs($this->clockingMachine);
 
-    $otherOrganisation        = StoreOrganisation::make()->action($this->organisation->group, Organisation::factory()->definition());
+    $otherOrganisation = StoreOrganisation::make()->action($this->organisation->group, Organisation::factory()->definition());
     $employeeOtherOrganisation = StoreEmployee::make()->action($otherOrganisation, Employee::factory()->definition());
     expect($otherOrganisation)->toBeInstanceOf(Organisation::class)
         ->and($otherOrganisation->id)->not->toBe($this->organisation->id)
         ->and($employeeOtherOrganisation)->toBeInstanceOf(Employee::class);
 
     $response = $this->postJson(route('han.employee.pin.validate'), [
-        'pin' => $employeeOtherOrganisation->pin
+        'pin' => $employeeOtherOrganisation->pin,
     ]);
     $response->assertStatus(404);
 });
@@ -159,7 +156,7 @@ test('find employee fail if employee status is left', function () {
     UpdateEmployee::make()->action($this->employee, ['state' => EmployeeStateEnum::LEFT]);
     $this->employee->refresh();
     $response = $this->postJson(route('han.employee.pin.validate'), [
-        'pin' => $this->employee->pin
+        'pin' => $this->employee->pin,
     ]);
     $response->assertStatus(404);
 });

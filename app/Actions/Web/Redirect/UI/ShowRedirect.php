@@ -67,30 +67,29 @@ class ShowRedirect extends OrgAction
         return Inertia::render(
             'Org/Web/Redirect',
             [
-                'title'    => __('Redirect'),
+                'title' => __('Redirect'),
                 // 'breadcrumbs' => $this->getBreadcrumbs(
                 //     $request->route()->getName(),
                 //     $request->route()->originalParameters()
                 // ),
                 'pageHead' => [
-                    'model'   => __('redirect'),
-                    'title'   => $redirect->path,
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'fa-concierge-bell'],
-                            'title' => __('Redirect')
-                        ],
+                    'model' => __('redirect'),
+                    'title' => $redirect->path,
+                    'icon' => [
+                        'icon' => ['fal', 'fa-concierge-bell'],
+                        'title' => __('Redirect'),
+                    ],
                     'actions' => [
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
+                                'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
                         ] : false,
 
-                    ]
+                    ],
                 ],
             ]
         );

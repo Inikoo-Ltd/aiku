@@ -8,9 +8,9 @@
 
 namespace App\Actions\Production\Artefact;
 
+use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\Hydrators\ArtefactHydrateUniversalSearch;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateArtefacts;
-use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateArtefacts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateArtefacts;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
@@ -40,7 +40,6 @@ class StoreArtefact extends OrgAction
         ProductionHydrateArtefacts::dispatch($artefact->production);
         ArtefactHydrateUniversalSearch::dispatch($artefact);
 
-
         return $artefact;
     }
 
@@ -56,10 +55,10 @@ class StoreArtefact extends OrgAction
     public function rules(): array
     {
         return [
-            'code'      => [
+            'code' => [
                 'required',
                 'max:64',
-                new AlphaDashDot(),
+                new AlphaDashDot,
                 Rule::notIn(['export', 'create', 'upload']),
                 new IUnique(
                     table: 'artefacts',
@@ -68,31 +67,30 @@ class StoreArtefact extends OrgAction
                     ]
                 ),
             ],
-            'name'        => ['required', 'string', 'max:255'],
-            'state'       => ['sometimes', 'nullable', Rule::enum(ArtefactStateEnum::class)],
-            'source_id'   => ['sometimes', 'nullable', 'string'],
-            'created_at'  => ['sometimes', 'nullable', 'date'],
-
+            'name' => ['required', 'string', 'max:255'],
+            'state' => ['sometimes', 'nullable', Rule::enum(ArtefactStateEnum::class)],
+            'source_id' => ['sometimes', 'nullable', 'string'],
+            'created_at' => ['sometimes', 'nullable', 'date'],
 
         ];
     }
 
     public function action(Production $production, array $modelData, int $hydratorsDelay = 0): Artefact
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($production->organisation, $modelData);
 
         return $this->handle($production, $this->validatedData);
     }
 
-
     public function htmlResponse(Artefact $artefact): RedirectResponse
     {
-        $production   = $artefact->production;
+        $production = $artefact->production;
         $organisation = $artefact->organisation;
+
         return Redirect::route('grp.org.productions.show.crafts.artefacts.index', [
-            $organisation, $production
+            $organisation, $production,
         ]);
     }
 
@@ -102,5 +100,4 @@ class StoreArtefact extends OrgAction
 
         return $this->handle($production, $this->validatedData);
     }
-
 }

@@ -56,29 +56,28 @@ class StoreRetinaPalletFromDelivery extends RetinaAction
     public function rules(): array
     {
         return [
-            'type'               => ['nullable', Rule::enum(PalletTypeEnum::class)],
+            'type' => ['nullable', Rule::enum(PalletTypeEnum::class)],
             'customer_reference' => ['nullable'],
-            'notes'              => ['nullable', 'string', 'max:1024']
+            'notes' => ['nullable', 'string', 'max:1024'],
         ];
     }
 
     public function asController(PalletDelivery $palletDelivery, ActionRequest $request): Pallet
     {
         /** @var FulfilmentCustomer $fulfilmentCustomer */
-        $this->parent       = $palletDelivery;
+        $this->parent = $palletDelivery;
         $fulfilmentCustomer = $request->user()->customer->fulfilmentCustomer;
-        $this->fulfilment   = $fulfilmentCustomer->fulfilment;
+        $this->fulfilment = $fulfilmentCustomer->fulfilment;
 
         $this->initialisation($request);
 
         return $this->handle($palletDelivery, $this->validatedData);
     }
 
-
     public function htmlResponse(): RedirectResponse
     {
         return Redirect::route('retina.fulfilment.storage.pallet_deliveries.show', [
-            'palletDelivery' => $this->parent->slug
+            'palletDelivery' => $this->parent->slug,
         ]);
     }
 
@@ -86,7 +85,7 @@ class StoreRetinaPalletFromDelivery extends RetinaAction
     {
         $this->asAction = true;
         $this->initialisationFulfilmentActions($palletDelivery->fulfilmentCustomer, $modelData);
+
         return $this->handle($palletDelivery, $this->validatedData);
     }
-
 }

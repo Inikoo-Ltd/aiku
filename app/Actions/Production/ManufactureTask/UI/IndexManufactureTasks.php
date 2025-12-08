@@ -35,7 +35,7 @@ class IndexManufactureTasks extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
+            return $request->user()->authTo('group-overview');
         }
         if ($this->parent instanceof Organisation) {
             $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
@@ -43,7 +43,7 @@ class IndexManufactureTasks extends OrgAction
             return $request->user()->authTo(
                 [
                     'productions-view.'.$this->organisation->id,
-                    'org-supervisor.'.$this->organisation->id
+                    'org-supervisor.'.$this->organisation->id,
                 ]
             );
         }
@@ -60,7 +60,6 @@ class IndexManufactureTasks extends OrgAction
 
         return $this->handle(parent: $this->parent, prefix: ManufactureTasksTabsEnum::MANUFACTURE_TASKS->value);
     }
-
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -92,7 +91,7 @@ class IndexManufactureTasks extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(ManufactureTask::class)
-        ->leftJoin('organisations', 'manufacture_tasks.organisation_id', '=', 'organisations.id');
+            ->leftJoin('organisations', 'manufacture_tasks.organisation_id', '=', 'organisations.id');
 
         if ($parent instanceof Group) {
             $queryBuilder->where('manufacture_tasks.group_id', $parent->id);
@@ -101,7 +100,6 @@ class IndexManufactureTasks extends OrgAction
         } else {
             $queryBuilder->where('manufacture_tasks.production_id', $parent->id);
         }
-
 
         return $queryBuilder
             ->defaultSort('manufacture_tasks.code')
@@ -138,28 +136,28 @@ class IndexManufactureTasks extends OrgAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Organisation' => [
-                            'title'  => __("No manufacture tasks found"),
-                            'count'  => $parent->manufactureStats->number_manufacture_tasks,
-                            'action' => null
+                            'title' => __('No manufacture tasks found'),
+                            'count' => $parent->manufactureStats->number_manufacture_tasks,
+                            'action' => null,
                         ],
                         'Production' => [
-                            'title'       => __("No manufacture tasks found"),
+                            'title' => __('No manufacture tasks found'),
                             'description' => $this->canEdit ? __('Get started by creating your first manufacture task. ✨')
                                 : null,
-                            'count'       => $parent->stats->number_manufacture_tasks,
-                            'action'      => $canEdit ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
+                            'count' => $parent->stats->number_manufacture_tasks,
+                            'action' => $canEdit ? [
+                                'type' => 'button',
+                                'style' => 'create',
                                 'tooltip' => __('New manufacture task'),
-                                'label'   => __('manufacture task'),
-                                'route'   => [
-                                    'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.create',
+                                'label' => __('manufacture task'),
+                                'route' => [
+                                    'name' => 'grp.org.productions.show.crafts.manufacture_tasks.create',
                                     'parameters' => [
                                         $parent->organisation->slug,
-                                        $parent->slug
-                                    ]
-                                ]
-                            ] : null
+                                        $parent->slug,
+                                    ],
+                                ],
+                            ] : null,
                         ],
                         default => null
                     }
@@ -187,47 +185,47 @@ class IndexManufactureTasks extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Manufacture tasks'),
-                'pageHead'    => [
-                    'title'     => __('Manufacture tasks'),
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-code-merge'],
+                'title' => __('Manufacture tasks'),
+                'pageHead' => [
+                    'title' => __('Manufacture tasks'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-code-merge'],
                         'title' => __('Manufacture_tasks'),
                     ],
-                    'actions'   => [
+                    'actions' => [
                         $this->canEdit && $this->parent instanceof Production ? [
-                            'type'   => 'buttonGroup',
-                            'key'    => 'upload-add',
+                            'type' => 'buttonGroup',
+                            'key' => 'upload-add',
                             'button' => [
                                 [
-                                    'type'  => 'button',
+                                    'type' => 'button',
                                     'style' => 'primary',
-                                    'icon'  => ['fal', 'fa-upload'],
+                                    'icon' => ['fal', 'fa-upload'],
                                     'label' => 'upload',
                                     'route' => [
-                                        'name'       => 'grp.models.production.manufacture_tasks.upload',
+                                        'name' => 'grp.models.production.manufacture_tasks.upload',
                                         'parameters' => [
-                                            $this->parent->id
-                                        ]
-                                    ]
+                                            $this->parent->id,
+                                        ],
+                                    ],
                                 ],
                                 [
 
-                                    'type'  => 'button',
+                                    'type' => 'button',
                                     'style' => 'create',
                                     'label' => __('task'),
                                     'route' => [
-                                        'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.create',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ]
+                                        'name' => 'grp.org.productions.show.crafts.manufacture_tasks.create',
+                                        'parameters' => $request->route()->originalParameters(),
+                                    ],
 
-                                ]
-                            ]
+                                ],
+                            ],
                         ] : null,
-                    ]
+                    ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
+                'tabs' => [
+                    'current' => $this->tab,
                     'navigation' => $this->parent instanceof Group ? Arr::except(ManufactureTasksTabsEnum::navigation(), [ManufactureTasksTabsEnum::MANUFACTURE_TASKS_HISTORIES->value]) : ManufactureTasksTabsEnum::navigation(),
                 ],
 
@@ -248,47 +246,44 @@ class IndexManufactureTasks extends OrgAction
     {
 
         return match ($routeName) {
-            'grp.overview.production.manufacture-tasks.index' =>
-            array_merge(
+            'grp.overview.production.manufacture-tasks.index' => array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(
                     $routeParameters
                 ),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => $routeName,
-                                'parameters' => $routeParameters
+                                'name' => $routeName,
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Manufacture tasks'),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
-                        'suffix' => $suffix
+                        'suffix' => $suffix,
 
-                    ]
+                    ],
                 ]
             ),
             default => array_merge(
                 ShowCraftsDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.show.crafts.manufacture_tasks.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Manufacture tasks'),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
-                        'suffix' => $suffix
+                        'suffix' => $suffix,
 
-                    ]
+                    ],
                 ]
             )
         };
     }
-
-
 }

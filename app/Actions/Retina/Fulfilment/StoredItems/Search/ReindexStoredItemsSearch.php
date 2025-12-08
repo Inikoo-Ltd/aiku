@@ -13,19 +13,17 @@ namespace App\Actions\Retina\Fulfilment\StoredItems\Search;
 use App\Actions\HydrateModel;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\StoredItem;
-use Illuminate\Support\Collection;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 
 class ReindexStoredItemsSearch extends HydrateModel
 {
     public string $commandSignature = 'search:retina_stored_items {organisations?*} {--s|slugs=}';
 
-
     public function handle(StoredItem $storedItem): void
     {
         StoredItemRecordSearch::run($storedItem);
     }
-
 
     protected function getModel(string $slug): Invoice
     {
@@ -39,7 +37,7 @@ class ReindexStoredItemsSearch extends HydrateModel
 
     protected function loopAll(Command $command): void
     {
-        $command->info("Reindex Stored Items");
+        $command->info('Reindex Stored Items');
         $count = StoredItem::count();
 
         $bar = $command->getOutput()->createProgressBar($count);
@@ -54,6 +52,6 @@ class ReindexStoredItemsSearch extends HydrateModel
         });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
     }
 }

@@ -35,13 +35,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexWebsites extends OrgAction
 {
     use WithWebAuthorisation;
+
     private Group|Organisation|Fulfilment|Shop $parent;
-
-
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
-        $this->scope  = $organisation;
+        $this->scope = $organisation;
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
@@ -57,13 +56,12 @@ class IndexWebsites extends OrgAction
         return $this->handle($this->parent);
     }
 
-
     protected function getElementGroups(Group|Organisation|Shop|Fulfilment $parent): array
     {
         return
             [
                 'state' => [
-                    'label'    => __('State'),
+                    'label' => __('State'),
                     'elements' => array_merge_recursive(
                         WebsiteStateEnum::labels(),
                         WebsiteStateEnum::count($parent)
@@ -71,9 +69,9 @@ class IndexWebsites extends OrgAction
 
                     'engine' => function ($query, $elements) {
                         $query->whereIn('websites.state', $elements);
-                    }
+                    },
 
-                ]
+                ],
             ];
     }
 
@@ -103,7 +101,6 @@ class IndexWebsites extends OrgAction
             $queryBuilder->where('websites.group_id', $parent->id);
         }
 
-
         if ($parent instanceof Group || $parent instanceof Organisation) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
@@ -117,11 +114,11 @@ class IndexWebsites extends OrgAction
 
         return $queryBuilder
             ->defaultSort('websites.code')
-            ->select(['websites.id', 'websites.code', 'websites.slug', 'websites.name', 'websites.slug', 'websites.domain', 'websites.status', 'websites.state','websites.shop_id',
-                      'shops.type as shop_type', 'shops.slug as shop_slug','shops.name as shop_name','organisations.name as organisation_name','organisations.slug as organisation_slug'])
+            ->select(['websites.id', 'websites.code', 'websites.slug', 'websites.name', 'websites.slug', 'websites.domain', 'websites.status', 'websites.state', 'websites.shop_id',
+                'shops.type as shop_type', 'shops.slug as shop_slug', 'shops.name as shop_name', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug'])
             ->leftJoin('shops', 'websites.shop_id', 'shops.id')
             ->leftJoin('organisations', 'websites.organisation_id', 'organisations.id')
-            ->allowedSorts([ 'code', 'name','domain','state'])
+            ->allowedSorts(['code', 'name', 'domain', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -148,7 +145,7 @@ class IndexWebsites extends OrgAction
 
             $countWebsites = match (class_basename($parent)) {
                 'Group', 'Organisation' => $parent->webStats->number_websites,
-                'Shop'  => $parent->website()->count(),
+                'Shop' => $parent->website()->count(),
                 default => $parent->shop->website()->count(),
             };
 
@@ -158,14 +155,14 @@ class IndexWebsites extends OrgAction
                 ->withEmptyState(
                     [
                         'title' => __('No websites found'),
-                        'count' => $countWebsites
+                        'count' => $countWebsites,
 
                     ]
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], sortable: true, type: 'icon')
                 ->column(key: 'code', label: __('code'), sortable: true)
                 ->column(key: 'name', label: __('name'), sortable: true);
-            if (!($parent instanceof Group)) {
+            if (! ($parent instanceof Group)) {
                 $table->column(key: 'routeUniqueVisitor', label: __('unique visitor'));
             }
             $table->column(key: 'domain', label: __('domain'), sortable: true)
@@ -180,22 +177,22 @@ class IndexWebsites extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $websites, ActionRequest $request): Response
     {
-        $scope     = $this->parent;
+        $scope = $this->parent;
         $container = null;
-        $title     = __('Websites');
+        $title = __('Websites');
         if (class_basename($scope) == 'Shop') {
-            $title     = __("Shop Websites");
+            $title = __('Shop Websites');
             $container = [
-                'icon'    => ['fal', 'fa-store-alt'],
+                'icon' => ['fal', 'fa-store-alt'],
                 'tooltip' => __('Shop'),
-                'label'   => Str::possessive($scope->code)
+                'label' => Str::possessive($scope->code),
             ];
         } elseif (class_basename($scope) == 'Fulfilment') {
-            $title     = __("Fulfilment Shop Websites");
+            $title = __('Fulfilment Shop Websites');
             $container = [
-                'icon'    => ['fal', 'fa-pallet-alt'],
+                'icon' => ['fal', 'fa-pallet-alt'],
                 'tooltip' => __('Fulfilment shop'),
-                'label'   => Str::possessive($scope->shop->code)
+                'label' => Str::possessive($scope->shop->code),
             ];
         }
 
@@ -209,27 +206,26 @@ class IndexWebsites extends OrgAction
                 $website = $this->parent->shop->website;
             }
 
-            if (!$website) {
+            if (! $website) {
                 $createWebsite = [
-                    'type'    => 'button',
-                    'style'   => 'create',
+                    'type' => 'button',
+                    'style' => 'create',
                     'tooltip' => __("Set up shop's website"),
-                    'label'   => __('set up website'),
-                    'route'   => match (class_basename($this->parent)) {
+                    'label' => __('set up website'),
+                    'route' => match (class_basename($this->parent)) {
                         'Shop' => [
-                            'name'       => 'grp.org.shops.show.web.websites.create',
-                            'parameters' => $request->route()->originalParameters()
+                            'name' => 'grp.org.shops.show.web.websites.create',
+                            'parameters' => $request->route()->originalParameters(),
                         ],
                         'Fulfilment' => [
-                            'name'       => 'grp.org.fulfilments.show.web.websites.create',
-                            'parameters' => $request->route()->originalParameters()
+                            'name' => 'grp.org.fulfilments.show.web.websites.create',
+                            'parameters' => $request->route()->originalParameters(),
                         ],
                         default => null
-                    }
+                    },
                 ];
             }
         }
-
 
         return Inertia::render(
             'Org/Web/Websites',
@@ -238,88 +234,79 @@ class IndexWebsites extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => $title,
+                'title' => $title,
 
                 'pageHead' => [
-                    'title'     => __('websites'),
+                    'title' => __('websites'),
                     'container' => $container,
-                    'icon'      => [
+                    'icon' => [
                         'title' => __('Website'),
-                        'icon'  => 'fal fa-globe'
+                        'icon' => 'fal fa-globe',
                     ],
 
-
                     'actions' => [
-                        $createWebsite
+                        $createWebsite,
 
-
-                    ]
+                    ],
                 ],
-                'data'     => WebsitesResource::collection($websites),
+                'data' => WebsitesResource::collection($websites),
 
             ]
         )->table($this->tableStructure($this->parent));
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Websites'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
-
         return match ($routeName) {
-            'grp.org.websites.index' =>
-            array_merge(
+            'grp.org.websites.index' => array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ]
                 ),
             ),
 
-            'grp.org.fulfilments.show.web.websites.index' =>
-            array_merge(
+            'grp.org.fulfilments.show.web.websites.index' => array_merge(
                 ShowFulfilment::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ]
                 ),
             ),
 
-
-            'grp.org.shops.show.web.websites.index' =>
-            array_merge(
+            'grp.org.shops.show.web.websites.index' => array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.catalogue.dashboard',
-                        'parameters' => $routeParameters
+                        'name' => 'grp.org.shops.show.catalogue.dashboard',
+                        'parameters' => $routeParameters,
                     ]
                 ),
             ),
 
-            'grp.overview.web.websites.index' =>
-            array_merge(
+            'grp.overview.web.websites.index' => array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ]
                 ),
             ),
@@ -327,5 +314,4 @@ class IndexWebsites extends OrgAction
             default => []
         };
     }
-
 }

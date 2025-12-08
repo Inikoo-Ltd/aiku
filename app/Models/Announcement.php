@@ -57,9 +57,11 @@ use Spatie\MediaLibrary\HasMedia;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Snapshot> $snapshots
  * @property-read Snapshot|null $unpublishedSnapshot
  * @property-read Website|null $website
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement query()
+ *
  * @mixin \Eloquent
  */
 class Announcement extends Model implements HasMedia
@@ -69,25 +71,25 @@ class Announcement extends Model implements HasMedia
 
     protected $guarded = [];
 
-    protected $casts   = [
-        "container_properties" => "array",
-        "fields"               => "array",
-        "settings"             => "array",
-        "published_settings"   => "array",
-        "live_at"              => "datetime",
-        "ready_at"              => "datetime",
-        "closed_at"            => "datetime",
-        "schedule_at"          => "datetime",
-        "schedule_finish_at"   => "datetime",
-        'state'                => AnnouncementStateEnum::class,
-        'status'               => AnnouncementStatusEnum::class
+    protected $casts = [
+        'container_properties' => 'array',
+        'fields' => 'array',
+        'settings' => 'array',
+        'published_settings' => 'array',
+        'live_at' => 'datetime',
+        'ready_at' => 'datetime',
+        'closed_at' => 'datetime',
+        'schedule_at' => 'datetime',
+        'schedule_finish_at' => 'datetime',
+        'state' => AnnouncementStateEnum::class,
+        'status' => AnnouncementStatusEnum::class,
     ];
 
     protected $attributes = [
-        'container_properties'   => '{}',
-        'fields'                 => '{}',
-        'settings'               => '{}',
-        'published_settings'     => '{}'
+        'container_properties' => '{}',
+        'fields' => '{}',
+        'settings' => '{}',
+        'published_settings' => '{}',
     ];
 
     public function extractSettings(array $data): array
@@ -124,6 +126,7 @@ class Announcement extends Model implements HasMedia
     {
         return $this->morphMany(Snapshot::class, 'parent');
     }
+
     public function unpublishedSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_snapshot_id');

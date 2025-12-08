@@ -16,17 +16,17 @@ enum UserTypeEnum: string
     use EnumHelperTrait;
 
     case EMPLOYEE = 'employee';
-    case GUEST    = 'guest';
+    case GUEST = 'guest';
     case SUPPLIER = 'supplier';
-    case AGENT    = 'agent';
+    case AGENT = 'agent';
 
     public static function labels(): array
     {
         return [
             'employee' => __('Employee'),
-            'guest'    => __('Guest'),
+            'guest' => __('Guest'),
             'supplier' => __('Supplier'),
-            'agent'    => __('Agent'),
+            'agent' => __('Agent'),
         ];
     }
 
@@ -36,12 +36,10 @@ enum UserTypeEnum: string
 
         return [
             'employee' => $stats->number_users_type_employee,
-            'guest'    => $stats->number_users_type_guest,
+            'guest' => $stats->number_users_type_guest,
             'supplier' => $stats->number_users_type_supplier,
-            'agent'    => $stats->number_users_type_agent,
+            'agent' => $stats->number_users_type_agent,
 
         ];
     }
-
-
 }

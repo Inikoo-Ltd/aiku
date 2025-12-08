@@ -23,7 +23,6 @@ class SetTradeUnitsTranslationsFromAurora extends OrgAction
     use WithOrganisationSource;
     use WithOrganisationSourceShop;
 
-
     /**
      * @throws \Exception
      */
@@ -59,7 +58,6 @@ class SetTradeUnitsTranslationsFromAurora extends OrgAction
                         }
                     }
 
-
                 }
             }
         }
@@ -72,7 +70,6 @@ class SetTradeUnitsTranslationsFromAurora extends OrgAction
         return $tradeUnit;
     }
 
-
     public function getCommandSignature(): string
     {
         return 'set:trade_units_translations_from_aurora';
@@ -83,7 +80,7 @@ class SetTradeUnitsTranslationsFromAurora extends OrgAction
         $command->info('Setting trade units translations from Aurora');
 
         $chunkSize = 100;
-        $count     = 0;
+        $count = 0;
 
         // Create a progress bar
         $bar = $command->getOutput()->createProgressBar(TradeUnit::count());

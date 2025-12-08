@@ -30,6 +30,7 @@ class UserRemoveRoles
             $user->removeRole($role);
         }
         SetUserAuthorisedModels::run($user);
+
         return $user;
     }
 
@@ -39,9 +40,8 @@ class UserRemoveRoles
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit");
+        return $request->user()->authTo('sysadmin.edit');
     }
-
 
     public function rules(): array
     {
@@ -64,12 +64,9 @@ class UserRemoveRoles
             }
         }
 
-
         $this->set('roles', $roles);
 
-
     }
-
 
     public function asController(User $user, ActionRequest $request): User
     {
@@ -81,7 +78,7 @@ class UserRemoveRoles
         $this->trusted = true;
         $this->setRawAttributes(
             [
-                'role_names' => $role_names
+                'role_names' => $role_names,
             ]
         );
         $this->validateAttributes();
@@ -90,7 +87,4 @@ class UserRemoveRoles
     }
 
     public string $commandSignature = 'user:remove-roles {user : User slug} {roles* : list of roles}';
-
-
-
 }

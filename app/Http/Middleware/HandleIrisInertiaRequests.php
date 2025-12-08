@@ -20,38 +20,33 @@ class HandleIrisInertiaRequests extends Middleware
 
     protected $rootView = 'app-iris';
 
-
     public function share(Request $request): array
     {
 
-
         $website = $request->get('website');
-
 
         $firstLoadOnlyProps = [];
 
-
-        if (!$request->inertia() || Session::get('reloadLayout')) {
+        if (! $request->inertia() || Session::get('reloadLayout')) {
             $websiteTheme = Arr::get($website->published_layout, 'theme');
 
             $firstLoadOnlyProps = [
-                'webpage_id'  => $website->id,
-                'currency'    => $request->get('currency_data'),
+                'webpage_id' => $website->id,
+                'currency' => $request->get('currency_data'),
                 'environment' => app()->environment(),
-                'ziggy'       => function () use ($request) {
+                'ziggy' => function () use ($request) {
                     return array_merge((new Ziggy('iris'))->toArray(), [
-                        'location' => $request->url()
+                        'location' => $request->url(),
                     ]);
                 },
-                'iris'        => $this->getIrisData($website),
-                "retina" => [
-                    "type" => $request->get('shop_type'),
+                'iris' => $this->getIrisData($website),
+                'retina' => [
+                    'type' => $request->get('shop_type'),
                 ],
-                "layout" => [
-                    "app_theme" => Arr::get($websiteTheme, 'color'),
+                'layout' => [
+                    'app_theme' => Arr::get($websiteTheme, 'color'),
                 ],
             ];
-
 
             if (Session::get('reloadLayout') == 'remove') {
                 Session::forget('reloadLayout');
@@ -61,15 +56,14 @@ class HandleIrisInertiaRequests extends Middleware
             }
         }
 
-
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'flash'  => [
+                'flash' => [
                     'notification' => fn () => $request->session()->get('notification'),
-                    'modal'        => fn () => $request->session()->get('modal')
+                    'modal' => fn () => $request->session()->get('modal'),
                 ],
-                'ziggy'  => [
+                'ziggy' => [
                     'location' => $request->url(),
                 ],
 

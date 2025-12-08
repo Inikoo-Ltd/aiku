@@ -17,22 +17,19 @@ class FetchAuroraWarehouseArea extends FetchAurora
     {
         $code = strtolower($this->auroraModelData->{'Warehouse Area Code'});
 
-
         $code = preg_replace('/\s*warehouse$/i', '', $code);
 
-
-        $this->parsedData['warehouse']      = $this->parseWarehouse($this->organisation->id.':'.$this->auroraModelData->{'Warehouse Area Warehouse Key'});
+        $this->parsedData['warehouse'] = $this->parseWarehouse($this->organisation->id.':'.$this->auroraModelData->{'Warehouse Area Warehouse Key'});
         $this->parsedData['warehouse_area'] = [
-            'name'            => $this->auroraModelData->{'Warehouse Area Name'} ?? 'Name not set',
-            'code'            => Str::kebab($code),
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Warehouse Area Key'},
-            'fetched_at'      => now(),
-            'last_fetched_at' => now()
+            'name' => $this->auroraModelData->{'Warehouse Area Name'} ?? 'Name not set',
+            'code' => Str::kebab($code),
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Warehouse Area Key'},
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Warehouse Area Dimension')

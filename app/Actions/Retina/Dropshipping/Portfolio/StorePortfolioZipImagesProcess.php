@@ -8,8 +8,8 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class StorePortfolioZipImagesProcess
 {
@@ -18,6 +18,7 @@ class StorePortfolioZipImagesProcess
     public function handle(array $modelData): ?int
     {
         $record = DownloadPortfolioCustomerSalesChannel::create($modelData);
+
         return $record->id;
     }
 }

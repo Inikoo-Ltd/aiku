@@ -18,16 +18,17 @@ class UserSearchResultResource extends JsonResource
     {
         /** @var \App\Models\SysAdmin\User $user */
         $user = $this;
+
         return [
-            'username'           => $user->username,
-            'image'              => $user->image_id,
-            'email'              => $user->email,
-            'contact_name'       => $user->contact_name,
-            'route'              => [
-                'name'       => 'grp.sysadmin.users.show',
-                'parameters' => $user->username
+            'username' => $user->username,
+            'image' => $user->image_id,
+            'email' => $user->email,
+            'contact_name' => $user->contact_name,
+            'route' => [
+                'name' => 'grp.sysadmin.users.show',
+                'parameters' => $user->username,
             ],
-            'icon'   => ['fal', 'fa-terminal']
+            'icon' => ['fal', 'fa-terminal'],
         ];
     }
 }

@@ -16,7 +16,7 @@ class ProductCategoryFactory extends Factory
     {
         return [
             'code' => fake()->lexify,
-            'name' => fake()->name
+            'name' => fake()->name,
         ];
     }
 }

@@ -33,6 +33,4 @@ class GroupHydrateDispatchedEmails implements ShouldBeUnique
 
         $group->commsStats()->update($stats);
     }
-
-
 }

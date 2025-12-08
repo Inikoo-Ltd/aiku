@@ -27,25 +27,25 @@ enum RetinaDropshippingInvoiceTabsEnum: string
         return match ($this) {
             RetinaDropshippingInvoiceTabsEnum::REFUNDS => [
                 'title' => __('Refunds'),
-                'icon'  => 'fal fa-arrow-circle-left',
-                'type'  => 'icon',
+                'icon' => 'fal fa-arrow-circle-left',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             RetinaDropshippingInvoiceTabsEnum::PAYMENTS => [
                 'title' => __('Payments'),
-                'type'  => 'icon',
+                'type' => 'icon',
                 'align' => 'right',
-                'icon'  => 'fal fa-credit-card',
+                'icon' => 'fal fa-credit-card',
             ],
             RetinaDropshippingInvoiceTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             RetinaDropshippingInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS => [
                 'title' => __('Transactions'),
-                'icon'  => 'fal fa-expand-arrows',
+                'icon' => 'fal fa-expand-arrows',
             ],
         };
     }

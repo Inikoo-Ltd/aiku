@@ -12,8 +12,8 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
-use App\Models\SysAdmin\Group;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,7 +22,6 @@ class GroupHydrateOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-
 
     public string $jobQueue = 'sales';
 
@@ -78,6 +77,4 @@ class GroupHydrateOrders implements ShouldBeUnique
 
         $group->orderingStats()->update($stats);
     }
-
-
 }

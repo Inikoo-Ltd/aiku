@@ -23,25 +23,25 @@ class LocationResource extends JsonResource
         $location = $this;
 
         return [
-            'id'                     => $location->id,
-            'slug'                   => $location->slug,
-            'code'                   => $location->code,
-            'allow_stocks'           => $location->allow_stocks,
-            'allow_fulfilment'       => $location->allow_fulfilment,
-            'allow_dropshipping'     => $location->allow_dropshipping,
-            'has_stock_slots'        => $location->has_stock_slots,
-            'has_fulfilment'         => $location->has_fulfilment,
+            'id' => $location->id,
+            'slug' => $location->slug,
+            'code' => $location->code,
+            'allow_stocks' => $location->allow_stocks,
+            'allow_fulfilment' => $location->allow_fulfilment,
+            'allow_dropshipping' => $location->allow_dropshipping,
+            'has_stock_slots' => $location->has_stock_slots,
+            'has_fulfilment' => $location->has_fulfilment,
             'has_dropshipping_slots' => $location->has_dropshipping_slots,
-            'status'                 => $location->status,
-            'stock_value'            => $location->stock_value,
-            'is_empty'               => $location->is_empty,
-            'max_weight'             => $location->max_weight,
-            'max_volume'             => $location->max_volume,
-            'data'                   => $location->data,
-            'audited_at'             => $location->audited_at,
-            'created_at'             => $location->created_at,
-            'updated_at'             => $location->updated_at,
-            'quantity'               => $this->whenPivotLoaded(new LocationOrgStock(), function () {
+            'status' => $location->status,
+            'stock_value' => $location->stock_value,
+            'is_empty' => $location->is_empty,
+            'max_weight' => $location->max_weight,
+            'max_volume' => $location->max_volume,
+            'data' => $location->data,
+            'audited_at' => $location->audited_at,
+            'created_at' => $location->created_at,
+            'updated_at' => $location->updated_at,
+            'quantity' => $this->whenPivotLoaded(new LocationOrgStock, function () {
                 return $this->pivot->quantity;
             }),
         ];

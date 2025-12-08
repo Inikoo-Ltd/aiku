@@ -19,7 +19,6 @@ trait WithIntervalsAggregators
         $stats = array_merge($stats, $this->getIntervalStats($queryBase, $statField, $dateField, $sumField, $intervals));
         $stats = array_merge($stats, $this->getLastYearIntervalStats($queryBase, $statField, $dateField, $sumField, $intervals));
 
-
         if ($doPreviousPeriods === null || in_array('previous_years', $doPreviousPeriods)) {
             $stats = array_merge($stats, $this->getPreviousYearsIntervalStats($queryBase, $statField, $dateField, $sumField));
         }
@@ -40,19 +39,17 @@ trait WithIntervalsAggregators
     ): array {
         $stats = [];
 
-
         foreach (DateIntervalEnum::casesWithoutCustom() as $interval) {
 
-            if ($intervals !== null && !in_array($interval, $intervals)) {
+            if ($intervals !== null && ! in_array($interval, $intervals)) {
                 continue;
             }
 
             $query = $queryBase->clone();
             $query = $interval->wherePeriod($query, $dateField);
-            $res                                = $query->first();
+            $res = $query->first();
             $stats[$statField.$interval->value] = $res->{$sumField} ?? 0;
         }
-
 
         return $stats;
     }
@@ -70,17 +67,16 @@ trait WithIntervalsAggregators
                 continue;
             }
 
-            if ($intervals !== null && !in_array($interval, $intervals)) {
+            if ($intervals !== null && ! in_array($interval, $intervals)) {
                 continue;
             }
 
             $query = $queryBase->clone();
             if ($query = $interval->whereLastYearPeriod($query, $dateField)) {
-                $res                                      = $query->first();
+                $res = $query->first();
                 $stats[$statField.$interval->value.'_ly'] = $res->{$sumField} ?? 0;
             }
         }
-
 
         return $stats;
     }
@@ -96,10 +92,9 @@ trait WithIntervalsAggregators
             $query = $queryBase->clone();
             $query = $period->wherePeriod($query, $dateField);
 
-            $res                              = $query->first();
+            $res = $query->first();
             $stats[$statField.$period->value] = $res->{$sumField} ?? 0;
         }
-
 
         return $stats;
     }
@@ -114,13 +109,11 @@ trait WithIntervalsAggregators
         foreach (PreviousQuartersEnum::cases() as $period) {
             $query = $queryBase->clone();
             if ($query = $period->wherePeriod($query, $dateField)) {
-                $res                              = $query->first();
+                $res = $query->first();
                 $stats[$statField.$period->value] = $res->{$sumField} ?? 0;
             }
         }
 
-
         return $stats;
     }
-
 }

@@ -23,13 +23,13 @@ class GetRetinaFulfilmentNavigation
         $groupNavigation = [];
 
         $groupNavigation['home'] = [
-            'label'   => __('Home'),
-            'icon'    => ['fal', 'fa-home'],
-            'root'    => 'retina.dashboard.show',
-            'route'   => [
-                'name' => 'retina.dashboard.show'
+            'label' => __('Home'),
+            'icon' => ['fal', 'fa-home'],
+            'root' => 'retina.dashboard.show',
+            'route' => [
+                'name' => 'retina.dashboard.show',
             ],
-            'topMenu' => []
+            'topMenu' => [],
 
         ];
 
@@ -40,50 +40,47 @@ class GetRetinaFulfilmentNavigation
                 $additionalSubsections = [
                     [
                         'label' => __('Goods out'),
-                        'icon'  => ['fal', 'fa-truck-ramp'],
-                        'root'  => 'retina.fulfilment.storage.pallet_returns.',
+                        'icon' => ['fal', 'fa-truck-ramp'],
+                        'root' => 'retina.fulfilment.storage.pallet_returns.',
                         'route' => [
-                            'name' => 'retina.fulfilment.storage.pallet_returns.index'
-                        ]
-                    ]
+                            'name' => 'retina.fulfilment.storage.pallet_returns.index',
+                        ],
+                    ],
                 ];
             }
 
-
             $groupNavigation['storage'] = [
-                'label'   => __('Storage'),
-                'icon'    => ['fal', 'fa-pallet'],
-                'root'    => 'retina.fulfilment.storage.',
-                'route'   => [
-                    'name' => 'retina.fulfilment.storage.dashboard'
+                'label' => __('Storage'),
+                'icon' => ['fal', 'fa-pallet'],
+                'root' => 'retina.fulfilment.storage.',
+                'route' => [
+                    'name' => 'retina.fulfilment.storage.dashboard',
                 ],
                 'topMenu' => [
                     'subSections' => [
                         [
                             'label' => __('Goods'),
-                            'icon'  => ['fal', 'fa-pallet'],
-                            'root'  => 'retina.fulfilment.storage.pallets.',
+                            'icon' => ['fal', 'fa-pallet'],
+                            'root' => 'retina.fulfilment.storage.pallets.',
                             'route' => [
-                                'name' => 'retina.fulfilment.storage.pallets.storing_pallets.index'
-                            ]
+                                'name' => 'retina.fulfilment.storage.pallets.storing_pallets.index',
+                            ],
                         ],
                         [
                             'label' => __('Goods In'),
-                            'icon'  => ['fal', 'fa-truck'],
-                            'root'  => 'retina.fulfilment.storage.pallet_deliveries.',
+                            'icon' => ['fal', 'fa-truck'],
+                            'root' => 'retina.fulfilment.storage.pallet_deliveries.',
                             'route' => [
-                                'name' => 'retina.fulfilment.storage.pallet_deliveries.index'
-                            ]
+                                'name' => 'retina.fulfilment.storage.pallet_deliveries.index',
+                            ],
                         ],
                         ...$additionalSubsections,
 
-
-                    ]
-                ]
+                    ],
+                ],
             ];
 
             if ($webUser->customer->fulfilmentCustomer->items_storage) {
-
 
                 $customerSalesChannelsNavigation = [];
 
@@ -92,33 +89,32 @@ class GetRetinaFulfilmentNavigation
                     $webUser->customer->customerSalesChannels as $customerSalesChannel
                 ) {
 
-                    $reference                         = $customerSalesChannel->reference ?? 'n/a';
+                    $reference = $customerSalesChannel->reference ?? 'n/a';
                     $customerSalesChannelsNavigation[] = [
-                        'id'            => $customerSalesChannel->id,
-                        'type'          => $customerSalesChannel->platform->type,
-                        'slug'          => $customerSalesChannel->slug,
-                        'key'           => $customerSalesChannel->slug,
-                        'img'           => $this->getPlatformLogo($customerSalesChannel->platform->code),
-                        'label'         => $customerSalesChannel->platform->name.' ('.$reference.')',
-                        'route'         => [
-                            'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
+                        'id' => $customerSalesChannel->id,
+                        'type' => $customerSalesChannel->platform->type,
+                        'slug' => $customerSalesChannel->slug,
+                        'key' => $customerSalesChannel->slug,
+                        'img' => $this->getPlatformLogo($customerSalesChannel->platform->code),
+                        'label' => $customerSalesChannel->platform->name.' ('.$reference.')',
+                        'route' => [
+                            'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
                             'parameters' => [
-                                'customerSalesChannel' => $customerSalesChannel->slug
-                            ]
+                                'customerSalesChannel' => $customerSalesChannel->slug,
+                            ],
                         ],
-                        'root'          => 'retina.fulfilment.dropshipping.customer_sales_channels.',
-                        'subNavigation' => GetRetinaFulfilmentCustomerSalesChannelNavigation::run($customerSalesChannel)
+                        'root' => 'retina.fulfilment.dropshipping.customer_sales_channels.',
+                        'subNavigation' => GetRetinaFulfilmentCustomerSalesChannelNavigation::run($customerSalesChannel),
                     ];
                 }
-
 
                 $numberChannels = $webUser->customer->customerSalesChannels->count();
 
                 $groupNavigation['platforms_navigation'] = [
-                    'type'                   => 'horizontal',
-                    'field_name'             => __('Dropshipping'),
-                    'field_icon'             => ['fal', 'fa-parachute-box'],
-                    'before_horizontal'      => [
+                    'type' => 'horizontal',
+                    'field_name' => __('Dropshipping'),
+                    'field_icon' => ['fal', 'fa-parachute-box'],
+                    'before_horizontal' => [
                         'subNavigation' => [
                             [
                                 'label' => __('Inventory'),
@@ -128,136 +124,132 @@ class GetRetinaFulfilmentNavigation
                                     'class' => 'text-white',
                                 ],
 
-                                'icon'    => ['fal', 'fa-inventory'],
-                                'root'    => 'retina.fulfilment.itemised_storage.',
-                                'route'   => [
-                                    'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
+                                'icon' => ['fal', 'fa-inventory'],
+                                'root' => 'retina.fulfilment.itemised_storage.',
+                                'route' => [
+                                    'name' => 'retina.fulfilment.itemised_storage.stored_items.index',
                                 ],
                                 'topMenu' => [
                                     'subSections' => [
                                         [
                                             'label' => __('SKUs'),
-                                            'icon'  => ['fal', 'fa-barcode'],
-                                            'root'  => 'retina.fulfilment.itemised_storage.stored_items.',
+                                            'icon' => ['fal', 'fa-barcode'],
+                                            'root' => 'retina.fulfilment.itemised_storage.stored_items.',
                                             'route' => [
-                                                'name' => 'retina.fulfilment.itemised_storage.stored_items.index'
-                                            ]
+                                                'name' => 'retina.fulfilment.itemised_storage.stored_items.index',
+                                            ],
                                         ],
                                         [
                                             'label' => __('Audits'),
-                                            'icon'  => ['fal', 'fa-ballot-check'],
-                                            'root'  => 'retina.fulfilment.itemised_storage.stored_items_audits.index',
+                                            'icon' => ['fal', 'fa-ballot-check'],
+                                            'root' => 'retina.fulfilment.itemised_storage.stored_items_audits.index',
                                             'route' => [
-                                                'name' => 'retina.fulfilment.itemised_storage.stored_items_audits.index'
-                                            ]
-                                        ]
+                                                'name' => 'retina.fulfilment.itemised_storage.stored_items_audits.index',
+                                            ],
+                                        ],
 
-                                    ]
-                                ]
+                                    ],
+                                ],
                             ],
                             [
-                                'label'         => __('Channels'),
-                                'icon'          => 'fal fa-code-branch',
-                                'right_label'   => [
+                                'label' => __('Channels'),
+                                'icon' => 'fal fa-code-branch',
+                                'right_label' => [
                                     'number' => $numberChannels,
                                     'class' => 'text-white',
                                 ],
                                 'icon_rotation' => 90,
-                                'root'          => 'retina.fulfilment.dropshipping.',
-                                'route'         => $numberChannels == 0
+                                'root' => 'retina.fulfilment.dropshipping.',
+                                'route' => $numberChannels == 0
                                     ? [
-                                        'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.create'
+                                        'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.create',
                                     ]
                                     : [
-                                        'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.index'
-                                    ]
-                            ]
-                        ]
+                                        'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.index',
+                                    ],
+                            ],
+                        ],
                     ],
-                    'horizontal_navigations' => $customerSalesChannelsNavigation
+                    'horizontal_navigations' => $customerSalesChannelsNavigation,
                 ];
             }
 
-
             $groupNavigation['spaces'] = [
-                'label'   => __('Spaces'),
-                'icon'    => ['fal', 'fa-parking'],
-                'root'    => 'retina.fulfilment.spaces.',
-                'route'   => [
-                    'name' => 'retina.fulfilment.spaces.index'
+                'label' => __('Spaces'),
+                'icon' => ['fal', 'fa-parking'],
+                'root' => 'retina.fulfilment.spaces.',
+                'route' => [
+                    'name' => 'retina.fulfilment.spaces.index',
                 ],
-                'topMenu' => []
+                'topMenu' => [],
             ];
-
 
             $currentRecurringBill = $webUser->customer?->fulfilmentCustomer?->currentRecurringBill;
 
             $groupNavigation['billing'] = [
-                'label'   => __('billing'),
-                'icon'    => ['fal', 'fa-file-invoice-dollar'],
-                'root'    => 'retina.fulfilment.billing.',
-                'route'   => [
-                    'name' => 'retina.fulfilment.billing.dashboard'
+                'label' => __('billing'),
+                'icon' => ['fal', 'fa-file-invoice-dollar'],
+                'root' => 'retina.fulfilment.billing.',
+                'route' => [
+                    'name' => 'retina.fulfilment.billing.dashboard',
                 ],
                 'topMenu' => [
                     'subSections' => [
                         $currentRecurringBill ? [
                             'label' => __('next bill'),
-                            'icon'  => ['fal', 'fa-receipt'],
-                            'root'  => 'retina.fulfilment.billing.next_recurring_bill',
+                            'icon' => ['fal', 'fa-receipt'],
+                            'root' => 'retina.fulfilment.billing.next_recurring_bill',
                             'route' => [
-                                'name' => 'retina.fulfilment.billing.next_recurring_bill'
-                            ]
+                                'name' => 'retina.fulfilment.billing.next_recurring_bill',
+                            ],
                         ] : null,
 
                         [
                             'label' => __('invoices'),
-                            'icon'  => ['fal', 'fa-file-invoice-dollar'],
-                            'root'  => 'retina.fulfilment.billing.invoices.',
+                            'icon' => ['fal', 'fa-file-invoice-dollar'],
+                            'root' => 'retina.fulfilment.billing.invoices.',
                             'route' => [
                                 'name' => 'retina.fulfilment.billing.invoices.index',
 
-                            ]
+                            ],
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ];
-
 
             if ($webUser->is_root) {
                 $groupNavigation['sysadmin'] = [
-                    'label'   => __('manage account'),
-                    'icon'    => ['fal', 'fa-users-cog'],
-                    'root'    => 'retina.sysadmin.',
-                    'route'   => [
-                        'name' => 'retina.sysadmin.fulfilment.dashboard'
+                    'label' => __('manage account'),
+                    'icon' => ['fal', 'fa-users-cog'],
+                    'root' => 'retina.sysadmin.',
+                    'route' => [
+                        'name' => 'retina.sysadmin.fulfilment.dashboard',
                     ],
                     'topMenu' => [
                         'subSections' => [
                             [
                                 'label' => __('users'),
-                                'icon'  => ['fal', 'fa-user-circle'],
-                                'root'  => 'retina.sysadmin.web-users.',
+                                'icon' => ['fal', 'fa-user-circle'],
+                                'root' => 'retina.sysadmin.web-users.',
                                 'route' => [
                                     'name' => 'retina.sysadmin.web-users.index',
 
-                                ]
+                                ],
                             ],
 
                             [
                                 'label' => __('account settings'),
-                                'icon'  => ['fal', 'fa-cog'],
-                                'root'  => 'retina.sysadmin.settings.',
+                                'icon' => ['fal', 'fa-cog'],
+                                'root' => 'retina.sysadmin.settings.',
                                 'route' => [
                                     'name' => 'retina.sysadmin.settings.edit',
 
-                                ]
+                                ],
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ];
             }
-
 
         }
 

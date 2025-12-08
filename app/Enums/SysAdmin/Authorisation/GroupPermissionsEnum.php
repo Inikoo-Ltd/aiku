@@ -16,7 +16,6 @@ enum GroupPermissionsEnum: string
     case SYSADMIN_EDIT = 'sysadmin.edit';
     case SYSADMIN_VIEW = 'sysadmin.view';
 
-
     case GROUP_WEBMASTER = 'group-webmaster';
     case GROUP_WEBMASTER_EDIT = 'group-webmaster.edit';
     case GROUP_WEBMASTER_VIEW = 'group-webmaster.view';
@@ -40,11 +39,8 @@ enum GroupPermissionsEnum: string
     case SUPPLY_CHAIN_EDIT = 'supply-chain.edit';
     case SUPPLY_CHAIN_VIEW = 'supply-chain.view';
 
-
     public static function getAllValues(): array
     {
         return array_column(GroupPermissionsEnum::cases(), 'value');
     }
-
-
 }

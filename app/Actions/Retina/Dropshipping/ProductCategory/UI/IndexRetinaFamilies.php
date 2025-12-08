@@ -53,7 +53,6 @@ class IndexRetinaFamilies extends RetinaAction
 
         $queryBuilder->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUING->value]);
 
-
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
@@ -69,7 +68,6 @@ class IndexRetinaFamilies extends RetinaAction
                 abort(419);
             }
         }
-
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
@@ -111,7 +109,7 @@ class IndexRetinaFamilies extends RetinaAction
 
     public function tableStructure(Shop|ProductCategory $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -123,7 +121,7 @@ class IndexRetinaFamilies extends RetinaAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Shop', 'ProductCategory' => [
-                            'title' => __("No families found"),
+                            'title' => __('No families found'),
                             'count' => $parent->stats->number_families,
                         ],
                         default => null
@@ -138,7 +136,6 @@ class IndexRetinaFamilies extends RetinaAction
                 ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
 
-
             if (class_basename($parent) != 'Collection') {
                 $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: false, searchable: false);
             }
@@ -152,96 +149,92 @@ class IndexRetinaFamilies extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $families, ActionRequest $request): Response
     {
-        $title      = __('Families');
-        $model      = '';
-        $icon       = [
-            'icon'  => ['fal', 'fa-folder'],
-            'title' => __('Family')
+        $title = __('Families');
+        $model = '';
+        $icon = [
+            'icon' => ['fal', 'fa-folder'],
+            'title' => __('Family'),
         ];
         $afterTitle = null;
-        $iconRight  = null;
+        $iconRight = null;
 
         if ($this->parent instanceof ProductCategory) {
             if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                $title      = $this->parent->name;
-                $model      = '';
-                $icon       = [
-                    'icon'  => ['fal', 'fa-folder-tree'],
-                    'title' => __('Department')
+                $title = $this->parent->name;
+                $model = '';
+                $icon = [
+                    'icon' => ['fal', 'fa-folder-tree'],
+                    'title' => __('Department'),
                 ];
-                $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
+                $iconRight = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
-                    'label' => __('Families')
+                    'label' => __('Families'),
                 ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                $title      = $this->parent->name;
-                $model      = '';
-                $icon       = [
-                    'icon'  => ['fal', 'fa-dot-circle'],
-                    'title' => __('Sub department')
+                $title = $this->parent->name;
+                $model = '';
+                $icon = [
+                    'icon' => ['fal', 'fa-dot-circle'],
+                    'title' => __('Sub department'),
                 ];
 
-                $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
+                $iconRight = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
-                    'label' => __('Families')
+                    'label' => __('Families'),
                 ];
             }
         }
 
-
         return Inertia::render(
             'Catalogue/RetinaFamilies',
             [
-                'breadcrumbs'                         => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                               => __('families'),
-                'pageHead'                            => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => __('families'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                 ],
-                'data'                                => FamiliesResource::collection($families),
+                'data' => FamiliesResource::collection($families),
             ]
         )->table($this->tableStructure(parent: $this->parent));
     }
 
-    public function getBreadcrumbs(Shop|ProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Shop|ProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Families'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
-                ]
+                    'suffix' => $suffix,
+                ],
             ];
         };
 
         return match ($routeName) {
-            'retina.catalogue.families.index' =>
-               array_merge(
-                   ShowRetinaCatalogue::make()->getBreadcrumbs(),
-                   $headCrumb(
-                       [
-                           'name'       => $routeName,
-                           'parameters' => $routeParameters
-                       ],
-                       $suffix
-                   )
-               ),
-
-
+            'retina.catalogue.families.index' => array_merge(
+                ShowRetinaCatalogue::make()->getBreadcrumbs(),
+                $headCrumb(
+                    [
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
+                    ],
+                    $suffix
+                )
+            ),
 
             default => []
         };

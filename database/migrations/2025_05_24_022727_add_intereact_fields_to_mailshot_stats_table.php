@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     private function addInteractFields(Blueprint $table): void
     {
         $table->unsignedInteger('number_opened_interact_failure')->default(0);
@@ -24,7 +25,7 @@ return new class () extends Migration {
     {
         $table->dropColumn([
             'number_opened_interact_failure',
-            'number_opened_interact_success'
+            'number_opened_interact_success',
         ]);
         $table->renameColumn('number_delivered_open_failure', 'number_deliveries_success_open_failure');
         $table->renameColumn('number_delivered_open_success', 'number_deliveries_success_open_success');

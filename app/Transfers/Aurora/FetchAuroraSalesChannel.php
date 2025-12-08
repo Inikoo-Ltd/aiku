@@ -26,13 +26,12 @@ class FetchAuroraSalesChannel extends FetchAurora
 
         $code = trim(strtolower($this->auroraModelData->{'Order Source Code'}));
 
-
         $this->parsedData['sales_channel'] = [
-            'type'            => $type,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Order Source Key'},
-            'fetched_at'      => now(),
+            'type' => $type,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Order Source Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
-            'is_seeded'       => $type != SalesChannelTypeEnum::MARKETPLACE
+            'is_seeded' => $type != SalesChannelTypeEnum::MARKETPLACE,
         ];
 
         if ($type == SalesChannelTypeEnum::MARKETPLACE) {
@@ -47,8 +46,7 @@ class FetchAuroraSalesChannel extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Order Source Dimension')

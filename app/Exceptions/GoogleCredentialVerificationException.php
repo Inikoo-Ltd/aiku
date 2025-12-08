@@ -10,7 +10,7 @@ namespace App\Exceptions;
 
 class GoogleCredentialVerificationException extends \Exception
 {
-    public function __construct(string $message = "Invalid Google credential provided!", int $code = 0, \Throwable $previous = null)
+    public function __construct(string $message = 'Invalid Google credential provided!', int $code = 0, ?\Throwable $previous = null)
     {
         parent::__construct($message, $code, $previous);
     }

@@ -15,8 +15,8 @@ use App\Exports\Marketing\DataFeedsMapping;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class DownloadPortfoliosCSV extends RetinaAction
 {
@@ -25,7 +25,7 @@ class DownloadPortfoliosCSV extends RetinaAction
     public function handle(CustomerSalesChannel $customerSalesChannel): BinaryFileResponse|Response
     {
 
-        $filename = 'portfolio_data_feed_' . $customerSalesChannel->customer->slug . '_' . now()->format('Ymd') . '.csv';
+        $filename = 'portfolio_data_feed_'.$customerSalesChannel->customer->slug.'_'.now()->format('Ymd').'.csv';
 
         $headers = $this->headings();
 
@@ -51,10 +51,9 @@ class DownloadPortfoliosCSV extends RetinaAction
                 }
             });
 
-
         // Create a temporary file
         $tempFile = tempnam(sys_get_temp_dir(), 'csv');
-        $file     = fopen($tempFile, 'w');
+        $file = fopen($tempFile, 'w');
 
         // Write CSV data to the file
         foreach ($csvData as $row) {
@@ -65,11 +64,10 @@ class DownloadPortfoliosCSV extends RetinaAction
 
         // Return the file as a download response
         return response()->download($tempFile, $filename, [
-            'Content-Type'  => 'text/csv',
+            'Content-Type' => 'text/csv',
             'Cache-Control' => 'max-age=0',
         ])->deleteFileAfterSend();
     }
-
 
     public function authorize(ActionRequest $request): bool
     {

@@ -16,15 +16,15 @@ class FetchAuroraBackInStockReminder extends FetchAurora
     {
 
         $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Back in Stock Reminder Customer Key'});
-        if (!$customer or $customer->deleted_at) {
+        if (! $customer or $customer->deleted_at) {
             return;
         }
         $product = $this->parseProduct($this->organisation->id.':'.$this->auroraModelData->{'Back in Stock Reminder Product ID'});
-        if (!$product or $product->deleted_at) {
+        if (! $product or $product->deleted_at) {
             return;
         }
         $createdAt = $this->parseDatetime($this->auroraModelData->{'Back in Stock Reminder Creation Date'});
-        if (!$createdAt) {
+        if (! $createdAt) {
             return;
         }
 
@@ -33,18 +33,17 @@ class FetchAuroraBackInStockReminder extends FetchAurora
         }
 
         $this->parsedData['customer'] = $customer;
-        $this->parsedData['product']  = $product;
+        $this->parsedData['product'] = $product;
 
         $this->parsedData['back_in_stock_reminder'] = [
-            'created_at'      => $createdAt,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Back in Stock Reminder Key'},
-            'fetched_at'      => now(),
+            'created_at' => $createdAt,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Back in Stock Reminder Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Back in Stock Reminder Fact')

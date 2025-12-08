@@ -22,25 +22,24 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $payment_service_provider_name
  * @property mixed $payment_service_provider_code
  * @property mixed $org_currency_code
- *
  */
 class PaymentAccountsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        return array(
-            'id'                            => $this->id,
-            'slug'                          => $this->slug,
-            'name'                          => $this->name,
-            'number_payments'               => $this->number_payments,
-            'number_customers'               => $this->number_customers,
-            'number_pas_state_active'       => $this->number_pas_state_active,
-            'code'                          => $this->code,
-            'org_amount_successfully_paid'  => $this->org_amount_successfully_paid,
-            'org_currency_code'             => $this->org_currency_code,
+        return [
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'number_payments' => $this->number_payments,
+            'number_customers' => $this->number_customers,
+            'number_pas_state_active' => $this->number_pas_state_active,
+            'code' => $this->code,
+            'org_amount_successfully_paid' => $this->org_amount_successfully_paid,
+            'org_currency_code' => $this->org_currency_code,
             'payment_service_provider_slug' => $this->payment_service_provider_slug,
             'payment_service_provider_name' => $this->payment_service_provider_name,
             'payment_service_provider_code' => $this->payment_service_provider_code,
-        );
+        ];
     }
 }

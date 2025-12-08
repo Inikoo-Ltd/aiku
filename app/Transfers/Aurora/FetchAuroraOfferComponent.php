@@ -17,18 +17,17 @@ class FetchAuroraOfferComponent extends FetchAurora
     protected function parseModel(): void
     {
         $offer = $this->parseOffer($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Deal Key'});
-        if (!$offer) {
-            print "Offer not found ".$this->auroraModelData->{'Deal Component Deal Key'}." \n";
+        if (! $offer) {
+            echo 'Offer not found '.$this->auroraModelData->{'Deal Component Deal Key'}." \n";
 
             return;
         }
-        //enum('Category','Department','Family','Product','Order','Customer','Customer Category','Customer List')
+        // enum('Category','Department','Family','Product','Order','Customer','Customer Category','Customer List')
         if (in_array($this->auroraModelData->{'Deal Component Trigger'}, ['Product', 'Department', 'Family', 'Category', 'Customer']) and
-            !$this->auroraModelData->{'Deal Component Trigger Key'}
+            ! $this->auroraModelData->{'Deal Component Trigger Key'}
         ) {
             return;
         }
-
 
         $state = match ($this->auroraModelData->{'Deal Component Status'}) {
             'Waiting' => OfferAllowanceStateEnum::IN_PROCESS,
@@ -37,46 +36,45 @@ class FetchAuroraOfferComponent extends FetchAurora
             default => OfferAllowanceStateEnum::ACTIVE
         };
 
-
         $type = $this->auroraModelData->{'Deal Component Terms Type'};
 
         if ($type == '') {
             return;
         }
 
-        $trigger      = null;
+        $trigger = null;
         $trigger_type = null;
-        $isLocked     = false;
-        $sourceData   = null;
+        $isLocked = false;
+        $sourceData = null;
 
         switch ($this->auroraModelData->{'Deal Component Trigger'}) {
             case 'Product':
                 $trigger = $this->parseProduct($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Trigger Key'});
-                if (!$trigger) {
-                    $isLocked   = true;
+                if (! $trigger) {
+                    $isLocked = true;
                     $sourceData = [
                         'note' => 'Trigger product not found',
                     ];
                 }
                 break;
             case 'Department':
-                $trigger    = $this->parseDepartment($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Trigger Key'});
-                $isLocked   = true;
+                $trigger = $this->parseDepartment($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Trigger Key'});
+                $isLocked = true;
                 $sourceData = [
                     'note' => 'Trigger department not found',
                 ];
                 break;
             case 'Family':
             case 'Category':
-                $trigger    = $this->parseFamily($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Trigger Key'});
-                $isLocked   = true;
+                $trigger = $this->parseFamily($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Trigger Key'});
+                $isLocked = true;
                 $sourceData = [
                     'note' => 'Trigger family not found',
                 ];
                 break;
             case 'Customer':
-                $trigger    = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Trigger Key'});
-                $isLocked   = true;
+                $trigger = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Trigger Key'});
+                $isLocked = true;
                 $sourceData = [
                     'note' => 'Trigger customer not found',
                 ];
@@ -91,11 +89,10 @@ class FetchAuroraOfferComponent extends FetchAurora
         }
 
         if ($state == OfferAllowanceStateEnum::ACTIVE and $trigger_type == null and $trigger == null) {
-            print "No trigger found for Offer component w trigger ".$this->auroraModelData->{'Deal Component Trigger'}." -> ".$this->auroraModelData->{'Deal Component Trigger Key'}." \n";
+            echo 'No trigger found for Offer component w trigger '.$this->auroraModelData->{'Deal Component Trigger'}.' -> '.$this->auroraModelData->{'Deal Component Trigger Key'}." \n";
 
             return;
         }
-
 
         $code = Abbreviate::run($this->auroraModelData->{'Deal Component Trigger'});
         if ($this->auroraModelData->{'Deal Component Terms Type'} != null) {
@@ -108,7 +105,6 @@ class FetchAuroraOfferComponent extends FetchAurora
             $code .= Abbreviate::run($this->auroraModelData->{'Deal Component Allowance Target'});
         }
 
-
         $code = $this->cleanOfferCode($code);
         $code = strtolower($code);
 
@@ -117,7 +113,6 @@ class FetchAuroraOfferComponent extends FetchAurora
         }
         $code = $code.$this->auroraModelData->{'Deal Component Key'};
 
-
         $this->parsedData['trigger'] = $trigger;
 
         if ($trigger) {
@@ -125,18 +120,17 @@ class FetchAuroraOfferComponent extends FetchAurora
             data_set($this->parsedData, 'offerAllowance.trigger_id', $trigger->id);
         }
 
-
-        $this->parsedData['offer']          = $offer;
+        $this->parsedData['offer'] = $offer;
         $this->parsedData['offerAllowance'] = [
-            'code'            => $code,
-            'state'           => $state,
-            'type'            => $type,
-            'trigger_scope'   => $this->auroraModelData->{'Deal Component Trigger Scope Type'},
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Deal Component Key'},
-            'fetched_at'      => now(),
+            'code' => $code,
+            'state' => $state,
+            'type' => $type,
+            'trigger_scope' => $this->auroraModelData->{'Deal Component Trigger Scope Type'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Deal Component Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
-            'start_at'        => $this->parseDatetime($this->auroraModelData->{'Deal Component Begin Date'}),
-            'is_locked'       => $isLocked,
+            'start_at' => $this->parseDatetime($this->auroraModelData->{'Deal Component Begin Date'}),
+            'is_locked' => $isLocked,
         ];
         if ($sourceData) {
             $this->parsedData['offerAllowance']['source_data'] = $sourceData;
@@ -157,8 +151,7 @@ class FetchAuroraOfferComponent extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Deal Component Dimension')

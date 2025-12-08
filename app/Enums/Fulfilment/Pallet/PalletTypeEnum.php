@@ -14,38 +14,37 @@ enum PalletTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case PALLET   = 'pallet';
-    case BOX      = 'box';
+    case PALLET = 'pallet';
+    case BOX = 'box';
     case OVERSIZE = 'oversize';
-
 
     public static function typeIcon(): array
     {
         return [
             'pallet' => [
                 'tooltip' => __('pallet'),
-                'icon'    => 'fal fa-pallet',
-                'app'     => [
+                'icon' => 'fal fa-pallet',
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'box' => [
                 'tooltip' => __('box'),
-                'icon'    => 'fal fa-box',
-                'app'     => [
+                'icon' => 'fal fa-box',
+                'app' => [
                     'name' => 'share',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'oversize' => [
                 'tooltip' => __('oversize'),
-                'icon'    => 'fal fa-sort-size-up',
-                'app'     => [
+                'icon' => 'fal fa-sort-size-up',
+                'app' => [
                     'name' => 'share',
-                    'type' => 'font-awesome-5'
-                ]
-            ]
+                    'type' => 'font-awesome-5',
+                ],
+            ],
         ];
     }
 }

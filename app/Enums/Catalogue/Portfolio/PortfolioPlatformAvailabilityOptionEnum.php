@@ -14,7 +14,7 @@ enum PortfolioPlatformAvailabilityOptionEnum: string
 {
     use EnumHelperTrait;
 
-    case USE_EXISTING  = 'use_existing';
+    case USE_EXISTING = 'use_existing';
     case BRAVE = 'brave';
     case DUPLICATE = 'duplicate';
 }

@@ -16,21 +16,21 @@ enum GrpTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE     = 'showcase';
-    case HISTORY      = 'history';
+    case SHOWCASE = 'showcase';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
             GrpTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             GrpTabsEnum::SHOWCASE => [
                 'title' => __('Group'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
         };
     }

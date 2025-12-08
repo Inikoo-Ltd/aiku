@@ -30,11 +30,10 @@ class GroupHydrateOfferCampaigns implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_offer_campaigns'          => $group->offerCampaigns()->count(),
-            'number_current_offer_campaigns'  => $group->offerCampaigns()->where('status', true)->count(),
+            'number_offer_campaigns' => $group->offerCampaigns()->count(),
+            'number_current_offer_campaigns' => $group->offerCampaigns()->where('status', true)->count(),
 
         ];
-
 
         $stats = array_merge(
             $stats,
@@ -49,9 +48,6 @@ class GroupHydrateOfferCampaigns implements ShouldBeUnique
             )
         );
 
-
         $group->discountsStats()->update($stats);
     }
-
-
 }

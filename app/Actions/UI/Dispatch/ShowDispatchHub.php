@@ -27,14 +27,12 @@ class ShowDispatchHub extends OrgAction
         return $warehouse;
     }
 
-
     public function asController(Organisation $organisation, Warehouse $warehouse): Warehouse
     {
         $this->initialisationFromWarehouse($warehouse, [])->withTab(DispatchHubTabsEnum::values());
 
         return $this->handle($warehouse);
     }
-
 
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
@@ -44,17 +42,17 @@ class ShowDispatchHub extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => 'dispatch',
-                'pageHead'    => [
-                    'icon'  => [
+                'title' => 'dispatch',
+                'pageHead' => [
+                    'icon' => [
                         'icon' => ['fal', 'fa-conveyor-belt-alt'],
                     ],
                     'title' => __('Dispatching backlog'),
                 ],
 
                 'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => DispatchHubTabsEnum::navigation()
+                    'current' => $this->tab,
+                    'navigation' => DispatchHubTabsEnum::navigation(),
                 ],
 
                 DispatchHubTabsEnum::DASHBOARD->value => $this->tab == DispatchHubTabsEnum::DASHBOARD->value
@@ -65,24 +63,22 @@ class ShowDispatchHub extends OrgAction
         );
     }
 
-
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
             ShowGroupDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.backlog',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.warehouses.show.dispatching.backlog',
+                            'parameters' => $routeParameters,
                         ],
                         'label' => __('Dispatching'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }
-
 }

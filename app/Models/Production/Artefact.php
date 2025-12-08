@@ -47,35 +47,36 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Production\ArtefactStats|null $stats
  * @property-read Stock|null $stock
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Artefact extends Model implements Auditable
 {
-    use SoftDeletes;
+    use HasHistory;
     use HasSlug;
     use HasUniversalSearch;
     use InProduction;
-    use HasHistory;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'                   => 'array',
-        'settings'               => 'array',
-        'state'                  => ArtefactStateEnum::class
+        'data' => 'array',
+        'settings' => 'array',
+        'state' => ArtefactStateEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 
     protected $guarded = [];
-
 
     public function getRouteKeyName(): string
     {
@@ -95,7 +96,6 @@ class Artefact extends Model implements Auditable
         return $this->belongsTo(Stock::class);
     }
 
-
     public function stats(): HasOne
     {
         return $this->hasOne(ArtefactStats::class);
@@ -105,6 +105,4 @@ class Artefact extends Model implements Auditable
     {
         return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks');
     }
-
-
 }

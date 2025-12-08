@@ -25,10 +25,12 @@ class AddRetinaDeliveryAddressToFulfilmentCustomer extends RetinaAction
     use WithModelAddressActions;
 
     private bool $action = false;
+
     public function handle(FulfilmentCustomer $fulfilmentCustomer, array $modelData): FulfilmentCustomer
     {
         AddDeliveryAddressToCustomer::make()->action($fulfilmentCustomer->customer, $modelData);
         $fulfilmentCustomer->refresh();
+
         return $fulfilmentCustomer;
     }
 
@@ -49,7 +51,7 @@ class AddRetinaDeliveryAddressToFulfilmentCustomer extends RetinaAction
     public function rules(): array
     {
         return [
-            'delivery_address'         => ['required', new ValidAddress()],
+            'delivery_address' => ['required', new ValidAddress],
         ];
     }
 
@@ -69,7 +71,6 @@ class AddRetinaDeliveryAddressToFulfilmentCustomer extends RetinaAction
 
         return $this->handle($fulfilmentCustomer, $this->validatedData);
     }
-
 
     public function jsonResponse(FulfilmentCustomer $fulfilmentCustomer): FulfilmentCustomerResource
     {

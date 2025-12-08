@@ -100,9 +100,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static Builder<static>|GroupProcurementStats newModelQuery()
  * @method static Builder<static>|GroupProcurementStats newQuery()
  * @method static Builder<static>|GroupProcurementStats query()
+ *
  * @mixin Eloquent
  */
 class GroupProcurementStats extends Model

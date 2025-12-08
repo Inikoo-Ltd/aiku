@@ -12,7 +12,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasHumanResourcesStats;
     use HasSysAdminStats;
 
@@ -31,11 +32,9 @@ return new class () extends Migration {
             $table->decimal('share_work_time', 7, 6)->nullable()->comment('This is the share of the total work time of the employees in this job position');
             $table->decimal('share_work_time_including_guests', 7, 6)->nullable()->comment('This is the share of the total work time of the employees and guests in this job position');
 
-
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

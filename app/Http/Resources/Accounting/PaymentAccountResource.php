@@ -17,13 +17,14 @@ class PaymentAccountResource extends JsonResource
     {
         /** @var PaymentAccount $paymentAccount */
         $paymentAccount = $this;
+
         return [
-            'slug'                           => $paymentAccount->slug,
-            'name'                           => $paymentAccount->name,
-            'number_payments'                => $paymentAccount->stats->number_payments,
-            'code'                           => $paymentAccount->code,
-            'created_at'                     => $paymentAccount->created_at,
-            'updated_at'                     => $paymentAccount->updated_at,
+            'slug' => $paymentAccount->slug,
+            'name' => $paymentAccount->name,
+            'number_payments' => $paymentAccount->stats->number_payments,
+            'code' => $paymentAccount->code,
+            'created_at' => $paymentAccount->created_at,
+            'updated_at' => $paymentAccount->updated_at,
         ];
     }
 }

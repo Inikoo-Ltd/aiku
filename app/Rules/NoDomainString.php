@@ -37,7 +37,7 @@ class NoDomainString implements ValidationRule
             'dev',
             'app',
             'ai',
-            'me'
+            'me',
         ];
 
         if (preg_match('/\b(?:http:\/\/|https:\/\/|www\.)|\b[a-z0-9-]+\.('.implode('|', $blockedTLDs).')\b/i', $value)) {

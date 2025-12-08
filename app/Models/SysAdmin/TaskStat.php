@@ -18,12 +18,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \App\Models\SysAdmin\Task $task
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class TaskStat extends Model
@@ -38,5 +40,4 @@ class TaskStat extends Model
         return $this->belongsTo(Task::class);
 
     }
-
 }

@@ -21,7 +21,6 @@ class GroupHydrateDeliveryNotes implements ShouldBeUnique
     use WithEnumStats;
     use WithHydrateDeliveryNotes;
 
-
     public string $jobQueue = 'low-priority';
 
     public function getJobUniqueId(int $groupId, DeliveryNoteTypeEnum $type): string
@@ -29,11 +28,10 @@ class GroupHydrateDeliveryNotes implements ShouldBeUnique
         return $groupId.'-'.$type->value;
     }
 
-
     public function handle(int $groupId, DeliveryNoteTypeEnum $type): void
     {
         $group = Group::find($groupId);
-        if (!$group) {
+        if (! $group) {
             return;
         }
 
@@ -43,9 +41,6 @@ class GroupHydrateDeliveryNotes implements ShouldBeUnique
             $stats = $this->getStoreReplacementsStats($group);
         }
 
-
         $group->orderingStats()->update($stats);
     }
-
-
 }

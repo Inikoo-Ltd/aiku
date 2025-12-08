@@ -17,9 +17,8 @@ enum ShippingZoneSchemaTabsEnum: string
     use HasTabs;
 
     // case SHOWCASE      = 'showcase';
-    case ZONES         = 'zones';
-    case HISTORY       = 'history';
-
+    case ZONES = 'zones';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
@@ -31,13 +30,13 @@ enum ShippingZoneSchemaTabsEnum: string
             // ],
             ShippingZoneSchemaTabsEnum::ZONES => [
                 'title' => __('Zones'),
-                'icon'  => 'fal fa-map',
+                'icon' => 'fal fa-map',
             ],
             ShippingZoneSchemaTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
-                'align' => 'right'
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ],
         };
     }

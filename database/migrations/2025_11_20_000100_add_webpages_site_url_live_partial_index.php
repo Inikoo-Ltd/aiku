@@ -9,7 +9,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     // Using plain SQL to create a partial composite index tailored to the hot path:
     // SELECT id FROM webpages WHERE website_id = ? AND url = ? AND state = 'live' AND deleted_at IS NULL
 
@@ -27,6 +28,6 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        DB::statement("DROP INDEX IF EXISTS webpages_site_url_live_idx;");
+        DB::statement('DROP INDEX IF EXISTS webpages_site_url_live_idx;');
     }
 };

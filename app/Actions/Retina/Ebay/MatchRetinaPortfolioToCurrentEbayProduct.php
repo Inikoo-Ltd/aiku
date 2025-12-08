@@ -36,5 +36,4 @@ class MatchRetinaPortfolioToCurrentEbayProduct extends RetinaAction
         $this->initialisation($request);
         $this->handle($portfolio, $this->validatedData);
     }
-
 }

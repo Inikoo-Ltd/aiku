@@ -70,6 +70,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\SupplyChain\Supplier> $suppliers
  * @property-read Collection<int, \App\Models\SupplyChain\AgentTimeSeries> $timeSeries
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\SupplyChain\AgentFactory factory($count = null, $state = [])
  * @method static Builder<static>|Agent newModelQuery()
  * @method static Builder<static>|Agent newQuery()
@@ -77,23 +78,24 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Agent query()
  * @method static Builder<static>|Agent withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Agent withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class Agent extends Model implements HasMedia, Auditable
+class Agent extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
     use HasImage;
+    use HasSlug;
+    use HasUniversalSearch;
     use InGroup;
+    use SoftDeletes;
 
     protected $casts = [
-        'status'          => 'boolean',
-        'fetched_at'      => 'datetime',
+        'status' => 'boolean',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
-        'sources'         => 'array',
+        'sources' => 'array',
     ];
 
     protected $attributes = [
@@ -105,7 +107,7 @@ class Agent extends Model implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'supply-chain'
+            'supply-chain',
         ];
     }
 
@@ -114,7 +116,6 @@ class Agent extends Model implements HasMedia, Auditable
         'name',
         'status',
     ];
-
 
     public function getSlugOptions(): SlugOptions
     {
@@ -181,5 +182,4 @@ class Agent extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(AgentTimeSeries::class);
     }
-
 }

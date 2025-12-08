@@ -14,33 +14,30 @@ class FetchAuroraQuery extends FetchAurora
 {
     protected function parseModel(): void
     {
-        if (!($this->auroraModelData->{'List Scope'} == 'Customer' && $this->auroraModelData->{'List Use Type'} == 'UserCreated')) {
+        if (! ($this->auroraModelData->{'List Scope'} == 'Customer' && $this->auroraModelData->{'List Use Type'} == 'UserCreated')) {
             return;
         }
 
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'List Parent Key'});
 
-
         $isStatic = $this->auroraModelData->{'List Type'} === 'Static';
-
 
         $this->parsedData['shop'] = $shop;
 
         $this->parsedData['query'] = [
-            'name'              => $this->auroraModelData->{'List Name'},
-            'model'             => 'Customer',
-            'constrains'        => [],
+            'name' => $this->auroraModelData->{'List Name'},
+            'model' => 'Customer',
+            'constrains' => [],
             'source_constrains' => json_decode($this->auroraModelData->{'List Metadata'}, true),
-            'created_at'        => $this->parseDatetime($this->auroraModelData->{'List Creation Date'}),
-            'is_static'         => $isStatic,
-            'fetched_at'        => now(),
-            'last_fetched_at'   => now(),
-            'source_id'         => $this->organisation->id.':'.$this->auroraModelData->{'List Key'},
+            'created_at' => $this->parseDatetime($this->auroraModelData->{'List Creation Date'}),
+            'is_static' => $isStatic,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'List Key'},
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('List Dimension')

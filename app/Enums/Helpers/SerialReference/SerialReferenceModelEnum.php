@@ -14,7 +14,6 @@ enum SerialReferenceModelEnum: string
 {
     use EnumHelperTrait;
 
-
     case CUSTOMER = 'customer';
     case ORDER = 'order';
     case PURCHASE_ORDER = 'purchase_order';

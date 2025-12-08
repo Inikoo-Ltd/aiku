@@ -18,13 +18,13 @@ enum OfferDurationEnum: string
     use EnumHelperTrait;
 
     case PERMANENT = 'permanent';
-    case INTERVAL  = 'interval';
+    case INTERVAL = 'interval';
 
     public static function labels(): array
     {
         return [
             self::PERMANENT->value => __('Permanent'),
-            self::INTERVAL->value  => __('Interval'),
+            self::INTERVAL->value => __('Interval'),
         ];
     }
 }

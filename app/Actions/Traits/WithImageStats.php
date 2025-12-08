@@ -16,10 +16,10 @@ trait WithImageStats
     /**
      * Calculate image statistics for a model using DB queries
      *
-     * @param Model $model The model to calculate image statistics for
-     * @param string $modelType The type of the model (e.g., 'Product', 'TradeUnit')
-     * @param bool $hasPublicImages Whether the model tracks public images
-     * @param bool $useTotalImageSize Whether to use 'total_image_size' instead of 'images_size'
+     * @param  Model  $model  The model to calculate image statistics for
+     * @param  string  $modelType  The type of the model (e.g., 'Product', 'TradeUnit')
+     * @param  bool  $hasPublicImages  Whether the model tracks public images
+     * @param  bool  $useTotalImageSize  Whether to use 'total_image_size' instead of 'images_size'
      * @return array The calculated statistics
      */
     protected function calculateImageStatsUsingDB(Model $model, string $modelType, bool $hasPublicImages = true, bool $useTotalImageSize = false): array
@@ -31,13 +31,13 @@ trait WithImageStats
             ->select([
                 DB::raw('COUNT(*) as number_images'),
                 DB::raw('SUM(media.size) as total_size'),
-                DB::raw('MAX(media.size) as max_size')
+                DB::raw('MAX(media.size) as max_size'),
             ]);
 
         if ($hasPublicImages) {
             $query->addSelect([
                 DB::raw('SUM(CASE WHEN model_has_media.is_public = true THEN 1 ELSE 0 END) as number_public_images'),
-                DB::raw('SUM(CASE WHEN model_has_media.is_public = true THEN media.size ELSE 0 END) as public_size')
+                DB::raw('SUM(CASE WHEN model_has_media.is_public = true THEN media.size ELSE 0 END) as public_size'),
             ]);
         }
 
@@ -46,7 +46,7 @@ trait WithImageStats
         $stats = [
             'number_images' => $imageStats->number_images ?? 0,
             'average_image_size' => $imageStats->number_images > 0 ? ($imageStats->total_size / $imageStats->number_images) : 0,
-            'max_image_size' => $imageStats->max_size ?? null
+            'max_image_size' => $imageStats->max_size ?? null,
         ];
 
         // Use the appropriate field name based on the model type
@@ -67,9 +67,9 @@ trait WithImageStats
     /**
      * Calculate image statistics for a model by loading all images
      *
-     * @param Model $model The model to calculate image statistics for
-     * @param bool $hasPublicImages Whether the model tracks public images
-     * @param bool $useTotalImageSize Whether to use 'total_image_size' instead of 'images_size'
+     * @param  Model  $model  The model to calculate image statistics for
+     * @param  bool  $hasPublicImages  Whether the model tracks public images
+     * @param  bool  $useTotalImageSize  Whether to use 'total_image_size' instead of 'images_size'
      * @return array The calculated statistics
      */
     protected function calculateImageStatsByLoading(Model $model, bool $hasPublicImages = true, bool $useTotalImageSize = false): array
@@ -106,7 +106,7 @@ trait WithImageStats
         $stats = [
             'number_images' => $numberImages,
             'average_image_size' => $averageImageSize,
-            'max_image_size' => $maxImageSize > 0 ? $maxImageSize : null
+            'max_image_size' => $maxImageSize > 0 ? $maxImageSize : null,
         ];
 
         // Use the appropriate field name based on the model type

@@ -58,9 +58,6 @@ class OrganisationHydrateCollections implements ShouldBeUnique
 
         $stats['number_current_collections'] = $stats['number_collections_state_active'] + $stats['number_collections_products_status_discontinuing'];
 
-
         $organisation->catalogueStats()->update($stats);
     }
-
-
 }

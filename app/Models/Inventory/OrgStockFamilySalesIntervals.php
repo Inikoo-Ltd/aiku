@@ -1275,9 +1275,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Inventory\OrgStockFamily $orgStockFamily
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilySalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilySalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilySalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class OrgStockFamilySalesIntervals extends Model
@@ -1285,7 +1287,6 @@ class OrgStockFamilySalesIntervals extends Model
     protected $table = 'org_stock_family_sales_intervals';
 
     protected $guarded = [];
-
 
     public function orgStockFamily(): BelongsTo
     {

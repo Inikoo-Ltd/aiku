@@ -22,10 +22,10 @@ trait WithHydrateSupplierProducts
     public function getSupplierProductsStats(Group|Agent|Supplier $model): array
     {
         $stats = [
-            'number_supplier_products'           => $model->supplierProducts()->count(),
+            'number_supplier_products' => $model->supplierProducts()->count(),
             'number_available_supplier_products' => $model->supplierProducts()->whereIn('state', [
                 SupplierProductStateEnum::ACTIVE,
-                SupplierProductStateEnum::DISCONTINUING
+                SupplierProductStateEnum::DISCONTINUING,
             ])->where('is_available', true)->count(),
         ];
 
@@ -39,8 +39,8 @@ trait WithHydrateSupplierProducts
                 where: function ($q) use ($model) {
                     $q->where(
                         match (class_basename($model)) {
-                            'Group'    => 'group_id',
-                            'Agent'    => 'agent_id',
+                            'Group' => 'group_id',
+                            'Agent' => 'agent_id',
                             'Supplier' => 'supplier_id',
                         },
                         $model->id
@@ -49,10 +49,9 @@ trait WithHydrateSupplierProducts
             )
         );
 
-        $stats['number_current_supplier_products']      = $stats['number_supplier_products_state_active'] + $stats['number_supplier_products_state_discontinuing'];
+        $stats['number_current_supplier_products'] = $stats['number_supplier_products_state_active'] + $stats['number_supplier_products_state_discontinuing'];
         $stats['number_no_available_supplier_products'] = $stats['number_current_supplier_products'] - $stats['number_available_supplier_products'];
 
         return $stats;
     }
-
 }

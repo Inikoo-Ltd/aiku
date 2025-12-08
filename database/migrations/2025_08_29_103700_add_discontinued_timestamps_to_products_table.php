@@ -10,14 +10,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'mark_for_discontinued_at')) {
+            if (! Schema::hasColumn('products', 'mark_for_discontinued_at')) {
                 $table->dateTimeTz('mark_for_discontinued_at')->nullable();
             }
-            if (!Schema::hasColumn('products', 'discontinued_at')) {
+            if (! Schema::hasColumn('products', 'discontinued_at')) {
                 $table->dateTimeTz('discontinued_at')->nullable();
             }
         });

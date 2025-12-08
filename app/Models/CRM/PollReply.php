@@ -25,9 +25,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read \App\Models\CRM\Poll $poll
  * @property-read \App\Models\CRM\PollOption|null $pollOption
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollReply newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollReply newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollReply query()
+ *
  * @mixin \Eloquent
  */
 class PollReply extends Model
@@ -35,8 +37,8 @@ class PollReply extends Model
     protected $table = 'poll_replies';
 
     protected $casts = [
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -44,13 +46,10 @@ class PollReply extends Model
 
     protected $guarded = [];
 
-
-
     public function poll(): BelongsTo
     {
         return $this->belongsTo(Poll::class);
     }
-
 
     public function pollOption(): BelongsTo
     {

@@ -8,9 +8,9 @@
 
 namespace App\Actions\Production\JobOrder;
 
+use App\Actions\OrgAction;
 use App\Actions\Production\JobOrder\Hydrators\JobOrderHydrateUniversalSearch;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateJobOrders;
-use App\Actions\OrgAction;
 use App\Http\Resources\Production\JobOrderResource;
 use App\Models\CRM\WebUser;
 use App\Models\Production\JobOrder;
@@ -31,18 +31,17 @@ class StoreJobOrder extends OrgAction
     use AsAction;
     use WithAttributes;
 
-
     public function handle(Production $production, array $modelData): JobOrder
     {
         data_set($modelData, 'group_id', $production->group_id);
         data_set($modelData, 'organisation_id', $production->organisation_id);
         data_set($modelData, 'in_process_at', now());
 
-        if (!Arr::get($modelData, 'reference')) {
+        if (! Arr::get($modelData, 'reference')) {
             data_set(
                 $modelData,
                 'reference',
-                Str::random(10) //TODO: make a reference generator for Job Order
+                Str::random(10) // TODO: make a reference generator for Job Order
             );
         }
 
@@ -67,21 +66,20 @@ class StoreJobOrder extends OrgAction
         return $request->user()->authTo("productions-view.{$this->organisation->id}");
     }
 
-
     public function rules(): array
     {
         $rules = [];
 
-        if (!request()->user() instanceof WebUser) {
+        if (! request()->user() instanceof WebUser) {
             $rules = [
-                'public_notes'  => ['sometimes','nullable','string','max:4000'],
-                'internal_notes' => ['sometimes','nullable','string','max:4000'],
+                'public_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+                'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             ];
         }
 
         return [
-            'customer_notes' => ['sometimes','nullable','string'],
-            ...$rules
+            'customer_notes' => ['sometimes', 'nullable', 'string'],
+            ...$rules,
         ];
     }
 
@@ -102,7 +100,7 @@ class StoreJobOrder extends OrgAction
 
     public function jsonResponse(JobOrder $jobOrder): JobOrderResource
     {
-        return JobOrderResource::make($jobOrder) ;
+        return JobOrderResource::make($jobOrder);
 
     }
 
@@ -112,10 +110,10 @@ class StoreJobOrder extends OrgAction
 
         return match ($routeName) {
             'grp.models.production.job-order.store' => Inertia::location(route('grp.org.productions.show.job-order.show', [
-                'organisation'           => $jobOrder->organisation->slug,
+                'organisation' => $jobOrder->organisation->slug,
             ])),
             default => Inertia::location(route('retina.fulfilment.storage.pallet_deliveries.show', [
-                'jobOrder'         => $jobOrder->slug
+                'jobOrder' => $jobOrder->slug,
             ]))
         };
     }
@@ -130,6 +128,7 @@ class StoreJobOrder extends OrgAction
             $production = Production::where('slug', $command->argument('production'))->firstOrFail();
         } catch (Exception $e) {
             $command->error($e->getMessage());
+
             return 1;
         }
 
@@ -139,6 +138,4 @@ class StoreJobOrder extends OrgAction
 
         return 0;
     }
-
-
 }

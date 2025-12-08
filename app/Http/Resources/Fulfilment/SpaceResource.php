@@ -33,17 +33,17 @@ class SpaceResource extends JsonResource
         $recurringBill = RecurringBill::find($this->current_recurring_bill_id);
 
         return [
-            'id'                         => $this->id,
-            'slug'                       => $this->slug,
-            'reference'                  => $this->reference,
-            'state'                      => $this->state,
-            'state_label'                => $this->state->labels()[$this->state->value],
-            'start_at'                   => $this->start_at,
-            'end_at'                     => $this->end_at,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'state' => $this->state,
+            'state_label' => $this->state->labels()[$this->state->value],
+            'start_at' => $this->start_at,
+            'end_at' => $this->end_at,
             // 'rental_slug'                => $this->rental_slug,
-            'exclude_weekend'            => $this->exclude_weekend,
-            'rental'                     => $this->rental,
-            'recurring_bill'             => RecurringBillResource::make($recurringBill ?? null),
+            'exclude_weekend' => $this->exclude_weekend,
+            'rental' => $this->rental,
+            'recurring_bill' => RecurringBillResource::make($recurringBill ?? null),
             // 'rental_code'                => $this->rental_code,
         ];
     }

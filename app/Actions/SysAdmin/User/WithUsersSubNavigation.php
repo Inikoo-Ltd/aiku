@@ -18,40 +18,39 @@ trait WithUsersSubNavigation
     {
         return [
             [
-                "number"   => $group->sysadminStats->number_users_status_active,
-                "label"    => __("Active"),
-                "route"     => [
-                    "name"       => "grp.sysadmin.users.index",
-                    "parameters" => [],
+                'number' => $group->sysadminStats->number_users_status_active,
+                'label' => __('Active'),
+                'route' => [
+                    'name' => 'grp.sysadmin.users.index',
+                    'parameters' => [],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-user-circle"],
-                    "tooltip" => __("Active Users"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-user-circle'],
+                    'tooltip' => __('Active Users'),
                 ],
             ],
             [
-                "number"   => $group->sysadminStats->number_users_status_inactive,
-                "label"    => __("Suspended"),
-                "route"     => [
-                    "name"       => "grp.sysadmin.users.suspended.index",
-                    "parameters" => [],
+                'number' => $group->sysadminStats->number_users_status_inactive,
+                'label' => __('Suspended'),
+                'route' => [
+                    'name' => 'grp.sysadmin.users.suspended.index',
+                    'parameters' => [],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-user-slash"],
-                    "tooltip" => __("Suspended Users"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-user-slash'],
+                    'tooltip' => __('Suspended Users'),
                 ],
             ],
 
             [
-                "number"   => $group->sysadminStats->number_users,
-                "label"    => __("All"),
-                'align'  => 'right',
-                "route"     => [
-                    "name"       => "grp.sysadmin.users.all.index",
-                    "parameters" => [],
-                ]
+                'number' => $group->sysadminStats->number_users,
+                'label' => __('All'),
+                'align' => 'right',
+                'route' => [
+                    'name' => 'grp.sysadmin.users.all.index',
+                    'parameters' => [],
+                ],
             ],
-
 
         ];
     }

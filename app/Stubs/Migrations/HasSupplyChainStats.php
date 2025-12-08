@@ -22,13 +22,11 @@ trait HasSupplyChainStats
         return $table;
     }
 
-
     public function suppliersStats(Blueprint $table): Blueprint
     {
         $table->unsignedInteger('number_suppliers')->default(0)->comment('Active + Archived  suppliers');
         $table->unsignedInteger('number_active_suppliers')->default(0)->comment('Active suppliers, status=true');
         $table->unsignedInteger('number_archived_suppliers')->default(0)->comment('Archived suppliers status=false');
-
 
         if ($table->getTable() != 'agent_stats') {
             $table->unsignedInteger('number_independent_suppliers')->default(0)->comment('Active + Archived no agent suppliers');
@@ -40,10 +38,8 @@ trait HasSupplyChainStats
             $table->unsignedInteger('number_archived_suppliers_in_agents')->default(0)->comment('Archived suppliers status=false');
         }
 
-
         return $table;
     }
-
 
     public function supplierProductsStats(Blueprint $table): Blueprint
     {
@@ -58,6 +54,4 @@ trait HasSupplyChainStats
 
         return $table;
     }
-
-
 }

@@ -210,14 +210,16 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $customers_invoiced_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingIntervals query()
+ *
  * @mixin \Eloquent
  */
 class MasterAssetOrderingIntervals extends Model
 {
     protected $table = 'master_asset_ordering_intervals';
-    protected $guarded = [];
 
+    protected $guarded = [];
 }

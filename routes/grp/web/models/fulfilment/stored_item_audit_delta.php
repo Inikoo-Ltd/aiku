@@ -21,7 +21,6 @@ Route::patch(
     UpdateStoredItemAuditDelta::class
 )->name('stored_item_audit_delta.update');
 
-
 Route::delete(
     'stored-item-audit-delta/{storedItemAuditDelta:id}',
     DeleteStoredItemAuditDelta::class

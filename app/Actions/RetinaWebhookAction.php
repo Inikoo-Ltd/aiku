@@ -25,12 +25,16 @@ class RetinaWebhookAction
     use WithAttributes;
     use WithTab;
 
-
     protected Website $website;
+
     protected ShopifyUser $shopifyUser;
+
     protected ?Fulfilment $fulfilment;
+
     protected ?FulfilmentCustomer $fulfilmentCustomer;
+
     protected Organisation $organisation;
+
     protected Shop $shop;
 
     protected array $validatedData;
@@ -43,12 +47,7 @@ class RetinaWebhookAction
         $this->organisation = $this->shop->organisation;
         $this->fillFromRequest($request);
         $this->validatedData = $this->validateAttributes();
+
         return $this;
     }
-
-
-
-
-
-
 }

@@ -18,11 +18,10 @@ trait WithFulfilmentWarehouseEditAuthorisation
             return true;
         }
 
-
         return $request->user()->authTo([
             "fulfilment.{$this->warehouse->id}.edit",
-            "supervisor-incoming.".$this->warehouse->id,
-            "supervisor-fulfilment.".$this->warehouse->id
+            'supervisor-incoming.'.$this->warehouse->id,
+            'supervisor-fulfilment.'.$this->warehouse->id,
         ]);
     }
 }

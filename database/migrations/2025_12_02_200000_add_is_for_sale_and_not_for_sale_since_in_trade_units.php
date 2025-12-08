@@ -9,7 +9,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('trade_units', function (Blueprint $table) {
@@ -17,7 +18,6 @@ return new class () extends Migration {
             $table->timestampTz('not_for_sale_since')->nullable();
         });
     }
-
 
     public function down(): void
     {

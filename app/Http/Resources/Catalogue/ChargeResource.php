@@ -22,18 +22,18 @@ class ChargeResource extends JsonResource
         $amount = Arr::get($charge->settings, 'amount', 0);
 
         return [
-            'id'            => $charge->id,
-            'slug'          => $charge->slug,
-            'code'          => $charge->code,
-            'name'          => $charge->name,
-            'label'         => $charge->label,
-            'description'   => $charge->description,
-            'state'         => $charge->state,
-            'created_at'    => $charge->created_at,
-            'updated_at'    => $charge->updated_at,
-            'amount'        => $amount,
+            'id' => $charge->id,
+            'slug' => $charge->slug,
+            'code' => $charge->code,
+            'name' => $charge->name,
+            'label' => $charge->label,
+            'description' => $charge->description,
+            'state' => $charge->state,
+            'created_at' => $charge->created_at,
+            'updated_at' => $charge->updated_at,
+            'amount' => $amount,
             'currency_code' => $charge->shop->currency->code,
-            'settings'      => $charge->settings
+            'settings' => $charge->settings,
         ];
     }
 }

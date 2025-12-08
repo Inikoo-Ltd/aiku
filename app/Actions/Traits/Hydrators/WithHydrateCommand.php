@@ -14,19 +14,22 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 trait WithHydrateCommand
 {
     use AsAction;
 
     private string $model;
+
     private ?string $restriction = null;
+
     private ?array $evadeState = null;
+
     protected bool $modelAsHandleArg = true;
 
     protected function getOrganisationsIds(Command $command): array
@@ -48,10 +51,9 @@ trait WithHydrateCommand
     {
         $command->info($command->getName());
 
-        $tableName = (new $this->model())->getTable();
+        $tableName = (new $this->model)->getTable();
 
         $query = $this->prepareQuery($tableName, $command);
-
 
         $count = $query->count();
 
@@ -65,7 +67,7 @@ trait WithHydrateCommand
                 foreach ($modelsData as $modelId) {
 
                     if ($this->modelAsHandleArg) {
-                        $model = (new $this->model());
+                        $model = (new $this->model);
                         if ($this->hasSoftDeletes($model)) {
                             $instance = $model->withTrashed()->find($modelId->id);
                         } else {
@@ -86,7 +88,7 @@ trait WithHydrateCommand
         );
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
 
         return 0;
     }
@@ -101,7 +103,6 @@ trait WithHydrateCommand
                 $query->where('shop_id', $shop->id);
             }
         }
-
 
         if ($command->hasOption('slug') && $command->option('slug')) {
             $query->where('slug', $command->option('slug'));
@@ -126,10 +127,8 @@ trait WithHydrateCommand
         return $query;
     }
 
-
     public function hasSoftDeletes($model): bool
     {
         return in_array(SoftDeletes::class, class_uses_recursive($model));
     }
-
 }

@@ -31,25 +31,25 @@ class ValidateQueryBuilderPeriods
     private function validateQuarter(string $period): ?array
     {
         if ($period && preg_match('/^\d{4}Q[1-4]$/', $period)) {
-            $year    = substr($period, 0, 4);
+            $year = substr($period, 0, 4);
             $quarter = substr($period, 5, 1);
 
             switch ($quarter) {
                 case '1':
                     $start = Carbon::create($year)->startOfQuarter()->toDateTimeString();
-                    $end   = Carbon::create($year)->endOfQuarter()->toDateTimeString();
+                    $end = Carbon::create($year)->endOfQuarter()->toDateTimeString();
                     break;
                 case '2':
                     $start = Carbon::create($year, 4)->startOfQuarter()->toDateTimeString();
-                    $end   = Carbon::create($year, 4)->endOfQuarter()->toDateTimeString();
+                    $end = Carbon::create($year, 4)->endOfQuarter()->toDateTimeString();
                     break;
                 case '3':
                     $start = Carbon::create($year, 7)->startOfQuarter()->toDateTimeString();
-                    $end   = Carbon::create($year, 7)->endOfQuarter()->toDateTimeString();
+                    $end = Carbon::create($year, 7)->endOfQuarter()->toDateTimeString();
                     break;
                 case '4':
                     $start = Carbon::create($year, 10)->startOfQuarter()->toDateTimeString();
-                    $end   = Carbon::create($year, 10)->endOfQuarter()->toDateTimeString();
+                    $end = Carbon::create($year, 10)->endOfQuarter()->toDateTimeString();
                     break;
                 default:
                     return null;
@@ -57,7 +57,7 @@ class ValidateQueryBuilderPeriods
 
             return [
                 'start' => $start,
-                'end'   => $end
+                'end' => $end,
             ];
         } else {
             return null;
@@ -68,11 +68,11 @@ class ValidateQueryBuilderPeriods
     {
         if (preg_match('/^\d{4}$/', $period)) {
             $start = Carbon::createFromFormat('Y', $period)->startOfYear()->toDateTimeString();
-            $end   = Carbon::createFromFormat('Y', $period)->endOfYear()->toDateTimeString();
+            $end = Carbon::createFromFormat('Y', $period)->endOfYear()->toDateTimeString();
 
             return [
                 'start' => $start,
-                'end'   => $end
+                'end' => $end,
             ];
         } else {
             return null;
@@ -83,11 +83,11 @@ class ValidateQueryBuilderPeriods
     {
         if (preg_match('/^\d{4}\d{2}$/', $period)) {
             $start = Carbon::createFromFormat('Ym', $period)->startOfMonth()->toDateTimeString();
-            $end   = Carbon::createFromFormat('Ym', $period)->endOfMonth()->toDateTimeString();
+            $end = Carbon::createFromFormat('Ym', $period)->endOfMonth()->toDateTimeString();
 
             return [
                 'start' => $start,
-                'end'   => $end
+                'end' => $end,
             ];
         } else {
             return null;
@@ -102,27 +102,26 @@ class ValidateQueryBuilderPeriods
             $date = Carbon::now()->setISODate($year, $week);
 
             $start = $date->startOfWeek()->toDateTimeString();
-            $end   = $date->endOfWeek()->toDateTimeString();
+            $end = $date->endOfWeek()->toDateTimeString();
 
             return [
                 'start' => $start,
-                'end'   => $end
+                'end' => $end,
             ];
         } else {
             return null;
         }
     }
 
-
     private function validateDay(string $period): ?array
     {
         if ($period && preg_match('/^\d{8}$/', $period)) {
             $start = Carbon::createFromFormat('Ymd', $period)->startOfDay()->toDateTimeString();
-            $end   = Carbon::createFromFormat('Ymd', $period)->endOfDay()->toDateTimeString();
+            $end = Carbon::createFromFormat('Ymd', $period)->endOfDay()->toDateTimeString();
 
             return [
                 'start' => $start,
-                'end'   => $end
+                'end' => $end,
             ];
         } else {
             return null;
@@ -132,12 +131,11 @@ class ValidateQueryBuilderPeriods
     private function validateYesterday(): ?array
     {
         $start = now()->subDay()->startOfDay()->toDateTimeString();
-        $end   = now()->subDay()->endOfDay()->toDateTimeString();
+        $end = now()->subDay()->endOfDay()->toDateTimeString();
 
         return [
             'start' => $start,
-            'end'   => $end
+            'end' => $end,
         ];
     }
-
 }

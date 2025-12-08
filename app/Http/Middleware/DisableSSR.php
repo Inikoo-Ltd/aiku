@@ -16,6 +16,7 @@ class DisableSSR
     public function handle(Request $request, Closure $next)
     {
         config(['inertia.ssr.enabled' => false]);
+
         return $next($request);
     }
 }

@@ -25,7 +25,6 @@ class OrganisationHydrateOrgPaymentServiceProviders implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
         $stats = [
@@ -44,7 +43,6 @@ class OrganisationHydrateOrgPaymentServiceProviders implements ShouldBeUnique
                 }
             )
         );
-
 
         $organisation->accountingStats()->update($stats);
     }

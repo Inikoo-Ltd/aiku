@@ -25,8 +25,6 @@ class CreateWebpage extends OrgAction
 
     protected Fulfilment|Website|Webpage $parent;
 
-
-
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
         $this->scope = $shop;
@@ -36,12 +34,10 @@ class CreateWebpage extends OrgAction
         return $website;
     }
 
-
-
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): Website
     {
-        $this->scope  = $fulfilment;
+        $this->scope = $fulfilment;
         $this->parent = $website;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
@@ -53,15 +49,16 @@ class CreateWebpage extends OrgAction
         $route = [];
         if ($this->scope instanceof Fulfilment) {
             $route = [
-                'name'       => 'grp.models.fulfilment.webpage.store',
-                'parameters' => [$this->scope->id, $parent->id]
+                'name' => 'grp.models.fulfilment.webpage.store',
+                'parameters' => [$this->scope->id, $parent->id],
             ];
         } else {
             $route = [
-                'name'       => 'grp.models.shop.webpage.store',
-                'parameters' => [$this->scope->id, $parent->id]
+                'name' => 'grp.models.shop.webpage.store',
+                'parameters' => [$this->scope->id, $parent->id],
             ];
         }
+
         return Inertia::render(
             'CreateModel',
             [
@@ -69,67 +66,64 @@ class CreateWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New webpage'),
-                'pageHead'    => [
-                    'title'   => __('New webpage'),
+                'title' => __('New webpage'),
+                'pageHead' => [
+                    'title' => __('New webpage'),
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
-                            'route' =>
-                                match ($request->route()->getName()) {
-                                    'org.websites.show.webpages.show.webpages.create' => [
-                                        'name'       => 'org.websites.show.webpages.show' ,
-                                        'parameters' => array_values($request->route()->originalParameters())
-                                    ],
-                                    'grp.org.shops.show.web.blogs.create' => [
-                                        'name'       => 'grp.org.shops.show.web.blogs.index' ,
-                                        'parameters' => array_values($request->route()->originalParameters())
-                                    ],
-                                    default => [
-                                        'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
-                                        'parameters' => array_values($request->route()->originalParameters())
-                                    ]
-                                }
+                            'route' => match ($request->route()->getName()) {
+                                'org.websites.show.webpages.show.webpages.create' => [
+                                    'name' => 'org.websites.show.webpages.show',
+                                    'parameters' => array_values($request->route()->originalParameters()),
+                                ],
+                                'grp.org.shops.show.web.blogs.create' => [
+                                    'name' => 'grp.org.shops.show.web.blogs.index',
+                                    'parameters' => array_values($request->route()->originalParameters()),
+                                ],
+                                default => [
+                                    'name' => preg_replace('/create$/', 'index', $request->route()->getName()),
+                                    'parameters' => array_values($request->route()->originalParameters()),
+                                ]
+                            },
 
-
-                        ]
-                    ]
-
+                        ],
+                    ],
 
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Id'),
-                            'icon'   => ['fal', 'fa-fingerprint'],
+                            'title' => __('Id'),
+                            'icon' => ['fal', 'fa-fingerprint'],
                             'fields' => [
-                                'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => '',
-                                    'required' => true,
+                            'code' => [
+                                'type' => 'input',
+                                'label' => __('code'),
+                                'value' => '',
+                                'required' => true,
+                            ],
+                            'title' => [
+                                'type' => 'input',
+                                'label' => __('title'),
+                                'value' => '',
+                                'required' => true,
+                            ],
+                            'url' => [
+                                'type' => 'inputWithAddOn',
+                                'label' => __('URL'),
+                                'label_no_capitalize' => true,
+                                'leftAddOn' => [
+                                    'label' => 'https://'.($parent instanceof Webpage ? $parent->website->domain : $parent->domain).'/',
                                 ],
-                                'title' => [
-                                    'type'     => 'input',
-                                    'label'    => __('title'),
-                                    'value'    => '',
-                                    'required' => true,
-                                ],
-                                'url' => [
-                                    'type'      => 'inputWithAddOn',
-                                    'label'     => __('URL'),
-                                    'label_no_capitalize' => true,
-                                    'leftAddOn' => [
-                                        'label' => 'https://' . ($parent instanceof Webpage ? $parent->website->domain : $parent->domain) . '/'
-                                    ],
-                                    'value'     => '',
-                                    'required'  => true,
-                                ],
-                            ]
-                        ]
+                                'value' => '',
+                                'required' => true,
+                            ],
+                            ],
+                        ],
                     ],
-                    'route'     => $route,
+                    'route' => $route,
 
                 ],
 
@@ -137,45 +131,41 @@ class CreateWebpage extends OrgAction
         );
     }
 
-
     public function getBreadcrumbs($routeName, $routeParameters): array
     {
 
         return match ($routeName) {
-            'org.websites.show.webpages.show.webpages.create' =>
-            array_merge(
+            'org.websites.show.webpages.show.webpages.create' => array_merge(
                 ShowWebpage::make()->getBreadcrumbs('org.websites.show.webpages.show.webpages.show', $routeParameters),
                 [
                     [
-                        'type'          => 'creatingModel',
+                        'type' => 'creatingModel',
                         'creatingModel' => [
-                            'label' => __("webpage"),
-                        ]
-                    ]
+                            'label' => __('webpage'),
+                        ],
+                    ],
                 ]
             ),
-            'grp.org.shops.show.web.blogs.create' =>
-            array_merge(
+            'grp.org.shops.show.web.blogs.create' => array_merge(
                 IndexBlogWebpages::make()->getBreadcrumbs('grp.org.shops.show.web.blogs.index', $routeParameters),
                 [
                     [
-                        'type'          => 'creatingModel',
+                        'type' => 'creatingModel',
                         'creatingModel' => [
-                            'label' => __("webpage"),
-                        ]
-                    ]
+                            'label' => __('webpage'),
+                        ],
+                    ],
                 ]
             ),
-            'org.websites.show.webpages.create' =>
-            array_merge(
+            'org.websites.show.webpages.create' => array_merge(
                 IndexWebpages::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
-                        'type'          => 'creatingModel',
+                        'type' => 'creatingModel',
                         'creatingModel' => [
-                            'label' => __("webpage"),
-                        ]
-                    ]
+                            'label' => __('webpage'),
+                        ],
+                    ],
                 ]
             ),
             default => []

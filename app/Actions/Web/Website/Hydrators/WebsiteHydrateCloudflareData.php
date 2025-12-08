@@ -23,19 +23,21 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
     use WithHydrateCommand;
 
     private Website $website;
+
     private Collection $siteList;
+
     private ?string $apiToken;
+
     private Collection $zoneAccountTag;
 
     public string $commandSignature = 'hydrate:website_data_cloudflare {organisations?*} {--s|slugs=}';
 
-
     public function __construct(Website $website)
     {
-        $this->website        = $website;
-        $this->siteList       = collect();
+        $this->website = $website;
+        $this->siteList = collect();
         $this->zoneAccountTag = collect();
-        $this->model          = Website::class;
+        $this->model = Website::class;
     }
 
     public function getJobUniqueId(Website $website): string
@@ -52,11 +54,11 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
             return;
         }
 
-        $groupSettings  = $website->group->settings;
+        $groupSettings = $website->group->settings;
         $this->apiToken = Arr::get($groupSettings, 'cloudflare.apiToken');
-        if (!$this->apiToken) {
+        if (! $this->apiToken) {
             $this->apiToken = config('app.analytics.cloudflare.api_token'); // from env cause group not stored api token yet
-            if (!$this->apiToken) {
+            if (! $this->apiToken) {
                 return;
             }
             data_set($groupSettings, 'cloudflare.apiToken', $this->apiToken);
@@ -65,7 +67,7 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
         $newWebsiteData = $website->data;
 
         $this->zoneAccountTag = $this->getZoneAccountTag($website);
-        if (!$this->zoneAccountTag->isEmpty()) {
+        if (! $this->zoneAccountTag->isEmpty()) {
             data_set($newWebsiteData, 'cloudflare.zoneTag', $this->zoneAccountTag->get('id'));
             data_set($newWebsiteData, 'cloudflare.accountTag', $this->zoneAccountTag->get('account')['id']);
         } else {
@@ -88,21 +90,20 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
         $website->update(['data' => $newWebsiteData]);
     }
 
-
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
     private function getZoneAccountTag(Website $website, $try = 3): Collection
     {
-        $urlCloudflareRest = "https://api.cloudflare.com/client/v4";
+        $urlCloudflareRest = 'https://api.cloudflare.com/client/v4';
         if ($try == 0) {
             return collect();
         }
         try {
             $resultZone = Http::timeout(10)->withHeaders([
                 'Authorization' => "Bearer $this->apiToken",
-                'Content-Type'  => 'application/json',
-            ])->get($urlCloudflareRest."/zones", [
+                'Content-Type' => 'application/json',
+            ])->get($urlCloudflareRest.'/zones', [
                 'name' => $website->domain,
             ])->json();
         } catch (Exception $e) {
@@ -112,10 +113,10 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
             throw $e;
         }
 
-        if (!empty($resultZone['errors'])) {
+        if (! empty($resultZone['errors'])) {
             return collect();
         }
-        if (!Arr::get($resultZone, 'result')) {
+        if (! Arr::get($resultZone, 'result')) {
             return collect();
         }
         if (empty($resultZone['result'])) {
@@ -132,9 +133,9 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
     {
         try {
             $urlCloudflareResAnalytic = "https://api.cloudflare.com/client/v4/accounts/$accountId/rum/site_info/list";
-            $resultAnalytic           = Http::timeout(10)->withHeaders([
+            $resultAnalytic = Http::timeout(10)->withHeaders([
                 'Authorization' => "Bearer $this->apiToken",
-                'Content-Type'  => 'application/json',
+                'Content-Type' => 'application/json',
             ])->get($urlCloudflareResAnalytic, [
                 'per_page' => Website::count(),
             ])->json();
@@ -144,10 +145,10 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
             }
             throw $e;
         }
-        if (!empty($resultAnalytic['errors'])) {
+        if (! empty($resultAnalytic['errors'])) {
             return collect();
         }
-        if (!Arr::get($resultAnalytic, 'result')) {
+        if (! Arr::get($resultAnalytic, 'result')) {
             return collect();
         }
 

@@ -18,7 +18,6 @@ class ReindexRawMaterialRecordSearch extends HydrateModel
 {
     public string $commandSignature = 'search:raw_material {organisations?*} {--s|slugs=}';
 
-
     public function handle(RawMaterial $rawMaterial): void
     {
         RawMaterialRecordSearch::run($rawMaterial);

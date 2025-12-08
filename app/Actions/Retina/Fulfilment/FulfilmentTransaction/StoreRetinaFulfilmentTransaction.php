@@ -10,8 +10,8 @@ namespace App\Actions\Retina\Fulfilment\FulfilmentTransaction;
 
 use App\Actions\Fulfilment\FulfilmentTransaction\StoreFulfilmentTransaction;
 use App\Actions\RetinaAction;
-use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\FulfilmentTransaction;
+use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Validation\Rule;
@@ -29,13 +29,13 @@ class StoreRetinaFulfilmentTransaction extends RetinaAction
     public function rules(): array
     {
         return [
-            'is_auto_assign'    => ['sometimes', 'boolean'],
-            'quantity'          => ['required', 'numeric', 'min:0'],
+            'is_auto_assign' => ['sometimes', 'boolean'],
+            'quantity' => ['required', 'numeric', 'min:0'],
             'historic_asset_id' => [
                 'required',
                 Rule::Exists('historic_assets', 'id')
-                    ->where('organisation_id', $this->organisation->id)
-            ]
+                    ->where('organisation_id', $this->organisation->id),
+            ],
         ];
     }
 

@@ -16,7 +16,6 @@ class HandleAikuPublicInertiaRequests extends Middleware
 {
     protected $rootView = 'app-aiku-public';
 
-
     public function share(Request $request): array
     {
         $firstLoadOnlyProps = [
@@ -28,7 +27,6 @@ class HandleAikuPublicInertiaRequests extends Middleware
                 'location' => $request->url(),
             ]);
         };
-
 
         return array_merge(
             $firstLoadOnlyProps,

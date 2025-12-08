@@ -19,21 +19,20 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property string $name
- *
  */
 class OffersResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'shop_slug'           => $this->shop_slug,
+            'shop_slug' => $this->shop_slug,
             'offer_campaign_slug' => $this->offer_campaign_slug,
-            'slug'                => $this->slug,
-            'code'                => $this->code,
-            'name'                => $this->name,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
-            'shop_name'         => $this->shop_name,
+            'shop_name' => $this->shop_name,
         ];
     }
 }

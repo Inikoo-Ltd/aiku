@@ -28,15 +28,15 @@ class PalletsInStoredItemResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                       => $this->id,
-            'slug'                     => $this->slug,
-            'reference'                => $this->reference,
-            'notes'                    => (string)$this->notes,
-            'state'                    => $this->pallet_state,
-            'state_label'              => PalletStateEnum::labels()[$this->pallet_state],
-            'state_icon'               => PalletStateEnum::stateIcon()[$this->pallet_state],
-            'location_code'            => $this->location_code,
-            'stored_items_quantity'    => $this->pivot_quantity,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'notes' => (string) $this->notes,
+            'state' => $this->pallet_state,
+            'state_label' => PalletStateEnum::labels()[$this->pallet_state],
+            'state_icon' => PalletStateEnum::stateIcon()[$this->pallet_state],
+            'location_code' => $this->location_code,
+            'stored_items_quantity' => $this->pivot_quantity,
         ];
     }
 }

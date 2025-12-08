@@ -166,13 +166,11 @@ Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->gro
     Route::patch('update', UpdateRetinaCustomerComms::class)->name('update');
 });
 
-
 Route::post('favourite/{product:id}', StoreRetinaFavourite::class)->name('favourites.store');
 Route::delete('un-favourite/{product:id}', DeleteRetinaFavourite::class)->name('favourites.delete');
 
 Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
 Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
-
 
 Route::post('pallet-return', StoreRetinaPalletReturn::class)->name('pallet-return.store');
 Route::post('pallet-return/stored-items', [StoreRetinaPalletReturn::class, 'withStoredItems'])->name('pallet-return-stored-items.store');
@@ -280,7 +278,6 @@ Route::name('customer-client.')->prefix('customer-client')->group(function () {
 Route::post('fulfilment-customer-sales-channel-manual', StoreRetinaFulfilmentManualPlatform::class)->name('fulfilment.customer_sales_channel.manual.store')->withoutScopedBindings();
 Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->name('customer_sales_channel.manual.store')->withoutScopedBindings();
 
-
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::patch('unsuspend', UnSuspendRetinaCustomerSalesChannel::class)->name('unsuspend');
     Route::patch('test-connection', TestConnectionWooCommerceUser::class)->name('test_connection');
@@ -305,9 +302,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('access-token', StoreCustomerToken::class)->name('access_token.create');
 });
 
-
 Route::delete('{token}/access-token', DeleteCustomerAccessToken::class)->name('access_token.delete');
-
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink');
@@ -354,7 +349,6 @@ Route::name('web-users.')->prefix('web-users')->group(function () {
 });
 
 Route::get('attachment/{media:ulid}', DownloadRetinaAttachment::class)->name('attachment.download');
-
 
 Route::name('transaction.')->prefix('transaction')->group(function () {
     Route::delete('{transaction:id}', RetinaDeleteBasketTransaction::class)->name('delete');

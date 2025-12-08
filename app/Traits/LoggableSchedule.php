@@ -20,7 +20,7 @@ trait LoggableSchedule
     protected function logSchedule(Event $event, string $name, string $type, string $scheduledAt): Event
     {
         // Generate unique key for this schedule instance
-        $key = "schedule_log_" . md5($name . $scheduledAt . now()->timestamp);
+        $key = 'schedule_log_'.md5($name.$scheduledAt.now()->timestamp);
 
         $event->before(function () use ($key, $name, $type, $scheduledAt) {
             // Store the log instance in service container
@@ -35,7 +35,7 @@ trait LoggableSchedule
                 }
             } catch (Exception $e) {
                 // Log error but don't break the schedule
-                logger()->error('Failed to finish schedule log: ' . $e->getMessage());
+                logger()->error('Failed to finish schedule log: '.$e->getMessage());
             }
         });
 

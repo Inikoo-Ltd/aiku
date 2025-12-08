@@ -25,9 +25,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgStockHasOrgSupplierProduct> $orgStockHasOrgSupplierProducts
  * @property-read \App\Models\Goods\Stock $stock
  * @property-read SupplierProduct|null $supplierProduct
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockHasSupplierProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockHasSupplierProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockHasSupplierProduct query()
+ *
  * @mixin \Eloquent
  */
 class StockHasSupplierProduct extends Model
@@ -38,7 +40,6 @@ class StockHasSupplierProduct extends Model
     ];
 
     protected $guarded = [];
-
 
     public function orgStockHasOrgSupplierProducts(): HasMany
     {
@@ -54,6 +55,4 @@ class StockHasSupplierProduct extends Model
     {
         return $this->belongsTo(SupplierProduct::class);
     }
-
-
 }

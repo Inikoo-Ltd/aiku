@@ -17,14 +17,14 @@ enum FulfilmentCustomerPlatformTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE      = 'showcase';
+    case SHOWCASE = 'showcase';
 
     public function blueprint(): array
     {
         return match ($this) {
             FulfilmentCustomerPlatformTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fal fa-tachometer-alt',
+                'icon' => 'fal fa-tachometer-alt',
             ],
         };
     }

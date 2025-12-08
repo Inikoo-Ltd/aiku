@@ -48,7 +48,6 @@ class FetchAuroraPollReplies extends FetchAuroraAction
                         strict: false,
                     );
 
-
                     $this->recordNew($organisationSource);
 
                     $sourceData = explode(':', $pollReply->source_id);
@@ -61,7 +60,6 @@ class FetchAuroraPollReplies extends FetchAuroraAction
                     return null;
                 }
             }
-
 
             return $pollReply;
         }
@@ -76,7 +74,6 @@ class FetchAuroraPollReplies extends FetchAuroraAction
             ->select('Customer Poll Key as source_id')
             ->orderBy('source_id');
     }
-
 
     public function count(): ?int
     {

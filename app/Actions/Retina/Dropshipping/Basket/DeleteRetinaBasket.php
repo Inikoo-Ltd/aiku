@@ -14,8 +14,8 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannel
 use App\Actions\RetinaAction;
 use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
-use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Facades\Redirect;
+use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRetinaBasket extends RetinaAction
 {
@@ -41,10 +41,10 @@ class DeleteRetinaBasket extends RetinaAction
             ]
         )
             ->with('notification', [
-                'status'  => 'info',
-                'title'   => __('Success!'),
+                'status' => 'info',
+                'title' => __('Success!'),
                 'description' => __('Your :order has been deleted.', [
-                    'order' => $xxx->reference
+                    'order' => $xxx->reference,
                 ]),
             ]);
     }

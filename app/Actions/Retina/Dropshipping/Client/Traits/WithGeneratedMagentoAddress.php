@@ -20,7 +20,7 @@ trait WithGeneratedMagentoAddress
         $contactAddress = $data;
         $country = Country::where('code', Arr::get($contactAddress, 'country_id'))->first();
 
-        if (!blank($contactAddress)) {
+        if (! blank($contactAddress)) {
             $address = [
                 'address' => [
                     'address_line_1' => Arr::get($contactAddress, 'street.0', ''),
@@ -31,16 +31,16 @@ trait WithGeneratedMagentoAddress
                     'locality' => Arr::get($contactAddress, 'city'),
                     'administrative_area' => Arr::get($contactAddress, 'region'),
                     'country_code' => Arr::get($contactAddress, 'country_id'),
-                    'country_id' => $country?->id
-                ]
+                    'country_id' => $country?->id,
+                ],
             ];
         }
 
         return [
-            'contact_name' => Arr::get($contactAddress, 'firstname') . ' ' . Arr::get($contactAddress, 'lastname'),
+            'contact_name' => Arr::get($contactAddress, 'firstname').' '.Arr::get($contactAddress, 'lastname'),
             'email' => Arr::get($contactAddress, 'email', ''),
             'phone' => Arr::get($contactAddress, 'telephone'),
-            ...$address
+            ...$address,
         ];
     }
 }

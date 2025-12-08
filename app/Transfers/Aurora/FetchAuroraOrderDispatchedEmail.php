@@ -16,13 +16,13 @@ class FetchAuroraOrderDispatchedEmail extends FetchAurora
     protected function parseModel(): void
     {
         $order = $this->parseOrder($this->organisation->id.':'.$this->auroraModelData->{'Order Sent Email Order Key'});
-        if (!$order) {
-            //print "Error no order\n";
+        if (! $order) {
+            // print "Error no order\n";
             return;
         }
         $dispatchedEmail = $this->parseDispatchedEmail($this->organisation->id.':'.$this->auroraModelData->{'Order Sent Email Email Tracking Key'});
-        if (!$dispatchedEmail) {
-            //print "Error no dispatchedEmail\n";
+        if (! $dispatchedEmail) {
+            // print "Error no dispatchedEmail\n";
             return;
         }
 
@@ -33,31 +33,28 @@ class FetchAuroraOrderDispatchedEmail extends FetchAurora
             default => null
         };
         if ($outboxCode == null) {
-            //print "Error no outbox type\n";
+            // print "Error no outbox type\n";
             return;
         }
 
         $outbox = $order->shop->outboxes()->where('code', $outboxCode)->first();
-        if (!$outbox) {
-            //print "Error no outbox with code $outboxCode->value  \n";
+        if (! $outbox) {
+            // print "Error no outbox with code $outboxCode->value  \n";
             return;
         }
 
-
-
-        $this->parsedData['order']           = $order;
+        $this->parsedData['order'] = $order;
         $this->parsedData['dispatchedEmail'] = $dispatchedEmail;
-        $this->parsedData['outbox']          = $outbox;
+        $this->parsedData['outbox'] = $outbox;
 
         $this->parsedData['modelHasDispatchedEmail'] = [
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Order Sent Email Bridge Key'},
-            'fetched_at'      => now(),
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Order Sent Email Bridge Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Order Sent Email Bridge')

@@ -33,10 +33,9 @@ class SeedWebsiteOutboxes
     {
         foreach (OutboxCodeEnum::cases() as $case) {
             if (in_array('Website', $case->scope()) && in_array($website->shop->type->value, $case->shopTypes())) {
-                $postRoom    = PostRoom::where('code', $case->postRoomCode()->value)->first();
+                $postRoom = PostRoom::where('code', $case->postRoomCode()->value)->first();
                 /** @var OrgPostRoom $orgPostRoom */
                 $orgPostRoom = $postRoom->orgPostRooms()->where('organisation_id', $website->organisation->id)->first();
-
 
                 if ($outbox = Outbox::where('website_id', $website->id)->where('code', $case)->first()) {
 
@@ -57,17 +56,16 @@ class SeedWebsiteOutboxes
                         $orgPostRoom,
                         $website,
                         [
-                            'name'       => $case->label(),
-                            'code'       => $case,
-                            'type'       => $case->type(),
-                            'state'      => $case->defaultState(),
+                            'name' => $case->label(),
+                            'code' => $case,
+                            'type' => $case->type(),
+                            'state' => $case->defaultState(),
                             'model_type' => $case->modelType(),
-                            'builder'    => $this->getDefaultBuilder($case, $website)
+                            'builder' => $this->getDefaultBuilder($case, $website),
 
                         ]
                     );
                 }
-
 
                 $this->setEmailOngoingRuns($outbox, $case, $website);
             }
@@ -102,6 +100,4 @@ class SeedWebsiteOutboxes
 
         return 0;
     }
-
-
 }

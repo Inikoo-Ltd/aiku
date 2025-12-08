@@ -16,7 +16,6 @@ class GroupHydrateWebUserRequests implements ShouldBeUnique
 {
     use AsAction;
 
-
     public string $jobQueue = 'low-priority';
 
     public function getJobUniqueId(int $groupID): string
@@ -31,9 +30,6 @@ class GroupHydrateWebUserRequests implements ShouldBeUnique
             'number_web_user_requests' => $group->webUserRequests()->count(),
         ];
 
-
         $group->webStats->update($stats);
     }
-
-
 }

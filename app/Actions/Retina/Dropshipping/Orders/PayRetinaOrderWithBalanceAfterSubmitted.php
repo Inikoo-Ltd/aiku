@@ -38,11 +38,9 @@ class PayRetinaOrderWithBalanceAfterSubmitted extends RetinaAction
 
         $result = $this->handle($order);
         request()->session()->flash('notification', [
-            'status'      => $result['success'] ? 'success' : 'error',
-            'title'       => Arr::get($result, 'reason', ''),
-            'description' => ''
+            'status' => $result['success'] ? 'success' : 'error',
+            'title' => Arr::get($result, 'reason', ''),
+            'description' => '',
         ]);
     }
-
-
 }

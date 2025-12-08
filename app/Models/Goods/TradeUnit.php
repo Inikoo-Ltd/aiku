@@ -155,6 +155,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $topImage
  * @property-read \App\Models\Goods\TradeUnitFamily|null $tradeUnitFamily
  * @property-read mixed $translations
+ *
  * @method static \Database\Factories\Goods\TradeUnitFactory factory($count = null, $state = [])
  * @method static Builder<static>|TradeUnit newModelQuery()
  * @method static Builder<static>|TradeUnit newQuery()
@@ -166,34 +167,34 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|TradeUnit whereLocales(string $column, array $locales)
  * @method static Builder<static>|TradeUnit withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|TradeUnit withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class TradeUnit extends Model implements HasMedia, Auditable
+class TradeUnit extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasImage;
+    use HasAttachments;
     use HasFactory;
     use HasHistory;
-    use HasAttachments;
+    use HasImage;
+    use HasSlug;
     use HasTranslations;
-
+    use SoftDeletes;
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'status'               => TradeUnitStatusEnum::class,
-        'data'                 => 'array',
+        'status' => TradeUnitStatusEnum::class,
+        'data' => 'array',
         'marketing_dimensions' => 'array',
-        'sources'              => 'array',
-        'fetched_at'           => 'datetime',
-        'last_fetched_at'      => 'datetime',
+        'sources' => 'array',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'                 => '{}',
+        'data' => '{}',
         'marketing_dimensions' => '{}',
-        'sources'              => '{}',
+        'sources' => '{}',
     ];
 
     protected $guarded = [];
@@ -201,7 +202,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'goods'
+            'goods',
         ];
     }
 
@@ -274,6 +275,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
     {
         /** @var Brand $brand */
         $brand = $this->brands()->first();
+
         return $brand;
     }
 
@@ -381,7 +383,4 @@ class TradeUnit extends Model implements HasMedia, Auditable
     {
         return $this->hasOne(Media::class, 'id', 'art5_image_id');
     }
-
-
-
 }

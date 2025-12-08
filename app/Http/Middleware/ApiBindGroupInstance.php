@@ -25,7 +25,6 @@ class ApiBindGroupInstance
             setPermissionsTeamId($group->id);
         }
 
-
         return $next($request);
     }
 }

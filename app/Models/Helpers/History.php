@@ -40,9 +40,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|History newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|History newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|History query()
+ *
  * @mixin \Eloquent
  */
 class History extends Model
@@ -52,17 +54,17 @@ class History extends Model
     protected $table = 'audits';
 
     protected $casts = [
-        'tags'       => 'array',
+        'tags' => 'array',
         'old_values' => 'array',
         'new_values' => 'array',
-        'data'       => 'array',
+        'data' => 'array',
     ];
 
     protected $attributes = [
-        'tags'       => '{}',
+        'tags' => '{}',
         'old_values' => '{}',
         'new_values' => '{}',
-        'data'       => '{}',
+        'data' => '{}',
     ];
 
     protected $guarded = [];

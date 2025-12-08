@@ -41,7 +41,6 @@ trait HasOrderingStats
         return $table;
     }
 
-
     public function ordersStatsFields(Blueprint $table): Blueprint
     {
         $table->dateTimeTz('last_order_created_at')->nullable();
@@ -96,15 +95,12 @@ trait HasOrderingStats
         return $table;
     }
 
-
     public function invoicedCustomersStatsFields(Blueprint $table): Blueprint
     {
         $table->unsignedInteger('number_invoiced_customers')->default(0);
 
-
         return $table;
     }
-
 
     public function deliveryNotesStatsFields(Blueprint $table): Blueprint
     {
@@ -116,7 +112,6 @@ trait HasOrderingStats
 
         $table->dateTimeTz('last_delivery_note_type_replacement_created_at')->nullable();
         $table->dateTimeTz('last_delivery_note_type_replacement_dispatched_at')->nullable();
-
 
         $table->unsignedInteger('number_delivery_notes')->default(0);
 
@@ -135,7 +130,6 @@ trait HasOrderingStats
         }
 
         $table->unsignedInteger('number_delivery_notes_state_with_out_of_stock')->default(0);
-
 
         return $table;
     }
@@ -172,7 +166,6 @@ trait HasOrderingStats
             $table->decimal('out_of_stock_in_basket_net_amount', 16)->default(0);
         }
 
-
         if ($table->getTable() == 'order_stats') {
             $table->unsignedBigInteger('number_transactions_at_submission')->default(0)->comment('transactions at the time up submission from basket');
             $table->unsignedBigInteger('number_created_transactions_after_submission')->default(0);
@@ -206,7 +199,6 @@ trait HasOrderingStats
         $table->unsignedBigInteger('number_negative_current_invoice_transactions')->default(0)->comment('transactions excluding cancelled, amount<0');
         $table->unsignedBigInteger('number_zero_current_invoice_transactions')->default(0)->comment('transactions excluding cancelled, amount=0');
 
-
         return $table;
     }
 
@@ -226,13 +218,11 @@ trait HasOrderingStats
     {
         $allowedCurrencies = $this->allowedCurrencies($table);
 
-
         $table->unsignedSmallInteger('number_offer_campaigns')->default(0);
         $table->unsignedInteger('number_offers')->default(0);
         $table->unsignedInteger('number_offer_components')->default(0);
 
         $table->unsignedBigInteger('number_transactions_with_offers')->default(0);
-
 
         if ($allowedCurrencies['shop']) {
             $table->decimal('discounts_amount', 16)->default(0)->comment('from % offs');
@@ -250,9 +240,6 @@ trait HasOrderingStats
             $table->decimal('grp_cashback_amount', 16)->nullable();
         }
 
-
         return $table;
     }
-
-
 }

@@ -26,8 +26,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     /**
      * @throws \Throwable
@@ -50,17 +50,17 @@ class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
                     ->where('reference', $product['slug'])->first();
                 $storedItemShopify = $wooCommerceUser->customerSalesChannel->portfolios()->where('platform_product_id', Arr::get($product, 'id'))->first();
 
-                if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
-                    if (!$storedItem) {
+                if ($shopType === ShopTypeEnum::FULFILMENT && ! $storedItemShopify) {
+                    if (! $storedItem) {
                         $storedItem = StoreStoredItem::make()->action($wooCommerceUser->customer->fulfilmentCustomer, [
                             'reference' => $product['slug'],
                             'name' => $product['name'],
-                            'total_quantity' => Arr::get($product, 'stock_quantity')
+                            'total_quantity' => Arr::get($product, 'stock_quantity'),
                         ]);
                     }
 
                     $portfolio = $storedItem->portfolio;
-                    if (!$portfolio) {
+                    if (! $portfolio) {
 
                         StorePortfolio::make()->action(
                             $wooCommerceUser->customerSalesChannel,
@@ -72,7 +72,7 @@ class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
                     }
 
                     UpdateStoredItem::run($storedItem, [
-                        'state' => StoredItemStateEnum::ACTIVE
+                        'state' => StoredItemStateEnum::ACTIVE,
                     ]);
                 }
             });

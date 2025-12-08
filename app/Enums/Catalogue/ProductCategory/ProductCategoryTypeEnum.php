@@ -14,7 +14,7 @@ enum ProductCategoryTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case DEPARTMENT     = 'department';
+    case DEPARTMENT = 'department';
     case SUB_DEPARTMENT = 'sub_department';
-    case FAMILY         = 'family';
+    case FAMILY = 'family';
 }

@@ -19,9 +19,6 @@ class FetchAuroraPaymentAccount extends FetchAurora
             return;
         }
 
-
-
-
         $type = match ($this->auroraModelData->{'Payment Account Block'}) {
             'Accounts' => PaymentAccountTypeEnum::ACCOUNT,
             'Paypal' => PaymentAccountTypeEnum::PAYPAL,
@@ -41,16 +38,13 @@ class FetchAuroraPaymentAccount extends FetchAurora
             dd($this->auroraModelData->{'Payment Account Block'});
         }
 
-
         $this->parsedData['orgPaymentServiceProvider'] = $this->parseOrgPaymentServiceProvider($this->organisation->id.':'.$this->auroraModelData->{'Payment Account Service Provider Key'});
-
 
         $code = $this->auroraModelData->{'Payment Account Code'};
         $code = str_replace('.', '-', $code);
         $code = str_replace('_', '-', $code);
 
         $code = strtolower($code);
-
 
         if ($this->organisation->slug == 'aw') {
             if ($code == 'bankeur') {
@@ -96,19 +90,18 @@ class FetchAuroraPaymentAccount extends FetchAurora
         }
         $data = [];
 
-
         if ($type == PaymentAccountTypeEnum::BANK) {
             $data = [
                 'bank' => [
                     'recipient' => $this->auroraModelData->{'Payment Account Recipient Holder'},
-                    'name'      => $this->auroraModelData->{'Payment Account Recipient Bank Name'},
-                    'account'   => $this->auroraModelData->{'Payment Account Recipient Bank Account Number'},
+                    'name' => $this->auroraModelData->{'Payment Account Recipient Bank Name'},
+                    'account' => $this->auroraModelData->{'Payment Account Recipient Bank Account Number'},
                     'sort_code' => $this->auroraModelData->{'Payment Account Recipient Bank Code'},
-                    'iban'      => $this->auroraModelData->{'Payment Account Recipient Bank IBAN'},
-                    'swift'     => $this->auroraModelData->{'Payment Account Recipient Bank Swift'},
-                    'bic'       => '',
-                    'address'   => $this->auroraModelData->{'Payment Account Recipient Address'},
-                ]
+                    'iban' => $this->auroraModelData->{'Payment Account Recipient Bank IBAN'},
+                    'swift' => $this->auroraModelData->{'Payment Account Recipient Bank Swift'},
+                    'bic' => '',
+                    'address' => $this->auroraModelData->{'Payment Account Recipient Address'},
+                ],
             ];
         } elseif ($type == PaymentAccountTypeEnum::CHECKOUT) {
             $data = [
@@ -116,13 +109,13 @@ class FetchAuroraPaymentAccount extends FetchAurora
                     'public_key' => $this->auroraModelData->{'Payment Account Login'},
                     'secret_key' => $this->auroraModelData->{'Payment Account Password'},
 
-                ]
+                ],
             ];
         } elseif ($type == PaymentAccountTypeEnum::PASTPAY) {
             $data = [
                 'credentials' => [
                     'api_key' => $this->auroraModelData->{'Payment Account Password'},
-                ]
+                ],
             ];
         } elseif ($type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {
 
@@ -132,7 +125,7 @@ class FetchAuroraPaymentAccount extends FetchAurora
                 $countries[] = $this->parseCountryID($countryCode);
             }
             $data = [
-                'countries' => $countries
+                'countries' => $countries,
             ];
         } elseif ($type == PaymentAccountTypeEnum::BRAINTREE) {
             $data = [
@@ -141,20 +134,19 @@ class FetchAuroraPaymentAccount extends FetchAurora
                     'client_secret' => $this->auroraModelData->{'Payment Account Password'},
 
                 ],
-                'payment_methods' => $this->auroraModelData->{'Payment Account Block'} == 'BTreePaypal' ? ['paypal'] : ['card','paypal']
+                'payment_methods' => $this->auroraModelData->{'Payment Account Block'} == 'BTreePaypal' ? ['paypal'] : ['card', 'paypal'],
             ];
         }
 
         $this->parsedData['paymentAccount'] = [
-            'code'            => $code,
-            'name'            => $this->auroraModelData->{'Payment Account Name'},
-            'type'            => $type,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Payment Account Key'},
-            'data'            => $data,
-            'fetched_at'      => now(),
+            'code' => $code,
+            'name' => $this->auroraModelData->{'Payment Account Name'},
+            'type' => $type,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Payment Account Key'},
+            'data' => $data,
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
-
 
         if ($this->parseDatetime($this->auroraModelData->{'Payment Account From'})) {
             $this->parsedData['paymentAccount']['created_at'] = $this->parseDatetime($this->auroraModelData->{'Payment Account From'});
@@ -170,10 +162,9 @@ class FetchAuroraPaymentAccount extends FetchAurora
         }
     }
 
-
     protected function fetchData(
         $id
-    ): object|null {
+    ): ?object {
         return DB::connection('aurora')
             ->table('Payment Account Dimension')
             ->where('Payment Account Key', $id)->first();

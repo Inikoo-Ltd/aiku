@@ -17,17 +17,16 @@ use Illuminate\Support\Facades\DB;
 
 class FetchAuroraProductOrgStocks extends FetchAuroraAction
 {
-    use WithAuroraAttachments;
     use HasStockLocationsFetch;
+    use WithAuroraAttachments;
     use WithFetchStock;
-
 
     public string $commandSignature = 'fetch:product_org_stocks {organisations?*} {--S|shop= : Shop slug}  {--s|source_id=}  {--d|db_suffix=}';
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Product
     {
         $product = Product::where('source_id', $organisationSource->getOrganisation()->id.':'.$organisationSourceId)->first();
-        if (!$product) {
+        if (! $product) {
             return $product;
         }
 
@@ -36,11 +35,10 @@ class FetchAuroraProductOrgStocks extends FetchAuroraAction
         return UpdateProduct::make()->action(
             $product,
             [
-                'well_formatted_org_stocks' => $orgStocks
+                'well_formatted_org_stocks' => $orgStocks,
             ]
         );
     }
-
 
     public function getModelsQuery(): Builder
     {
@@ -72,6 +70,4 @@ class FetchAuroraProductOrgStocks extends FetchAuroraAction
 
         return $query->count();
     }
-
-
 }

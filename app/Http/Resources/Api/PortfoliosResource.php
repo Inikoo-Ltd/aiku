@@ -31,14 +31,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $family_code
  * @property mixed $family_name
  * @property StoredItem|Product $item
- *
  */
 class PortfoliosResource extends JsonResource
 {
     public function toArray($request): array
     {
         $quantity = 0;
-        $itemId   = null;
+        $itemId = null;
         if ($this->item instanceof StoredItem) {
             $quantity = $this->item->total_quantity;
             $itemId = $this->item->id;
@@ -54,19 +53,19 @@ class PortfoliosResource extends JsonResource
         }
 
         return [
-            'id'                        => $this->id,
-            'item_id'                   => $itemId,
-            'slug'                      => $this->item?->slug,
-            'code'                      => $this->item?->code ?? $this->item_code,
-            'currency_code'             => $this->item?->currency?->code,
-            'name'                      => $this->item?->name ?? $this->item_name ?? $this->item?->code,
-            'quantity_left'             => $quantity,
-            'weight'                    => $weight,
-            'price'                     => $price,
-            'image'                     => $image,
-            'type'                      => $this->item_type,
-            'created_at'                => $this->created_at,
-            'updated_at'                => $this->updated_at,
+            'id' => $this->id,
+            'item_id' => $itemId,
+            'slug' => $this->item?->slug,
+            'code' => $this->item?->code ?? $this->item_code,
+            'currency_code' => $this->item?->currency?->code,
+            'name' => $this->item?->name ?? $this->item_name ?? $this->item?->code,
+            'quantity_left' => $quantity,
+            'weight' => $weight,
+            'price' => $price,
+            'image' => $image,
+            'type' => $this->item_type,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

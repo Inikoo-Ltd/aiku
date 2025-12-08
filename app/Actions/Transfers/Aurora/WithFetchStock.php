@@ -21,20 +21,18 @@ use Throwable;
 
 trait WithFetchStock
 {
-    protected function processOrgStock(SourceOrganisationService $organisationSource, Stock $effectiveStock, array $stockData): OrgStock|null
+    protected function processOrgStock(SourceOrganisationService $organisationSource, Stock $effectiveStock, array $stockData): ?OrgStock
     {
         $organisation = $organisationSource->getOrganisation();
 
-
         $orgStock = $organisation->orgStocks()->where('source_id', $stockData['stock']['source_id'])->first();
 
-        if (!$orgStock) {
-            $code     = $stockData['stock']['code'];
+        if (! $orgStock) {
+            $code = $stockData['stock']['code'];
             $orgStock = OrgStock::where('organisation_id', $organisation->id)
                 ->whereRaw('LOWER(code) = LOWER(?)', [$code])
                 ->first();
         }
-
 
         /** @var OrgStock $orgStock */
         if ($orgStock) {
@@ -58,7 +56,7 @@ trait WithFetchStock
                 $orgParent = $effectiveStock->stockFamily->orgStockFamilies()->where('organisation_id', $organisation->id)->first();
             }
 
-            if (!$orgParent) {
+            if (! $orgParent) {
                 $orgParent = $organisationSource->getOrganisation();
             }
             try {
@@ -85,8 +83,7 @@ trait WithFetchStock
         }
     }
 
-
-    protected function processAbnormalOrgStock(SourceOrganisationService $organisationSource, array $stockData): OrgStock|null
+    protected function processAbnormalOrgStock(SourceOrganisationService $organisationSource, array $stockData): ?OrgStock
     {
         $orgStockData = $stockData['org_stock'];
         data_set($orgStockData, 'code', $stockData['stock']['code']);
@@ -144,18 +141,16 @@ trait WithFetchStock
         }
     }
 
-
     public function updateStockSources(Stock $stock, string $source): void
     {
-        $sources   = Arr::get($stock->sources, 'stocks', []);
+        $sources = Arr::get($stock->sources, 'stocks', []);
         $sources[] = $source;
-        $sources   = array_unique($sources);
+        $sources = array_unique($sources);
 
         $stock->updateQuietly([
             'sources' => [
                 'stocks' => $sources,
-            ]
+            ],
         ]);
     }
-
 }

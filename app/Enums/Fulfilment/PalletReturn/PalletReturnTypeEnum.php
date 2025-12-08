@@ -14,16 +14,16 @@ enum PalletReturnTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case PALLET         = 'pallet';
-    case STORED_ITEM    = 'stored_item';
-    case DROPSHIPPING   = 'dropshipping';
+    case PALLET = 'pallet';
+    case STORED_ITEM = 'stored_item';
+    case DROPSHIPPING = 'dropshipping';
 
     public static function labels($forElements = false): array
     {
         return [
-            'pallet'         => __('Pallet'),
-            'stored_item'    => __('Stored Item'),
-            'dropshipping'    => __('Dropshipping'),
+            'pallet' => __('Pallet'),
+            'stored_item' => __('Stored Item'),
+            'dropshipping' => __('Dropshipping'),
         ];
     }
 
@@ -32,16 +32,16 @@ enum PalletReturnTypeEnum: string
         return [
             'pallet' => [
                 'tooltip' => __('Pallet'),
-                'icon'    => 'fal fa-pallet',
+                'icon' => 'fal fa-pallet',
             ],
-            'stored_item'  => [
+            'stored_item' => [
                 'tooltip' => __('Stored Item'),
-                'icon'    => 'fal fa-narwhal',
+                'icon' => 'fal fa-narwhal',
             ],
-            'dropshipping'  => [
+            'dropshipping' => [
                 'tooltip' => __('Dropshipping'),
-                'icon'    => 'fal fa-box',
-            ]
+                'icon' => 'fal fa-box',
+            ],
         ];
     }
 }

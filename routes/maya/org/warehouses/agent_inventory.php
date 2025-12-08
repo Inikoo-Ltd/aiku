@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Inventory\UI\ShowAgentInventoryDashboard;
 use App\Actions\SupplyChain\SupplierProduct\UI\IndexAgentSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\UI\ShowSupplierProduct;

@@ -29,6 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowAgent extends GrpAction
 {
     use WithAgentSubNavigation;
+
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('supply-chain.edit');
@@ -41,7 +42,6 @@ class ShowAgent extends GrpAction
         return $agent;
     }
 
-
     public function asController(Agent $agent, ActionRequest $request): Agent
     {
         $this->initialisation(app('group'), $request)->withTab(AgentTabsEnum::values());
@@ -49,64 +49,61 @@ class ShowAgent extends GrpAction
         return $this->handle($agent);
     }
 
-
     public function htmlResponse(Agent $agent, ActionRequest $request): Response
     {
 
         return Inertia::render(
             'SupplyChain/Agent',
             [
-                'title'                        => __("agent"),
-                'breadcrumbs'                  => $this->getBreadcrumbs(
+                'title' => __('agent'),
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $agent,
                     $request->route()->originalParameters()
                 ),
-                'navigation'                   => [
+                'navigation' => [
                     'previous' => $this->getPrevious($agent, $request),
-                    'next'     => $this->getNext($agent, $request),
+                    'next' => $this->getNext($agent, $request),
                 ],
-                'pageHead'                     => [
-                    'model'   => __('agent'),
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'people-arrows'],
-                            'title' => __('Agent')
-                        ],
+                'pageHead' => [
+                    'model' => __('agent'),
+                    'icon' => [
+                        'icon' => ['fal', 'people-arrows'],
+                        'title' => __('Agent'),
+                    ],
                     'subNavigation' => $this->getAgentNavigation($agent),
-                    'title'   => $agent->organisation->name,
+                    'title' => $agent->organisation->name,
                     'actions' => [
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
                         $this->canDelete ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'delete',
                             'route' => [
-                                'name'       => 'grp.org.procurement.marketplace.agents.remove',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => 'grp.org.procurement.marketplace.agents.remove',
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'create',
                             'route' => [
-                                'name'       => 'grp.org.procurement.marketplace.agents.show.suppliers.create',
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => 'grp.org.procurement.marketplace.agents.show.suppliers.create',
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                            'label' => __('supplier')
+                            'label' => __('supplier'),
                         ] : false,
                     ],
 
-
                 ],
-                'tabs'                         => [
-                    'current'    => $this->tab,
-                    'navigation' => AgentTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => AgentTabsEnum::navigation(),
                 ],
                 AgentTabsEnum::SHOWCASE->value => $this->tab == AgentTabsEnum::SHOWCASE->value ?
                     fn () => GetAgentShowcase::run($agent)
@@ -133,8 +130,7 @@ class ShowAgent extends GrpAction
 
                 AgentTabsEnum::HISTORY->value => $this->tab == AgentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($agent))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($agent)))
-
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($agent))),
 
             ]
         )->table(
@@ -143,7 +139,6 @@ class ShowAgent extends GrpAction
             )
         );
     }
-
 
     public function jsonResponse(Agent $agent): AgentsResource
     {
@@ -157,18 +152,18 @@ class ShowAgent extends GrpAction
             ShowSupplyChainDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
                                 'name' => 'grp.supply-chain.agents.index',
                             ],
-                            'label' => __("Agents"),
+                            'label' => __('Agents'),
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.supply-chain.agents.show',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.supply-chain.agents.show',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $agent->organisation->code,
                         ],
@@ -196,7 +191,7 @@ class ShowAgent extends GrpAction
 
     private function getNavigation(?Agent $agent, string $routeName): ?array
     {
-        if (!$agent) {
+        if (! $agent) {
             return null;
         }
 
@@ -204,12 +199,12 @@ class ShowAgent extends GrpAction
             'grp.supply-chain.agents.show' => [
                 'label' => $agent->organisation->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'agent' => $agent->slug
-                    ]
+                        'agent' => $agent->slug,
+                    ],
 
-                ]
+                ],
             ]
         };
     }

@@ -11,4 +11,4 @@ use App\Actions\SysAdmin\Organisation\UI\EditOrganisationSettings;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', EditOrganisationSettings::class)->name('edit');
-Route::get("google-drive-callback", [CallbackClientGoogleDrive::class, 'callback'])->name('google_drive.callback');
+Route::get('google-drive-callback', [CallbackClientGoogleDrive::class, 'callback'])->name('google_drive.callback');

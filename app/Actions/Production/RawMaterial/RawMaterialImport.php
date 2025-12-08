@@ -22,15 +22,16 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class RawMaterialImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class RawMaterialImport implements SkipsOnFailure, ToCollection, WithEvents, WithHeadingRow, WithValidation
 {
     use WithImport;
 
     protected Production $scope;
+
     public function __construct(Production $production, Upload $upload)
     {
         $this->upload = $upload;
-        $this->scope  = $production;
+        $this->scope = $production;
     }
 
     public function storeModel($row, $uploadRecord): void
@@ -45,7 +46,7 @@ class RawMaterialImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
         $modelData = $row->only($fields)->all();
 
         data_set($modelData, 'data.bulk_import', [
-            'id'   => $this->upload->id,
+            'id' => $this->upload->id,
             'type' => 'Upload',
         ]);
 
@@ -66,16 +67,16 @@ class RawMaterialImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
     public function rules(): array
     {
         return [
-            'type'             => ['required', Rule::enum(RawMaterialTypeEnum::class)],
-            'state'            => ['required', Rule::enum(RawMaterialStateEnum::class)],
-            'code'             => [
+            'type' => ['required', Rule::enum(RawMaterialTypeEnum::class)],
+            'state' => ['required', Rule::enum(RawMaterialStateEnum::class)],
+            'code' => [
                 'required',
                 'alpha_dash',
                 'max:64',
             ],
-            'description'      => ['required', 'string', 'max:255'],
-            'unit'             => ['required', Rule::enum(RawMaterialUnitEnum::class)],
-            'unit_cost'        => ['required', 'numeric', 'min:0'],
+            'description' => ['required', 'string', 'max:255'],
+            'unit' => ['required', Rule::enum(RawMaterialUnitEnum::class)],
+            'unit_cost' => ['required', 'numeric', 'min:0'],
         ];
     }
 }

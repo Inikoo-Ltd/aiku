@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('model_has_master_collections', function (Blueprint $table) {
@@ -20,12 +21,11 @@ return new class () extends Migration {
             $table->string('model_type')->nullable();
             $table->unsignedInteger('model_id')->nullable();
             $table->string('type')->nullable();
-            $table->index(['model_type','model_id']);
-            $table->unique(['master_collection_id','model_type','model_id']);
+            $table->index(['model_type', 'model_id']);
+            $table->unique(['master_collection_id', 'model_type', 'model_id']);
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

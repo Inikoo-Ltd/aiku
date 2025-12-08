@@ -36,7 +36,7 @@ trait WithOutboxBuilder
     public function getDefaultBuilder(OutboxCodeEnum $case, Organisation|Shop|Fulfilment|Website $model): ?OutboxBuilderEnum
     {
         $builder = $case->defaultBuilder();
-        if (!$builder && $case != OutboxCodeEnum::TEST) {
+        if (! $builder && $case != OutboxCodeEnum::TEST) {
             $builder = Arr::get(
                 $model->group->settings,
                 'default_outbox_builder',
@@ -66,19 +66,17 @@ trait WithOutboxBuilder
             $emailTemplate = EmailTemplate::where('state', EmailTemplateStateEnum::ACTIVE)
                 ->whereJsonContains('data->outboxes', $outbox->code)->first();
 
-
             if ($emailTemplate) {
-                if (!$emailOngoingRun->email) {
+                if (! $emailOngoingRun->email) {
                     $this->createEmail($model, $case, $emailOngoingRun, $emailTemplate, $outbox);
                 } elseif ($emailOngoingRun->email->builder == EmailBuilderEnum::BLADE) {
-
 
                     if ($emailOngoingRun->email->liveSnapshot->layout != $emailTemplate->layout) {
                         $this->createSnapshot($emailOngoingRun, $emailTemplate);
                     }
                     $outbox->update(
                         [
-                            'state' => OutboxStateEnum::ACTIVE
+                            'state' => OutboxStateEnum::ACTIVE,
                         ]
                     );
                 }
@@ -95,12 +93,12 @@ trait WithOutboxBuilder
             $currentSnapshot = $emailOngoingRun->email->liveSnapshot;
 
             $snapshotData = [
-                'builder'      => $emailTemplate->builder->value,
-                'layout'       => $emailTemplate->layout,
+                'builder' => $emailTemplate->builder->value,
+                'layout' => $emailTemplate->layout,
                 'first_commit' => true,
-                'recyclable'   => false,
-                'state'        => SnapshotStateEnum::LIVE,
-                'published_at' => now()
+                'recyclable' => false,
+                'state' => SnapshotStateEnum::LIVE,
+                'published_at' => now(),
             ];
             $liveSnapShot = StoreEmailSnapshot::make()->action(
                 $emailOngoingRun->email,
@@ -108,18 +106,16 @@ trait WithOutboxBuilder
                 strict: false
             );
 
-
             UpdateSnapshot::make()->action(
                 $currentSnapshot,
                 [
-                    'state'           => SnapshotStateEnum::HISTORIC,
-                    'published_until' => now()
+                    'state' => SnapshotStateEnum::HISTORIC,
+                    'published_until' => now(),
                 ]
             );
 
             return $liveSnapShot;
         });
-
 
         $emailOngoingRun->email->update(
             [
@@ -137,17 +133,17 @@ trait WithOutboxBuilder
             $emailOngoingRun,
             $emailTemplate,
             modelData: [
-                'subject'               => $case->label(),
-                'snapshot_state'        => SnapshotStateEnum::LIVE,
+                'subject' => $case->label(),
+                'snapshot_state' => SnapshotStateEnum::LIVE,
                 'snapshot_published_at' => $model->created_at,
-                'snapshot_recyclable'   => false,
+                'snapshot_recyclable' => false,
                 'snapshot_first_commit' => true,
-                'builder'               => match ($this->getDefaultBuilder($case, $model)) {
+                'builder' => match ($this->getDefaultBuilder($case, $model)) {
                     OutboxBuilderEnum::UNLAYER => EmailBuilderEnum::UNLAYER,
                     OutboxBuilderEnum::BEEFREE => EmailBuilderEnum::BEEFREE,
                     OutboxBuilderEnum::BLADE => EmailBuilderEnum::BLADE,
                     default => null
-                }
+                },
             ],
             strict: false
         );
@@ -156,28 +152,27 @@ trait WithOutboxBuilder
             $emailOngoingRun,
             [
                 'email_id' => $email->id,
-                'status'   => EmailOngoingRunStatusEnum::ACTIVE
+                'status' => EmailOngoingRunStatusEnum::ACTIVE,
             ]
         );
 
         UpdateOutbox::make()->action(
             $outbox,
             [
-                'state'    => OutboxStateEnum::ACTIVE,
-                'model_id' => $emailOngoingRun->id
+                'state' => OutboxStateEnum::ACTIVE,
+                'model_id' => $emailOngoingRun->id,
             ]
         );
     }
-
 
     /**
      * @throws \Throwable
      */
     protected function addEmailOngoingRunToOutbox(OutboxCodeEnum $case, Outbox $outbox): EmailOngoingRun
     {
-        if (!$outbox->emailOngoingRun) {
+        if (! $outbox->emailOngoingRun) {
             $emailOngoingRun = EmailOngoingRun::where('outbox_id', $outbox->id)->first();
-            if (!$emailOngoingRun) {
+            if (! $emailOngoingRun) {
                 $emailOngoingRun = StoreEmailOngoingRun::make()->action(
                     $outbox,
                     [
@@ -197,6 +192,4 @@ trait WithOutboxBuilder
 
         return $emailOngoingRun;
     }
-
-
 }

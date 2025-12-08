@@ -16,9 +16,9 @@ enum FulfilmentCustomerTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE      = 'showcase';
+    case SHOWCASE = 'showcase';
     case AGREED_PRICES = 'agreed_prices';
-    case HISTORY       = 'history';
+    case HISTORY = 'history';
     /*     case ATTACHMENTS   = 'attachments';
     case WEBHOOK       = 'webhook';
     case NOTE          = 'note'; */
@@ -32,26 +32,26 @@ enum FulfilmentCustomerTabsEnum: string
             FulfilmentCustomerTabsEnum::EMAIL => [
                 'align' => 'right',
                 'title' => __('Email'),
-                'icon'  => 'fal fa-envelope',
-                'type'  => 'icon'
+                'icon' => 'fal fa-envelope',
+                'type' => 'icon',
             ],
             FulfilmentCustomerTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
                 'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
-                'type'  => 'icon'
+                'icon' => 'fal fa-paperclip',
+                'type' => 'icon',
             ],
             FulfilmentCustomerTabsEnum::HISTORY => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
+                'icon' => 'fal fa-clock',
             ],
             FulfilmentCustomerTabsEnum::BALANCE => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('Balance'),
-                'icon'  => 'fal fa-wallet',
+                'icon' => 'fal fa-wallet',
             ],
             /* FulfilmentCustomerTabsEnum::WEBHOOK => [
                 'align' => 'right',
@@ -61,11 +61,11 @@ enum FulfilmentCustomerTabsEnum: string
             ], */
             FulfilmentCustomerTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fal fa-tachometer-alt',
+                'icon' => 'fal fa-tachometer-alt',
             ],
             FulfilmentCustomerTabsEnum::AGREED_PRICES => [
                 'title' => __('Agreed prices'),
-                'icon'  => 'fal fa-usd-circle',
+                'icon' => 'fal fa-usd-circle',
             ],
 
             //            FulfilmentCustomerTabsEnum::NOTE => [

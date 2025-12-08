@@ -25,15 +25,15 @@ class EmployeesResource extends JsonResource
         $employee = $this;
 
         return [
-            'id'            => $employee->id,
-            'slug'          => $employee->slug,
+            'id' => $employee->id,
+            'slug' => $employee->slug,
             'worker_number' => $employee->worker_number,
-            'name'          => $employee->contact_name,
-            'contact_name'  => $employee->contact_name,
-            'job_title'     => $employee->job_title,
-            'state'         => $employee->state,
-            'positions'     => $this->job_positions ? JobPositionLightResource::collection(json_decode($this->job_positions)) : null,
-            'state_icon'    => $employee->state->stateIcon()[$employee->state->value],
+            'name' => $employee->contact_name,
+            'contact_name' => $employee->contact_name,
+            'job_title' => $employee->job_title,
+            'state' => $employee->state,
+            'positions' => $this->job_positions ? JobPositionLightResource::collection(json_decode($this->job_positions)) : null,
+            'state_icon' => $employee->state->stateIcon()[$employee->state->value],
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
         ];

@@ -22,7 +22,6 @@ class StoreFetchStacks
     use AsAction;
     use WithOrganisationSource;
 
-
     /**
      * @throws \Exception
      */
@@ -35,34 +34,32 @@ class StoreFetchStacks
             $this->setSource($organisation);
             $data = [];
 
-
             $results = DB::connection('aurora')->table('Stack Aiku Dimension')->orderBy('Stack Aiku Creation Date')->get();
 
             foreach ($results as $row) {
-                $operation   = $row->{'Stack Aiku Operation'};
+                $operation = $row->{'Stack Aiku Operation'};
                 $operationId = $row->{'Stack Aiku Operation Key'};
 
                 $data[$row->{'Stack Aiku Key'}] = [
-                    'group_id'        => $organisation->group_id,
+                    'group_id' => $organisation->group_id,
                     'organisation_id' => $organisation->id,
-                    'operation'       => $operation,
-                    'operation_id'    => $operationId,
-                    'submitted_at'    => $row->{'Stack Aiku Creation Date'},
+                    'operation' => $operation,
+                    'operation_id' => $operationId,
+                    'submitted_at' => $row->{'Stack Aiku Creation Date'},
                 ];
             }
 
             foreach ($data as $key => $row) {
 
-                if (!FetchStack::where('operation', $row['operation'])->where('operation_id', $row['operation_id'])->where('state', FetchStackStateEnum::IN_PROCESS)->exists()) {
+                if (! FetchStack::where('operation', $row['operation'])->where('operation_id', $row['operation_id'])->where('state', FetchStackStateEnum::IN_PROCESS)->exists()) {
                     FetchStack::create($row);
                 }
                 DB::connection('aurora')->table('Stack Aiku Dimension')->where('Stack Aiku Key', $key)->delete();
             }
 
-            $command?->info("Processed: ".count($data));
+            $command?->info('Processed: '.count($data));
         }
     }
-
 
     /**
      * @throws \Exception

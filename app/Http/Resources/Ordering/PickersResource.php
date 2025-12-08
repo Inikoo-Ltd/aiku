@@ -14,17 +14,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $contact_name
  * @property string $alias
  * @property mixed $id
- *
  */
 class PickersResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'           => $this->id,
+            'id' => $this->id,
             'contact_name' => $this->contact_name,
-            'alias'        => $this->alias,
-            'employee_id'  => $this->employee_id
+            'alias' => $this->alias,
+            'employee_id' => $this->employee_id,
         ];
     }
 }

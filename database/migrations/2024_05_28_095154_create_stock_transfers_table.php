@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -23,13 +24,11 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('org_partner_id')->index();
             $table->foreign('org_partner_id')->references('id')->on('org_partners')->onUpdate('cascade')->onDelete('cascade');
 
-
             $table->timestampsTz();
             $table->softDeletesTz();
             $table->string('source_id')->nullable()->unique();
         });
     }
-
 
     public function down(): void
     {

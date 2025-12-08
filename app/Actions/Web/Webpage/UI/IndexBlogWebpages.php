@@ -45,7 +45,6 @@ class IndexBlogWebpages extends OrgAction
         $this->parent = $website;
         $this->initialisationFromShop($website->shop, $request);
 
-
         return $this->handle(parent: $this->parent, bucket: $this->bucket);
     }
 
@@ -53,7 +52,7 @@ class IndexBlogWebpages extends OrgAction
     {
         return [
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     WebpageStateEnum::labels(),
                     WebpageStateEnum::count($parent)
@@ -61,13 +60,12 @@ class IndexBlogWebpages extends OrgAction
 
                 'engine' => function ($query, $elements) {
                     $query->whereIn('webpages.state', $elements);
-                }
+                },
 
             ],
 
         ];
     }
-
 
     public function handle(Group|Organisation|Website|Webpage $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
@@ -88,7 +86,7 @@ class IndexBlogWebpages extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Webpage::class);
 
-        if (!($parent instanceof Group)) {
+        if (! ($parent instanceof Group)) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
                     key: $key,
@@ -98,7 +96,6 @@ class IndexBlogWebpages extends OrgAction
                 );
             }
         }
-
 
         if ($parent instanceof Organisation) {
             $queryBuilder->where('webpages.organisation_id', $parent->id);
@@ -145,7 +142,7 @@ class IndexBlogWebpages extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'websites.domain as website_url',
-                'websites.slug as website_slug'
+                'websites.slug as website_slug',
             ])
             ->allowedSorts(['code', 'type', 'level', 'url'])
             ->allowedFilters([$globalSearch])
@@ -162,7 +159,7 @@ class IndexBlogWebpages extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            if (!($parent instanceof Group)) {
+            if (! ($parent instanceof Group)) {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
@@ -172,20 +169,19 @@ class IndexBlogWebpages extends OrgAction
                 }
             }
 
-
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Organisation' => [
-                            'title'       => __("No webpages found"),
+                            'title' => __('No webpages found'),
                             'description' => $parent->webStats->number_websites == 0 ? __('Nor any website exist 🤭') : null,
-                            'count'       => $parent->webStats->number_webpages,
+                            'count' => $parent->webStats->number_webpages,
 
                         ],
                         'Website', 'Group' => [
-                            'title' => __("No webpages found"),
+                            'title' => __('No webpages found'),
                             'count' => $parent->webStats->number_webpages,
                         ],
                         default => null
@@ -214,8 +210,6 @@ class IndexBlogWebpages extends OrgAction
     {
         $subNavigation = [];
 
-
-
         $routeName = $request->route()->getName();
 
         $routeCreate = null;
@@ -229,12 +223,12 @@ class IndexBlogWebpages extends OrgAction
 
         if ($routeCreate) {
             $actions[] = [
-                'type'  => 'button',
+                'type' => 'button',
                 'style' => 'create',
                 'label' => __('Blog'),
                 'route' => [
-                    'name'       => $routeCreate,
-                    'parameters' => array_values($request->route()->originalParameters())
+                    'name' => $routeCreate,
+                    'parameters' => array_values($request->route()->originalParameters()),
                 ],
             ];
         }
@@ -246,35 +240,35 @@ class IndexBlogWebpages extends OrgAction
                     $routeName,
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpages'),
-                'pageHead'    => [
-                    'model'         => __('webpages'),
-                    'title'         => ucfirst($this->bucket),
-                    'icon'          => [
-                        'icon'  => ['fal', 'fa-browser'],
-                        'title' => __('Webpage')
+                'title' => __('Webpages'),
+                'pageHead' => [
+                    'model' => __('webpages'),
+                    'title' => ucfirst($this->bucket),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-browser'],
+                        'title' => __('Webpage'),
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => $actions,
+                    'actions' => $actions,
                 ],
-                'data'        => WebpagesResource::collection($webpages),
+                'data' => WebpagesResource::collection($webpages),
 
             ]
         )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Blogs'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
@@ -292,8 +286,8 @@ class IndexBlogWebpages extends OrgAction
                     ),
                     $headCrumb(
                         [
-                            'name'       => 'grp.org.shops.show.web.blogs.index',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.shops.show.web.blogs.index',
+                            'parameters' => $routeParameters,
                         ],
                         $suffix
                     )

@@ -80,5 +80,4 @@ class GroupHydrateOrgStockMovements implements ShouldBeUnique
             $this->handle($group);
         }
     }
-
 }

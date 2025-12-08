@@ -35,9 +35,8 @@ class FetchAuroraService extends FetchAurora
 
         $this->parsedData['shop'] = $shop;
 
-        $data     = [];
+        $data = [];
         $settings = [];
-
 
         if ($this->auroraModelData->{'Product Valid From'} == '0000-00-00 00:00:00') {
             $created_at = null;
@@ -47,11 +46,10 @@ class FetchAuroraService extends FetchAurora
 
         $unit_price = $this->auroraModelData->{'Product Price'};
 
-
         $this->parsedData['historic_service_source_id'] = $this->auroraModelData->{'Product Current Key'};
 
         $owner_type = 'Shop';
-        $owner_id   = $this->parsedData['shop']->id;
+        $owner_id = $this->parsedData['shop']->id;
 
         $code = $this->cleanTradeUnitReference($this->auroraModelData->{'Product Code'});
 
@@ -82,21 +80,20 @@ class FetchAuroraService extends FetchAurora
         }
 
         $this->parsedData['service'] = [
-            'type'               => $type,
-            'owner_type'         => $owner_type,
-            'owner_id'           => $owner_id,
-            'state'              => $state,
-            'code'               => $code,
-            'name'               => $this->auroraModelData->{'Product Name'},
-            'price'              => round($unit_price, 2),
-            'status'             => $status,
-            'data'               => $data,
-            'settings'           => $settings,
-            'created_at'         => $created_at,
-            'source_id'          => $this->organisation->id.':'.$this->auroraModelData->{'Product ID'},
+            'type' => $type,
+            'owner_type' => $owner_type,
+            'owner_id' => $owner_id,
+            'state' => $state,
+            'code' => $code,
+            'name' => $this->auroraModelData->{'Product Name'},
+            'price' => round($unit_price, 2),
+            'status' => $status,
+            'data' => $data,
+            'settings' => $settings,
+            'created_at' => $created_at,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Product ID'},
             'historic_source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Product Current Key'},
         ];
-
 
         if ($type == AssetTypeEnum::RENTAL) {
             $autoAssignAsset = match ($code) {
@@ -117,16 +114,15 @@ class FetchAuroraService extends FetchAurora
                 default => RentalUnitEnum::DAY->value
             };
 
-
-            $this->parsedData['service']['unit']                   = $unit;
-            $this->parsedData['service']['auto_assign_asset']      = $autoAssignAsset;
+            $this->parsedData['service']['unit'] = $unit;
+            $this->parsedData['service']['auto_assign_asset'] = $autoAssignAsset;
             $this->parsedData['service']['auto_assign_asset_type'] = $autoAssignAssetType;
         } else {
             $serviceAutomationData = $this->getAutomationData();
             if ($serviceAutomationData['is_auto_assign']) {
-                $this->parsedData['service']['is_auto_assign']           = $serviceAutomationData['is_auto_assign'];
-                $this->parsedData['service']['auto_assign_trigger']      = $serviceAutomationData['auto_assign_trigger'];
-                $this->parsedData['service']['auto_assign_subject']      = $serviceAutomationData['auto_assign_subject'];
+                $this->parsedData['service']['is_auto_assign'] = $serviceAutomationData['is_auto_assign'];
+                $this->parsedData['service']['auto_assign_trigger'] = $serviceAutomationData['auto_assign_trigger'];
+                $this->parsedData['service']['auto_assign_subject'] = $serviceAutomationData['auto_assign_subject'];
                 $this->parsedData['service']['auto_assign_subject_type'] = $serviceAutomationData['auto_assign_subject_type'];
 
                 $this->parsedData['service']['auto_assign_status'] = $serviceAutomationData['auto_assign_status'];
@@ -143,47 +139,44 @@ class FetchAuroraService extends FetchAurora
         ];
 
         if ($this->auroraModelData->{'Product Code'} == 'AWSF-04') {
-            $automationData['is_auto_assign']           = true;
-            $automationData['auto_assign_trigger']      = 'PalletDelivery';
-            $automationData['auto_assign_subject']      = 'Pallet';
+            $automationData['is_auto_assign'] = true;
+            $automationData['auto_assign_trigger'] = 'PalletDelivery';
+            $automationData['auto_assign_subject'] = 'Pallet';
             $automationData['auto_assign_subject_type'] = 'pallet';
-            $automationData['auto_assign_status']       = true;
+            $automationData['auto_assign_status'] = true;
         }
 
         if ($this->auroraModelData->{'Product Code'} == 'AWSF-05') {
-            $automationData['is_auto_assign']           = true;
-            $automationData['auto_assign_trigger']      = 'PalletReturn';
-            $automationData['auto_assign_subject']      = 'Pallet';
+            $automationData['is_auto_assign'] = true;
+            $automationData['auto_assign_trigger'] = 'PalletReturn';
+            $automationData['auto_assign_subject'] = 'Pallet';
             $automationData['auto_assign_subject_type'] = 'pallet';
-            $automationData['auto_assign_status']       = true;
+            $automationData['auto_assign_status'] = true;
         }
 
         if ($this->auroraModelData->{'Product Code'} == 'AWSF-06') {
-            $automationData['is_auto_assign']           = true;
-            $automationData['auto_assign_trigger']      = 'PalletDelivery';
-            $automationData['auto_assign_subject']      = 'Pallet';
+            $automationData['is_auto_assign'] = true;
+            $automationData['auto_assign_trigger'] = 'PalletDelivery';
+            $automationData['auto_assign_subject'] = 'Pallet';
             $automationData['auto_assign_subject_type'] = 'box';
-            $automationData['auto_assign_status']       = true;
+            $automationData['auto_assign_status'] = true;
         }
 
         if ($this->auroraModelData->{'Product Code'} == 'AWSF-07') {
-            $automationData['is_auto_assign']           = true;
-            $automationData['auto_assign_trigger']      = 'PalletReturn';
-            $automationData['auto_assign_subject']      = 'Pallet';
+            $automationData['is_auto_assign'] = true;
+            $automationData['auto_assign_trigger'] = 'PalletReturn';
+            $automationData['auto_assign_subject'] = 'Pallet';
             $automationData['auto_assign_subject_type'] = 'box';
-            $automationData['auto_assign_status']       = true;
+            $automationData['auto_assign_status'] = true;
         }
-
 
         return $automationData;
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Product Dimension')
             ->where('Product ID', $id)->first();
     }
-
 }

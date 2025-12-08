@@ -29,7 +29,6 @@ class FetchRetinaFulfilmentCustomerClientFromWooCommerce extends RetinaAction
         GetRetinaCustomerClientFromWooCommerce::run($wooCommerceUser);
     }
 
-
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
         $customerSalesChannel = $request->route('customerSalesChannel');
@@ -38,7 +37,6 @@ class FetchRetinaFulfilmentCustomerClientFromWooCommerce extends RetinaAction
         }
 
     }
-
 
     /**
      * @throws \Throwable

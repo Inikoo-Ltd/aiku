@@ -28,13 +28,12 @@ class GroupHydrateSalesIntervals implements ShouldBeUnique
         return $this->getUniqueJobWithInterval($group, $intervals, $doPreviousPeriods);
     }
 
-
     public function handle(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
         $stats = [];
 
         $queryBase = Invoice::where('in_process', false)->where('group_id', $group->id)->selectRaw('sum(grp_net_amount) as sum_aggregate');
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'sales_grp_currency_',
@@ -42,10 +41,6 @@ class GroupHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-
-
         $group->salesIntervals()->update($stats);
     }
-
-
 }

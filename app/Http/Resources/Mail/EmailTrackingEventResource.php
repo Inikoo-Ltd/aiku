@@ -16,6 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class EmailTrackingEventResource extends JsonResource
 {
     use WithLogRequest;
+
     public function toArray($request): array
     {
         return [
@@ -24,7 +25,7 @@ class EmailTrackingEventResource extends JsonResource
             'date' => $this->date,
             'device' => $this->device ? [
                 'tooltip' => __($this->device),
-                'icon' => $this->getDeviceIcon($this->device)
+                'icon' => $this->getDeviceIcon($this->device),
             ] : [],
         ];
     }

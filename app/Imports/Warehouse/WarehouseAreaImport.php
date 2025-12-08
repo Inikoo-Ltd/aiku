@@ -19,16 +19,16 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class WarehouseAreaImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class WarehouseAreaImport implements SkipsOnFailure, ToCollection, WithEvents, WithHeadingRow, WithValidation
 {
     use WithImport;
 
-
     protected Warehouse $scope;
+
     public function __construct(Warehouse $warehouse, Upload $upload)
     {
         $this->upload = $upload;
-        $this->scope  = $warehouse;
+        $this->scope = $warehouse;
     }
 
     public function storeModel($row, $uploadRecord): void
@@ -43,7 +43,7 @@ class WarehouseAreaImport implements ToCollection, WithHeadingRow, SkipsOnFailur
         $modelData = $row->only($fields)->all();
 
         data_set($modelData, 'data.bulk_import', [
-            'id'   => $this->upload->id,
+            'id' => $this->upload->id,
             'type' => 'Upload',
         ]);
 
@@ -61,12 +61,11 @@ class WarehouseAreaImport implements ToCollection, WithHeadingRow, SkipsOnFailur
         }
     }
 
-
     public function rules(): array
     {
         return [
             'code' => ['required'],
-            'name' => ['required']
+            'name' => ['required'],
         ];
     }
 }

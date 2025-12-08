@@ -17,8 +17,8 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
-use ZipStream\ZipStream;
 use Sentry\Laravel\Facade as Sentry;
+use ZipStream\ZipStream;
 
 class ProductZipExport
 {
@@ -29,26 +29,25 @@ class ProductZipExport
      */
     public function handle(Shop|ProductCategory|Product|Collection $parent, string $filename): void
     {
-        $zip         = new ZipStream(
+        $zip = new ZipStream(
             sendHttpHeaders: true,
             outputName: $filename,
         );
 
-
         $imagesData = $this->getImages($parent);
-
 
         foreach ($imagesData as $imageId => $imageData) {
             $image = $imageData['image'];
-            $disk  = Storage::disk($image->disk);
-            if (!$disk->exists($image->getPathRelativeToRoot())) {
+            $disk = Storage::disk($image->disk);
+            if (! $disk->exists($image->getPathRelativeToRoot())) {
                 unset($imagesData[$imageId]);
+
                 continue;
             }
 
             try {
                 $stream = $disk->readStream($image->getPathRelativeToRoot());
-                if (!$stream) {
+                if (! $stream) {
                     continue;
                 }
 
@@ -58,9 +57,9 @@ class ProductZipExport
             } catch (\Exception $e) {
                 Sentry::captureException($e, [
                     'extra' => [
-                        'image_id'  => $imageId,
-                        'file_path' => $image->getPathRelativeToRoot()
-                    ]
+                        'image_id' => $imageId,
+                        'file_path' => $image->getPathRelativeToRoot(),
+                    ],
                 ]);
             } finally {
                 if (isset($stream) && is_resource($stream)) {
@@ -71,7 +70,6 @@ class ProductZipExport
 
         $zip->finish();
     }
-
 
     public function getImages(Shop|ProductCategory|Product|Collection $parent): array
     {
@@ -88,10 +86,11 @@ class ProductZipExport
             $product = $parent;
             foreach ($product->images as $image) {
                 $imagesData[$image->id] = [
-                    'filename' => strtolower($product->code) . '_' . $image->id . '.' . $image->extension,
-                    'image'    => $image
+                    'filename' => strtolower($product->code).'_'.$image->id.'.'.$image->extension,
+                    'image' => $image,
                 ];
             }
+
             return $imagesData;
         } elseif ($parent instanceof Collection) {
             $products = $parent->products
@@ -104,8 +103,8 @@ class ProductZipExport
             $product = $product;
             foreach ($product->images as $image) {
                 $imagesData[$image->id] = [
-                    'filename' => strtolower($product->code) . '_' . $image->id . '.' . $image->extension,
-                    'image'    => $image
+                    'filename' => strtolower($product->code).'_'.$image->id.'.'.$image->extension,
+                    'image' => $image,
                 ];
             }
         }

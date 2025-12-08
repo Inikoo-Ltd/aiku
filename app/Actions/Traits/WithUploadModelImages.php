@@ -33,17 +33,16 @@ trait WithUploadModelImages
 {
     use WithAttachMediaToModel;
 
-
     public function uploadImages(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|MasterCollection $model, string $scope, array $modelData): array
     {
         $medias = [];
 
         foreach ($modelData['images'] as $imageFile) {
             $imageData = [
-                'path'         => $imageFile->getPathName(),
+                'path' => $imageFile->getPathName(),
                 'originalName' => $imageFile->getClientOriginalName(),
-                'extension'    => $imageFile->guessClientExtension(),
-                'checksum'     => md5_file($imageFile->getPathName()),
+                'extension' => $imageFile->guessClientExtension(),
+                'checksum' => md5_file($imageFile->getPathName()),
             ];
 
             $media = StoreMediaFromFile::run($model, $imageData, $scope);
@@ -60,8 +59,8 @@ trait WithUploadModelImages
     public function imageUploadRules(): array
     {
         return [
-            'images'   => ['required', 'array'],
-            'images.*' => ["mimes:jpg,png,jpeg,gif", "max:50000"],
+            'images' => ['required', 'array'],
+            'images.*' => ['mimes:jpg,png,jpeg,gif', 'max:50000'],
         ];
     }
 }

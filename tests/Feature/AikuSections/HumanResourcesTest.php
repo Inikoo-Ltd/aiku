@@ -52,7 +52,7 @@ beforeAll(function () {
 
 beforeEach(function () {
     $this->organisation = createOrganisation();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
+    $this->adminGuest = createAdminGuest($this->organisation->group);
 
     Config::set(
         'inertia.testing.page_paths',
@@ -72,9 +72,9 @@ test('check seeded job positions', function () {
 
 test('create working place successful', function () {
     $modelData = [
-        'name'    => 'office',
-        'type'    => WorkplaceTypeEnum::BRANCH,
-        'address' => Address::factory()->definition()
+        'name' => 'office',
+        'type' => WorkplaceTypeEnum::BRANCH,
+        'address' => Address::factory()->definition(),
     ];
 
     $workplace = StoreWorkplace::make()->action($this->organisation, $modelData);
@@ -83,15 +83,14 @@ test('create working place successful', function () {
         ->and($this->organisation->humanResourcesStats->number_workplaces_type_branch)->toBe(1)
         ->and($this->organisation->humanResourcesStats->number_workplaces_type_home)->toBe(0);
 
-
     return $workplace;
 });
 
 test('update working place successful', function ($createdWorkplace) {
     $arrayData = [
-        'name'    => 'vica smith',
-        'type'    => WorkplaceTypeEnum::HOME,
-        'address' => Address::factory()->definition()
+        'name' => 'vica smith',
+        'type' => WorkplaceTypeEnum::HOME,
+        'address' => Address::factory()->definition(),
     ];
 
     $workplace = UpdateWorkplace::run($createdWorkplace, $arrayData);
@@ -113,20 +112,20 @@ test('create working place by command', function () {
 
 test('create employee successful', function () {
     $arrayData = [
-        'alias'               => 'artha',
-        'contact_name'        => 'artha',
+        'alias' => 'artha',
+        'contact_name' => 'artha',
         'employment_start_at' => '2019-01-01',
-        'date_of_birth'       => '2000-01-01',
-        'job_title'           => 'director',
-        'state'               => EmployeeStateEnum::HIRED,
-        'positions'           => ['acc-m'],
-        'worker_number'       => '1234567890',
-        'work_email'          => null,
-        'email'               => null,
-        'username'            => null,
-        'type'                => EmployeeTypeEnum::EMPLOYEE,
+        'date_of_birth' => '2000-01-01',
+        'job_title' => 'director',
+        'state' => EmployeeStateEnum::HIRED,
+        'positions' => ['acc-m'],
+        'worker_number' => '1234567890',
+        'work_email' => null,
+        'email' => null,
+        'username' => null,
+        'type' => EmployeeTypeEnum::EMPLOYEE,
     ];
-    $employee  = StoreEmployee::make()->action($this->organisation, $arrayData);
+    $employee = StoreEmployee::make()->action($this->organisation, $arrayData);
 
     expect($employee)->toBeInstanceOf(Employee::class)
         ->and($employee->stats->number_job_positions)->toBe(0)
@@ -145,10 +144,10 @@ test('add job position to employee', function (Employee $employee) {
     UpdateEmployee::make()->action($employee, [
         'job_positions' => [
             [
-                'slug'   => $jobPosition->slug,
-                'scopes' => []
-            ]
-        ]
+                'slug' => $jobPosition->slug,
+                'scopes' => [],
+            ],
+        ],
     ]);
     $jobPosition->refresh();
     $employee->refresh();
@@ -156,13 +155,12 @@ test('add job position to employee', function (Employee $employee) {
         ->and($jobPosition->stats->number_employees)->toBe(1);
 })->depends('create employee successful');
 
-
 test('update employees successful', function ($lastEmployee) {
     $arrayData = [
-        'contact_name'  => 'vica',
+        'contact_name' => 'vica',
         'date_of_birth' => '2019-01-01',
-        'job_title'     => 'director',
-        'state'         => EmployeeStateEnum::WORKING
+        'job_title' => 'director',
+        'state' => EmployeeStateEnum::WORKING,
     ];
 
     $updatedEmployee = UpdateEmployee::run($lastEmployee, $arrayData);
@@ -193,11 +191,10 @@ test('create clocking machines', function ($workplace) {
     return $clockingMachine;
 })->depends('create working place successful');
 
-
 test('update clocking machines', function ($createdClockingMachine) {
     $arrayData = [
         'name' => 'XYZ',
-        'type' => ClockingMachineTypeEnum::BIOMETRIC
+        'type' => ClockingMachineTypeEnum::BIOMETRIC,
     ];
 
     $updatedClockingMachine = UpdateClockingMachine::make()->action($createdClockingMachine, $arrayData);
@@ -239,9 +236,9 @@ test('can show list of workplaces', function () {
 
 test('can show workplace', function () {
     $workplace = Workplace::first();
-    $response  = get(route('grp.org.hr.workplaces.show', [$this->organisation->slug, $workplace->slug]));
+    $response = get(route('grp.org.hr.workplaces.show', [$this->organisation->slug, $workplace->slug]));
 
-    $response->assertInertia(function (AssertableInertia $page) use ($workplace) {
+    $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/HumanResources/Workplace')
             ->has('breadcrumbs', 3);
@@ -346,7 +343,6 @@ test('hydrate clocking machine', function (ClockingMachine $clockingMachine) {
     HydrateClockingMachine::run($clockingMachine);
     $this->artisan('hydrate:clocking-machine '.$this->organisation->slug)->assertExitCode(0);
 })->depends('create clocking machines')->todo();
-
 
 test('employees notes search', function () {
     $this->artisan('search:employees')->assertExitCode(0);

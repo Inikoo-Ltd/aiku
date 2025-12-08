@@ -9,8 +9,8 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Catalogue\ProductCategory;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property string $slug
@@ -28,7 +28,6 @@ use App\Models\Catalogue\ProductCategory;
  * @property mixed $shop_name
  * @property mixed $department_code
  * @property mixed $department_name
- *
  */
 class WorkshopSubDepartmentsResource extends JsonResource
 {
@@ -42,30 +41,31 @@ class WorkshopSubDepartmentsResource extends JsonResource
         } elseif (is_array($this->web_images)) {
             $webImages = $this->web_images;
         }
+
         return [
-            'id'                 => $this->id,
-            'name'               => $this->name,
-            'slug'               => $this->slug,
-            'image'              => $subDepartment->imageSources(720, 480),
-            'code'              => $this->code,
-            'web_images'        => $webImages,
-            'description'       => $this->description,
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'image' => $subDepartment->imageSources(720, 480),
+            'code' => $this->code,
+            'web_images' => $webImages,
+            'description' => $this->description,
             'description_extra' => $this->description_extra,
             'description_title' => $this->description_title,
-            'created_at'        => $this->created_at,
-            'updated_at'        => $this->updated_at,
-            'families_route'    => [
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'families_route' => [
                 'name' => 'grp.json.workshop.families.index',
                 'parameters' => [
-                    'subDepartment' => $this->slug
-                ]
+                    'subDepartment' => $this->slug,
+                ],
             ],
-            'collections_route'      => [
+            'collections_route' => [
                 'name' => 'grp.json.product_category.collections.index',
                 'parameters' => [
-                    'productCategory'   => $this->slug
-                ]
-            ]
+                    'productCategory' => $this->slug,
+                ],
+            ],
         ];
     }
 }

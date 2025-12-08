@@ -30,7 +30,6 @@ class EditRetinaPallet extends RetinaAction
         return PalletResource::collection($pallet);
     }
 
-
     public function htmlResponse(Pallet $pallet, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -40,49 +39,49 @@ class EditRetinaPallet extends RetinaAction
                     $pallet,
                     $request->route()->getName()
                 ),
-                'title'       => __('Edit pallet'),
-                'pageHead'    => [
-                    'icon'      => 'fal fa-pallet',
-                    'model'     => __('Edit Pallet'),
-                    'title'      => $pallet->reference,
-                    'actions'   => [
+                'title' => __('Edit pallet'),
+                'pageHead' => [
+                    'icon' => 'fal fa-pallet',
+                    'model' => __('Edit Pallet'),
+                    'title' => $pallet->reference,
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
-                    ]
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
+                    ],
                 ],
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Properties'),
-                            'icon'   => ['fal', 'fa-narwhal'],
+                            'label' => __('Properties'),
+                            'icon' => ['fal', 'fa-narwhal'],
                             'fields' => [
                                 'customer_reference' => [
-                                    'type'    => 'input',
-                                    'label'   => __('customer reference'),
-                                    'value'   => $pallet->customer_reference,
-                                    'required' => false
+                                    'type' => 'input',
+                                    'label' => __('customer reference'),
+                                    'value' => $pallet->customer_reference,
+                                    'required' => false,
                                 ],
                                 'notes' => [
-                                    'type'    => 'input',
-                                    'label'   => __('notes'),
-                                    'value'   => $pallet->notes,
-                                    'required' => false
+                                    'type' => 'input',
+                                    'label' => __('notes'),
+                                    'value' => $pallet->notes,
+                                    'required' => false,
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'retina.models.pallet.update',
-                            'parameters' => [$pallet->id]
+                            'name' => 'retina.models.pallet.update',
+                            'parameters' => [$pallet->id],
                         ],
-                    ]
+                    ],
                 ],
             ]
         );

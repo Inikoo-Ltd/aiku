@@ -52,6 +52,7 @@ class GroupHydrateInvoiceTransactions implements ShouldBeUnique
 
         $group->orderingStats()->update($stats);
     }
+
     public string $commandSignature = 'hydrate:group_invoice_transactions';
 
     public function asCommand($command): void
@@ -59,6 +60,4 @@ class GroupHydrateInvoiceTransactions implements ShouldBeUnique
         $group = Group::first();
         $this->handle($group);
     }
-
-
 }

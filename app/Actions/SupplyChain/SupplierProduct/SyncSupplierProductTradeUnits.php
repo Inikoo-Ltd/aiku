@@ -19,6 +19,7 @@ class SyncSupplierProductTradeUnits
     {
 
         $supplierProduct->tradeUnits()->sync($tradeUnitsData);
+
         return $supplierProduct;
     }
 }

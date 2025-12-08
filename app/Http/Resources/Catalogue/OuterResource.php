@@ -17,11 +17,12 @@ class OuterResource extends JsonResource
     {
         /** @var Product $outer */
         $outer = $this;
+
         return [
-            'slug'       => $outer->slug,
-            'code'       => $outer->code,
-            'name'       => $outer->name,
-            'state'      => $outer->state,
+            'slug' => $outer->slug,
+            'code' => $outer->code,
+            'name' => $outer->name,
+            'state' => $outer->state,
             'created_at' => $outer->created_at,
             'updated_at' => $outer->updated_at,
         ];

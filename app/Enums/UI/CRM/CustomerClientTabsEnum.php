@@ -18,13 +18,12 @@ enum CustomerClientTabsEnum: string
 
     case SHOWCASE = 'showcase';
 
-
     public function blueprint(): array
     {
         return match ($this) {
             CustomerClientTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
         };
     }

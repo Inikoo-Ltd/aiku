@@ -32,55 +32,54 @@ class RawMaterialRecordSearch
         $rawMaterial->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'          => $rawMaterial->group_id,
-                'organisation_id'   => $rawMaterial->organisation_id,
+                'group_id' => $rawMaterial->group_id,
+                'organisation_id' => $rawMaterial->organisation_id,
                 'organisation_slug' => $rawMaterial->organisation->slug,
-                'sections'          => ['productions'],
-                'haystack_tier_1'   => trim($rawMaterial->code . ' ' . $stock->code),
-                'result'            => [
-                    'route'      => [
-                        'name'       => 'grp.org.productions.show.crafts.raw_materials.show',
+                'sections' => ['productions'],
+                'haystack_tier_1' => trim($rawMaterial->code.' '.$stock->code),
+                'result' => [
+                    'route' => [
+                        'name' => 'grp.org.productions.show.crafts.raw_materials.show',
                         'parameters' => [
                             'organisation' => $rawMaterial->organisation->slug,
-                            'production'     => $rawMaterial->production->slug,
-                            'rawMaterial'     => $rawMaterial->slug,
-                        ]
+                            'production' => $rawMaterial->production->slug,
+                            'rawMaterial' => $rawMaterial->slug,
+                        ],
                     ],
                     'description' => [
-                        'label'     => $stock->name . ' (' . $rawMaterial->description . ')',
+                        'label' => $stock->name.' ('.$rawMaterial->description.')',
                     ],
                     'code' => [
-                        'label' => $rawMaterial->code
+                        'label' => $rawMaterial->code,
                     ],
-                    'icon'  => [
+                    'icon' => [
                         'icon' => 'fal fa-drone',
                     ],
-                    'meta'  => [
+                    'meta' => [
                         [
-                            'label'   => $rawMaterial->state->labels()[$rawMaterial->state->value],
-                            'tooltip' => __('State')
+                            'label' => $rawMaterial->state->labels()[$rawMaterial->state->value],
+                            'tooltip' => __('State'),
                         ],
                         [
-                            'label'   => $rawMaterial->stock_status->labels()[$rawMaterial->stock_status->value],
-                            'tooltip' => __('Stock Status')
+                            'label' => $rawMaterial->stock_status->labels()[$rawMaterial->stock_status->value],
+                            'tooltip' => __('Stock Status'),
                         ],
                         [
-                            'label'   => $rawMaterial->type,
-                            'tooltip' => __('Type')
+                            'label' => $rawMaterial->type,
+                            'tooltip' => __('Type'),
                         ],
                         [
-                            'label'   => $rawMaterial->unit->labels()[$rawMaterial->unit->value] . ' ' . $rawMaterial->unit_cost,
-                            'tooltip' => __('Stock (Units)')
+                            'label' => $rawMaterial->unit->labels()[$rawMaterial->unit->value].' '.$rawMaterial->unit_cost,
+                            'tooltip' => __('Stock (Units)'),
                         ],
                         [
-                            'type'      => 'number',
-                            'label'     => __('Quantity on Location') . ': ',
-                            'number'    => $rawMaterial->quantity_on_location,
+                            'type' => 'number',
+                            'label' => __('Quantity on Location').': ',
+                            'number' => $rawMaterial->quantity_on_location,
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }
-
 }

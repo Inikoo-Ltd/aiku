@@ -22,21 +22,20 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class SubmitRetinaOrder extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     public function handle(Order $order): Order
     {
         $order = SubmitOrder::run($order);
 
-
-        if (!$order->customer_id && !$order->platform) {
+        if (! $order->customer_id && ! $order->platform) {
             return $order;
         }
 
         $customerSalesChannel = CustomerSalesChannel::where('customer_id', $order->customer_id)
-        ->where('platform_id', $order->platform_id)
-        ->first();
+            ->where('platform_id', $order->platform_id)
+            ->first();
 
         CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
 

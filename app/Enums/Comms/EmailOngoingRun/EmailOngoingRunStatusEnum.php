@@ -14,7 +14,6 @@ enum EmailOngoingRunStatusEnum: string
 {
     use EnumHelperTrait;
 
-
     case IN_PROCESS = 'in_process';
     case ACTIVE = 'active';
     case SUSPENDED = 'suspended';
@@ -23,8 +22,8 @@ enum EmailOngoingRunStatusEnum: string
     {
         return [
             'in_process' => __('In Process'),
-            'active'     => __('Active'),
-            'suspended'  => __('Suspended')
+            'active' => __('Active'),
+            'suspended' => __('Suspended'),
         ];
     }
 
@@ -34,22 +33,21 @@ enum EmailOngoingRunStatusEnum: string
             'in_process' => [
 
                 'tooltip' => __('In Process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-indigo-500'
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-indigo-500',
             ],
-            'active'     => [
+            'active' => [
 
                 'tooltip' => __('Active'),
-                'icon'    => 'fal fa-paper-plane',
-                'class'   => 'animate-pulse'
+                'icon' => 'fal fa-paper-plane',
+                'class' => 'animate-pulse',
             ],
-            'suspended'  => [
+            'suspended' => [
 
                 'tooltip' => __('Suspended'),
-                'icon'    => 'fal fa-paper-plane',
-                'class'   => 'text-red-600'
-            ]
-
+                'icon' => 'fal fa-paper-plane',
+                'class' => 'text-red-600',
+            ],
 
         ];
     }

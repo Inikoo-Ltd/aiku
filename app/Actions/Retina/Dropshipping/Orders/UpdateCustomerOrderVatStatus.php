@@ -9,16 +9,16 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Actions\Helpers\TaxNumber\ValidateEuropeanTaxNumber;
+use App\Actions\Helpers\TaxNumber\ValidateGBTaxNumber;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
+use App\Http\Resources\Sales\OrderResource;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Helpers\TaxNumber\ValidateEuropeanTaxNumber;
-use App\Actions\Helpers\TaxNumber\ValidateGBTaxNumber;
-use App\Actions\Helpers\TaxCategory\GetTaxCategory;
-use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Http\Resources\Sales\OrderResource;
 use Sentry;
 
 class UpdateCustomerOrderVatStatus extends RetinaAction
@@ -45,7 +45,7 @@ class UpdateCustomerOrderVatStatus extends RetinaAction
                 isRe: $order->customer->is_re,
             )->id;
         } catch (Exception $e) {
-            Log::error("Failed to update & fetch Tax Category on order due to:", $e);
+            Log::error('Failed to update & fetch Tax Category on order due to:', $e);
             Sentry::captureException($e);
         } finally {
             if ($taxCategory) {

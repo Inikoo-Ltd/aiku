@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('top_up_payment_api_points', function (Blueprint $table) {
@@ -20,7 +21,6 @@ return new class () extends Migration {
             $table->string('state')->default(TopUpPaymentApiPointStateEnum::IN_PROCESS)->index();
         });
     }
-
 
     public function down(): void
     {

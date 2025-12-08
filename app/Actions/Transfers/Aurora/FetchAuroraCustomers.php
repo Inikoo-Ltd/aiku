@@ -31,11 +31,10 @@ class FetchAuroraCustomers extends FetchAuroraAction
 
     public string $commandSignature = 'fetch:customers {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--w|with=* : Accepted values: products orders web_users favourites polls full} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Customer
     {
         $organisation = $organisationSource->getOrganisation();
-        $with         = $this->with;
+        $with = $this->with;
 
         $customerData = $organisationSource->fetchCustomer($organisationSourceId);
 
@@ -78,7 +77,6 @@ class FetchAuroraCustomers extends FetchAuroraAction
                         Arr::except($customerData['customer'], ['fetched_at', 'last_fetched_at', 'source_id'])
                     );
 
-
                     $this->recordNew($organisationSource);
                     $sourceData = explode(':', $customer->source_id);
                     DB::connection('aurora')->table('Customer Dimension')
@@ -90,7 +88,6 @@ class FetchAuroraCustomers extends FetchAuroraAction
                     return null;
                 }
             }
-
 
             $sourceData = explode(':', $customer->source_id);
 
@@ -122,14 +119,13 @@ class FetchAuroraCustomers extends FetchAuroraAction
 
                 $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
-                if (!$customer->customerSalesChannels()->where('platform_id', $platform->id)->exists()) {
+                if (! $customer->customerSalesChannels()->where('platform_id', $platform->id)->exists()) {
                     StoreCustomerSalesChannel::make()->action($customer, $platform, [
-                        'reference' => (string) $customer->id
+                        'reference' => (string) $customer->id,
                     ]);
                 }
 
             }
-
 
             if (in_array('orders', $with) || in_array('full', $with)) {
                 foreach (
@@ -142,7 +138,6 @@ class FetchAuroraCustomers extends FetchAuroraAction
                     FetchAuroraOrders::run($organisationSource, $order->source_id, true);
                 }
             }
-
 
             if (in_array('web_users', $with) || in_array('full', $with)) {
                 foreach (
@@ -179,7 +174,6 @@ class FetchAuroraCustomers extends FetchAuroraAction
 
         return null;
     }
-
 
     public function getModelsQuery(): Builder
     {

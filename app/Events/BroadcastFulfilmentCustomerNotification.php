@@ -24,41 +24,43 @@ class BroadcastFulfilmentCustomerNotification implements ShouldQueue
     use SerializesModels;
 
     public array $data;
+
     public Group $group;
+
     public PalletDelivery|PalletReturn $parent;
 
     public function __construct(Group $group, PalletDelivery|PalletReturn $parent)
     {
         $this->parent = $parent;
-        $this->group  = $group;
-        $this->data   = [
+        $this->group = $group;
+        $this->data = [
             'title' => $parent->state->notifications($parent->reference)[$parent->state->value]['title'],
-            'body'  => $parent->state->notifications($parent->reference)[$parent->state->value]['subtitle'],
-            'type'  => class_basename($parent),
-            'slug'  => $parent->slug,
-            'id'    => $parent->id,
+            'body' => $parent->state->notifications($parent->reference)[$parent->state->value]['subtitle'],
+            'type' => class_basename($parent),
+            'slug' => $parent->slug,
+            'id' => $parent->id,
             'route' => match (class_basename($parent)) {
                 'PalletDelivery' => route('grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show', [
-                    'organisation'       => $parent->organisation->slug,
-                    'fulfilment'         => $parent->fulfilment->slug,
+                    'organisation' => $parent->organisation->slug,
+                    'fulfilment' => $parent->fulfilment->slug,
                     'fulfilmentCustomer' => $parent->fulfilmentCustomer->slug,
-                    $parent->slug
+                    $parent->slug,
                 ]),
                 'PalletReturn' => route('grp.org.fulfilments.show.crm.customers.show.pallet_returns.show', [
-                    'organisation'       => $parent->organisation->slug,
-                    'fulfilment'         => $parent->fulfilment->slug,
+                    'organisation' => $parent->organisation->slug,
+                    'fulfilment' => $parent->fulfilment->slug,
                     'fulfilmentCustomer' => $parent->fulfilmentCustomer->slug,
-                    $parent->slug
+                    $parent->slug,
                 ]),
                 default => null
-            }
+            },
         ];
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("grp.".$this->group->id.".fulfilmentCustomer.{$this->parent->fulfilmentCustomer->id}")
+            new PrivateChannel('grp.'.$this->group->id.".fulfilmentCustomer.{$this->parent->fulfilmentCustomer->id}"),
         ];
     }
 

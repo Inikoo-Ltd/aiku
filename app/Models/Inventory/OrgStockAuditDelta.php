@@ -33,9 +33,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Inventory\OrgStockAudit|null $orgStockAudit
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Inventory\Warehouse $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockAuditDelta newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockAuditDelta newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockAuditDelta query()
+ *
  * @mixin \Eloquent
  */
 class OrgStockAuditDelta extends Model
@@ -45,18 +47,17 @@ class OrgStockAuditDelta extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'type'       => OrgStockAuditDeltaTypeEnum::class,
+        'type' => OrgStockAuditDeltaTypeEnum::class,
         'audited_at' => 'datetime',
-        'data'       => 'array'
+        'data' => 'array',
     ];
 
     protected $attributes = [
-        'data' => '{}'
+        'data' => '{}',
     ];
 
     public function orgStockAudit(): BelongsTo
     {
         return $this->belongsTo(OrgStockAudit::class);
     }
-
 }

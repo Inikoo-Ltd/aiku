@@ -76,7 +76,7 @@ class IndexExternalLinks extends OrgAction
 
     public function tableStructure(Website|Webpage|WebBlock $parent, ?array $modelOperations = null, $prefix = null, $bucket = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -88,7 +88,7 @@ class IndexExternalLinks extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                        'title'       => __("No external links found"),
+                        'title' => __('No external links found'),
                         'description' => __('Nor any website exist 🤭'),
                     ],
                 )

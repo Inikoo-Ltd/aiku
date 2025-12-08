@@ -21,18 +21,18 @@ use Illuminate\Support\Collection;
 trait WithUploadWebImage
 {
     use WithAttachMediaToModel;
+
     public function handle(WebBlock|Website|Group|Announcement $model, string $scope, array $modelData): Collection
     {
         $medias = [];
 
         foreach ($modelData['images'] as $imageFile) {
 
-
             $imageData = [
-                'path'         => $imageFile->getPathName(),
+                'path' => $imageFile->getPathName(),
                 'originalName' => $imageFile->getClientOriginalName(),
-                'extension'    => $imageFile->guessClientExtension(),
-                'checksum'     => md5_file($imageFile->getPathName())
+                'extension' => $imageFile->guessClientExtension(),
+                'checksum' => md5_file($imageFile->getPathName()),
             ];
 
             $media = StoreMediaFromFile::run($model, $imageData, $scope);
@@ -41,15 +41,14 @@ trait WithUploadWebImage
 
         }
 
-
         return collect($medias);
     }
 
     public function rules(): array
     {
         return [
-            'images'   => ['required'],
-            'images.*' => ["mimes:jpg,png,jpeg,gif,avif,webp", "max:50000"],
+            'images' => ['required'],
+            'images.*' => ['mimes:jpg,png,jpeg,gif,avif,webp', 'max:50000'],
         ];
     }
 

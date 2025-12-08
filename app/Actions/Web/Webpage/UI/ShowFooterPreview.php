@@ -11,11 +11,11 @@ namespace App\Actions\Web\Webpage\UI;
 use App\Actions\OrgAction;
 use App\Actions\Web\Website\GetWebsiteWorkshopFooter;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Illuminate\Support\Arr;
 
 class ShowFooterPreview extends OrgAction
 {

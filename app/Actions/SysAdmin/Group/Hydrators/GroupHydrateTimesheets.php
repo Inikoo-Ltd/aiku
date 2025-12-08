@@ -51,5 +51,4 @@ class GroupHydrateTimesheets implements ShouldBeUnique
             $this->handle($group);
         }
     }
-
 }

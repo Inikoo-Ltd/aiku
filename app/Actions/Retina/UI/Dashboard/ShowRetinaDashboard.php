@@ -19,7 +19,6 @@ class ShowRetinaDashboard extends RetinaAction
 {
     use AsAction;
 
-
     public function handle(ActionRequest $request): Response
     {
         $inertiaPage = 'Dashboard/RetinaFulfilmentDashboard';
@@ -37,7 +36,7 @@ class ShowRetinaDashboard extends RetinaAction
             $inertiaPage,
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'data'        => match ($this->shop->type) {
+                'data' => match ($this->shop->type) {
                     ShopTypeEnum::FULFILMENT => GetRetinaFulfilmentHomeData::run($this->fulfilmentCustomer, $request),
                     ShopTypeEnum::DROPSHIPPING => GetRetinaDropshippingHomeData::run($this->customer),
                     ShopTypeEnum::B2B => GetRetinaB2BHomeData::run($this->customer),
@@ -64,7 +63,6 @@ class ShowRetinaDashboard extends RetinaAction
     public function getBreadcrumbs(): array
     {
         return [
-
 
         ];
     }

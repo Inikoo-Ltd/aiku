@@ -18,7 +18,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PalletReturnPalletExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMapping
+class PalletReturnPalletExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     use Exportable;
 
@@ -35,10 +35,12 @@ class PalletReturnPalletExport implements FromQuery, WithHeadings, ShouldAutoSiz
             ->where('state', PalletStateEnum::STORING)
             ->where('fulfilment_customer_id', $this->fulfilmentCustomer->id);
     }
+
     public function map($row): array
     {
         /** @var PalletStoredItem $row */
         $pallet = $row;
+
         return [
             $pallet->reference,
         ];

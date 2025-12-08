@@ -16,44 +16,43 @@ enum PaymentServiceProviderTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE         = 'showcase';
-    case STATS            = 'stats';
+    case SHOWCASE = 'showcase';
+    case STATS = 'stats';
     case PAYMENT_ACCOUNTS = 'payment_accounts';
-    case PAYMENTS         = 'payments';
-    case HISTORY          = 'history';
-    case DATA             = 'data';
-
+    case PAYMENTS = 'payments';
+    case HISTORY = 'history';
+    case DATA = 'data';
 
     public function blueprint(): array
     {
         return match ($this) {
-            PaymentServiceProviderTabsEnum::STATS             => [
+            PaymentServiceProviderTabsEnum::STATS => [
                 'title' => __('Stats'),
-                'icon'  => 'fal fa-chart-line',
+                'icon' => 'fal fa-chart-line',
             ],
             PaymentServiceProviderTabsEnum::PAYMENT_ACCOUNTS => [
                 'title' => __('Payment accounts'),
-                'icon'  => 'fal fa-money-check-alt',
+                'icon' => 'fal fa-money-check-alt',
             ],
-            PaymentServiceProviderTabsEnum::PAYMENTS     => [
+            PaymentServiceProviderTabsEnum::PAYMENTS => [
                 'title' => __('Payments'),
-                'icon'  => 'fal fa-coins',
+                'icon' => 'fal fa-coins',
             ],
-            PaymentServiceProviderTabsEnum::DATA     => [
+            PaymentServiceProviderTabsEnum::DATA => [
                 'title' => __('Data'),
-                'icon'  => 'fal fa-database',
-                'type'  => 'icon',
+                'icon' => 'fal fa-database',
+                'type' => 'icon',
                 'align' => 'right',
             ],
-            PaymentServiceProviderTabsEnum::HISTORY     => [
-                'title'  => __('history'),
-                'icon'   => 'fal fa-clock',
-                'type'   => 'icon',
-                'align'  => 'right',
+            PaymentServiceProviderTabsEnum::HISTORY => [
+                'title' => __('history'),
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ],
             PaymentServiceProviderTabsEnum::SHOWCASE => [
                 'title' => __('Payment service provider'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
         };
     }

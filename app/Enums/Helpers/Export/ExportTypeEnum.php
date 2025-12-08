@@ -15,6 +15,6 @@ enum ExportTypeEnum: string
     use EnumHelperTrait;
 
     case XLSX = 'xlsx';
-    case CSV  = 'csv';
-    case PDF  = 'pdf';
+    case CSV = 'csv';
+    case PDF = 'pdf';
 }

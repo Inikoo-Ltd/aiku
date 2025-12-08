@@ -39,7 +39,7 @@ class OrganisationHydrateInvoiceIntervals implements ShouldBeUnique
         $stats = [];
 
         $queryBase = Invoice::where('in_process', false)->where('organisation_id', $organisation->id)->where('type', InvoiceTypeEnum::INVOICE)->selectRaw('count(*) as  sum_aggregate');
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'invoices_',
@@ -48,7 +48,7 @@ class OrganisationHydrateInvoiceIntervals implements ShouldBeUnique
         );
 
         $queryBase = Invoice::where('in_process', false)->where('organisation_id', $organisation->id)->where('type', InvoiceTypeEnum::REFUND)->selectRaw(' count(*) as  sum_aggregate');
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'refunds_',
@@ -56,9 +56,6 @@ class OrganisationHydrateInvoiceIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-
         $organisation->orderingIntervals()->update($stats);
     }
-
-
 }

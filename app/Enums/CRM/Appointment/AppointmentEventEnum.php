@@ -16,14 +16,14 @@ enum AppointmentEventEnum: string
 
     case TELEPHONE = 'telephone';
     case IN_PERSON = 'in_person';
-    case CALLBACK  = 'callback';
+    case CALLBACK = 'callback';
 
     public static function labels(): array
     {
         return [
-            'callback'  => 'Callback',
+            'callback' => 'Callback',
             'in_person' => 'In Person',
-            'telephone' => 'Telephone'
+            'telephone' => 'Telephone',
         ];
     }
 }

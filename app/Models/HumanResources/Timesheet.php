@@ -37,26 +37,26 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Model|\Eloquent $subject
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\TimeTracker> $timeTrackers
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Timesheet newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Timesheet newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Timesheet query()
+ *
  * @mixin \Eloquent
  */
 class Timesheet extends Model
 {
     use InOrganisation;
 
-
     protected $casts = [
-        'date'            => 'date',
-        'start_at'        => 'datetime',
-        'end_at'          => 'datetime',
-        'fetched_at'      => 'datetime',
+        'date' => 'date',
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
     protected $guarded = [];
-
 
     public function subject(): MorphTo
     {
@@ -67,5 +67,4 @@ class Timesheet extends Model
     {
         return $this->hasMany(TimeTracker::class);
     }
-
 }

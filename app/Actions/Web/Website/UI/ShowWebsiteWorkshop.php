@@ -30,6 +30,7 @@ class ShowWebsiteWorkshop extends OrgAction
     use WithWebAuthorisation;
 
     private Fulfilment|Shop $parent;
+
     private Fulfilment|Shop $scope;
 
     public function handle(Website $website): Website
@@ -39,29 +40,26 @@ class ShowWebsiteWorkshop extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
-        $this->scope  = $shop;
+        $this->scope = $shop;
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(WebsiteWorkshopTabsEnum::values());
 
         return $website;
     }
 
-
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): Website
     {
-        $this->scope  = $fulfilment;
+        $this->scope = $fulfilment;
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(WebsiteWorkshopTabsEnum::values());
 
         return $this->handle($website);
     }
 
-
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
         $product = $website->shop->productsInStock()->first();
-
 
         $navigation = WebsiteWorkshopTabsEnum::navigation();
 
@@ -109,96 +107,93 @@ class ShowWebsiteWorkshop extends OrgAction
                 fn () => GetWebsiteWorkshopDepartment::run($website)
             );
 
-
-
         $publishRoute = [
-            'method'     => 'patch',
-            'name'       => 'grp.models.website.update',
+            'method' => 'patch',
+            'name' => 'grp.models.website.update',
             'parameters' => [
-                'website' => $website->id
-            ]
+                'website' => $website->id,
+            ],
         ];
 
         if ($this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value) {
             $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.sub_department',
+                'method' => 'post',
+                'name' => 'grp.models.website.publish.sub_department',
                 'parameters' => [
-                    'website' => $website->id
-                ]
+                    'website' => $website->id,
+                ],
             ];
         } elseif ($this->tab == WebsiteWorkshopTabsEnum::FAMILY->value) {
             $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.family',
+                'method' => 'post',
+                'name' => 'grp.models.website.publish.family',
                 'parameters' => [
-                    'website' => $website->id
-                ]
+                    'website' => $website->id,
+                ],
             ];
         } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCT->value) {
             $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.product',
+                'method' => 'post',
+                'name' => 'grp.models.website.publish.product',
                 'parameters' => [
-                    'website' => $website->id
-                ]
+                    'website' => $website->id,
+                ],
             ];
         } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value) {
             $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.products',
+                'method' => 'post',
+                'name' => 'grp.models.website.publish.products',
                 'parameters' => [
-                    'website' => $website->id
-                ]
+                    'website' => $website->id,
+                ],
             ];
         }
 
         return Inertia::render(
             'Org/Web/Workshop/WebsiteWorkshop',
             [
-                'title'       => __("Website's workshop"),
+                'title' => __("Website's workshop"),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                     '('.__('Workshop').')'
                 ),
-                'pageHead'    => [
+                'pageHead' => [
 
                     'title' => __('Workshop'),
                     'model' => __('Website'),
-                    'icon'  =>
-                        [
-                            'icon'  => ['fal', 'drafting-compass'],
-                            'title' => __("Website's workshop")
-                        ],
+                    'icon' => [
+                        'icon' => ['fal', 'drafting-compass'],
+                        'title' => __("Website's workshop"),
+                    ],
 
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exit',
                             'label' => __('Exit workshop'),
                             'route' => [
-                                'name'       => preg_replace('/workshop$/', 'show', $request->route()->getName()),
+                                'name' => preg_replace('/workshop$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
-                            ]
+                            ],
                         ],
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'primary',
-                            'icon'  => ["fas", "fa-save"],
+                            'icon' => ['fas', 'fa-save'],
                             'label' => __('publish'),
-                            'route' => $publishRoute
-                        ]
+                            'route' => $publishRoute,
+                        ],
                     ],
                 ],
 
-                'tabs'     => [
-                    'current'    => $this->tab,
+                'tabs' => [
+                    'current' => $this->tab,
                     'navigation' => $navigation,
                 ],
-                'currency'  => $this->parent instanceof Shop ? CurrencyResource::make($this->parent->currency)->resolve() : null,
+                'currency' => $this->parent instanceof Shop ? CurrencyResource::make($this->parent->currency)->resolve() : null,
                 'settings' => $website->settings,
-                ...$tabs
+                ...$tabs,
             ]
         );
     }
@@ -212,20 +207,11 @@ class ShowWebsiteWorkshop extends OrgAction
             'grp.org.shops.show.web.websites.workshop',
             'grp.org.shops.show.web.websites.workshop.header',
             'grp.org.shops.show.web.websites.workshop.menu',
-            'grp.org.shops.show.web.websites.workshop.footer' =>
+            'grp.org.shops.show.web.websites.workshop.footer' => ShowWebsite::make()->getBreadcrumbs($website, 'grp.org.shops.show.web.websites.show', $routeParameters, suffix: $suffix),
 
-
-            ShowWebsite::make()->getBreadcrumbs($website, 'grp.org.shops.show.web.websites.show', $routeParameters, suffix:$suffix),
-
-
-            'grp.org.fulfilments.show.web.websites.workshop' =>
-
-            ShowWebsite::make()->getBreadcrumbs($website, 'grp.org.fulfilments.show.web.websites.show', $routeParameters, suffix:$suffix),
-
+            'grp.org.fulfilments.show.web.websites.workshop' => ShowWebsite::make()->getBreadcrumbs($website, 'grp.org.fulfilments.show.web.websites.show', $routeParameters, suffix: $suffix),
 
             default => []
         };
     }
-
-
 }

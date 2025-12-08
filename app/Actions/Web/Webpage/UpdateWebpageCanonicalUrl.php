@@ -30,7 +30,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 
     public function getJobUniqueId(Webpage $webpage): string
     {
-        return (string)$webpage->id;
+        return (string) $webpage->id;
     }
 
     public function handle(Webpage $webpage, $updateChildren = true): string
@@ -46,7 +46,6 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $canonicalPath = ltrim($canonicalPath, '/');
 
         $canonicalUrl = 'https://www.'.$webpage->website->domain.'/'.$canonicalPath;
-
 
         $canonicalUrl = $this->trimTrailingSlash($canonicalUrl);
         $canonicalUrl = replaceUrlSubdomain($canonicalUrl, $webpage->website->is_migrating ? 'v2' : 'www');
@@ -123,13 +122,12 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
     {
         /** @var Collection $collection */
         $collection = $webpage->model;
-        if (!$collection) {
+        if (! $collection) {
             return $webpage->url;
         }
 
         $done = false;
-        $url  = '';
-
+        $url = '';
 
         foreach ($collection->parentSubDepartments as $subDepartment) {
             if ($subDepartment->webpage && $subDepartment->webpage->state != WebpageStateEnum::CLOSED) {
@@ -140,7 +138,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
             }
         }
 
-        if (!$done) {
+        if (! $done) {
             foreach ($collection->parentSubDepartments as $department) {
                 if ($department->webpage && $department->webpage->state != WebpageStateEnum::CLOSED) {
                     $url = $this->getProductCategoryCanonicalUrl($department->webpage);
@@ -178,14 +176,13 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         /** @var ProductCategory $productCategory */
         $productCategory = $webpage->model;
 
-        if (!$productCategory) {
+        if (! $productCategory) {
             $productCategory = ProductCategory::withTrashed()->where('id', $webpage->model_id)->first();
         }
 
-        if (!$productCategory) {
+        if (! $productCategory) {
             return $url;
         }
-
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $url = $this->trimTrailingSlash($webpage->url);
@@ -213,7 +210,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 
     protected function getSubDepartmentUrl(ProductCategory $model): string
     {
-        $url           = '';
+        $url = '';
         $subDepartment = $model->subDepartment;
         if ($subDepartment && $subDepartment->webpage && $subDepartment->webpage->state != WebpageStateEnum::CLOSED) {
             $url = $subDepartment->webpage->url;
@@ -224,7 +221,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 
     protected function getDepartmentUrl(ProductCategory $model): string
     {
-        $url        = '';
+        $url = '';
         $department = $model->department;
         if ($department && $department->webpage && $department->webpage->state != WebpageStateEnum::CLOSED) {
             $url = $department->webpage->url;
@@ -235,7 +232,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 
     private function trimTrailingSlash(?string $url): string
     {
-        if (!$url) {
+        if (! $url) {
             return '';
         }
         // Preserve root '/'
@@ -266,7 +263,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $processed = 0;
 
         // Determine total for the progress bar
-        $total       = $query->count();
+        $total = $query->count();
         $progressBar = $command->getOutput()->createProgressBar($total);
         $progressBar->setRedrawFrequency(1);
         $progressBar->start();
@@ -291,10 +288,9 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $command->newLine(2);
 
         $duration = microtime(true) - $startTime;
-        $human    = gmdate('H:i:s', (int)$duration);
+        $human = gmdate('H:i:s', (int) $duration);
         $command->info("Processed $processed webpages in $human.");
 
         return 0;
     }
-
 }

@@ -22,7 +22,6 @@ class StoreRetinaStoredItemsToReturn extends RetinaAction
         return StoreStoredItemsToReturn::run($palletReturn, $modelData);
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -39,27 +38,29 @@ class StoreRetinaStoredItemsToReturn extends RetinaAction
     public function rules(): array
     {
         return [
-            'stored_items.*.quantity' => ['required', 'integer']
+            'stored_items.*.quantity' => ['required', 'integer'],
         ];
     }
 
     public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->initialisation($request);
+
         return $this->handle($palletReturn, $this->validatedData);
     }
 
     public function action(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisationFulfilmentActions($palletReturn->fulfilmentCustomer, $modelData);
+
         return $this->handle($palletReturn, $this->validatedData);
     }
 
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): RedirectResponse
     {
         return Redirect::route('retina.fulfilment.storage.pallet_returns.show', [
-            'palletReturn'     => $palletReturn->slug
+            'palletReturn' => $palletReturn->slug,
         ]);
     }
 }

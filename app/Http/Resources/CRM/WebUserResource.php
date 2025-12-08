@@ -21,22 +21,22 @@ class WebUserResource extends JsonResource
         $webUser = $this;
 
         return [
-            'slug'       => $webUser->slug,
-            'username'   => $webUser->username,
+            'slug' => $webUser->slug,
+            'username' => $webUser->username,
             'contact_name' => $webUser->contact_name,
-            'status'     => $webUser->status,
-            'email'      => $webUser->email,
-            'is_root'    => $webUser->is_root,
+            'status' => $webUser->status,
+            'email' => $webUser->email,
+            'is_root' => $webUser->is_root,
             'last_login' => $webUser->stats->last_login_at ?? 'no data',
             'created_at' => $webUser->created_at,
             'updated_at' => $webUser->updated_at,
-            'customer'   => CustomersResource::make($webUser->customer),
+            'customer' => CustomersResource::make($webUser->customer),
             'delete_route' => [
                 'name' => 'grp.models.web-user.delete',
                 'parameters' => [
-                    'webUser' => $this->id
-                ]
-            ]
+                    'webUser' => $this->id,
+                ],
+            ],
         ];
     }
 }

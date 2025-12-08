@@ -29,68 +29,68 @@ class CreateOrganisation extends InertiaAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('New organisation'),
-                'pageHead'    => [
-                    'title'        => __('New organisation'),
-                    'actions'      => [
+                'title' => __('New organisation'),
+                'pageHead' => [
+                    'title' => __('New organisation'),
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.sysadmin.guests.index'
+                                'name' => 'grp.sysadmin.guests.index',
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => [
                         [
                             'title' => __('Information'),
 
                             'fields' => [
-                                'code'             => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'required' => true
-                                ],
-                                'name'             => [
-                                    'type'     => 'input',
-                                    'label'    => __('name'),
-                                    'required' => true
-                                ],
-                                'email'        => [
-                                    'type'     => 'input',
-                                    'label'    => __('email'),
-                                    'required' => true
-                                ],
-                                'currency_id'  => [
-                                    'label'    => __('currency'),
-                                    'type'     => 'select',
+                                'code' => [
+                                    'type' => 'input',
+                                    'label' => __('code'),
                                     'required' => true,
-                                    'value'    => null,
-                                    'options'  => Options::forModels(Currency::all())
                                 ],
-                                'country_id'   => [
-                                    'label'    => __('country'),
-                                    'type'     => 'select',
+                                'name' => [
+                                    'type' => 'input',
+                                    'label' => __('name'),
                                     'required' => true,
-                                    'value'    => null,
-                                    'options'  => Options::forModels(Country::all())
                                 ],
-                                'language_id'  => [
-                                    'label'    => __('language'),
-                                    'type'     => 'select',
+                                'email' => [
+                                    'type' => 'input',
+                                    'label' => __('email'),
                                     'required' => true,
-                                    'value'    => null,
-                                    'options'  => Options::forModels(Language::all())
                                 ],
-                                'timezone_id'  => [
-                                    'label'    => __('timezone'),
-                                    'type'     => 'select',
+                                'currency_id' => [
+                                    'label' => __('currency'),
+                                    'type' => 'select',
                                     'required' => true,
-                                    'value'    => null,
-                                    'options'  => Options::forModels(Timezone::all())
+                                    'value' => null,
+                                    'options' => Options::forModels(Currency::all()),
+                                ],
+                                'country_id' => [
+                                    'label' => __('country'),
+                                    'type' => 'select',
+                                    'required' => true,
+                                    'value' => null,
+                                    'options' => Options::forModels(Country::all()),
+                                ],
+                                'language_id' => [
+                                    'label' => __('language'),
+                                    'type' => 'select',
+                                    'required' => true,
+                                    'value' => null,
+                                    'options' => Options::forModels(Language::all()),
+                                ],
+                                'timezone_id' => [
+                                    'label' => __('timezone'),
+                                    'type' => 'select',
+                                    'required' => true,
+                                    'value' => null,
+                                    'options' => Options::forModels(Timezone::all()),
                                 ],
 
                             ],
@@ -98,13 +98,13 @@ class CreateOrganisation extends InertiaAction
                         ],
 
                     ],
-                    'route'     => [
-                        'name'       => 'grp.org.models.organisation.store',
+                    'route' => [
+                        'name' => 'grp.org.models.organisation.store',
                         'parameters' => [
-                            'group' => group()->id
-                        ]
+                            'group' => group()->id,
+                        ],
 
-                    ]
+                    ],
 
                 ],
 
@@ -116,7 +116,6 @@ class CreateOrganisation extends InertiaAction
     {
         return $request->user()->authTo('sysadmin.users.edit');
     }
-
 
     /**
      * @throws \Exception
@@ -134,11 +133,11 @@ class CreateOrganisation extends InertiaAction
             IndexOrganisations::make()->getBreadcrumbs(),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating organisation'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

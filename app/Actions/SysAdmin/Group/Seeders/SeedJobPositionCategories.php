@@ -23,8 +23,7 @@ class SeedJobPositionCategories extends Seeder
 
     public function handle(Group $group): void
     {
-        $jobPositionCategories = collect(config("blueprint.job_positions.positions"));
-
+        $jobPositionCategories = collect(config('blueprint.job_positions.positions'));
 
         foreach ($jobPositionCategories as $jobPositionCategoryData) {
             /** @var JobPositionCategory $jobPositionCategory */
@@ -33,10 +32,10 @@ class SeedJobPositionCategories extends Seeder
                 UpdateJobPositionCategory::make()->action(
                     $jobPositionCategory,
                     [
-                        'name'       => $jobPositionCategoryData['name'],
+                        'name' => $jobPositionCategoryData['name'],
                         'department' => Arr::get($jobPositionCategoryData, 'department'),
-                        'team'       => Arr::get($jobPositionCategoryData, 'team'),
-                        'scope'      => Arr::get($jobPositionCategoryData, 'scope')
+                        'team' => Arr::get($jobPositionCategoryData, 'team'),
+                        'scope' => Arr::get($jobPositionCategoryData, 'scope'),
                     ]
                 );
             } else {
@@ -44,17 +43,16 @@ class SeedJobPositionCategories extends Seeder
                 StoreJobPositionCategory::make()->action(
                     $group,
                     [
-                        'code'       => $jobPositionCategoryData['code'],
-                        'name'       => $jobPositionCategoryData['name'],
+                        'code' => $jobPositionCategoryData['code'],
+                        'name' => $jobPositionCategoryData['name'],
                         'department' => Arr::get($jobPositionCategoryData, 'department'),
-                        'team'       => Arr::get($jobPositionCategoryData, 'team'),
-                        'scope'      => Arr::get($jobPositionCategoryData, 'scope')
+                        'team' => Arr::get($jobPositionCategoryData, 'team'),
+                        'scope' => Arr::get($jobPositionCategoryData, 'scope'),
                     ],
                 );
             }
         }
     }
-
 
     public string $commandSignature = 'group:seed-job-position-categories {group?}';
 
@@ -62,8 +60,9 @@ class SeedJobPositionCategories extends Seeder
     {
         if ($command->argument('group')) {
             $group = Group::where('slug', $command->argument('group'))->first();
-            if (!$group) {
-                $command->error("Group not found");
+            if (! $group) {
+                $command->error('Group not found');
+
                 return 1;
             }
             $this->handle($group);
@@ -75,7 +74,6 @@ class SeedJobPositionCategories extends Seeder
                 $this->handle($group);
             }
         }
-
 
         return 0;
     }

@@ -40,7 +40,7 @@ class StorePurge extends OrgAction
             $purge = $shop->purges()->create($modelData);
             $purge->refresh();
             $purge->stats()->create([
-                'currency_id' => $shop->currency_id
+                'currency_id' => $shop->currency_id,
             ]);
 
             return $purge;
@@ -62,14 +62,14 @@ class StorePurge extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        $dateThreshold       = Carbon::now()->subDays($this->get('inactive_days'));
+        $dateThreshold = Carbon::now()->subDays($this->get('inactive_days'));
         $numberEligiblePurge = $this->shop->orders()
             ->where('updated_at', '<', $dateThreshold)
             ->where('state', OrderStateEnum::CREATING)
             ->count();
 
         if ($this->strict && $numberEligiblePurge == 0) {
-            $message = __("There are no eligible orders to purge");
+            $message = __('There are no eligible orders to purge');
             $validator->errors()->add('purge', $message);
         }
     }
@@ -77,23 +77,23 @@ class StorePurge extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'type'          => ['required', Rule::enum(PurgeTypeEnum::class)],
-            'scheduled_at'  => ['sometimes', 'required', 'date'],
-            'user_id'       => [
+            'type' => ['required', Rule::enum(PurgeTypeEnum::class)],
+            'scheduled_at' => ['sometimes', 'required', 'date'],
+            'user_id' => [
                 'sometimes',
                 'required',
                 Rule::exists('users', 'id')->where(function ($query) {
                     $query->where('group_id', $this->shop->group_id);
-                })
+                }),
             ],
             'inactive_days' => ['required', 'integer', 'min:1', 'max:3652'],
         ];
 
-        if (!$this->strict) {
-            $rules['state']   = ['required', Rule::enum(PurgeStateEnum::class)];
+        if (! $this->strict) {
+            $rules['state'] = ['required', Rule::enum(PurgeStateEnum::class)];
             $rules['start_at'] = ['sometimes', 'required', 'date'];
-            $rules['end_at']   = ['sometimes', 'required', 'date'];
-            $rules             = $this->noStrictStoreRules($rules);
+            $rules['end_at'] = ['sometimes', 'required', 'date'];
+            $rules = $this->noStrictStoreRules($rules);
         }
 
         return $rules;
@@ -114,12 +114,12 @@ class StorePurge extends OrgAction
      */
     public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Purge
     {
-        if (!$audit) {
+        if (! $audit) {
             Purge::disableAuditing();
         }
 
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisationFromShop($shop, $modelData);

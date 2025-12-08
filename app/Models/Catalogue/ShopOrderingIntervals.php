@@ -553,9 +553,11 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property-read Group|null $group
  * @property-read Organisation|null $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingIntervals query()
+ *
  * @mixin \Eloquent
  */
 class ShopOrderingIntervals extends Model
@@ -592,7 +594,4 @@ class ShopOrderingIntervals extends Model
             'group_id'           // Local key on Shop
         );
     }
-
-
-
 }

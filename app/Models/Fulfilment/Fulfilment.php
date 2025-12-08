@@ -56,27 +56,29 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Fulfilment\FulfilmentStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Warehouse> $warehouses
  * @property-read Shop|null $website
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Fulfilment extends Model
 {
-    use SoftDeletes;
     use HasSlug;
     use InShop;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'     => 'array',
+        'data' => 'array',
         'settings' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 
@@ -147,7 +149,4 @@ class Fulfilment extends Model
     {
         return $this->hasMany(Space::class);
     }
-
-
-
 }

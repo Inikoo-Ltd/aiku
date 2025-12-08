@@ -25,19 +25,19 @@ class CustomersResource extends JsonResource
         $customer = $this;
 
         return [
-            'id'                     => $customer->id,
-            'slug'                   => $customer->slug,
-            'reference'              => $customer->reference,
-            'name'                   => $customer->name,
-            'contact_name'           => $customer->contact_name,
-            'company_name'           => $customer->company_name,
-            'location'               => $customer->location,
-            'email'                  => $customer->email,
-            'phone'                  => $customer->phone,
-            'balance'                => $customer->balance,
-            'saved_cards'            => MitSavedCardResource::collection($customer->mitSavedCard),
-            'created_at'             => $customer->created_at,
-            'updated_at'             => $customer->updated_at,
+            'id' => $customer->id,
+            'slug' => $customer->slug,
+            'reference' => $customer->reference,
+            'name' => $customer->name,
+            'contact_name' => $customer->contact_name,
+            'company_name' => $customer->company_name,
+            'location' => $customer->location,
+            'email' => $customer->email,
+            'phone' => $customer->phone,
+            'balance' => $customer->balance,
+            'saved_cards' => MitSavedCardResource::collection($customer->mitSavedCard),
+            'created_at' => $customer->created_at,
+            'updated_at' => $customer->updated_at,
         ];
     }
 }

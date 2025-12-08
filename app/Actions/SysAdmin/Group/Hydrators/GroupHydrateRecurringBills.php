@@ -21,6 +21,7 @@ class GroupHydrateRecurringBills implements ShouldBeUnique
     use WithEnumStats;
 
     public string $jobQueue = 'low-priority';
+
     public function getJobUniqueId(Group $group): string
     {
         return $group->id;
@@ -31,7 +32,6 @@ class GroupHydrateRecurringBills implements ShouldBeUnique
         $stats = [
             'number_recurring_bills' => $group->recurringBills()->count(),
         ];
-
 
         $stats = array_merge(
             $stats,
@@ -48,6 +48,4 @@ class GroupHydrateRecurringBills implements ShouldBeUnique
 
         $group->fulfilmentStats()->update($stats);
     }
-
-
 }

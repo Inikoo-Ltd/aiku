@@ -37,7 +37,6 @@ class StoreUser extends GrpAction
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'contact_name', $parent->contact_name);
 
-
         $userModelStatus = $this->get('user_model_status', Arr::get($modelData, 'status', false));
         data_forget($modelData, 'user_model_status');
 
@@ -49,7 +48,7 @@ class StoreUser extends GrpAction
             if ($parent instanceof Guest) {
                 $parent->update(
                     [
-                        'user_id' => $user->id
+                        'user_id' => $user->id,
                     ]
                 );
             }
@@ -60,13 +59,13 @@ class StoreUser extends GrpAction
             $user->refresh();
             if ($parent instanceof Employee) {
                 $user = AttachEmployeeToUser::make()->action($user, $parent, [
-                    'status'    => $userModelStatus,
-                    'source_id' => $user->source_id
+                    'status' => $userModelStatus,
+                    'source_id' => $user->source_id,
                 ]);
             } else {
                 $user = AttachGuestToUser::make()->action($user, $parent, [
-                    'status'    => $userModelStatus,
-                    'source_id' => $user->source_id
+                    'status' => $userModelStatus,
+                    'source_id' => $user->source_id,
                 ]);
             }
 
@@ -81,10 +80,8 @@ class StoreUser extends GrpAction
             return $user;
         });
 
-
         UserRecordSearch::dispatch($user);
         GroupHydrateUsers::dispatch($user->group)->delay($this->hydratorsDelay);
-
 
         return $user;
     }
@@ -95,25 +92,24 @@ class StoreUser extends GrpAction
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit");
+        return $request->user()->authTo('sysadmin.edit');
     }
-
 
     public function rules(): array
     {
         $rules = [
-            'username'          => [
+            'username' => [
                 'required',
-                $this->strict ? new AlphaDashDot() : 'string',
+                $this->strict ? new AlphaDashDot : 'string',
                 new IUnique(
                     table: 'users',
                     column: 'username',
                 ),
-                Rule::notIn(['export', 'create'])
+                Rule::notIn(['export', 'create']),
             ],
-            'password'          => ['required', app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)],
-            'reset_password'    => ['sometimes', 'boolean'],
-            'email'             => [
+            'password' => ['required', app()->isLocal() || app()->environment('testing') || ! $this->strict ? Password::min(3) : Password::min(8)],
+            'reset_password' => ['sometimes', 'boolean'],
+            'email' => [
                 'sometimes',
                 'nullable',
                 'email',
@@ -121,18 +117,18 @@ class StoreUser extends GrpAction
                     table: 'users'
                 ),
             ],
-            'contact_name'      => ['sometimes', 'string', 'max:255'],
-            'auth_type'         => ['sometimes', Rule::enum(UserAuthTypeEnum::class)],
-            'status'            => ['required', 'boolean'],
+            'contact_name' => ['sometimes', 'string', 'max:255'],
+            'auth_type' => ['sometimes', Rule::enum(UserAuthTypeEnum::class)],
+            'status' => ['required', 'boolean'],
             'user_model_status' => ['sometimes', 'boolean'],
-            'language_id'       => ['sometimes', 'required', 'exists:languages,id'],
+            'language_id' => ['sometimes', 'required', 'exists:languages,id'],
         ];
 
-        if (!$this->strict) {
-            $rules['deleted_at']      = ['sometimes', 'date'];
-            $rules['created_at']      = ['sometimes', 'date'];
-            $rules['fetched_at']      = ['sometimes', 'date'];
-            $rules['source_id']       = ['sometimes', 'string', 'max:255'];
+        if (! $this->strict) {
+            $rules['deleted_at'] = ['sometimes', 'date'];
+            $rules['created_at'] = ['sometimes', 'date'];
+            $rules['fetched_at'] = ['sometimes', 'date'];
+            $rules['source_id'] = ['sometimes', 'string', 'max:255'];
             $rules['legacy_password'] = ['sometimes', 'string'];
         }
 
@@ -150,25 +146,22 @@ class StoreUser extends GrpAction
         }
     }
 
-
     /**
      * @throws \Throwable
      */
     public function action(Guest|Employee $parent, array $modelData = [], int $hydratorsDelay = 0, bool $strict = true, $audit = true): User
     {
-        if (!$audit) {
+        if (! $audit) {
             User::disableAuditing();
         }
 
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->parent         = $parent;
+        $this->parent = $parent;
 
         $this->initialisation($parent->group, $modelData);
 
         return $this->handle($parent, $this->validatedData);
     }
-
-
 }

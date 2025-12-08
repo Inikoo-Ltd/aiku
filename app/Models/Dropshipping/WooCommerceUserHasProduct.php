@@ -20,9 +20,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Dropshipping\WooCommerceUser $wooCommerceUser
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUserHasProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUserHasProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUserHasProduct query()
+ *
  * @mixin \Eloquent
  */
 class WooCommerceUserHasProduct extends Pivot

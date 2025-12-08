@@ -26,12 +26,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowGroupDashboard extends OrgAction
 {
-    use WithDashboard;
-    use WithDashboardSettings;
-    use WithDashboardIntervalOption;
-    use WithDashboardCurrencyTypeSettings;
-    use WithTabsBox;
     use WithCustomRangeDashboard;
+    use WithDashboard;
+    use WithDashboardCurrencyTypeSettings;
+    use WithDashboardIntervalOption;
+    use WithDashboardSettings;
+    use WithTabsBox;
 
     public function handle(Group $group, ActionRequest $request): Response
     {
@@ -39,7 +39,7 @@ class ShowGroupDashboard extends OrgAction
 
         $currentTab = Arr::get($userSettings, 'group_dashboard_tab', Arr::first(GroupDashboardSalesTableTabsEnum::values()));
 
-        if (!in_array($currentTab, GroupDashboardSalesTableTabsEnum::values())) {
+        if (! in_array($currentTab, GroupDashboardSalesTableTabsEnum::values())) {
             $currentTab = Arr::first(GroupDashboardSalesTableTabsEnum::values());
         }
 
@@ -51,41 +51,41 @@ class ShowGroupDashboard extends OrgAction
         $dashboard = [
             'super_blocks' => [
                 [
-                    'id'        => 'group_dashboard_tab',
+                    'id' => 'group_dashboard_tab',
                     'intervals' => [
-                        'options'        => $this->dashboardIntervalOption(),
-                        'value'          => $saved_interval,
-                        'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
+                        'options' => $this->dashboardIntervalOption(),
+                        'value' => $saved_interval,
+                        'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings),
                     ],
-                    'settings'  => [
-                        'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                    'settings' => [
+                        'model_state_type' => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($group, $userSettings),
+                        'currency_type' => $this->dashboardCurrencyTypeSettings($group, $userSettings),
                     ],
-                    'blocks'    => [
+                    'blocks' => [
                         [
-                            'id'          => 'sales_table',
-                            'type'        => 'table',
+                            'id' => 'sales_table',
+                            'type' => 'table',
                             'current_tab' => $currentTab,
-                            'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $customRangeData),
-                            'charts'      => [] // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
-                        ]
+                            'tabs' => GroupDashboardSalesTableTabsEnum::navigation(),
+                            'tables' => GroupDashboardSalesTableTabsEnum::tables($group, $customRangeData),
+                            'charts' => [], // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
+                        ],
                     ],
-                    'tabs_box'  => [
-                        'current'    => $this->tab,
-                        'navigation' => $tabsBox
+                    'tabs_box' => [
+                        'current' => $this->tab,
+                        'navigation' => $tabsBox,
                     ],
-                ]
-            ]
+                ],
+            ],
         ];
 
         return Inertia::render(
             'Dashboard/GrpDashboard',
             [
-                'title'       => __('Dashboard Group'),
+                'title' => __('Dashboard Group'),
                 'breadcrumbs' => $this->getBreadcrumbs(__('Dashboard')),
-                'dashboard'   => $dashboard
+                'dashboard' => $dashboard,
             ]
         );
     }
@@ -103,14 +103,14 @@ class ShowGroupDashboard extends OrgAction
     {
         return [
             [
-                'type'   => 'simple',
+                'type' => 'simple',
                 'simple' => [
-                    'icon'  => 'fal fa-tachometer-alt-fast',
+                    'icon' => 'fal fa-tachometer-alt-fast',
                     'label' => $label,
                     'route' => [
-                        'name' => 'grp.dashboard.show'
-                    ]
-                ]
+                        'name' => 'grp.dashboard.show',
+                    ],
+                ],
             ],
         ];
     }

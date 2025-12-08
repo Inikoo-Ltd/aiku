@@ -68,7 +68,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 'supplier_products.current_historic_supplier_product_id as historic_id',
                 'purchase_order_transactions.quantity_ordered as quantity_ordered',
                 'purchase_order_transactions.id as purchase_order_transaction_id',
-                'purchase_orders.id as purchase_order_id'
+                'purchase_orders.id as purchase_order_id',
             ])
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
@@ -88,7 +88,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         return PurchaseOrderOrgSupplierProductsResource::collection($orgSupplierProducts);
     }
 
-    public function tableStructure(array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {

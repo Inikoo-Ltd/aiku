@@ -49,9 +49,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Inventory\OrgStock $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Inventory\Warehouse $warehouse
+ *
  * @method static Builder<static>|OrgStockMovement newModelQuery()
  * @method static Builder<static>|OrgStockMovement newQuery()
  * @method static Builder<static>|OrgStockMovement query()
+ *
  * @mixin Eloquent
  */
 class OrgStockMovement extends Model
@@ -59,12 +61,12 @@ class OrgStockMovement extends Model
     use InWarehouse;
 
     protected $casts = [
-        'data'       => 'array',
-        'type'       => OrgStockMovementTypeEnum::class,
-        'flow'       => OrgStockMovementFlowEnum::class,
-        'date'       => 'datetime',
-        'quantity'   => 'decimal:3',
-        'amount'     => 'decimal:3',
+        'data' => 'array',
+        'type' => OrgStockMovementTypeEnum::class,
+        'flow' => OrgStockMovementFlowEnum::class,
+        'date' => 'datetime',
+        'quantity' => 'decimal:3',
+        'amount' => 'decimal:3',
         'grp_amount' => 'decimal:3',
         'org_amount' => 'decimal:3',
     ];

@@ -13,10 +13,12 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use HasHelpersStats;
+return new class extends Migration
+{
     use HasCatalogueStats;
     use HasGoodsStats;
+    use HasHelpersStats;
+
     public function up(): void
     {
         Schema::create('master_shop_stats', function (Blueprint $table) {
@@ -28,11 +30,9 @@ return new class () extends Migration {
             $table = $this->masterProductCategoriesStatsFields($table);
             $table = $this->masterAssetsStatsFields($table);
 
-
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

@@ -80,8 +80,8 @@ class IndexIndexTransactionsInBasket extends OrgAction
             $table
                 ->withEmptyState(
                     [
-                        'title' => __("Basket is empty"),
-                        'count' => $order->stats->number_item_transactions
+                        'title' => __('Basket is empty'),
+                        'count' => $order->stats->number_item_transactions,
                     ]
                 );
 
@@ -93,6 +93,4 @@ class IndexIndexTransactionsInBasket extends OrgAction
             $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
-
-
 }

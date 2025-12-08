@@ -35,7 +35,6 @@ class ShowRetinaPalletReturn extends RetinaAction
         return $palletReturn;
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         if ($this->customer->id == $request->route()->parameter('palletReturn')->fulfilmentCustomer->customer_id) {
@@ -44,7 +43,6 @@ class ShowRetinaPalletReturn extends RetinaAction
 
         return false;
     }
-
 
     public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
@@ -65,194 +63,192 @@ class ShowRetinaPalletReturn extends RetinaAction
 
         if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
             $afterTitle = [
-                'label' => '('.__("Customer's sKUs").')'
+                'label' => '('.__("Customer's sKUs").')',
             ];
         } else {
             $afterTitle = [
-                'label' => '('.__('Whole goods').')'
+                'label' => '('.__('Whole goods').')',
             ];
         }
 
         $actions = GetRetinaPalletReturnActions::run($palletReturn);
 
-
         return Inertia::render(
             'Storage/RetinaPalletReturn',
             [
-                'title'       => __('Goods return'),
+                'title' => __('Goods return'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($palletReturn, $request),
-                    'next'     => $this->getNext($palletReturn, $request),
+                    'next' => $this->getNext($palletReturn, $request),
                 ],
-                'pageHead'    => [
-                    'title'      => $palletReturn->reference,
-                    'icon'       => [
-                        'icon'  => ['fal', 'fa-truck-couch'],
-                        'title' => $palletReturn->reference
+                'pageHead' => [
+                    'title' => $palletReturn->reference,
+                    'icon' => [
+                        'icon' => ['fal', 'fa-truck-couch'],
+                        'title' => $palletReturn->reference,
                     ],
                     'afterTitle' => $afterTitle,
-                    'model'      => __('Goods out'),
-                    'actions'    => $actions
+                    'model' => __('Goods out'),
+                    'actions' => $actions,
                 ],
 
-                'service_list_route'       => [
-                    'name'       => 'retina.json.fulfilment.return.services.index',
+                'service_list_route' => [
+                    'name' => 'retina.json.fulfilment.return.services.index',
                     'parameters' => [
                         'fulfilment' => $palletReturn->fulfilment->slug,
-                        'scope'      => $palletReturn->slug
-                    ]
+                        'scope' => $palletReturn->slug,
+                    ],
                 ],
                 'physical_good_list_route' => [
-                    'name'       => 'retina.json.fulfilment.return.physical-goods.index',
+                    'name' => 'retina.json.fulfilment.return.physical-goods.index',
                     'parameters' => [
                         'fulfilment' => $palletReturn->fulfilment->slug,
-                        'scope'      => $palletReturn->slug
-                    ]
+                        'scope' => $palletReturn->slug,
+                    ],
                 ],
 
                 'stored_items_add_route' => [
-                    'name'       => 'retina.models.pallet-return.stored_item.store',
+                    'name' => 'retina.models.pallet-return.stored_item.store',
                     'parameters' => [
-                        'palletReturn' => $palletReturn->id
-                    ]
+                        'palletReturn' => $palletReturn->id,
+                    ],
                 ],
-                'updateRoute'            => [
+                'updateRoute' => [
                     'route' => [
-                        'name'       => 'retina.models.pallet-return.update',
+                        'name' => 'retina.models.pallet-return.update',
                         'parameters' => [
-                            'palletReturn' => $palletReturn->id
-                        ]
-                    ]
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                    ],
                 ],
 
                 'deleteServiceRoute' => [
-                    'name'       => 'retina.models.pallet-return.service.delete',
+                    'name' => 'retina.models.pallet-return.service.delete',
                     'parameters' => [
-                        'palletReturn' => $palletReturn->id
-                    ]
+                        'palletReturn' => $palletReturn->id,
+                    ],
                 ],
 
                 'deletePhysicalGoodRoute' => [
-                    'name'       => 'retina.models.pallet-return.physical_good.delete',
+                    'name' => 'retina.models.pallet-return.physical_good.delete',
                     'parameters' => [
-                        'palletReturn' => $palletReturn->id
-                    ]
+                        'palletReturn' => $palletReturn->id,
+                    ],
                 ],
 
                 'interest' => [
                     'pallets_storage' => $palletReturn->fulfilmentCustomer->pallets_storage,
-                    'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,
-                    'dropshipping'    => $palletReturn->fulfilmentCustomer->dropshipping,
+                    'items_storage' => $palletReturn->fulfilmentCustomer->items_storage,
+                    'dropshipping' => $palletReturn->fulfilmentCustomer->dropshipping,
                 ],
 
-
                 'upload_pallet' => [
-                    'title'               => [
-                        'label'       => __('Upload storing pallet'),
-                        'information' => __('The list of column file: reference')
+                    'title' => [
+                        'label' => __('Upload storing pallet'),
+                        'information' => __('The list of column file: reference'),
                     ],
                     'progressDescription' => __('Adding pallets to the Return'),
-                    'preview_template'    => [
+                    'preview_template' => [
                         'unique_column' => [
                             'reference' => [
                                 'label' => __('The pallets should already stored in warehouse. Both system reference and your reference is valid.'),
-                            ]
+                            ],
                         ],
-                        'header'        => ['reference'],
-                        'rows'          => [
+                        'header' => ['reference'],
+                        'rows' => [
                             [
                                 'reference' => 'PALLET1',
                             ],
-                        ]
+                        ],
                     ],
-                    'upload_spreadsheet'  => [
-                        'event'           => 'action-progress',
-                        'channel'         => 'retina.personal.'.$palletReturn->organisation_id,
+                    'upload_spreadsheet' => [
+                        'event' => 'action-progress',
+                        'channel' => 'retina.personal.'.$palletReturn->organisation_id,
                         'required_fields' => ['reference'],
                         // 'template'        => [
                         //     'label' => 'Download template (.xlsx)',
                         // ],
-                        'route'           => [
-                            'upload'  => [
-                                'name'       => 'retina.models.pallet-return.pallet-return-item.upload',
+                        'route' => [
+                            'upload' => [
+                                'name' => 'retina.models.pallet-return.pallet-return-item.upload',
                                 'parameters' => [
-                                    'palletReturn' => $palletReturn->id
-                                ]
+                                    'palletReturn' => $palletReturn->id,
+                                ],
                             ],
                             'history' => [
-                                'name'       => 'retina.fulfilment.storage.pallet_returns.uploads.history',
+                                'name' => 'retina.fulfilment.storage.pallet_returns.uploads.history',
                                 'parameters' => [
-                                    'palletReturn' => $palletReturn->slug
-                                ]
+                                    'palletReturn' => $palletReturn->slug,
+                                ],
                             ],
                         ],
                     ],
                 ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
-                        'name'       => 'retina.models.pallet-return.attachment.attach',
+                        'name' => 'retina.models.pallet-return.attachment.attach',
                         'parameters' => [
                             'palletReturn' => $palletReturn->id,
                         ],
-                        'method'     => 'post'
+                        'method' => 'post',
                     ],
                     'detachRoute' => [
-                        'name'       => 'retina.models.pallet-return.attachment.detach',
+                        'name' => 'retina.models.pallet-return.attachment.detach',
                         'parameters' => [
                             'palletReturn' => $palletReturn->id,
                         ],
-                        'method'     => 'delete'
-                    ]
+                        'method' => 'delete',
+                    ],
                 ],
 
-                'tabs'               => [
-                    'current'    => $this->tab,
-                    'navigation' => $navigation
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => $navigation,
                 ],
                 'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn, forRetina: true),
-                'box_stats'          => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer, fromRetina: true),
-                'notes_data'         => [
-                    'return'    => [
-                        'label'    => __("Return's note"),
-                        'note'     => $palletReturn->customer_notes ?? '',
+                'box_stats' => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer, fromRetina: true),
+                'notes_data' => [
+                    'return' => [
+                        'label' => __("Return's note"),
+                        'note' => $palletReturn->customer_notes ?? '',
                         'editable' => true,
                         // 'bgColor'         => 'blue',
-                        'field'    => 'customer_notes'
+                        'field' => 'customer_notes',
                     ],
                     'warehouse' => [
-                        'label'    => __('Note from warehouse'),
-                        'note'     => $palletReturn->public_notes ?? '',
+                        'label' => __('Note from warehouse'),
+                        'note' => $palletReturn->public_notes ?? '',
                         'editable' => false,
                         // 'bgColor'         => 'pink',
-                        'field'    => 'public_notes'
+                        'field' => 'public_notes',
                     ],
                 ],
 
                 'route_check_stored_items' => [
-                    'method'     => 'post',
-                    'name'       => 'retina.models.pallet-return.stored_item.store',
+                    'method' => 'post',
+                    'name' => 'retina.models.pallet-return.stored_item.store',
                     'parameters' => [
-                        $palletReturn->id
-                    ]
+                        $palletReturn->id,
+                    ],
                 ],
-                'pallets_route'            => [
-                    'method'     => 'get',
-                    'name'       => 'retina.json.pallet-return.pallets.index',
+                'pallets_route' => [
+                    'method' => 'get',
+                    'name' => 'retina.json.pallet-return.pallets.index',
                     'parameters' => [
-                        'palletReturn' => $palletReturn->slug
-                    ]
+                        'palletReturn' => $palletReturn->slug,
+                    ],
                 ],
-                'option_attach_file'       => [
+                'option_attach_file' => [
                     [
                         'name' => __('Other'),
-                        'code' => 'Other'
-                    ]
+                        'code' => 'Other',
+                    ],
                 ],
-                'data'                     => PalletReturnResource::make($palletReturn),
+                'data' => PalletReturnResource::make($palletReturn),
 
                 RetinaPalletReturnTabsEnum::GOODS->value => $this->tab == RetinaPalletReturnTabsEnum::GOODS->value ?
                     fn () => PalletReturnItemsUIResource::collection(IndexRetinaPalletsInReturnPalletWholePallets::run($palletReturn, RetinaPalletReturnTabsEnum::GOODS->value))
@@ -289,7 +285,6 @@ class ShowRetinaPalletReturn extends RetinaAction
         )->table(IndexAttachments::make()->tableStructure(RetinaPalletReturnTabsEnum::ATTACHMENTS->value));
     }
 
-
     public function jsonResponse(PalletReturn $palletReturn): PalletReturnsResource
     {
         return new PalletReturnsResource($palletReturn);
@@ -300,11 +295,11 @@ class ShowRetinaPalletReturn extends RetinaAction
         $headCrumb = function (PalletReturn $palletReturn, array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Goods out')
+                            'label' => __('Goods out'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -312,7 +307,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
@@ -326,13 +321,13 @@ class ShowRetinaPalletReturn extends RetinaAction
                     $palletReturn,
                     [
                         'index' => [
-                            'name'       => 'retina.fulfilment.storage.pallet_returns.index',
-                            'parameters' => []
+                            'name' => 'retina.fulfilment.storage.pallet_returns.index',
+                            'parameters' => [],
                         ],
                         'model' => [
-                            'name'       => 'retina.fulfilment.storage.pallet_returns.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'retina.fulfilment.storage.pallet_returns.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -345,7 +340,7 @@ class ShowRetinaPalletReturn extends RetinaAction
     public function getPrevious(PalletReturn $palletReturn, ActionRequest $request, bool $storedItems = false): ?array
     {
         $query = PalletReturn::where('id', '<', $palletReturn->id)
-        ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id);
+            ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id);
 
         if ($storedItems) {
             $query->where('type', PalletReturnTypeEnum::STORED_ITEM);
@@ -361,7 +356,7 @@ class ShowRetinaPalletReturn extends RetinaAction
     public function getNext(PalletReturn $palletReturn, ActionRequest $request, bool $storedItems = false): ?array
     {
         $query = PalletReturn::where('id', '>', $palletReturn->id)
-        ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id);
+            ->where('fulfilment_customer_id', $palletReturn->fulfilmentCustomer->id);
 
         if ($storedItems) {
             $query->where('type', PalletReturnTypeEnum::STORED_ITEM);
@@ -376,23 +371,22 @@ class ShowRetinaPalletReturn extends RetinaAction
 
     private function getNavigation(?PalletReturn $palletReturn, string $routeName): ?array
     {
-        if (!$palletReturn) {
+        if (! $palletReturn) {
             return null;
         }
 
-
         return [
-                'label' => $palletReturn->slug,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation'       => $palletReturn->organisation->slug,
-                        'fulfilment'         => $palletReturn->fulfilment->slug,
-                        'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                        'palletReturn'       => $palletReturn->slug
-                    ]
+            'label' => $palletReturn->slug,
+            'route' => [
+                'name' => $routeName,
+                'parameters' => [
+                    'organisation' => $palletReturn->organisation->slug,
+                    'fulfilment' => $palletReturn->fulfilment->slug,
+                    'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
+                    'palletReturn' => $palletReturn->slug,
+                ],
 
-                ]
-            ];
+            ],
+        ];
     }
 }

@@ -16,10 +16,10 @@ trait WithOrganisationSourceShop
             'en' => [
                 1 => 1,
                 2 => 2,
-                3 => 5
+                3 => 5,
             ],
             'es' => [
-                3 => 1
+                3 => 1,
             ],
             'fr' => [
                 2 => 6,
@@ -61,7 +61,7 @@ trait WithOrganisationSourceShop
             ],
             'bg' => [
                 2 => 25,
-            ]
+            ],
         ];
     }
 }

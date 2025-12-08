@@ -78,7 +78,6 @@ class FetchAuroraPurges extends FetchAuroraAction
 
             $purge->stats->update($purgeData['purge_stats']);
 
-
             $sourceData = explode(':', $purgeData['purge']['source_id']);
             foreach (
                 DB::connection('aurora')->table('Order Basket Purge Order Fact')
@@ -93,11 +92,11 @@ class FetchAuroraPurges extends FetchAuroraAction
                 };
 
                 $purgedOrderData = [
-                    'status'          => $status,
-                    'source_id'       => $organisation->id.':'.$purgedOrderAuroraData->{'Order Basket Purge Order Basket Purge Key'}.'_'.$purgedOrderAuroraData->{'Order Basket Purge Order Order Key'},
-                    'fetched_at'      => now(),
+                    'status' => $status,
+                    'source_id' => $organisation->id.':'.$purgedOrderAuroraData->{'Order Basket Purge Order Basket Purge Key'}.'_'.$purgedOrderAuroraData->{'Order Basket Purge Order Order Key'},
+                    'fetched_at' => now(),
                     'last_fetched_at' => now(),
-                    'created_at'      => $purge->created_at,
+                    'created_at' => $purge->created_at,
                 ];
 
                 if ($status == PurgedOrderStatusEnum::PURGED) {
@@ -107,7 +106,6 @@ class FetchAuroraPurges extends FetchAuroraAction
                 if ($status == PurgedOrderStatusEnum::ERROR) {
                     $purgedOrderData['error_message'] = $purgedOrderAuroraData->{'Order Basket Purge Note'};
                 }
-
 
                 $purgedOrder = PurgedOrder::where('source_id', $purgedOrderData['source_id'])->first();
                 if ($purgedOrder) {
@@ -137,7 +135,6 @@ class FetchAuroraPurges extends FetchAuroraAction
             ->select('Order Basket Purge Key as source_id')
             ->orderBy('source_id');
     }
-
 
     public function count(): ?int
     {

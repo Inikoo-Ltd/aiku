@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('model_has_recurring_bills', function (Blueprint $table) {
@@ -20,10 +21,9 @@ return new class () extends Migration {
             $table->string('model_type');
             $table->timestampsTz();
             $table->index(['model_id', 'model_type']);
-            $table->unique(['recurring_bill_id','model_type','model_id']);
+            $table->unique(['recurring_bill_id', 'model_type', 'model_id']);
         });
     }
-
 
     public function down(): void
     {

@@ -16,9 +16,9 @@ class StockFactory extends Factory
     public function definition(): array
     {
         return [
-            'code'     => fake()->lexify(),
-            'name'     => fake()->name(),
-            'units'    => 1,
+            'code' => fake()->lexify(),
+            'name' => fake()->name(),
+            'units' => 1,
             'trade_unit' => TradeUnit::factory()->definition(),
         ];
     }

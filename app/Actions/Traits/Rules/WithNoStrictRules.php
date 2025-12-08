@@ -19,64 +19,62 @@ trait WithNoStrictRules
         $rules['created_at'] = ['sometimes', 'date'];
         $rules['fetched_at'] = ['sometimes', 'date'];
         $rules['deleted_at'] = ['sometimes', 'nullable', 'date'];
-        $rules['source_id']  = ['sometimes', 'string', 'max:255'];
+        $rules['source_id'] = ['sometimes', 'string', 'max:255'];
 
         return $rules;
     }
 
     protected function noStrictUpdateRules($rules): array
     {
-        $rules['created_at']      = ['sometimes', 'date'];
+        $rules['created_at'] = ['sometimes', 'date'];
         $rules['last_fetched_at'] = ['sometimes', 'date'];
-        $rules['deleted_at']      = ['sometimes', 'nullable', 'date'];
-        $rules['source_id']       = ['sometimes', 'string', 'max:255'];
+        $rules['deleted_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['source_id'] = ['sometimes', 'string', 'max:255'];
 
         return $rules;
     }
 
     protected function orderNoStrictFields(array $rules): array
     {
-        $rules['billing_locked']            = ['sometimes', 'boolean'];
-        $rules['delivery_locked']           = ['sometimes', 'boolean'];
-        $rules['submitted_at']              = ['sometimes', 'nullable', 'date'];
-        $rules['in_warehouse_at']           = ['sometimes', 'nullable', 'date'];
-        $rules['packed_at']                 = ['sometimes', 'nullable', 'date'];
-        $rules['finalised_at']              = ['sometimes', 'nullable', 'date'];
-        $rules['dispatched_at']             = ['sometimes', 'nullable', 'date'];
-        $rules['payment_amount']            = ['sometimes', 'numeric'];
-        $rules['data']                      = ['sometimes', 'array'];
-        $rules['reference']                 = ['sometimes', 'string', 'max:64'];
-        $rules['date']                      = ['sometimes', 'required', 'date'];
-        $rules['cancelled_at']              = ['sometimes', 'nullable', 'date'];
-        $rules['updated_by_customer_at']    = ['sometimes', 'nullable', 'date'];
-        $rules['weight']                    = ['sometimes', 'integer'];
-        $rules['estimated_weight']          = ['sometimes', 'integer'];
-        $rules['shipping_engine']           = ['sometimes', Rule::enum(OrderShippingEngineEnum::class)];
-        $rules['charges_engine']            = ['sometimes', Rule::enum(OrderChargesEngineEnum::class)];
+        $rules['billing_locked'] = ['sometimes', 'boolean'];
+        $rules['delivery_locked'] = ['sometimes', 'boolean'];
+        $rules['submitted_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['in_warehouse_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['packed_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['finalised_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['dispatched_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['payment_amount'] = ['sometimes', 'numeric'];
+        $rules['data'] = ['sometimes', 'array'];
+        $rules['reference'] = ['sometimes', 'string', 'max:64'];
+        $rules['date'] = ['sometimes', 'required', 'date'];
+        $rules['cancelled_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['updated_by_customer_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['weight'] = ['sometimes', 'integer'];
+        $rules['estimated_weight'] = ['sometimes', 'integer'];
+        $rules['shipping_engine'] = ['sometimes', Rule::enum(OrderShippingEngineEnum::class)];
+        $rules['charges_engine'] = ['sometimes', Rule::enum(OrderChargesEngineEnum::class)];
         $rules['customer_sales_channel_id'] = ['sometimes', 'nullable', 'integer'];
 
         return $this->orderingAmountNoStrictFields($rules);
     }
-
 
     protected function orderingAmountNoStrictFields(array $rules): array
     {
         $rules['grp_exchange'] = ['sometimes', 'numeric'];
         $rules['org_exchange'] = ['sometimes', 'numeric'];
 
-        $rules['gross_amount']    = ['sometimes', 'numeric'];
-        $rules['goods_amount']    = ['sometimes', 'numeric'];
+        $rules['gross_amount'] = ['sometimes', 'numeric'];
+        $rules['goods_amount'] = ['sometimes', 'numeric'];
         $rules['services_amount'] = ['sometimes', 'numeric'];
 
-        $rules['shipping_amount']  = ['sometimes', 'numeric'];
-        $rules['charges_amount']   = ['sometimes', 'numeric'];
+        $rules['shipping_amount'] = ['sometimes', 'numeric'];
+        $rules['charges_amount'] = ['sometimes', 'numeric'];
         $rules['insurance_amount'] = ['sometimes', 'numeric'];
 
-        $rules['net_amount']   = ['sometimes', 'numeric'];
-        $rules['tax_amount']   = ['sometimes', 'numeric'];
+        $rules['net_amount'] = ['sometimes', 'numeric'];
+        $rules['tax_amount'] = ['sometimes', 'numeric'];
         $rules['total_amount'] = ['sometimes', 'numeric'];
 
         return $rules;
     }
-
 }

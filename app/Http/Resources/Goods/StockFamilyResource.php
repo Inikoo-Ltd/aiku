@@ -19,13 +19,13 @@ class StockFamilyResource extends JsonResource
         $stockFamily = $this;
 
         return [
-            'slug'            => $stockFamily->slug,
-            'code'            => $stockFamily->code,
-            'state'           => $stockFamily->state,
-            'name'            => $stockFamily->name,
-            'number_stocks'   => $stockFamily->stats->number_stocks,
-            'created_at'      => $stockFamily->created_at,
-            'updated_at'      => $stockFamily->updated_at,
+            'slug' => $stockFamily->slug,
+            'code' => $stockFamily->code,
+            'state' => $stockFamily->state,
+            'name' => $stockFamily->name,
+            'number_stocks' => $stockFamily->stats->number_stocks,
+            'created_at' => $stockFamily->created_at,
+            'updated_at' => $stockFamily->updated_at,
         ];
     }
 }

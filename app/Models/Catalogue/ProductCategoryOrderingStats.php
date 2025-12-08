@@ -98,9 +98,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_delivery_note_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingStats query()
+ *
  * @mixin \Eloquent
  */
 class ProductCategoryOrderingStats extends Model

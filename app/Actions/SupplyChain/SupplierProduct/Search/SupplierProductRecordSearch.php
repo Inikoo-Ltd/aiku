@@ -26,11 +26,10 @@ class SupplierProductRecordSearch
         $supplierProduct->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'        => $supplierProduct->group_id,
-                'sections'        => ['supply-chain'],
+                'group_id' => $supplierProduct->group_id,
+                'sections' => ['supply-chain'],
                 'haystack_tier_1' => trim($supplierProduct->code.' '.$supplierProduct->name),
             ]
         );
     }
-
 }

@@ -38,12 +38,11 @@ beforeAll(function () {
 
 beforeEach(function () {
     $this->organisation = createOrganisation();
-    $this->group        = $this->organisation->group;
-    $this->user         = createAdminGuest($this->group)->getUser();
-
+    $this->group = $this->organisation->group;
+    $this->user = createAdminGuest($this->group)->getUser();
 
     $shop = Shop::first();
-    if (!$shop) {
+    if (! $shop) {
         $storeData = Shop::factory()->definition();
         data_set($storeData, 'type', ShopTypeEnum::DROPSHIPPING);
 
@@ -58,17 +57,16 @@ beforeEach(function () {
 
     $this->customer = createCustomer($this->shop);
 
-    list(
+    [
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+    ] = createProduct($this->shop);
 
     $this->department = $this->product->department;
-    $this->family     = $this->product->family;
-
+    $this->family = $this->product->family;
 
     $subDepartment = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->first();
-    if (!$subDepartment) {
+    if (! $subDepartment) {
         $subDepartmentData = ProductCategory::factory()->definition();
         data_set($subDepartmentData, 'type', ProductCategoryTypeEnum::SUB_DEPARTMENT->value);
         $subDepartment = StoreProductCategory::make()->action(
@@ -80,7 +78,7 @@ beforeEach(function () {
 
     /** @var Collection $collection */
     $collection = Collection::first();
-    if (!$collection) {
+    if (! $collection) {
         data_set($storeData, 'code', 'Test');
         data_set($storeData, 'name', 'Test Name');
 
@@ -92,17 +90,17 @@ beforeEach(function () {
     $this->collectionModel = $collection;
 
     $charge = Charge::first();
-    if (!$charge) {
+    if (! $charge) {
         $charge = StoreCharge::make()->action(
             $this->shop,
             [
-                'code'        => 'MyFColl',
-                'name'        => 'My first charge',
-                'type'        => ChargeTypeEnum::HANGING,
-                'trigger'     => ChargeTriggerEnum::ORDER,
+                'code' => 'MyFColl',
+                'name' => 'My first charge',
+                'type' => ChargeTypeEnum::HANGING,
+                'trigger' => ChargeTriggerEnum::ORDER,
                 'description' => 'Charge description',
-                'price'       => fake()->numberBetween(100, 2000),
-                'unit'        => 'charge',
+                'price' => fake()->numberBetween(100, 2000),
+                'unit' => 'charge',
             ]
         );
         $this->shop->refresh();
@@ -136,11 +134,10 @@ test('UI Index catalogue departments', function () {
 test('UI show department', function () {
     $this->withoutExceptionHandling();
 
-
     $response = get(route('grp.org.shops.show.catalogue.departments.show', [
         $this->organisation->slug,
         $this->shop->slug,
-        $this->department->slug
+        $this->department->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -179,7 +176,7 @@ test('UI edit department', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.product_category.update')
                     ->where('parameters', [
-                        'productCategory' => $this->department->id
+                        'productCategory' => $this->department->id,
                     ])
             )
             ->has('breadcrumbs', 3);
@@ -238,7 +235,7 @@ test('UI edit family in department', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.product_category.update')
                     ->where('parameters', [
-                        'productCategory' => $this->family->id
+                        'productCategory' => $this->family->id,
                     ])
             )
             ->has('breadcrumbs', 4);
@@ -255,7 +252,6 @@ test('UI Index catalogue product inside department', function () {
             ->has('breadcrumbs', 4);
     });
 });
-
 
 test('UI Index catalogue family in (tab index)', function () {
     $response = get(route('grp.org.shops.show.catalogue.families.index', [
@@ -279,7 +275,7 @@ test('UI Index catalogue family in (tab sales)', function () {
     $response = get(route('grp.org.shops.show.catalogue.families.index', [
         $this->organisation->slug,
         $this->shop->slug,
-        'tab' => 'sales'
+        'tab' => 'sales',
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -297,7 +293,7 @@ test('UI Index catalogue family in (tab sales)', function () {
 test('UI Index catalogue product in current', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.current_products.index', [
         $this->organisation->slug,
-        $this->shop->slug
+        $this->shop->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -315,7 +311,7 @@ test('UI Index catalogue product in current', function () {
 test('UI Index catalogue product all', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.all_products.index', [
         $this->organisation->slug,
-        $this->shop->slug
+        $this->shop->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -333,7 +329,7 @@ test('UI Index catalogue product all', function () {
 test('UI Index catalogue product in process', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.in_process_products.index', [
         $this->organisation->slug,
-        $this->shop->slug
+        $this->shop->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -347,12 +343,11 @@ test('UI Index catalogue product in process', function () {
             ->has('breadcrumbs', 4);
     });
 });
-
 
 test('UI Index catalogue product in discontinued', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.discontinued_products.index', [
         $this->organisation->slug,
-        $this->shop->slug
+        $this->shop->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -366,7 +361,6 @@ test('UI Index catalogue product in discontinued', function () {
             ->has('breadcrumbs', 4);
     });
 });
-
 
 test('UI show product in department', function () {
     $this->withoutExceptionHandling();
@@ -386,7 +380,6 @@ test('UI show product in department', function () {
             ->has('tabs');
     });
 });
-
 
 test('UI Index catalogue sub department inside department', function () {
     $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.index', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
@@ -586,11 +579,10 @@ test('UI edit Charges', function () {
     });
 });
 
-
 test('UI get section route catalogue dashboard', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.catalogue.dashboard', [
         'organisation' => $this->organisation->slug,
-        'shop'         => $this->shop->slug
+        'shop' => $this->shop->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -602,7 +594,7 @@ test('UI get section route catalogue dashboard', function () {
 test('UI get section route billables charges index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.billables.charges.index', [
         'organisation' => $this->organisation->slug,
-        'shop'         => $this->shop->slug
+        'shop' => $this->shop->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -614,7 +606,7 @@ test('UI get section route billables charges index', function () {
 test('UI get section route shop edit', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.settings.edit', [
         'organisation' => $this->organisation->slug,
-        'shop'         => $this->shop->slug
+        'shop' => $this->shop->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -626,7 +618,7 @@ test('UI get section route shop edit', function () {
 test('UI get section route shop dashboard', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.dashboard.show', [
         'organisation' => $this->organisation->slug,
-        'shop'         => $this->shop->slug
+        'shop' => $this->shop->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)

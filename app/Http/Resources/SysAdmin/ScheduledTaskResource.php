@@ -15,15 +15,15 @@ class ScheduledTaskResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'            => $this->id,
-            'task_name'     => $this->task_name,
-            'task_type'     => $this->task_type,
-            'scheduled_at'  => $this->scheduled_at,
-            'started_at'    => $this->started_at,
-            'finished_at'   => $this->finished_at,
-            'duration'      => $this->duration,
-            'status'        => $this->status,
-            'error_message' => $this->error_message
+            'id' => $this->id,
+            'task_name' => $this->task_name,
+            'task_type' => $this->task_type,
+            'scheduled_at' => $this->scheduled_at,
+            'started_at' => $this->started_at,
+            'finished_at' => $this->finished_at,
+            'duration' => $this->duration,
+            'status' => $this->status,
+            'error_message' => $this->error_message,
         ];
     }
 }

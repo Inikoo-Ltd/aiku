@@ -43,7 +43,6 @@ class IndexNotification
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -70,24 +69,23 @@ class IndexNotification
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('notifications'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.notifications' =>
-            array_merge(
+            'grp.notifications' => array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => 'grp.notifications',
-                        null
+                        null,
                     ]
                 ),
             ),

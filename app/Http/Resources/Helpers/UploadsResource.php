@@ -15,42 +15,42 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class UploadsResource extends JsonResource
 {
     use HasSelfCall;
+
     public function toArray($request): array
     {
         /** @var Upload $upload */
         $upload = $this;
 
         return [
-            'id'                => $upload->id,
-            'type'              => $upload->model,
-            'uploaded_at'       => $upload->uploaded_at,
+            'id' => $upload->id,
+            'type' => $upload->model,
+            'uploaded_at' => $upload->uploaded_at,
             'original_filename' => $upload->original_filename,
-            'filename'          => $upload->filename,
-            'number_rows'       => $upload->number_rows,
-            'number_success'    => $upload->number_success,
-            'number_fails'      => $upload->number_fails,
-            'path'              => $upload->path,
-            'download_route'    => match (request()->routeIs('retina.*')) {
+            'filename' => $upload->filename,
+            'number_rows' => $upload->number_rows,
+            'number_success' => $upload->number_success,
+            'number_fails' => $upload->number_fails,
+            'path' => $upload->path,
+            'download_route' => match (request()->routeIs('retina.*')) {
                 true => [
-                    'name'       => 'retina.helpers.uploads.records.show',
-                    'parameters' => $upload->id
+                    'name' => 'retina.helpers.uploads.records.show',
+                    'parameters' => $upload->id,
                 ],
                 default => [
-                    'name'       => 'grp.helpers.uploads.records.show',
-                    'parameters' => $upload->id
+                    'name' => 'grp.helpers.uploads.records.show',
+                    'parameters' => $upload->id,
                 ]
             },
-            'show_route'    =>  match (request()->routeIs('retina.*')) {
+            'show_route' => match (request()->routeIs('retina.*')) {
                 true => [
-                    'name'       => 'retina.helpers.uploads.records.download',
-                    'parameters' => $upload->id
+                    'name' => 'retina.helpers.uploads.records.download',
+                    'parameters' => $upload->id,
                 ],
                 default => [
-                    'name'       => 'grp.helpers.uploads.records.download',
-                    'parameters' => $upload->id
+                    'name' => 'grp.helpers.uploads.records.download',
+                    'parameters' => $upload->id,
                 ]
             },
-
 
         ];
     }

@@ -35,26 +35,22 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrder extends OrgAction
 {
+    use HasOrderHydrators;
     use WithActionUpdate;
     use WithFixedAddressActions;
     use WithModelAddressActions;
-    use HasOrderHydrators;
     use WithNoStrictRules;
 
     private Order $order;
 
     public function handle(Order $order, array $modelData): Order
     {
-        $oldPlatform             = $order->platform;
+        $oldPlatform = $order->platform;
         $oldShippingZoneSchemaId = $order->shipping_zone_schema_id;
-        $oldShippingZoneId       = $order->shipping_zone_id;
-        $oldState                = $order->state;
+        $oldShippingZoneId = $order->shipping_zone_id;
+        $oldState = $order->state;
 
-
-
-
-
-        $order         = $this->update($order, $modelData, ['data']);
+        $order = $this->update($order, $modelData, ['data']);
         $changedFields = $order->getChanges();
         $order->refresh();
 
@@ -75,14 +71,13 @@ class UpdateOrder extends OrgAction
 
             $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
             if ($deliveryNote) {
-                if (Arr::has($changes, 'collection_address_id') && !in_array($deliveryNote->state, [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
+                if (Arr::has($changes, 'collection_address_id') && ! in_array($deliveryNote->state, [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
                     $deliveryNote->update(
                         [
                             'collection_address_id' => $order->collection_address_id,
                         ]
                     );
                 }
-
 
                 if (Arr::has($changes, 'customer_notes')) {
                     $deliveryNote->update(
@@ -114,7 +109,6 @@ class UpdateOrder extends OrgAction
                     UpdateOrderNotesEvent::dispatch($deliveryNote);
                 }
             }
-
 
             if (array_key_exists('state', $changedFields)) {
                 $this->orderHydrators($order);
@@ -168,35 +162,34 @@ class UpdateOrder extends OrgAction
                     table: 'orders',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'id', 'value' => $this->order->id, 'operator' => '!=']
+                        ['column' => 'id', 'value' => $this->order->id, 'operator' => '!='],
                     ]
                 ),
             ],
-            'in_warehouse_at'         => ['sometimes', 'date'],
-            'dispatched_at'           => ['sometimes', 'nullable', 'date'],
-            'finalised_at'            => ['sometimes', 'nullable', 'date'],
-            'delivery_address_id'     => ['sometimes', Rule::exists('addresses', 'id')],
-            'collection_address_id'   => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
-            'shipping_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'state'                   => ['sometimes', Rule::enum(OrderStateEnum::class)],
-            'shipping_engine'         => ['sometimes', Rule::enum(OrderShippingEngineEnum::class)],
-            'sales_channel_id'        => [
+            'in_warehouse_at' => ['sometimes', 'date'],
+            'dispatched_at' => ['sometimes', 'nullable', 'date'],
+            'finalised_at' => ['sometimes', 'nullable', 'date'],
+            'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')],
+            'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
+            'shipping_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'customer_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'public_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'state' => ['sometimes', Rule::enum(OrderStateEnum::class)],
+            'shipping_engine' => ['sometimes', Rule::enum(OrderShippingEngineEnum::class)],
+            'sales_channel_id' => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {
                     $query->where('group_id', $this->shop->group_id);
-                })
+                }),
             ],
-            'tax_category_id'         => ['sometimes', Rule::exists('tax_categories', 'id')],
+            'tax_category_id' => ['sometimes', Rule::exists('tax_categories', 'id')],
             'shipping_zone_schema_id' => ['sometimes', 'nullable'],
-            'shipping_zone_id'        => ['sometimes', 'nullable'],
+            'shipping_zone_id' => ['sometimes', 'nullable'],
         ];
 
-
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->orderNoStrictFields($rules);
             $rules = $this->noStrictUpdateRules($rules);
         }
@@ -206,13 +199,13 @@ class UpdateOrder extends OrgAction
 
     public function action(Order $order, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Order
     {
-        if (!$audit) {
+        if (! $audit) {
             Order::disableAuditing();
         }
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->order          = $order;
+        $this->order = $order;
 
         $this->initialisationFromShop($order->shop, $modelData);
 

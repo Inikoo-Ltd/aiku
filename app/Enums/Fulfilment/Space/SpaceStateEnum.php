@@ -18,18 +18,12 @@ enum SpaceStateEnum: string
     case RENTING = 'renting';
     case FINISHED = 'finished';
 
-
-
     public static function labels(): array
     {
         return [
-            'reserved'                => __('Reserved'),
-            'renting'                 => __('Renting'),
-            'finished'                => __('Finished'),
+            'reserved' => __('Reserved'),
+            'renting' => __('Renting'),
+            'finished' => __('Finished'),
         ];
     }
-
-
-
-
 }

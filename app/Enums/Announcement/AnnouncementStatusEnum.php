@@ -14,30 +14,30 @@ enum AnnouncementStatusEnum: string
 {
     use EnumHelperTrait;
 
-    case INACTIVE  = 'inactive';
-    case ACTIVE    = 'active';
+    case INACTIVE = 'inactive';
+    case ACTIVE = 'active';
 
     public static function labels(): array
     {
         return [
-            'inactive'    => __('Inactive'),
-            'active'      => __('Active')
+            'inactive' => __('Inactive'),
+            'active' => __('Active'),
         ];
     }
 
     public static function statusIcon(): array
     {
         return [
-            'inactive'    => [
-                'icon'    => 'fad fa-stop',
-                'class'   => 'text-red-500',
-                'tooltip' => __('Inactive (will not show on the website)')
+            'inactive' => [
+                'icon' => 'fad fa-stop',
+                'class' => 'text-red-500',
+                'tooltip' => __('Inactive (will not show on the website)'),
             ],
-            'active'      => [
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-green-500 animate-pulse',
-                'tooltip' => __('Active (will show if possible)')
-            ]
+            'active' => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-green-500 animate-pulse',
+                'tooltip' => __('Active (will show if possible)'),
+            ],
         ];
     }
 }

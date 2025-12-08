@@ -9,8 +9,8 @@
 namespace App\Models\Dispatching;
 
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\InShop;
@@ -87,9 +87,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read Transaction|null $transaction
+ *
  * @method static Builder<static>|DeliveryNoteItem newModelQuery()
  * @method static Builder<static>|DeliveryNoteItem newQuery()
  * @method static Builder<static>|DeliveryNoteItem query()
+ *
  * @mixin Eloquent
  */
 class DeliveryNoteItem extends Model
@@ -99,24 +101,24 @@ class DeliveryNoteItem extends Model
     protected $table = 'delivery_note_items';
 
     protected $casts = [
-        'data'       => 'array',
-        'state'      => DeliveryNoteItemStateEnum::class,
+        'data' => 'array',
+        'state' => DeliveryNoteItemStateEnum::class,
         'sales_type' => DeliveryNoteItemSalesTypeEnum::class,
         'cancel_state' => DeliveryNoteItemCancelStateEnum::class,
 
-        'date'               => 'datetime',
+        'date' => 'datetime',
         'order_submitted_at' => 'datetime',
-        'assigned_at'        => 'datetime',
-        'picking_at'         => 'datetime',
-        'picked_at'          => 'datetime',
-        'packing_at'         => 'datetime',
-        'packed_at'          => 'datetime',
-        'dispatched_at'      => 'datetime',
-        'cancelled_at'       => 'datetime',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'assigned_at' => 'datetime',
+        'picking_at' => 'datetime',
+        'picked_at' => 'datetime',
+        'packing_at' => 'datetime',
+        'packed_at' => 'datetime',
+        'dispatched_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
 
-        'revenue_amount'     => 'decimal:2',
+        'revenue_amount' => 'decimal:2',
         'org_revenue_amount' => 'decimal:2',
         'grp_revenue_amount' => 'decimal:2',
     ];

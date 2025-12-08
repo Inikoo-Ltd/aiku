@@ -16,27 +16,27 @@ enum ShowProspectTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE  = 'showcase';
+    case SHOWCASE = 'showcase';
     case PROSPECTS = 'prospects';
-    case HISTORY   = 'history';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
             ShowProspectTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
 
             ShowProspectTabsEnum::PROSPECTS => [
                 'title' => __('Prospects'),
-                'icon'  => 'fal fa-transporter',
+                'icon' => 'fal fa-transporter',
             ],
 
             ShowProspectTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
         };

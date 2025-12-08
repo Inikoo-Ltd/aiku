@@ -20,15 +20,12 @@ class FetchAuroraDeliveryNoteItems
 {
     use AsAction;
 
-
     public function handle(SourceOrganisationService $organisationSource, int $source_id, DeliveryNote $deliveryNote): ?DeliveryNoteItem
     {
         $transactionData = $organisationSource->fetchDeliveryNoteItem(id: $source_id, deliveryNote: $deliveryNote);
         if (isset($transactionData['delivery_note_item'])) {
 
-
             if ($deliveryNoteItem = DeliveryNoteItem::where('source_id', $transactionData['delivery_note_item']['source_id'])->first()) {
-
 
                 $deliveryNoteItem = UpdateDeliveryNoteItem::make()->action(
                     deliveryNoteItem: $deliveryNoteItem,
@@ -38,10 +35,9 @@ class FetchAuroraDeliveryNoteItems
                 );
             } else {
 
-
                 $deliveryNoteItem = StoreDeliveryNoteItem::make()->action(
                     deliveryNote: $deliveryNote,
-                    modelData:    $transactionData['delivery_note_item'],
+                    modelData: $transactionData['delivery_note_item'],
                     hydratorsDelay: 10,
                     strict: false
                 );
@@ -51,11 +47,10 @@ class FetchAuroraDeliveryNoteItems
                     ->where('Inventory Transaction Key', $sourceData[1])
                     ->update(['aiku_dn_item_id' => $deliveryNoteItem->id]);
 
-
             }
+
             return $deliveryNoteItem;
         }
-
 
         return null;
     }

@@ -27,46 +27,45 @@ class BannerResource extends JsonResource
         /** @var Banner $banner */
         $banner = $this;
 
-        $image          = null;
+        $image = null;
         $imageThumbnail = null;
         if ($banner->image) {
-            $image          = $banner->image->getImage();
+            $image = $banner->image->getImage();
             $imageThumbnail = $banner->image->getImage()->resize(0, 48);
         }
 
         $publishedSnapshot = [];
         if ($banner->state == BannerStateEnum::LIVE and $this->live_snapshot_id) {
-            $snapshot          = $banner->liveSnapshot;
+            $snapshot = $banner->liveSnapshot;
             $publishedSnapshot = SnapshotResource::make($snapshot)->getArray();
         }
 
-
         return [
-            'id'                 => $banner->id,
-            'type'               => $banner->type,
-            'ulid'               => $banner->ulid,
-            'slug'               => $banner->slug,
-            'name'               => $banner->name,
-            'state_value'        => $banner->state->value,
-            'state'              => $banner->state,
-            'state_label'        => $banner->state->labels()[$banner->state->value],
-            'state_icon'         => $banner->state->stateIcon()[$banner->state->value],
-            'image_thumbnail'    => $imageThumbnail ? GetPictureSources::run($imageThumbnail) : null,
-            'image'              => $image ? GetPictureSources::run($image) : null,
-            'route'              => [
-                'name'       => 'customer.banners.banners.show',
-                'parameters' => [$banner->slug]
+            'id' => $banner->id,
+            'type' => $banner->type,
+            'ulid' => $banner->ulid,
+            'slug' => $banner->slug,
+            'name' => $banner->name,
+            'state_value' => $banner->state->value,
+            'state' => $banner->state,
+            'state_label' => $banner->state->labels()[$banner->state->value],
+            'state_icon' => $banner->state->stateIcon()[$banner->state->value],
+            'image_thumbnail' => $imageThumbnail ? GetPictureSources::run($imageThumbnail) : null,
+            'image' => $image ? GetPictureSources::run($image) : null,
+            'route' => [
+                'name' => 'customer.banners.banners.show',
+                'parameters' => [$banner->slug],
             ],
-            'updated_at'         => $banner->updated_at,
-            'created_at'         => $banner->created_at,
-            'workshopRoute'      => [
-                'name'       => 'customer.banners.banners.workshop',
-                'parameters' => [$banner->slug]
+            'updated_at' => $banner->updated_at,
+            'created_at' => $banner->created_at,
+            'workshopRoute' => [
+                'name' => 'customer.banners.banners.workshop',
+                'parameters' => [$banner->slug],
             ],
-            'compiled_layout'    => $banner->compiled_layout,
-            'delivery_url'       => config('app.delivery_url').'/banners/'.$banner->ulid,
+            'compiled_layout' => $banner->compiled_layout,
+            'delivery_url' => config('app.delivery_url').'/banners/'.$banner->ulid,
             'published_snapshot' => $publishedSnapshot,
-            'views'              => $banner->stats?->number_views,
+            'views' => $banner->stats?->number_views,
         ];
     }
 }

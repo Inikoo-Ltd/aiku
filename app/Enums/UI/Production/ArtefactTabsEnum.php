@@ -16,14 +16,12 @@ enum ArtefactTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE                = 'showcase';
+    case SHOWCASE = 'showcase';
     // case DASHBOARD               = 'dashboard';
-    case MANUFACTURE_TASKS       = 'manufacture_tasks';
-    case RAW_MATERIALS           = 'raw_materials';
-    case HISTORY                 = 'history';
+    case MANUFACTURE_TASKS = 'manufacture_tasks';
+    case RAW_MATERIALS = 'raw_materials';
+    case HISTORY = 'history';
     // case DATA                    = 'data';
-
-
 
     public function blueprint(): array
     {
@@ -34,11 +32,11 @@ enum ArtefactTabsEnum: string
             // ],
             ArtefactTabsEnum::MANUFACTURE_TASKS => [
                 'title' => __('Manufacture tasks'),
-                'icon'  => 'fal fa-hamsa',
+                'icon' => 'fal fa-hamsa',
             ],
             ArtefactTabsEnum::RAW_MATERIALS => [
                 'title' => __('Raw materials'),
-                'icon'  => 'fal fa-hamsa',
+                'icon' => 'fal fa-hamsa',
             ],
             // ArtefactTabsEnum::DATA => [
             //     'align' => 'right',
@@ -48,13 +46,13 @@ enum ArtefactTabsEnum: string
             // ],
             ArtefactTabsEnum::HISTORY => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
+                'icon' => 'fal fa-clock',
             ],
             ArtefactTabsEnum::SHOWCASE => [
                 'title' => __('Warehouse'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
         };
     }

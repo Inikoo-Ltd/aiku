@@ -17,8 +17,8 @@ class FetchAuroraCustomerClient extends FetchAurora
 {
     protected function parseModel(): void
     {
-        if (!$this->auroraModelData->{'Customer Client Customer Key'}) {
-            print "No customer key";
+        if (! $this->auroraModelData->{'Customer Client Customer Key'}) {
+            echo 'No customer key';
 
             return;
         }
@@ -27,8 +27,8 @@ class FetchAuroraCustomerClient extends FetchAurora
             $this->organisation->id.':'.$this->auroraModelData->{'Customer Client Customer Key'}
         );
 
-        if (!$customer) {
-            print "No customer not found";
+        if (! $customer) {
+            echo 'No customer not found';
 
             return;
         }
@@ -36,25 +36,21 @@ class FetchAuroraCustomerClient extends FetchAurora
         $this->parsedData['customer'] = $customer;
 
         if ($this->auroraModelData->{'Customer Client Status'} == 'Active') {
-            $status         = true;
+            $status = true;
             $deactivated_at = null;
         } else {
-            $status         = false;
-            $metadata       = json_decode($this->auroraModelData->{'Customer Client Metadata'} ?? '{}');
+            $status = false;
+            $metadata = json_decode($this->auroraModelData->{'Customer Client Metadata'} ?? '{}');
             $deactivated_at = $metadata->deactivated_date;
         }
 
         $manualPlatform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
-
         $customerSalesChannel = $customer->customerSalesChannels()
             ->where('platform_id', $manualPlatform->id)
             ->first();
 
-
-
-
-        if (!$customerSalesChannel) {
+        if (! $customerSalesChannel) {
             $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
                 customer: $customer,
                 platform: $manualPlatform,
@@ -65,23 +61,21 @@ class FetchAuroraCustomerClient extends FetchAurora
             );
         }
 
-
-
         $this->parsedData['customer_client'] =
             [
-                'reference'                 => $this->auroraModelData->{'Customer Client Code'},
-                'status'                    => $status,
-                'contact_name'              => $this->auroraModelData->{'Customer Client Main Contact Name'},
-                'company_name'              => $this->auroraModelData->{'Customer Client Company Name'},
-                'email'                     => $this->auroraModelData->{'Customer Client Main Plain Email'},
-                'phone'                     => $this->auroraModelData->{'Customer Client Main Plain Mobile'},
-                'source_id'                 => $this->organisation->id.':'.$this->auroraModelData->{'Customer Client Key'},
-                'created_at'                => $this->auroraModelData->{'Customer Client Creation Date'},
-                'address'                   => $this->parseAddress(prefix: 'Customer Client Contact', auAddressData: $this->auroraModelData),
-                'fetched_at'                => now(),
-                'last_fetched_at'           => now(),
-                'platform_id'               => $manualPlatform->id,
-                'customer_sales_channel_id' => $customerSalesChannel->id
+                'reference' => $this->auroraModelData->{'Customer Client Code'},
+                'status' => $status,
+                'contact_name' => $this->auroraModelData->{'Customer Client Main Contact Name'},
+                'company_name' => $this->auroraModelData->{'Customer Client Company Name'},
+                'email' => $this->auroraModelData->{'Customer Client Main Plain Email'},
+                'phone' => $this->auroraModelData->{'Customer Client Main Plain Mobile'},
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Customer Client Key'},
+                'created_at' => $this->auroraModelData->{'Customer Client Creation Date'},
+                'address' => $this->parseAddress(prefix: 'Customer Client Contact', auAddressData: $this->auroraModelData),
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
+                'platform_id' => $manualPlatform->id,
+                'customer_sales_channel_id' => $customerSalesChannel->id,
             ];
 
         if ($customer->deleted_at) {
@@ -93,8 +87,7 @@ class FetchAuroraCustomerClient extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Customer Client Dimension')

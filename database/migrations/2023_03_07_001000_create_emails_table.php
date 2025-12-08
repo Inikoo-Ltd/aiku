@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('emails', function (Blueprint $table) {
@@ -30,12 +31,10 @@ return new class () extends Migration {
             $table->string('builder')->index();
             $table->string('subject')->index();
 
-
             $table->unsignedInteger('unpublished_snapshot_id')->nullable()->index();
             $table->foreign('unpublished_snapshot_id')->references('id')->on('snapshots')->onUpdate('cascade')->onDelete('cascade');
             $table->unsignedInteger('live_snapshot_id')->nullable()->index();
             $table->foreign('live_snapshot_id')->references('id')->on('snapshots')->onUpdate('cascade')->onDelete('cascade');
-
 
             $table->unsignedInteger('screenshot_id')->nullable();
             $table->foreign('screenshot_id')->references('id')->on('media');
@@ -48,7 +47,6 @@ return new class () extends Migration {
             $table->index(['parent_type', 'parent_id']);
         });
     }
-
 
     public function down(): void
     {

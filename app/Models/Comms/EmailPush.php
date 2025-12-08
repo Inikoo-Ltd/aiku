@@ -43,9 +43,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read Model|\Eloquent|null $recipient
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailPush newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailPush newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailPush query()
+ *
  * @mixin \Eloquent
  */
 class EmailPush extends Model
@@ -53,14 +55,13 @@ class EmailPush extends Model
     use InShop;
 
     protected $casts = [
-        'data'            => 'array',
-        'sources'         => 'array',
-        'state'           => EmailPushStateEnum::class,
-        'exit_status'     => EmailPushExitStatusEnum::class,
-        'next_push_at'    => 'datetime',
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'sources' => 'array',
+        'state' => EmailPushStateEnum::class,
+        'exit_status' => EmailPushExitStatusEnum::class,
+        'next_push_at' => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
-
 
     ];
 
@@ -84,5 +85,4 @@ class EmailPush extends Model
     {
         return $this->morphTo();
     }
-
 }

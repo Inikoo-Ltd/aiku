@@ -27,7 +27,7 @@ class SetTaskComplete
 
         if ($pivot) {
             $pivot->update([
-                'status'        => TaskStatusEnum::COMPLETED->value,
+                'status' => TaskStatusEnum::COMPLETED->value,
                 'complete_date' => Carbon::now(),
             ]);
 
@@ -49,5 +49,4 @@ class SetTaskComplete
     {
         return $this->handle($task, $user);
     }
-
 }

@@ -19,29 +19,29 @@ class DashboardHeaderOffersResource extends JsonResource
         $model = $this->resource;
 
         return [
-            'slug'    => $model->slug,
+            'slug' => $model->slug,
             'columns' => [
-                'label'     => [
-                    'formatted_value'   => __('Bracket'),
-                    'currency_type'     => 'always',
+                'label' => [
+                    'formatted_value' => __('Bracket'),
+                    'currency_type' => 'always',
                     'data_display_type' => 'full',
-                    'align'             => 'left'
+                    'align' => 'left',
                 ],
                 'customers' => [
-                    'formatted_value'   => __('Customers'),
-                    'currency_type'     => 'always',
+                    'formatted_value' => __('Customers'),
+                    'currency_type' => 'always',
                     'data_display_type' => 'full',
-                    'align'             => 'left',
-                    'scope'             => 'customers'
+                    'align' => 'left',
+                    'scope' => 'customers',
                 ],
-                'orders'    => [
-                    'formatted_value'   => __('Orders'),
-                    'currency_type'     => 'always',
+                'orders' => [
+                    'formatted_value' => __('Orders'),
+                    'currency_type' => 'always',
                     'data_display_type' => 'full',
-                    'align'             => 'left',
-                    'scope'             => 'orders'
+                    'align' => 'left',
+                    'scope' => 'orders',
                 ],
-            ]
+            ],
         ];
     }
 }

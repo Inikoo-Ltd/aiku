@@ -63,9 +63,11 @@ use Illuminate\Support\Facades\Auth;
  * @property-read Model|\Eloquent $parent
  * @property-read Model|\Eloquent|null $recipient
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail query()
+ *
  * @mixin \Eloquent
  */
 class DispatchedEmail extends Model
@@ -73,16 +75,16 @@ class DispatchedEmail extends Model
     use InShop;
 
     protected $casts = [
-        'data'             => 'array',
-        'state'            => DispatchedEmailStateEnum::class,
-        'provider'         => DispatchedEmailProviderEnum::class,
-        'sent_at'          => 'datetime',
-        'first_read_at'    => 'datetime',
-        'last_read_at'     => 'datetime',
+        'data' => 'array',
+        'state' => DispatchedEmailStateEnum::class,
+        'provider' => DispatchedEmailProviderEnum::class,
+        'sent_at' => 'datetime',
+        'first_read_at' => 'datetime',
+        'last_read_at' => 'datetime',
         'first_clicked_at' => 'datetime',
-        'last_clicked_at'  => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime',
+        'last_clicked_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -96,12 +98,10 @@ class DispatchedEmail extends Model
         return $this->belongsTo(EmailAddress::class);
     }
 
-
     public function recipient(): MorphTo
     {
         return $this->morphTo();
     }
-
 
     public function mailshot(): BelongsTo
     {
@@ -143,6 +143,4 @@ class DispatchedEmail extends Model
     {
         return $this->morphTo();
     }
-
-
 }

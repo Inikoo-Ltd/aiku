@@ -55,33 +55,35 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read \App\Models\Dispatching\ShipperStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static Builder<static>|Shipper newModelQuery()
  * @method static Builder<static>|Shipper newQuery()
  * @method static Builder<static>|Shipper onlyTrashed()
  * @method static Builder<static>|Shipper query()
  * @method static Builder<static>|Shipper withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Shipper withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Shipper extends Model implements Auditable
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasUniversalSearch;
-    use HasHistory;
     use HasFactory;
+    use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'            => 'array',
-        'settings'        => 'array',
-        'status'          => 'boolean',
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'settings' => 'array',
+        'status' => 'boolean',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'settings'    => '{}',
+        'data' => '{}',
+        'settings' => '{}',
     ];
 
     protected $guarded = [];
@@ -89,7 +91,7 @@ class Shipper extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'dispatching'
+            'dispatching',
         ];
     }
 
@@ -134,5 +136,4 @@ class Shipper extends Model implements Auditable
     {
         return $this->hasOne(ShipperStats::class);
     }
-
 }

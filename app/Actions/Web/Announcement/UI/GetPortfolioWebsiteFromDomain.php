@@ -12,8 +12,8 @@ class GetPortfolioWebsiteFromDomain extends OrgAction
 
     public function handle(string $domain): PortfolioWebsite
     {
-        $origin   = $domain ? preg_replace('/^(https?:\/\/)?(www\.)?([^\/]+).*/', '$3', $domain) : null;
+        $origin = $domain ? preg_replace('/^(https?:\/\/)?(www\.)?([^\/]+).*/', '$3', $domain) : null;
 
-        return PortfolioWebsite::where('url', 'LIKE', '%' . $origin . '%')->firstOrFail();
+        return PortfolioWebsite::where('url', 'LIKE', '%'.$origin.'%')->firstOrFail();
     }
 }

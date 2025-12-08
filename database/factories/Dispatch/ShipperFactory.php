@@ -23,12 +23,12 @@ class ShipperFactory extends Factory
     public function definition()
     {
         return [
-            'code'         => fake()->lexify(),
-            'name'         => fake()->name,
+            'code' => fake()->lexify(),
+            'name' => fake()->name,
             'contact_name' => fake()->name,
             'company_name' => fake()->company,
-            'email'        => fake()->email,
-            'website'      => fake()->url,
+            'email' => fake()->email,
+            'website' => fake()->url,
             'tracking_url' => fake()->url,
         ];
     }

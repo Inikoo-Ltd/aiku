@@ -49,8 +49,8 @@ class GroupHydrateInvoiceCategories implements ShouldBeUnique
 
         // Current = not closed (active + in_process + cooldown)
         $stats['number_current_invoice_categories'] =
-            ($stats['number_invoice_categories_state_' . InvoiceCategoryStateEnum::ACTIVE->snake()] ?? 0)
-            + ($stats['number_invoice_categories_state_' . InvoiceCategoryStateEnum::COOLDOWN->snake()] ?? 0);
+            ($stats['number_invoice_categories_state_'.InvoiceCategoryStateEnum::ACTIVE->snake()] ?? 0)
+            + ($stats['number_invoice_categories_state_'.InvoiceCategoryStateEnum::COOLDOWN->snake()] ?? 0);
 
         $group->accountingStats()->update($stats);
     }

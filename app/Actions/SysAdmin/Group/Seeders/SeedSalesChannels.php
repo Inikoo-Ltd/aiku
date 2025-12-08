@@ -19,7 +19,6 @@ class SeedSalesChannels
 {
     use AsAction;
 
-
     /**
      * @throws \Throwable
      */
@@ -42,7 +41,7 @@ class SeedSalesChannels
                             'type' => $salesChannelType,
                             'code' => $salesChannelType->value,
                             'name' => $salesChannelType->labels()[$salesChannelType->value],
-                            'is_seeded' => true
+                            'is_seeded' => true,
                         ],
                         strict: false
                     );
@@ -65,6 +64,4 @@ class SeedSalesChannels
 
         return 0;
     }
-
-
 }

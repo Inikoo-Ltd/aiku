@@ -20,6 +20,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCollections;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCreditTransactions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomerBalances;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotesState;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDepartments;
@@ -33,6 +34,11 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFulfilmentCustomers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateGuests;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceCategories;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceTransactions;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateJobPositions;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterCollections;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterFamiliesWithNoDepartment;
@@ -42,6 +48,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOfferCampaigns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrdersDispatchedToday;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateCreating;
@@ -51,44 +58,38 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateHandlingBlocked;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateInWarehouse;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStatePacked;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateSubmitted;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrganisations;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgPostRooms;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStockFamilies;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStockMovements;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStocks;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOutboxes;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletDeliveries;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePallets;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePostRooms;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductsWithNoFamily;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockFamilies;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceTransactions;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateJobPositions;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrganisations;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStockFamilies;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStockMovements;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStocks;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePaymentAccounts;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePayments;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePaymentServiceProviders;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePostRooms;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProducts;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRecurringBills;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRentals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductSuppliers;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductsWithNoFamily;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProspects;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurchaseOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurges;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRecurringBills;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRedirects;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRentals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateServices;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSpaces;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockDeliveries;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockFamilies;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStoredItemAudits;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStoredItems;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSubDepartments;
@@ -108,7 +109,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebsites;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUserRequests;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUsers;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -203,7 +203,7 @@ class HydrateGroup extends HydrateModel
         GroupHydrateOrderStateFinalised::run($group->id);
         GroupHydrateOrdersDispatchedToday::run($group->id);
 
-        //fulfilment
+        // fulfilment
         GroupHydratePallets::run($group);
         GroupHydratePalletDeliveries::run($group);
         GroupHydratePalletReturns::run($group);
@@ -228,7 +228,6 @@ class HydrateGroup extends HydrateModel
             GroupHydrateDeliveryNotesState::run($group->id, $case);
         }
 
-
         GroupHydrateAdjustments::run($group);
         GroupHydrateWebUsers::run($group);
         GroupHydrateDeletedInvoices::run($group);
@@ -245,5 +244,4 @@ class HydrateGroup extends HydrateModel
         GroupHydrateMasterFamiliesWithNoDepartment::run($group);
         GroupHydrateInvoiceCategories::dispatch($group);
     }
-
 }

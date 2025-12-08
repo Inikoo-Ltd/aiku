@@ -22,7 +22,6 @@ class FetchAuroraDeletedUsers extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:deleted_users {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
-
     /**
      * @throws \Throwable
      */
@@ -53,19 +52,16 @@ class FetchAuroraDeletedUsers extends FetchAuroraAction
                     return $user;
                 }
 
-
-                if (!$userData['parent']) {
+                if (! $userData['parent']) {
                     $group_id = $organisationSource->getOrganisation()->group_id;
 
                     $user = User::withTrashed()->where('group_id', $group_id)->where('username', $userData['related_username'])->first();
-
 
                     if ($user) {
                         $sourceData = explode(':', $userData['user']['source_id']);
                         DB::connection('aurora')->table('User Deleted Dimension')
                             ->where('User Deleted Key', $sourceData[1])
                             ->update(['aiku_related_id' => $user->id]);
-
 
                         $user = FetchAuroraUsers::make()->updateUserSources($user, $userData);
                     }
@@ -83,7 +79,6 @@ class FetchAuroraDeletedUsers extends FetchAuroraAction
 
                     return $user;
                 }
-
 
                 try {
                     $user = StoreUser::make()->action(
@@ -105,7 +100,6 @@ class FetchAuroraDeletedUsers extends FetchAuroraAction
 
                     return null;
                 }
-
 
                 return $user;
             }

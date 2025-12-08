@@ -28,7 +28,6 @@ class ShowHumanResourcesDashboard extends OrgAction
         return $request;
     }
 
-
     public function htmlResponse(ActionRequest $request): Response
     {
         $title = __('Human Resources');
@@ -37,51 +36,51 @@ class ShowHumanResourcesDashboard extends OrgAction
             'Org/HumanResources/HumanResourcesDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => $title,
-                'pageHead'    => [
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-user-hard-hat'],
-                        'title' => $title
+                'title' => $title,
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-user-hard-hat'],
+                        'title' => $title,
                     ],
                     'iconRight' => [
-                        'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => $title
+                        'icon' => ['fal', 'fa-chart-network'],
+                        'title' => $title,
                     ],
-                    'title'     => $title,
+                    'title' => $title,
                 ],
-                'stats'       => [
+                'stats' => [
                     [
-                        'name'  => __('Employees'),
-                        'stat'  => $this->organisation->humanResourcesStats->number_employees_state_working,
+                        'name' => __('Employees'),
+                        'stat' => $this->organisation->humanResourcesStats->number_employees_state_working,
                         'route' => [
-                            'name'       => 'grp.org.hr.employees.index',
+                            'name' => 'grp.org.hr.employees.index',
                             'parameters' => array_merge(
                                 [
                                     '_query' => [
-                                        'elements[state]' => 'working'
-                                    ]
+                                        'elements[state]' => 'working',
+                                    ],
                                 ],
                                 $request->route()->originalParameters()
-                            )
-                        ]
+                            ),
+                        ],
                     ],
                     [
-                        'name'  => __('working places'),
-                        'stat'  => $this->organisation->humanResourcesStats->number_workplaces,
+                        'name' => __('working places'),
+                        'stat' => $this->organisation->humanResourcesStats->number_workplaces,
                         'route' => [
-                            'name'       => 'grp.org.hr.workplaces.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
+                            'name' => 'grp.org.hr.workplaces.index',
+                            'parameters' => $request->route()->originalParameters(),
+                        ],
                     ],
                     [
-                        'name'  => __('responsibilities'),
-                        'stat'  => $this->organisation->humanResourcesStats->number_job_positions,
+                        'name' => __('responsibilities'),
+                        'stat' => $this->organisation->humanResourcesStats->number_job_positions,
                         'route' => [
-                            'name'       => 'grp.org.hr.job_positions.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
-                    ]
-                ]
+                            'name' => 'grp.org.hr.job_positions.index',
+                            'parameters' => $request->route()->originalParameters(),
+                        ],
+                    ],
+                ],
 
             ]
         );
@@ -94,15 +93,15 @@ class ShowHumanResourcesDashboard extends OrgAction
                 ShowOrganisationDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.hr.dashboard',
-                                'parameters' => Arr::only($routeParameters, 'organisation')
+                                'name' => 'grp.org.hr.dashboard',
+                                'parameters' => Arr::only($routeParameters, 'organisation'),
                             ],
                             'label' => __('Human resources'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

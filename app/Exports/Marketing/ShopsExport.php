@@ -10,14 +10,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ShopsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class ShopsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Shop|Builder
     {
         return Shop::query();
     }
 
-    /** @var Shop $row */
+    /** @var Shop */
     public function map($row): array
     {
         return [
@@ -37,7 +37,7 @@ class ShopsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeading
             $row->country->name,
             $row->currency->code,
             $row->timezone->name,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -61,7 +61,7 @@ class ShopsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeading
             'Currency',
             'Timezone',
             'State',
-            'Created At'
+            'Created At',
         ];
     }
 }

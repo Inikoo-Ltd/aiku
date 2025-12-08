@@ -16,11 +16,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property string|null $source_id
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DeliveryNoteItemHasFeedback newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DeliveryNoteItemHasFeedback newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DeliveryNoteItemHasFeedback query()
+ *
  * @mixin \Eloquent
  */
-class DeliveryNoteItemHasFeedback extends Model
-{
-}
+class DeliveryNoteItemHasFeedback extends Model {}

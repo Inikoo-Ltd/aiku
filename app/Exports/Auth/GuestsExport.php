@@ -15,14 +15,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class GuestsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class GuestsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|\App\Models\SysAdmin\Guest|Builder
     {
         return \App\Models\SysAdmin\Guest::query();
     }
 
-    /** @var \App\Models\SysAdmin\Guest $row */
+    /** @var \App\Models\SysAdmin\Guest */
     public function map($row): array
     {
         return [
@@ -32,7 +32,7 @@ class GuestsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadin
             $row->contact_name,
             $row->phone,
             $row->type,
-            $row->status
+            $row->status,
         ];
     }
 

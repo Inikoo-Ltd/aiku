@@ -48,7 +48,6 @@ class IndexRetinaCollections extends RetinaAction
 
         $queryBuilder->leftjoin('collection_stats', 'collections.id', 'collection_stats.collection_id');
 
-
         $queryBuilder
             ->leftJoin('webpages', function ($join) {
                 $join->on('collections.id', '=', 'webpages.model_id')
@@ -92,9 +91,8 @@ class IndexRetinaCollections extends RetinaAction
    
         AND model_has_collections.model_type = ?
     ) as parents_data',
-                ['ProductCategory',]
+                ['ProductCategory']
             );
-
 
         return $queryBuilder
             ->allowedFilters([$globalSearch])
@@ -116,12 +114,11 @@ class IndexRetinaCollections extends RetinaAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title'       => __("No collections found"),
+                        'title' => __('No collections found'),
                         'description' => __('Get started by creating a new collection. ✨'),
-                        'count'       => $shop->stats->number_collections,
+                        'count' => $shop->stats->number_collections,
                     ]
                 );
-
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
@@ -141,36 +138,35 @@ class IndexRetinaCollections extends RetinaAction
 
         $subNavigation = null;
 
-        $title     = __('Collections');
-        $icon      = [
-            'icon'  => ['fal', 'fa-album-collection'],
-            'title' => $title
+        $title = __('Collections');
+        $icon = [
+            'icon' => ['fal', 'fa-album-collection'],
+            'title' => $title,
         ];
         $iconRight = null;
 
         return Inertia::render(
             'Catalogue/RetinaCollections',
             [
-                'breadcrumbs'    => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'          => __('Collections'),
-                'pageHead'       => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'afterTitle'    => [
+                'title' => __('Collections'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'afterTitle' => [
                         'label' => '@ '.__('shop').' '.$this->shop->code,
                     ],
-                    'iconRight'     => $iconRight,
-                    'container'     => $container,
+                    'iconRight' => $iconRight,
+                    'container' => $container,
                     'subNavigation' => $subNavigation,
                 ],
-                'data'           => CollectionsResource::collection($collections),
+                'data' => CollectionsResource::collection($collections),
             ]
         )->table($this->tableStructure($this->shop));
     }
-
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
@@ -179,37 +175,33 @@ class IndexRetinaCollections extends RetinaAction
         return $this->handle(parent: $this->shop);
     }
 
-
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Collections'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
-                ]
+                    'suffix' => $suffix,
+                ],
             ];
         };
 
         return match ($routeName) {
-            'retina.catalogue.collections.index' =>
-            array_merge(
+            'retina.catalogue.collections.index' => array_merge(
                 ShowRetinaCatalogue::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ],
                     $suffix
                 )
             ),
-
-
 
             default => []
         };

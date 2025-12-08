@@ -22,7 +22,7 @@ class ToggleWebsiteStatus extends OrgAction
     public function handle(Website $website): Website
     {
         return $this->update($website, [
-            'status' => !$website->status
+            'status' => ! $website->status,
         ]);
     }
 
@@ -40,7 +40,7 @@ class ToggleWebsiteStatus extends OrgAction
 
     public function action(Website $website): Website
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisationFromShop($website->shop, []);
 
         return $this->handle($website);

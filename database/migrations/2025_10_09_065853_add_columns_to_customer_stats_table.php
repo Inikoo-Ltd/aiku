@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('customer_stats', function (Blueprint $table) {
@@ -27,11 +28,8 @@ return new class () extends Migration {
             $table->decimal('average_order_value', 16)->nullable();
             $table->dateTimeTz('expected_date_of_next_order')->nullable();
 
-
-
         });
     }
-
 
     public function down(): void
     {

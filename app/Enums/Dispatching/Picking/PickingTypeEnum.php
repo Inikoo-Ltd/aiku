@@ -22,10 +22,9 @@ enum PickingTypeEnum: string
     public static function labels(): array
     {
         return [
-            'pick'     => __('Pick'),
+            'pick' => __('Pick'),
             'not-pick' => __('Not Pick'),
-            'return'   => __('Return to location'),
+            'return' => __('Return to location'),
         ];
     }
-
 }

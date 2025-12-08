@@ -16,13 +16,12 @@ enum MasterFamilyTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE  = 'showcase';
-    case FAMILIES     = 'families';
-    case IMAGES    = 'images';
-    case SALES     = 'sales';
+    case SHOWCASE = 'showcase';
+    case FAMILIES = 'families';
+    case IMAGES = 'images';
+    case SALES = 'sales';
 
-    case HISTORY   = 'history';
-
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
@@ -30,26 +29,26 @@ enum MasterFamilyTabsEnum: string
 
             MasterFamilyTabsEnum::SALES => [
                 'title' => __('Sales'),
-                'icon'  => 'fal fa-money-bill-wave',
+                'icon' => 'fal fa-money-bill-wave',
             ],
             MasterFamilyTabsEnum::FAMILIES => [
                 'title' => __('Families in shop'),
-                'icon'  => 'fal fa-store',
+                'icon' => 'fal fa-store',
             ],
 
             MasterFamilyTabsEnum::IMAGES => [
                 'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
+                'icon' => 'fal fa-camera-retro',
             ],
             MasterFamilyTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             MasterFamilyTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

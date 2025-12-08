@@ -16,11 +16,11 @@ Route::get('/ping', function () {
 Route::middleware(['auth:sanctum', 'ability:retina', 'treblle'])->group(function () {
     Route::get('/user-profile', GetProfile::class)->name('profile');
 
-    Route::prefix("dropshipping")
-        ->name("dropshipping.")
-        ->group(__DIR__ . "/dropshipping/dropshipping.php");
+    Route::prefix('dropshipping')
+        ->name('dropshipping.')
+        ->group(__DIR__.'/dropshipping/dropshipping.php');
 
-    Route::prefix("fulfilment")
-        ->name("fulfilment.")
-        ->group(__DIR__ . "/fulfilment/fulfilment.php");
+    Route::prefix('fulfilment')
+        ->name('fulfilment.')
+        ->group(__DIR__.'/fulfilment/fulfilment.php');
 });

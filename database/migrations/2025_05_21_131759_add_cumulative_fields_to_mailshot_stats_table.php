@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     private function addCumulativeFields(Blueprint $table): void
     {
         $table->unsignedInteger('number_try_send_failure')->default(0);
@@ -35,7 +36,7 @@ return new class () extends Migration {
             'number_deliveries_success',
             'number_deliveries_total',
             'number_deliveries_success_open_failure',
-            'number_deliveries_success_open_success'
+            'number_deliveries_success_open_success',
         ]);
     }
 

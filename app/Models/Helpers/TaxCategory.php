@@ -27,9 +27,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaxCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaxCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaxCategory query()
+ *
  * @mixin \Eloquent
  */
 class TaxCategory extends Model
@@ -37,10 +39,10 @@ class TaxCategory extends Model
     use HasSlug;
 
     protected $casts = [
-        'data'   => 'array',
+        'data' => 'array',
         'status' => 'boolean',
-        'rate'   => 'decimal:4',
-        'type'   => TaxCategoryTypeEnum::class
+        'rate' => 'decimal:4',
+        'type' => TaxCategoryTypeEnum::class,
     ];
 
     protected $attributes = [
@@ -56,6 +58,4 @@ class TaxCategory extends Model
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
     }
-
-
 }

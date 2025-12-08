@@ -18,26 +18,26 @@ trait WithAnalyticsSubNavigations
     {
         return [
             [
-                "label"    => __("Dashboard"),
-                "route"     => [
-                    "name"       => "grp.sysadmin.analytics.dashboard",
-                    "parameters" => [],
+                'label' => __('Dashboard'),
+                'route' => [
+                    'name' => 'grp.sysadmin.analytics.dashboard',
+                    'parameters' => [],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-tachometer-alt"],
-                    "tooltip" => __("Dashboard"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-tachometer-alt'],
+                    'tooltip' => __('Dashboard'),
                 ],
             ],
             [
-                "number"   => $group->sysadminStats->number_user_requests,
-                "label"    => __("User Requests"),
-                "route"     => [
-                    "name"       => "grp.sysadmin.analytics.request.index",
-                    "parameters" => [],
+                'number' => $group->sysadminStats->number_user_requests,
+                'label' => __('User Requests'),
+                'route' => [
+                    'name' => 'grp.sysadmin.analytics.request.index',
+                    'parameters' => [],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-user-slash"],
-                    "tooltip" => __("Suspended Users"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-user-slash'],
+                    'tooltip' => __('Suspended Users'),
                 ],
             ],
         ];

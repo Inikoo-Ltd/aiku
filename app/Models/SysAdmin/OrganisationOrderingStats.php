@@ -226,9 +226,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $lost_revenue_other_amount_org_currency
  * @property string $lost_revenue_other_amount_grp_currency
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats query()
+ *
  * @mixin \Eloquent
  */
 class OrganisationOrderingStats extends Model

@@ -35,11 +35,11 @@ class DashboardTotalPlatformSalesResource extends JsonResource
             [
                 'label' => [
                     'formatted_value' => 'All Platform',
-                    'align'           => 'left',
+                    'align' => 'left',
                 ],
                 'label_minified' => [
                     'formatted_value' => 'All Platform',
-                    'align'           => 'left',
+                    'align' => 'left',
                 ],
                 'sales_percentage' => [
                     'formatted_value' => '100%',
@@ -62,7 +62,7 @@ class DashboardTotalPlatformSalesResource extends JsonResource
             $this->getDashboardTableColumn($summedData, 'sales_grp_currency_delta')
         );
 
-        if (!empty($firstModel->shop_id)) {
+        if (! empty($firstModel->shop_id)) {
             $summedData = (object) array_merge(
                 (array) $summedData,
                 $this->sumIntervalValues($models, 'sales'),
@@ -83,7 +83,7 @@ class DashboardTotalPlatformSalesResource extends JsonResource
         }
 
         return [
-            'slug'    => 'totals',
+            'slug' => 'totals',
             'columns' => $columns,
         ];
     }

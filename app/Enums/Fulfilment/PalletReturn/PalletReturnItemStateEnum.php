@@ -20,26 +20,26 @@ enum PalletReturnItemStateEnum: string
 {
     use EnumHelperTrait;
 
-    case IN_PROCESS      = 'in_process';
-    case SUBMITTED       = 'submitted';
-    case CONFIRMED       = 'confirmed';
-    case PICKING         = 'picking';
-    case PICKED          = 'picked';
-    case NOT_PICKED      = 'not_picked';
-    case DISPATCHED      = 'dispatched';
-    case CANCEL          = 'cancel';
+    case IN_PROCESS = 'in_process';
+    case SUBMITTED = 'submitted';
+    case CONFIRMED = 'confirmed';
+    case PICKING = 'picking';
+    case PICKED = 'picked';
+    case NOT_PICKED = 'not_picked';
+    case DISPATCHED = 'dispatched';
+    case CANCEL = 'cancel';
 
     public static function labels(): array
     {
         return [
-            'in_process'               => __('In Process'),
-            'submitted'                => __('Submitted'),
-            'confirmed'                => __('Confirmed'),
-            'picking'                  => __('Picking'),
-            'picked'                   => __('Picked'),
-            'not_picked'               => __('Not Picked'),
-            'dispatched'               => __('Dispatched'),
-            'cancel'                   => __('Cancel')
+            'in_process' => __('In Process'),
+            'submitted' => __('Submitted'),
+            'confirmed' => __('Confirmed'),
+            'picking' => __('Picking'),
+            'picked' => __('Picked'),
+            'not_picked' => __('Not Picked'),
+            'dispatched' => __('Dispatched'),
+            'cancel' => __('Cancel'),
         ];
     }
 
@@ -48,51 +48,51 @@ enum PalletReturnItemStateEnum: string
         return [
             'in_process' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
-                'color'   => 'lime'  // Color for box (Retina)
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',  // Color for normal icon (Aiku)
+                'color' => 'lime',  // Color for box (Retina)
             ],
             'submitted' => [
                 'tooltip' => __('Submitted'),
-                'icon'    => 'fal fa-share',
-                'class'   => 'text-indigo-400',
-                'color'   => 'indigo'
+                'icon' => 'fal fa-share',
+                'class' => 'text-indigo-400',
+                'color' => 'indigo',
             ],
-            'confirmed'  => [
+            'confirmed' => [
                 'tooltip' => __('Confirmed'),
-                'icon'    => 'fal fa-spell-check',
-                'class'   => 'text-emerald-500',
-                'color'   => 'emerald'
+                'icon' => 'fal fa-spell-check',
+                'class' => 'text-emerald-500',
+                'color' => 'emerald',
             ],
             'picking' => [
                 'tooltip' => __('Picking'),
-                'icon'    => 'fal fa-truck',
-                'class'   => 'text-orange-500',
-                'color'   => 'orange'
+                'icon' => 'fal fa-truck',
+                'class' => 'text-orange-500',
+                'color' => 'orange',
             ],
             'picked' => [
                 'tooltip' => __('Picked'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-slate-500',
-                'color'   => 'slate'
+                'icon' => 'fal fa-check',
+                'class' => 'text-slate-500',
+                'color' => 'slate',
             ],
             'not_picked' => [
                 'tooltip' => __('Not Picked'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red'
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
             ],
             'dispatched' => [
                 'tooltip' => __('Dispatched'),
-                'icon'    => 'fal fa-check-double',
-                'class'   => 'text-purple-500',
-                'color'   => 'purple'
+                'icon' => 'fal fa-check-double',
+                'class' => 'text-purple-500',
+                'color' => 'purple',
             ],
             'cancel' => [
                 'tooltip' => __('Cancel'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red'
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
             ],
         ];
     }
@@ -106,14 +106,14 @@ enum PalletReturnItemStateEnum: string
         }
 
         return [
-            'in_process'   => $stats->number_pallet_returns_state_in_process,
-            'submitted'    => $stats->number_pallet_returns_state_submitted,
-            'confirmed'    => $stats->number_pallet_returns_state_confirmed,
-            'picking'      => $stats->number_pallet_returns_state_picking,
-            'picked'       => $stats->number_pallet_returns_state_picked,
-            'not_picked'   => $stats->number_pallet_returns_state_not_picked,
-            'dispatched'   => $stats->number_pallet_returns_state_dispatched,
-            'cancel'       => $stats->number_pallet_returns_state_cancel
+            'in_process' => $stats->number_pallet_returns_state_in_process,
+            'submitted' => $stats->number_pallet_returns_state_submitted,
+            'confirmed' => $stats->number_pallet_returns_state_confirmed,
+            'picking' => $stats->number_pallet_returns_state_picking,
+            'picked' => $stats->number_pallet_returns_state_picked,
+            'not_picked' => $stats->number_pallet_returns_state_not_picked,
+            'dispatched' => $stats->number_pallet_returns_state_dispatched,
+            'cancel' => $stats->number_pallet_returns_state_cancel,
         ];
     }
 }

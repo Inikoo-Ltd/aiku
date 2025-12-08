@@ -15,5 +15,4 @@ Route::name('payment.')->prefix('payment/{payment:id}')->group(function () {
     Route::post('/refund-manual', RefundPaymentManual::class)->name('refund_manual');
     Route::post('/refund-api', RefundPaymentManual::class)->name('refund_api');
 
-
 });

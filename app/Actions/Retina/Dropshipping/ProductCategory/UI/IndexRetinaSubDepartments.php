@@ -29,7 +29,6 @@ class IndexRetinaSubDepartments extends RetinaAction
 {
     private Shop|ProductCategory $parent;
 
-
     public function inDepartment(ProductCategory $department, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
@@ -45,7 +44,6 @@ class IndexRetinaSubDepartments extends RetinaAction
 
         return $this->handle(parent: $this->shop);
     }
-
 
     public function handle(ProductCategory|Shop $parent, $prefix = null): LengthAwarePaginator
     {
@@ -115,26 +113,26 @@ class IndexRetinaSubDepartments extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $subDepartment, ActionRequest $request): Response
     {
-        $title      = __('Sub-departments');
-        $model      = '';
-        $icon       = [
-            'icon'  => ['fal', 'fa-dot-circle'],
-            'title' => __('Sub-department')
+        $title = __('Sub-departments');
+        $model = '';
+        $icon = [
+            'icon' => ['fal', 'fa-dot-circle'],
+            'title' => __('Sub-department'),
         ];
         $afterTitle = null;
-        $iconRight  = null;
+        $iconRight = null;
 
         if ($this->parent instanceof ProductCategory && $this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $title      = $this->parent->name;
-            $icon       = [
-                'icon'  => ['fal', 'fa-folder-tree'],
-                'title' => __('Department')
+            $title = $this->parent->name;
+            $icon = [
+                'icon' => ['fal', 'fa-folder-tree'],
+                'title' => __('Department'),
             ];
-            $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
+            $iconRight = $this->parent->state->stateIcon()[$this->parent->state->value];
 
             $afterTitle = [
 
-                'label' => __('Sub-departments')
+                'label' => __('Sub-departments'),
             ];
         }
 
@@ -145,49 +143,46 @@ class IndexRetinaSubDepartments extends RetinaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('sub-departments'),
-                'pageHead'    => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => __('sub-departments'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                 ],
-                'data'        => SubDepartmentsResource::collection($subDepartment),
+                'data' => SubDepartmentsResource::collection($subDepartment),
             ]
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Sub Departments'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
-                ]
+                    'suffix' => $suffix,
+                ],
             ];
         };
 
         return match ($routeName) {
-            'retina.catalogue.sub_department.index' =>
-            array_merge(
+            'retina.catalogue.sub_department.index' => array_merge(
                 ShowRetinaCatalogue::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ],
                     $suffix
                 )
             ),
-
-
 
             default => []
         };

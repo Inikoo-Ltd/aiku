@@ -35,5 +35,4 @@ enum OrgPostRoomTypeEnum: string
             PostRoomCodeEnum::TEST => 'Tests',
         };
     }
-
 }

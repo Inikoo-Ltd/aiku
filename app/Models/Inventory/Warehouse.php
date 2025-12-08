@@ -84,6 +84,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Collection<int, UniversalSearch> $universalSearches
  * @property-read Collection<int, \App\Models\Inventory\WarehouseArea> $warehouseAreas
+ *
  * @method static \Database\Factories\Inventory\WarehouseFactory factory($count = null, $state = [])
  * @method static Builder<static>|Warehouse newModelQuery()
  * @method static Builder<static>|Warehouse newQuery()
@@ -91,32 +92,33 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Warehouse query()
  * @method static Builder<static>|Warehouse withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Warehouse withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Warehouse extends Model implements Auditable
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasUniversalSearch;
-    use HasFactory;
-    use HasHistory;
-    use InOrganisation;
     use HasAddress;
     use HasAddresses;
+    use HasFactory;
+    use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InOrganisation;
+    use SoftDeletes;
 
     protected $casts = [
-        'state'              => WarehouseStateEnum::class,
-        'data'               => 'array',
-        'settings'           => 'array',
-        'location'           => 'array',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'state' => WarehouseStateEnum::class,
+        'data' => 'array',
+        'settings' => 'array',
+        'location' => 'array',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
-        'location' => '{}'
+        'location' => '{}',
     ];
 
     protected $guarded = [];
@@ -124,7 +126,7 @@ class Warehouse extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'warehouse'
+            'warehouse',
         ];
     }
 
@@ -134,7 +136,7 @@ class Warehouse extends Model implements Auditable
         'state',
         'allow_stocks',
         'allow_fulfilment',
-        'allow_dropshipping'
+        'allow_dropshipping',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -225,5 +227,4 @@ class Warehouse extends Model implements Auditable
     {
         return $this->hasMany(PickingSession::class);
     }
-
 }

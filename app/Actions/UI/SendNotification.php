@@ -11,8 +11,8 @@ namespace App\Actions\UI;
 use App\Events\BroadcastUserNotification;
 use App\Models\SysAdmin\Group;
 use Exception;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Console\Command;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class SendNotification
 {
@@ -37,15 +37,13 @@ class SendNotification
 
         if ($command->hasArgument('message')) {
             $title = 'Hey';
-            $text  = $command->argument('message');
+            $text = $command->argument('message');
         } else {
             $title = $command->ask('Title');
-            $text  = $command->ask('Text');
+            $text = $command->ask('Text');
         }
         $this->handle($group, $title, $text);
 
-
         return 0;
     }
-
 }

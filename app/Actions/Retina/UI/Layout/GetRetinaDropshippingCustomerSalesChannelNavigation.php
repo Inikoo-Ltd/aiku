@@ -24,35 +24,33 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
 
         if ($isManual) {
             $platformNavigation['baskets'] = [
-                'label'       => __('Baskets'),
-                'icon'        => ['fal', 'fa-shopping-basket'],
-                'root'        => 'retina.dropshipping.customer_sales_channels.basket.',
+                'label' => __('Baskets'),
+                'icon' => ['fal', 'fa-shopping-basket'],
+                'root' => 'retina.dropshipping.customer_sales_channels.basket.',
                 'right_label' => [
                     'number' => $customerSalesChannel->number_orders_state_creating,
-                    'class'  => 'bg-yellow-500 text-green-500'
+                    'class' => 'bg-yellow-500 text-green-500',
                 ],
-                'route'       => [
-                    'name'       => 'retina.dropshipping.customer_sales_channels.basket.index',
-                    'parameters' => [$customerSalesChannel->slug]
+                'route' => [
+                    'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
+                    'parameters' => [$customerSalesChannel->slug],
                 ],
             ];
         }
 
-
-
         // If channel installed
         if ($isManual || $customerSalesChannel->can_connect_to_platform) {
             $platformNavigation['portfolios'] = [
-                'label'       => __('My Products'),
-                'icon'        => ['fal', 'fa-cube'],
-                'root'        => 'retina.dropshipping.customer_sales_channels.portfolios.',
-                'route'       => [
-                    'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.index',
-                    'parameters' => [$customerSalesChannel->slug]
+                'label' => __('My Products'),
+                'icon' => ['fal', 'fa-cube'],
+                'root' => 'retina.dropshipping.customer_sales_channels.portfolios.',
+                'route' => [
+                    'name' => 'retina.dropshipping.customer_sales_channels.portfolios.index',
+                    'parameters' => [$customerSalesChannel->slug],
                 ],
                 'right_label' => [
-                    'number'        => $customerSalesChannel->number_portfolios - $customerSalesChannel->portfolios()->where('status', false)->count(), // TODO: Move to hydrators later
-                    'class'        => 'text-white',
+                    'number' => $customerSalesChannel->number_portfolios - $customerSalesChannel->portfolios()->where('status', false)->count(), // TODO: Move to hydrators later
+                    'class' => 'text-white',
                 ],
 
             ];
@@ -60,33 +58,33 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
 
         if ($isManual) {
             $platformNavigation['client'] = [
-                        'label' => __('Clients'),
-                        'icon'  => ['fal', 'fa-user-friends'],
-                        'root'  => 'retina.dropshipping.customer_sales_channels.client.',
-                        'route' => [
-                            'name'       => 'retina.dropshipping.customer_sales_channels.client.index',
-                            'parameters' => [$customerSalesChannel->slug]
-                        ],
-                        'right_label' => [
-                            'number'        => $customerSalesChannel->number_customer_clients,
-                            'class'        => 'text-white',
-                        ],
-                    ];
+                'label' => __('Clients'),
+                'icon' => ['fal', 'fa-user-friends'],
+                'root' => 'retina.dropshipping.customer_sales_channels.client.',
+                'route' => [
+                    'name' => 'retina.dropshipping.customer_sales_channels.client.index',
+                    'parameters' => [$customerSalesChannel->slug],
+                ],
+                'right_label' => [
+                    'number' => $customerSalesChannel->number_customer_clients,
+                    'class' => 'text-white',
+                ],
+            ];
         }
 
         // If channel installed
         if ($isManual || $customerSalesChannel->can_connect_to_platform) {
             $platformNavigation['orders'] = [
                 'label' => __('Orders'),
-                'icon'  => ['fal', 'fa-shopping-cart'],
-                'root'  => 'retina.dropshipping.customer_sales_channels.orders.',
+                'icon' => ['fal', 'fa-shopping-cart'],
+                'root' => 'retina.dropshipping.customer_sales_channels.orders.',
                 'route' => [
-                    'name'       => 'retina.dropshipping.customer_sales_channels.orders.index',
-                    'parameters' => [$customerSalesChannel->slug]
+                    'name' => 'retina.dropshipping.customer_sales_channels.orders.index',
+                    'parameters' => [$customerSalesChannel->slug],
                 ],
                 'right_label' => [
-                    'number'        => $customerSalesChannel->number_orders - $customerSalesChannel->number_orders_state_creating - $customerSalesChannel->number_orders_state_cancelled,
-                    'class'        => 'text-white',
+                    'number' => $customerSalesChannel->number_orders - $customerSalesChannel->number_orders_state_creating - $customerSalesChannel->number_orders_state_cancelled,
+                    'class' => 'text-white',
                 ],
             ];
         }
@@ -94,16 +92,14 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
         if ($isManual) {
             $platformNavigation['api_token'] = [
                 'label' => __('Api'),
-                'icon'  => ['fal', 'fa-key'],
-                'root'  => 'retina.dropshipping.customer_sales_channels.api.',
+                'icon' => ['fal', 'fa-key'],
+                'root' => 'retina.dropshipping.customer_sales_channels.api.',
                 'route' => [
-                    'name'       => 'retina.dropshipping.customer_sales_channels.api.dashboard',
-                    'parameters' => [$customerSalesChannel->slug]
+                    'name' => 'retina.dropshipping.customer_sales_channels.api.dashboard',
+                    'parameters' => [$customerSalesChannel->slug],
                 ],
             ];
         }
-
-
 
         return $platformNavigation;
     }

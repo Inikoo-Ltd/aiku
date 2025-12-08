@@ -18,7 +18,6 @@ class OrganisationHydratePortfolios implements ShouldBeUnique
     use AsAction;
     use WithHydratePortfolios;
 
-
     public string $jobQueue = 'low-priority';
 
     public function getJobUniqueId(Organisation $organisation): string

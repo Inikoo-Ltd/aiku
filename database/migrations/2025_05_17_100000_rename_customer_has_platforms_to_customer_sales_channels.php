@@ -9,12 +9,12 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::rename('customer_has_platforms', 'customer_sales_channels');
     }
-
 
     public function down(): void
     {

@@ -14,9 +14,9 @@ enum ElasticsearchUserRequestTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case VISIT        = 'visit';
-    case ACTION       = 'action';
-    case FAIL_LOGIN   = 'fail_login';
-    case LOGIN        = 'login';
-    case LOGOUT       = 'logout';
+    case VISIT = 'visit';
+    case ACTION = 'action';
+    case FAIL_LOGIN = 'fail_login';
+    case LOGIN = 'login';
+    case LOGOUT = 'logout';
 }

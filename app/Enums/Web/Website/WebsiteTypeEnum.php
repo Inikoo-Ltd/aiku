@@ -15,22 +15,21 @@ enum WebsiteTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case INFO         = 'info';
-    case B2B          = 'b2b';
-    case B2C          = 'b2c';
+    case INFO = 'info';
+    case B2B = 'b2b';
+    case B2C = 'b2c';
     case DROPSHIPPING = 'dropshipping';
-    case FULFILMENT   = 'fulfilment';
+    case FULFILMENT = 'fulfilment';
     case DIGITAL_AGENCY = 'digital_agency';
-
 
     public static function labels(): array
     {
         return [
-            'info'         => __('info'),
-            'b2b'          => __('B2B'),
-            'b2c'          => __('B2C'),
+            'info' => __('info'),
+            'b2b' => __('B2B'),
+            'b2c' => __('B2C'),
             'dropshipping' => __('dropshipping'),
-            'fulfilment'   => __('fulfilment'),
+            'fulfilment' => __('fulfilment'),
         ];
     }
 
@@ -39,13 +38,11 @@ enum WebsiteTypeEnum: string
         $webStats = $parent->webStats;
 
         return [
-            'info'         => $webStats->number_websites_type_info,
-            'b2b'          => $webStats->number_websites_type_b2b,
-            'b2c'          => $webStats->number_websites_type_b2c,
+            'info' => $webStats->number_websites_type_info,
+            'b2b' => $webStats->number_websites_type_b2b,
+            'b2c' => $webStats->number_websites_type_b2c,
             'dropshipping' => $webStats->number_websites_type_dropshipping,
-            'fulfilment'   => $webStats->number_websites_type_fulfilment,
+            'fulfilment' => $webStats->number_websites_type_fulfilment,
         ];
     }
-
-
 }

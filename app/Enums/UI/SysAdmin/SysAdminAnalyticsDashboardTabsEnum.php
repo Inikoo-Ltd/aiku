@@ -23,7 +23,7 @@ enum SysAdminAnalyticsDashboardTabsEnum: string
         return match ($this) {
             SysAdminAnalyticsDashboardTabsEnum::DASHBOARD => [
                 'title' => __('Dashboard'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

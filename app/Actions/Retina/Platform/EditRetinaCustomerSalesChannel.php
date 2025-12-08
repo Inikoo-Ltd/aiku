@@ -34,88 +34,88 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
             $routeName = 'retina.models.customer_sales_channel.ebay_update';
             $properties = [
                 [
-                    "label"  => __("Pricing"),
-                    'icon'    => 'fa-light fa-user',
-                    'title'  => __('pricing'),
+                    'label' => __('Pricing'),
+                    'icon' => 'fa-light fa-user',
+                    'title' => __('pricing'),
                     'fields' => [
                         'is_vat_adjustment' => [
-                            'type'  => 'toggle',
+                            'type' => 'toggle',
                             'label' => __('VAT Pricing Adjustment'),
-                            'value' => (bool) Arr::get($customerSalesChannel->settings, 'tax_category.checked')
+                            'value' => (bool) Arr::get($customerSalesChannel->settings, 'tax_category.checked'),
                         ],
                         'tax_category_id' => [
-                            'type'     => 'select',
-                            'label'    => __('Vat Category'),
+                            'type' => 'select',
+                            'label' => __('Vat Category'),
                             'required' => true,
                             'hidden' => ! Arr::get($customerSalesChannel->settings, 'tax_category.checked'),
                             'options' => Options::forModels(TaxCategory::class),
-                            'value'    => Arr::get($customerSalesChannel->settings, 'tax_category.id')
+                            'value' => Arr::get($customerSalesChannel->settings, 'tax_category.id'),
                         ],
-                    ]
+                    ],
                 ],
                 [
-                    "label"  => __("Shipping"),
-                    'icon'    => 'fa-light fa-truck',
-                    'title'  => __('shipping'),
+                    'label' => __('Shipping'),
+                    'icon' => 'fa-light fa-truck',
+                    'title' => __('shipping'),
                     'fields' => [
                         'shipping_service' => [
-                            'type'  => 'select',
+                            'type' => 'select',
                             'label' => __('shipping service'),
                             'options' => Options::forArray($user->getServicesForOptions()),
                             'value' => Arr::get($customerSalesChannel->settings, 'shipping.service_code'),
                         ],
                         'shipping_price' => [
-                            'type'  => 'input',
+                            'type' => 'input',
                             'label' => __('shipping price'),
-                            'value' => Arr::get($customerSalesChannel->settings, 'shipping.price')
+                            'value' => Arr::get($customerSalesChannel->settings, 'shipping.price'),
                         ],
                         'shipping_max_dispatch_time' => [
-                            'type'  => 'input',
+                            'type' => 'input',
                             'label' => __('shipping max dispatch time'),
-                            'value' => Arr::get($customerSalesChannel->settings, 'shipping.max_dispatch_time')
+                            'value' => Arr::get($customerSalesChannel->settings, 'shipping.max_dispatch_time'),
                         ],
-                    ]
+                    ],
                 ],
                 [
-                    "label"  => __("Returns"),
-                    'icon'    => 'fa-light fa-arrow-left',
-                    'title'  => __('returns'),
+                    'label' => __('Returns'),
+                    'icon' => 'fa-light fa-arrow-left',
+                    'title' => __('returns'),
                     'fields' => [
                         'return_accepted' => [
-                            'type'  => 'toggle',
+                            'type' => 'toggle',
                             'label' => __('Returns Accepted'),
-                            'value' => (bool) Arr::get($customerSalesChannel->settings, 'return.accepted')
+                            'value' => (bool) Arr::get($customerSalesChannel->settings, 'return.accepted'),
                         ],
                         'return_payer' => [
-                            'type'     => 'select',
-                            'label'    => __('Return Payer'),
+                            'type' => 'select',
+                            'label' => __('Return Payer'),
                             'required' => true,
                             'hidden' => ! Arr::get($customerSalesChannel->settings, 'return.accepted'),
                             'options' => Options::forArray([
-                                    'SELLER' => __('Seller'),
-                                    'BUYER' => __('Buyer')
-                                ]),
-                            'value'    => Arr::get($customerSalesChannel->settings, 'return.payer')
+                                'SELLER' => __('Seller'),
+                                'BUYER' => __('Buyer'),
+                            ]),
+                            'value' => Arr::get($customerSalesChannel->settings, 'return.payer'),
                         ],
                         'return_within' => [
-                            'type'  => 'select',
+                            'type' => 'select',
                             'label' => __('returns within'),
                             'required' => true,
                             'hidden' => ! Arr::get($customerSalesChannel->settings, 'return.accepted'),
                             'options' => Options::forArray([
                                 14 => __('14 Days'),
                                 30 => __('30 Days'),
-                                60 => __('60 Days')
+                                60 => __('60 Days'),
                             ]),
-                            'value' => Arr::get($customerSalesChannel->settings, 'return.within')
+                            'value' => Arr::get($customerSalesChannel->settings, 'return.within'),
                         ],
                         'return_description' => [
-                            'type'  => 'textarea',
+                            'type' => 'textarea',
                             'label' => __('return description'),
                             'hidden' => ! Arr::get($customerSalesChannel->settings, 'return.accepted'),
-                            'value' => Arr::get($customerSalesChannel->settings, 'return.description')
+                            'value' => Arr::get($customerSalesChannel->settings, 'return.description'),
                         ],
-                    ]
+                    ],
                 ],
             ];
         }
@@ -126,52 +126,51 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $customerSalesChannel
                 ),
-                'title'       => __('Edit sales channel'),
-                'pageHead'    => [
-                    'title'   => __('Edit sales channel'),
-                    'icon'    => [
-                        'icon'  => ['fal', 'fa-code-branch'],
-                        'title' => __('Sales channel')
+                'title' => __('Edit sales channel'),
+                'pageHead' => [
+                    'title' => __('Edit sales channel'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-code-branch'],
+                        'title' => __('Sales channel'),
                     ],
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'label' => __('Exit edit'),
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
-                ],
-                'formData'    => [
-                    'blueprint' =>
-                        [
-                            [
-                                "label"  => __("Properties"),
-                                'icon'    => 'fa-light fa-fingerprint',
-                                'title'  => __('properties'),
-                                'fields' => [
-                                    'name' => [
-                                        'type'  => 'input',
-                                        'label' => __('store name'),
-                                        'value' => $customerSalesChannel->name
-                                    ],
-                                ]
-                            ],
-                            ...$properties
                         ],
-                    'args'      => [
-                        'updateRoute' => [
-                            'name'       => $routeName,
-                            'parameters' => [
-                                'customerSalesChannel' => $customerSalesChannel->id
+                    ],
+                ],
+                'formData' => [
+                    'blueprint' => [
+                        [
+                            'label' => __('Properties'),
+                            'icon' => 'fa-light fa-fingerprint',
+                            'title' => __('properties'),
+                            'fields' => [
+                                'name' => [
+                                    'type' => 'input',
+                                    'label' => __('store name'),
+                                    'value' => $customerSalesChannel->name,
+                                ],
                             ],
-                            'method'     => 'patch'
-                        ]
-                    ]
-                ]
+                        ],
+                        ...$properties,
+                    ],
+                    'args' => [
+                        'updateRoute' => [
+                            'name' => $routeName,
+                            'parameters' => [
+                                'customerSalesChannel' => $customerSalesChannel->id,
+                            ],
+                            'method' => 'patch',
+                        ],
+                    ],
+                ],
             ]
         );
     }
@@ -191,11 +190,11 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
             ),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Editing Channel'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

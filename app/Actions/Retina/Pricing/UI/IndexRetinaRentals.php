@@ -29,12 +29,13 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexRetinaRentals extends RetinaAction
 {
     use WithRetinaPricingSubNavigation;
+
     protected function getElementGroups(Fulfilment $parent): array
     {
         return [
 
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     RentalStateEnum::labels(),
                     RentalStateEnum::count($parent->shop)
@@ -42,7 +43,7 @@ class IndexRetinaRentals extends RetinaAction
 
                 'engine' => function ($query, $elements) {
                     $query->whereIn('rentals.state', $elements);
-                }
+                },
 
             ],
         ];
@@ -65,7 +66,6 @@ class IndexRetinaRentals extends RetinaAction
         $queryBuilder->where('rentals.shop_id', $this->fulfilment->shop_id);
         $queryBuilder->join('assets', 'rentals.asset_id', '=', 'assets.id');
         $queryBuilder->join('currencies', 'assets.currency_id', '=', 'currencies.id');
-
 
         foreach ($this->getElementGroups($this->fulfilment) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -95,8 +95,7 @@ class IndexRetinaRentals extends RetinaAction
                 'currencies.id as currency_id',
             ]);
 
-
-        return $queryBuilder->allowedSorts(['code','name','rental_price'])
+        return $queryBuilder->allowedSorts(['code', 'name', 'rental_price'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -109,30 +108,28 @@ class IndexRetinaRentals extends RetinaAction
         return $this->handle();
     }
 
-
-
     public function htmlResponse(LengthAwarePaginator $rentals, ActionRequest $request): Response
     {
         // dd(ServicesResource::collection($services));
         return Inertia::render(
             'Pricing/RetinaRentals',
             [
-                'title'       => __('Rentals'),
+                'title' => __('Rentals'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'pageHead'    => [
-                    'icon'    => [
-                        'icon'  => ['fal', 'fa-garage'],
-                        'title' => __('Rentals')
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-garage'],
+                        'title' => __('Rentals'),
                     ],
-                    'model'    => __('Pricing'),
-                    'title'         => __('Rentals'),
+                    'model' => __('Pricing'),
+                    'title' => __('Rentals'),
                     'subNavigation' => $this->getPricingNavigation($this->fulfilment),
                 ],
 
-                'data'        => RentalsResource::collection($rentals),
+                'data' => RentalsResource::collection($rentals),
             ]
         )->table(
             $this->tableStructure(
@@ -147,7 +144,7 @@ class IndexRetinaRentals extends RetinaAction
         $prefix = null,
         $canEdit = false
     ): Closure {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -168,7 +165,7 @@ class IndexRetinaRentals extends RetinaAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Fulfilment' => [
-                            'title' => __("No rentals found"),
+                            'title' => __('No rentals found'),
                             'count' => $parent->shop->stats->number_assets_type_rental,
                         ],
                         default => null
@@ -184,25 +181,23 @@ class IndexRetinaRentals extends RetinaAction
         };
     }
 
-
     public function jsonResponse(LengthAwarePaginator $rentals): AnonymousResourceCollection
     {
         return RentalsResource::collection($rentals);
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
     {
         $headCrumb = function (array $routeParameters = []) use ($suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Rentals'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
@@ -212,12 +207,10 @@ class IndexRetinaRentals extends RetinaAction
                 IndexRetinaPricing::make()->getBreadcrumbs(routeName: $routeName),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ]
                 )
             );
     }
-
-
 }

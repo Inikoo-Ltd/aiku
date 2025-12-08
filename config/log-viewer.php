@@ -56,7 +56,7 @@ return [
     */
 
     'exclude_files' => [
-        //'my_secret.log'
+        // 'my_secret.log'
     ],
 
     /*

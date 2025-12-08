@@ -106,9 +106,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_current_orders Number of orders has state submitted, in_warehouse, handling, handling_blocked, packed, finalised
  * @property string $current_orders_amount Total amount of orders has state submitted, in_warehouse, handling, handling_blocked, packed, finalised
  * @property-read \App\Models\Dropshipping\CustomerClient $customerClient
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerClientStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerClientStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerClientStats query()
+ *
  * @mixin \Eloquent
  */
 class CustomerClientStats extends Model

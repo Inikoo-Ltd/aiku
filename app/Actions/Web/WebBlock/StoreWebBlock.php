@@ -21,7 +21,6 @@ class StoreWebBlock extends OrgAction
 {
     use WithWebAuthorisation;
 
-
     public function handle(WebBlockType $webBlockType, array $modelData): WebBlock
     {
         $models = Arr::pull($modelData, 'models', []);
@@ -39,7 +38,6 @@ class StoreWebBlock extends OrgAction
         /** @var WebBlock $webBlock */
         $webBlock = $webBlockType->webBlocks()->create($modelData);
 
-
         foreach ($models as $model) {
             if ($model instanceof Product) {
                 $webBlock->products()->attach($model->id);
@@ -56,11 +54,11 @@ class StoreWebBlock extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'layout'     => ['sometimes', 'array'],
-            'models'    =>  ['sometimes', 'array']
+            'layout' => ['sometimes', 'array'],
+            'models' => ['sometimes', 'array'],
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules['migration_checksum'] = ['sometimes', 'string'];
         }
 
@@ -69,12 +67,11 @@ class StoreWebBlock extends OrgAction
 
     public function action(WebBlockType $webBlockType, array $modelData, $strict = true): WebBlock
     {
-        $this->strict   = $strict;
+        $this->strict = $strict;
         $this->asAction = true;
 
         $this->initialisationFromGroup($webBlockType->group, $modelData);
 
         return $this->handle($webBlockType, $this->validatedData);
     }
-
 }

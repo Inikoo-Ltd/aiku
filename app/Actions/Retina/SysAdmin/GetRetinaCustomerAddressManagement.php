@@ -24,25 +24,25 @@ class GetRetinaCustomerAddressManagement
 
     public function handle(Customer $customer): array
     {
-        $addresses                = [];
-        $addressUpdateRoute       = [];
+        $addresses = [];
+        $addressUpdateRoute = [];
         $canOpenAddressManagement = false;
         if ($customer->shop->type != ShopTypeEnum::DROPSHIPPING) {
             $canOpenAddressManagement = true;
-            $addresses                = $this->getAddresses($customer);
-            $addressUpdateRoute       = [
-                'method'     => 'patch',
-                'name'       => 'retina.models.customer.address.update',
+            $addresses = $this->getAddresses($customer);
+            $addressUpdateRoute = [
+                'method' => 'patch',
+                'name' => 'retina.models.customer.address.update',
                 'parameters' => [
-                    'customer' => $customer->id
-                ]
+                    'customer' => $customer->id,
+                ],
             ];
         }
 
         $address_management = [
             'can_open_address_management' => $canOpenAddressManagement,
-            'address_update_route'        => $addressUpdateRoute,
-            'addresses'                   => $addresses
+            'address_update_route' => $addressUpdateRoute,
+            'addresses' => $addresses,
         ];
 
         return $address_management;
@@ -53,17 +53,16 @@ class GetRetinaCustomerAddressManagement
         $addresses = $customer->addresses;
 
         $processedAddresses = $addresses->map(function ($address) {
-            if (!DB::table('model_has_addresses')->where('address_id', $address->id)->where('model_type', '=', 'Customer')->exists()) {
+            if (! DB::table('model_has_addresses')->where('address_id', $address->id)->where('model_type', '=', 'Customer')->exists()) {
                 return $address->setAttribute('can_delete', false)
                     ->setAttribute('can_edit', true);
             }
-
 
             return $address->setAttribute('can_delete', true)
                 ->setAttribute('can_edit', true);
         });
 
-        $customerAddressId         = $customer->address->id;
+        $customerAddressId = $customer->address->id;
         $customerDeliveryAddressId = $customer->deliveryAddress->id;
         if ($customer->fulfilmentCustomer) {
             $palletReturnDeliveryAddressIds = PalletReturn::where('fulfilment_customer_id', $customer->fulfilmentCustomer->id)
@@ -72,10 +71,10 @@ class GetRetinaCustomerAddressManagement
                 ->toArray();
         } else {
             $palletReturnDeliveryAddressIds = Order::where('customer_id', $customer->id)
-            ->pluck('delivery_address_id')
-            ->unique()
-            ->toArray();
-            ;
+                ->pluck('delivery_address_id')
+                ->unique()
+                ->toArray();
+
         }
 
         $forbiddenAddressIds = array_merge(
@@ -93,38 +92,38 @@ class GetRetinaCustomerAddressManagement
         $addressCollection = AddressResource::collection($processedAddresses);
 
         return [
-            'isCannotSelect'                 => true,
-            'address_list'                   => $addressCollection,
-            'options'                        => [
-                'countriesAddressData' => GetAddressData::run()
+            'isCannotSelect' => true,
+            'address_list' => $addressCollection,
+            'options' => [
+                'countriesAddressData' => GetAddressData::run(),
             ],
-            'pinned_address_id'              => $customer->delivery_address_id,
-            'home_address_id'                => $customer->address_id,
-            'current_selected_address_id'    => $customer->delivery_address_id,
+            'pinned_address_id' => $customer->delivery_address_id,
+            'home_address_id' => $customer->address_id,
+            'current_selected_address_id' => $customer->delivery_address_id,
             'selected_delivery_addresses_id' => $palletReturnDeliveryAddressIds,
-            'routes_list'                    => [
+            'routes_list' => [
                 'pinned_route' => [
-                    'method'     => 'patch',
-                    'name'       => 'retina.models.customer.delivery-address.update',
+                    'method' => 'patch',
+                    'name' => 'retina.models.customer.delivery-address.update',
                     'parameters' => [
-                        'customer' => $customer->id
-                    ]
+                        'customer' => $customer->id,
+                    ],
                 ],
                 'delete_route' => [
-                    'method'     => 'delete',
-                    'name'       => 'retina.models.customer.delivery-address.delete',
+                    'method' => 'delete',
+                    'name' => 'retina.models.customer.delivery-address.delete',
                     'parameters' => [
-                        'customer' => $customer->id
-                    ]
+                        'customer' => $customer->id,
+                    ],
                 ],
-                'store_route'  => [
-                    'method'     => 'post',
-                    'name'       => 'retina.models.customer.delivery-address.store',
+                'store_route' => [
+                    'method' => 'post',
+                    'name' => 'retina.models.customer.delivery-address.store',
                     'parameters' => [
-                        'customer' => $customer->id
-                    ]
-                ]
-            ]
+                        'customer' => $customer->id,
+                    ],
+                ],
+            ],
         ];
     }
 }

@@ -17,41 +17,41 @@ trait WithWebsiteWorkshop
     {
         return [
             [
-                'key'   => 'exit_workshop',
-                'type'  => 'button',
+                'key' => 'exit_workshop',
+                'type' => 'button',
                 'style' => 'exit',
                 'label' => __('Exit workshop'),
                 'route' => ($website->shop->type === ShopTypeEnum::FULFILMENT)
                     ? [
-                        'name'       => 'grp.org.fulfilments.show.web.websites.workshop',
+                        'name' => 'grp.org.fulfilments.show.web.websites.workshop',
                         'parameters' => [
                             'organisation' => $website->organisation,
-                            'fulfilment'   => $website->shop->slug,
-                            'website'      => $website
+                            'fulfilment' => $website->shop->slug,
+                            'website' => $website,
                         ],
                     ]
                     : [
-                        'name'       => 'grp.org.shops.show.web.websites.workshop',
+                        'name' => 'grp.org.shops.show.web.websites.workshop',
                         'parameters' => [
                             'organisation' => $website->organisation->slug,
-                            'shop'         => $website->shop->slug,
-                            'website'      => $website->slug
+                            'shop' => $website->shop->slug,
+                            'website' => $website->slug,
                         ],
-                    ]
+                    ],
             ],
             [
-                'key'   => 'publish',
-                'type'  => 'button',
+                'key' => 'publish',
+                'type' => 'button',
                 'style' => 'primary',
-                'icon'  => ["fas", "fa-rocket"],
+                'icon' => ['fas', 'fa-rocket'],
                 'label' => __('Publish'),
                 'route' => [
-                    'method'     => 'post',
-                    'name'       => $publishRoute,
+                    'method' => 'post',
+                    'name' => $publishRoute,
                     'parameters' => [
-                        'website' => $website->id
+                        'website' => $website->id,
                     ],
-                ]
+                ],
             ],
         ];
     }

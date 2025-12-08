@@ -30,8 +30,8 @@ class AddItemPurchaseOrder
     {
         return [
             'supplier_product_id' => ['required', 'exists:supplier_products,id'],
-            'unit_price'          => ['required', 'numeric', 'gt:0'],
-            'unit_quantity'       => ['required', 'numeric', 'gt:0']
+            'unit_price' => ['required', 'numeric', 'gt:0'],
+            'unit_quantity' => ['required', 'numeric', 'gt:0'],
         ];
     }
 

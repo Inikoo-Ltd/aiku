@@ -21,29 +21,27 @@ class FetchAuroraStockDeliveryItem extends FetchAurora
         if ($this->auroraModelData->{'Purchase Order Transaction Part SKU'}) {
             $orgStock = $this->parseOrgStock($this->organisation->id.':'.$this->auroraModelData->{'Purchase Order Transaction Part SKU'});
         }
-        if (!$orgStock) {
-            print "SD  ".$this->auroraModelData->{'Supplier Delivery Key'}."  SKU not found (".$this->auroraModelData->{'Purchase Order Transaction Part SKU'}.")   ".$this->auroraModelData->{'Purchase Order Transaction Fact Key'}."  \n";
+        if (! $orgStock) {
+            echo 'SD  '.$this->auroraModelData->{'Supplier Delivery Key'}.'  SKU not found ('.$this->auroraModelData->{'Purchase Order Transaction Part SKU'}.')   '.$this->auroraModelData->{'Purchase Order Transaction Fact Key'}."  \n";
+
             return;
         }
 
-
         $historicSupplierProduct = null;
-        if (!($stockDelivery->parent_type == 'OrgPartner' || $stockDelivery->parent_type == 'Production')) {
+        if (! ($stockDelivery->parent_type == 'OrgPartner' || $stockDelivery->parent_type == 'Production')) {
             $historicSupplierProduct = $this->parseHistoricSupplierProduct($this->organisation->id, $this->auroraModelData->{'Supplier Part Historic Key'});
         }
 
-
-        if (!$historicSupplierProduct and !$orgStock) {
-            print "SD  ".$this->auroraModelData->{'Supplier Delivery Key'}."  Transaction Item not found   ".$this->auroraModelData->{'Purchase Order Transaction Fact Key'}."  \n";
+        if (! $historicSupplierProduct and ! $orgStock) {
+            echo 'SD  '.$this->auroraModelData->{'Supplier Delivery Key'}.'  Transaction Item not found   '.$this->auroraModelData->{'Purchase Order Transaction Fact Key'}."  \n";
 
             return;
         }
 
-
         $this->parsedData['historic_supplier_product'] = $historicSupplierProduct;
-        $this->parsedData['org_stock']                 = $orgStock;
+        $this->parsedData['org_stock'] = $orgStock;
 
-        //enum('Cancelled','NoReceived','InProcess','Dispatched','Received','Checked','Placed','CostingDone')
+        // enum('Cancelled','NoReceived','InProcess','Dispatched','Received','Checked','Placed','CostingDone')
         $state = match ($this->auroraModelData->{'Supplier Delivery Transaction State'}) {
             'Cancelled' => StockDeliveryItemStateEnum::CANCELLED,
             'NoReceived' => StockDeliveryItemStateEnum::NOT_RECEIVED,
@@ -54,17 +52,15 @@ class FetchAuroraStockDeliveryItem extends FetchAurora
             'Placed', 'CostingDone' => StockDeliveryItemStateEnum::PLACED,
         };
 
-
         $this->parsedData['stock_delivery_item'] = [
-            'unit_quantity'         => !$this->auroraModelData->{'Supplier Delivery Units'} ? 0 : $this->auroraModelData->{'Supplier Delivery Units'},
-            'unit_quantity_checked' => !$this->auroraModelData->{'Supplier Delivery Checked Units'} ? 0 : $this->auroraModelData->{'Supplier Delivery Checked Units'},
-            'unit_quantity_placed'  => !$this->auroraModelData->{'Supplier Delivery Placed Units'} ? 0 : $this->auroraModelData->{'Supplier Delivery Placed Units'},
-            'state'                 => $state,
-            'source_id'             => $this->organisation->id.':'.$this->auroraModelData->{'Purchase Order Transaction Fact Key'},
-            'created_at'            => $this->auroraModelData->{'Creation Date'},
-            'fetched_at'            => now(),
-            'last_fetched_at'       => now(),
-
+            'unit_quantity' => ! $this->auroraModelData->{'Supplier Delivery Units'} ? 0 : $this->auroraModelData->{'Supplier Delivery Units'},
+            'unit_quantity_checked' => ! $this->auroraModelData->{'Supplier Delivery Checked Units'} ? 0 : $this->auroraModelData->{'Supplier Delivery Checked Units'},
+            'unit_quantity_placed' => ! $this->auroraModelData->{'Supplier Delivery Placed Units'} ? 0 : $this->auroraModelData->{'Supplier Delivery Placed Units'},
+            'state' => $state,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Purchase Order Transaction Fact Key'},
+            'created_at' => $this->auroraModelData->{'Creation Date'},
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
 
         ];
     }
@@ -80,12 +76,10 @@ class FetchAuroraStockDeliveryItem extends FetchAurora
         return $this->parsedData;
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Purchase Order Transaction Fact')
             ->where('Purchase Order Transaction Fact Key', $id)->first();
     }
-
-
 }

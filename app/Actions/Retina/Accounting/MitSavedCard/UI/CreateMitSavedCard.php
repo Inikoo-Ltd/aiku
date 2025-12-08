@@ -33,9 +33,8 @@ class CreateMitSavedCard extends RetinaAction
             ->where('type', PaymentAccountTypeEnum::CHECKOUT)
             ->where('state', PaymentAccountShopStateEnum::ACTIVE)->first();
 
-        list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
+        [$publicKey, $secretKey] = $paymentAccountShop->getCredentials();
         $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
-
 
         $mitSavedCard = StoreMitSavedCard::run(
             $this->customer,
@@ -46,18 +45,17 @@ class CreateMitSavedCard extends RetinaAction
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
-
-        $paymentSessionRequest               = new PaymentSessionsRequest();
-        $paymentSessionRequest->amount       = 0;
+        $paymentSessionRequest = new PaymentSessionsRequest;
+        $paymentSessionRequest->amount = 0;
         $paymentSessionRequest->payment_type = 'Unscheduled';
 
         $paymentSessionRequest->currency = $this->shop->currency->code;
 
-        $paymentSessionRequest->three_ds                      = new ThreeDsRequest();
-        $paymentSessionRequest->three_ds->enabled             = true;
+        $paymentSessionRequest->three_ds = new ThreeDsRequest;
+        $paymentSessionRequest->three_ds->enabled = true;
         $paymentSessionRequest->three_ds->challenge_indicator = 'challenge_requested_mandate';
 
-        $channelID                                    = $paymentAccountShop->getCheckoutComChannel();
+        $channelID = $paymentAccountShop->getCheckoutComChannel();
         $paymentSessionRequest->processing_channel_id = $channelID;
         $paymentSessionRequest->enabled_payment_methods = ['card'];
 
@@ -72,7 +70,6 @@ class CreateMitSavedCard extends RetinaAction
 
         $paymentSessionRequest = $this->setBillingInformation($paymentSessionRequest, $billingAddress);
 
-
         try {
             $paymentSession = $paymentSessionClient->createPaymentSessions($paymentSessionRequest);
         } catch (Exception $e) {
@@ -83,16 +80,15 @@ class CreateMitSavedCard extends RetinaAction
         }
 
         return [
-            'label'       => __('Online payments'),
-            'key'         => 'credit_card',
-            'public_key'  => $publicKey,
+            'label' => __('Online payments'),
+            'key' => 'credit_card',
+            'public_key' => $publicKey,
             'environment' => app()->environment('production') ? 'production' : 'sandbox',
-            'locale'      => 'en',
-            'icon'        => 'fal fa-credit-card-front',
-            'data'        => $paymentSession
+            'locale' => 'en',
+            'icon' => 'fal fa-credit-card-front',
+            'data' => $paymentSession,
         ];
     }
-
 
     private function getSuccessUrl(MitSavedCard $mitSavedCard): string
     {
@@ -103,7 +99,6 @@ class CreateMitSavedCard extends RetinaAction
     {
         return route('retina.webhooks.checkout_com.mit_saved_card_failure', $mitSavedCard->ulid);
     }
-
 
     public function asController(ActionRequest $request): \Illuminate\Http\Response|array
     {
@@ -117,18 +112,18 @@ class CreateMitSavedCard extends RetinaAction
         $title = __('Saved Credit Card');
 
         return Inertia::render('Dropshipping/CreateMitSavedCard', [
-            'title'             => $title,
-            'breadcrumbs'       => $this->getBreadcrumbs(),
-            'pageHead'          => [
+            'title' => $title,
+            'breadcrumbs' => $this->getBreadcrumbs(),
+            'pageHead' => [
 
                 'title' => $title,
-                'icon'  => [
-                    'icon'  => ['fal', 'fa-tachometer-alt'],
-                    'title' => $title
+                'icon' => [
+                    'icon' => ['fal', 'fa-tachometer-alt'],
+                    'title' => $title,
                 ],
             ],
             'checkout_com_data' => $checkoutComData,
-            'head_title'           => __('Save your card for future purchases'),
+            'head_title' => __('Save your card for future purchases'),
 
         ]);
     }
@@ -140,14 +135,14 @@ class CreateMitSavedCard extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
+                                'name' => 'retina.dropshipping.mit_saved_cards.dashboard',
                             ],
                             'label' => __('Saved Credit Card'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

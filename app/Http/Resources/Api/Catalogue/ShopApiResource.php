@@ -27,14 +27,14 @@ class ShopApiResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'              => $this->id,
-            'slug'            => $this->slug,
-            'code'            => $this->code,
-            'name'            => $this->name,
-            'type'            => $this->type,
-            'state'           => $this->state,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'type' => $this->type,
+            'state' => $this->state,
             'organisation_id' => $this->organisation_id,
-            'currency'        => CurrencyResource::make($this->currency),
+            'currency' => CurrencyResource::make($this->currency),
         ];
     }
 }

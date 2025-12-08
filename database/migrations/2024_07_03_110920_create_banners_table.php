@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
@@ -15,9 +14,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use HasSoftDeletes;
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
+    use HasSoftDeletes;
+
     public function up(): void
     {
         Schema::create('banners', function (Blueprint $table) {
@@ -54,7 +55,6 @@ return new class () extends Migration {
             $this->softDeletes($table);
         });
     }
-
 
     public function down(): void
     {

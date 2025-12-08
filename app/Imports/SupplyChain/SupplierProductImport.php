@@ -21,7 +21,7 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class SupplierProductImport implements SkipsOnFailure, ToCollection, WithEvents, WithHeadingRow, WithValidation
 {
     use WithImport;
 
@@ -29,8 +29,8 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
 
     public function __construct(Supplier $supplier, Upload $upload)
     {
-        $this->upload            = $upload;
-        $this->scope             = $supplier;
+        $this->upload = $upload;
+        $this->scope = $supplier;
     }
 
     public function storeModel($row, $uploadRecord): void
@@ -60,8 +60,8 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
             if (is_numeric($partKey)) {
                 $partKey = (int) $partKey;
                 $existingProduct = $this->scope->supplierProducts()
-                ->where('id', $partKey)
-                ->first();
+                    ->where('id', $partKey)
+                    ->first();
             }
 
             $isNew = is_string($validatedData['id_supplier_part_key'])
@@ -72,7 +72,7 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
             } elseif ($isNew) {
                 StoreSupplierProduct::run($this->scope, $modelData);
             } else {
-                throw new Exception("Part key not found");
+                throw new Exception('Part key not found');
             }
 
             $this->setRecordAsCompleted($uploadRecord);

@@ -19,9 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateStockDelivery extends OrgAction
 {
     use WithActionUpdate;
-    use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
-
+    use WithNoStrictRules;
 
     private StockDelivery $stockDelivery;
 
@@ -49,26 +48,24 @@ class UpdateStockDelivery extends OrgAction
             ],
         ];
 
-
         if ($this->strict) {
             $rules['reference'][] = new IUnique(
                 table: 'stock_deliveries',
                 extraConditions: [
                     [
                         'column' => 'organisation_id',
-                        'value'  => $this->organisation->id
+                        'value' => $this->organisation->id,
                     ],
                     [
-                        'column'   => 'id',
+                        'column' => 'id',
                         'operator' => '!=',
-                        'value'    => $this->stockDelivery->id
-                    ]
+                        'value' => $this->stockDelivery->id,
+                    ],
                 ]
             );
         }
 
-
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictStockDeliveryRules($rules);
@@ -80,12 +77,12 @@ class UpdateStockDelivery extends OrgAction
     public function action(StockDelivery $stockDelivery, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): StockDelivery
     {
         $this->strict = $strict;
-        if (!$audit) {
+        if (! $audit) {
             StockDelivery::disableAuditing();
         }
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->stockDelivery       = $stockDelivery;
+        $this->stockDelivery = $stockDelivery;
         $this->initialisation($stockDelivery->organisation, $modelData);
 
         return $this->handle($stockDelivery, $this->validatedData);
@@ -97,6 +94,4 @@ class UpdateStockDelivery extends OrgAction
 
         return $this->handle($stockDelivery, $this->validatedData);
     }
-
-
 }

@@ -33,18 +33,20 @@ use Spatie\MediaLibrary\HasMedia;
  * @property-read Model|\Eloquent $model
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasContent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasContent newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasContent query()
+ *
  * @mixin \Eloquent
  */
 class ModelHasContent extends Model implements HasMedia
 {
-    use HasUniversalSearch;
     use HasImage;
+    use HasUniversalSearch;
 
     protected $casts = [
-        'type'            => ModelHasContentTypeEnum::class,
+        'type' => ModelHasContentTypeEnum::class,
     ];
 
     protected $guarded = [];

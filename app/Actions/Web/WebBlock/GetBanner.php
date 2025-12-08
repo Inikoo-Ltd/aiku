@@ -20,7 +20,7 @@ class GetBanner
     {
 
         $fieldValue = Arr::get($webBlock, 'web_block.layout.data.fieldValue', []);
-        $bannerId   = Arr::get($fieldValue, 'banner_id');
+        $bannerId = Arr::get($fieldValue, 'banner_id');
 
         if ($banner = Banner::find($bannerId)) {
             $fieldValue['compiled_layout'] = $banner->compiled_layout;
@@ -29,5 +29,4 @@ class GetBanner
 
         return $webBlock;
     }
-
 }

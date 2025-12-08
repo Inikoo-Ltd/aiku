@@ -31,46 +31,45 @@ class ShowRetinaTopUpCheckout extends RetinaAction
     public function handle(TopUpPaymentApiPoint $topUpPaymentApiPoint): array
     {
         $paymentAccountShopID = Arr::get($topUpPaymentApiPoint->data, 'payment_account_shop_id.checkout');
-        $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopID);
+        $paymentAccountShop = PaymentAccountShop::find($paymentAccountShopID);
 
-        list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
+        [$publicKey, $secretKey] = $paymentAccountShop->getCredentials();
 
         $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
-        $topUpAmount = (int)round((float)$topUpPaymentApiPoint->amount * 100);
+        $topUpAmount = (int) round((float) $topUpPaymentApiPoint->amount * 100);
 
-        $paymentSessionRequest            = new PaymentSessionsRequest();
-        $paymentSessionRequest->amount    = $topUpAmount;
-        $paymentSessionRequest->currency  = $this->shop->currency->code;
+        $paymentSessionRequest = new PaymentSessionsRequest;
+        $paymentSessionRequest->amount = $topUpAmount;
+        $paymentSessionRequest->currency = $this->shop->currency->code;
         $paymentSessionRequest->reference = $topUpPaymentApiPoint->ulid;
 
-        $paymentSessionRequest->three_ds          = new ThreeDsRequest();
+        $paymentSessionRequest->three_ds = new ThreeDsRequest;
         $paymentSessionRequest->three_ds->enabled = true;
 
-        $channelID                                    = $paymentAccountShop->getCheckoutComChannel();
+        $channelID = $paymentAccountShop->getCheckoutComChannel();
         $paymentSessionRequest->processing_channel_id = $channelID;
-        $paymentSessionRequest->success_url           = $this->getSuccessUrl($topUpPaymentApiPoint);
-        $paymentSessionRequest->failure_url           = $this->getFailureUrl($topUpPaymentApiPoint);
+        $paymentSessionRequest->success_url = $this->getSuccessUrl($topUpPaymentApiPoint);
+        $paymentSessionRequest->failure_url = $this->getFailureUrl($topUpPaymentApiPoint);
 
         $paymentSessionRequest->metadata = [
-            'origin'         => 'aiku',
-            'operation'      => 'top_up',
+            'origin' => 'aiku',
+            'operation' => 'top_up',
             'api_point_ulid' => $topUpPaymentApiPoint->ulid,
-            'environment'    => app()->environment()
+            'environment' => app()->environment(),
         ];
 
         $paymentSessionRequest->disabled_payment_methods = [
-            'bizum'
+            'bizum',
         ];
 
-        $product                      = new Product();
-        $product->name                = 'top up';
-        $product->quantity            = 1;
-        $product->unit_price          = $topUpAmount;
+        $product = new Product;
+        $product->name = 'top up';
+        $product->quantity = 1;
+        $product->unit_price = $topUpAmount;
         $paymentSessionRequest->items = [$product];
-
 
         $paymentSessionRequest = $this->setBillingInformation(
             $paymentSessionRequest,
@@ -87,14 +86,14 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         }
 
         return [
-            'label'                         => __('Online payments'),
-            'key'                           => 'credit_card',
-            'public_key'                    => $publicKey,
-            'environment'                   => app()->environment('production') ? 'production' : 'sandbox',
-            'locale'                        => 'en',
-            'icon'                          => 'fal fa-credit-card-front',
-            'data'                          => $paymentSession,
-            'top_up_payment_api_point_ulid' => $topUpPaymentApiPoint->ulid
+            'label' => __('Online payments'),
+            'key' => 'credit_card',
+            'public_key' => $publicKey,
+            'environment' => app()->environment('production') ? 'production' : 'sandbox',
+            'locale' => 'en',
+            'icon' => 'fal fa-credit-card-front',
+            'data' => $paymentSession,
+            'top_up_payment_api_point_ulid' => $topUpPaymentApiPoint->ulid,
         ];
     }
 
@@ -105,20 +104,18 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         return $topUpPaymentApiPoint->customer_id == $this->customer->id;
     }
 
-
     public function asController(TopUpPaymentApiPoint $topUpPaymentApiPoint, ActionRequest $request): array
     {
         $this->initialisation($request);
 
         if ($topUpPaymentApiPoint->state !== TopUpPaymentApiPointStateEnum::IN_PROCESS) {
             return [
-                'error' => 'Top Up Payment expired'
+                'error' => 'Top Up Payment expired',
             ];
         }
 
         return $this->handle($topUpPaymentApiPoint);
     }
-
 
     public function htmlResponse(array $checkoutComData, ActionRequest $request): \Illuminate\Http\Response|Response|\Illuminate\Http\RedirectResponse
     {
@@ -128,8 +125,8 @@ class ShowRetinaTopUpCheckout extends RetinaAction
             return Redirect::route('retina.top_up.dashboard')->with(
                 'notification',
                 [
-                    'status'      => 'error',
-                    'title'       => __('Failed to Top Up'),
+                    'status' => 'error',
+                    'title' => __('Failed to Top Up'),
                     'description' => Arr::get($checkoutComData, 'error'),
                 ]
             );
@@ -140,15 +137,15 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         return Inertia::render(
             'Dropshipping/TopUp/TopUpCheckout',
             [
-                'title'                         => $title,
-                'pageHead'                      => [
+                'title' => $title,
+                'pageHead' => [
                     'title' => $title,
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-money-bill-wave'],
-                        'title' => $title
+                    'icon' => [
+                        'icon' => ['fal', 'fa-money-bill-wave'],
+                        'title' => $title,
                     ],
                 ],
-                'checkout_com_data'             => $checkoutComData,
+                'checkout_com_data' => $checkoutComData,
                 'top_up_payment_api_point_ulid' => $topUpPaymentApiPointUlid,
             ]
         );
@@ -163,6 +160,4 @@ class ShowRetinaTopUpCheckout extends RetinaAction
     {
         return route('retina.webhooks.checkout_com.top_up_payment_failure', $topUpPaymentApiPoint->ulid);
     }
-
-
 }

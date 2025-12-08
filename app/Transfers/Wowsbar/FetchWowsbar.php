@@ -8,22 +8,25 @@
 
 namespace App\Transfers\Wowsbar;
 
-use App\Transfers\SourceOrganisationService;
 use App\Models\SysAdmin\Organisation;
+use App\Transfers\SourceOrganisationService;
 
 class FetchWowsbar
 {
     protected Organisation $organisation;
+
     protected ?array $parsedData;
+
     protected ?object $wowModelData;
+
     protected SourceOrganisationService $organisationSource;
 
     public function __construct(SourceOrganisationService $organisationSource)
     {
-        $this->organisationSource    = $organisationSource;
-        $this->organisation          = $organisationSource->organisation;
-        $this->parsedData            = null;
-        $this->wowModelData          = null;
+        $this->organisationSource = $organisationSource;
+        $this->organisation = $organisationSource->organisation;
+        $this->parsedData = null;
+        $this->wowModelData = null;
     }
 
     public function fetch(int $id): ?array
@@ -37,12 +40,10 @@ class FetchWowsbar
         return $this->parsedData;
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return null;
     }
 
-    protected function parseModel(): void
-    {
-    }
+    protected function parseModel(): void {}
 }

@@ -252,37 +252,39 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Webpage> $webpages
  * @property-read LaravelCollection<int, Website> $websites
  * @property-read LaravelCollection<int, Workplace> $workplaces
+ *
  * @method static \Database\Factories\SysAdmin\OrganisationFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organisation newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organisation newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organisation query()
+ *
  * @mixin \Eloquent
  */
-class Organisation extends Model implements HasMedia, Auditable
+class Organisation extends Model implements Auditable, HasMedia
 {
-    use HasFactory;
-    use HasSlug;
-    use InteractsWithMedia;
-    use HasImage;
     use HasAddress;
     use HasAddresses;
+    use HasFactory;
     use HasHistory;
+    use HasImage;
+    use HasSlug;
+    use InteractsWithMedia;
 
     protected $casts = [
-        'data'     => 'array',
+        'data' => 'array',
         'settings' => 'array',
-        'source'   => 'array',
+        'source' => 'array',
         'location' => 'array',
         'forbidden_dispatch_countries' => 'array',
-        'type'     => OrganisationTypeEnum::class
+        'type' => OrganisationTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
-        'source'   => '{}',
+        'source' => '{}',
         'location' => '{}',
-        'forbidden_dispatch_countries' => '{}'
+        'forbidden_dispatch_countries' => '{}',
     ];
 
     protected $guarded = [];
@@ -565,7 +567,6 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasMany(Webpage::class);
     }
 
-
     public function orgPartners(): HasMany
     {
         return $this->hasMany(OrgPartner::class);
@@ -816,7 +817,6 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasOne(OrganisationOutboxNewsletterIntervals::class);
     }
 
-
     public function outboxMarketingIntervals(): HasOne
     {
         return $this->hasOne(OrganisationOutboxMarketingIntervals::class);
@@ -881,6 +881,4 @@ class Organisation extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(Box::class);
     }
-
-
 }

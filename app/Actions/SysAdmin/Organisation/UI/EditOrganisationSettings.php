@@ -29,11 +29,10 @@ class EditOrganisationSettings extends OrgAction
         return $request->user()->authTo(
             [
                 'organisations.edit',
-                'org-admin.'.$this->organisation->id
+                'org-admin.'.$this->organisation->id,
             ]
         );
     }
-
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
@@ -41,8 +40,6 @@ class EditOrganisationSettings extends OrgAction
 
         return $organisation;
     }
-
-
 
     public function htmlResponse(Organisation $organisation): Response
     {
@@ -53,107 +50,107 @@ class EditOrganisationSettings extends OrgAction
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => $title,
-                'pageHead'    => [
+                'title' => $title,
+                'pageHead' => [
                     'title' => $title,
                 ],
-                "formData" => [
-                    "blueprint" => [
+                'formData' => [
+                    'blueprint' => [
                         [
-                            "label"  => __("Details"),
-                            "icon"   => "fa-light fa-fingerprint",
-                            "fields" => [
-                                "name" => [
-                                    "type"  => "input",
-                                    "label" => __("Name"),
-                                    "value" => $organisation->name,
+                            'label' => __('Details'),
+                            'icon' => 'fa-light fa-fingerprint',
+                            'fields' => [
+                                'name' => [
+                                    'type' => 'input',
+                                    'label' => __('Name'),
+                                    'value' => $organisation->name,
                                 ],
-                                "contact_name" => [
-                                    "type"  => "input",
-                                    "label" => __("Contact name"),
-                                    "value" => $organisation->contact_name
+                                'contact_name' => [
+                                    'type' => 'input',
+                                    'label' => __('Contact name'),
+                                    'value' => $organisation->contact_name,
                                 ],
-                                "email" => [
-                                    "type"  => "input",
-                                    "label" => __("Email"),
-                                    "value" => $organisation->email
+                                'email' => [
+                                    'type' => 'input',
+                                    'label' => __('Email'),
+                                    'value' => $organisation->email,
                                 ],
-                                "phone" => [
-                                    "type"  => "input",
-                                    "label" => __("Phone"),
-                                    "value" => $organisation->phone
+                                'phone' => [
+                                    'type' => 'input',
+                                    'label' => __('Phone'),
+                                    'value' => $organisation->phone,
                                 ],
                                 'address' => [
-                                    'type'    => 'address',
-                                    'label'   => __('Address'),
-                                    'value'   => AddressFormFieldsResource::make($organisation->address)->getArray(),
+                                    'type' => 'address',
+                                    'label' => __('Address'),
+                                    'value' => AddressFormFieldsResource::make($organisation->address)->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
-                                    ]
+                                        'countriesAddressData' => GetAddressData::run(),
+                                    ],
                                 ],
                             ],
                         ],
                         [
-                            "label"  => __("Branding"),
-                            "icon"   => "fa-light fa-copyright",
-                            "fields" => [
-                                "ui_name" => [
-                                    "type"  => "input",
-                                    "label" => __("UI display name"),
-                                    "value" => Arr::get($organisation->settings, 'ui.name', $organisation->name)
+                            'label' => __('Branding'),
+                            'icon' => 'fa-light fa-copyright',
+                            'fields' => [
+                                'ui_name' => [
+                                    'type' => 'input',
+                                    'label' => __('UI display name'),
+                                    'value' => Arr::get($organisation->settings, 'ui.name', $organisation->name),
                                 ],
-                                "logo" => [
-                                    "type"  => "avatar",
-                                    "label" => __("logo"),
-                                    "value" => $organisation->imageSources(320, 320),
+                                'logo' => [
+                                    'type' => 'avatar',
+                                    'label' => __('logo'),
+                                    'value' => $organisation->imageSources(320, 320),
                                 ],
                             ],
                         ],
                         [
-                            "label"  => __("Invoicing"),
-                            "icon"   => "fa-light fa-file-invoice",
-                            "fields" => [
+                            'label' => __('Invoicing'),
+                            'icon' => 'fa-light fa-file-invoice',
+                            'fields' => [
                                 'show_tax_liability_date' => [
-                                    'type'  => 'toggle',
+                                    'type' => 'toggle',
                                     'label' => __('Show tax liability date'),
                                     'value' => Arr::get($organisation->settings, 'invoicing.show_tax_liability_date', false),
                                 ],
                                 'attach_isdoc_to_pdf' => [
-                                    'type'  => 'toggle',
+                                    'type' => 'toggle',
                                     'label' => __('Attach ISDoc to PDF'),
                                     'value' => Arr::get($organisation->settings, 'invoice_export.attach_isdoc_to_pdf', false),
                                 ],
                                 'show_omega' => [
-                                    'type'  => 'toggle',
+                                    'type' => 'toggle',
                                     'label' => __('Show Omega'),
                                     'value' => Arr::get($organisation->settings, 'invoice_export.show_omega', false),
                                 ],
                             ],
                         ],
                         [
-                            "label"  => __("google drive"),
-                            "icon"   => "fab fa-google",
-                            "button" => [
-                                "title"   => !file_exists($this->getTokenPath($organisation)) ? "Authorize" : "Authorized",
-                                "route"   => [
-                                    'name'       => 'grp.models.org.google_drive.authorize',
-                                    'parameters' => [$organisation->id]
+                            'label' => __('google drive'),
+                            'icon' => 'fab fa-google',
+                            'button' => [
+                                'title' => ! file_exists($this->getTokenPath($organisation)) ? 'Authorize' : 'Authorized',
+                                'route' => [
+                                    'name' => 'grp.models.org.google_drive.authorize',
+                                    'parameters' => [$organisation->id],
                                 ],
-                                "disable" => file_exists($this->getTokenPath($organisation))
+                                'disable' => file_exists($this->getTokenPath($organisation)),
                             ],
 
-                            "fields" => [
-                                "google_client_id" => [
-                                    "type"  => "password",
-                                    "label" => __("client ID"),
-                                    "value" => Arr::get($organisation->settings, 'google.id'),
-                                    "use_generate_password" => false
+                            'fields' => [
+                                'google_client_id' => [
+                                    'type' => 'password',
+                                    'label' => __('client ID'),
+                                    'value' => Arr::get($organisation->settings, 'google.id'),
+                                    'use_generate_password' => false,
                                 ],
-                                "google_client_secret" => [
-                                    "type"  => "password",
-                                    "label" => __("client secret"),
-                                    "value" => Arr::get($organisation->settings, 'google.secret'),
-                                    "use_generate_password" => false
+                                'google_client_secret' => [
+                                    'type' => 'password',
+                                    'label' => __('client secret'),
+                                    'value' => Arr::get($organisation->settings, 'google.secret'),
+                                    'use_generate_password' => false,
                                 ],
                                 /*"google_drive_folder_key" => [
                                     "type"  => "password",
@@ -161,48 +158,45 @@ class EditOrganisationSettings extends OrgAction
                                     "value" => Arr::get($organisation->settings, 'google.drive.folder'),
                                     "use_generate_password" => false
                                 ],*/
-                                "google_redirect_uri" => [
-                                    "type"       => "input",
-                                    "label"      => __("google redirect URI"),
-                                    "value"      => url('/'),
-                                    "readonly"   => true,
-                                    "copyButton" => true,
-                                ]
+                                'google_redirect_uri' => [
+                                    'type' => 'input',
+                                    'label' => __('google redirect URI'),
+                                    'value' => url('/'),
+                                    'readonly' => true,
+                                    'copyButton' => true,
+                                ],
                             ],
                         ],
                         [
-                            'label'  => __('Shipping'),
-                            'icon'   => 'fa-light fa-truck',
+                            'label' => __('Shipping'),
+                            'icon' => 'fa-light fa-truck',
                             'fields' => [
                                 'forbidden_dispatch_countries' => [
-                                    'type'          => 'multiselect-tags',
-                                    'label'         => __('Forbidden Countries'),
-                                    'placeholder'   => __('Select countries'),
-                                    'required'      => true,
-                                    'value'         => $organisation->forbidden_dispatch_countries ?? [],
-                                    'options'       => GetCountriesOptions::run(),
-                                    'searchable'    => true,
-                                    'mode'          => 'tags',
-                                    'labelProp'     => 'label',
-                                    'valueProp' => 'id'
-                                ]
+                                    'type' => 'multiselect-tags',
+                                    'label' => __('Forbidden Countries'),
+                                    'placeholder' => __('Select countries'),
+                                    'required' => true,
+                                    'value' => $organisation->forbidden_dispatch_countries ?? [],
+                                    'options' => GetCountriesOptions::run(),
+                                    'searchable' => true,
+                                    'mode' => 'tags',
+                                    'labelProp' => 'label',
+                                    'valueProp' => 'id',
+                                ],
                             ],
                         ],
                     ],
-                    "args"      => [
-                        "updateRoute" => [
-                            "name"       => "grp.models.org.settings.update",
-                            "parameters" => [$organisation->id],
+                    'args' => [
+                        'updateRoute' => [
+                            'name' => 'grp.models.org.settings.update',
+                            'parameters' => [$organisation->id],
                         ],
                     ],
                 ],
 
-
             ]
         );
     }
-
-
 
     public function getBreadcrumbs(): array
     {
@@ -211,15 +205,15 @@ class EditOrganisationSettings extends OrgAction
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.settings.edit',
-                                'parameters' => [$this->organisation->slug]
+                                'name' => 'grp.org.settings.edit',
+                                'parameters' => [$this->organisation->slug],
                             ],
-                            'label'  => __('Organisation settings'),
-                        ]
-                    ]
+                            'label' => __('Organisation settings'),
+                        ],
+                    ],
                 ]
             );
     }

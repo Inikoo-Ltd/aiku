@@ -10,15 +10,16 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('org_stocks', function (Blueprint $table) {
-            if (!Schema::hasColumn('org_stocks', 'source_quantity_in_submitted_orders')) {
+            if (! Schema::hasColumn('org_stocks', 'source_quantity_in_submitted_orders')) {
                 $table->decimal('source_quantity_in_submitted_orders', 18, 3)->default(0);
             }
 
-            if (!Schema::hasColumn('org_stocks', 'source_quantity_to_be_picked')) {
+            if (! Schema::hasColumn('org_stocks', 'source_quantity_to_be_picked')) {
                 $table->decimal('source_quantity_to_be_picked', 18, 3)->default(0);
             }
         });

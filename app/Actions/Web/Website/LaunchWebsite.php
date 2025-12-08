@@ -14,8 +14,8 @@ use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\Catalogue\Shop;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\Web\Website;
 use Exception;
 use Illuminate\Console\Command;
@@ -25,13 +25,10 @@ class LaunchWebsite extends OrgAction
 {
     use WithActionUpdate;
 
-
     private Fulfilment|Shop|null $parent;
 
     public function handle(Website $website): Website
     {
-
-
 
         PublishWebsiteMarginal::run($website, 'header', ['layout' => $website->unpublishedHeaderSnapshot->layout]);
         PublishWebsiteMarginal::run($website, 'footer', ['layout' => $website->unpublishedFooterSnapshot->layout]);
@@ -40,11 +37,10 @@ class LaunchWebsite extends OrgAction
             PublishWebpage::run($webpage, ['layout' => $webpage->unpublishedSnapshot->layout]);
         }
 
-
         $modelData = [
-            'state'       => WebsiteStateEnum::LIVE,
-            'status'      => true,
-            'launched_at' => now()
+            'state' => WebsiteStateEnum::LIVE,
+            'status' => true,
+            'launched_at' => now(),
         ];
 
         return $this->update($website, $modelData);
@@ -67,10 +63,10 @@ class LaunchWebsite extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (!$request->exists('status') and $request->has('state')) {
+        if (! $request->exists('status') and $request->has('state')) {
             $status = match ($request->get('state')) {
                 WebsiteStateEnum::LIVE->value => true,
-                default                       => false
+                default => false
             };
             $request->merge(['status' => $status]);
         }
@@ -83,7 +79,6 @@ class LaunchWebsite extends OrgAction
 
         return $this->handle($website);
     }
-
 
     public function asController(Website $website, ActionRequest $request): Website
     {
@@ -99,10 +94,8 @@ class LaunchWebsite extends OrgAction
             abort(419);
         }
 
-
         return $this->handle($website);
     }
-
 
     public string $commandSignature = 'website:launch {website}';
 
@@ -124,12 +117,10 @@ class LaunchWebsite extends OrgAction
             return 1;
         }
 
-
         $this->handle($website);
 
-        $command->info("Website launched 🚀");
+        $command->info('Website launched 🚀');
 
         return 0;
     }
-
 }

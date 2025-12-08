@@ -19,15 +19,14 @@ class GetLayout
 
     public function handle(?User $user): array
     {
-        if (!$user) {
+        if (! $user) {
             return [];
         }
 
-
         return [
-            'group'          => GroupResource::make(app('group'))->getArray(),
-            'organisations'  => UserOrganisationResource::collectionForUser($user->authorisedShopOrganisations, $user),
-            'agents'         => UserOrganisationResource::collectionForUser($user->authorisedAgentsOrganisations, $user),
+            'group' => GroupResource::make(app('group'))->getArray(),
+            'organisations' => UserOrganisationResource::collectionForUser($user->authorisedShopOrganisations, $user),
+            'agents' => UserOrganisationResource::collectionForUser($user->authorisedAgentsOrganisations, $user),
             'digital_agency' => UserOrganisationResource::collectionForUser($user->authorisedDigitalAgencyOrganisations, $user),
 
             'navigation' => [
@@ -35,7 +34,6 @@ class GetLayout
                 'org' => GetOrganisationsLayout::run($user),
             ],
             'app_theme' => $user->settings['app_theme'] ?? null,
-
 
         ];
     }

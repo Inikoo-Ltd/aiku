@@ -35,7 +35,7 @@ class DashboardTotalOffersResource extends JsonResource
             [
                 'label' => [
                     'formatted_value' => 'Total',
-                    'align'           => 'left',
+                    'align' => 'left',
                 ],
             ],
             //            $this->getDashboardTableColumn($summedData, 'customers'),
@@ -45,7 +45,7 @@ class DashboardTotalOffersResource extends JsonResource
         );
 
         return [
-            'slug'    => 'totals',
+            'slug' => 'totals',
             'columns' => $columns,
         ];
     }
@@ -55,7 +55,7 @@ class DashboardTotalOffersResource extends JsonResource
         $sums = [];
 
         foreach (DateIntervalEnum::cases() as $interval) {
-            $key = $field . '_' . $interval->value;
+            $key = $field.'_'.$interval->value;
             $sums[$key] = 0;
 
             foreach ($models as $model) {
@@ -72,13 +72,13 @@ class DashboardTotalOffersResource extends JsonResource
         $columns = [];
 
         foreach ($intervals as $interval) {
-            $key = $scope . '_' . $interval->value;
+            $key = $scope.'_'.$interval->value;
             $rawValue = $summedData[$key] ?? 0;
 
             $columns[$interval->value] = [
                 'raw_value' => $rawValue,
                 'tooltip' => '',
-                'formatted_value' => Number::format($rawValue)
+                'formatted_value' => Number::format($rawValue),
             ];
         }
 

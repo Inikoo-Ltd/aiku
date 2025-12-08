@@ -24,12 +24,12 @@ class FulfilmentsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'      => $this->id,
-            'slug'    => $this->slug,
-            'code'    => $this->code,
-            'name'    => $this->name,
-            'type'    => $this->type,
-            'state'   => $this->state,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'type' => $this->type,
+            'state' => $this->state,
         ];
     }
 }

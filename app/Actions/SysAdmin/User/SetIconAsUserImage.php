@@ -19,15 +19,17 @@ class SetIconAsUserImage
 {
     use AsAction;
     use WithAttachMediaToModel;
+
     public function handle(User $user): User
     {
         $media = StoreMediaFromIcon::run($user);
         $this->attachMediaToModel($user, $media, 'avatar');
         $user->updateQuietly(
             [
-                'image_id' => $media->id
+                'image_id' => $media->id,
             ]
         );
+
         return $user;
     }
 

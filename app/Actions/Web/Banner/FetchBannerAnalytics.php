@@ -18,8 +18,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class FetchBannerAnalytics
 {
     use AsAction;
-    use WithAttributes;
     use AsCommand;
+    use WithAttributes;
 
     public $commandSignature = 'banner:analytics';
 
@@ -38,7 +38,7 @@ class FetchBannerAnalytics
 
                 $banner?->stats()->update([
                     'number_views' => $analytic['pageViews'],
-                    'number_users' => $analytic['users']
+                    'number_users' => $analytic['users'],
                 ]);
             }
         }

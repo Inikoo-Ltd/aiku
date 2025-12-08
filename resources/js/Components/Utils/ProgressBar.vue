@@ -29,7 +29,7 @@ interface EchoPersonal {
 const props = defineProps<{
     description?: string
     // echo: Object
-   
+
 }>()
 
 const selectedEchopersonal = inject('selectedEchopersonal', {})
@@ -76,7 +76,7 @@ const throttledValue = throttle((newValue) => {
 
                             <!-- Label: All success -->
                             <span v-else-if="upload.done == upload.data.number_success" class="text-gray-500">
-                                {{ trans("Success Streak: Nailed it") }}🥳
+                                {{ trans("Success Streak: Nailed it") }}
                             </span>
 
                             <!-- Label: Fails is bigger -->
@@ -94,11 +94,11 @@ const throttledValue = throttle((newValue) => {
                             <div>
                                 {{ description ?? trans('Adding')}} ({{ upload.data.number_success + upload.data.number_fails }}/<span class="font-semibold inline">{{ upload.total }}</span>)
                             </div>
-                            
+
                             <!-- Time Remaining  -->
                             <div class="text-xs text-gray-500 leading-none tabular-nums">{{ throttledValue(upload.estimatedTime) }} {{ trans("remaining") }}</div>
                         </template>
-                
+
                         <!-- Progress Bar -->
                         <div class="overflow-hidden rounded-full bg-gray-100 ring-1 ring-gray-300 w-64 flex justify-start">
                             <div class="h-2 bg-lime-600 transition-all duration-100 ease-in-out" :style="`width: ${(upload.data.number_success/upload.total)*100}%`" />
@@ -113,11 +113,11 @@ const throttledValue = throttle((newValue) => {
                 </div>
             </TransitionGroup>
         </template>
+
         <div v-else class="w-64 flex justify-center flex-col items-center gap-y-2 py-1 text-gray-500">
             <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin' aria-hidden='true' />
             <div class="text-sm">{{ trans("Calculating data..") }}</div>
         </div>
-
 
         <div @click="closeModal" class="absolute top-0 right-1 px-2 py-1 cursor-pointer text-gray-500 hover:text-gray-600">
             <FontAwesomeIcon icon='fal fa-times' class='text-xs' aria-hidden='true' />

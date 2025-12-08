@@ -32,6 +32,4 @@ class WebpageHydrateProducts implements ShouldBeUnique
 
         $webpage->stats()->update($stats);
     }
-
-
 }

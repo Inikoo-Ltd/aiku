@@ -40,26 +40,28 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag query()
+ *
  * @mixin \Eloquent
  */
 class Tag extends Model implements HasMedia
 {
-    use HasSlug;
     use HasImage;
+    use HasSlug;
 
     protected $guarded = [];
 
     protected $casts = [
-        'data'      => 'array',
+        'data' => 'array',
         'web_image' => 'array',
-        'scope'     => TagScopeEnum::class,
+        'scope' => TagScopeEnum::class,
     ];
 
     protected $attributes = [
-        'data'      => '{}',
+        'data' => '{}',
         'web_image' => '[]',
     ];
 

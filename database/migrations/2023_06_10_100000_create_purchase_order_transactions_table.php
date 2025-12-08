@@ -6,8 +6,8 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use App\Stubs\Migrations\HasOrderFields;
 use App\Stubs\Migrations\HasProcurementOrderFields;
@@ -15,11 +15,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
     use HasOrderFields;
     use HasProcurementOrderFields;
-
 
     public function up(): void
     {
@@ -53,7 +53,6 @@ return new class () extends Migration {
             $table->string('source_id')->nullable()->unique();
         });
     }
-
 
     public function down(): void
     {

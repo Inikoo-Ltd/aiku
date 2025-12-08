@@ -20,7 +20,7 @@ class OfferAllowanceFactory extends Factory
         return [
             'code' => fake()->lexify,
             'name' => fake()->name,
-            'trigger_scope' => 'NA'
+            'trigger_scope' => 'NA',
         ];
     }
 }

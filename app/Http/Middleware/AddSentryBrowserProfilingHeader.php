@@ -17,6 +17,7 @@ class AddSentryBrowserProfilingHeader
     {
         $response = $next($request);
         $response->headers->set('Document-Policy', 'js-profiling');
+
         return $response;
     }
 }

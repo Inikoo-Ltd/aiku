@@ -25,7 +25,8 @@ class EditStockDelivery extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = true;
-        //TODO:Raul Need to think of this
+
+        // TODO:Raul Need to think of this
         return true;
     }
 
@@ -41,49 +42,48 @@ class EditStockDelivery extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'                                 => __('supplier delivery'),
+                'title' => __('supplier delivery'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $stockDelivery,
                     $request->route()->originalParameters()
                 ),
-                'pageHead'    => [
-                    'title'     => $stockDelivery->reference,
-                    'actions'   => [
+                'pageHead' => [
+                    'title' => $stockDelivery->reference,
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
                     ],
-
 
                 ],
 
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('id'),
+                            'title' => __('id'),
                             'fields' => [
                                 'number' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('number'),
-                                    'value' => $stockDelivery->number
+                                    'value' => $stockDelivery->number,
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
 
                     ],
                     'args' => [
                         'updateRoute' => [
-                            'name'      => 'grp.models.supplier-delivery.update',
-                            'parameters' => $stockDelivery->slug
+                            'name' => 'grp.models.supplier-delivery.update',
+                            'parameters' => $stockDelivery->slug,
 
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

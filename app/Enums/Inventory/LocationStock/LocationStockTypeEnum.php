@@ -14,6 +14,6 @@ enum LocationStockTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case PICKING            = 'picking';
-    case STORING            = 'storing';
+    case PICKING = 'picking';
+    case STORING = 'storing';
 }

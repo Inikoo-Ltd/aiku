@@ -26,13 +26,13 @@ class MarketplaceAgentResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'                     => $this->slug,
-            'code'                     => $this->code,
-            'name'                     => $this->name,
-            'location'                 => $this->location,
-            'number_suppliers'         => $this->number_suppliers,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'location' => $this->location,
+            'number_suppliers' => $this->number_suppliers,
             'number_supplier_products' => $this->number_supplier_products,
-            'adoption'                 => $this->adoption ?? 'available'
+            'adoption' => $this->adoption ?? 'available',
 
         ];
     }

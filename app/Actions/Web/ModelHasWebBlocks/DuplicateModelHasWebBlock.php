@@ -22,9 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DuplicateModelHasWebBlock extends OrgAction
 {
-    use WithWebAuthorisation;
     use WithActionUpdate;
-
+    use WithWebAuthorisation;
 
     public function handle(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks): ModelHasWebBlocks
     {
@@ -52,18 +51,18 @@ class DuplicateModelHasWebBlock extends OrgAction
         /** @var ModelHasWebBlocks $modelHasWebBlockCopy */
         $modelHasWebBlockCopy = $webpage->modelHasWebBlocks()->create(
             [
-                'group_id'        => $webpage->group_id,
+                'group_id' => $webpage->group_id,
                 'organisation_id' => $webpage->organisation_id,
-                'shop_id'         => $webpage->shop_id,
-                'website_id'      => $webpage->website_id,
-                'webpage_id'      => $webpage->id,
-                'position'        => $position,
-                'model_id'        => $modelHasWebBlocks->model_id,
-                'model_type'      => $modelHasWebBlocks->model_type,
-                'web_block_id'    => $webBlock->id,
-                'show'            => $modelHasWebBlocks->show,
-                'show_logged_in'  => $modelHasWebBlocks->show_logged_in,
-                'show_logged_out'  => $modelHasWebBlocks->show_logged_out,
+                'shop_id' => $webpage->shop_id,
+                'website_id' => $webpage->website_id,
+                'webpage_id' => $webpage->id,
+                'position' => $position,
+                'model_id' => $modelHasWebBlocks->model_id,
+                'model_type' => $modelHasWebBlocks->model_type,
+                'web_block_id' => $webBlock->id,
+                'show' => $modelHasWebBlocks->show,
+                'show_logged_in' => $modelHasWebBlocks->show_logged_in,
+                'show_logged_out' => $modelHasWebBlocks->show_logged_out,
             ]
         );
         UpdateWebpageContent::run($webpage->refresh());

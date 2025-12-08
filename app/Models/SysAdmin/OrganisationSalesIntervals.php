@@ -252,9 +252,11 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property-read Currency|null $currency
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static Builder<static>|OrganisationSalesIntervals newModelQuery()
  * @method static Builder<static>|OrganisationSalesIntervals newQuery()
  * @method static Builder<static>|OrganisationSalesIntervals query()
+ *
  * @mixin Eloquent
  */
 class OrganisationSalesIntervals extends Model
@@ -280,7 +282,6 @@ class OrganisationSalesIntervals extends Model
         );
     }
 
-
     public function currency(): HasOneThrough
     {
         return $this->hasOneThrough(
@@ -292,7 +293,4 @@ class OrganisationSalesIntervals extends Model
             'currency_id'       // Local key on Shop table
         );
     }
-
-
-
 }

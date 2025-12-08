@@ -44,19 +44,18 @@ beforeAll(function () {
     loadDB();
 });
 
-
 beforeEach(
     /**
      * @throws \Throwable
      */
     function () {
-        list(
+        [
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ] = createShop();
         $this->customer = createCustomer($this->shop);
-        $this->group    = $this->organisation->group;
+        $this->group = $this->organisation->group;
 
         Config::set(
             'inertia.testing.page_paths',
@@ -105,7 +104,6 @@ test('seed shop outboxes by command', function (Shop $shop) {
 
 test('outbox seeded when website created', function (Shop $shop) {
 
-
     $website = StoreWebsite::make()->action(
         $shop,
         Website::factory()->definition()
@@ -119,7 +117,7 @@ test('outbox seeded when website created', function (Shop $shop) {
     $forgotPasswordOutbox = $website->shop->outboxes()->where('code', 'password_reminder')->first();
 
     expect($forgotPasswordOutbox)->toBeInstanceOf(Outbox::class)
-    ->and($forgotPasswordOutbox->state)->toBe(OutboxStateEnum::IN_PROCESS);
+        ->and($forgotPasswordOutbox->state)->toBe(OutboxStateEnum::IN_PROCESS);
 
     $forgotPasswordEmailOngoingRun = $forgotPasswordOutbox->emailOngoingRun;
     expect($forgotPasswordEmailOngoingRun)->toBeInstanceOf(EmailOngoingRun::class)
@@ -131,17 +129,14 @@ test('outbox seeded when website created', function (Shop $shop) {
         ->and($email->liveSnapshot)->toBeInstanceOf(Snapshot::class)
         ->and($email->liveSnapshot->compiled_layout)->toBeNull();
 
-
     return $website;
 })->depends('outbox seeded when shop created');
-
 
 test('seed websites outboxes by command', function (Website $website) {
     $this->artisan('website:seed_outboxes '.$website->slug)->assertExitCode(0);
     $this->artisan('website:seed_outboxes')->assertExitCode(0);
     expect($website->group->commsStats->number_outboxes)->toBe(34);
 })->depends('outbox seeded when website created');
-
 
 test(
     'outbox seeded when fulfilment created',
@@ -160,7 +155,6 @@ test('seed fulfilments outboxes by command', function (Fulfilment $fulfilment) {
     $this->artisan('fulfilment:seed_outboxes')->assertExitCode(0);
     expect($fulfilment->group->commsStats->number_outboxes)->toBe(48);
 })->depends('outbox seeded when fulfilment created');
-
 
 test(
     'create mailshot',
@@ -182,7 +176,6 @@ test('update mailshot', function ($mailshot) {
     return $mailshot;
 })->depends('create mailshot');
 
-
 test('test post room hydrator', function ($shop) {
     $postRoom = $this->group->postRooms()->first();
 
@@ -191,14 +184,14 @@ test('test post room hydrator', function ($shop) {
         $shop->organisation,
         []
     );
-    $outbox      = StoreOutbox::make()->action(
+    $outbox = StoreOutbox::make()->action(
         $orgPostRoom,
         $shop,
         [
-            'code'  => OutboxCodeEnum::INVITE,
-            'type'  => OutboxTypeEnum::NEWSLETTER,
-            'name'  => 'Test',
-            'state' => OutboxStateEnum::ACTIVE
+            'code' => OutboxCodeEnum::INVITE,
+            'type' => OutboxTypeEnum::NEWSLETTER,
+            'name' => 'Test',
+            'state' => OutboxStateEnum::ACTIVE,
         ]
     );
 
@@ -209,20 +202,17 @@ test('test post room hydrator', function ($shop) {
     return $outbox;
 })->depends('outbox seeded when shop created');
 
-
 test('test send email reset password', function () {
     StoreWebsite::make()->action($this->shop, [
-        'code'   => 'test1',
-        'name'   => 'Test Website',
+        'code' => 'test1',
+        'name' => 'Test Website',
         'domain' => 'https://test.com',
     ]);
 
     $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
 
-
-
     $dispatchedEmail = SendResetPasswordEmail::run($webUser, [
-        'url' => 'https://test.com'
+        'url' => 'https://test.com',
     ]);
 
     expect($dispatchedEmail)->toBeNull();
@@ -267,7 +257,7 @@ test('UI index mail outboxes', function () {
 });
 
 test('UI show mail outboxes', function () {
-    $outbox   = $this->shop->outboxes()->first();
+    $outbox = $this->shop->outboxes()->first();
     $response = $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.show', [$this->organisation->slug, $this->shop->slug, $outbox]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($outbox) {
@@ -305,7 +295,7 @@ test('UI Index Org Post Rooms', function () {
 
 test('UI Show Org Post Rooms', function () {
     $orgPostRoom = $this->organisation->orgPostRooms()->first();
-    $response    = $this->get(route('grp.org.shops.show.dashboard.comms.post-rooms.show', [$this->organisation->slug, $this->shop->slug, $orgPostRoom->slug]));
+    $response = $this->get(route('grp.org.shops.show.dashboard.comms.post-rooms.show', [$this->organisation->slug, $this->shop->slug, $orgPostRoom->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($orgPostRoom) {
         $page
@@ -543,7 +533,7 @@ test('UI show dispatched emails', function () {
 
 test('UI edit outbox in fulfilment', function () {
     $fulfilment = Fulfilment::first();
-    if (!$fulfilment) {
+    if (! $fulfilment) {
         $fulfilment = createFulfilment($this->organisation);
     }
     $postRoom = $this->group->postRooms()->first();
@@ -558,17 +548,17 @@ test('UI edit outbox in fulfilment', function () {
         $orgPostRoom,
         $fulfilment,
         [
-            'code'  => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-            'type'  => OutboxTypeEnum::USER_NOTIFICATION,
+            'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            'type' => OutboxTypeEnum::USER_NOTIFICATION,
             'state' => OutboxStateEnum::ACTIVE,
-            'name'  => 'test sender',
+            'name' => 'test sender',
         ]
     );
 
     $response = $this->get(route('grp.org.fulfilments.show.operations.comms.outboxes.edit', [
         $this->organisation,
         $fulfilment->slug,
-        $outbox->slug
+        $outbox->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -589,9 +579,8 @@ test('UI create mailshot', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.shops.show.marketing.mailshots.create', [
         $this->organisation,
-        $this->shop
+        $this->shop,
     ]));
-
 
     $outbox = $this->shop->outboxes()->where('outboxes.code', OutboxCodeEnum::MARKETING)->first();
 
@@ -603,10 +592,10 @@ test('UI create mailshot', function () {
                 'formData',
                 fn (AssertableInertia $page) => $page
                     ->where('route', [
-                        'name'       => 'grp.models.outbox.mailshot.store',
+                        'name' => 'grp.models.outbox.mailshot.store',
                         'parameters' => [
-                            'outbox' => $outbox->id
-                        ]
+                            'outbox' => $outbox->id,
+                        ],
                     ])
                     ->etc()
             )
@@ -619,7 +608,7 @@ test('UI edit mailshot', function (Mailshot $mailShot) {
     $response = $this->get(route('grp.org.shops.show.marketing.mailshots.edit', [
         $this->organisation,
         $this->shop,
-        $mailShot->slug
+        $mailShot->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -634,31 +623,30 @@ test('UI edit mailshot', function (Mailshot $mailShot) {
 test('UI show mailshot in workshop', function (Mailshot $mailShot) {
     $this->withoutExceptionHandling();
     UpdateGroupSettings::make()->action($this->group, [
-        'client_id'     => 'xxx',
+        'client_id' => 'xxx',
         'client_secret' => 'xxx',
-        'grant_type'    => 'whatever'
+        'grant_type' => 'whatever',
     ]);
     $email = StoreEmail::make()->action($mailShot, null, [
-        'subject'               => 'Reset Password',
-        'body'                  => 'Reset Password',
-        'layout'                => ['body' => 'Reset Password'],
-        'compiled_layout'       => 'xxx',
-        'state'                 => 'active',
-        'builder'               => EmailBuilderEnum::BEEFREE,
-        'snapshot_state'        => SnapshotStateEnum::LIVE,
-        'snapshot_recyclable'   => true,
+        'subject' => 'Reset Password',
+        'body' => 'Reset Password',
+        'layout' => ['body' => 'Reset Password'],
+        'compiled_layout' => 'xxx',
+        'state' => 'active',
+        'builder' => EmailBuilderEnum::BEEFREE,
+        'snapshot_state' => SnapshotStateEnum::LIVE,
+        'snapshot_recyclable' => true,
         'snapshot_first_commit' => true,
     ], strict: false);
 
-
     $mailShot->update([
-        'email_id' => $email->id
+        'email_id' => $email->id,
     ]);
 
     $response = $this->get(route('grp.org.shops.show.marketing.mailshots.workshop', [
         $this->organisation,
         $this->shop,
-        $mailShot->slug
+        $mailShot->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($mailShot) {

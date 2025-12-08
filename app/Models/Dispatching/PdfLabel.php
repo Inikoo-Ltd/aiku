@@ -24,21 +24,22 @@ use Spatie\Sluggable\SlugOptions;
  *
  * @property-read \App\Models\Dispatching\Shipper|null $shipper
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static Builder<static>|PdfLabel newModelQuery()
  * @method static Builder<static>|PdfLabel newQuery()
  * @method static Builder<static>|PdfLabel onlyTrashed()
  * @method static Builder<static>|PdfLabel query()
  * @method static Builder<static>|PdfLabel withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|PdfLabel withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class PdfLabel extends Model
 {
-    use SoftDeletes;
-    use HasSlug;
-
-    use HasUniversalSearch;
     use HasFactory;
+    use HasSlug;
+    use HasUniversalSearch;
+    use SoftDeletes;
 
     protected $casts = [
         'data' => 'array',
@@ -62,5 +63,4 @@ class PdfLabel extends Model
     {
         return $this->belongsTo(Shipper::class);
     }
-
 }

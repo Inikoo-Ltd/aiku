@@ -14,11 +14,10 @@ enum GroupSetUpKeyStateEnum: string
 {
     use EnumHelperTrait;
 
-    case ACTIVE     = 'active';
-    case EXPIRED    = 'expired';
+    case ACTIVE = 'active';
+    case EXPIRED = 'expired';
     case INSTALLING = 'installing';
-    case CANCELLED  = 'cancelled';
-    case SUCCESS    = 'success';
-
+    case CANCELLED = 'cancelled';
+    case SUCCESS = 'success';
 
 }

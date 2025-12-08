@@ -21,10 +21,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderFixedAddress extends OrgAction
 {
+    use HasOrderHydrators;
     use WithActionUpdate;
     use WithFixedAddressActions;
     use WithModelAddressActions;
-    use HasOrderHydrators;
 
     private Order $order;
 
@@ -38,7 +38,6 @@ class UpdateOrderFixedAddress extends OrgAction
             $oldAddress = $order->deliveryAddress;
         }
 
-
         if ($oldAddress && $oldAddress->checksum == $modelData['address']->getChecksum()) {
             return $order;
         }
@@ -51,16 +50,13 @@ class UpdateOrderFixedAddress extends OrgAction
 
         $order->updateQuietly(
             [
-                $type . '_country_id' => $address->country_id,
+                $type.'_country_id' => $address->country_id,
             ]
         );
 
         if ($oldAddress) {
             FixedAddressGarbageCollection::dispatch($oldAddress->id)->delay($this->hydratorsDelay);
         }
-
-
-
 
         return $order;
     }
@@ -69,20 +65,20 @@ class UpdateOrderFixedAddress extends OrgAction
     {
         return [
 
-            'address' => ['required', new ValidAddress()],
-            'type'    => ['required', Rule::in(['billing', 'delivery'])],
+            'address' => ['required', new ValidAddress],
+            'type' => ['required', Rule::in(['billing', 'delivery'])],
 
         ];
     }
 
     public function action(Order $order, array $modelData, int $hydratorsDelay = 0, bool $audit = true): Order
     {
-        if (!$audit) {
+        if (! $audit) {
             Order::disableAuditing();
         }
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->order          = $order;
+        $this->order = $order;
 
         $this->initialisationFromShop($order->shop, $modelData);
 

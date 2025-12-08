@@ -33,22 +33,21 @@ class FetchAuroraWebBlockLink extends OrgAction
     {
         $this->organisationSource = $organisationSource;
 
-
-        if (!$this->isInternalLink($website, $auroraLink)) {
+        if (! $this->isInternalLink($website, $auroraLink)) {
             $linkData = [
                 'type' => 'external',
-                'url'  => $auroraLink
+                'url' => $auroraLink,
             ];
         } else {
             $linkData = [
                 'type' => 'internal',
-                'id'   => null
+                'id' => null,
             ];
 
-            $auroraLink        = $this->cleanUrl($auroraLink);
-            $auroraLink        = str_replace($website->domain, '', $auroraLink);
-            $auroraLink        = preg_replace('/^\/+/', "", $auroraLink);
-            $dataSource        = explode(':', $website->source_id);
+            $auroraLink = $this->cleanUrl($auroraLink);
+            $auroraLink = str_replace($website->domain, '', $auroraLink);
+            $auroraLink = preg_replace('/^\/+/', '', $auroraLink);
+            $dataSource = explode(':', $website->source_id);
             $auroraWebpageData = DB::connection('aurora')
                 ->table('Page Store Dimension')
                 ->select('Page Key as source_id')
@@ -57,12 +56,11 @@ class FetchAuroraWebBlockLink extends OrgAction
                 ->orWhere('Webpage Canonical Code', $auroraLink)
                 ->first();
 
-
-            //todo look for webpage also in Page Redirection Dimension
+            // todo look for webpage also in Page Redirection Dimension
 
             $linkedWebpage = false;
 
-            if ($auroraLink == "") {
+            if ($auroraLink == '') {
                 $linkedWebpage = $website->storefront;
             } elseif ($auroraWebpageData) {
                 $linkedWebpage = $this->parseWebpage($website->organisation_id.':'.$auroraWebpageData->source_id);
@@ -79,10 +77,10 @@ class FetchAuroraWebBlockLink extends OrgAction
                 ]));
             } else {
                 $linkData = [
-                    'type'      => 'external',
-                    'url'       => $auroraLink,
-                    'error'     => true,
-                    'error_msg' => 'Webpage count not be fetched'
+                    'type' => 'external',
+                    'url' => $auroraLink,
+                    'error' => true,
+                    'error_msg' => 'Webpage count not be fetched',
                 ];
             }
         }
@@ -92,35 +90,32 @@ class FetchAuroraWebBlockLink extends OrgAction
 
     public function isInternalLink($website, $auroraLink): bool
     {
-        if (str_starts_with($auroraLink, "tel:")) {
+        if (str_starts_with($auroraLink, 'tel:')) {
             return false;
         }
-        if (str_starts_with($auroraLink, "mailto:")) {
+        if (str_starts_with($auroraLink, 'mailto:')) {
             return false;
         }
 
-        if (!str_starts_with($auroraLink, "http")) {
+        if (! str_starts_with($auroraLink, 'http')) {
             return true;
         }
-        $domain     = $website->domain;
+        $domain = $website->domain;
         $auroraLink = $this->cleanUrl($auroraLink);
 
-
-        $auroraDomain = preg_replace('/\/.*$/', "", $auroraLink);
+        $auroraDomain = preg_replace('/\/.*$/', '', $auroraLink);
 
         return $domain == $auroraDomain;
     }
 
     public function cleanUrl($auroraLink): string
     {
-        $auroraLink = preg_replace('/^https?:\/\//', "", $auroraLink);
-        $auroraLink = preg_replace('/^www\./', "", $auroraLink);
+        $auroraLink = preg_replace('/^https?:\/\//', '', $auroraLink);
+        $auroraLink = preg_replace('/^www\./', '', $auroraLink);
 
-        $auroraLink = preg_replace('/^\/+/', "", $auroraLink);
-        $auroraLink = preg_replace('/\/+$/', "", $auroraLink);
+        $auroraLink = preg_replace('/^\/+/', '', $auroraLink);
+        $auroraLink = preg_replace('/\/+$/', '', $auroraLink);
 
         return trim($auroraLink);
     }
-
-
 }

@@ -1,11 +1,12 @@
 <?php
 
+use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -41,7 +42,6 @@ return new class () extends Migration {
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

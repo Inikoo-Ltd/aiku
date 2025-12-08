@@ -37,22 +37,22 @@ class EditProduction extends OrgAction
 
     public function htmlResponse(Production $production, ActionRequest $request): Response
     {
-        $sections               = [];
+        $sections = [];
         $sections['properties'] = [
-            'label'  => __('Properties'),
-            'icon'   => 'fal fa-sliders-h',
+            'label' => __('Properties'),
+            'icon' => 'fal fa-sliders-h',
             'fields' => [
                 'code' => [
-                    'type'  => 'input',
+                    'type' => 'input',
                     'label' => __('code'),
-                    'value' => $production->code
+                    'value' => $production->code,
                 ],
                 'name' => [
-                    'type'  => 'input',
+                    'type' => 'input',
                     'label' => __('name'),
-                    'value' => $production->name
-                ]
-            ]
+                    'value' => $production->name,
+                ],
+            ],
         ];
 
         $currentSection = 'properties';
@@ -63,43 +63,43 @@ class EditProduction extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'                            => __('Edit production'),
-                'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'navigation'                       => [
+                'title' => __('Edit production'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'navigation' => [
                     'previous' => $this->getPrevious($production, $request),
-                    'next'     => $this->getNext($production, $request),
+                    'next' => $this->getNext($production, $request),
                 ],
-                'pageHead'    => [
-                    'title'     => $production->code,
-                    'actions'   => [
+                'pageHead' => [
+                    'title' => $production->code,
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
-                    ]
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
+                    ],
                 ],
 
                 'formData' => [
-                    'current'   => $currentSection,
+                    'current' => $currentSection,
                     'blueprint' => $sections,
-                    'args'      => [
+                    'args' => [
                         'updateRoute' => [
-                            'name'      => 'grp.models.production.update',
-                            'parameters' => $production->id
+                            'name' => 'grp.models.production.update',
+                            'parameters' => $production->id,
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }
 
     public function getBreadcrumbs(array $routeParameters): array
     {
-        return ShowProduction::make()->getBreadcrumbs(routeParameters:$routeParameters, suffix: '('.__('Editing').')');
+        return ShowProduction::make()->getBreadcrumbs(routeParameters: $routeParameters, suffix: '('.__('Editing').')');
     }
 
     public function getPrevious(Production $production, ActionRequest $request): ?array
@@ -118,7 +118,7 @@ class EditProduction extends OrgAction
 
     private function getNavigation(?Production $production, string $routeName): ?array
     {
-        if (!$production) {
+        if (! $production) {
             return null;
         }
 
@@ -126,12 +126,12 @@ class EditProduction extends OrgAction
             'grp.org.productions.show.infrastructure.edit' => [
                 'label' => $production->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $production->organisation->slug,
-                        'production'    => $production->slug
-                    ]
-                ]
+                        'organisation' => $production->organisation->slug,
+                        'production' => $production->slug,
+                    ],
+                ],
             ]
         };
     }

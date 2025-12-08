@@ -32,9 +32,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_dispatched_emails_state_delay
  * @property-read \App\Models\Comms\EmailOngoingRun|null $emailOngoingRun
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailOngoingRunStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailOngoingRunStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailOngoingRunStats query()
+ *
  * @mixin \Eloquent
  */
 class EmailOngoingRunStats extends Model

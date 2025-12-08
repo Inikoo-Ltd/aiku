@@ -15,6 +15,7 @@ class ClearLogs
     use AsCommand;
 
     public string $commandSignature = 'logs:clear';
+
     public string $commandDescription = 'Clear the log files';
 
     public function handle(): void
@@ -24,7 +25,4 @@ class ClearLogs
             unlink($logFile);
         }
     }
-
-
-
 }

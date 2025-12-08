@@ -21,11 +21,10 @@ trait WithJobPositionableShare
             )
         );
 
-
         $jobPositionsNoShare = $jobPositionable->jobPositions()->whereNull('share')->pluck('job_position_id');
 
         $numberJobPositionsNoShare = count($jobPositionsNoShare);
-        $numberJobPositions        = count($jobPositions);
+        $numberJobPositions = count($jobPositions);
 
         if ($numberJobPositionsNoShare == 0) {
             return $jobPositions;
@@ -40,7 +39,6 @@ trait WithJobPositionableShare
         foreach ($jobPositions as $id => $share) {
             $shares[$id] = $share * $numberJobPositions / $numberSlots;
         }
-
 
         return $this->normalise(collect($shares));
     }

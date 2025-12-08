@@ -38,40 +38,38 @@ class PortfoliosResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'         => $this->id,
-            'reference'  => $this->reference,
-            'item_name'  => $this->item_name,
-            'item_code'  => $this->item_code,
-            'item_type'  => $this->item_type,
-            'item_id'    => $this->item_id,
-            'type'       => $this->type,
+            'id' => $this->id,
+            'reference' => $this->reference,
+            'item_name' => $this->item_name,
+            'item_code' => $this->item_code,
+            'item_type' => $this->item_type,
+            'item_id' => $this->item_id,
+            'type' => $this->type,
             'created_at' => $this->created_at,
-
 
             'customer_sales_channel_platform_status' => $this->customer_sales_channel_platform_status,
 
             'has_valid_platform_product_id' => $this->has_valid_platform_product_id,
-            'exist_in_platform'             => $this->exist_in_platform,
-            'platform_status'               => $this->platform_status,
-            'platform_possible_matches'     => $this->platform_possible_matches,
-            'platform_product_id'           => $this->platform_product_id,
+            'exist_in_platform' => $this->exist_in_platform,
+            'platform_status' => $this->platform_status,
+            'platform_possible_matches' => $this->platform_possible_matches,
+            'platform_product_id' => $this->platform_product_id,
             'platform_product_data' => match ($this->platform_type) {
                 PlatformTypeEnum::WOOCOMMERCE->value => Arr::get($this->data, 'woo_product', []),
                 PlatformTypeEnum::EBAY->value => Arr::get($this->data, 'ebay_product', []),
                 default => [],
             },
 
-
             'customer_sales_channel_id' => $this->customer_sales_channel_id ?? null,
-            'routes'                    => [
+            'routes' => [
                 'delete_route' => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.portfolio.delete',
+                    'method' => 'delete',
+                    'name' => 'grp.models.portfolio.delete',
                     'parameters' => [
-                        'portfolio' => $this->id
-                    ]
-                ]
-            ]
+                        'portfolio' => $this->id,
+                    ],
+                ],
+            ],
 
         ];
     }

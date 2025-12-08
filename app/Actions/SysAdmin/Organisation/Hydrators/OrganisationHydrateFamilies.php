@@ -47,6 +47,4 @@ class OrganisationHydrateFamilies implements ShouldBeUnique
 
         $organisation->catalogueStats()->update($stats);
     }
-
-
 }

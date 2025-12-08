@@ -22,11 +22,10 @@ class ShowWarehouseFulfilmentDashboard extends OrgAction
     {
         return $request->user()->authTo(
             [
-                "fulfilment.{$this->warehouse->id}.view"
+                "fulfilment.{$this->warehouse->id}.view",
             ]
         );
     }
-
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): ActionRequest
     {
@@ -35,26 +34,24 @@ class ShowWarehouseFulfilmentDashboard extends OrgAction
         return $request;
     }
 
-
     public function htmlResponse(ActionRequest $request): Response
     {
         return Inertia::render(
             'Org/Warehouse/Fulfilment/FulfilmentDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('fulfilment'),
-                'pageHead'    => [
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-hand-holding-box'],
-                        'title' => __('Fulfilment')
+                'title' => __('fulfilment'),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-hand-holding-box'],
+                        'title' => __('Fulfilment'),
                     ],
                     'iconRight' => [
-                        'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('Fulfilment')
+                        'icon' => ['fal', 'fa-chart-network'],
+                        'title' => __('Fulfilment'),
                     ],
-                    'title'     => __('fulfilment central command'),
+                    'title' => __('fulfilment central command'),
                 ],
-
 
             ]
         );
@@ -67,19 +64,17 @@ class ShowWarehouseFulfilmentDashboard extends OrgAction
                 ShowWarehouse::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.warehouses.show.fulfilment.dashboard',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.warehouses.show.fulfilment.dashboard',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Fulfilment'),
-                            'icon'  => 'fal fa-chart-network'
-                        ]
-                    ]
+                            'icon' => 'fal fa-chart-network',
+                        ],
+                    ],
                 ]
             );
     }
-
-
 }

@@ -17,17 +17,14 @@ enum IngredientTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
-    case SHOWCASE           = 'showcase';
-
-
+    case SHOWCASE = 'showcase';
 
     public function blueprint(): array
     {
         return match ($this) {
             IngredientTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

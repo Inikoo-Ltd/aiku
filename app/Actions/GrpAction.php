@@ -22,19 +22,21 @@ class GrpAction
 
     protected Group $group;
 
-    protected bool $asAction      = false;
-    protected bool $canEdit               = false;
-    protected bool $canDelete             = false;
+    protected bool $asAction = false;
 
-    public int $hydratorsDelay    = 0;
-    protected bool $strict        = true;
+    protected bool $canEdit = false;
 
+    protected bool $canDelete = false;
+
+    public int $hydratorsDelay = 0;
+
+    protected bool $strict = true;
 
     protected array $validatedData;
 
     public function initialisation(Group $group, ActionRequest|array $request): static
     {
-        $this->group          = $group;
+        $this->group = $group;
         if (is_array($request)) {
             $this->setRawAttributes($request);
         } else {
@@ -45,9 +47,4 @@ class GrpAction
 
         return $this;
     }
-
-
-
-
-
 }

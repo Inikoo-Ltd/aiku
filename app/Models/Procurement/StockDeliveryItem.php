@@ -59,10 +59,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Procurement\StockDelivery $stockDelivery
  * @property-read SupplierProduct|null $supplierProduct
+ *
  * @method static \Database\Factories\Procurement\StockDeliveryItemFactory factory($count = null, $state = [])
  * @method static Builder<static>|StockDeliveryItem newModelQuery()
  * @method static Builder<static>|StockDeliveryItem newQuery()
  * @method static Builder<static>|StockDeliveryItem query()
+ *
  * @mixin Eloquent
  */
 class StockDeliveryItem extends Model
@@ -71,20 +73,20 @@ class StockDeliveryItem extends Model
     use InOrganisation;
 
     protected $casts = [
-        'state'           => StockDeliveryItemStateEnum::class,
-        'data'            => 'array',
-        'unit_quantity'   => 'decimal:4',
+        'state' => StockDeliveryItemStateEnum::class,
+        'data' => 'array',
+        'unit_quantity' => 'decimal:4',
         'unit_quantity_checked' => 'decimal:4',
-        'unit_quantity_placed'  => 'decimal:4',
-        'unit_price'      => 'decimal:4',
+        'unit_quantity_placed' => 'decimal:4',
+        'unit_price' => 'decimal:4',
 
-        'dispatched_at'   => 'datetime',
+        'dispatched_at' => 'datetime',
         'not_received_at' => 'datetime',
-        'received_at'     => 'datetime',
-        'checked_at'      => 'datetime',
-        'placed_at'       => 'datetime',
-        'cancelled_at'    => 'datetime',
-        'fetched_at'      => 'datetime',
+        'received_at' => 'datetime',
+        'checked_at' => 'datetime',
+        'placed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 

@@ -90,9 +90,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_pallets_state_request_return_submitted
  * @property int $number_pallets_state_request_return_confirmed
  * @property-read \App\Models\Inventory\WarehouseArea|null $warehouse
+ *
  * @method static Builder<static>|WarehouseAreaStats newModelQuery()
  * @method static Builder<static>|WarehouseAreaStats newQuery()
  * @method static Builder<static>|WarehouseAreaStats query()
+ *
  * @mixin Eloquent
  */
 class WarehouseAreaStats extends Model
@@ -100,7 +102,6 @@ class WarehouseAreaStats extends Model
     protected $table = 'warehouse_area_stats';
 
     protected $guarded = [];
-
 
     public function warehouse(): BelongsTo
     {

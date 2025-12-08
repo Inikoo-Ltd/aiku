@@ -25,7 +25,6 @@ trait HasCreditsStats
         $table->unsignedInteger('number_customers_with_positive_balances')->default(0);
         $table->unsignedInteger('number_customers_with_negative_balances')->default(0);
 
-
         if ($table->getTable() == 'shop_stats') {
             $table->decimal('customer_balances_amount', 16)->default(0);
             $table->decimal('customer_positive_balances_amount', 16)->default(0);
@@ -40,7 +39,6 @@ trait HasCreditsStats
             $table = $this->getGroupBalanceStats($table);
         }
 
-
         return $table;
     }
 
@@ -49,7 +47,6 @@ trait HasCreditsStats
         $table->decimal('customer_balances_org_amount', 16)->default(0);
         $table->decimal('customer_positive_balances_org_amount', 16)->default(0);
         $table->decimal('customer_negative_balances_org_amount', 16)->default(0);
-
 
         return $table;
     }
@@ -62,7 +59,6 @@ trait HasCreditsStats
 
         return $table;
     }
-
 
     public function getTopUpsStats(Blueprint $table): Blueprint
     {

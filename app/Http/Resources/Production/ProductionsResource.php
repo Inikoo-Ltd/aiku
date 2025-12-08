@@ -24,12 +24,12 @@ class ProductionsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'                     => $this->slug,
-            'code'                     => $this->code,
-            'name'                     => $this->name,
-            'state_icon'               => ProductionStateEnum::stateIcon($this->state->value),
-            'number_raw_materials'     => $this->number_raw_materials,
-            'number_artefacts'         => $this->number_artefacts,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'state_icon' => ProductionStateEnum::stateIcon($this->state->value),
+            'number_raw_materials' => $this->number_raw_materials,
+            'number_artefacts' => $this->number_artefacts,
             'number_manufacture_tasks' => $this->number_manufacture_tasks,
         ];
     }

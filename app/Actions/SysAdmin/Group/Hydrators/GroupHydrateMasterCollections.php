@@ -30,8 +30,8 @@ class GroupHydrateMasterCollections implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_master_collections'         => DB::table('master_collections')->where('group_id', $group->id)->count(),
-            'number_current_master_collections' => DB::table('master_collections')->where('group_id', $group->id)->where('state', MasterCollectionStateEnum::ACTIVE)->count()
+            'number_master_collections' => DB::table('master_collections')->where('group_id', $group->id)->count(),
+            'number_current_master_collections' => DB::table('master_collections')->where('group_id', $group->id)->where('state', MasterCollectionStateEnum::ACTIVE)->count(),
         ];
 
         $group->goodsStats()->update($stats);

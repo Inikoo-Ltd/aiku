@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-
 declare(strict_types=1);
 
 namespace App\Providers;
@@ -31,6 +30,7 @@ final class ElasticSearchServiceProvider extends ServiceProvider
             if (config('elasticsearch.api_key')) {
                 $clientBuilder->setApiKey(config('elasticsearch.api_key'));
             }
+
             return $clientBuilder->build();
         });
 
@@ -39,8 +39,6 @@ final class ElasticSearchServiceProvider extends ServiceProvider
             EloquentHitsIteratorAggregate::class
         );
     }
-
-
 
     public function provides(): array
     {

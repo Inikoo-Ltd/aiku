@@ -9,16 +9,16 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\HydrateMasterShop;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
-use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -46,29 +46,28 @@ beforeAll(function () {
     loadDB();
 });
 
-
 beforeEach(function () {
-    $this->group      = createGroup();
+    $this->group = createGroup();
     $this->adminGuest = createAdminGuest($this->group);
-    list(
+    [
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
-    Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
+    ] = createShop();
+    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->adminGuest->getUser());
 });
 
-test("UI Index Master Shops", function () {
+test('UI Index Master Shops', function () {
     $response = get(
-        route("grp.masters.master_shops.index")
+        route('grp.masters.master_shops.index')
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Masters/MasterShops")
-            ->has("title")
-            ->has("breadcrumbs", 3)
-            ->has("data");
+            ->component('Masters/MasterShops')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('data');
     });
 });
 
@@ -76,9 +75,9 @@ test('create master shop', function () {
     $masterShop = StoreMasterShop::make()->action(
         $this->group,
         [
-            'code' => "SHOP1",
-            'name' => "shop1",
-            'type' => ShopTypeEnum::DROPSHIPPING
+            'code' => 'SHOP1',
+            'name' => 'shop1',
+            'type' => ShopTypeEnum::DROPSHIPPING,
         ]
     );
 
@@ -103,24 +102,23 @@ test('create master shop', function () {
     return $masterShop;
 });
 
-test("UI Show master shop", function (MasterShop $masterShop) {
+test('UI Show master shop', function (MasterShop $masterShop) {
     $this->withoutExceptionHandling();
-    $response  = get(
-        route("grp.masters.master_shops.show", [$masterShop->slug])
+    $response = get(
+        route('grp.masters.master_shops.show', [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) use ($masterShop) {
         $page
-            ->component("Masters/MasterShop")
-            ->has("title")
-            ->has("breadcrumbs", 3)
+            ->component('Masters/MasterShop')
+            ->has('title')
+            ->has('breadcrumbs', 3)
             ->has(
-                "pageHead",
-                fn (AssertableInertia $page) =>
-                $page->where("title", $masterShop->name)
+                'pageHead',
+                fn (AssertableInertia $page) => $page->where('title', $masterShop->name)
                     ->has('subNavigation')
                     ->etc()
             )
-            ->has("tabs");
+            ->has('tabs');
     });
 })->depends('create master shop');
 
@@ -128,7 +126,7 @@ test('update master shop', function (MasterShop $masterShop) {
     $updatedMasterShop = UpdateMasterShop::make()->action(
         $masterShop,
         [
-            'name' => "shop2",
+            'name' => 'shop2',
             'type' => ShopTypeEnum::FULFILMENT,
         ]
     );
@@ -143,7 +141,7 @@ test('update master shop', function (MasterShop $masterShop) {
     UpdateMasterShop::make()->action(
         $masterShop,
         [
-            'status' => false
+            'status' => false,
         ]
     );
     $group = $masterShop->group;
@@ -151,15 +149,13 @@ test('update master shop', function (MasterShop $masterShop) {
         ->and($group->goodsStats->number_current_master_shops)->toBe(0);
 })->depends('create master shop');
 
-
 test('create master shop from command', function () {
     $this->artisan('master_shop:create', [
         'group' => $this->group->slug,
-        'type'  => ShopTypeEnum::DROPSHIPPING,
-        'code'  => 'ds',
-        'name'  => 'Dropshipping class'
+        'type' => ShopTypeEnum::DROPSHIPPING,
+        'code' => 'ds',
+        'name' => 'Dropshipping class',
     ])->assertExitCode(0);
-
 
     $group = $this->group->refresh();
 
@@ -172,7 +168,7 @@ test('assign master shop to shop', function () {
     UpdateShop::make()->action(
         $this->shop,
         [
-            'master_shop_id' => $masterShop->id
+            'master_shop_id' => $masterShop->id,
         ]
     );
     $masterShop->refresh();
@@ -181,73 +177,69 @@ test('assign master shop to shop', function () {
         ->and($masterShop->stats->number_current_shops)->toBe(0);
 });
 
-test("UI Index Master Departments", function (MasterShop $masterShop) {
+test('UI Index Master Departments', function (MasterShop $masterShop) {
     $response = get(
-        route("grp.masters.master_shops.show.master_departments.index", [$masterShop->slug])
+        route('grp.masters.master_shops.show.master_departments.index', [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Masters/MasterDepartments")
-            ->has("title")
-            ->has("breadcrumbs", 4)
-            ->has("data")
+            ->component('Masters/MasterDepartments')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has('data')
             ->has(
-                "pageHead",
-                fn (AssertableInertia $page) =>
-                $page->has('subNavigation')->etc()
+                'pageHead',
+                fn (AssertableInertia $page) => $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop');
 
-test("UI Master Dashboard", function () {
+test('UI Master Dashboard', function () {
     $response = get(
-        route("grp.masters.dashboard")
+        route('grp.masters.dashboard')
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Masters/MastersDashboard")
-            ->has("title")
-            ->has("breadcrumbs", 2)
+            ->component('Masters/MastersDashboard')
+            ->has('title')
+            ->has('breadcrumbs', 2)
             ->has(
-                "pageHead",
-                fn (AssertableInertia $page) =>
-                $page->has('title')->etc()
+                'pageHead',
+                fn (AssertableInertia $page) => $page->has('title')->etc()
             );
     });
 });
 
-test("UI Index Master Families", function (MasterShop $masterShop) {
+test('UI Index Master Families', function (MasterShop $masterShop) {
     $response = get(
-        route("grp.masters.master_shops.show.master_families.index", [$masterShop->slug])
+        route('grp.masters.master_shops.show.master_families.index', [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Masters/MasterFamilies")
-            ->has("title")
-            ->has("breadcrumbs", 4)
-            ->has("data")
+            ->component('Masters/MasterFamilies')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has('data')
             ->has(
-                "pageHead",
-                fn (AssertableInertia $page) =>
-                $page->has('subNavigation')->etc()
+                'pageHead',
+                fn (AssertableInertia $page) => $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop');
 
-test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
+test('UI Index Master SubDepartments', function (MasterShop $masterShop) {
     $response = get(
-        route("grp.masters.master_shops.show.master_sub_departments.index", [$masterShop->slug])
+        route('grp.masters.master_shops.show.master_sub_departments.index', [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Masters/MasterSubDepartments")
-            ->has("title")
-            ->has("breadcrumbs", 2)
-            ->has("data")
+            ->component('Masters/MasterSubDepartments')
+            ->has('title')
+            ->has('breadcrumbs', 2)
+            ->has('data')
             ->has(
-                "pageHead",
-                fn (AssertableInertia $page) =>
-                $page->has('subNavigation')->etc()
+                'pageHead',
+                fn (AssertableInertia $page) => $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop')->todo();
@@ -258,7 +250,7 @@ test('create master department', function (MasterShop $masterShop) {
         [
             'code' => 'PRODUCT_CATEGORY1',
             'name' => 'product category 1',
-            'type' => MasterProductCategoryTypeEnum::DEPARTMENT
+            'type' => MasterProductCategoryTypeEnum::DEPARTMENT,
         ]
     );
 
@@ -281,7 +273,7 @@ test('create master department', function (MasterShop $masterShop) {
         ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(1);
 
     return $masterProductCategory;
-})->depends("create master shop");
+})->depends('create master shop');
 
 test('update master department', function (MasterProductCategory $masterProductCategory) {
     $updatedMasterProductCategory = UpdateMasterProductCategory::make()->action(
@@ -289,7 +281,7 @@ test('update master department', function (MasterProductCategory $masterProductC
         [
             'code' => 'PRODUCT_CATEGORY2',
             'name' => 'product category 2',
-            'status' => false
+            'status' => false,
         ]
     );
 
@@ -303,8 +295,7 @@ test('update master department', function (MasterProductCategory $masterProductC
         ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(0);
 
     return $updatedMasterProductCategory;
-})->depends("create master department");
-
+})->depends('create master department');
 
 test('create master family', function (MasterProductCategory $masterDepartment) {
     $masterFamily = StoreMasterProductCategory::make()->action(
@@ -312,16 +303,15 @@ test('create master family', function (MasterProductCategory $masterDepartment) 
         [
             'code' => 'master_fam1',
             'name' => 'master family 1',
-            'type' => MasterProductCategoryTypeEnum::FAMILY
+            'type' => MasterProductCategoryTypeEnum::FAMILY,
         ]
     );
-
 
     expect($masterFamily)->toBeInstanceOf(MasterProductCategory::class)
         ->and($masterFamily->stats)->toBeInstanceOf(MasterProductCategoryStats::class);
 
     return $masterFamily;
-})->depends("update master department");
+})->depends('update master department');
 
 test('create master asset', function (MasterProductCategory $masterFamily) {
     $masterAsset = StoreMasterAsset::make()->action(
@@ -338,7 +328,6 @@ test('create master asset', function (MasterProductCategory $masterFamily) {
 
     $masterAsset->refresh();
 
-
     expect($masterAsset)->toBeInstanceOf(MasterAsset::class)
         ->and($masterAsset->stats)->toBeInstanceOf(MasterAssetStats::class)
         ->and($masterAsset->orderingStats)->toBeInstanceOf(MasterAssetOrderingStats::class)
@@ -352,7 +341,7 @@ test('create master asset', function (MasterProductCategory $masterFamily) {
         ->and($masterAsset->type)->toBe(MasterAssetTypeEnum::RENTAL);
 
     return $masterAsset;
-})->depends("create master family");
+})->depends('create master family');
 
 test('update master asset', function (MasterAsset $masterAsset) {
     $masterAsset = UpdateMasterAsset::make()->action(
@@ -378,13 +367,12 @@ test('update master asset', function (MasterAsset $masterAsset) {
         ->and($masterAsset->type)->toBe(MasterAssetTypeEnum::RENTAL);
 
     return $masterAsset;
-})->depends("create master asset");
+})->depends('create master asset');
 
 test('Hydrate master_shops', function () {
     HydrateMasterShop::run(MasterShop::first());
     $this->artisan('hydrate:master_shops')->assertSuccessful();
 });
-
 
 test('create master sub department', function (MasterProductCategory $masterDepartment) {
     $masterSubDepartment = StoreMasterSubDepartment::make()->action(
@@ -407,42 +395,40 @@ test('create master sub department', function (MasterProductCategory $masterDepa
     return $masterSubDepartment;
 })->depends('create master department');
 
-test("UI Index Master SubDepartments in Department", function (MasterProductCategory $masterDepartment) {
+test('UI Index Master SubDepartments in Department', function (MasterProductCategory $masterDepartment) {
     $response = get(
-        route("grp.masters.master_departments.show.master_sub_departments.index", [$masterDepartment->slug])
+        route('grp.masters.master_departments.show.master_sub_departments.index', [$masterDepartment->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Masters/MasterSubDepartments")
-            ->has("title")
-            ->has("data")
+            ->component('Masters/MasterSubDepartments')
+            ->has('title')
+            ->has('data')
             ->has(
-                "pageHead",
-                fn (AssertableInertia $page) =>
-                $page->has('subNavigation')->etc()
+                'pageHead',
+                fn (AssertableInertia $page) => $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master department');
 
-test("UI Show Master SubDepartment", function (MasterProductCategory $masterSubDepartment) {
+test('UI Show Master SubDepartment', function (MasterProductCategory $masterSubDepartment) {
     $this->withoutExceptionHandling();
 
     $response = get(
-        route("grp.masters.master_departments.show.master_sub_departments.show", [
+        route('grp.masters.master_departments.show.master_sub_departments.show', [
             'masterDepartment' => $masterSubDepartment->parent->slug,
-            'masterSubDepartment' => $masterSubDepartment->slug
+            'masterSubDepartment' => $masterSubDepartment->slug,
         ])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Masters/MasterSubDepartment")
-            ->has("title")
+            ->component('Masters/MasterSubDepartment')
+            ->has('title')
             ->has(
-                "pageHead",
-                fn (AssertableInertia $page) =>
-                $page->has('subNavigation')->etc()
+                'pageHead',
+                fn (AssertableInertia $page) => $page->has('subNavigation')->etc()
             )
-            ->has("tabs");
+            ->has('tabs');
     });
 })->depends('create master sub department');
 

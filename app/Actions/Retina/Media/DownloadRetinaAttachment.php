@@ -25,6 +25,4 @@ class DownloadRetinaAttachment
     {
         return response()->download($media->getPath(), $media->file_name);
     }
-
-
 }

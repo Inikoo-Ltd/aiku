@@ -24,7 +24,6 @@ class SetMasterProductCategoriesTranslationsFromAurora extends OrgAction
     use WithOrganisationSource;
     use WithOrganisationSourceShop;
 
-
     /**
      * @throws \Exception
      */
@@ -51,13 +50,11 @@ class SetMasterProductCategoriesTranslationsFromAurora extends OrgAction
             }
         }
 
-
         $masterProductCategory->setTranslations('name_i8n', $translationName);
         $masterProductCategory->save();
 
         return $masterProductCategory;
     }
-
 
     public function getCommandSignature(): string
     {
@@ -69,7 +66,6 @@ class SetMasterProductCategoriesTranslationsFromAurora extends OrgAction
         $command->info('Setting master assets translations from Aurora');
 
         $chunkSize = 100;
-
 
         $count = MasterProductCategory::whereIn(
             'type',

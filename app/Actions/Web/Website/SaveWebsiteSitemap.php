@@ -25,17 +25,17 @@ class SaveWebsiteSitemap extends OrgAction
 
     public function handle(Website $website): int
     {
-        $baseDir   = 'sitemaps';
-        $disk      = Storage::disk('local');
-        $limit     = 50000; // the limit from Google is 50,000 URLs per sitemap
+        $baseDir = 'sitemaps';
+        $disk = Storage::disk('local');
+        $limit = 50000; // the limit from Google is 50,000 URLs per sitemap
         $chunkSize = 100;
 
-        if (!$disk->exists($baseDir)) {
+        if (! $disk->exists($baseDir)) {
             $disk->makeDirectory($baseDir);
         }
 
         $sitemap = Sitemap::create();
-        $count   = 0;
+        $count = 0;
 
         $website->webpages()->with('liveSnapshot')->where('state', WebpageStateEnum::LIVE)->chunk($chunkSize, function ($webpages) use (&$sitemap, &$count, $limit) {
             /** @var Webpage $webpage */

@@ -17,7 +17,7 @@ class FetchAuroraNoProductTransactionHasOfferComponent extends FetchAurora
     {
         $transaction = $this->parseTransactionNoProduct($this->organisation->id.':'.$this->auroraModelData->{'Order No Product Transaction Fact Key'});
 
-        if (!$transaction) {
+        if (! $transaction) {
             return;
         }
 
@@ -28,28 +28,24 @@ class FetchAuroraNoProductTransactionHasOfferComponent extends FetchAurora
         }
 
         $data = [];
-        if (!$offerAllowance) {
+        if (! $offerAllowance) {
 
-
-            $data           = [
-                'fetch_error'      => true,
+            $data = [
+                'fetch_error' => true,
                 'fetch_error_data' => [
                     'aurora_deal_component_key' => $this->auroraModelData->{'Deal Component Key'},
-                ]
+                ],
             ];
             $offerAllowance = $order->shop->offerAllowances()->where('is_discretionary', true)->first();
-
-
 
         }
 
         if ($offerAllowance->shop_id != $order->shop_id) {
-            print 'Offer Component '.$offerAllowance->id.' does not belong to the same shop as the order '.$order->id."\n";
+            echo 'Offer Component '.$offerAllowance->id.' does not belong to the same shop as the order '.$order->id."\n";
             dd($this->auroraModelData);
         }
 
-
-        $this->parsedData['transaction']     = $transaction;
+        $this->parsedData['transaction'] = $transaction;
         $this->parsedData['offer_allowance'] = $offerAllowance;
 
         $fractionDiscount = $this->auroraModelData->{'Fraction Discount'};
@@ -62,20 +58,20 @@ class FetchAuroraNoProductTransactionHasOfferComponent extends FetchAurora
 
         if ($this->auroraModelData->{'Amount Discount'} < 0) {
             $this->parsedData = null;
+
             return;
         }
 
-
         $this->parsedData['transaction_has_offer_component'] = [
-            'source_alt_id'      => $this->organisation->id.':'.$this->auroraModelData->{'Order No Product Transaction Deal Key'},
+            'source_alt_id' => $this->organisation->id.':'.$this->auroraModelData->{'Order No Product Transaction Deal Key'},
             'offer_allowance_id' => $offerAllowance->id,
-            'discounted_amount'  => $this->auroraModelData->{'Amount Discount'},
-            'info'               => $this->auroraModelData->{'Deal Info'},
-            'is_pinned'          => $this->auroraModelData->{'Order No Product Transaction Deal Pinned'} == 'Yes',
-            'precursor'          => $this->auroraModelData->{'Order No Product Transaction Deal Source'},
-            'fetched_at'         => now(),
-            'last_fetched_at'    => now(),
-            'data'               => $data,
+            'discounted_amount' => $this->auroraModelData->{'Amount Discount'},
+            'info' => $this->auroraModelData->{'Deal Info'},
+            'is_pinned' => $this->auroraModelData->{'Order No Product Transaction Deal Pinned'} == 'Yes',
+            'precursor' => $this->auroraModelData->{'Order No Product Transaction Deal Source'},
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'data' => $data,
         ];
 
         if (isset($fractionDiscount)) {
@@ -83,8 +79,7 @@ class FetchAuroraNoProductTransactionHasOfferComponent extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Order No Product Transaction Deal Bridge')

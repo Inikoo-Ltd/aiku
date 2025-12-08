@@ -10,14 +10,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class EmployeesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class EmployeesExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Employee|Builder
     {
         return Employee::query();
     }
 
-    /** @var Employee $row */
+    /** @var Employee */
     public function map($row): array
     {
         return [
@@ -32,7 +32,7 @@ class EmployeesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             $row->working_hours,
             $row->emergency_contact,
             $row->employment_start_at,
-            $row->employment_end_at
+            $row->employment_end_at,
         ];
     }
 
@@ -50,7 +50,7 @@ class EmployeesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             'Working Hours',
             'Emergency Contact',
             'Employment Start At',
-            'Employment End At'
+            'Employment End At',
         ];
     }
 }

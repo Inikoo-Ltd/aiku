@@ -22,12 +22,11 @@ class FetchAuroraEmailTrackingEvents extends FetchAuroraAction
 
     public string $commandSignature = 'fetch:email_tracking_events {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?EmailTrackingEvent
     {
         $emailTrackingEventData = $organisationSource->fetchEmailTrackingEvent($organisationSourceId);
         if ($emailTrackingEventData) {
-            if (!$emailTrackingEventData['dispatchedEmail']) {
+            if (! $emailTrackingEventData['dispatchedEmail']) {
                 return null;
             }
 
@@ -65,13 +64,11 @@ class FetchAuroraEmailTrackingEvents extends FetchAuroraAction
                 }
             }
 
-
             return $emailTrackingEvent;
         }
 
         return null;
     }
-
 
     public function getModelsQuery(): Builder
     {
@@ -94,7 +91,6 @@ class FetchAuroraEmailTrackingEvents extends FetchAuroraAction
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');
         }
-
 
         if ($this->fromDays) {
             $query->where('Email Tracking Event Date', '>=', now()->subDays($this->fromDays)->format('Y-m-d'));

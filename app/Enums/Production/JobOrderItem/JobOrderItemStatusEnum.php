@@ -8,25 +8,24 @@ enum JobOrderItemStatusEnum: string
 {
     use EnumHelperTrait;
 
-    case RECEIVING    = 'receiving';
+    case RECEIVING = 'receiving';
     case NOT_RECEIVED = 'not_received';
-    case STORING      = 'storing';
-    case RETURNING    = 'returning';
-    case RETURNED     = 'returned';
-    case INCIDENT     = 'incident';
+    case STORING = 'storing';
+    case RETURNING = 'returning';
+    case RETURNED = 'returned';
+    case INCIDENT = 'incident';
 
     public static function labels($forElements = false): array
     {
         $labels = [
-            'receiving'    => __('Receiving'),
+            'receiving' => __('Receiving'),
             'not_received' => __('Not received'),
-            'storing'      => __('Storing'),
-            'returning'    => __('Returning'),
-            'returned'     => __('Returned'),
-            'incident'     => __('Incidents'),
+            'storing' => __('Storing'),
+            'returning' => __('Returning'),
+            'returned' => __('Returned'),
+            'incident' => __('Incidents'),
 
         ];
-
 
         return $labels;
     }
@@ -34,65 +33,65 @@ enum JobOrderItemStatusEnum: string
     public static function statusIcon(): array
     {
         return [
-            'receiving'   => [
+            'receiving' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
-                'color'   => 'lime',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',  // Color for normal icon (Aiku)
+                'color' => 'lime',  // Color for box (Retina)
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'not_received' => [
                 'tooltip' => __('not received'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'storing'    => [
+            'storing' => [
                 'tooltip' => __('Storing'),
-                'icon'    => 'fal fa-check-double',
-                'class'   => 'text-purple-500',
-                'color'   => 'purple',
-                'app'     => [
+                'icon' => 'fal fa-check-double',
+                'class' => 'text-purple-500',
+                'color' => 'purple',
+                'app' => [
                     'name' => 'check-double',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'incident'      => [
+            'incident' => [
                 'tooltip' => __('Incident'),
-                'icon'    => 'fal fa-sad-cry',
-                'class'   => 'text-red-600',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-sad-cry',
+                'class' => 'text-red-600',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'sad-cry',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'returning'       => [
+            'returning' => [
                 'tooltip' => __('Returning'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-green-400',
-                'color'   => 'green',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-green-400',
+                'color' => 'green',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'returned'       => [
+            'returned' => [
                 'tooltip' => __('Returned'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-green-400',
-                'color'   => 'green',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-green-400',
+                'color' => 'green',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
         ];
     }

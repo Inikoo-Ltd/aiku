@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 use App\Actions\CRM\Appointment\CheckCustomerAppointment;
 use App\Actions\CRM\Appointment\GetBookedScheduleAppointment;
 use App\Actions\CRM\Appointment\LoginCustomerAppointment;

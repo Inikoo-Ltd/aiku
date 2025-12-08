@@ -21,12 +21,11 @@ class ClockingMachineInertiaResource extends JsonResource
         /** @var ClockingMachine $clockingMachine */
         $clockingMachine = $this;
 
-
         return [
-            'id'            => $clockingMachine->id,
-            'slug'          => $clockingMachine->slug,
-            'code'          => $clockingMachine->code,
-            'workplace_id'  => $clockingMachine->workplace_id,
+            'id' => $clockingMachine->id,
+            'slug' => $clockingMachine->slug,
+            'code' => $clockingMachine->code,
+            'workplace_id' => $clockingMachine->workplace_id,
         ];
     }
 }

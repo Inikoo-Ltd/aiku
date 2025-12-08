@@ -15,24 +15,24 @@ trait HasWorkshopAction
         return
             [
                 $this->canEdit ? [
-                    'type'    => 'button',
-                    'style'   => 'edit',
+                    'type' => 'button',
+                    'style' => 'edit',
                     'tooltip' => __('settings'),
-                    'icon'    => ["fal", "fa-sliders-h"],
-                    'route'   => [
-                        'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                        'parameters' => array_values($request->route()->originalParameters())
-                    ]
+                    'icon' => ['fal', 'fa-sliders-h'],
+                    'route' => [
+                        'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                        'parameters' => array_values($request->route()->originalParameters()),
+                    ],
                 ] : [],
                 $this->canEdit ? [
-                    'type'  => 'button',
+                    'type' => 'button',
                     'style' => 'secondary',
                     'label' => __('Workshop'),
-                    'icon'  => ["fal", "fa-drafting-compass"],
+                    'icon' => ['fal', 'fa-drafting-compass'],
                     'route' => [
-                        'name'       => preg_replace('/show$/', 'workshop', $request->route()->getName()),
-                        'parameters' => array_values($request->route()->originalParameters())
-                    ]
+                        'name' => preg_replace('/show$/', 'workshop', $request->route()->getName()),
+                        'parameters' => array_values($request->route()->originalParameters()),
+                    ],
                 ] : [],
             ];
     }

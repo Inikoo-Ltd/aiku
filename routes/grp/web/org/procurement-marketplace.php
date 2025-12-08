@@ -6,10 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-
-
-//todo: delete this
-
+// todo: delete this
 
 /*
 Route::get('/agents', IndexMarketplaceAgents::class)->name('agents.index');

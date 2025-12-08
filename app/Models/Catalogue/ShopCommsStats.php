@@ -88,9 +88,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_pallet_deleted
  * @property int $number_traffic_sources
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static Builder<static>|ShopCommsStats newModelQuery()
  * @method static Builder<static>|ShopCommsStats newQuery()
  * @method static Builder<static>|ShopCommsStats query()
+ *
  * @mixin Eloquent
  */
 class ShopCommsStats extends Model

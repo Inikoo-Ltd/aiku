@@ -12,9 +12,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use HasSoftDeletes;
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
+    use HasSoftDeletes;
+
     public function up(): void
     {
         Schema::create('queries', function (Blueprint $table) {

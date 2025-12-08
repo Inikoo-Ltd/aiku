@@ -35,8 +35,8 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
                 'options' => collect(RetinaPalletsInPalletReturnWholePalletsOptionEnum::labels())
                     ->map(function ($label, $key) use ($palletReturn) {
                         return [
-                            'label' => $label . ' (' . RetinaPalletsInPalletReturnWholePalletsOptionEnum::count($palletReturn)[$key] . ')',
-                            'value' => RetinaPalletsInPalletReturnWholePalletsOptionEnum::from($key)->value
+                            'label' => $label.' ('.RetinaPalletsInPalletReturnWholePalletsOptionEnum::count($palletReturn)[$key].')',
+                            'value' => RetinaPalletsInPalletReturnWholePalletsOptionEnum::from($key)->value,
                         ];
                     })
                     ->values()
@@ -45,7 +45,7 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
                     if (RetinaPalletsInPalletReturnWholePalletsOptionEnum::SELECTED->value === $elements) {
                         $query->where('pallet_return_items.pallet_return_id', $palletReturn->id);
                     }
-                }
+                },
             ],
         ];
     }
@@ -65,7 +65,6 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
 
         $query = QueryBuilder::for(Pallet::class);
 
-
         $query->where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id);
 
         $query->where(function ($query) use ($palletReturn) {
@@ -78,7 +77,7 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
                 PalletStatusEnum::RETURNED,
                 PalletStatusEnum::IN_PROCESS,
                 PalletStatusEnum::RECEIVING,
-                PalletStatusEnum::NOT_RECEIVED
+                PalletStatusEnum::NOT_RECEIVED,
             ]);
         } elseif ($palletReturn->state === PalletReturnStateEnum::IN_PROCESS) {
             $query->where('pallets.status', PalletStatusEnum::STORING);
@@ -137,7 +136,7 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
             return true;
         }
 
-        $this->canEdit   = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
+        $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
         $this->canDelete = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
 
         return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.view");
@@ -154,19 +153,20 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
 
         return $this->handle($palletReturn);
     }
+
     public function tableStructure(PalletReturn $palletReturn, $request, $prefix = null, $modelOperations = []): Closure
     {
         return function (InertiaTable $table) use ($prefix, $modelOperations, $request, $palletReturn) {
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
 
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
                 'title' => '',
-                'count' => $palletReturn->fulfilmentCustomer->number_pallets_state_storing
+                'count' => $palletReturn->fulfilmentCustomer->number_pallets_state_storing,
             ];
 
             if ($palletReturn->state === PalletReturnStateEnum::IN_PROCESS) {
@@ -181,35 +181,26 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
 
             $table->withGlobalSearch();
 
-
             $table->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
 
-
             $table->column(key: 'type_icon', label: ['fal', 'fa-yin-yang'], type: 'icon');
-
 
             /* $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon'); */
 
-
             $table->column(key: 'reference', label: __('pallet ID'), canBeHidden: false, sortable: true, searchable: true);
-
 
             $customersReferenceLabel = __("Pallet reference (customer's), notes");
 
-
             $table->column(key: 'customer_reference', label: $customersReferenceLabel, canBeHidden: false, sortable: true, searchable: true);
 
-            if (!$request->user() instanceof WebUser) {
+            if (! $request->user() instanceof WebUser) {
                 $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
             }
 
-
             $table->column(key: 'actions', label: 'actions', canBeHidden: false, searchable: true);
-
 
             $table->defaultSort('reference');
         };
     }
-
 }

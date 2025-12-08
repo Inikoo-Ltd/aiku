@@ -25,22 +25,20 @@ trait WithLogin
         ];
     }
 
-
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function asController(ActionRequest $request): RedirectResponse | array
+    public function asController(ActionRequest $request): RedirectResponse|array
     {
         return $this->handle($request);
     }
-
 
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
     public function ensureIsNotRateLimited(ActionRequest $request): void
     {
-        if (!RateLimiter::tooManyAttempts($this->throttleKey($request), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey($request), 5)) {
             return;
         }
 

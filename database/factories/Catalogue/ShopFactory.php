@@ -16,18 +16,18 @@ class ShopFactory extends Factory
     public function definition(): array
     {
         return [
-            'code'                     => fake()->lexify(),
-            'name'                     => fake()->company(),
-            'contact_name'             => fake()->name,
-            'company_name'             => fake()->company,
-            'email'                    => fake()->email,
+            'code' => fake()->lexify(),
+            'name' => fake()->company(),
+            'contact_name' => fake()->name,
+            'company_name' => fake()->company,
+            'email' => fake()->email,
             'identity_document_number' => fake('en_GB')->vat(),
-            'identity_document_type'   => 'passport',
-            'type'                     => ShopTypeEnum::B2B->value,
-            'country_id'               => 1,
-            'currency_id'              => 1,
-            'language_id'              => 1,
-            'timezone_id'              => 1,
+            'identity_document_type' => 'passport',
+            'type' => ShopTypeEnum::B2B->value,
+            'country_id' => 1,
+            'currency_id' => 1,
+            'language_id' => 1,
+            'timezone_id' => 1,
         ];
     }
 }

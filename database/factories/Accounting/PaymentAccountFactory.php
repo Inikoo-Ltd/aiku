@@ -18,7 +18,7 @@ class PaymentAccountFactory extends Factory
         return [
             'code' => fake()->lexify('????'),
             'name' => fake()->company(),
-            'type' => PaymentAccountTypeEnum::CASH->value
+            'type' => PaymentAccountTypeEnum::CASH->value,
         ];
     }
 }

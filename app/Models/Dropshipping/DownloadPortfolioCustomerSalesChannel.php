@@ -26,18 +26,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel $customerSalesChannel
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DownloadPortfolioCustomerSalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DownloadPortfolioCustomerSalesChannel newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DownloadPortfolioCustomerSalesChannel onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DownloadPortfolioCustomerSalesChannel query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DownloadPortfolioCustomerSalesChannel withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DownloadPortfolioCustomerSalesChannel withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class DownloadPortfolioCustomerSalesChannel extends Model
 {
     use SoftDeletes;
+
     protected $table = 'download_portfolio_customer_sales_channel';
+
     protected $fillable = [
         'customer_sales_channel_id',
         'file_name',
@@ -53,5 +57,4 @@ class DownloadPortfolioCustomerSalesChannel extends Model
     {
         return $this->belongsTo(CustomerSalesChannel::class);
     }
-
 }

@@ -27,11 +27,9 @@ class FetchAuroraOrganisations
 
     public string $commandSignature = 'fetch:aurora_organisations  {--d|db_suffix=}';
 
-
     public function handle(SourceOrganisationService $organisationSource, Organisation $organisation): Organisation
     {
         $organisationData = $organisationSource->fetchOrganisation($organisation);
-
 
         $organisation = UpdateOrganisation::make()->action(
             organisation: $organisation,
@@ -42,11 +40,10 @@ class FetchAuroraOrganisations
         );
         Organisation::enableAuditing();
 
-
-        if (!$organisation->fetched_at) {
+        if (! $organisation->fetched_at) {
             $organisation->updateQuietly(
                 [
-                    'fetched_at' => now()
+                    'fetched_at' => now(),
                 ]
             );
 
@@ -55,7 +52,6 @@ class FetchAuroraOrganisations
                 Arr::except($organisationData['organisation'], ['source', 'source_id', 'fetched_at', 'last_fetched_at'])
             );
         }
-
 
         $sourceData = explode(':', $organisation->source_id);
         DB::connection('aurora')->table('Account Dimension')
@@ -66,65 +62,56 @@ class FetchAuroraOrganisations
             ->select('Payment Service Provider Key')
             ->where('Payment Service Provider Block', 'Accounts')->first();
 
-
         if ($accountsServiceProviderData) {
             $accountsServiceProvider = $organisation->getAccountsServiceProvider();
             $accountsServiceProvider->update(
                 [
-                    'source_id' => $organisation->id.':'.$accountsServiceProviderData->{'Payment Service Provider Key'}
+                    'source_id' => $organisation->id.':'.$accountsServiceProviderData->{'Payment Service Provider Key'},
                 ]
             );
 
             if ($accountsServiceProvider->fetched_at) {
                 $accountsServiceProvider->update(
                     [
-                        'last_fetched_at' => now()
+                        'last_fetched_at' => now(),
                     ]
                 );
             } else {
                 $accountsServiceProvider->update(
                     [
-                        'fetched_at' => now()
+                        'fetched_at' => now(),
                     ]
                 );
             }
         }
-
-
 
         /** @var Organisation $otherOrganisation */
         foreach (Organisation::where('type', OrganisationTypeEnum::SHOP)->where('id', '!=', $organisation->id)->get() as $otherOrganisation) {
 
             $orgPartner = $organisation->orgPartners()->where('partner_id', $otherOrganisation->id)->first();
             if ($orgPartner) {
-                $supplierData = DB::connection("aurora")
-                    ->table("Supplier Dimension")
+                $supplierData = DB::connection('aurora')
+                    ->table('Supplier Dimension')
                     ->select('Supplier Key')
-                    ->where("partner_code", $otherOrganisation->slug)
+                    ->where('partner_code', $otherOrganisation->slug)
                     ->first();
 
-
                 if ($supplierData) {
-                    $modelSources         = Arr::get($orgPartner->sources, 'suppliers', []);
-                    $modelSources[]       = $organisation->id.':'.$supplierData->{'Supplier Key'};
-                    $modelSources         = array_unique($modelSources);
+                    $modelSources = Arr::get($orgPartner->sources, 'suppliers', []);
+                    $modelSources[] = $organisation->id.':'.$supplierData->{'Supplier Key'};
+                    $modelSources = array_unique($modelSources);
                     $sources['suppliers'] = $modelSources;
                     $orgPartner->updateQuietly(
                         [
-                            'sources' => $sources
+                            'sources' => $sources,
                         ]
                     );
                 }
             }
         }
 
-
-
-
-
         return $organisation;
     }
-
 
     /**
      * @throws \Exception

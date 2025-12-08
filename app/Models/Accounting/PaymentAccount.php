@@ -59,6 +59,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, SerialReference> $serialReferences
  * @property-read \App\Models\Accounting\PaymentAccountStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Accounting\PaymentAccountFactory factory($count = null, $state = [])
  * @method static Builder<static>|PaymentAccount newModelQuery()
  * @method static Builder<static>|PaymentAccount newQuery()
@@ -66,16 +67,17 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|PaymentAccount query()
  * @method static Builder<static>|PaymentAccount withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|PaymentAccount withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class PaymentAccount extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
     use HasFactory;
     use HasHistory;
-    use inOrganisation;
+    use HasSlug;
     use HasUniversalSearch;
+    use inOrganisation;
+    use SoftDeletes;
 
     protected $casts = [
         'data' => 'array',
@@ -145,5 +147,4 @@ class PaymentAccount extends Model implements Auditable
     {
         return $this->morphMany(SerialReference::class, 'container');
     }
-
 }

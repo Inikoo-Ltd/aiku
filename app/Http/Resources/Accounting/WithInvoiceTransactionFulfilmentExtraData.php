@@ -20,40 +20,38 @@ trait WithInvoiceTransactionFulfilmentExtraData
 {
     public function getServicePalletInfo(array $data, bool $isRetina): ?array
     {
-        $palletId     = Arr::get($data, 'handling_service_date');
+        $palletId = Arr::get($data, 'handling_service_date');
         $handlingDate = Arr::get($data, 'handling_service_pallet_id');
-
 
         $pallet = null;
         if ($palletId) {
             $pallet = Pallet::find($palletId);
         }
-        if (!$pallet) {
+        if (! $pallet) {
             return null;
         }
 
-
         $palletReference = $pallet->reference;
-        $palletRoute     = $isRetina ?
+        $palletRoute = $isRetina ?
             [
-                'name'       => 'retina.fulfilment.storage.pallets.show',
+                'name' => 'retina.fulfilment.storage.pallets.show',
                 'parameters' => [
-                    'pallet' => $pallet->slug
-                ]
+                    'pallet' => $pallet->slug,
+                ],
 
             ] : [
-            'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
-            'parameters' => [
-                'organisation'       => $pallet->organisation->slug,
-                'fulfilment'         => $pallet->fulfilment->slug,
-                'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
-                'pallet'             => $pallet->slug
-            ]
-        ];
+                'name' => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
+                'parameters' => [
+                    'organisation' => $pallet->organisation->slug,
+                    'fulfilment' => $pallet->fulfilment->slug,
+                    'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
+                    'pallet' => $pallet->slug,
+                ],
+            ];
 
         $servicePalletInfo = [
             'palletReference' => $palletReference,
-            'palletRoute'     => $palletRoute,
+            'palletRoute' => $palletRoute,
 
         ];
 
@@ -61,27 +59,24 @@ trait WithInvoiceTransactionFulfilmentExtraData
             $servicePalletInfo['handlingDate'] = Carbon::parse($handlingDate)->format('d M Y');
         }
 
-
         return $servicePalletInfo;
     }
-
 
     public function getRentedScopeInfo(?int $recurring_bill_transaction_id, ?string $modelType, ?int $modelId, bool $isRetina): ?array
     {
 
-        $rentalObjectInfo         = null;
-        if (!$recurring_bill_transaction_id || !$modelType) {
+        $rentalObjectInfo = null;
+        if (! $recurring_bill_transaction_id || ! $modelType) {
             return null;
         }
-
 
         $recurringBillTransaction = RecurringBillTransaction::find($recurring_bill_transaction_id);
 
         if ($recurringBillTransaction) {
             $rentalObjectInfo = [
-                'model'       => '',
-                'title'       => '',
-                'route'       => '',
+                'model' => '',
+                'title' => '',
+                'route' => '',
                 'after_title' => null,
             ];
 
@@ -96,7 +91,6 @@ trait WithInvoiceTransactionFulfilmentExtraData
             }
         }
 
-
         return $rentalObjectInfo;
     }
 
@@ -104,24 +98,24 @@ trait WithInvoiceTransactionFulfilmentExtraData
     {
         $space = Space::find($modelId);
         if ($space) {
-            $desc_model       = __('Space (parking)');
-            $desc_title       = $space->reference;
-            $desc_route       = $isRetina
+            $desc_model = __('Space (parking)');
+            $desc_title = $space->reference;
+            $desc_route = $isRetina
                 ? []
                 : [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.spaces.show',
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.spaces.show',
                     'parameters' => [
-                        'organisation'       => $space->organisation,
-                        'fulfilment'         => $space->fulfilment,
+                        'organisation' => $space->organisation,
+                        'fulfilment' => $space->fulfilment,
                         'fulfilmentCustomer' => $space->fulfilmentCustomer->slug,
-                        'space'              => $space->slug
-                    ]
+                        'space' => $space->slug,
+                    ],
                 ];
             $rentalObjectInfo = [
-                'model'       => $desc_model,
-                'title'       => $desc_title,
-                'route'       => $desc_route,
-                'after_title' => null
+                'model' => $desc_model,
+                'title' => $desc_title,
+                'route' => $desc_route,
+                'after_title' => null,
             ];
         }
 
@@ -136,32 +130,31 @@ trait WithInvoiceTransactionFulfilmentExtraData
             $desc_model = __('Pallet Return');
             $desc_route = $isRetina
                 ? [
-                    'name'       => 'retina.fulfilment.storage.pallet_returns.show',
+                    'name' => 'retina.fulfilment.storage.pallet_returns.show',
                     'parameters' => [
-                        'palletReturn' => $palletReturn->slug
-                    ]
+                        'palletReturn' => $palletReturn->slug,
+                    ],
                 ]
                 : [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
                     'parameters' => [
-                        'organisation'       => $palletReturn->organisation,
-                        'fulfilment'         => $palletReturn->fulfilment,
+                        'organisation' => $palletReturn->organisation,
+                        'fulfilment' => $palletReturn->fulfilment,
                         'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                        'palletReturn'       => $palletReturn->slug
-                    ]
+                        'palletReturn' => $palletReturn->slug,
+                    ],
                 ];
 
             $rentalObjectInfo = [
-                'model'       => $desc_model,
-                'title'       => $desc_title,
-                'route'       => $desc_route,
-                'after_title' => null
+                'model' => $desc_model,
+                'title' => $desc_title,
+                'route' => $desc_route,
+                'after_title' => null,
             ];
         }
 
         return $rentalObjectInfo;
     }
-
 
     protected function getPalletDeliveryInfo(array $rentalObjectInfo, RecurringBillTransaction $recurringBillTransaction, bool $isRetina): ?array
     {
@@ -171,26 +164,26 @@ trait WithInvoiceTransactionFulfilmentExtraData
             $desc_model = __('Pallet Delivery');
             $desc_route = $isRetina
                 ? [
-                    'name'       => 'retina.fulfilment.storage.pallet_deliveries.show',
+                    'name' => 'retina.fulfilment.storage.pallet_deliveries.show',
                     'parameters' => [
-                        'palletDelivery' => $palletDelivery->slug
-                    ]
+                        'palletDelivery' => $palletDelivery->slug,
+                    ],
                 ]
                 : [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
                     'parameters' => [
-                        'organisation'       => $palletDelivery->organisation,
-                        'fulfilment'         => $palletDelivery->fulfilment,
+                        'organisation' => $palletDelivery->organisation,
+                        'fulfilment' => $palletDelivery->fulfilment,
                         'fulfilmentCustomer' => $palletDelivery->fulfilmentCustomer->slug,
-                        'palletDelivery'     => $palletDelivery->slug
-                    ]
+                        'palletDelivery' => $palletDelivery->slug,
+                    ],
                 ];
 
             $rentalObjectInfo = [
-                'model'       => $desc_model,
-                'title'       => $desc_title,
-                'route'       => $desc_route,
-                'after_title' => null
+                'model' => $desc_model,
+                'title' => $desc_title,
+                'route' => $desc_route,
+                'after_title' => null,
             ];
         }
 
@@ -201,35 +194,34 @@ trait WithInvoiceTransactionFulfilmentExtraData
     {
         $pallet = Pallet::find($recurringBillTransaction->item_id);
         if ($pallet) {
-            $desc_title       = $pallet->customer_reference;
-            $desc_model       = __('Storage');
+            $desc_title = $pallet->customer_reference;
+            $desc_model = __('Storage');
             $desc_after_title = $pallet->reference;
-            $desc_route       = $isRetina
+            $desc_route = $isRetina
                 ?
                 [
-                    'name'       => 'retina.fulfilment.storage.pallets.show',
+                    'name' => 'retina.fulfilment.storage.pallets.show',
                     'parameters' => [
-                        'pallet' => $pallet->slug
-                    ]
+                        'pallet' => $pallet->slug,
+                    ],
                 ]
                 : [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show.pallets.show',
                     'parameters' => [
-                        'organisation'       => $pallet->organisation,
-                        'fulfilment'         => $pallet->fulfilment,
+                        'organisation' => $pallet->organisation,
+                        'fulfilment' => $pallet->fulfilment,
                         'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
-                        'pallet'             => $pallet->slug
-                    ]
+                        'pallet' => $pallet->slug,
+                    ],
                 ];
             $rentalObjectInfo = [
-                'model'       => $desc_model,
-                'title'       => $desc_title,
-                'route'       => $desc_route,
+                'model' => $desc_model,
+                'title' => $desc_title,
+                'route' => $desc_route,
                 'after_title' => $desc_after_title,
             ];
         }
 
         return $rentalObjectInfo;
     }
-
 }

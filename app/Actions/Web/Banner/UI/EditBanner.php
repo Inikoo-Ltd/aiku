@@ -31,7 +31,6 @@ class EditBanner extends OrgAction
         return $banner;
     }
 
-
     public function asController(Organisation $organisation, Shop $shop, Website $website, Banner $banner, ActionRequest $request): Banner
     {
         $this->initialisationFromShop($banner->shop, $request);
@@ -47,77 +46,75 @@ class EditBanner extends OrgAction
         return $this->handle($banner);
     }
 
-
     /**
      * @throws Exception
      */
     public function htmlResponse(Banner $banner, ActionRequest $request): Response
     {
         $sections['properties'] = [
-            'label'  => __('Banner properties'),
-            'icon'   => 'fal fa-sliders-h',
+            'label' => __('Banner properties'),
+            'icon' => 'fal fa-sliders-h',
             'fields' => [
                 'name' => [
-                    'type'     => 'input',
-                    'label'    => __('name'),
-                    'value'    => $banner->name,
+                    'type' => 'input',
+                    'label' => __('name'),
+                    'value' => $banner->name,
                     'required' => true,
                 ],
 
-            ]
+            ],
         ];
-
 
         if ($banner->state == BannerStateEnum::LIVE) {
             $sections['shutdown'] = [
-                'label'  => __('Shutdown'),
-                'icon'   => 'fal fa-power-off',
-                'title'  => '',
+                'label' => __('Shutdown'),
+                'icon' => 'fal fa-power-off',
+                'title' => '',
                 'fields' => [
                     'shutdown_action' => [
-                        'type'   => 'action',
+                        'type' => 'action',
                         'action' => [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'secondary',
-                            'icon'  => ['fal', 'fa-power-off'],
+                            'icon' => ['fal', 'fa-power-off'],
                             'label' => __('Shutdown banner'),
                             'route' => [
-                                'method'     => 'patch',
-                                'name'       => 'grp.models.shop.website.banner.shutdown',
+                                'method' => 'patch',
+                                'name' => 'grp.models.shop.website.banner.shutdown',
                                 'parameters' => [
-                                    'shop'    => $banner->shop_id,
+                                    'shop' => $banner->shop_id,
                                     'website' => $banner->website_id,
-                                    'banner'  => $banner->id,
-                                ]
+                                    'banner' => $banner->id,
+                                ],
                             ],
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ];
         }
 
         $sections['delete'] = [
-            'label'  => __('Delete'),
-            'icon'   => 'fal fa-trash-alt',
+            'label' => __('Delete'),
+            'icon' => 'fal fa-trash-alt',
             'fields' => [
                 'name' => [
-                    'type'   => 'action',
+                    'type' => 'action',
                     'action' => [
-                        'type'  => 'button',
+                        'type' => 'button',
                         'style' => 'delete',
                         'label' => __('Delete banner'),
                         'route' => [
-                            'method'     => 'delete',
-                            'name'       => 'grp.models.shop.website.banner.delete',
+                            'method' => 'delete',
+                            'name' => 'grp.models.shop.website.banner.delete',
                             'parameters' => [
-                                'shop'    => $banner->shop_id,
+                                'shop' => $banner->shop_id,
                                 'website' => $banner->website_id,
-                                'banner'  => $banner->id,
-                            ]
+                                'banner' => $banner->id,
+                            ],
                         ],
                     ],
-                ]
-            ]
+                ],
+            ],
         ];
 
         $currentSection = 'properties';
@@ -128,49 +125,48 @@ class EditBanner extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __("Edit banner"),
+                'title' => __('Edit banner'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'pageHead'    => [
-                    'title'     => $banner->name,
-                    'icon'      => [
+                'pageHead' => [
+                    'title' => $banner->name,
+                    'icon' => [
                         'tooltip' => __('Banner'),
-                        'icon'    => 'fal fa-sign'
+                        'icon' => 'fal fa-sign',
                     ],
                     'iconRight' => $banner->state->stateIcon()[$banner->state->value],
-                    'actions'   => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exit',
                             'label' => __('Exit edit'),
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
                     ],
                 ],
-                'formData'    => [
-                    'current'   => $currentSection,
+                'formData' => [
+                    'current' => $currentSection,
                     'blueprint' => $sections,
-                    'args'      => [
+                    'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.shop.website.banner.update',
+                            'name' => 'grp.models.shop.website.banner.update',
                             'parameters' => [
-                                'shop'    => $banner->shop_id,
+                                'shop' => $banner->shop_id,
                                 'website' => $banner->website_id,
-                                'banner'  => $banner->id,
-                            ]
+                                'banner' => $banner->id,
+                            ],
                         ],
-                    ]
+                    ],
                 ],
 
             ]
         );
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
@@ -180,6 +176,4 @@ class EditBanner extends OrgAction
             suffix: '('.__('Editing').')'
         );
     }
-
-
 }

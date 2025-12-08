@@ -21,6 +21,4 @@ trait WithWarehouseManagementEditAuthorisation
         return $request->user()->authTo('org-supervisor.'.$this->organisation->id);
 
     }
-
-
 }

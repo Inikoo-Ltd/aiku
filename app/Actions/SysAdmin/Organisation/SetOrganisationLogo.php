@@ -26,12 +26,12 @@ class SetOrganisationLogo
         $this->attachMediaToModel($organisation, $media, 'logo');
         $organisation->updateQuietly(
             [
-                'image_id' => $media->id
+                'image_id' => $media->id,
             ]
         );
+
         return $organisation;
     }
-
 
     public string $commandSignature = 'org:logo {organisation : Organisation slug}';
 
@@ -47,12 +47,13 @@ class SetOrganisationLogo
 
         try {
             $this->handle($organisation);
+
             return 0;
         } catch (Exception $exception) {
             $command->error('Error setting logo, '.$exception->getMessage());
+
             return 1;
         }
-
 
     }
 }

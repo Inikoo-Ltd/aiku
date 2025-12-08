@@ -21,23 +21,21 @@ class LogWebUserRequestMiddleware
 
     public function handle(Request $request, Closure $next)
     {
-        if (!RetinaLogWebUserRequest::make()->canLogWebUserRequest()) {
+        if (! RetinaLogWebUserRequest::make()->canLogWebUserRequest()) {
             return $next($request);
         }
-
 
         ProcessRetinaWebUserRequest::dispatch(
             $request->user(),
             now(),
             [
-                'name'      => $request->route()->getName(),
+                'name' => $request->route()->getName(),
                 'arguments' => $request->route()->originalParameters(),
-                'url'       => $request->path(),
+                'url' => $request->path(),
             ],
             $request->ip(),
             $request->header('User-Agent')
         );
-
 
         return $next($request);
     }

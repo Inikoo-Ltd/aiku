@@ -35,13 +35,12 @@ class StorePurgedOrder extends OrgAction
         return $purge->purgedOrders()->create($modelData);
     }
 
-
     public function rules(): array
     {
         $rules = [
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictStoreRules($rules);
         }
 
@@ -50,11 +49,12 @@ class StorePurgedOrder extends OrgAction
 
     public function action(Purge $purge, Order $order, array $modelData, int $hydratorsDelay = 0, bool $strict = true): PurgedOrder
     {
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisationFromShop($purge->shop, $modelData);
+
         return $this->handle($purge, $order);
     }
 }

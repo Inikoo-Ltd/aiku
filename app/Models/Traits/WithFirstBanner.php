@@ -20,14 +20,13 @@ trait WithFirstBanner
 
         if (class_basename($scope) == 'PortfolioWebsite') {
 
-
             if ($scope->stats->number_banners == 0) {
                 $firstBanner = [
-                    'text'        => $textHtml,
+                    'text' => $textHtml,
                     'createRoute' => [
-                        'name'       => 'customer.models.portfolio-website.banner.store',
-                        'parameters' => $scope->id
-                    ]
+                        'name' => 'customer.models.portfolio-website.banner.store',
+                        'parameters' => $scope->id,
+                    ],
                 ];
             }
         } else {
@@ -36,21 +35,21 @@ trait WithFirstBanner
                 $numberPortfolioWebsites = $scope->portfolioStats->number_portfolio_websites;
                 if ($numberPortfolioWebsites == 1) {
                     $portfolioWebsiteID = PortfolioWebsite::first()->pluck('id');
-                    $firstBanner        = [
-                        'text'        => $textHtml,
+                    $firstBanner = [
+                        'text' => $textHtml,
                         'createRoute' => [
-                            'name'       => 'customer.models.portfolio-website.banner.store',
-                            'parameters' => $portfolioWebsiteID
-                        ]
+                            'name' => 'customer.models.portfolio-website.banner.store',
+                            'parameters' => $portfolioWebsiteID,
+                        ],
                     ];
                 } elseif ($numberPortfolioWebsites > 1) {
                     $firstBanner = [
-                        'text'           => $textHtml,
+                        'text' => $textHtml,
                         'websiteOptions' => GetPortfolioWebsitesOptions::run(),
-                        'createRoute'    => [
+                        'createRoute' => [
                             'name' => 'customer.models.banner.store',
 
-                        ]
+                        ],
                     ];
                 }
             }
@@ -58,5 +57,4 @@ trait WithFirstBanner
 
         return $firstBanner;
     }
-
 }

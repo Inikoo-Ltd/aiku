@@ -11,8 +11,8 @@ namespace App\Stubs\Migrations;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
@@ -33,11 +33,8 @@ trait HasWebStats
             $table->unsignedInteger('number_websites_state_'.$websiteState->snake())->default(0);
         }
 
-
-
         return $table;
     }
-
 
     public function getSnapshotsFields(Blueprint $table): Blueprint
     {
@@ -45,6 +42,7 @@ trait HasWebStats
         foreach (SnapshotStateEnum::cases() as $case) {
             $table->unsignedSmallInteger('number_snapshots_state_'.$case->snake())->default(0);
         }
+
         return $table;
     }
 
@@ -82,7 +80,6 @@ trait HasWebStats
         return $table;
     }
 
-
     public function getBannersStatsFields(Blueprint $table): Blueprint
     {
 
@@ -90,7 +87,6 @@ trait HasWebStats
         foreach (BannerStateEnum::cases() as $case) {
             $table->unsignedSmallInteger('number_banners_state_'.$case->snake())->default(0);
         }
-
 
         return $table;
     }
@@ -123,5 +119,4 @@ trait HasWebStats
 
         return $table;
     }
-
 }

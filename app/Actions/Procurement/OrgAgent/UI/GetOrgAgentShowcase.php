@@ -19,37 +19,38 @@ class GetOrgAgentShowcase
     public function handle(OrgAgent $orgAgent): array
     {
         $agent = $orgAgent->agent;
+
         return [
             'contactCard' => [
-                'company'  => $agent->organisation->name,
-                'contact'  => $agent->organisation->contact_name,
-                'email'    => $agent->organisation->email,
-                'phone'    => $agent->organisation->phone,
+                'company' => $agent->organisation->name,
+                'contact' => $agent->organisation->contact_name,
+                'email' => $agent->organisation->email,
+                'phone' => $agent->organisation->phone,
                 'location' => $agent->organisation->location,
                 // 'address'  => AddressResource::make($agent->organisation->address)->getArray(),
-                'photo'    => $agent->organisation->imageSources()
+                'photo' => $agent->organisation->imageSources(),
             ],
-            'stats'       => [
+            'stats' => [
                 [
                     'label' => __('Purchase Orders'),
                     'count' => $orgAgent->stats->number_purchase_orders,
-                    'full'  => true
+                    'full' => true,
                 ],
                 [
                     'label' => __('Suppliers'),
-                    'count' => $orgAgent->stats->number_org_suppliers
+                    'count' => $orgAgent->stats->number_org_suppliers,
                 ],
                 [
                     'label' => __('Products'),
-                    'count' => $orgAgent->stats->number_org_supplier_products
+                    'count' => $orgAgent->stats->number_org_supplier_products,
                 ],
                 [
                     'label' => __('Deliveries'),
                     'count' => $orgAgent->stats->number_stock_deliveries,
-                    'full'  => true
+                    'full' => true,
                 ],
 
-            ]
+            ],
         ];
     }
 }

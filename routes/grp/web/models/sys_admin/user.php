@@ -7,9 +7,9 @@
  */
 
 use App\Actions\SysAdmin\User\StoreUserAccessToken;
+use App\Actions\SysAdmin\User\UpdateUser;
 use App\Actions\SysAdmin\User\UpdateUserGroupPseudoJobPositions;
 use App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions;
-use App\Actions\SysAdmin\User\UpdateUser;
 use Illuminate\Support\Facades\Route;
 
 Route::name('user.')->prefix('user/{user:id}')->group(function () {

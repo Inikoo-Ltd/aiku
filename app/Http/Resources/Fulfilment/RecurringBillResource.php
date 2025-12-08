@@ -20,27 +20,26 @@ class RecurringBillResource extends JsonResource
         /** @var RecurringBill $recurringBill */
         $recurringBill = $this;
 
-
         return [
-            "id"            => $recurringBill->id,
-            "reference"     => $recurringBill->reference,
-            "slug"          => $recurringBill->slug,
-            "order_summary" => [
+            'id' => $recurringBill->id,
+            'reference' => $recurringBill->reference,
+            'slug' => $recurringBill->slug,
+            'order_summary' => [
                 [
                     [
-                        "label"       => __("tax"),
-                        "quantity"    => 0000000,
-                        "price_base"  => 55555555,
-                        "price_total" => $recurringBill->tax,
-                        "information" => 'Tax is based on 10% of total order.',
+                        'label' => __('tax'),
+                        'quantity' => 0000000,
+                        'price_base' => 55555555,
+                        'price_total' => $recurringBill->tax,
+                        'information' => 'Tax is based on 10% of total order.',
                     ],
                 ],
                 [
                     [
-                        "label" => __("total"),
+                        'label' => __('total'),
                         // "quantity" => 0000000,
                         // "price_base" => 55555555,
-                        "price_total" => $recurringBill->total,
+                        'price_total' => $recurringBill->total,
                         // "information" => 777777,
                     ],
                 ],

@@ -14,24 +14,24 @@ trait WithStorageLink
     {
 
         $linkBase = public_path($path);
-        $link     = $linkBase.'/'.$link;
-        $target   = storage_path('app/public');
+        $link = $linkBase.'/'.$link;
+        $target = storage_path('app/public');
 
-        if (!file_exists($linkBase)) {
+        if (! file_exists($linkBase)) {
             mkdir($linkBase, 0777, true);
         }
-        if (!file_exists($target)) {
+        if (! file_exists($target)) {
             mkdir($target, 0777, true);
         }
 
         if (file_exists($link)) {
-            if (!is_link($link)) {
-                return array('success' => false, 'target' => $target, 'link' => $link);
+            if (! is_link($link)) {
+                return ['success' => false, 'target' => $target, 'link' => $link];
             }
             unlink($link);
         }
         symlink($target, $link);
 
-        return array('success' => true, 'target' => $target, 'link' => $link);
+        return ['success' => true, 'target' => $target, 'link' => $link];
     }
 }

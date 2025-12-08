@@ -22,27 +22,27 @@ class UploadProductToShopifyProgressEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
-
     public ShopifyUser $shopifyUser;
+
     public Portfolio $portfolio;
 
     public function __construct(ShopifyUser $shopifyUser, Portfolio $portfolio)
     {
-        $this->shopifyUser     = $shopifyUser;
-        $this->portfolio     = $portfolio;
+        $this->shopifyUser = $shopifyUser;
+        $this->portfolio = $portfolio;
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("shopify.{$this->shopifyUser->id}.upload-product.{$this->portfolio->id}")
+            new PrivateChannel("shopify.{$this->shopifyUser->id}.upload-product.{$this->portfolio->id}"),
         ];
     }
 
     public function broadcastWith(): array
     {
         return [
-            'portfolio'    => $this->portfolio
+            'portfolio' => $this->portfolio,
         ];
     }
 

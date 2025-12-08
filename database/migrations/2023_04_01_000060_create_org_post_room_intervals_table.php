@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasDateIntervalsStats;
 
     public function up(): void
@@ -22,7 +23,7 @@ return new class () extends Migration {
             $table->foreign('org_post_room_id')->references('id')->on('org_post_rooms');
 
             $fields = [
-                'runs',//number of MailShot|EmailBulkRun|EmailPush
+                'runs', // number of MailShot|EmailBulkRun|EmailPush
                 'dispatched_emails',
                 'opened_emails',
                 'clicked_emails',
@@ -36,7 +37,6 @@ return new class () extends Migration {
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

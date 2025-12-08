@@ -51,61 +51,62 @@ class ShowWebpageWorkshop extends OrgAction
             $url = 'https://'.$url;
         }
         $webBlockTypes = $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'webpage')->get();
-        if (!in_array($webpage->sub_type, [WebpageSubTypeEnum::PRODUCT, WebpageSubTypeEnum::FAMILY])) {
+        if (! in_array($webpage->sub_type, [WebpageSubTypeEnum::PRODUCT, WebpageSubTypeEnum::FAMILY])) {
             $webBlockTypes = $this->organisation->group
-            ->webBlockTypes()
-            ->where('fixed', false)
-            ->where('scope', 'webpage')
-            ->where('name', 'not like', '%see-also%')
-            ->get();
+                ->webBlockTypes()
+                ->where('fixed', false)
+                ->where('scope', 'webpage')
+                ->where('name', 'not like', '%see-also%')
+                ->get();
         }
+
         // dd($webBlockTypes);
         return Inertia::render(
             'Org/Web/WebpageWorkshop',
             [
-                'title'         => $webpage->code.' '.__("workshop"),
-                'breadcrumbs'   => $this->getBreadcrumbs(
+                'title' => $webpage->code.' '.__('workshop'),
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'pageHead'      => [
-                    'title'      => $webpage->code,
+                'pageHead' => [
+                    'title' => $webpage->code,
                     'afterTitle' => [
                         'label' => '../'.$webpage->url,
                     ],
-                    'icon'       => [
+                    'icon' => [
                         'title' => __('Webpage'),
-                        'icon'  => 'fal fa-browser'
+                        'icon' => 'fal fa-browser',
                     ],
-                    'iconRight'  => $webpage->state->stateIcon()[$webpage->state->value],
-                    'model'      => __('Workshop'),
+                    'iconRight' => $webpage->state->stateIcon()[$webpage->state->value],
+                    'model' => __('Workshop'),
 
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exit',
                             'label' => __('Exit workshop'),
                             'route' => [
-                                'name'       => preg_replace('/workshop$/', 'show', $request->route()->getName()),
+                                'name' => preg_replace('/workshop$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
-                            ]
+                            ],
                         ],
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'save',
                             'label' => __('publish'),
                             'route' => [
-                                'name'       => 'grp.models.webpage.publish',
+                                'name' => 'grp.models.webpage.publish',
                                 'parameters' => $webpage->id,
-                                'method'     => 'post'
-                            ]
+                                'method' => 'post',
+                            ],
                         ],
                     ],
                 ],
                 'luigi_tracker_id' => Arr::get($webpage->website->settings, 'luigisbox.tracker_id'),
-                'url'           => $url,
-                'webpage'       => WebpageWorkshopResource::make($webpage)->getArray(),
-                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes)
+                'url' => $url,
+                'webpage' => WebpageWorkshopResource::make($webpage)->getArray(),
+                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes),
 
             ]
         );
@@ -119,6 +120,4 @@ class ShowWebpageWorkshop extends OrgAction
             suffix: '('.__('Workshop').')'
         );
     }
-
-
 }

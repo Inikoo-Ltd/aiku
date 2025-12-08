@@ -19,8 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderStateToPacked extends OrgAction
 {
-    use WithActionUpdate;
     use HasOrderHydrators;
+    use WithActionUpdate;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -29,7 +29,7 @@ class UpdateOrderStateToPacked extends OrgAction
     {
         $oldState = $order->state;
         $data = [
-            'state' => OrderStateEnum::PACKED
+            'state' => OrderStateEnum::PACKED,
         ];
 
         if (in_array($order->state, [
@@ -41,7 +41,7 @@ class UpdateOrderStateToPacked extends OrgAction
                 'state' => TransactionStateEnum::PACKED,
             ]);
 
-            $data['packed_at']                  = now();
+            $data['packed_at'] = now();
 
             $this->update($order, $data);
 
@@ -62,6 +62,7 @@ class UpdateOrderStateToPacked extends OrgAction
     {
         $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
+
         return $this->handle($order, $fromDeliveryNote);
     }
 
@@ -71,6 +72,7 @@ class UpdateOrderStateToPacked extends OrgAction
     public function asController(Order $order, ActionRequest $request): Order
     {
         $this->initialisationFromShop($order->shop, $request);
+
         return $this->handle($order);
     }
 }

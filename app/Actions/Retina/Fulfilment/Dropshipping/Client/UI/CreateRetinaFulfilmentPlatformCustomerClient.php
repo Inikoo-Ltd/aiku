@@ -25,73 +25,72 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('New client'),
-                'pageHead'    => [
-                    'title'   => __('New client'),
-                    'icon'    => [
-                        'icon'  => ['fal', 'fa-user'],
-                        'title' => __('Client')
+                'title' => __('New client'),
+                'pageHead' => [
+                    'title' => __('New client'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-user'],
+                        'title' => __('Client'),
                     ],
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => preg_replace('/create$/', 'index', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
-                ],
-                'formData'    => [
-                    'blueprint' =>
-                        [
-                            [
-                                'title'  => __('contact'),
-                                'fields' => [
-                                    'company_name' => [
-                                        'type'  => 'input',
-                                        'label' => __('company')
-                                    ],
-                                    'contact_name' => [
-                                        'type'  => 'input',
-                                        'label' => __('contact name')
-                                    ],
-                                    'email'        => [
-                                        'type'  => 'input',
-                                        'label' => __('email')
-                                    ],
-                                    'phone'        => [
-                                        'type'  => 'input',
-                                        'label' => __('phone')
-                                    ],
-                                    'address'      => [
-                                        'type'    => 'address',
-                                        'label'   => __('Address'),
-                                        'value'   => AddressFormFieldsResource::make(
-                                            new Address(
-                                                [
-                                                    'country_id' => $this->customer->shop->country_id,
-
-                                                ]
-                                            )
-                                        )->getArray(),
-                                        'options' => [
-                                            'countriesAddressData' => GetAddressData::run()
-
-                                        ]
-                                    ]
-                                ]
-                            ]
                         ],
-                    'route'     => [
-                        'name'       => 'retina.models.customer_sales_channel.fulfilment.customer-client.store',
+                    ],
+                ],
+                'formData' => [
+                    'blueprint' => [
+                        [
+                            'title' => __('contact'),
+                            'fields' => [
+                                'company_name' => [
+                                    'type' => 'input',
+                                    'label' => __('company'),
+                                ],
+                                'contact_name' => [
+                                    'type' => 'input',
+                                    'label' => __('contact name'),
+                                ],
+                                'email' => [
+                                    'type' => 'input',
+                                    'label' => __('email'),
+                                ],
+                                'phone' => [
+                                    'type' => 'input',
+                                    'label' => __('phone'),
+                                ],
+                                'address' => [
+                                    'type' => 'address',
+                                    'label' => __('Address'),
+                                    'value' => AddressFormFieldsResource::make(
+                                        new Address(
+                                            [
+                                                'country_id' => $this->customer->shop->country_id,
+
+                                            ]
+                                        )
+                                    )->getArray(),
+                                    'options' => [
+                                        'countriesAddressData' => GetAddressData::run(),
+
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    'route' => [
+                        'name' => 'retina.models.customer_sales_channel.fulfilment.customer-client.store',
                         'parameters' => [
-                            'customerSalesChannel' => $customerSalesChannel->id
-                        ]
-                    ]
-                ]
+                            'customerSalesChannel' => $customerSalesChannel->id,
+                        ],
+                    ],
+                ],
 
             ]
         );
@@ -103,6 +102,7 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
         if ($customerSalesChannel->customer_id == $this->customer->id) {
             return true;
         }
+
         return false;
     }
 
@@ -112,6 +112,4 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
 
         return $this->handle($customerSalesChannel, $request);
     }
-
-
 }

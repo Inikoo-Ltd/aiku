@@ -40,9 +40,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerNote newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerNote newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerNote query()
+ *
  * @mixin \Eloquent
  */
 class CustomerNote extends Model
@@ -52,13 +54,13 @@ class CustomerNote extends Model
     protected $table = 'audits';
 
     protected $casts = [
-        'tags'       => 'array',
+        'tags' => 'array',
         'old_values' => 'array',
         'new_values' => 'array',
     ];
 
     protected $attributes = [
-        'tags'       => '{}',
+        'tags' => '{}',
         'old_values' => '{}',
         'new_values' => '{}',
     ];

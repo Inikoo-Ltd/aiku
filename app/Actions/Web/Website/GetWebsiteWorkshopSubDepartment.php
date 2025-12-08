@@ -31,18 +31,18 @@ class GetWebsiteWorkshopSubDepartment
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'sub_departments'   => WorkshopSubDepartmentsResource::collection($families),
-            'layout'    => Arr::get($website->unpublishedSubDepartmentSnapshot, 'layout.sub_department', []),
+            'sub_departments' => WorkshopSubDepartmentsResource::collection($families),
+            'layout' => Arr::get($website->unpublishedSubDepartmentSnapshot, 'layout.sub_department', []),
             'autosaveRoute' => [
-                'name'       => 'grp.models.website.autosave.sub_department',
+                'name' => 'grp.models.website.autosave.sub_department',
                 'parameters' => [
-                    'website' => $website->id
-                ]
+                    'website' => $website->id,
+                ],
             ],
             'update_family_route' => [
                 'name' => 'grp.models.product_category.update',
-                'parameters' => []
-            ]
+                'parameters' => [],
+            ],
         ];
     }
 }

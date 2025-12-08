@@ -16,34 +16,37 @@ trait WithFetchDepartmentWebBlock
 {
     use AsAction;
     use WithAuroraParsers;
+
     public function processDepartmentData(
         $webpage,
         $auroraBlock
-    ): array|null {
-        if (!isset($auroraBlock["type"])) {
+    ): ?array {
+        if (! isset($auroraBlock['type'])) {
             return null;
         }
         $sections = [];
         data_set($layout, 'data.fieldValue.value.department_id', $webpage->model_id);
-        foreach ($auroraBlock["sections"] as $section) {
+        foreach ($auroraBlock['sections'] as $section) {
             $sections[] = [
-                "title" => $section["title"] ?? "",
-                "subtitle" => $section["subtitle"] ?? "",
-                "items" => array_filter(
+                'title' => $section['title'] ?? '',
+                'subtitle' => $section['subtitle'] ?? '',
+                'items' => array_filter(
                     array_map(function ($item) {
-                        if ($item["type"] == "image") {
+                        if ($item['type'] == 'image') {
                             return [
-                                "type" => $item["type"],
-                                "aurora_source" => $item["image_src"],
+                                'type' => $item['type'],
+                                'aurora_source' => $item['image_src'],
                             ];
                         }
+
                         return $item;
-                    }, $section["items"] ?? [])
+                    }, $section['items'] ?? [])
                 ),
             ];
         }
 
-        data_set($layout, "data.fieldValue.value.sections", $sections);
+        data_set($layout, 'data.fieldValue.value.sections', $sections);
+
         return $layout;
     }
 }

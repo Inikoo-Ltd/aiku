@@ -22,7 +22,6 @@ class FetchAuroraProspects extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:prospects {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Prospect
     {
         if ($prospectData = $organisationSource->fetchProspect($organisationSourceId)) {
@@ -69,7 +68,6 @@ class FetchAuroraProspects extends FetchAuroraAction
                 }
             }
 
-
             return $prospect;
         }
 
@@ -91,7 +89,6 @@ class FetchAuroraProspects extends FetchAuroraAction
             $sourceData = explode(':', $this->shop->source_id);
             $query->where('Prospect Store Key', $sourceData[1]);
         }
-
 
         return $query;
     }

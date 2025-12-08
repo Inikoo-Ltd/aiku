@@ -8,8 +8,8 @@
 
 namespace App\Enums\Fulfilment\RentalAgreementClause;
 
-use App\Enums\EnumHelperTrait;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\EnumHelperTrait;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -18,58 +18,57 @@ enum RentalAgreementClauseTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case PRODUCT      = 'product';
-    case SERVICE      = 'service';
-    case RENTAL       = 'rental';
+    case PRODUCT = 'product';
+    case SERVICE = 'service';
+    case RENTAL = 'rental';
 
-    public static function labels(Shop|Organisation|ProductCategory $parent = null): array
+    public static function labels(Shop|Organisation|ProductCategory|null $parent = null): array
     {
         return [
-            'product'      => __('Product'),
-            'service'      => __('Services'),
-            'rental'       => __('Rentals'),
+            'product' => __('Product'),
+            'service' => __('Services'),
+            'rental' => __('Rentals'),
         ];
 
     }
 
-
     public static function typeIcon(): array
     {
         return [
-            'product'      => [
+            'product' => [
                 'tooltip' => __('Physical good'),
-                'icon'    => 'fal fa-cube',
-                'app'     => [
+                'icon' => 'fal fa-cube',
+                'app' => [
                     'name' => 'cube',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'service'      => [
+            'service' => [
                 'tooltip' => __('Service'),
-                'icon'    => 'fal fa-concierge-bell',
-                'app'     => [
+                'icon' => 'fal fa-concierge-bell',
+                'app' => [
                     'name' => 'concierge-bell',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'rental'       => [
+            'rental' => [
                 'tooltip' => __('Rental'),
-                'icon'    => 'fal fa-garage',
-                'app'     => [
+                'icon' => 'fal fa-garage',
+                'app' => [
                     'name' => 'garage',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
         ];
     }
 
     public static function count(Shop|Organisation|ProductCategory $parent): array
     {
-        $stats  = $parent->stats;
+        $stats = $parent->stats;
         $counts = [
-            'product'      => $stats->number_rental_agreement_clause_type_products,
-            'service'      => $stats->number_rental_agreement_clause_type_service,
-            'rental'       => $stats->number_rental_agreement_clause_type_rental,
+            'product' => $stats->number_rental_agreement_clause_type_products,
+            'service' => $stats->number_rental_agreement_clause_type_service,
+            'rental' => $stats->number_rental_agreement_clause_type_rental,
         ];
 
         if ($parent instanceof Shop) {
@@ -81,5 +80,4 @@ enum RentalAgreementClauseTypeEnum: string
 
         return $counts;
     }
-
 }

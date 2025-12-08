@@ -19,12 +19,12 @@ class SupplierProductResource extends JsonResource
         $supplierProduct = $this;
 
         return [
-            'code'          => $supplierProduct->code,
-            'name'          => $supplierProduct->name,
-            'slug'          => $supplierProduct->slug,
-            'description'   => $supplierProduct->description,
-            'created_at'    => $supplierProduct->created_at,
-            'updated_at'    => $supplierProduct->updated_at,
+            'code' => $supplierProduct->code,
+            'name' => $supplierProduct->name,
+            'slug' => $supplierProduct->slug,
+            'description' => $supplierProduct->description,
+            'created_at' => $supplierProduct->created_at,
+            'updated_at' => $supplierProduct->updated_at,
 
         ];
     }

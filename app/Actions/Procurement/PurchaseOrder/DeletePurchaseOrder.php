@@ -25,9 +25,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeletePurchaseOrder
 {
-    use WithAttributes;
     use AsAction;
-
+    use WithAttributes;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -55,9 +54,8 @@ class DeletePurchaseOrder
             return $purchaseOrderDeleted;
         }
 
-
         throw ValidationException::withMessages([
-            'purchase_order' => 'You can not delete this purchase order with state '.$purchaseOrder->state->value
+            'purchase_order' => 'You can not delete this purchase order with state '.$purchaseOrder->state->value,
         ]);
     }
 

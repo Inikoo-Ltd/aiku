@@ -23,7 +23,7 @@ class CaptureTrafficSourceMiddleWare
     public function handle(Request $request, Closure $next)
     {
 
-        if (!CaptureTrafficSource::make()->canCaptureTrafficSource()) {
+        if (! CaptureTrafficSource::make()->canCaptureTrafficSource()) {
             return $next($request);
         }
 
@@ -32,9 +32,7 @@ class CaptureTrafficSourceMiddleWare
         foreach ($cookies as $key => $value) {
             Cookie::queue($key, $value['value'], $value['duration']);
         }
+
         return $next($request);
     }
-
-
-
 }

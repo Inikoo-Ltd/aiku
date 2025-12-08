@@ -194,6 +194,4 @@ interface SourceOrganisationService
     public function fetchSubscriptionEvent($id);
 
     public function fetchCollection($id);
-
-
 }

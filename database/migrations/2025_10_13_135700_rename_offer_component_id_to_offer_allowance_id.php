@@ -9,7 +9,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     private array $tables = [
         'offer_allowances_stats',
         'transaction_has_offer_allowances',
@@ -21,7 +22,7 @@ return new class () extends Migration {
     public function up(): void
     {
         foreach ($this->tables as $table) {
-            if ($this->columnExists($table, 'offer_component_id') && !$this->columnExists($table, 'offer_allowance_id')) {
+            if ($this->columnExists($table, 'offer_component_id') && ! $this->columnExists($table, 'offer_allowance_id')) {
                 // Drop any foreign keys on offer_component_id
                 foreach ($this->getForeignKeysForColumn($table, 'offer_component_id') as $fk) {
                     DB::statement("ALTER TABLE \"$table\" DROP CONSTRAINT IF EXISTS \"$fk\"");
@@ -50,7 +51,7 @@ return new class () extends Migration {
     public function down(): void
     {
         foreach ($this->tables as $table) {
-            if ($this->columnExists($table, 'offer_allowance_id') && !$this->columnExists($table, 'offer_component_id')) {
+            if ($this->columnExists($table, 'offer_allowance_id') && ! $this->columnExists($table, 'offer_component_id')) {
                 // Drop any foreign keys on offer_allowance_id
                 foreach ($this->getForeignKeysForColumn($table, 'offer_allowance_id') as $fk) {
                     DB::statement("ALTER TABLE \"$table\" DROP CONSTRAINT IF EXISTS \"$fk\"");
@@ -103,7 +104,7 @@ return new class () extends Migration {
             [$table, $column]
         );
 
-        return (bool)$row;
+        return (bool) $row;
     }
 
     private function getForeignKeysForColumn(string $table, string $column): array

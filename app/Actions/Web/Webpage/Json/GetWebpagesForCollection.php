@@ -41,7 +41,6 @@ class GetWebpagesForCollection extends OrgAction
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -84,7 +83,7 @@ class GetWebpagesForCollection extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'websites.domain as website_url',
-                'websites.slug as website_slug'
+                'websites.slug as website_slug',
             ])->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -94,6 +93,7 @@ class GetWebpagesForCollection extends OrgAction
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($collection);
     }
 
@@ -101,5 +101,4 @@ class GetWebpagesForCollection extends OrgAction
     {
         return WebpagesResource::collection($collections);
     }
-
 }

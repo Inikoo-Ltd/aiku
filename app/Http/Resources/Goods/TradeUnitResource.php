@@ -9,11 +9,11 @@
 namespace App\Http\Resources\Goods;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\ImageResource;
+use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\BrandResource;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Helpers\NaturalLanguage;
 
 class TradeUnitResource extends JsonResource
 {
@@ -32,7 +32,7 @@ class TradeUnitResource extends JsonResource
             'dimensions' => $tradeUnit->marketing_dimensions,
         ];
 
-        return array(
+        return [
             'created_at' => $tradeUnit->created_at,
             'updated_at' => $tradeUnit->updated_at,
             'slug' => $tradeUnit->slug,
@@ -65,11 +65,11 @@ class TradeUnitResource extends JsonResource
             'brands' => BrandResource::collection($tradeUnit->brands)->resolve(),
             'tags' => TagsResource::collection($tradeUnit->tags)->resolve(),
             'un_number' => $tradeUnit->un_number,
-            'un_class'  => $tradeUnit->un_class,
+            'un_class' => $tradeUnit->un_class,
             'packing_group' => $tradeUnit->packing_group,
             'proper_shipping_name' => $tradeUnit->proper_shipping_name,
-            'hazard_identification_number' => $tradeUnit->hazard_identification_number
-        );
+            'hazard_identification_number' => $tradeUnit->hazard_identification_number,
+        ];
     }
 
     protected function safeDecode(?string $json): array

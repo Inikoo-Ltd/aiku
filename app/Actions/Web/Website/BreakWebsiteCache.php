@@ -29,7 +29,6 @@ class BreakWebsiteCache extends OrgAction
 
         BreakWebsiteVarnishCache::run($website);
 
-
         return $website;
     }
 
@@ -57,5 +56,4 @@ class BreakWebsiteCache extends OrgAction
 
         return 0;
     }
-
 }

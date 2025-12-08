@@ -34,11 +34,9 @@ class CalculateOrderHangingCharges
         /** @var Charge $charge */
         $charge = $order->shop->charges()->where('type', ChargeTypeEnum::HANGING)->where('state', ChargeStateEnum::ACTIVE)->first();
 
-
         $chargeApplies = $this->checkIfChargeApplies($charge, $order);
 
-
-        $chargeTransaction   = null;
+        $chargeTransaction = null;
         $chargeTransactionID = DB::table('transactions')->where('order_id', $order->id)
             ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
             ->where('model_type', 'Charge')->where('charges.type', ChargeTypeEnum::HANGING->value)->value('transactions.id');
@@ -46,7 +44,6 @@ class CalculateOrderHangingCharges
         if ($chargeTransactionID) {
             $chargeTransaction = Transaction::find($chargeTransactionID);
         }
-
 
         if ($chargeApplies) {
             $chargeAmount = Arr::get($charge->settings, 'amount');
@@ -62,10 +59,9 @@ class CalculateOrderHangingCharges
         return $order;
     }
 
-
     private function checkIfChargeApplies(?Charge $charge, Order $order): bool
     {
-        if (!$charge) {
+        if (! $charge) {
             return false;
         }
         if (Arr::get($charge->settings, 'rule_subject') == 'Order Items Net Amount') {
@@ -75,11 +71,9 @@ class CalculateOrderHangingCharges
         return false;
     }
 
-
-
     private function match($amount, string $rules): bool
     {
-        list($operator, $limit) = explode(';', $rules);
+        [$operator, $limit] = explode(';', $rules);
 
         if ($operator == '>') {
             return $amount > $limit;
@@ -94,6 +88,4 @@ class CalculateOrderHangingCharges
 
         return false;
     }
-
-
 }

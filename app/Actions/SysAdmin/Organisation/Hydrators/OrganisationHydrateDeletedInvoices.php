@@ -25,7 +25,6 @@ class OrganisationHydrateDeletedInvoices implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
 
-
         $organisation->orderingStats()->update(
             [
                 'number_deleted_invoices' => Invoice::onlyTrashed()
@@ -34,6 +33,4 @@ class OrganisationHydrateDeletedInvoices implements ShouldBeUnique
             ]
         );
     }
-
-
 }

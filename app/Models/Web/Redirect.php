@@ -36,18 +36,20 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Web\Webpage|null $webpage
  * @property-read \App\Models\Web\Website $website
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Redirect newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Redirect newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Redirect query()
+ *
  * @mixin \Eloquent
  */
 class Redirect extends Model implements Auditable
 {
-    use InWebsite;
     use HasHistory;
+    use InWebsite;
 
     protected $casts = [
-        'type' => RedirectTypeEnum::class
+        'type' => RedirectTypeEnum::class,
     ];
 
     protected $guarded = [];
@@ -60,7 +62,7 @@ class Redirect extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'websites'
+            'websites',
         ];
     }
 
@@ -68,6 +70,4 @@ class Redirect extends Model implements Auditable
         'type',
         'url',
     ];
-
-
 }

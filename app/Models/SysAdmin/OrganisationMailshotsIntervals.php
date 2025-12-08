@@ -212,9 +212,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationMailshotsIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationMailshotsIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationMailshotsIntervals query()
+ *
  * @mixin \Eloquent
  */
 class OrganisationMailshotsIntervals extends Model

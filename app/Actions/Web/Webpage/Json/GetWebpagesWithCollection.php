@@ -37,12 +37,11 @@ class GetWebpagesWithCollection extends OrgAction
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
         $queryBuilder->where('webpages.website_id', $website->id);
-        //$queryBuilder->join('webpage_has_collections', 'webpages.id', '=', 'webpage_has_collections.webpage_id');
+        // $queryBuilder->join('webpage_has_collections', 'webpages.id', '=', 'webpage_has_collections.webpage_id');
         $queryBuilder->distinct();
 
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
@@ -64,7 +63,7 @@ class GetWebpagesWithCollection extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'websites.domain as website_url',
-                'websites.slug as website_slug'
+                'websites.slug as website_slug',
             ])->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -73,6 +72,7 @@ class GetWebpagesWithCollection extends OrgAction
     public function asController(Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($website->shop, $request);
+
         return $this->handle($website);
     }
 
@@ -80,5 +80,4 @@ class GetWebpagesWithCollection extends OrgAction
     {
         return WebpagesResource::collection($webpages);
     }
-
 }

@@ -16,13 +16,12 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class BannersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class BannersExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Banner|Builder
     {
         return Banner::query();
     }
-
 
     public function map($row): array
     {
@@ -32,7 +31,7 @@ class BannersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadi
             $row->name,
             $row->state,
             $row->live_at,
-            $row->data
+            $row->data,
         ];
     }
 
@@ -44,7 +43,7 @@ class BannersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadi
             'Name',
             'State',
             'Live At',
-            'Data'
+            'Data',
         ];
     }
 }

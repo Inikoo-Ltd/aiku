@@ -23,6 +23,7 @@ class GroupHydrateRedirects implements ShouldBeUnique
     use WithEnumStats;
 
     public string $jobQueue = 'low-priority';
+
     public function getJobUniqueId(Group $group): string
     {
         return $group->id;

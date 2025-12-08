@@ -16,16 +16,14 @@ enum BlogWebpageTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE             = 'showcase';
-
-
+    case SHOWCASE = 'showcase';
 
     public function blueprint(): array
     {
         return match ($this) {
             BlogWebpageTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
         };
     }

@@ -26,7 +26,7 @@ class ProductionHydrateJobOrders implements ShouldBeUnique
     public function handle(Production $production): void
     {
         $stats = [
-            'number_job_orders' => $production->jobOrders()->count()
+            'number_job_orders' => $production->jobOrders()->count(),
         ];
 
         $production->stats()->update($stats);

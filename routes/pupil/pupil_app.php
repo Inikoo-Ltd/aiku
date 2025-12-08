@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Dropshipping\Shopify\Webhook\SetupShopifyAccount;
 use App\Actions\Pupil\Auth\AuthShopifyUser;
 use App\Actions\Pupil\Dashboard\ShowPupilDashboard;
@@ -15,8 +14,7 @@ Route::middleware(['verify.shopify'])->group(function () {
     Route::get('/', ShowPupilDashboard::class)->name('home');
     Route::post('shopify-user/{shopifyUser:id}/get-started', SetupShopifyAccount::class)->name('shopify_user.get_started.store')->withoutScopedBindings();
 
-    Route::prefix("dashboard")->name("dashboard.")->group(__DIR__."/dashboard.php");
-
+    Route::prefix('dashboard')->name('dashboard.')->group(__DIR__.'/dashboard.php');
 
 });
 

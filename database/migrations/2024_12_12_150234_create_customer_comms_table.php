@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('customer_comms', function (Blueprint $table) {
@@ -27,16 +28,13 @@ return new class () extends Migration {
             $table->unsignedInteger('customer_id')->index();
             $table->foreign('customer_id')->references('id')->on('customers');
 
-
             $table->boolean('is_suspended')->default(false)->index()->comment('Suspend communication with customer because of spam or bounces');
             $table->dateTimeTz('suspended_at')->nullable()->index();
             $table->string('suspended_cause')->nullable()->index();
 
-
             foreach ($outboxFields as $outboxField) {
                 $table->boolean('is_subscribed_to_'.$outboxField)->index();
             }
-
 
             foreach ($outboxFields as $outboxField) {
                 $table->dateTimeTz($outboxField.'_unsubscribed_at')->nullable()->index();
@@ -46,7 +44,6 @@ return new class () extends Migration {
                 $table->string($outboxField.'_unsubscribed_origin_id')->nullable();
             }
 
-
             $table->timestampsTz();
 
             foreach ($outboxFields as $outboxField) {
@@ -55,7 +52,6 @@ return new class () extends Migration {
             }
         });
     }
-
 
     public function down(): void
     {

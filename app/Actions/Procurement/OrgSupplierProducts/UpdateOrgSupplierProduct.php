@@ -22,19 +22,17 @@ class UpdateOrgSupplierProduct extends OrgAction
 {
     use WithActionUpdate;
 
-
     public function handle(OrgSupplierProduct $orgSupplierProduct, $modelData = []): OrgSupplierProduct
     {
         $orgSupplierProduct = $this->update($orgSupplierProduct, $modelData);
 
-        if ($orgSupplierProduct->wasChanged(['status','is_available'])) {
+        if ($orgSupplierProduct->wasChanged(['status', 'is_available'])) {
             OrganisationHydrateOrgSupplierProducts::dispatch($orgSupplierProduct->organisation);
             OrgSupplierHydrateOrgSupplierProducts::dispatch($orgSupplierProduct->orgSupplier);
             if ($orgSupplierProduct->org_agent_id) {
                 OrgAgentHydrateOrgSupplierProducts::dispatch($orgSupplierProduct->orgAgent);
             }
         }
-
 
         return $orgSupplierProduct;
     }
@@ -45,27 +43,25 @@ class UpdateOrgSupplierProduct extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("procurement.".$this->organisation->id.".edit");
+        return $request->user()->authTo('procurement.'.$this->organisation->id.'.edit');
     }
 
     public function rules(ActionRequest $request): array
     {
         return [
             'source_id' => 'sometimes|nullable|string|max:64',
-            'status'    => ['sometimes', 'required', 'boolean'],
-            'state'     => ['sometimes', 'required', Rule::enum(OrgSupplierProductStateEnum::class)],
-            'is_available'    => ['sometimes', 'required', 'boolean'],
+            'status' => ['sometimes', 'required', 'boolean'],
+            'state' => ['sometimes', 'required', Rule::enum(OrgSupplierProductStateEnum::class)],
+            'is_available' => ['sometimes', 'required', 'boolean'],
         ];
     }
 
     public function action(OrgSupplierProduct $orgSupplierProduct, $modelData, $hydratorsDelay = 0): OrgSupplierProduct
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($orgSupplierProduct->organisation, $modelData);
 
         return $this->handle($orgSupplierProduct, $this->validatedData);
     }
-
-
 }

@@ -19,10 +19,9 @@ trait HasStockLocationsFetch
     public function getStockLocationData($organisationSource, $sourceId): array
     {
         $organisation = $organisationSource->getOrganisation();
-        $sourceData   = explode(':', $sourceId);
+        $sourceData = explode(':', $sourceId);
 
-
-        $stockLocations  = [];
+        $stockLocations = [];
         $auroraModelData = DB::connection('aurora')
             ->table('Part Location Dimension')
             ->where('Part SKU', $sourceData[1])
@@ -33,7 +32,7 @@ trait HasStockLocationsFetch
         foreach ($auroraModelData as $modelData) {
             $location = $this->parseLocation($sourceData[0].':'.$modelData->{'Location Key'}, $organisationSource);
 
-            if (!$location) {
+            if (! $location) {
                 $this->recordFetchError(
                     $organisationSource,
                     $auroraModelData,
@@ -43,9 +42,9 @@ trait HasStockLocationsFetch
                         'msg' => 'Location not found',
                     ]
                 );
+
                 continue;
             }
-
 
             $settings = [];
             if ($modelData->{'Minimum Quantity'}) {
@@ -58,26 +57,24 @@ trait HasStockLocationsFetch
                 $settings['max_stock'] = $modelData->{'Moving Quantity'};
             }
 
-
             $type = LocationStockTypeEnum::STORING->value;
             if ($modelData->{'Can Pick'} == 'Yes') {
                 $type = LocationStockTypeEnum::PICKING->value;
             }
             $pickingPriority = $pickingPriority === null ? 1 : $pickingPriority + 1;
 
-
             $stockLocations[$location->id] = [
-                'quantity'           => round($modelData->{'Quantity On Hand'}, 3),
-                'audited_at'         => $modelData->{'Part Location Last Audit'},
-                'notes'              => $modelData->{'Part Location Note'},
-                'data'               => [],
-                'settings'           => $settings,
-                'source_stock_id'    => $organisation->id.':'.$modelData->{'Part SKU'},
+                'quantity' => round($modelData->{'Quantity On Hand'}, 3),
+                'audited_at' => $modelData->{'Part Location Last Audit'},
+                'notes' => $modelData->{'Part Location Note'},
+                'data' => [],
+                'settings' => $settings,
+                'source_stock_id' => $organisation->id.':'.$modelData->{'Part SKU'},
                 'source_location_id' => $organisation->id.':'.$modelData->{'Location Key'},
-                'picking_priority'   => $pickingPriority,
-                'type'               => $type,
-                'fetched_at'         => now(),
-                'last_fetched_at'    => now()
+                'picking_priority' => $pickingPriority,
+                'type' => $type,
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
             ];
         }
 
@@ -88,12 +85,10 @@ trait HasStockLocationsFetch
     {
         $sourceData = explode(':', $sourceId);
 
-
         return DB::connection('aurora')
             ->table('Part Dimension')
             ->select('Part Current Stock Ordered Paid', 'Part Current Stock In Process', 'Part On Demand')
             ->where('Part SKU', $sourceData[1])
             ->get();
     }
-
 }

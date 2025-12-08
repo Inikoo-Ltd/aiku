@@ -19,8 +19,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class DeleteMitSavedCard extends RetinaAction
 {
     use AsController;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     public function handle(MitSavedCard $mitSavedCard): void
     {
@@ -28,7 +28,7 @@ class DeleteMitSavedCard extends RetinaAction
 
         foreach ($mitSavedCards as $key => $currentMitSavedCard) {
             $this->update($currentMitSavedCard, [
-                'priority' => $key + 1
+                'priority' => $key + 1,
             ]);
         }
 

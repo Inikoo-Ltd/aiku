@@ -30,7 +30,9 @@ class PublishAnnouncement extends OrgAction
     use WithActionUpdate;
 
     private Customer|Website $parent;
+
     private string $scope;
+
     private Customer $customer;
 
     public function handle(Announcement $announcement, array $modelData): void
@@ -41,7 +43,7 @@ class PublishAnnouncement extends OrgAction
             ->where('status', AnnouncementStatusEnum::ACTIVE)
             ->whereRaw("settings->>'position' = ?", [$position])
             ->update([
-                'status' => AnnouncementStatusEnum::INACTIVE
+                'status' => AnnouncementStatusEnum::INACTIVE,
             ]);
 
         $firstCommit = false;
@@ -60,12 +62,12 @@ class PublishAnnouncement extends OrgAction
         $snapshot = StoreAnnouncementSnapshot::run(
             $announcement,
             [
-                'state'          => SnapshotStateEnum::LIVE,
-                'published_at'   => now(),
-                'layout'         => $layout,
-                'first_commit'   => $firstCommit,
-                'comment'        => Arr::get($modelData, 'comment'),
-                'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                'state' => SnapshotStateEnum::LIVE,
+                'published_at' => now(),
+                'layout' => $layout,
+                'first_commit' => $firstCommit,
+                'comment' => Arr::get($modelData, 'comment'),
+                'publisher_id' => Arr::get($modelData, 'publisher_id'),
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
             ]
         );
@@ -73,8 +75,8 @@ class PublishAnnouncement extends OrgAction
         StoreDeployment::run(
             $announcement,
             [
-                'snapshot_id'    => $snapshot->id,
-                'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                'snapshot_id' => $snapshot->id,
+                'publisher_id' => Arr::get($modelData, 'publisher_id'),
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
             ]
         );
@@ -82,31 +84,31 @@ class PublishAnnouncement extends OrgAction
         $compiled_layout = [];
         if (Arr::exists($modelData, 'compiled_layout')) {
             $compiled_layout = [
-                'compiled_layout'          => Arr::get($modelData, 'compiled_layout'),
+                'compiled_layout' => Arr::get($modelData, 'compiled_layout'),
             ];
         }
 
         $updateData = [
-            'live_snapshot_id'          => $snapshot->id,
-            'fields'                    => Arr::get($snapshot->layout, 'fields'),
-            'published_fields'          => Arr::get($snapshot->layout, 'fields'),
-            'published_message'         => Arr::get($modelData, 'published_message'),
-            'container_properties'      => Arr::get($modelData, 'container_properties'),
-            'text'                      => Arr::get($snapshot->layout, 'text'),
-            'published_checksum'        => md5(json_encode($snapshot->layout)),
-            'state'                     => AnnouncementStateEnum::READY,
-            'status'                    => AnnouncementStatusEnum::ACTIVE,
-            'published_settings'        => Arr::get($snapshot->layout, 'settings'),
-            'is_dirty'                  => false,
-            ...$compiled_layout
+            'live_snapshot_id' => $snapshot->id,
+            'fields' => Arr::get($snapshot->layout, 'fields'),
+            'published_fields' => Arr::get($snapshot->layout, 'fields'),
+            'published_message' => Arr::get($modelData, 'published_message'),
+            'container_properties' => Arr::get($modelData, 'container_properties'),
+            'text' => Arr::get($snapshot->layout, 'text'),
+            'published_checksum' => md5(json_encode($snapshot->layout)),
+            'state' => AnnouncementStateEnum::READY,
+            'status' => AnnouncementStatusEnum::ACTIVE,
+            'published_settings' => Arr::get($snapshot->layout, 'settings'),
+            'is_dirty' => false,
+            ...$compiled_layout,
         ];
 
         if ($announcement->state == AnnouncementStateEnum::IN_PROCESS or $announcement->state == AnnouncementStateEnum::READY) {
             $updateData['ready_at'] = now();
-            $updateData['live_at']  = now();
+            $updateData['live_at'] = now();
         }
 
-        $scheduleAt                = Arr::get($modelData, 'schedule_at');
+        $scheduleAt = Arr::get($modelData, 'schedule_at');
         $updateData['schedule_at'] = Carbon::parse($scheduleAt);
 
         if ($scheduleAt) {
@@ -115,11 +117,11 @@ class PublishAnnouncement extends OrgAction
             $updateData['schedule_at'] = null;
         }
 
-        $scheduleFinishAt                 = Arr::get($modelData, 'schedule_finish_at');
+        $scheduleFinishAt = Arr::get($modelData, 'schedule_finish_at');
         $updateData['schedule_finish_at'] = Carbon::parse($scheduleFinishAt);
 
         if ($scheduleFinishAt) {
-            $updateData['closed_at']          = Carbon::parse($scheduleFinishAt);
+            $updateData['closed_at'] = Carbon::parse($scheduleFinishAt);
         } else {
             $updateData['schedule_finish_at'] = null;
         }
@@ -133,8 +135,6 @@ class PublishAnnouncement extends OrgAction
         $this->update($announcement, $updateData);
         ClearCacheByWildcard::run("irisData:website:$announcement->website_id:*");
 
-
-
     }
 
     public function authorize(ActionRequest $request): bool
@@ -145,21 +145,21 @@ class PublishAnnouncement extends OrgAction
     public function rules(): array
     {
         return [
-            'code'                 => ['sometimes', 'string', 'nullable'],
-            'schedule_at'          => ['sometimes', 'date', 'nullable'],
-            'schedule_finish_at'   => ['sometimes', 'date', 'nullable'],
-            'published_message'    => ['sometimes', 'string'],
-            'fields'               => ['sometimes', 'array'],
+            'code' => ['sometimes', 'string', 'nullable'],
+            'schedule_at' => ['sometimes', 'date', 'nullable'],
+            'schedule_finish_at' => ['sometimes', 'date', 'nullable'],
+            'published_message' => ['sometimes', 'string'],
+            'fields' => ['sometimes', 'array'],
             'container_properties' => ['sometimes', 'array'],
-            'compiled_layout'      => ['sometimes', 'string', 'nullable'],
-            'text'                 => ['sometimes', 'string']
+            'compiled_layout' => ['sometimes', 'string', 'nullable'],
+            'text' => ['sometimes', 'string'],
         ];
     }
 
     public function asController(Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): void
     {
-        $this->scope    = 'website';
-        $this->parent   = $website;
+        $this->scope = 'website';
+        $this->parent = $website;
         $this->initialisation($website->organisation, $request);
 
         $this->handle($announcement, $this->validatedData);

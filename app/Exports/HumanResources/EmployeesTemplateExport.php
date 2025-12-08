@@ -15,7 +15,7 @@ class EmployeesTemplateExport implements FromArray
     public function array(): array
     {
         return [
-            ['worker_number', 'name', 'alias', 'job_title', 'positions', 'starting_date', 'workplace', 'username', 'password', 'reset_password']
+            ['worker_number', 'name', 'alias', 'job_title', 'positions', 'starting_date', 'workplace', 'username', 'password', 'reset_password'],
         ];
     }
 }

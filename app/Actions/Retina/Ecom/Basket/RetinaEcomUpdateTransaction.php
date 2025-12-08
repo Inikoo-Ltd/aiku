@@ -27,7 +27,6 @@ class RetinaEcomUpdateTransaction extends RetinaAction
         return UpdateTransaction::run($transaction, $modelData);
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->is_root;
@@ -37,8 +36,8 @@ class RetinaEcomUpdateTransaction extends RetinaAction
     {
 
         return [
-                'quantity_ordered'    => ['sometimes', 'numeric', 'min:0'],
-            ];
+            'quantity_ordered' => ['sometimes', 'numeric', 'min:0'],
+        ];
 
     }
 

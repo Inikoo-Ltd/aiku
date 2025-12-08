@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Web\Webpage\UI\ShowFooterPreview;
 use App\Actions\Web\Webpage\UI\ShowHeaderPreview;
 use App\Actions\Web\Webpage\UI\ShowSidebarPreview;

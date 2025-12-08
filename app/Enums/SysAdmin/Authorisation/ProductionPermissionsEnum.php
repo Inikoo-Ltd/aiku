@@ -26,17 +26,16 @@ enum ProductionPermissionsEnum: string
 
     case PRODUCTION_RD_EDIT = 'productions_rd.edit';
 
-    case PRODUCTION_PROCUREMENT      = 'productions_procurement';
+    case PRODUCTION_PROCUREMENT = 'productions_procurement';
     case PRODUCTION_PROCUREMENT_EDIT = 'productions_procurement.edit';
     case PRODUCTION_PROCUREMENT_VIEW = 'productions_procurement.view';
-
 
     public static function getAllValues(Production $production): array
     {
 
         $rawPermissionsNames = array_column(ProductionPermissionsEnum::cases(), 'value');
 
-        $permissionsNames    = [];
+        $permissionsNames = [];
         foreach ($rawPermissionsNames as $rawPermissionsName) {
             $permissionsNames[] = self::getPermissionName($rawPermissionsName, $production);
         }
@@ -49,7 +48,6 @@ enum ProductionPermissionsEnum: string
         $permissionComponents = explode('.', $rawName);
         $permissionComponents = array_merge(array_slice($permissionComponents, 0, 1), [$production->id], array_slice($permissionComponents, 1));
 
-        return join('.', $permissionComponents);
+        return implode('.', $permissionComponents);
     }
-
 }

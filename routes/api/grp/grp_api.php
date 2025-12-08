@@ -6,7 +6,6 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Api\Group\Customer\IndexApiCustomers;
 use App\Actions\Api\Group\Customer\ShowApiCustomer;
 use App\Actions\Api\Group\GetApiProfile;

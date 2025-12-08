@@ -30,17 +30,15 @@ class GroupHydratePayments implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
 
         $stats = array_merge(
             [
-                'number_payments' => $group->payments()->count()
+                'number_payments' => $group->payments()->count(),
             ],
             $this->paidAmounts($group, 'grp_amount'),
         );
-
 
         $stats = array_merge(
             $stats,
@@ -55,7 +53,6 @@ class GroupHydratePayments implements ShouldBeUnique
             )
         );
 
-
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
@@ -68,7 +65,6 @@ class GroupHydratePayments implements ShouldBeUnique
                 }
             )
         );
-
 
         foreach (PaymentTypeEnum::cases() as $type) {
             $stats = array_merge(

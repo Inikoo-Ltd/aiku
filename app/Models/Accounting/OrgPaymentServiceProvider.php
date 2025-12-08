@@ -47,16 +47,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Accounting\PaymentServiceProvider $paymentServiceProvider
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\Payment> $payments
  * @property-read \App\Models\Accounting\OrgPaymentServiceProviderStats|null $stats
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPaymentServiceProvider newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPaymentServiceProvider newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPaymentServiceProvider query()
+ *
  * @mixin \Eloquent
  */
 class OrgPaymentServiceProvider extends Model implements Auditable
 {
+    use HasHistory;
     use HasSlug;
     use InOrganisation;
-    use HasHistory;
 
     protected $casts = [
         'data' => 'array',
@@ -105,6 +107,4 @@ class OrgPaymentServiceProvider extends Model implements Auditable
     {
         return $this->hasOne(OrgPaymentServiceProviderStats::class);
     }
-
-
 }

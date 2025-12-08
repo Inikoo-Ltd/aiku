@@ -14,16 +14,16 @@ enum TaskStatusEnum: string
 {
     use EnumHelperTrait;
 
-    case COMPLETED             = 'completed';
-    case PENDING               = 'pending';
-    case FAILED                = 'failed';
+    case COMPLETED = 'completed';
+    case PENDING = 'pending';
+    case FAILED = 'failed';
 
     public static function labels(): array
     {
         return [
-            'completed'  => __('Completed'),
-            'pending'    => __('Pending'),
-            'failed'     => __('Failed'),
+            'completed' => __('Completed'),
+            'pending' => __('Pending'),
+            'failed' => __('Failed'),
         ];
     }
 }

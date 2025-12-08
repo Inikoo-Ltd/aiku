@@ -18,11 +18,11 @@ trait WithAccountingAuthorisation
             return true;
         }
 
-        $this->canEdit   = $request->user()->authTo("accounting.{$this->organisation->id}.edit");
+        $this->canEdit = $request->user()->authTo("accounting.{$this->organisation->id}.edit");
 
         return $request->user()->authTo(
             [
-                "accounting.{$this->organisation->id}.view"
+                "accounting.{$this->organisation->id}.view",
             ]
         );
     }

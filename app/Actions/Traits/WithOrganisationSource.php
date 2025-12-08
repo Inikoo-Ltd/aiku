@@ -22,17 +22,17 @@ trait WithOrganisationSource
     public function getOrganisationSource(Organisation $organisation): AuroraOrganisationService|WowsbarOrganisationService|null
     {
         $sourceType = Arr::get($organisation->source, 'type');
-        if (!$sourceType) {
-            throw new Exception("Organisation dont have source");
+        if (! $sourceType) {
+            throw new Exception('Organisation dont have source');
         }
 
         $organisationSource = match (Arr::get($organisation->source, 'type')) {
-            'Aurora'  => new AuroraOrganisationService(),
-            'Wowsbar' => new WowsbarOrganisationService(),
-            default   => null
+            'Aurora' => new AuroraOrganisationService,
+            'Wowsbar' => new WowsbarOrganisationService,
+            default => null
         };
 
-        if (!$organisationSource) {
+        if (! $organisationSource) {
             throw new Exception("Organisation source $sourceType is not supported");
         }
 

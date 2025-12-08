@@ -19,10 +19,9 @@ enum SubscriptionStateEnum: string
     use EnumHelperTrait;
     use IsBillableState;
 
-
-    case IN_PROCESS        = 'in_process';
-    case ACTIVE            = 'active';
-    case DISCONTINUED      = 'discontinued';
+    case IN_PROCESS = 'in_process';
+    case ACTIVE = 'active';
+    case DISCONTINUED = 'discontinued';
 
     public static function count(Shop|Organisation|Group $parent): array
     {
@@ -31,11 +30,10 @@ enum SubscriptionStateEnum: string
             'Organisation', 'Group' => $parent->catalogueStats,
         };
 
-
         return [
-            'in_process'   => $stats->number_subscriptions_state_in_process,
-            'active'       => $stats->number_subscriptions_state_active,
-            'discontinued' => $stats->number_subscriptions_state_discontinued
+            'in_process' => $stats->number_subscriptions_state_in_process,
+            'active' => $stats->number_subscriptions_state_active,
+            'discontinued' => $stats->number_subscriptions_state_discontinued,
         ];
     }
 }

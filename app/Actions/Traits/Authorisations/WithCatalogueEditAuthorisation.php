@@ -17,6 +17,7 @@ trait WithCatalogueEditAuthorisation
         if ($this->asAction) {
             return true;
         }
+
         return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 }

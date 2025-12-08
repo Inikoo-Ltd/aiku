@@ -140,9 +140,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_items_delivery_notes_state_dispatched
  * @property int $number_items_delivery_notes_state_cancelled
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderHandlingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderHandlingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderHandlingStats query()
+ *
  * @mixin \Eloquent
  */
 class OrganisationOrderHandlingStats extends Model

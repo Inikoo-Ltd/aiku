@@ -19,7 +19,6 @@ class FetchAuroraHistoricServices
 {
     use AsAction;
 
-
     public function handle(SourceOrganisationService $organisationSource, int $source_id): ?HistoricAsset
     {
         if ($historicProductData = $organisationSource->fetchHistoricService($source_id)) {
@@ -27,11 +26,11 @@ class FetchAuroraHistoricServices
                 ->first()) {
                 $historicProduct = UpdateHistoricAsset::run(
                     historicAsset: $historicProduct,
-                    modelData:       $historicProductData['historic_service'],
+                    modelData: $historicProductData['historic_service'],
                 );
             } else {
                 $historicProduct = StoreHistoricAsset::run(
-                    assetModel:   $historicProductData['service'],
+                    assetModel: $historicProductData['service'],
                     modelData: $historicProductData['historic_service']
                 );
             }
@@ -43,7 +42,6 @@ class FetchAuroraHistoricServices
 
             return $historicProduct;
         }
-
 
         return null;
     }

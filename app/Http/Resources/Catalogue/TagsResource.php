@@ -22,9 +22,9 @@ class TagsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'    => $this->id,
-            'slug'  => $this->slug,
-            'name'  => $this->name,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'name' => $this->name,
             'scope' => $this->scope?->pretty(),
         ];
     }

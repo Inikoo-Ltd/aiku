@@ -26,12 +26,12 @@ class CreateSupplier extends GrpAction
     {
         if ($parent instanceof Agent) {
             $route = [
-                'name'  => 'grp.models.agent.supplier.store',
-                'parameters' => $parent->id
+                'name' => 'grp.models.agent.supplier.store',
+                'parameters' => $parent->id,
             ];
         } else {
             $route = [
-                'name'  => 'grp.models.supplier.store',
+                'name' => 'grp.models.supplier.store',
             ];
         }
 
@@ -42,24 +42,24 @@ class CreateSupplier extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New supplier'),
-                'pageHead'    => [
-                    'title'        => __('New supplier'),
-                    'actions'      => [
+                'title' => __('New supplier'),
+                'pageHead' => [
+                    'title' => __('New supplier'),
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => preg_replace('/create/', 'index', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => preg_replace('/create/', 'index', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'formData' => [
                     'blueprint' => $this->supplyChainFields(),
-                    'route'     => $route
+                    'route' => $route,
                 ],
             ]
         );
@@ -92,11 +92,11 @@ class CreateSupplier extends GrpAction
             IndexSuppliers::make()->getBreadcrumbs($routeName, $routeParameters),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __("creating supplier"),
-                    ]
-                ]
+                        'label' => __('creating supplier'),
+                    ],
+                ],
             ]
         );
     }

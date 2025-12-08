@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('webpages', function (Blueprint $table) {
@@ -20,11 +21,10 @@ return new class () extends Migration {
         });
     }
 
-
     public function down(): void
     {
         Schema::table('webpages', function (Blueprint $table) {
-            if (!Schema::hasColumn('webpages', 'is_use_canonical_url')) {
+            if (! Schema::hasColumn('webpages', 'is_use_canonical_url')) {
                 $table->boolean('is_use_canonical_url')->default(false);
             }
         });

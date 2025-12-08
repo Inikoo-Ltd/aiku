@@ -32,14 +32,14 @@ class DeleteUserAccessToken extends OrgAction
         $token->delete();
 
         if ($tokenable instanceof User) {
-            $user                 = $tokenable;
-            $user->auditEvent     = 'delete';
-            $user->isCustomEvent  = true;
+            $user = $tokenable;
+            $user->auditEvent = 'delete';
+            $user->isCustomEvent = true;
             $user->auditCustomOld = [
-                'api_token' => $token->name
+                'api_token' => $token->name,
             ];
             $user->auditCustomNew = [
-                'api_token' => __('Api token deleted')
+                'api_token' => __('Api token deleted'),
             ];
 
             Event::dispatch(new AuditCustom($user));

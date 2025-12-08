@@ -14,6 +14,6 @@ enum DeliveryNoteTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case ORDER              = 'order';
-    case REPLACEMENT        = 'replacement';
+    case ORDER = 'order';
+    case REPLACEMENT = 'replacement';
 }

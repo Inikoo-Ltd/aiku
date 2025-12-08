@@ -39,11 +39,10 @@ beforeAll(function () {
     loadDB();
 });
 
-
 beforeEach(function () {
     $this->organisation = createOrganisation();
-    $this->group        = group();
-    $this->stocks       = createStocks($this->group);
+    $this->group = group();
+    $this->stocks = createStocks($this->group);
 
     $this->adminGuest = createAdminGuest($this->organisation->group);
 
@@ -56,7 +55,7 @@ beforeEach(function () {
 
 test('create agent', function () {
     $modelData = Agent::factory()->definition();
-    $agent     = StoreAgent::make()->action(
+    $agent = StoreAgent::make()->action(
         group: $this->group,
         modelData: $modelData
     );
@@ -65,13 +64,12 @@ test('create agent', function () {
         ->and($this->group->supplyChainStats->number_agents)->toBe(1)
         ->and($this->group->supplyChainStats->number_archived_agents)->toBe(0);
 
-
     return $agent;
 });
 
 test('update agent', function (Agent $agent) {
-    $modelData    = [
-        'name' => 'UpdatedName'
+    $modelData = [
+        'name' => 'UpdatedName',
     ];
     $updatedAgent = UpdateAgent::make()->action(
         agent: $agent,
@@ -84,10 +82,9 @@ test('update agent', function (Agent $agent) {
     return $updatedAgent;
 })->depends('create agent');
 
-
 test('create another agent', function () {
     $modelData = Agent::factory()->definition();
-    $agent     = StoreAgent::make()->action(
+    $agent = StoreAgent::make()->action(
         group: $this->group,
         modelData: $modelData
     );
@@ -99,7 +96,6 @@ test('create another agent', function () {
     return $agent;
 });
 
-
 test('create independent supplier', function () {
     $supplier = StoreSupplier::make()->action(
         parent: $this->group,
@@ -109,13 +105,12 @@ test('create independent supplier', function () {
         ->and($supplier->agent_id)->toBeNull()
         ->and($this->group->supplyChainStats->number_suppliers)->toBe(1);
 
-
     return $supplier;
 });
 
 test('update supplier', function (Supplier $supplier) {
-    $modelData       = [
-        'contact_name' => 'UpdatedName'
+    $modelData = [
+        'contact_name' => 'UpdatedName',
     ];
     $updatedSupplier = UpdateSupplier::make()->action(
         supplier: $supplier,
@@ -136,7 +131,6 @@ test('create independent supplier 2', function () {
     expect($supplier)->toBeInstanceOf(Supplier::class)
         ->and($supplier->agent_id)->toBeNull()
         ->and($this->group->supplyChainStats->number_suppliers)->toBe(2);
-
 
     return $supplier;
 });
@@ -184,12 +178,11 @@ test('create supplier product in agent supplier', function ($supplier) {
     expect($supplierProduct)->toBeInstanceOf(SupplierProduct::class);
 })->depends('create supplier in agent');
 
-
 test('UI show suppliers product in supplier', function (SupplierProduct $supplierProduct) {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.suppliers.supplier_products.show', [
         $supplierProduct->supplier->slug,
-        $supplierProduct->slug
+        $supplierProduct->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -202,7 +195,6 @@ test('UI show suppliers product in supplier', function (SupplierProduct $supplie
             ->has('breadcrumbs', 1);
     });
 })->depends('create supplier product independent supplier');
-
 
 test('create trade unit', function () {
     $tradeUnit = StoreTradeUnit::make()->action(
@@ -231,7 +223,7 @@ test('update org-agent', function ($orgAgent) {
     $updatedOrgAgent = UpdateOrgAgent::make()->action(
         $orgAgent,
         [
-            'status' => false
+            'status' => false,
         ]
     );
 
@@ -257,7 +249,7 @@ test('update org-supplier', function ($orgSupplier) {
     $updatedOrgSupplier = UpdateOrgSupplier::make()->action(
         $orgSupplier,
         [
-            'status' => false
+            'status' => false,
         ]
     );
 
@@ -321,7 +313,7 @@ test('UI Index suppliers product in supplier', function () {
     $this->withoutExceptionHandling();
     $supplier = Supplier::first();
     $response = $this->get(route('grp.supply-chain.suppliers.supplier_products.index', [
-        $supplier->slug
+        $supplier->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -353,7 +345,7 @@ test('UI create suppliers product in supplier', function () {
     $this->withoutExceptionHandling();
     $supplier = Supplier::first();
     $response = $this->get(route('grp.supply-chain.suppliers.supplier_products.create', [
-        $supplier->slug
+        $supplier->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -372,7 +364,7 @@ test('UI Index suppliers product in agent', function () {
     $supplier->update(['agent_id' => Agent::first()->id]);
     $response = $this->get(route('grp.supply-chain.agents.show.supplier_products.index', [
         $supplier->agent->slug,
-        $supplier->slug
+        $supplier->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -406,7 +398,7 @@ test('UI show supplier', function () {
 });
 
 test('UI edit supplier', function () {
-    $agent    = Agent::first();
+    $agent = Agent::first();
     $supplier = $agent->suppliers()->first();
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.agents.show.suppliers.edit', [$agent->slug, $supplier->slug]));

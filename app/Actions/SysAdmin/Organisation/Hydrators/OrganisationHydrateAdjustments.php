@@ -22,12 +22,10 @@ class OrganisationHydrateAdjustments implements ShouldBeUnique
 
     public string $jobQueue = 'low-priority';
 
-
     public function getJobUniqueId(Organisation $organisation): string
     {
         return $organisation->id;
     }
-
 
     public function handle(Organisation $organisation): void
     {
@@ -50,5 +48,4 @@ class OrganisationHydrateAdjustments implements ShouldBeUnique
 
         $organisation->catalogueStats()->update($stats);
     }
-
 }

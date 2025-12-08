@@ -22,6 +22,7 @@ class ShowRetinaTopUpDashboard extends RetinaAction
     public function asController(ActionRequest $request): Customer
     {
         $this->initialisation($request);
+
         return $this->customer;
     }
 
@@ -29,21 +30,21 @@ class ShowRetinaTopUpDashboard extends RetinaAction
     {
 
         return Inertia::render('Storage/RetinaTopUpDashboard', [
-            'title'        => __('Top Ups Dashboard'),
-            'breadcrumbs'    => $this->getBreadcrumbs(),
-            'pageHead'    => [
+            'title' => __('Top Ups Dashboard'),
+            'breadcrumbs' => $this->getBreadcrumbs(),
+            'pageHead' => [
 
-                'title'         => __('Top Up Dashboard'),
-                'icon'          => [
-                    'icon'  => ['fal', 'fa-tachometer-alt'],
-                    'title' => __('TopUp Dashboard')
+                'title' => __('Top Up Dashboard'),
+                'icon' => [
+                    'icon' => ['fal', 'fa-tachometer-alt'],
+                    'title' => __('TopUp Dashboard'),
                 ],
 
             ],
             'amount_shortcuts' => [],
-            'topUpData'  => $this->getTopUpData($customer),
+            'topUpData' => $this->getTopUpData($customer),
             'balance' => $customer->balance,
-            'currency' => CurrencyResource::make($customer->shop->currency)->getArray()
+            'currency' => CurrencyResource::make($customer->shop->currency)->getArray(),
         ]);
     }
 
@@ -52,12 +53,12 @@ class ShowRetinaTopUpDashboard extends RetinaAction
         $stats = [];
 
         $stats['topUps'] = [
-            'label'         => __('Top Ups'),
-            'count'         => $customer->stats->number_top_ups,
-            'description'   => __('previous top ups'),
-            'route'         => [
-                'name' => 'retina.top_up.index'
-            ]
+            'label' => __('Top Ups'),
+            'count' => $customer->stats->number_top_ups,
+            'description' => __('previous top ups'),
+            'route' => [
+                'name' => 'retina.top_up.index',
+            ],
         ];
 
         return $stats;
@@ -71,14 +72,14 @@ class ShowRetinaTopUpDashboard extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.top_up.dashboard'
+                                'name' => 'retina.top_up.dashboard',
                             ],
                             'label' => __('Top Up dashboard'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
 

@@ -53,9 +53,9 @@ Broadcast::channel('grp.{groupID}.fulfilmentCustomer.{userID}', function (User $
 
 Broadcast::channel('grp.live.users', function (User $user) {
     return [
-        'id'    => $user->id,
+        'id' => $user->id,
         'alias' => $user->slug,
-        'name'  => $user->contact_name,
+        'name' => $user->contact_name,
     ];
 });
 
@@ -71,28 +71,26 @@ Broadcast::channel('retina.personal.{webUserID}', function (Webuser $webUser, in
     return $webUserID === $webUser->id;
 });
 
-
 Broadcast::channel('webpage.{webpage}.preview', function (User $user) {
     return true;
 });
 
-
-Broadcast::channel("header-footer.{website}.preview", function (User $user) {
+Broadcast::channel('header-footer.{website}.preview', function (User $user) {
     return true;
 });
 
-Broadcast::channel("app.general", function () {
+Broadcast::channel('app.general', function () {
     return true;
 });
 
-Broadcast::channel("grp.dn.{deliveryNoteId}", function () {
+Broadcast::channel('grp.dn.{deliveryNoteId}', function () {
     return true;
 });
 
-Broadcast::channel("translate.{randomString}.channel", function () {
+Broadcast::channel('translate.{randomString}.channel', function () {
     return true;
 });
 
-Broadcast::channel("upload-portfolio-to-r2.{randomString}", function () {
+Broadcast::channel('upload-portfolio-to-r2.{randomString}', function () {
     return true;
 });

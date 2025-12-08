@@ -21,16 +21,17 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Rules\AlphaDashDotSpaceSlashParenthesisPlus;
 use App\Rules\IUnique;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Database\Query\Builder;
 
 class StoreSupplierProduct extends GrpAction
 {
     use WithNoStrictRules;
 
     public bool $skipHistoric = false;
+
     private int $supplier_id;
 
     public function authorize(ActionRequest $request): bool
@@ -39,7 +40,7 @@ class StoreSupplierProduct extends GrpAction
             return true;
         }
 
-        return $request->user()->authTo("supply-chain.edit");
+        return $request->user()->authTo('supply-chain.edit');
     }
 
     /**
@@ -60,13 +61,13 @@ class StoreSupplierProduct extends GrpAction
             $supplierProduct->refresh();
             $supplierProduct->stats()->create();
 
-            if (!$this->skipHistoric) {
+            if (! $this->skipHistoric) {
                 $historicProduct = StoreHistoricSupplierProduct::make()->action($supplierProduct, [
                     'status' => true,
                 ]);
                 $supplierProduct->update(
                     [
-                        'current_historic_supplier_product_id' => $historicProduct->id
+                        'current_historic_supplier_product_id' => $historicProduct->id,
                     ]
                 );
             }
@@ -74,15 +75,12 @@ class StoreSupplierProduct extends GrpAction
             return $supplierProduct;
         });
 
-
         GroupHydrateSupplierProducts::dispatch($supplier->group)->delay($this->hydratorsDelay);
         SupplierHydrateSupplierProducts::dispatch($supplier)->delay($this->hydratorsDelay);
-        AgentHydrateSupplierProducts::dispatchIf((bool)$supplierProduct->agent_id, $supplierProduct->agent)->delay($this->hydratorsDelay);
+        AgentHydrateSupplierProducts::dispatchIf((bool) $supplierProduct->agent_id, $supplierProduct->agent)->delay($this->hydratorsDelay);
         GroupHydrateProductSuppliers::dispatch($supplier->group)->delay($this->hydratorsDelay);
 
         SupplierProductRecordSearch::dispatch($supplierProduct);
-
-
 
         return $supplierProduct;
     }
@@ -90,10 +88,10 @@ class StoreSupplierProduct extends GrpAction
     public function rules(): array
     {
         $rules = [
-            'code'         => [
+            'code' => [
                 'required',
                 $this->strict ? 'max:64' : 'max:255',
-                $this->strict ? new AlphaDashDotSpaceSlashParenthesisPlus() : 'string',
+                $this->strict ? new AlphaDashDotSpaceSlashParenthesisPlus : 'string',
                 Rule::notIn(['export', 'create', 'upload']),
                 new IUnique(
                     table: 'supplier_products',
@@ -102,25 +100,25 @@ class StoreSupplierProduct extends GrpAction
                     ]
                 ),
             ],
-//            'stock_id'     => [
-//                'required',
-//                Rule::exists('stocks', 'id')->where(function (Builder $query) {
-//                    return $query->where('group_id', $this->group->id);
-//                }),
-//
-//            ],
-            'name'         => ['required', 'string', 'max:255'],
-            'state'        => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
+            //            'stock_id'     => [
+            //                'required',
+            //                Rule::exists('stocks', 'id')->where(function (Builder $query) {
+            //                    return $query->where('group_id', $this->group->id);
+            //                }),
+            //
+            //            ],
+            'name' => ['required', 'string', 'max:255'],
+            'state' => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
             'is_available' => ['sometimes', 'required', 'boolean'],
-            'cost'         => ['required'],
-            'units_per_pack'         => ['sometimes', 'nullable'],
-            'units_per_carton'         => ['sometimes', 'nullable'],
-            'cbm'          => ['sometimes', 'nullable', 'numeric'],
+            'cost' => ['required'],
+            'units_per_pack' => ['sometimes', 'nullable'],
+            'units_per_carton' => ['sometimes', 'nullable'],
+            'cbm' => ['sometimes', 'nullable', 'numeric'],
         ];
 
-        if (!$this->strict) {
-            $rules                           = $this->noStrictStoreRules($rules);
-            $rules['source_slug']            = ['sometimes', 'nullable', 'string'];
+        if (! $this->strict) {
+            $rules = $this->noStrictStoreRules($rules);
+            $rules['source_slug'] = ['sometimes', 'nullable', 'string'];
         }
 
         return $rules;
@@ -131,14 +129,14 @@ class StoreSupplierProduct extends GrpAction
      */
     public function action(Supplier $supplier, array $modelData, bool $skipHistoric = false, int $hydratorsDelay = 0, bool $strict = true, $audit = true): SupplierProduct
     {
-        if (!$audit) {
+        if (! $audit) {
             SupplierProduct::disableAuditing();
         }
-        $this->supplier_id    = $supplier->id;
-        $this->asAction       = true;
+        $this->supplier_id = $supplier->id;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->skipHistoric   = $skipHistoric;
-        $this->strict         = $strict;
+        $this->skipHistoric = $skipHistoric;
+        $this->strict = $strict;
 
         $this->initialisation($supplier->group, $modelData);
 
@@ -147,7 +145,7 @@ class StoreSupplierProduct extends GrpAction
 
     public function asController(Supplier $supplier, ActionRequest $request)
     {
-        $this->supplier_id    = $supplier->id;
+        $this->supplier_id = $supplier->id;
         $this->initialisation($supplier->group, $request);
 
         return $this->handle($supplier, $this->validatedData);

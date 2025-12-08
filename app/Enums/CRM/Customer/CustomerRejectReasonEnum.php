@@ -15,7 +15,7 @@ enum CustomerRejectReasonEnum: string
     use EnumHelperTrait;
 
     case SPAM = 'spam';
-    case DUPLICATED         = 'duplicated';
-    case OTHER         = 'other';
-    case UNKNOWN           = 'unknown';
+    case DUPLICATED = 'duplicated';
+    case OTHER = 'other';
+    case UNKNOWN = 'unknown';
 }

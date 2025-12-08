@@ -20,29 +20,27 @@ class FetchAuroraSalesChannels extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:sales_channels {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
-
     /**
      * @throws \Throwable
      */
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?SalesChannel
     {
-        $group             = group();
+        $group = group();
         $salesChannelsData = $organisationSource->fetchSalesChannel($organisationSourceId);
-        if (!$salesChannelsData) {
+        if (! $salesChannelsData) {
             return null;
         }
-
 
         $type = $salesChannelsData['sales_channel']['type'];
         if ($type->canSeed()) {
             $salesChannel = $group->salesChannels()->where('type', $type)->first();
-            if (!$salesChannel) {
+            if (! $salesChannel) {
                 dd('error can not find seed sales channel');
             }
-            if (!$salesChannel->fetched_at) {
+            if (! $salesChannel->fetched_at) {
                 $seededSalesChannelData = Arr::only($salesChannelsData['sales_channel'], [
                     'fetched_at',
-                    'source_id'
+                    'source_id',
                 ]);
                 UpdateSalesChannel::make()->action(
                     salesChannel: $salesChannel,
@@ -92,7 +90,6 @@ class FetchAuroraSalesChannels extends FetchAuroraAction
                     audit: false
                 );
 
-
                 SalesChannel::enableAuditing();
                 $this->saveMigrationHistory(
                     $salesChannel,
@@ -111,17 +108,16 @@ class FetchAuroraSalesChannels extends FetchAuroraAction
         return $salesChannel;
     }
 
-
     public function updateSalesChannelSources(SalesChannel $salesChannel, string $source): void
     {
-        $sources   = Arr::get($salesChannel->sources, 'sales_channels', []);
+        $sources = Arr::get($salesChannel->sources, 'sales_channels', []);
         $sources[] = $source;
-        $sources   = array_unique($sources);
+        $sources = array_unique($sources);
 
         $salesChannel->updateQuietly([
             'sources' => [
                 'sales_channels' => $sources,
-            ]
+            ],
         ]);
     }
 
@@ -132,7 +128,6 @@ class FetchAuroraSalesChannels extends FetchAuroraAction
             ->select('Order Source Key as source_id')
             ->orderBy('source_id');
     }
-
 
     public function count(): ?int
     {

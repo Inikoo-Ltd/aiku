@@ -22,8 +22,8 @@ use Symfony\Component\HttpFoundation\Response;
 class StoreRetinaFulfilmentManualPlatform extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     public function handle(Customer $customer, array $modelData): CustomerSalesChannel
     {
@@ -33,14 +33,14 @@ class StoreRetinaFulfilmentManualPlatform extends RetinaAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'unique:customer_sales_channels,name']
+            'name' => ['required', 'string', 'max:255', 'unique:customer_sales_channels,name'],
         ];
     }
 
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
     {
         return Inertia::location(route('retina.fulfilment.dropshipping.customer_sales_channels.show', [
-            'customerSalesChannel' => $customerSalesChannel->slug
+            'customerSalesChannel' => $customerSalesChannel->slug,
         ]));
     }
 

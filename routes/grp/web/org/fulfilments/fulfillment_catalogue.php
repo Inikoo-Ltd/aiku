@@ -34,7 +34,6 @@ Route::get('services/create', CreateFulfilmentService::class)->name('services.cr
 Route::get('services/{service}', ShowFulfilmentService::class)->name('services.show');
 Route::get('services/{service}/edit', EditFulfilmentService::class)->name('services.edit');
 
-
 Route::get('physical-goods', IndexFulfilmentPhysicalGoods::class)->name('physical_goods.index');
 Route::get('physical-goods/create', CreatePhysicalGoods::class)->name('physical_goods.create');
 Route::get('physical-goods/{product}', ShowFulfilmentPhysicalGood::class)->name('physical_goods.show');

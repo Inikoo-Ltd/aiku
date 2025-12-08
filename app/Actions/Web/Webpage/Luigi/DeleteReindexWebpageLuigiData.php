@@ -40,6 +40,7 @@ class DeleteReindexWebpageLuigiData
             $webpage = Webpage::first();
         }
         $this->handle($webpage);
+
         return 0;
     }
 }

@@ -49,34 +49,34 @@ class PalletReturnStoredItemsResource extends JsonResource
         $palletReturnItemQuery = PalletReturnItem::where([['pallet_return_id', $palletReturn->id], ['stored_item_id', $this->id]])->get();
 
         return [
-            'id'                                   => $this->id,
-            'slug'                                 => $this->slug,
-            'reference'                            => $this->reference,
-            'state'                                => $this->state,
-            'state_icon'                           => $this->state->stateIcon()[$this->state->value],
-            'total_quantity'                       => intval($this->pallets->sum('pivot.quantity')),
-            'quantity'                             => (int) $palletReturnItemQuery?->sum('quantity_ordered') ?: intval($this->pallets->sum('pivot.quantity')),
-            'damaged_quantity'                     => intval($this->pallets->sum('pivot.damaged_quantity')),
-            'is_checked'                           => (bool) $palletReturnItemQuery->first(),
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'state' => $this->state,
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
+            'total_quantity' => intval($this->pallets->sum('pivot.quantity')),
+            'quantity' => (int) $palletReturnItemQuery?->sum('quantity_ordered') ?: intval($this->pallets->sum('pivot.quantity')),
+            'damaged_quantity' => intval($this->pallets->sum('pivot.damaged_quantity')),
+            'is_checked' => (bool) $palletReturnItemQuery->first(),
 
-            'updateRoute'           => match (request()->routeIs('retina.*')) {
+            'updateRoute' => match (request()->routeIs('retina.*')) {
                 true => [
-                    'name'       => 'retina.models.pallet-return-item.update',
-                    'parameters' => $palletReturnItemQuery->first()?->id
+                    'name' => 'retina.models.pallet-return-item.update',
+                    'parameters' => $palletReturnItemQuery->first()?->id,
                 ],
                 default => [
-                    'name'       => 'grp.models.pallet-return-item.pick',
-                    'parameters' => $palletReturnItemQuery->first()?->id
+                    'name' => 'grp.models.pallet-return-item.pick',
+                    'parameters' => $palletReturnItemQuery->first()?->id,
                 ]
             },
             'undoPickingRoute' => [
-                'name'       => 'grp.models.pallet-return-item.undo-picking',
-                'parameters' => [$palletReturnItemQuery->first()?->id]
+                'name' => 'grp.models.pallet-return-item.undo-picking',
+                'parameters' => [$palletReturnItemQuery->first()?->id],
             ],
             'notPickedRoute' => [
-                'method'     => 'patch',
-                'name'       => 'grp.models.pallet-return-item.not-picked',
-                'parameters' => [$palletReturnItemQuery->first()?->id]
+                'method' => 'patch',
+                'name' => 'grp.models.pallet-return-item.not-picked',
+                'parameters' => [$palletReturnItemQuery->first()?->id],
             ],
         ];
     }

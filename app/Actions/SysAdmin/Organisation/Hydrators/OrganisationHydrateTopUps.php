@@ -48,5 +48,4 @@ class OrganisationHydrateTopUps implements ShouldBeUnique
 
         $organisation->accountingStats()->update($stats);
     }
-
 }

@@ -17,9 +17,9 @@ use App\Actions\Production\ManufactureTask\UI\ShowManufactureTask;
 use App\Actions\Production\Production\UI\CreateProduction;
 use App\Actions\Production\Production\UI\EditProduction;
 use App\Actions\Production\Production\UI\IndexProductions;
-use App\Actions\Production\Production\UI\ShowProduction;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\Production\Production\UI\ShowOperationsDashboard;
+use App\Actions\Production\Production\UI\ShowProduction;
 use App\Actions\Production\RawMaterial\UI\CreateRawMaterial;
 use App\Actions\Production\RawMaterial\UI\EditRawMaterial;
 use App\Actions\Production\RawMaterial\UI\IndexRawMaterials;
@@ -61,13 +61,10 @@ Route::prefix('{production}')
                         Route::get('artefacts/{artefact}', ShowArtefact::class)->name('artefacts.show');
                         Route::get('artefacts/{artefact}/edit', EditArtefact::class)->name('artefacts.edit');
 
-
                         Route::get('manufacture-tasks', IndexManufactureTasks::class)->name('manufacture_tasks.index');
                         Route::get('manufacture-tasks/create', CreateManufactureTask::class)->name('manufacture_tasks.create');
                         Route::get('manufacture-tasks/{manufactureTask}', ShowManufactureTask::class)->name('manufacture_tasks.show');
                         Route::get('manufacture-tasks/{manufactureTask}/edit', EditManufactureTask::class)->name('manufacture_tasks.edit');
-
-
 
                     });
             });

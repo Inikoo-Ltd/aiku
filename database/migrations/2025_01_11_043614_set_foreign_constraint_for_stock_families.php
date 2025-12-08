@@ -10,11 +10,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         $this->delete_stock_families_foreign_constraint();
-
 
         Schema::table('stock_family_stats', function (Blueprint $table) {
             $table->foreign('stock_family_id')->references('id')->on('stock_families')->cascadeOnDelete();
@@ -32,17 +32,13 @@ return new class () extends Migration {
             $table->foreign('stock_family_id')->references('id')->on('stock_families')->nullOnDelete();
         });
 
-
         Schema::table('org_stock_movements', function (Blueprint $table) {
             $table->foreign('stock_family_id')->references('id')->on('stock_families')->nullOnDelete();
         });
 
-
         Schema::table('org_stock_movements', function (Blueprint $table) {
             $table->foreign('org_stock_family_id')->references('id')->on('org_stock_families')->nullOnDelete();
         });
-
-
 
         Schema::table('delivery_note_items', function (Blueprint $table) {
             $table->foreign('stock_family_id')->references('id')->on('stock_families')->nullOnDelete();
@@ -51,13 +47,10 @@ return new class () extends Migration {
         Schema::table('delivery_note_items', function (Blueprint $table) {
             $table->foreign('org_stock_family_id')->references('id')->on('org_stock_families')->nullOnDelete();
         });
-
-
 
         Schema::table('org_stock_families', function (Blueprint $table) {
             $table->foreign('stock_family_id')->references('id')->on('stock_families')->cascadeOnDelete();
         });
-
 
         Schema::table('org_stock_family_stats', function (Blueprint $table) {
             $table->foreign('org_stock_family_id')->references('id')->on('org_stock_families')->cascadeOnDelete();
@@ -76,12 +69,10 @@ return new class () extends Migration {
         });
     }
 
-
     public function down(): void
     {
         //
     }
-
 
     private function delete_stock_families_foreign_constraint(): void
     {
@@ -106,7 +97,6 @@ return new class () extends Migration {
             $table->dropForeign(['org_stock_family_id']);
         });
 
-
         Schema::table('org_stock_families', function (Blueprint $table) {
             $table->dropForeign(['stock_family_id']);
         });
@@ -135,6 +125,4 @@ return new class () extends Migration {
             $table->dropForeign(['org_stock_family_id']);
         });
     }
-
-
 };

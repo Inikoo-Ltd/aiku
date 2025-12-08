@@ -40,8 +40,6 @@ trait WithGetRecurringBillEndDate
                 return Carbon::now()->endOfMonth()->startOfDay();
             }
 
-
-
         }
         $endDate = now()->day($endDayOfMonth);
         if (now()->gte($endDate)) {
@@ -49,21 +47,22 @@ trait WithGetRecurringBillEndDate
         }
 
         if (Arr::get($setting, 'is_weekdays') and $endDate->isWeekend()) {
-            $endDate =  $endDate->nextWeekday();
+            $endDate = $endDate->nextWeekday();
         }
+
         return $endDate;
     }
 
     public function getEndDateWeekly(Carbon $startDate, array $setting): Carbon
     {
         $daysOfWeek = [
-            'Sunday'    => CarbonInterface::SUNDAY,
-            'Monday'    => CarbonInterface::MONDAY,
-            'Tuesday'   => CarbonInterface::TUESDAY,
+            'Sunday' => CarbonInterface::SUNDAY,
+            'Monday' => CarbonInterface::MONDAY,
+            'Tuesday' => CarbonInterface::TUESDAY,
             'Wednesday' => CarbonInterface::WEDNESDAY,
-            'Thursday'  => CarbonInterface::THURSDAY,
-            'Friday'    => CarbonInterface::FRIDAY,
-            'Saturday'  => CarbonInterface::SATURDAY,
+            'Thursday' => CarbonInterface::THURSDAY,
+            'Friday' => CarbonInterface::FRIDAY,
+            'Saturday' => CarbonInterface::SATURDAY,
         ];
 
         $endDayOfWeek = $daysOfWeek[$setting['day']];

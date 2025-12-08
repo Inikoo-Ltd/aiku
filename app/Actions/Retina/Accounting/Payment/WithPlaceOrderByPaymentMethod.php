@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 trait WithPlaceOrderByPaymentMethod
 {
     use WithChargeTransactions;
+
     /**
      * Common implementation to place an order for a given customer's current basket
      * and set the payment method designation, wrapped in a DB transaction.
@@ -32,11 +33,11 @@ trait WithPlaceOrderByPaymentMethod
     protected function placeOrderByPaymentMethod(Customer $customer, OrderToBePaidByEnum $method): array
     {
         $order = Order::find($customer->current_order_in_basket_id);
-        if (!$order) {
+        if (! $order) {
             return [
                 'success' => false,
-                'reason'  => 'Order not found',
-                'order'   => null,
+                'reason' => 'Order not found',
+                'order' => null,
             ];
         }
 
@@ -54,8 +55,8 @@ trait WithPlaceOrderByPaymentMethod
 
         return [
             'success' => true,
-            'reason'  => 'Order submitted successfully',
-            'order'   => $order,
+            'reason' => 'Order submitted successfully',
+            'order' => $order,
         ];
     }
 
@@ -64,7 +65,7 @@ trait WithPlaceOrderByPaymentMethod
         /** @var Charge $charge */
         $charge = $order->shop->charges()->where('type', ChargeTypeEnum::COD)->where('state', ChargeStateEnum::ACTIVE)->first();
 
-        $cashOnDeliveryTransaction   = null;
+        $cashOnDeliveryTransaction = null;
         $cashOnDeliveryTransactionID = DB::table('transactions')->where('order_id', $order->id)
             ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
             ->where('model_type', 'Charge')->where('charges.type', ChargeTypeEnum::COD->value)->value('transactions.id');
@@ -84,7 +85,4 @@ trait WithPlaceOrderByPaymentMethod
 
         return $order;
     }
-
-
-
 }

@@ -17,21 +17,21 @@ enum PalletDeliveriesTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case DELIVERIES        = 'deliveries';
-    case UPLOADS       = 'uploads';
+    case DELIVERIES = 'deliveries';
+    case UPLOADS = 'uploads';
 
     public function blueprint(): array
     {
         return match ($this) {
             PalletDeliveriesTabsEnum::UPLOADS => [
                 'title' => __('uploads'),
-                'icon'  => 'fal fa-upload',
-            //    'type'  => 'icon',
+                'icon' => 'fal fa-upload',
+                //    'type'  => 'icon',
                 'align' => 'right',
             ],
             PalletDeliveriesTabsEnum::DELIVERIES => [
-                'title'     => __("deliveries"),
-                'icon'      => 'fal fa-truck-couch',
+                'title' => __('deliveries'),
+                'icon' => 'fal fa-truck-couch',
             ],
         };
     }

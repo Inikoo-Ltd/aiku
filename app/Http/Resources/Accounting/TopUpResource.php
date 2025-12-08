@@ -19,12 +19,12 @@ class TopUpResource extends JsonResource
         $topUp = $this;
 
         return [
-            'created_at'    => $topUp->created_at,
-            'slug'      => $topUp->slug,
+            'created_at' => $topUp->created_at,
+            'slug' => $topUp->slug,
             'reference' => $topUp->reference,
-            'amount'    => $topUp->amount,
-            'status'    => $topUp->status,
-            'currency_code'  => $topUp?->currency?->code
+            'amount' => $topUp->amount,
+            'status' => $topUp->status,
+            'currency_code' => $topUp?->currency?->code,
         ];
     }
 }

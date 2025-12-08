@@ -101,9 +101,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $average_image_size
  * @property float|null $max_image_size
  * @property-read \App\Models\Goods\Stock $stock
+ *
  * @method static Builder<static>|StockStats newModelQuery()
  * @method static Builder<static>|StockStats newQuery()
  * @method static Builder<static>|StockStats query()
+ *
  * @mixin Eloquent
  */
 class StockStats extends Model
@@ -111,7 +113,6 @@ class StockStats extends Model
     protected $table = 'stock_stats';
 
     protected $guarded = [];
-
 
     public function stock(): BelongsTo
     {

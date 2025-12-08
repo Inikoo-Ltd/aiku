@@ -31,67 +31,67 @@ class WebpageRecordSearch
         }
 
         $modelData = [
-            'group_id'          => $webpage->group_id,
-            'website_id'        => $webpage->website_id,
-            'website_slug'      => $webpage->website->slug,
-            'shop_id'           => $webpage->website->shop_id,
-            'shop_slug'         => $webpage->website->shop->slug,
-            'organisation_id'   => $webpage->organisation_id,
+            'group_id' => $webpage->group_id,
+            'website_id' => $webpage->website_id,
+            'website_slug' => $webpage->website->slug,
+            'shop_id' => $webpage->website->shop_id,
+            'shop_slug' => $webpage->website->shop->slug,
+            'organisation_id' => $webpage->organisation_id,
             'organisation_slug' => $webpage->organisation->slug,
-            'sections'          => ['web'],
-            'haystack_tier_1'   => trim($webpage->code.' '.$webpage->url),
-            'result'            => [
-                'xx'          => $webpage,
-                'route'       => match ($webpage->website->type) {
+            'sections' => ['web'],
+            'haystack_tier_1' => trim($webpage->code.' '.$webpage->url),
+            'result' => [
+                'xx' => $webpage,
+                'route' => match ($webpage->website->type) {
                     WebsiteTypeEnum::FULFILMENT => [
-                        'name'       => 'grp.org.fulfilments.show.web.webpages.show',
+                        'name' => 'grp.org.fulfilments.show.web.webpages.show',
                         'parameters' => [
                             $webpage->organisation->slug,
                             $webpage->shop->slug,
                             $webpage->website->slug,
-                            $webpage->slug
-                        ]
+                            $webpage->slug,
+                        ],
                     ],
                     default => [
-                        'name'       => 'grp.org.shops.show.web.webpages.show',
+                        'name' => 'grp.org.shops.show.web.webpages.show',
                         'parameters' => [
                             $webpage->organisation->slug,
                             $webpage->shop->slug,
                             $webpage->website->slug,
-                            $webpage->slug
-                        ]
+                            $webpage->slug,
+                        ],
                     ],
                 },
                 'description' => [
-                    'label' => $webpage->url
+                    'label' => $webpage->url,
                 ],
-                'code'        => [
+                'code' => [
                     'label' => $webpage->code,
                 ],
-                'icon'        => [
-                    'icon' => 'fal fa-globe'
+                'icon' => [
+                    'icon' => 'fal fa-globe',
                 ],
-                'meta'        => [
+                'meta' => [
                     [
-                        'label'   => $webpage->state->labels()[$webpage->state->value],
+                        'label' => $webpage->state->labels()[$webpage->state->value],
                         'tooltip' => __('State'),
                     ],
                     [
-                        'icon'    => $webpage->type->stateIcon()[$webpage->type->value],
-                        'label'   => $webpage->type->labels()[$webpage->type->value],
+                        'icon' => $webpage->type->stateIcon()[$webpage->type->value],
+                        'label' => $webpage->type->labels()[$webpage->type->value],
                         'tooltip' => __('Type'),
                     ],
                     [
-                        'type'   => 'number',
+                        'type' => 'number',
                         'number' => $webpage->level,
-                        'label'  => __('Level'),
+                        'label' => __('Level'),
                     ],
                 ],
-            ]
+            ],
         ];
 
         if ($webpage->website->type == WebsiteTypeEnum::FULFILMENT) {
-            $modelData['fulfilment_id']   = $webpage->shop->fulfilment->id;
+            $modelData['fulfilment_id'] = $webpage->shop->fulfilment->id;
             $modelData['fulfilment_slug'] = $webpage->shop->fulfilment->slug;
         }
 
@@ -100,6 +100,4 @@ class WebpageRecordSearch
             $modelData
         );
     }
-
-
 }

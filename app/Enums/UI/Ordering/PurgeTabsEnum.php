@@ -17,24 +17,19 @@ enum PurgeTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE        = 'showcase';
-    case PURGED_ORDERS   = 'purged_orders';
-
-
-
-
-
+    case SHOWCASE = 'showcase';
+    case PURGED_ORDERS = 'purged_orders';
 
     public function blueprint(): array
     {
         return match ($this) {
             PurgeTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fal fa-info-circle',
+                'icon' => 'fal fa-info-circle',
             ],
             PurgeTabsEnum::PURGED_ORDERS => [
                 'title' => __('Purged orders'),
-                'icon'  => 'fal fa-dollar-sign',
+                'icon' => 'fal fa-dollar-sign',
             ],
         };
     }

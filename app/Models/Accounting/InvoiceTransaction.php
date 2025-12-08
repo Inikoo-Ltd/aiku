@@ -11,8 +11,8 @@ namespace App\Models\Accounting;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Discounts\Offer;
-use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferAllowance;
+use App\Models\Discounts\OfferCampaign;
 use App\Models\Fulfilment\RecurringBillTransaction;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\InvoiceTransactionHasFeedback;
@@ -86,32 +86,34 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read TaxCategory $taxCategory
  * @property-read Transaction|null $transaction
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $transactionRefunds
+ *
  * @method static Builder<static>|InvoiceTransaction newModelQuery()
  * @method static Builder<static>|InvoiceTransaction newQuery()
  * @method static Builder<static>|InvoiceTransaction onlyTrashed()
  * @method static Builder<static>|InvoiceTransaction query()
  * @method static Builder<static>|InvoiceTransaction withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|InvoiceTransaction withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class InvoiceTransaction extends Model
 {
-    use SoftDeletes;
     use InCustomer;
+    use SoftDeletes;
 
     protected $table = 'invoice_transactions';
 
     protected $casts = [
-        'data'           => 'array',
-        'date'           => 'datetime',
-        'quantity'       => 'decimal:3',
-        'gross_amount'   => 'decimal:2',
-        'net_amount'     => 'decimal:2',
-        'grp_exchange'   => 'decimal:4',
-        'org_exchange'   => 'decimal:4',
+        'data' => 'array',
+        'date' => 'datetime',
+        'quantity' => 'decimal:3',
+        'gross_amount' => 'decimal:2',
+        'net_amount' => 'decimal:2',
+        'grp_exchange' => 'decimal:4',
+        'org_exchange' => 'decimal:4',
         'grp_net_amount' => 'decimal:2',
         'org_net_amount' => 'decimal:2',
-        'offers_data'    => 'array',
+        'offers_data' => 'array',
     ];
 
     protected $attributes = [

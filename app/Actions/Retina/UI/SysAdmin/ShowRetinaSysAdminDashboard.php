@@ -11,9 +11,9 @@ namespace App\Actions\Retina\UI\SysAdmin;
 use App\Actions\Retina\SysAdmin\GetRetinaCustomerAddressManagement;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Http\Resources\CRM\CustomersResource;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Http\Resources\CRM\CustomersResource;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaSysAdminDashboard extends RetinaAction
@@ -26,6 +26,7 @@ class ShowRetinaSysAdminDashboard extends RetinaAction
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
+
         return $this->handle($request);
     }
 
@@ -37,35 +38,35 @@ class ShowRetinaSysAdminDashboard extends RetinaAction
             'SysAdmin/RetinaSysAdminDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => $title,
-                'pageHead'    => [
+                'title' => $title,
+                'pageHead' => [
                     'title' => $title,
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-users-cog'],
-                        'title' => $title
+                    'icon' => [
+                        'icon' => ['fal', 'fa-users-cog'],
+                        'title' => $title,
                     ],
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'create',
                             'label' => __('user'),
                             'route' => [
-                                'name'       => 'retina.sysadmin.web-users.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ]
-                    ]
+                                'name' => 'retina.sysadmin.web-users.create',
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
+                        ],
+                    ],
 
                 ],
                 'users' => [
                     'active' => $this->customer->stats->number_current_web_users,
-                    'inactive' => $this->customer->stats->number_web_users - $this->customer->stats->number_current_web_users
+                    'inactive' => $this->customer->stats->number_web_users - $this->customer->stats->number_current_web_users,
                 ],
-                'customer'     => CustomersResource::make($this->customer),
-                'status'              => $this->customer->status,
-                'additional_data'     => $this->customer->data,
-                'currency_code'  => $this->shop->currency->code,
-                'address_management' => GetRetinaCustomerAddressManagement::run(customer:$this->customer),
+                'customer' => CustomersResource::make($this->customer),
+                'status' => $this->customer->status,
+                'additional_data' => $this->customer->data,
+                'currency_code' => $this->shop->currency->code,
+                'address_management' => GetRetinaCustomerAddressManagement::run(customer: $this->customer),
             ]
         );
     }
@@ -77,14 +78,14 @@ class ShowRetinaSysAdminDashboard extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.sysadmin.fulfilment.dashboard'
+                                'name' => 'retina.sysadmin.fulfilment.dashboard',
                             ],
                             'label' => __('Account'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

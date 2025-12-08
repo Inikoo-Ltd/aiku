@@ -33,14 +33,14 @@ class WebsitesResource extends JsonResource
         $website = $this;
 
         return [
-            'id'         => $website->id,
-            'slug'       => $website->slug,
-            'code'       => $website->code,
-            'name'       => $website->name,
-            'domain'     => $website->domain,
-            'url'        => app()->environment('local') ? 'http://'.$website->domain.'/' : 'https://'.$website->domain.'/',
-            'state'      => $website->state,
-            'status'     => $website->status,
+            'id' => $website->id,
+            'slug' => $website->slug,
+            'code' => $website->code,
+            'name' => $website->name,
+            'domain' => $website->domain,
+            'url' => app()->environment('local') ? 'http://'.$website->domain.'/' : 'https://'.$website->domain.'/',
+            'state' => $website->state,
+            'status' => $website->status,
             'created_at' => $website->created_at,
             'updated_at' => $website->updated_at,
 

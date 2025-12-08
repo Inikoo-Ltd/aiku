@@ -19,11 +19,10 @@ enum RetinaPalletsInPalletReturnWholePalletsOptionEnum: string
     case ALL_STORED_GOODS = 'all_stored_goods';
     case SELECTED = 'selected';
 
-
     public static function labels(): array
     {
         return [
-            'selected'           => __('Selected'),
+            'selected' => __('Selected'),
             'all_stored_goods' => __('All stored goods'),
 
         ];
@@ -33,7 +32,7 @@ enum RetinaPalletsInPalletReturnWholePalletsOptionEnum: string
     {
         return [
             'all_stored_goods' => $palletReturn->fulfilmentCustomer->number_pallets_status_storing,
-            'selected'           => $palletReturn->stats->number_pallets
+            'selected' => $palletReturn->stats->number_pallets,
         ];
     }
 }

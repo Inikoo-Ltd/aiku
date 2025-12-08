@@ -37,9 +37,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_current_api_tokens
  * @property int $number_expired_api_tokens
  * @property-read \App\Models\SysAdmin\User $user
+ *
  * @method static Builder<static>|UserStats newModelQuery()
  * @method static Builder<static>|UserStats newQuery()
  * @method static Builder<static>|UserStats query()
+ *
  * @mixin Eloquent
  */
 class UserStats extends Model

@@ -15,9 +15,9 @@ class WebUserFactory extends Factory
     public function definition(): array
     {
         return [
-            'username'             => fake()->userName,
-            'password'             => fake()->password,
-            'email'                => fake()->email,
+            'username' => fake()->userName,
+            'password' => fake()->password,
+            'email' => fake()->email,
         ];
     }
 }

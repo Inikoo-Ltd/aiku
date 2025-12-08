@@ -20,17 +20,14 @@ enum ChargeTriggerEnum: string
     case SELECTED_BY_CUSTOMER = 'selected-by-customer';
     case SELECTED_BY_USER = 'selected-by-user';
 
-
     public static function labels(): array
     {
         return [
-            'product    '          => __('Product'),
-            'order'                => __('Order'),
-            'payment-account'      => __('Payment Type'),
+            'product    ' => __('Product'),
+            'order' => __('Order'),
+            'payment-account' => __('Payment Type'),
             'selected-by-customer' => __('Selected by customer'),
-            'selected-by-user'     => __('Selected by user'),
+            'selected-by-user' => __('Selected by user'),
         ];
     }
-
-
 }

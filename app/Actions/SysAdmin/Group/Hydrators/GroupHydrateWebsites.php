@@ -60,7 +60,6 @@ class GroupHydrateWebsites implements ShouldBeUnique
             )
         );
 
-
         $group->webStats()->update($stats);
     }
 }

@@ -13,14 +13,14 @@ use App\Enums\EnumHelperTrait;
 enum PaymentServiceProviderStateEnum: string
 {
     use EnumHelperTrait;
-    case LEGACY                            = 'legacy';
-    case ACTIVE                            = 'active';
+    case LEGACY = 'legacy';
+    case ACTIVE = 'active';
 
     public static function labels(): array
     {
         return [
-            'legacy'                           => __('Legacy'),
-            'active'                           => __('Active'),
+            'legacy' => __('Legacy'),
+            'active' => __('Active'),
         ];
     }
 }

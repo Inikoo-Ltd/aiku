@@ -19,8 +19,7 @@ enum AppointmentTypeEnum: string
     public static function labels(): array
     {
         return [
-            'lead' => 'Leads'
+            'lead' => 'Leads',
         ];
     }
-
 }

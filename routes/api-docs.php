@@ -6,7 +6,6 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
 /*
 |--------------------------------------------------------------------------
 | API Documentation Routes

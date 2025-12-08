@@ -24,9 +24,9 @@ class StoreWebBlockType
     {
 
         /** @var WebBlockType $webBlockType */
-
         $webBlockType = $group->webBlockTypes()->create($modelData);
         $webBlockType->stats()->create();
+
         return $webBlockType;
     }
 }

@@ -8,21 +8,20 @@ enum RawMaterialUnitEnum: string
 {
     use EnumHelperTrait;
 
-    case UNIT       = 'unit';
-    case PACK       = 'pack';
-    case CARTON     = 'carton';
-    case LITER      = 'liter';
-    case KILOGRAM   = 'kilogram';
+    case UNIT = 'unit';
+    case PACK = 'pack';
+    case CARTON = 'carton';
+    case LITER = 'liter';
+    case KILOGRAM = 'kilogram';
 
     public static function labels(): array
     {
         return [
-            self::UNIT->value     => 'Unit',
-            self::PACK->value     => 'Pack',
-            self::CARTON->value   => 'Carton',
-            self::LITER->value    => 'Liter',
+            self::UNIT->value => 'Unit',
+            self::PACK->value => 'Pack',
+            self::CARTON->value => 'Carton',
+            self::LITER->value => 'Liter',
             self::KILOGRAM->value => 'Kilogram',
         ];
     }
-
 }

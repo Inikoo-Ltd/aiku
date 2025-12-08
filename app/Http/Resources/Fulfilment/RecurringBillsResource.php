@@ -11,7 +11,6 @@ namespace App\Http\Resources\Fulfilment;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- *
  * @property int $id
  * @property int $reference
  * @property int $slug
@@ -31,18 +30,18 @@ class RecurringBillsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                       => $this->id,
-            'slug'                     => $this->slug,
-            'status_icon'              => $this->status->statusIcon()[$this->status->value],
-            'reference'                => $this->reference,
-            'customer_name'            => $this->customer_name,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'status_icon' => $this->status->statusIcon()[$this->status->value],
+            'reference' => $this->reference,
+            'customer_name' => $this->customer_name,
             'fulfilment_customer_slug' => $this->fulfilment_customer_slug,
-            'net_amount'               => $this->net_amount,
-            'start_date'               => $this->start_date,
-            'end_date'                 => $this->end_date,
-            'currency_code'            => $this->currency_code ?? ($this->currency ? $this->currency->code : null),
-            'currency_symbol'          => $this->currency_symbol,
-            'number_item_transactions' => $this->number_item_transactions
+            'net_amount' => $this->net_amount,
+            'start_date' => $this->start_date,
+            'end_date' => $this->end_date,
+            'currency_code' => $this->currency_code ?? ($this->currency ? $this->currency->code : null),
+            'currency_symbol' => $this->currency_symbol,
+            'number_item_transactions' => $this->number_item_transactions,
         ];
     }
 }

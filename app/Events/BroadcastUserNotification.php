@@ -25,23 +25,24 @@ class BroadcastUserNotification implements ShouldBroadcast
     use SerializesModels;
 
     public array $data;
+
     public Group $group;
 
     public function __construct(Group $group, PalletDelivery|PalletReturn|Pallet $parent, string $title, string $text)
     {
         $this->group = $group;
-        $this->data  = [
+        $this->data = [
             'title' => $title,
-            'body'  => $text,
-            'type'  => class_basename($parent),
-            'id'    => $parent->id
+            'body' => $text,
+            'type' => class_basename($parent),
+            'id' => $parent->id,
         ];
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("grp.".$this->group->id.".general")
+            new PrivateChannel('grp.'.$this->group->id.'.general'),
         ];
     }
 

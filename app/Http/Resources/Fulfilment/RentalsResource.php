@@ -29,21 +29,21 @@ class RentalsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'code'                   => $this->code,
-            'name'                   => $this->name,
-            'sales'                  => $this->sales,
-            'rental_price'           => $this->rental_price,
-            'currency_code'          => $this->currency_code,
-            'unit'                   => $this->unit,
-            'unit_abbreviation'      => $this->unit->abbreviations()[$this->unit->value],
-            'unit_label'             => $this->unit->labels()[$this->unit->value],
-            'description'            => $this->description,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'sales' => $this->sales,
+            'rental_price' => $this->rental_price,
+            'currency_code' => $this->currency_code,
+            'unit' => $this->unit,
+            'unit_abbreviation' => $this->unit->abbreviations()[$this->unit->value],
+            'unit_label' => $this->unit->labels()[$this->unit->value],
+            'description' => $this->description,
             'auto_assign_asset_type' => $this->auto_assign_asset_type,
-            'auto_assign_asset'      => $this->auto_assign_asset,
-            'state_label'            => $this->state->labels()[$this->state->value],
-            'state_icon'             => $this->state->stateIcon()[$this->state->value],
+            'auto_assign_asset' => $this->auto_assign_asset,
+            'state_label' => $this->state->labels()[$this->state->value],
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
         ];
     }
 }

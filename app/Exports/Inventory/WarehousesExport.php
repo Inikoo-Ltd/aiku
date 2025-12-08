@@ -16,21 +16,21 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class WarehousesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class WarehousesExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Warehouse|Builder
     {
         return Warehouse::query();
     }
 
-    /** @var Warehouse $row */
+    /** @var Warehouse */
     public function map($row): array
     {
         return [
             $row->id,
             $row->slug,
             $row->name,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -40,7 +40,7 @@ class WarehousesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHe
             '#',
             'Slug',
             'Name',
-            'Created At'
+            'Created At',
         ];
     }
 }

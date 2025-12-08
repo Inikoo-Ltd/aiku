@@ -43,8 +43,8 @@ class UserHydrateAudits implements ShouldBeUnique
             }
 
             $stats["number_audits_event_{$case->snake()}"] = $queryBase->clone()
-            ->where('event', $case)
-            ->count();
+                ->where('event', $case)
+                ->count();
         }
 
         $user->stats->update($stats);
@@ -60,5 +60,4 @@ class UserHydrateAudits implements ShouldBeUnique
             $this->handle($user);
         }
     }
-
 }

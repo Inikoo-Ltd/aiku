@@ -21,8 +21,7 @@ class Filter implements Arrayable
         public string $noFilterOptionLabel,
         public string $type,
         public ?string $value = null,
-    ) {
-    }
+    ) {}
 
     public function toArray(): array
     {
@@ -33,11 +32,11 @@ class Filter implements Arrayable
         }
 
         return [
-            'key'     => $this->key,
-            'label'   => $this->label,
+            'key' => $this->key,
+            'label' => $this->label,
             'options' => $options,
-            'value'   => $this->value,
-            'type'    => $this->type,
+            'value' => $this->value,
+            'type' => $this->type,
         ];
     }
 }

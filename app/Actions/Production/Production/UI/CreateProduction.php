@@ -24,50 +24,50 @@ class CreateProduction extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New production'),
-                'pageHead'    => [
-                    'title'        => __('New production'),
-                    'icon'         => [
+                'title' => __('New production'),
+                'pageHead' => [
+                    'title' => __('New production'),
+                    'icon' => [
                         'title' => __('Create productions'),
-                        'icon'  => 'fal fa-industry'
+                        'icon' => 'fal fa-industry',
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.productions.index',
-                                'parameters' => $request->route()->originalParameters()
+                                'name' => 'grp.org.productions.index',
+                                'parameters' => $request->route()->originalParameters(),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Create production'),
+                            'title' => __('Create production'),
                             'fields' => [
 
                                 'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('code'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'name' => [
-                                    'type'     => 'input',
-                                    'label'    => __('name'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('name'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
 
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    'route'      => [
-                        'name'       => 'grp.models.production.store',
-                    ]
+                    'route' => [
+                        'name' => 'grp.models.production.store',
+                    ],
                 ],
 
             ]
@@ -78,7 +78,6 @@ class CreateProduction extends OrgAction
     {
         return $request->user()->authTo("productions.{$this->organisation->id}.edit");
     }
-
 
     public function asController(Organisation $organisation, ActionRequest $request): Response
     {
@@ -93,11 +92,11 @@ class CreateProduction extends OrgAction
             IndexProductions::make()->getBreadcrumbs($routeParameters),
             [
                 [
-                    'type'         => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating production'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

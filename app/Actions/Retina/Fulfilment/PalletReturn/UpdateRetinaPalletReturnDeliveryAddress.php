@@ -25,7 +25,7 @@ class UpdateRetinaPalletReturnDeliveryAddress extends RetinaAction
     public function rules(): array
     {
         return [
-            'address'             => ['sometimes'],
+            'address' => ['sometimes'],
         ];
     }
 
@@ -38,6 +38,7 @@ class UpdateRetinaPalletReturnDeliveryAddress extends RetinaAction
         if ($this->fulfilmentCustomer->id == $request->route()->parameter('palletReturn')->fulfilmentCustomer->id) {
             return true;
         }
+
         return false;
     }
 

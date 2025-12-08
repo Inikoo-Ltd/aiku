@@ -13,7 +13,7 @@ use App\Enums\EnumHelperTrait;
 enum AdjustmentTypeEnum: string
 {
     use EnumHelperTrait;
-    case ERROR_NET    = 'error-net';
-    case ERROR_TAX    = 'error-tax';
-    case CREDIT       = 'credit';
+    case ERROR_NET = 'error-net';
+    case ERROR_TAX = 'error-tax';
+    case CREDIT = 'credit';
 }

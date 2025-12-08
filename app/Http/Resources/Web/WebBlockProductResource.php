@@ -12,10 +12,10 @@ use App\Actions\Traits\HasBucketImages;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Helpers\ImageResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Helpers\ImageResource;
 
 /**
  * @property mixed $units
@@ -23,10 +23,9 @@ use App\Http\Resources\Helpers\ImageResource;
  */
 class WebBlockProductResource extends JsonResource
 {
-    use HasSelfCall;
     use HasBucketImages;
     use HasPriceMetrics;
-
+    use HasSelfCall;
 
     public function toArray($request): array
     {
@@ -35,51 +34,48 @@ class WebBlockProductResource extends JsonResource
 
         $specifications = [
             'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
-            'ingredients'       => $product->marketing_ingredients,
-            'gross_weight'      => $product->gross_weight,
-            'barcode'           => $product->barcode,
-            'dimensions'        => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
-            'cpnp'              => $product->cpnp_number,
-            'marketing_weight'  => $product->marketing_weight,
-            'unit'              => $product->unit,
+            'ingredients' => $product->marketing_ingredients,
+            'gross_weight' => $product->gross_weight,
+            'barcode' => $product->barcode,
+            'dimensions' => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
+            'cpnp' => $product->cpnp_number,
+            'marketing_weight' => $product->marketing_weight,
+            'unit' => $product->unit,
         ];
-
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
         return [
-            'luigi_identity'    => $product->getLuigiIdentity(),
-            'slug'              => $product->slug,
-            'code'              => $product->code,
-            'name'              => $product->name,
-            'description'       => $product->description,
+            'luigi_identity' => $product->getLuigiIdentity(),
+            'slug' => $product->slug,
+            'code' => $product->code,
+            'name' => $product->name,
+            'description' => $product->description,
             'description_title' => $product->description_title,
             'description_extra' => $product->description_extra,
-            'stock'             => $product->available_quantity,
-            'specifications'    => $product->is_single_trade_unit ? $specifications : null,
-            'contents'          => ModelHasContentsResource::collection($product->contents)->toArray($request),
-            'id'                => $product->id,
-            'image_id'          => $product->image_id,
-            'currency_code'     => $product->currency->code,
-            'rrp'               => $product->rrp,
-            'rrp_per_unit'      => $rrpPerUnit,
-            'margin'            => $margin,
-            'profit'            => $profit,
-            'profit_per_unit'   => $profitPerUnit,
-            'price'             => $product->price,
-            'price_per_unit'    => $pricePerUnit,
-            'status'            => $product->status,
-            'status_label'      => $product->status->labels()[$product->status->value],
-            'state'             => $product->state,
-            'units'             => $units,
-            'unit'              => $product->unit,
-            'web_images'        => $product->web_images,
-            'created_at'        => $product->created_at,
-            'updated_at'        => $product->updated_at,
-            'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
-            'tags'              => TagResource::collection($product->tags)->toArray($request),
+            'stock' => $product->available_quantity,
+            'specifications' => $product->is_single_trade_unit ? $specifications : null,
+            'contents' => ModelHasContentsResource::collection($product->contents)->toArray($request),
+            'id' => $product->id,
+            'image_id' => $product->image_id,
+            'currency_code' => $product->currency->code,
+            'rrp' => $product->rrp,
+            'rrp_per_unit' => $rrpPerUnit,
+            'margin' => $margin,
+            'profit' => $profit,
+            'profit_per_unit' => $profitPerUnit,
+            'price' => $product->price,
+            'price_per_unit' => $pricePerUnit,
+            'status' => $product->status,
+            'status_label' => $product->status->labels()[$product->status->value],
+            'state' => $product->state,
+            'units' => $units,
+            'unit' => $product->unit,
+            'web_images' => $product->web_images,
+            'created_at' => $product->created_at,
+            'updated_at' => $product->updated_at,
+            'images' => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
+            'tags' => TagResource::collection($product->tags)->toArray($request),
         ];
     }
-
-
 }

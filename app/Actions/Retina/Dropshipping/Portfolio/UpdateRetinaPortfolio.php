@@ -13,10 +13,10 @@ use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
-use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
-use Lorisleiva\Actions\ActionRequest;
+use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Facades\Log;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaPortfolio extends RetinaAction
 {
@@ -34,22 +34,23 @@ class UpdateRetinaPortfolio extends RetinaAction
             $file_paths = $downloadPortfolioCustomerSalesChannels->pluck('file_path')->filter()->values()->toArray();
             $ids = $downloadPortfolioCustomerSalesChannels->pluck('id')->toArray();
 
-            if (!empty($file_paths)) {
+            if (! empty($file_paths)) {
                 try {
                     RemoveFilesFromCatalogueIrisR2::run($file_paths);
                 } catch (\Exception $e) {
-                    Log::error('Failed to remove files from R2: ' . $e->getMessage());
+                    Log::error('Failed to remove files from R2: '.$e->getMessage());
                 }
             }
 
-            if (!empty($ids)) {
+            if (! empty($ids)) {
                 try {
                     DownloadPortfolioCustomerSalesChannel::whereIn('id', $ids)->delete();
                 } catch (\Exception $e) {
-                    Log::error('Failed to delete download records: ' . $e->getMessage());
+                    Log::error('Failed to delete download records: '.$e->getMessage());
                 }
             }
         }
+
         return UpdatePortfolio::make()->action($portfolio, $modelData);
     }
 

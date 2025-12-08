@@ -17,19 +17,18 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $updated_at
  * @property string $name
  * @property string $state
- * @property integer $image_id
- *
+ * @property int $image_id
  */
 class StockShowcaseResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'slug'       => $this->slug,
-            'image_id'   => $this->image_id,
-            'code'       => $this->code,
-            'name'       => $this->name,
-            'state'      => $this->state,
+            'slug' => $this->slug,
+            'image_id' => $this->image_id,
+            'code' => $this->code,
+            'name' => $this->name,
+            'state' => $this->state,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

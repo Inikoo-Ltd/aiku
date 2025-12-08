@@ -18,10 +18,10 @@ trait WithDashboardIntervalOption
         return collect(DateIntervalEnum::casesWithoutCustom())
             ->map(function ($interval) {
                 return [
-                    'label'               => $interval->labels()[$interval->value],
-                    'labelShort'          => $interval->shortLabels()[$interval->value],
-                    'value'               => $interval->value,
-                    'route_interval_args' => DashboardIntervalFilters::run($interval)
+                    'label' => $interval->labels()[$interval->value],
+                    'labelShort' => $interval->shortLabels()[$interval->value],
+                    'value' => $interval->value,
+                    'route_interval_args' => DashboardIntervalFilters::run($interval),
                 ];
             })
             ->toArray();

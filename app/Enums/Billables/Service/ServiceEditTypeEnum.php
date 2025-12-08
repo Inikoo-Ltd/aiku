@@ -15,14 +15,14 @@ enum ServiceEditTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case QUANTITY          = 'quantity';
-    case NET               = 'net';
+    case QUANTITY = 'quantity';
+    case NET = 'net';
 
     public static function labels(): array
     {
         return [
-            'quantity'    => __('Quantity'),
-            'net'        => __('Net'),
+            'quantity' => __('Quantity'),
+            'net' => __('Net'),
         ];
     }
 }

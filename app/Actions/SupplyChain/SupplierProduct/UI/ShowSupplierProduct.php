@@ -26,7 +26,6 @@ class ShowSupplierProduct extends InertiaAction
         return $supplierProduct;
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('supply-chain.edit');
@@ -54,18 +53,17 @@ class ShowSupplierProduct extends InertiaAction
         return Inertia::render(
             'SupplyChain/SupplierProduct',
             [
-                'title'       => __('supplier product'),
+                'title' => __('supplier product'),
                 'breadcrumbs' => $this->getBreadcrumbs($supplierProduct, $request->route()->getName(), $request->route()->originalParameters()),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($supplierProduct, $request),
-                    'next'     => $this->getNext($supplierProduct, $request),
+                    'next' => $this->getNext($supplierProduct, $request),
                 ],
-                'pageHead'    => [
-                    'icon'          =>
-                        [
-                            'icon'  => ['fal', 'box-usd'],
-                            'title' => __('Agent')
-                        ],
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'box-usd'],
+                        'title' => __('Agent'),
+                    ],
                     'title' => $supplierProduct->name,
                     /*
                     'edit'  => $this->canEdit ? [
@@ -76,22 +74,21 @@ class ShowSupplierProduct extends InertiaAction
                     ] : false,
                     */
                 ],
-                'supplier'    => new SupplierProductResource($supplierProduct),
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => SupplierProductTabsEnum::navigation()
+                'supplier' => new SupplierProductResource($supplierProduct),
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => SupplierProductTabsEnum::navigation(),
                 ],
                 SupplierProductTabsEnum::SHOWCASE->value => $this->tab == SupplierProductTabsEnum::SHOWCASE->value ?
                     fn () => GetSupplierProductShowcase::run($supplierProduct)
                     : Inertia::lazy(fn () => GetSupplierProductShowcase::run($supplierProduct)),
                 SupplierProductTabsEnum::HISTORY->value => $this->tab == SupplierProductTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($supplierProduct))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($supplierProduct)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($supplierProduct))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierProductTabsEnum::HISTORY->value));
     }
-
 
     public function jsonResponse(SupplierProduct $supplierProduct): SupplierProductResource
     {
@@ -105,11 +102,11 @@ class ShowSupplierProduct extends InertiaAction
             return [
                 [
 
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Supplier Products')
+                            'label' => __('Supplier Products'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -117,30 +114,29 @@ class ShowSupplierProduct extends InertiaAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
 
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.supply-chain.suppliers.supplier_products.show' =>
-            array_merge(
+            'grp.supply-chain.suppliers.supplier_products.show' => array_merge(
                 IndexSupplierProducts::make()->getBreadcrumbs($routeName, $routeParameters, $supplierProduct->supplier),
                 $headCrumb(
                     $supplierProduct,
                     [
                         'index' => [
-                            'name'       => 'grp.supply-chain.suppliers.supplier_products.index',
-                            'parameters' => []
+                            'name' => 'grp.supply-chain.suppliers.supplier_products.index',
+                            'parameters' => [],
                         ],
                         'model' => [
-                            'name'       => 'grp.supply-chain.suppliers.supplier_products.show',
+                            'name' => 'grp.supply-chain.suppliers.supplier_products.show',
                             'parameters' => [
                                 'supplier' => $supplierProduct->supplier->slug,
-                                'supplierProduct' => $supplierProduct->slug
-                                ]
-                        ]
+                                'supplierProduct' => $supplierProduct->slug,
+                            ],
+                        ],
                     ],
                     $suffix
                 ),
@@ -148,6 +144,7 @@ class ShowSupplierProduct extends InertiaAction
             default => []
         };
     }
+
     public function getPrevious(SupplierProduct $supplierProduct, ActionRequest $request): ?array
     {
         $query = SupplierProduct::where('code', '<', $supplierProduct->code);
@@ -161,7 +158,6 @@ class ShowSupplierProduct extends InertiaAction
         };
 
         $previous = $query->orderBy('code', 'desc')->first();
-
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
@@ -185,7 +181,7 @@ class ShowSupplierProduct extends InertiaAction
 
     private function getNavigation(?SupplierProduct $supplierProduct, string $routeName): ?array
     {
-        if (!$supplierProduct) {
+        if (! $supplierProduct) {
             return null;
         }
 
@@ -193,13 +189,13 @@ class ShowSupplierProduct extends InertiaAction
             'grp.supply-chain.suppliers.supplier_products.show' => [
                 'label' => $supplierProduct->code,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'supplier'        => $supplierProduct->supplier->slug,
-                        'supplierProduct' => $supplierProduct->slug
-                    ]
+                        'supplier' => $supplierProduct->supplier->slug,
+                        'supplierProduct' => $supplierProduct->slug,
+                    ],
 
-                ]
+                ],
             ],
         };
     }

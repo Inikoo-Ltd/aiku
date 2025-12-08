@@ -14,8 +14,8 @@ enum RawMaterialTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case STOCK        = 'stock';
-    case CONSUMABLE   = 'consumable';
+    case STOCK = 'stock';
+    case CONSUMABLE = 'consumable';
     case INTERMEDIATE = 'intermediate';
 
 }

@@ -16,16 +16,15 @@ use Illuminate\Contracts\Support\Arrayable;
     public function __construct(
         public string $key,
         public string $label,
-        public string|null $date
-    ) {
-    }
+        public ?string $date
+    ) {}
 
     public function toArray(): array
     {
         return [
-            'type'  => $this->key,
+            'type' => $this->key,
             'label' => $this->label,
-            'date'  => $this->date,
+            'date' => $this->date,
         ];
     }
 }

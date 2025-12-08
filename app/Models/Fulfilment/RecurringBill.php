@@ -10,14 +10,15 @@ namespace App\Models\Fulfilment;
 
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Accounting\Invoice;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
+use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasRetinaSearch;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilmentCustomer;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,7 +27,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
  * @property int $id
@@ -73,30 +73,32 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property-read TaxCategory $taxCategory
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\RecurringBillTransaction> $transactions
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class RecurringBill extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasUniversalSearch;
+    use HasHistory;
     use HasRetinaSearch;
     use HasSlug;
+    use HasUniversalSearch;
     use InFulfilmentCustomer;
-    use HasHistory;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     protected $casts = [
-        'data'   => 'array',
+        'data' => 'array',
         'status' => RecurringBillStatusEnum::class,
         'start_date' => 'datetime',
-        'end_date'   => 'datetime',
+        'end_date' => 'datetime',
     ];
 
     protected $attributes = [
@@ -150,7 +152,6 @@ class RecurringBill extends Model implements Auditable
     {
         return $this->hasMany(RecurringBillTransaction::class);
     }
-
 
     public function stats(): HasOne
     {

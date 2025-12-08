@@ -18,14 +18,13 @@ class FetchAuroraMailshot extends FetchAurora
 {
     protected function parseModel(): void
     {
-        if (!in_array($this->auroraModelData->{'Email Campaign Type'}, ['Newsletter', 'Marketing', 'AbandonedCart'])) {
+        if (! in_array($this->auroraModelData->{'Email Campaign Type'}, ['Newsletter', 'Marketing', 'AbandonedCart'])) {
             return;
         }
 
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Email Campaign Store Key'});
 
-
-        //enum('InProcess','SetRecipients','ComposingEmail','Ready','Scheduled','Sending','Sent','Cancelled','Stopped')
+        // enum('InProcess','SetRecipients','ComposingEmail','Ready','Scheduled','Sending','Sent','Cancelled','Stopped')
         $state = match ($this->auroraModelData->{'Email Campaign State'}) {
             'InProcess', 'SetRecipients', 'ComposingEmail' => MailshotStateEnum::IN_PROCESS,
             'Ready' => MailshotStateEnum::READY,
@@ -35,7 +34,6 @@ class FetchAuroraMailshot extends FetchAurora
             'Cancelled' => MailshotStateEnum::CANCELLED,
             'Stopped' => MailshotStateEnum::STOPPED,
         };
-
 
         $date = $this->parseDatetime($this->auroraModelData->{'Email Campaign Creation Date'});
         if ($this->auroraModelData->{'Email Campaign State'} == 'ComposingEmail' and $this->parseDatetime($this->auroraModelData->{'Email Campaign Setup Date'})) {
@@ -65,68 +63,59 @@ class FetchAuroraMailshot extends FetchAurora
             $date = $this->parseDatetime($this->auroraModelData->{'Email Campaign Stopped Date'});
         }
 
-
-
-
-
         if ($this->auroraModelData->{'Email Campaign Type'} == 'Newsletter') {
-            $type   = MailshotTypeEnum::NEWSLETTER;
+            $type = MailshotTypeEnum::NEWSLETTER;
             $outbox = $shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->first();
         } elseif ($this->auroraModelData->{'Email Campaign Type'} == 'Marketing') {
-            $type   = MailshotTypeEnum::MARKETING;
+            $type = MailshotTypeEnum::MARKETING;
             $outbox = $shop->outboxes()->where('code', OutboxCodeEnum::MARKETING)->first();
         } elseif ($this->auroraModelData->{'Email Campaign Type'} == 'Invite Full Mailshot') {
-            $type   = MailshotTypeEnum::INVITE;
+            $type = MailshotTypeEnum::INVITE;
             $outbox = $shop->outboxes()->where('code', OutboxCodeEnum::INVITE)->first();
         } elseif ($this->auroraModelData->{'Email Campaign Type'} == 'AbandonedCart') {
             if ($shop->type == ShopTypeEnum::DROPSHIPPING or $shop->type == ShopTypeEnum::FULFILMENT) {
                 return;
             }
-            $type   = MailshotTypeEnum::ABANDONED_CART;
+            $type = MailshotTypeEnum::ABANDONED_CART;
             $outbox = $shop->outboxes()->where('code', OutboxCodeEnum::ABANDONED_CART)->first();
         } else {
             dd($this->auroraModelData->{'Email Campaign Type'});
         }
 
-
-        if (!$outbox) {
+        if (! $outbox) {
             dd($this->auroraModelData);
         }
-
 
         $this->parsedData['outbox'] = $outbox;
 
         $this->parsedData['source_template_id'] = $this->auroraModelData->{'Email Campaign Email Template Key'};
-
 
         $subject = trim($this->auroraModelData->{'Email Template Subject'});
         if ($subject == '') {
             $subject = '?';
         }
 
-
         $this->parsedData['mailshot'] = [
-            'subject'    => $subject,
-            'type'       => $type,
-            'state'      => $state,
-            'source_id'  => $this->organisation->id.':'.$this->auroraModelData->{'Email Campaign Key'},
+            'subject' => $subject,
+            'type' => $type,
+            'state' => $state,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Email Campaign Key'},
             'created_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign Creation Date'}),
-            'date'       => $date,
+            'date' => $date,
 
-            'ready_at'         => $this->parseDatetime($this->auroraModelData->{'Email Campaign Composed Date'}),
-            'scheduled_at'     => $this->parseDatetime($this->auroraModelData->{'Email Campaign Scheduled Date'}),
+            'ready_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign Composed Date'}),
+            'scheduled_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign Scheduled Date'}),
             'start_sending_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign Start Send Date'}),
-            'sent_at'          => $this->parseDatetime($this->auroraModelData->{'Email Campaign End Send Date'}),
-            'stopped_at'       => $this->parseDatetime($this->auroraModelData->{'Email Campaign Stopped Date'}),
+            'sent_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign End Send Date'}),
+            'stopped_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign Stopped Date'}),
 
             'recipients_recipe' => [],
-            'fetched_at'        => now(),
-            'last_fetched_at'   => now(),
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Email Campaign Dimension')

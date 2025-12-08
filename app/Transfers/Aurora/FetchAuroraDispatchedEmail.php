@@ -26,11 +26,11 @@ class FetchAuroraDispatchedEmail extends FetchAurora
      */
     protected function parseModel(): void
     {
-        if (!$this->auroraModelData->{'Email Tracking Recipient Key'}) {
+        if (! $this->auroraModelData->{'Email Tracking Recipient Key'}) {
             return;
         }
 
-        if (!$this->auroraModelData->{'Email Tracking Email'}) {
+        if (! $this->auroraModelData->{'Email Tracking Email'}) {
             return;
         }
 
@@ -47,7 +47,6 @@ class FetchAuroraDispatchedEmail extends FetchAurora
             'Error' => DispatchedEmailStateEnum::ERROR
         };
 
-
         $recipient = match ($this->auroraModelData->{'Email Tracking Recipient'}) {
             'Customer' => $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Recipient Key'}),
             'Prospect' => $this->parseProspect($this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Recipient Key'}),
@@ -56,12 +55,11 @@ class FetchAuroraDispatchedEmail extends FetchAurora
             default => null
         };
 
-        if (!$recipient) {
+        if (! $recipient) {
             return;
         }
 
         $parent = null;
-
 
         if ($recipient instanceof Prospect) {
             $parent = $this->parseProspectMailshot($recipient);
@@ -69,14 +67,14 @@ class FetchAuroraDispatchedEmail extends FetchAurora
             if ($this->auroraModelData->{'Email Tracking Email Mailshot Key'}) {
                 $parent = $this->parseMailshot($this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Email Mailshot Key'});
 
-                if (!$parent) {
+                if (! $parent) {
                     $parent = $this->parseEmailBulkRun($this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Email Mailshot Key'});
                 }
             }
-            if (!$parent and $this->auroraModelData->{'Email Tracking Email Template Type Key'}) {
+            if (! $parent and $this->auroraModelData->{'Email Tracking Email Template Type Key'}) {
                 $parent = $this->parseEmailOngoingRun($this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Email Template Type Key'});
 
-                if (!$parent) {
+                if (! $parent) {
                     return;
                 }
 
@@ -88,49 +86,44 @@ class FetchAuroraDispatchedEmail extends FetchAurora
             }
         }
 
-
-        if (!$parent) {
+        if (! $parent) {
             return;
             //  dd($this->auroraModelData);
         }
 
-
         $this->parsedData['recipient'] = $recipient;
-        $this->parsedData['parent']    = $parent;
-
+        $this->parsedData['parent'] = $parent;
 
         $this->parsedData['dispatchedEmail'] = [
-            'provider'             => DispatchedEmailProviderEnum::SES,
+            'provider' => DispatchedEmailProviderEnum::SES,
             'provider_dispatch_id' => $this->auroraModelData->{'Email Tracking SES Id'},
-            'email_address'        => $this->auroraModelData->{'Email Tracking Email'},
-            'state'                => $state,
-            'fetched_at'           => now(),
-            'last_fetched_at'      => now(),
-            'source_id'            => $this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Key'},
-            'created_at'           => $this->parseDatetime($this->auroraModelData->{'Email Tracking Created Date'}),
-            'sent_at'              => $this->parseDatetime($this->auroraModelData->{'Email Tracking Sent Date'}),
-            'first_read_at'        => $this->parseDatetime($this->auroraModelData->{'Email Tracking First Read Date'}),
-            'last_read_at'         => $this->parseDatetime($this->auroraModelData->{'Email Tracking Last Read Date'}),
-            'first_clicked_at'     => $this->parseDatetime($this->auroraModelData->{'Email Tracking First Clicked Date'}),
-            'last_clicked_at'      => $this->parseDatetime($this->auroraModelData->{'Email Tracking Last Clicked Date'}),
-            'number_reads'         => (int)$this->auroraModelData->{'Email Tracking Number Reads'},
-            'number_clicks'        => (int)$this->auroraModelData->{'Email Tracking Number Clicks'},
+            'email_address' => $this->auroraModelData->{'Email Tracking Email'},
+            'state' => $state,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Key'},
+            'created_at' => $this->parseDatetime($this->auroraModelData->{'Email Tracking Created Date'}),
+            'sent_at' => $this->parseDatetime($this->auroraModelData->{'Email Tracking Sent Date'}),
+            'first_read_at' => $this->parseDatetime($this->auroraModelData->{'Email Tracking First Read Date'}),
+            'last_read_at' => $this->parseDatetime($this->auroraModelData->{'Email Tracking Last Read Date'}),
+            'first_clicked_at' => $this->parseDatetime($this->auroraModelData->{'Email Tracking First Clicked Date'}),
+            'last_clicked_at' => $this->parseDatetime($this->auroraModelData->{'Email Tracking Last Clicked Date'}),
+            'number_reads' => (int) $this->auroraModelData->{'Email Tracking Number Reads'},
+            'number_clicks' => (int) $this->auroraModelData->{'Email Tracking Number Clicks'},
         ];
     }
-
 
     /**
      * @throws \Throwable
      */
-    public function parseProspectMailshot($recipient): Mailshot|null
+    public function parseProspectMailshot($recipient): ?Mailshot
     {
         $mailshot = Mailshot::where('source_alt_id', $this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Published Email Template Key'})->first();
-        if (!$mailshot) {
+        if (! $mailshot) {
             $mailshot = Mailshot::where('source_alt2_id', $this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Email Template Key'})->first();
         }
 
-
-        if (!$mailshot) {
+        if (! $mailshot) {
 
             $sourceAltId = null;
             $sourceAlt2Id = null;
@@ -144,7 +137,7 @@ class FetchAuroraDispatchedEmail extends FetchAurora
                 $sourceAltId = $this->organisation->id.':'.$publishedEmailAuroraData->{'Published Email Template Key'};
             }
 
-            if (!$publishedEmailAuroraData) {
+            if (! $publishedEmailAuroraData) {
                 $emailAuroraData = DB::connection('aurora')
                     ->table('Email Template Dimension')
                     ->where('Email Template Key', $this->auroraModelData->{'Email Tracking Email Template Key'})->first();
@@ -157,23 +150,21 @@ class FetchAuroraDispatchedEmail extends FetchAurora
 
             }
 
-
             $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::INVITE)->first();
 
             $mailshotData = [
-                'subject'           => $subject,
-                'type'              => MailshotTypeEnum::INVITE,
-                'state'             => MailshotStateEnum::SENT,
-                'source_alt_id'     => $sourceAltId,
-                'source_alt2_id'     => $sourceAlt2Id,
+                'subject' => $subject,
+                'type' => MailshotTypeEnum::INVITE,
+                'state' => MailshotStateEnum::SENT,
+                'source_alt_id' => $sourceAltId,
+                'source_alt2_id' => $sourceAlt2Id,
 
-                'created_at'        => $this->parseDatetime($this->auroraModelData->{'Email Tracking Created Date'}),
-                'sent_at'           => $this->parseDatetime($this->auroraModelData->{'Email Tracking Sent Date'}),
+                'created_at' => $this->parseDatetime($this->auroraModelData->{'Email Tracking Created Date'}),
+                'sent_at' => $this->parseDatetime($this->auroraModelData->{'Email Tracking Sent Date'}),
                 'recipients_recipe' => [],
-                'fetched_at'        => now(),
-                'last_fetched_at'   => now(),
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
             ];
-
 
             $mailshot = StoreMailshot::make()->action(
                 outbox: $outbox,
@@ -187,7 +178,7 @@ class FetchAuroraDispatchedEmail extends FetchAurora
         return $mailshot;
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Email Tracking Dimension')

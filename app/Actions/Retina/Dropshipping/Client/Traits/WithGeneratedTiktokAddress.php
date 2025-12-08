@@ -18,27 +18,27 @@ trait WithGeneratedTiktokAddress
         $customer = $address;
         $country = Country::where('code', Arr::get($address, 'region_code'))->first();
 
-        if (!blank($address)) {
+        if (! blank($address)) {
             $address = [
                 'address' => [
-                    'address_line_1'      => Arr::get($address, 'address_line1'),
-                    'address_line_2'      => Arr::get($address, 'address_line2'),
-                    'sorting_code'        => null,
-                    'postal_code'         => Arr::get($address, 'postal_code'),
-                    'dependent_locality'  => null,
-                    'locality'            => Arr::get($address, 'district_info.2.address_name'),
+                    'address_line_1' => Arr::get($address, 'address_line1'),
+                    'address_line_2' => Arr::get($address, 'address_line2'),
+                    'sorting_code' => null,
+                    'postal_code' => Arr::get($address, 'postal_code'),
+                    'dependent_locality' => null,
+                    'locality' => Arr::get($address, 'district_info.2.address_name'),
                     'administrative_area' => Arr::get($address, 'district_info.1.address_name'),
-                    'country_code'        => Arr::get($address, 'region_code'),
-                    'country_id'          => $country->id
-                ]
+                    'country_code' => Arr::get($address, 'region_code'),
+                    'country_id' => $country->id,
+                ],
             ];
         }
 
         return [
-            'contact_name' => $customer['first_name'] . ' ' . Arr::get($customer, 'last_name'),
+            'contact_name' => $customer['first_name'].' '.Arr::get($customer, 'last_name'),
             'email' => $customer['email'],
             'phone' => $customer['phone_number'],
-            ...$address
+            ...$address,
         ];
     }
 }

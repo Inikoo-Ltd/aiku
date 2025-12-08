@@ -12,23 +12,22 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Website\GetWebsiteWorkshopMenu;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
+use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Web\WebBlockTypesResource;
-use Illuminate\Support\Arr;
 
 class ShowMenuWorkshop extends OrgAction
 {
     use WithMenuSubNavigation;
     use WithWebEditAuthorisation;
     use WithWebsiteWorkshop;
-
 
     private Webpage|Website $parent;
 
@@ -39,8 +38,9 @@ class ShowMenuWorkshop extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-        $menuLayout   = Arr::get($website->published_layout, 'menu');
+        $menuLayout = Arr::get($website->published_layout, 'menu');
         $isMenuActive = Arr::get($menuLayout, 'status');
+
         return Inertia::render(
             'Org/Web/Workshop/Menu/MenuWorkshop',
             [
@@ -48,52 +48,51 @@ class ShowMenuWorkshop extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("Website Menu's Workshop"),
-                'pageHead'    => [
+                'title' => __("Website Menu's Workshop"),
+                'pageHead' => [
                     'subNavigation' => $this->getMenuSubNavigation($website),
-                    'title'         => __("Menu's Workshop"),
-                    'model'         => $website->name,
-                    'icon'          => [
+                    'title' => __("Menu's Workshop"),
+                    'model' => $website->name,
+                    'icon' => [
                         'tooltip' => __('Header'),
-                        'icon'    => 'fal fa-browser'
+                        'icon' => 'fal fa-browser',
                     ],
-                    'meta'          => [
+                    'meta' => [
                         [
-                            'key'      => 'website',
-                            'label'    => $website->domain,
+                            'key' => 'website',
+                            'label' => $website->domain,
                             'leftIcon' => [
-                                'icon' => 'fal fa-globe'
-                            ]
-                        ]
+                                'icon' => 'fal fa-globe',
+                            ],
+                        ],
                     ],
-                    'actions'       => $this->getActions($website, 'grp.models.website.publish.menu')
+                    'actions' => $this->getActions($website, 'grp.models.website.publish.menu'),
 
                 ],
 
                 'uploadImageRoute' => [
-                    'name'       => 'grp.models.website.menu.images.store',
+                    'name' => 'grp.models.website.menu.images.store',
                     'parameters' => [
-                        'website' => $website->id
-                    ]
+                        'website' => $website->id,
+                    ],
                 ],
 
                 'autosaveRoute' => [
-                    'name'       => 'grp.models.website.autosave.menu',
+                    'name' => 'grp.models.website.autosave.menu',
                     'parameters' => [
-                        'website' => $website->id
-                    ]
+                        'website' => $website->id,
+                    ],
                 ],
-                'shop_type'     => $website->shop->type,
-                'status'        => $isMenuActive ?? true,
-                'domain'        => $website->domain,
-                'data'          => GetWebsiteWorkshopMenu::run($website),
+                'shop_type' => $website->shop->type,
+                'status' => $isMenuActive ?? true,
+                'domain' => $website->domain,
+                'data' => GetWebsiteWorkshopMenu::run($website),
                 'webBlockTypes' => WebBlockTypesResource::collection(
                     $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'website')->where('data->component', 'menu')->get()
-                )
+                ),
             ]
         );
     }
-
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
@@ -117,11 +116,11 @@ class ShowMenuWorkshop extends OrgAction
         $headCrumb = function (array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Workshop')
+                            'label' => __('Workshop'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -129,11 +128,10 @@ class ShowMenuWorkshop extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
-
 
         return match ($routeName) {
             'grp.org.shops.show.web.websites.workshop.menu' => array_merge(
@@ -144,13 +142,13 @@ class ShowMenuWorkshop extends OrgAction
                 $headCrumb(
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.web.websites.workshop',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.shops.show.web.websites.workshop',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.web.websites.workshop.menu',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.shops.show.web.websites.workshop.menu',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -158,5 +156,4 @@ class ShowMenuWorkshop extends OrgAction
             default => []
         };
     }
-
 }

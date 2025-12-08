@@ -28,7 +28,7 @@ class FetchAuroraPurchaseOrders extends FetchAuroraAction
     {
         if ($purchaseOrderData = $organisationSource->fetchPurchaseOrder($organisationSourceId)) {
             if (empty($purchaseOrderData['org_parent'])) {
-                print "No parent found for purchase order with source id: ".$purchaseOrderData['purchase_order']['source_id']."\n";
+                echo 'No parent found for purchase order with source id: '.$purchaseOrderData['purchase_order']['source_id']."\n";
 
                 return null;
             }
@@ -84,10 +84,8 @@ class FetchAuroraPurchaseOrders extends FetchAuroraAction
             $this->processFetchAttachments($purchaseOrder, 'Purchase Order', $purchaseOrderData['purchase_order']['source_id']);
         }
 
-
         return null;
     }
-
 
     private function fetchTransactions($organisationSource, PurchaseOrder $purchaseOrder): void
     {
@@ -104,14 +102,13 @@ class FetchAuroraPurchaseOrders extends FetchAuroraAction
                 ->get() as $auroraData
         ) {
             $transactionsToDelete = array_diff($transactionsToDelete, [
-                $purchaseOrder->organisation_id.':'.$auroraData->{'Purchase Order Transaction Fact Key'}
+                $purchaseOrder->organisation_id.':'.$auroraData->{'Purchase Order Transaction Fact Key'},
             ]);
 
             FetchAuroraPurchaseOrderTransactions::run($organisationSource, $auroraData->{'Purchase Order Transaction Fact Key'}, $purchaseOrder);
         }
         $purchaseOrder->purchaseOrderTransactions()->whereIn('id', array_keys($transactionsToDelete))->delete();
     }
-
 
     public function getModelsQuery(): Builder
     {

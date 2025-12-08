@@ -19,7 +19,7 @@ trait WithFulfilmentShopSupervisorAuthorisation
         }
 
         return $request->user()->authTo([
-            "supervisor-fulfilment-shop.".$this->fulfilment->id,
+            'supervisor-fulfilment-shop.'.$this->fulfilment->id,
         ]);
     }
 }

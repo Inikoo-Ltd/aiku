@@ -29,6 +29,4 @@ class GroupHydrateMasterFamiliesWithNoDepartment implements ShouldBeUnique
 
         $group->catalogueStats()->update($stats);
     }
-
-
 }

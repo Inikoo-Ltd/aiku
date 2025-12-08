@@ -30,7 +30,6 @@ class DownloadPortfolioZipImages extends RetinaAction
         return $response;
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         $customerSalesChannel = $request->route()->customerSalesChannel;
@@ -44,7 +43,7 @@ class DownloadPortfolioZipImages extends RetinaAction
     public function rules(): array
     {
         return [
-            'ids' => ['nullable', 'array']
+            'ids' => ['nullable', 'array'],
         ];
     }
 
@@ -58,6 +57,7 @@ class DownloadPortfolioZipImages extends RetinaAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): StreamedResponse
     {
         $this->initialisation($request);
+
         return $this->handle($customerSalesChannel, $this->validatedData);
     }
 }

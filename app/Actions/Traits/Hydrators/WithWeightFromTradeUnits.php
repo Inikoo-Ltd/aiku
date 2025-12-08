@@ -16,21 +16,20 @@ trait WithWeightFromTradeUnits
     public function getWeightFromTradeUnits(Stock|Product $model): ?int
     {
         $changed = false;
-        $weight  = 0;
+        $weight = 0;
 
         foreach ($model->tradeUnits as $tradeUnit) {
             if (is_numeric($tradeUnit->gross_weight) && is_numeric($tradeUnit->pivot->quantity)) {
                 $changed = true;
-                $weight  += $tradeUnit->gross_weight * $tradeUnit->pivot->quantity;
+                $weight += $tradeUnit->gross_weight * $tradeUnit->pivot->quantity;
             }
         }
 
-        if (!$changed) {
+        if (! $changed) {
             $weight = null;
         } else {
-            $weight = (int)ceil($weight);
+            $weight = (int) ceil($weight);
         }
-
 
         return $weight;
     }

@@ -29,22 +29,19 @@ trait WithAuroraSysAdminParsers
             ->whereJsonContains('sources->users', $sourceId)
             ->first();
 
-
         if ($user) {
             return $user;
         }
 
-
         $sourceData = explode(':', $sourceId);
         $user = FetchAuroraUsers::run($this->organisationSource, $sourceData[1]);
 
-        if (!$user) {
+        if (! $user) {
             $user = FetchAuroraDeletedUsers::run($this->organisationSource, $sourceData[1]);
         }
 
         return $user;
     }
-
 
     protected function parseUserFromHistory(): User|WebUser|null
     {
@@ -57,7 +54,7 @@ trait WithAuroraSysAdminParsers
 
             if ($employee) {
                 $user = $employee->getUser();
-                if (!$user) {
+                if (! $user) {
                     $userHasModel = DB::table('user_has_models')
                         ->where('model_id', $employee->id)
                         ->where('model_type', 'Employee')
@@ -68,7 +65,7 @@ trait WithAuroraSysAdminParsers
                 }
             }
 
-            if (!$user) {
+            if (! $user) {
                 $guest = Guest::withTrashed()
                     ->where('group_id', $this->organisation->group_id)
                     ->where('source_id', $this->organisation->id.':'.$this->auroraModelData->{'Subject Key'})
@@ -84,23 +81,21 @@ trait WithAuroraSysAdminParsers
                 }
             }
 
-            if (!$user) {
+            if (! $user) {
                 $user = User::withTrashed()
                     ->where('group_id', $this->organisation->group_id)
                     ->whereJsonContains('sources->parents', $this->organisation->id.':'.$this->auroraModelData->{'Subject Key'})
                     ->first();
             }
 
-            if (!$user) {
+            if (! $user) {
                 $user = $this->parseUser($this->organisation->id.':'.$this->auroraModelData->{'User Key'});
             }
 
-
-            if (!$user) {
+            if (! $user) {
                 dd($this->auroraModelData);
             }
         }
-
 
         if ($this->auroraModelData->{'Subject'} == 'Customer' and $this->auroraModelData->{'Subject Key'} > 0) {
             foreach (
@@ -118,10 +113,8 @@ trait WithAuroraSysAdminParsers
             return $user;
         }
 
-
         return $this->parseUser($this->organisation->id.':'.$this->auroraModelData->{'User Key'});
     }
-
 
     protected function parseUserPhoto(): array
     {
@@ -134,5 +127,4 @@ trait WithAuroraSysAdminParsers
 
         return $profileImages->toArray();
     }
-
 }

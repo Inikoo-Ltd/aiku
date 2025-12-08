@@ -23,25 +23,23 @@ enum RefundInProcessTabsEnum: string
 
     case ITEMS = 'items';
 
-
     public function blueprint(): array
     {
         return match ($this) {
             RefundInProcessTabsEnum::ITEMS => [
                 'title' => __('Transactions to be refunded (only)'),
-                'icon'  => 'fal fa-star-half-alt',
+                'icon' => 'fal fa-star-half-alt',
             ],
 
             RefundInProcessTabsEnum::ITEMS_IN_PROCESS => [
                 'title' => __('All Original Invoice transactions'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
-
 
             RefundInProcessTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
         };

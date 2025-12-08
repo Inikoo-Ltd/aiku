@@ -16,6 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class AgentResource extends JsonResource
 {
     use HasSelfCall;
+
     public static $wrap = null;
 
     public function toArray($request): array
@@ -24,14 +25,14 @@ class AgentResource extends JsonResource
         $agent = $this;
 
         return [
-            'code'     => $agent->code,
-            'name'     => $agent->name,
-            'slug'     => $agent->slug,
+            'code' => $agent->code,
+            'name' => $agent->name,
+            'slug' => $agent->slug,
             'location' => $agent->organisation->location,
-            'email'    => $agent->organisation->email,
-            'phone'    => $agent->organisation->phone,
-            'address'  => AddressResource::make($agent->organisation->address),
-            'photo'    => $agent->organisation->imageSources()
+            'email' => $agent->organisation->email,
+            'phone' => $agent->organisation->phone,
+            'address' => AddressResource::make($agent->organisation->address),
+            'photo' => $agent->organisation->imageSources(),
         ];
     }
 }

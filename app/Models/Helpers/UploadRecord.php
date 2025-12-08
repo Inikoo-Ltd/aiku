@@ -27,24 +27,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $last_fetched_at
  * @property string|null $source_id
  * @property-read \App\Models\Helpers\Upload $excel
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UploadRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UploadRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UploadRecord query()
+ *
  * @mixin \Eloquent
  */
-
 class UploadRecord extends Model
 {
     protected $casts = [
-        'values'        => 'array',
-        'errors'        => 'array',
-
+        'values' => 'array',
+        'errors' => 'array',
 
     ];
 
     protected $attributes = [
-        'values'     => '{}',
-        'errors'     => '{}',
+        'values' => '{}',
+        'errors' => '{}',
     ];
 
     protected $guarded = [];

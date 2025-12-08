@@ -2,9 +2,9 @@
 
 namespace App\Actions\Production\ManufactureTask;
 
+use App\Actions\OrgAction;
 use App\Actions\Production\ManufactureTask\Hydrators\ManufactureTaskHydrateUniversalSearch;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateManufactureTasks;
-use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateManufactureTasks;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateManufactureTasks;
 use App\Actions\Traits\WithActionUpdate;
@@ -32,6 +32,7 @@ class UpdateManufactureTask extends OrgAction
             ProductionHydrateManufactureTasks::dispatch($manufactureTask->production);
         }
         ManufactureTaskHydrateUniversalSearch::dispatch($manufactureTask);
+
         return $manufactureTask;
     }
 
@@ -47,7 +48,7 @@ class UpdateManufactureTask extends OrgAction
     public function rules(): array
     {
         return [
-            'code'        => [
+            'code' => [
                 'sometimes',
                 'alpha_dash',
                 'max:64',
@@ -56,27 +57,27 @@ class UpdateManufactureTask extends OrgAction
                     extraConditions: [
                         [
                             'column' => 'organisation_id',
-                            'value'  => $this->organisation->id,
+                            'value' => $this->organisation->id,
                         ],
                         [
-                            'column'    => 'id',
-                            'value'     => $this->manufactureTask->id,
-                            'operation' => '!='
-                        ]
+                            'column' => 'id',
+                            'value' => $this->manufactureTask->id,
+                            'operation' => '!=',
+                        ],
 
                     ]
                 ),
             ],
-            'name'                              => ['sometimes', 'string', 'max:255'],
-            'task_materials_cost'               => ['sometimes', 'numeric', 'min:0'],
-            'task_energy_cost'                  => ['sometimes', 'numeric', 'min:0'],
-            'task_other_cost'                   => ['sometimes', 'numeric', 'min:0'],
-            'task_work_cost'                    => ['sometimes', 'numeric', 'min:0'],
-            'task_lower_target'                 => ['sometimes', 'numeric', 'min:0'],
-            'task_upper_target'                 => ['sometimes', 'numeric', 'min:0'],
-            'operative_reward_terms'            => ['sometimes', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
-            'operative_reward_allowance_type'   => ['sometimes', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
-            'operative_reward_amount'           => ['sometimes', 'numeric', 'min:0'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'task_materials_cost' => ['sometimes', 'numeric', 'min:0'],
+            'task_energy_cost' => ['sometimes', 'numeric', 'min:0'],
+            'task_other_cost' => ['sometimes', 'numeric', 'min:0'],
+            'task_work_cost' => ['sometimes', 'numeric', 'min:0'],
+            'task_lower_target' => ['sometimes', 'numeric', 'min:0'],
+            'task_upper_target' => ['sometimes', 'numeric', 'min:0'],
+            'operative_reward_terms' => ['sometimes', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
+            'operative_reward_allowance_type' => ['sometimes', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
+            'operative_reward_amount' => ['sometimes', 'numeric', 'min:0'],
         ];
     }
 
@@ -93,7 +94,7 @@ class UpdateManufactureTask extends OrgAction
 
     public function action(ManufactureTask $manufactureTask, $modelData): ManufactureTask
     {
-        $this->asAction        = true;
+        $this->asAction = true;
         $this->manufactureTask = $manufactureTask;
         $this->initialisation($manufactureTask->organisation, $modelData);
 

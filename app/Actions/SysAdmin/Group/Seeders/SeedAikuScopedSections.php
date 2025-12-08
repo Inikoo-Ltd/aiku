@@ -63,7 +63,6 @@ class SeedAikuScopedSections extends GrpAction
         }
     }
 
-
     public function seedAikuScopedSection(Group|Shop|Organisation|Fulfilment|Production|Warehouse|Agent|CustomerClient $model): void
     {
         foreach (AikuSectionEnum::cases() as $case) {
@@ -82,8 +81,8 @@ class SeedAikuScopedSections extends GrpAction
             }
             if (in_array($scope, $case->scopes())) {
                 $aikuSection = AikuSection::where('code', $case->value)->first();
-                $code        = $aikuSection->slug;
-                $name        = $case->labels()[$case->value].' '.$model->code;
+                $code = $aikuSection->slug;
+                $name = $case->labels()[$case->value].' '.$model->code;
 
                 $aikuScopedSection = AikuScopedSection::where('code', $code)
                     ->where('model_type', class_basename($model))
@@ -92,12 +91,12 @@ class SeedAikuScopedSections extends GrpAction
 
                 if ($aikuScopedSection) {
                     UpdateAikuScopedSection::make()->action($aikuScopedSection, [
-                        'name' => $name
+                        'name' => $name,
                     ]);
                 } else {
                     StoreAikuScopedSection::make()->action($model, $aikuSection, [
                         'code' => $code,
-                        'name' => $name
+                        'name' => $name,
                     ]);
                 }
             }
@@ -138,7 +137,6 @@ class SeedAikuScopedSections extends GrpAction
     {
         $this->seedAikuScopedSection($agent);
     }
-
 
     public string $commandSignature = 'group:seed_aiku_scoped_sections';
 

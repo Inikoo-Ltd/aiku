@@ -47,26 +47,28 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\Inventory\OrgStock $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Inventory\Warehouse $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStock newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStock newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStock query()
+ *
  * @mixin \Eloquent
  */
 class LocationOrgStock extends Model implements Auditable
 {
-    use InWarehouse;
     use HasHistory;
+    use InWarehouse;
 
     public $incrementing = true;
 
     protected $casts = [
-        'data'     => 'array',
+        'data' => 'array',
         'settings' => 'array',
-        'type'     => LocationStockTypeEnum::class
+        'type' => LocationStockTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 

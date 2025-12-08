@@ -21,7 +21,6 @@ class OrganisationHydrateWebsites implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public function getJobUniqueId(Organisation $organisation): string
     {
         return $organisation->id;
@@ -58,7 +57,6 @@ class OrganisationHydrateWebsites implements ShouldBeUnique
                 }
             )
         );
-
 
         $organisation->webStats()->update($stats);
     }

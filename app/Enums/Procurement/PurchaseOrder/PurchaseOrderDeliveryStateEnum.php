@@ -20,7 +20,7 @@ enum PurchaseOrderDeliveryStateEnum: string
     case DISPATCHED = 'dispatched';
     case RECEIVED = 'received';
     case CHECKED = 'checked';
-    case PLACED      = 'placed';
-    case CANCELLED      = 'cancelled';
-    case NOT_RECEIVED      = 'not_received';
+    case PLACED = 'placed';
+    case CANCELLED = 'cancelled';
+    case NOT_RECEIVED = 'not_received';
 }

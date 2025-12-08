@@ -14,41 +14,41 @@ enum PaymentStatusEnum: string
 {
     use EnumHelperTrait;
     case IN_PROCESS = 'in_process';
-    case SUCCESS    = 'success';
-    case FAIL       = 'fail';
+    case SUCCESS = 'success';
+    case FAIL = 'fail';
 
     public static function stateIcon(): array
     {
         return [
-            'in_process'   => [
+            'in_process' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',
-                'color'   => 'lime',
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',
+                'color' => 'lime',
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'success'    => [
+            'success' => [
                 'tooltip' => __('Success'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-indigo-400',
-                'color'   => 'indigo',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-indigo-400',
+                'color' => 'indigo',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'fail'    => [
+            'fail' => [
                 'tooltip' => __('Fail'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-emerald-500',
-                'color'   => 'emerald',
-                'app'     => [
+                'icon' => 'fal fa-times',
+                'class' => 'text-emerald-500',
+                'color' => 'emerald',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
         ];
     }

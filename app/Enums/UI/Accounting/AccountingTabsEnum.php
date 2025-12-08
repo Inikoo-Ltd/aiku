@@ -16,33 +16,31 @@ enum AccountingTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
-    case ITEMS                 = 'items';
-    case PAYMENTS              = 'payments';
+    case ITEMS = 'items';
+    case PAYMENTS = 'payments';
     case PROPERTIES_OPERATIONS = 'properties_operations';
 
     case CHANGELOG = 'changelog';
-
 
     public function blueprint(): array
     {
         return match ($this) {
             AccountingTabsEnum::ITEMS => [
                 'title' => __('Items'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
             AccountingTabsEnum::PAYMENTS => [
                 'title' => __('Payments'),
-                'icon'  => 'fal fa-dollar-sign',
+                'icon' => 'fal fa-dollar-sign',
             ],
             AccountingTabsEnum::PROPERTIES_OPERATIONS => [
                 'title' => __('Properties/operations'),
-                'icon'  => 'fal fa-database',
+                'icon' => 'fal fa-database',
             ],
             AccountingTabsEnum::CHANGELOG => [
                 'title' => __('Changelog'),
-                'icon'  => 'fal fa-road',
-                'type'  => 'icon-only',
+                'icon' => 'fal fa-road',
+                'type' => 'icon-only',
             ],
         };
     }

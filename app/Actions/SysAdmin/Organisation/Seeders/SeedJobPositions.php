@@ -27,8 +27,7 @@ class SeedJobPositions extends Seeder
 
     public function handle(Organisation $organisation): void
     {
-        $jobPositions = collect(config("blueprint.job_positions.positions"));
-
+        $jobPositions = collect(config('blueprint.job_positions.positions'));
 
         foreach ($jobPositions as $jobPositionData) {
             if (in_array($organisation->type, $jobPositionData['organisation_types'])) {
@@ -49,7 +48,6 @@ class SeedJobPositions extends Seeder
         }
     }
 
-
     private function processJobPosition(Organisation $organisation, array $jobPositionData): void
     {
         /** @var JobPosition $jobPosition */
@@ -61,44 +59,43 @@ class SeedJobPositions extends Seeder
                     'name' => $jobPositionData['name'],
                     'department' => Arr::get($jobPositionData, 'department'),
                     'team' => Arr::get($jobPositionData, 'team'),
-                    'scope' => Arr::get($jobPositionData, 'scope')
+                    'scope' => Arr::get($jobPositionData, 'scope'),
                 ]
             );
         } else {
             /** @var JobPositionCategory $jobPositionCategory */
             $jobPositionCategory = $organisation->group->jobPositionCategories()->where('code', $jobPositionData['code'])->first();
-            $jobPosition        = StoreJobPosition::make()->action(
+            $jobPosition = StoreJobPosition::make()->action(
                 $organisation,
                 [
                     'group_job_position_id' => $jobPositionCategory->id,
-                    'code'                  => $jobPositionData['code'],
-                    'name'                  => $jobPositionData['name'],
-                    'department'            => Arr::get($jobPositionData, 'department'),
-                    'team'                  => Arr::get($jobPositionData, 'team'),
-                    'scope'                 => Arr::get($jobPositionData, 'scope')
+                    'code' => $jobPositionData['code'],
+                    'name' => $jobPositionData['name'],
+                    'department' => Arr::get($jobPositionData, 'department'),
+                    'team' => Arr::get($jobPositionData, 'team'),
+                    'scope' => Arr::get($jobPositionData, 'scope'),
                 ],
             );
         }
-
 
         $roles = [];
         foreach ($jobPositionData['roles'] as $case) {
             switch ($case->scope()) {
                 case 'Group':
-                    if ($role = (new Role())->where('name', $case->value)->first()) {
+                    if ($role = (new Role)->where('name', $case->value)->first()) {
                         $roles[] = $role->id;
                     }
                     break;
                 case 'Organisation':
                     $roleName = RolesEnum::getRoleName($case->value, $organisation);
-                    if ($role = (new Role())->where('name', $roleName)->first()) {
+                    if ($role = (new Role)->where('name', $roleName)->first()) {
                         $roles[] = $role->id;
                     }
                     break;
                 case 'Warehouse':
                     foreach ($organisation->warehouses as $warehouse) {
                         $roleName = RolesEnum::getRoleName($case->value, $warehouse);
-                        if ($role = (new Role())->where('name', $roleName)->first()) {
+                        if ($role = (new Role)->where('name', $roleName)->first()) {
                             $roles[] = $role->id;
                         }
                     }
@@ -107,8 +104,7 @@ class SeedJobPositions extends Seeder
                     foreach ($organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get() as $shop) {
                         $roleName = RolesEnum::getRoleName($case->value, $shop);
 
-
-                        if ($role = (new Role())->where('name', $roleName)->first()) {
+                        if ($role = (new Role)->where('name', $roleName)->first()) {
                             $roles[] = $role->id;
                         }
                     }
@@ -116,7 +112,7 @@ class SeedJobPositions extends Seeder
                 case 'Fulfilment':
                     foreach ($organisation->shops()->where('type', ShopTypeEnum::FULFILMENT)->get() as $shop) {
                         $roleName = RolesEnum::getRoleName($case->value, $shop->fulfilment);
-                        if ($role = (new Role())->where('name', $roleName)->first()) {
+                        if ($role = (new Role)->where('name', $roleName)->first()) {
                             $roles[] = $role->id;
                         }
                     }
@@ -129,15 +125,14 @@ class SeedJobPositions extends Seeder
         $jobPosition->roles()->sync($roles);
     }
 
-
     public string $commandSignature = 'org:seed-job-positions {organisation?}';
 
     public function asCommand(Command $command): int
     {
         if ($command->argument('organisation')) {
             $organisation = Organisation::where('slug', $command->argument('organisation'))->first();
-            if (!$organisation) {
-                $command->error("Organisation not found");
+            if (! $organisation) {
+                $command->error('Organisation not found');
 
                 return 1;
             }
@@ -150,7 +145,6 @@ class SeedJobPositions extends Seeder
                 $this->handle($organisation);
             }
         }
-
 
         return 0;
     }

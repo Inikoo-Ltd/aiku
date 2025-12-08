@@ -58,7 +58,7 @@ class ImportTransactionInOrder extends OrgAction
     public function rules(): array
     {
         return [
-            'file'             => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
+            'file' => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
         ];
     }
 
@@ -77,7 +77,6 @@ class ImportTransactionInOrder extends OrgAction
     {
         $this->parent = $order->shop;
         $this->initialisationFromShop($order->shop, $modelData);
-
 
         $file = Arr::get($modelData, 'file');
         Storage::disk('local')->put($this->tmpPath, $file);

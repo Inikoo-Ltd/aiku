@@ -32,7 +32,7 @@ trait HasCommsIntervals
 
         if (in_array($case, [
             OutboxTypeEnum::CUSTOMER_NOTIFICATION,
-            OutboxTypeEnum::USER_NOTIFICATION
+            OutboxTypeEnum::USER_NOTIFICATION,
         ])) {
             unset($fields[$outboxType.'_subscribed']);
             unset($fields[$outboxType.'_unsubscribed']);

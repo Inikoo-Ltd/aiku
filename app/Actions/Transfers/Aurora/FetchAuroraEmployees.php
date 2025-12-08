@@ -37,7 +37,6 @@ class FetchAuroraEmployees extends FetchAuroraAction
     {
         setPermissionsTeamId($organisationSource->getOrganisation()->group_id);
 
-
         if ($employeeData = $organisationSource->fetchEmployee($organisationSourceId)) {
             $sourceId = $employeeData['employee']['source_id'];
 
@@ -76,7 +75,6 @@ class FetchAuroraEmployees extends FetchAuroraAction
                         Arr::except($employeeData['employee'], ['fetched_at', 'last_fetched_at', 'source_id', 'positions', 'user_model_status'])
                     );
 
-
                     $this->recordNew($organisationSource);
 
                     $sourceData = explode(':', $employee->source_id);
@@ -92,25 +90,23 @@ class FetchAuroraEmployees extends FetchAuroraAction
 
             UpdateEmployeeWorkingHours::run($employee, $employeeData['working_hours']);
 
-
             if (Arr::has($employeeData, 'user.source_id')) {
                 $updateUser = true;
-                $user       = $employee->getUser();
-                if (!$user) {
+                $user = $employee->getUser();
+                if (! $user) {
                     $user = $employee->group->users()->where('username', $employeeData['user']['username'])->first();
                     if ($user) {
                         $updateUser = false;
-                        $user       = AttachEmployeeToUser::make()->action(
+                        $user = AttachEmployeeToUser::make()->action(
                             $user,
                             $employee,
                             [
-                                'status'    => $employeeData['user']['user_model_status'],
+                                'status' => $employeeData['user']['user_model_status'],
                                 'source_id' => $employeeData['user']['source_id'],
                             ]
                         );
                     }
                 }
-
 
                 if ($user) {
                     if ($updateUser) {
@@ -118,8 +114,8 @@ class FetchAuroraEmployees extends FetchAuroraAction
                             UpdateUser::make()->action(
                                 $employee->getUser(),
                                 [
-                                    'legacy_password' => (string)Arr::get($employeeData, 'user.legacy_password'),
-                                    'status'          => Arr::get($employeeData, 'user.status'),
+                                    'legacy_password' => (string) Arr::get($employeeData, 'user.legacy_password'),
+                                    'status' => Arr::get($employeeData, 'user.status'),
                                 ],
                                 strict: false
                             );
@@ -136,11 +132,11 @@ class FetchAuroraEmployees extends FetchAuroraAction
                             array_merge(
                                 $employeeData['user'],
                                 [
-                                    'password'       => wordwrap(Str::random(), 4, '-', true),
-                                    'contact_name'   => $employee->contact_name,
-                                    'email'          => $employee->work_email,
+                                    'password' => wordwrap(Str::random(), 4, '-', true),
+                                    'contact_name' => $employee->contact_name,
+                                    'email' => $employee->work_email,
                                     'reset_password' => true,
-                                    'auth_type'      => UserAuthTypeEnum::AURORA,
+                                    'auth_type' => UserAuthTypeEnum::AURORA,
                                 ]
                             ),
                             strict: false
@@ -169,7 +165,6 @@ class FetchAuroraEmployees extends FetchAuroraAction
             //                }
             //            }
 
-
             $this->processFetchAttachments($employee, 'Staff', $employeeData['employee']['source_id']);
 
             return $employee;
@@ -177,7 +172,6 @@ class FetchAuroraEmployees extends FetchAuroraAction
 
         return null;
     }
-
 
     public function getModelsQuery(): Builder
     {

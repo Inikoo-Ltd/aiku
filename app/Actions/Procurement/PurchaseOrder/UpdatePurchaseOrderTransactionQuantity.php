@@ -34,12 +34,14 @@ class UpdatePurchaseOrderTransactionQuantity extends OrgAction
     {
         $this->asAction = true;
         $this->initialisation($purchaseOrderTransaction->organisation, $modelData);
+
         return $this->handle($purchaseOrderTransaction, $modelData);
     }
 
     public function asController(PurchaseOrderTransaction $purchaseOrderTransaction, ActionRequest $request): PurchaseOrderTransaction
     {
         $this->initialisation($purchaseOrderTransaction->organisation, $request);
+
         return $this->handle($purchaseOrderTransaction, $this->validatedData);
     }
 

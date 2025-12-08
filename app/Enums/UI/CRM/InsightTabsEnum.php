@@ -16,21 +16,19 @@ enum InsightTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
-    case DATA         = 'data';
+    case DATA = 'data';
     case POOL_OPTIONS = 'pool_options';
-
 
     public function blueprint(): array
     {
         return match ($this) {
             InsightTabsEnum::DATA => [
                 'title' => __('Data'),
-                'icon'  => 'fal fa-database',
+                'icon' => 'fal fa-database',
             ],
             InsightTabsEnum::POOL_OPTIONS => [
                 'title' => __('Pool options'),
-                'icon'  => 'fal fa-dollar-sign',
+                'icon' => 'fal fa-dollar-sign',
             ],
         };
     }

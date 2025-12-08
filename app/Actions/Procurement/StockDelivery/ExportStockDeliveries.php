@@ -28,7 +28,7 @@ class ExportStockDeliveries
     {
         $type = $modelData['type'];
 
-        return $this->export(new StockDeliveriesExport(), 'stock-deliveries', $type);
+        return $this->export(new StockDeliveriesExport, 'stock-deliveries', $type);
     }
 
     /**

@@ -14,9 +14,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use IsProcurementOrder;
+return new class extends Migration
+{
     use HasProcurementStats;
+    use IsProcurementOrder;
+
     public function up(): void
     {
         Schema::create('agent_supplier_purchase_orders', function (Blueprint $table) {
@@ -54,7 +56,6 @@ return new class () extends Migration {
             $table->string('source_id')->nullable()->unique();
         });
     }
-
 
     public function down(): void
     {

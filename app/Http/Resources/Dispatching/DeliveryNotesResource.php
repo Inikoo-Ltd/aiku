@@ -33,7 +33,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $effective_weight
  * @property mixed $picking_sessions_count
  * @property mixed $picking_session_ids
- *
  */
 class DeliveryNotesResource extends JsonResource
 {
@@ -43,40 +42,40 @@ class DeliveryNotesResource extends JsonResource
     {
 
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'reference'              => $this->reference,
-            'date'                   => $this->date,
-            'state'                  => $this->state,
-            'state_icon'             => $this->state->stateIcon()[$this->state->value],
-            'type'                   => $this->type,
-            'weight'                 => $this->weight / 1000,
-            'estimated_weight'       => $this->estimated_weight / 1000,
-            'effective_weight'       => $this->effective_weight / 1000,
-            'created_at'             => $this->created_at,
-            'updated_at'             => $this->updated_at,
-            'shop_slug'              => $this->shop_slug,
-            'customer_slug'          => $this->customer_slug,
-            'customer_name'          => $this->customer_name,
-            'number_items'           => $this->number_items,
-            'organisation_name'      => $this->organisation_name,
-            'organisation_slug'      => $this->organisation_slug,
-            'shop_name'              => $this->shop_name,
-            'is_premium_dispatch'    => $this->is_premium_dispatch,
-            'has_extra_packing'      => $this->has_extra_packing,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'date' => $this->date,
+            'state' => $this->state,
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
+            'type' => $this->type,
+            'weight' => $this->weight / 1000,
+            'estimated_weight' => $this->estimated_weight / 1000,
+            'effective_weight' => $this->effective_weight / 1000,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'shop_slug' => $this->shop_slug,
+            'customer_slug' => $this->customer_slug,
+            'customer_name' => $this->customer_name,
+            'number_items' => $this->number_items,
+            'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
+            'shop_name' => $this->shop_name,
+            'is_premium_dispatch' => $this->is_premium_dispatch,
+            'has_extra_packing' => $this->has_extra_packing,
             'picking_sessions_count' => $this->picking_sessions_count,
-            'picking_session_ids'    => $this->picking_session_ids,
-            'customer_notes'         => $this->customer_notes,
-            'internal_notes'         => $this->internal_notes,
-            'public_notes'           => $this->public_notes,
-            'shipping_notes'        => $this->shipping_notes,
-            'employee_pick_route'    => [
-                'name'       => 'grp.models.delivery_note.employee.pick',
+            'picking_session_ids' => $this->picking_session_ids,
+            'customer_notes' => $this->customer_notes,
+            'internal_notes' => $this->internal_notes,
+            'public_notes' => $this->public_notes,
+            'shipping_notes' => $this->shipping_notes,
+            'employee_pick_route' => [
+                'name' => 'grp.models.delivery_note.employee.pick',
                 'parameters' => [
-                    'deliveryNote' => $this->id
+                    'deliveryNote' => $this->id,
                 ],
-                'method'     => 'patch'
-            ]
+                'method' => 'patch',
+            ],
         ];
     }
 }

@@ -25,9 +25,11 @@ class CheckCatalogueFileExistsInR2
 
         try {
             $exists = $disk->exists($filePath);
+
             return $exists;
         } catch (Exception $e) {
-            Log::error('R2 Check File Exists Error: ' . $e->getMessage());
+            Log::error('R2 Check File Exists Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -41,8 +43,4 @@ class CheckCatalogueFileExistsInR2
     {
         return $this->handle($command->argument('filePath'));
     }
-
-
-
-
 }

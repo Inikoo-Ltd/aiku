@@ -42,24 +42,26 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\PollReply> $pollReplies
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\CRM\PollOptionStat|null $stats
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOption newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOption newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOption onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOption query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOption withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOption withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class PollOption extends Model implements Auditable
 {
-    use SoftDeletes;
     use HasHistory;
     use HasSlug;
     use InShop;
+    use SoftDeletes;
 
     protected $casts = [
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -81,7 +83,7 @@ class PollOption extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'crm'
+            'crm',
         ];
     }
 
@@ -104,5 +106,4 @@ class PollOption extends Model implements Auditable
     {
         return $this->hasMany(PollReply::class);
     }
-
 }

@@ -18,37 +18,36 @@ use Illuminate\Support\Number;
 
 trait WithDashboard
 {
-    protected ?string $tabDashboardInterval                = null;
+    protected ?string $tabDashboardInterval = null;
 
     public function getIntervalOptions(): array
     {
         return collect(DateIntervalEnum::casesWithoutCustom())->map(function ($interval) {
             return [
-                'label'      => __(strtolower(str_replace('_', ' ', $interval->name))),
+                'label' => __(strtolower(str_replace('_', ' ', $interval->name))),
                 'labelShort' => __($interval->value),
-                'value'      => $interval->value
+                'value' => $interval->value,
             ];
         })->toArray();
     }
-
 
     public function getWidget(string $type = 'basic', int $colSpan = 1, int $rowSpan = 1, array $route = [], array $data = [], array $visual = []): array
     {
         return [
             'type' => $type,
-            'col_span'  => $colSpan,
-            'row_span'  => $rowSpan,
+            'col_span' => $colSpan,
+            'row_span' => $rowSpan,
             'route' => $route,
             'visual' => $visual,
-            'data' => $data
+            'data' => $data,
         ];
     }
 
     public function withTabDashboardInterval(array $tabs): static
     {
-        $tab =  $this->get('tab_dashboard_interval', Arr::first($tabs));
+        $tab = $this->get('tab_dashboard_interval', Arr::first($tabs));
 
-        if (!in_array($tab, $tabs)) {
+        if (! in_array($tab, $tabs)) {
             abort(404);
         }
 
@@ -69,32 +68,30 @@ trait WithDashboard
     protected function getIntervalPercentage($intervalData, string $prefix, $key, $tooltip = '', $currencyCode = 'USD'): array
     {
 
-
         if ($key == 'all') {
             return [
-                'amount' => $intervalData->{$prefix . '_all'} ?? null,
+                'amount' => $intervalData->{$prefix.'_all'} ?? null,
             ];
         }
 
-        if (!str_starts_with($prefix, 'sales')) {
-            $tooltips = "$tooltip" . $intervalData->{$prefix . '_' . $key . '_ly'} ?? 0;
+        if (! str_starts_with($prefix, 'sales')) {
+            $tooltips = "$tooltip".$intervalData->{$prefix.'_'.$key.'_ly'} ?? 0;
         } else {
-            $tooltips = "$tooltip" . Number::currency($intervalData->{$prefix . '_' . $key . '_ly'} ?? 0, $currencyCode);
+            $tooltips = "$tooltip".Number::currency($intervalData->{$prefix.'_'.$key.'_ly'} ?? 0, $currencyCode);
         }
 
-
         return [
-            'amount'     => $intervalData->{$prefix . '_' . $key} ?? null,
-            'percentage' => isset($intervalData->{$prefix . '_' . $key}, $intervalData->{$prefix . '_' . $key . '_ly'})
+            'amount' => $intervalData->{$prefix.'_'.$key} ?? null,
+            'percentage' => isset($intervalData->{$prefix.'_'.$key}, $intervalData->{$prefix.'_'.$key.'_ly'})
                 ? $this->calculatePercentageIncrease(
-                    $intervalData->{$prefix . '_' . $key},
-                    $intervalData->{$prefix . '_' . $key . '_ly'}
+                    $intervalData->{$prefix.'_'.$key},
+                    $intervalData->{$prefix.'_'.$key.'_ly'}
                 )
                 : null,
-            'difference' => isset($intervalData->{$prefix . '_' . $key}, $intervalData->{$prefix . '_' . $key . '_ly'})
-                ? $intervalData->{$prefix . '_' . $key} - $intervalData->{$prefix . '_' . $key . '_ly'}
+            'difference' => isset($intervalData->{$prefix.'_'.$key}, $intervalData->{$prefix.'_'.$key.'_ly'})
+                ? $intervalData->{$prefix.'_'.$key} - $intervalData->{$prefix.'_'.$key.'_ly'}
                 : null,
-            'tooltip'  =>  $tooltips,
+            'tooltip' => $tooltips,
         ];
     }
 
@@ -107,19 +104,20 @@ trait WithDashboard
             if ($key == 'all') {
                 $result[] = [
                     'name' => __(strtolower(str_replace('_', ' ', $interval->name))),
-                    'amount' => $intervalData->{$prefix . '_all'} ?? null,
+                    'amount' => $intervalData->{$prefix.'_all'} ?? null,
                 ];
+
                 continue;
             }
 
             $result[] = [
                 'name' => __(strtolower(str_replace('_', ' ', $interval->name))),
-                'amount'     => $intervalData->{$prefix . '_' . $key} ?? null,
-                'amount_ly' => $intervalData->{$prefix . '_' . $key . '_ly'} ?? null,
-                'percentage' => isset($intervalData->{$prefix . '_' . $key}, $intervalData->{$prefix . '_' . $key . '_ly'})
+                'amount' => $intervalData->{$prefix.'_'.$key} ?? null,
+                'amount_ly' => $intervalData->{$prefix.'_'.$key.'_ly'} ?? null,
+                'percentage' => isset($intervalData->{$prefix.'_'.$key}, $intervalData->{$prefix.'_'.$key.'_ly'})
                     ? $this->calculatePercentageIncrease(
-                        $intervalData->{$prefix . '_' . $key},
-                        $intervalData->{$prefix . '_' . $key . '_ly'}
+                        $intervalData->{$prefix.'_'.$key},
+                        $intervalData->{$prefix.'_'.$key.'_ly'}
                     )
                     : null,
             ];
@@ -128,15 +126,12 @@ trait WithDashboard
         return $result;
     }
 
-
-
-
     public function setSortedVisualData(&$visualData, $key): void
     {
-        $combined = $this->sortVisualDataset(2, $visualData[$key . '_data']['labels'], $visualData[$key . '_data']['hover_labels'], $visualData[$key . '_data']['datasets'][0]['data']);
-        $visualData[ $key . '_data']['labels']              = array_column($combined, 0);
-        $visualData[ $key . '_data']['hover_labels']        = array_column($combined, 1);
-        $visualData[ $key . '_data']['datasets'][0]['data'] = array_column($combined, 2);
+        $combined = $this->sortVisualDataset(2, $visualData[$key.'_data']['labels'], $visualData[$key.'_data']['hover_labels'], $visualData[$key.'_data']['datasets'][0]['data']);
+        $visualData[$key.'_data']['labels'] = array_column($combined, 0);
+        $visualData[$key.'_data']['hover_labels'] = array_column($combined, 1);
+        $visualData[$key.'_data']['datasets'][0]['data'] = array_column($combined, 2);
     }
 
     public function setVisualInvoiceSales(Group|Organisation $parent, array $visualData, array $dashboard, $visualType = 'doughnut'): array
@@ -148,24 +143,25 @@ trait WithDashboard
             $dashboard['widgets']['components'][] = $this->getWidget(
                 type: 'chart_display',
                 data: [
-                    'status'        => $total['total_sales'] < 0 ? 'danger' : '',
-                    'value'         => $total['total_sales'],
+                    'status' => $total['total_sales'] < 0 ? 'danger' : '',
+                    'value' => $total['total_sales'],
                     'currency_code' => $parent->currency->code,
-                    'type'          => 'currency',
-                    'description'   => __('Total sales')
+                    'type' => 'currency',
+                    'description' => __('Total sales'),
                 ],
                 visual: [
-                    'type'  => $visualType,
+                    'type' => $visualType,
                     'value' => [
-                        'labels'         => $visualData['sales_data']['labels'],
-                        'hover_labels'   => $visualData['sales_data']['hover_labels'],
-                        'datasets'       => [
+                        'labels' => $visualData['sales_data']['labels'],
+                        'hover_labels' => $visualData['sales_data']['hover_labels'],
+                        'datasets' => [
                             'data' => Arr::flatten($visualData['sales_data']['datasets']),
                         ],
                     ],
                 ]
             );
         }
+
         return $dashboard;
     }
 
@@ -177,17 +173,17 @@ trait WithDashboard
             $dashboard['widgets']['components'][] = $this->getWidget(
                 type: 'chart_display',
                 data: [
-                    'status'        => $total['total_invoices'] < 0 ? 'danger' : '',
-                    'value'       => $total['total_invoices'],
-                    'type'        => 'number',
+                    'status' => $total['total_invoices'] < 0 ? 'danger' : '',
+                    'value' => $total['total_invoices'],
+                    'type' => 'number',
                     'description' => __('Total invoices'),
                 ],
                 visual: [
-                    'type'  => $visualType,
+                    'type' => $visualType,
                     'value' => [
-                        'labels'         => Arr::get($visualData, 'invoices_data.labels'),
-                        'hover_labels'   => Arr::get($visualData, 'invoices_data.hover_labels'),
-                        'datasets'       => [
+                        'labels' => Arr::get($visualData, 'invoices_data.labels'),
+                        'hover_labels' => Arr::get($visualData, 'invoices_data.hover_labels'),
+                        'datasets' => [
                             'data' => Arr::flatten($visualData['invoices_data']['datasets']),
                         ],
                     ],
@@ -221,19 +217,19 @@ trait WithDashboard
                 type: 'chart_display',
                 data: [
                     'currency_code' => $parent->currency->code,
-                    'description' => __('Average invoice value')
+                    'description' => __('Average invoice value'),
                 ],
                 visual: [
-                    'type'  => $visualType,
+                    'type' => $visualType,
                     'value' => [
-                        'labels'         => $labels,
-                        'hover_labels'  => $hoverLabels,
-                        'datasets'       => [
+                        'labels' => $labels,
+                        'hover_labels' => $hoverLabels,
+                        'datasets' => [
                             [
                                 'data' => $averageDataset,
                                 // 'backgroundColor' => $this->getReadableColor($labels),
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
                 ]
             );
@@ -241,7 +237,6 @@ trait WithDashboard
 
         return $dashboard;
     }
-
 
     public function sortVisualDataset($keyBaseSorted, ...$data): array
     {
@@ -264,14 +259,14 @@ trait WithDashboard
             $r = hexdec(substr($hash, 0, 2));
             $g = hexdec(substr($hash, 2, 2));
             $b = hexdec(substr($hash, 4, 2));
-            $hexColor = sprintf("#%02X%02X%02X", $r, $g, $b);
+            $hexColor = sprintf('#%02X%02X%02X', $r, $g, $b);
 
             while (isset($colorMaps[$hexColor])) {
                 $hash = md5($hash);
                 $r = hexdec(substr($hash, 0, 2));
                 $g = hexdec(substr($hash, 2, 2));
                 $b = hexdec(substr($hash, 4, 2));
-                $hexColor = sprintf("#%02X%02X%02X", $r, $g, $b);
+                $hexColor = sprintf('#%02X%02X%02X', $r, $g, $b);
             }
 
             $colorMaps[$hexColor] = $hexColor;
@@ -298,8 +293,6 @@ trait WithDashboard
             $colorMaps[$hexColor] = $hexColor;
         }
 
-
-
         if (count($colorMaps) < $total) {
             $neededLabels = array_values(array_diff($labels, array_keys($colorMaps)));
             $colorMaps = $this->getMoreColor($colorMaps, $total - count($colorMaps), $neededLabels);
@@ -316,7 +309,7 @@ trait WithDashboard
         $x = $c * (1 - abs(fmod($h / 60, 2) - 1));
         $m = $l - $c / 2;
 
-        list($r, $g, $b) = match (true) {
+        [$r, $g, $b] = match (true) {
             $h < 60 => [$c, $x, 0],
             $h < 120 => [$x, $c, 0],
             $h < 180 => [0, $c, $x],
@@ -325,8 +318,6 @@ trait WithDashboard
             default => [$c, 0, $x]
         };
 
-        return sprintf("#%02X%02X%02X", ($r + $m) * 255, ($g + $m) * 255, ($b + $m) * 255);
+        return sprintf('#%02X%02X%02X', ($r + $m) * 255, ($g + $m) * 255, ($b + $m) * 255);
     }
-
-
 }

@@ -21,6 +21,7 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
     public function setCustomRangeData(array $customRangeData): self
     {
         $this->customRangeData = $customRangeData;
+
         return $this;
     }
 
@@ -32,7 +33,7 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
         $salesIntervals = $group->salesIntervals;
         $orderingIntervals = $group->orderingIntervals;
 
-        if (!empty($this->customRangeData['organisations'])) {
+        if (! empty($this->customRangeData['organisations'])) {
             $aggregatedData = $this->aggregateOrganisationsData($this->customRangeData['organisations']);
 
             $salesIntervals = $this->createCustomRangeIntervalsObject($salesIntervals, $aggregatedData, 'sales', $group);
@@ -69,47 +70,47 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
             ],
         ];
 
-        $baskets_created_grp_currency       = $this->getDashboardTableColumn($salesIntervals, 'baskets_created_grp_currency', $routeTargets['inBasket']);
-        $baskets_created_org_currency       = [
-            'baskets_created_org_currency' => $baskets_created_grp_currency['baskets_created_grp_currency']
+        $baskets_created_grp_currency = $this->getDashboardTableColumn($salesIntervals, 'baskets_created_grp_currency', $routeTargets['inBasket']);
+        $baskets_created_org_currency = [
+            'baskets_created_org_currency' => $baskets_created_grp_currency['baskets_created_grp_currency'],
         ];
 
         $baskets_created_grp_currency_minified = $this->getDashboardTableColumn($salesIntervals, 'baskets_created_grp_currency_minified', $routeTargets['inBasket']);
         $baskets_created_org_currency_minified = [
-            'baskets_created_org_currency_minified' => $baskets_created_grp_currency_minified['baskets_created_grp_currency_minified']
+            'baskets_created_org_currency_minified' => $baskets_created_grp_currency_minified['baskets_created_grp_currency_minified'],
         ];
 
-        $sales_grp_currency       = $this->getDashboardTableColumn($salesIntervals, 'sales_grp_currency');
+        $sales_grp_currency = $this->getDashboardTableColumn($salesIntervals, 'sales_grp_currency');
         $sales_grp_currency_delta = $this->getDashboardTableColumn($salesIntervals, 'sales_grp_currency_delta');
 
         $sales_org_currency = [
-            'sales_org_currency' => $sales_grp_currency['sales_grp_currency']
+            'sales_org_currency' => $sales_grp_currency['sales_grp_currency'],
         ];
 
         $sales_org_currency_delta = [
-            'sales_org_currency_delta' => $sales_grp_currency_delta['sales_grp_currency_delta']
+            'sales_org_currency_delta' => $sales_grp_currency_delta['sales_grp_currency_delta'],
         ];
 
         $sales_grp_currency_minified = $this->getDashboardTableColumn($salesIntervals, 'sales_grp_currency_minified');
         $sales_org_currency_minified = [
-            'sales_org_currency_minified' => $sales_grp_currency_minified['sales_grp_currency_minified']
+            'sales_org_currency_minified' => $sales_grp_currency_minified['sales_grp_currency_minified'],
         ];
 
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value'   => $group->name,
-                    'align'             => 'left',
+                    'formatted_value' => $group->name,
+                    'align' => 'left',
                     ...$routeTargets['group'],
-                ]
+                ],
             ],
             [
                 'label_minified' => [
-                    'formatted_value'   => $group->code,
-                    'tooltip'           => $group->name,
-                    'align'             => 'left',
+                    'formatted_value' => $group->code,
+                    'tooltip' => $group->name,
+                    'align' => 'left',
                     ...$routeTargets['group'],
-                ]
+                ],
             ],
             $baskets_created_org_currency,
             $baskets_created_org_currency_minified,
@@ -134,8 +135,8 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
         );
 
         return [
-            'slug'    => $group->slug,
-            'columns' => $columns
+            'slug' => $group->slug,
+            'columns' => $columns,
         ];
     }
 

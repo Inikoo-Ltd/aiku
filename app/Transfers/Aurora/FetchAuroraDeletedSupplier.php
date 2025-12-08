@@ -17,7 +17,6 @@ class FetchAuroraDeletedSupplier extends FetchAurora
     {
         $auroraDeletedData = json_decode(gzuncompress($this->auroraModelData->{'Supplier Deleted Metadata'}));
 
-
         $agentData = Db::connection('aurora')->table('Agent Supplier Bridge')
             ->leftJoin('Agent Dimension', 'Agent Supplier Agent Key', '=', 'Agent Key')
             ->select('Agent Code', 'Agent Key')
@@ -29,8 +28,8 @@ class FetchAuroraDeletedSupplier extends FetchAurora
             $agent = $this->parseAgent(
                 $this->organisation->id.':'.$agentData->{'Agent Key'}
             );
-            if (!$agent) {
-                print "agent not found ".$agentData->{'Agent Code'}." \n";
+            if (! $agent) {
+                echo 'agent not found '.$agentData->{'Agent Code'}." \n";
 
                 return;
             }
@@ -42,18 +41,16 @@ class FetchAuroraDeletedSupplier extends FetchAurora
             $this->parsedData['parent'] = $this->organisation->group;
         }
 
-
         $phone = $auroraDeletedData->{'Supplier Main Plain Mobile'} ?? null;
         if ($phone == '') {
             $phone = $auroraDeletedData->{'Supplier Main Plain Telephone'};
         }
 
-
         $numberPurchaseOrders = DB::connection('aurora')->table('Purchase Order Dimension')
             ->where('Purchase Order State', '!=', 'Cancelled')->where('Purchase Order Parent', 'Supplier')
             ->where('Purchase Order Parent Key', $auroraDeletedData->{'Supplier Key'})->count();
 
-        $deletedAt  = null;
+        $deletedAt = null;
         $archivedAt = null;
         if ($numberPurchaseOrders == 0) {
             $deletedAt = $this->auroraModelData->{'Supplier Deleted Date'};
@@ -67,7 +64,7 @@ class FetchAuroraDeletedSupplier extends FetchAurora
         }
 
         $scopeType = 'Group';
-        $scopeId   = $this->organisation->group_id;
+        $scopeId = $this->organisation->group_id;
 
         $code = preg_replace('/\s/', '-', $auroraDeletedData->{'Supplier Code'});
 
@@ -75,22 +72,22 @@ class FetchAuroraDeletedSupplier extends FetchAurora
 
         $this->parsedData['supplier'] =
             [
-                'name'            => $auroraDeletedData->{'Supplier Nickname'} ?? $auroraDeletedData->{'Supplier Name'},
-                'code'            => $code,
-                'company_name'    => $auroraDeletedData->{'Supplier Company Name'},
-                'contact_name'    => $auroraDeletedData->{'Supplier Main Contact Name'},
-                'email'           => $auroraDeletedData->{'Supplier Main Plain Email'},
-                'phone'           => $phone,
-                'currency_id'     => $this->parseCurrencyID($auroraDeletedData->{'Supplier Default Currency Code'}),
-                'source_id'       => $this->organisation->id.':'.$auroraDeletedData->{'Supplier Key'},
-                'source_slug'     => Str::kebab(strtolower($code)),
-                'deleted_at'      => $deletedAt,
-                'archived_at'     => $archivedAt,
-                'status'          => false,
-                'address'         => $this->parseAddress(prefix: 'Supplier Contact', auAddressData: $auroraDeletedData),
-                'scope_type'      => $scopeType,
-                'scope_id'        => $scopeId,
-                'fetched_at'      => now(),
+                'name' => $auroraDeletedData->{'Supplier Nickname'} ?? $auroraDeletedData->{'Supplier Name'},
+                'code' => $code,
+                'company_name' => $auroraDeletedData->{'Supplier Company Name'},
+                'contact_name' => $auroraDeletedData->{'Supplier Main Contact Name'},
+                'email' => $auroraDeletedData->{'Supplier Main Plain Email'},
+                'phone' => $phone,
+                'currency_id' => $this->parseCurrencyID($auroraDeletedData->{'Supplier Default Currency Code'}),
+                'source_id' => $this->organisation->id.':'.$auroraDeletedData->{'Supplier Key'},
+                'source_slug' => Str::kebab(strtolower($code)),
+                'deleted_at' => $deletedAt,
+                'archived_at' => $archivedAt,
+                'status' => false,
+                'address' => $this->parseAddress(prefix: 'Supplier Contact', auAddressData: $auroraDeletedData),
+                'scope_type' => $scopeType,
+                'scope_id' => $scopeId,
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
 
             ];
@@ -99,12 +96,10 @@ class FetchAuroraDeletedSupplier extends FetchAurora
             $this->parsedData['supplier']['created_at'] = $createdAt;
         }
 
-
         $this->parsedData['address'] = $this->parseAddress(prefix: 'Supplier Contact', auAddressData: $auroraDeletedData);
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Supplier Deleted Dimension')

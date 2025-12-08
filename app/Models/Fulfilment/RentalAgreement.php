@@ -51,27 +51,30 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\RentalAgreementSnapshot> $snapshots
  * @property-read \App\Models\Fulfilment\RentalAgreementStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreement newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreement onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreement query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreement withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreement withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class RentalAgreement extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasUniversalSearch;
-    use HasSlug;
-    use InFulfilmentCustomer;
     use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InFulfilmentCustomer;
+    use SoftDeletes;
 
     protected $guarded = [];
-    protected $casts   = [
-        'data'          => 'array',
-        'state'         => RentalAgreementStateEnum::class,
-        'billing_cycle' => RentalAgreementBillingCycleEnum::class
+
+    protected $casts = [
+        'data' => 'array',
+        'state' => RentalAgreementStateEnum::class,
+        'billing_cycle' => RentalAgreementBillingCycleEnum::class,
     ];
 
     protected $attributes = [
@@ -126,6 +129,4 @@ class RentalAgreement extends Model implements Auditable
     {
         return $this->hasOne(RentalAgreementStats::class);
     }
-
-
 }

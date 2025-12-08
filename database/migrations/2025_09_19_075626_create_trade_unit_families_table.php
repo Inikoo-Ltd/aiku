@@ -5,8 +5,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasAssetCodeDescription;
+
     public function up(): void
     {
         Schema::create('trade_unit_families', function (Blueprint $table) {
@@ -25,7 +27,6 @@ return new class () extends Migration {
             $table->foreign('trade_unit_family_id')->references('id')->on('trade_unit_families');
         });
     }
-
 
     public function down(): void
     {

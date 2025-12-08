@@ -25,11 +25,10 @@ class OrganisationHydrateArtefacts implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_artefacts' => $organisation->artefacts()->count()
+            'number_artefacts' => $organisation->artefacts()->count(),
         ];
 
         $organisation->manufactureStats()->update($stats);

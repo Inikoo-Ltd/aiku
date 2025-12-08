@@ -21,14 +21,15 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeleteBanner extends OrgAction
 {
-    use WithWebEditAuthorisation;
     use AsAction;
     use WithAttributes;
+    use WithWebEditAuthorisation;
 
     public function handle(Banner $banner): Banner
     {
         $banner->delete();
         BannerRecordSearch::run($banner);
+
         return $banner;
     }
 
@@ -52,7 +53,7 @@ class DeleteBanner extends OrgAction
                 'organisation' => $banner->organisation->slug,
                 'shop' => $banner->shop->slug,
                 'website' => $banner->website->slug,
-                'banner' => $banner->slug
+                'banner' => $banner->slug,
             ]
         );
     }

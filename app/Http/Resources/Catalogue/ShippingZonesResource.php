@@ -16,15 +16,15 @@ class ShippingZonesResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                       => $this->id,
-            'slug'                     => $this->slug,
-            'code'                     => $this->code,
-            'name'                     => $this->name,
-            'price'                    => $this->price,
-            'territories'              => $this->territories,
-            'position'                 => $this->position,
-            'created_at'               => $this->created_at,
-            'currency_code'            => $this->currency_code
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'price' => $this->price,
+            'territories' => $this->territories,
+            'position' => $this->position,
+            'created_at' => $this->created_at,
+            'currency_code' => $this->currency_code,
         ];
     }
 }

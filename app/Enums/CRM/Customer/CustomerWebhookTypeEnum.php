@@ -14,7 +14,7 @@ enum CustomerWebhookTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case JSON  = 'json';
+    case JSON = 'json';
     case HUMAN = 'human';
     case ARRAY = 'array';
 }

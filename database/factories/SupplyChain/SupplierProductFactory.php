@@ -27,7 +27,7 @@ class SupplierProductFactory extends Factory
             'name' => fake()->name,
             'cost' => fake()->numberBetween(10, 100),
             'units_per_pack' => 10,
-            'units_per_carton' => 100
+            'units_per_carton' => 100,
         ];
     }
 }

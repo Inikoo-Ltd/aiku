@@ -20,8 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateAgentSupplierPurchaseOrder extends GrpAction
 {
     use WithActionUpdate;
-    use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
+    use WithNoStrictRules;
 
     private AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder;
 
@@ -48,9 +48,9 @@ class UpdateAgentSupplierPurchaseOrder extends GrpAction
             'reference' => [
                 'sometimes',
                 'required',
-                $this->strict ? 'alpha_dash' : 'string'
+                $this->strict ? 'alpha_dash' : 'string',
             ],
-            'notes'     => ['sometimes', 'string']
+            'notes' => ['sometimes', 'string'],
         ];
 
         if ($this->strict) {
@@ -59,19 +59,18 @@ class UpdateAgentSupplierPurchaseOrder extends GrpAction
                 extraConditions: [
                     [
                         'column' => 'supplier_id',
-                        'value'  => $this->agentSupplierPurchaseOrder->supplier_id,
+                        'value' => $this->agentSupplierPurchaseOrder->supplier_id,
                     ],
                     [
-                        'column'   => 'id',
+                        'column' => 'id',
                         'operator' => '!=',
-                        'value'    => $this->agentSupplierPurchaseOrder->id
-                    ]
+                        'value' => $this->agentSupplierPurchaseOrder->id,
+                    ],
                 ]
             );
         }
 
-
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictPurchaseOrderDatesRules($rules);
@@ -82,15 +81,14 @@ class UpdateAgentSupplierPurchaseOrder extends GrpAction
 
     public function action(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): AgentSupplierPurchaseOrder
     {
-        if (!$audit) {
+        if (! $audit) {
             AgentSupplierPurchaseOrder::disableAuditing();
         }
-        $this->asAction                   = true;
-        $this->strict                     = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->agentSupplierPurchaseOrder = $agentSupplierPurchaseOrder;
-        $this->hydratorsDelay             = $hydratorsDelay;
+        $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($agentSupplierPurchaseOrder->group, $modelData);
-
 
         return $this->handle($agentSupplierPurchaseOrder, $this->validatedData);
     }

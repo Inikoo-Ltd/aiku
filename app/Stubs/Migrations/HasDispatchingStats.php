@@ -27,6 +27,7 @@ trait HasDispatchingStats
     public function shipmentTrackingsStatsFields(Blueprint $table): Blueprint
     {
         $table->unsignedInteger('number_shipment_trackings')->default(0);
+
         return $table;
     }
 
@@ -34,9 +35,7 @@ trait HasDispatchingStats
     {
         $table->unsignedSmallInteger('number_shipper_accounts')->default(0);
         $table->unsignedSmallInteger('number_active_shipper_accounts')->default(0);
+
         return $table;
     }
-
-
-
 }

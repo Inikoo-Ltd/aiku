@@ -24,18 +24,19 @@ class BroadcastPalletDeliveryTimeline implements ShouldBroadcast
     use SerializesModels;
 
     public array $data;
+
     public Group $group;
 
     public function __construct(Group $group, PalletDelivery|PalletReturn $parent, string $title, string $text)
     {
         $this->group = $group;
-        $this->data  = $parent->toArray();
+        $this->data = $parent->toArray();
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("grp.".$this->group->id.".pallet-delivery-timeline")
+            new PrivateChannel('grp.'.$this->group->id.'.pallet-delivery-timeline'),
         ];
     }
 

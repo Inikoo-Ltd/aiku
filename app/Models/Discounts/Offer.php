@@ -8,8 +8,8 @@
 
 namespace App\Models\Discounts;
 
-use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\HasHistory;
@@ -70,6 +70,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Discounts\OfferStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Discounts\OfferFactory factory($count = null, $state = [])
  * @method static Builder<static>|Offer newModelQuery()
  * @method static Builder<static>|Offer newQuery()
@@ -77,36 +78,37 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Offer query()
  * @method static Builder<static>|Offer withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Offer withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Offer extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
     use HasFactory;
-    use InShop;
     use HasHistory;
+    use HasSlug;
     use HasUniversalSearch;
+    use InShop;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'            => 'array',
-        'settings'        => 'array',
-        'trigger_data'    => 'array',
-        'source_data'     => 'array',
-        'begin_at'        => 'datetime',
-        'end_at'          => 'datetime',
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'settings' => 'array',
+        'trigger_data' => 'array',
+        'source_data' => 'array',
+        'begin_at' => 'datetime',
+        'end_at' => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
-        'status'          => 'boolean',
-        'state'           => OfferStateEnum::class,
-        'duration'        => OfferDurationEnum::class,
+        'status' => 'boolean',
+        'state' => OfferStateEnum::class,
+        'duration' => OfferDurationEnum::class,
     ];
 
     protected $attributes = [
-        'data'         => '{}',
-        'settings'     => '{}',
+        'data' => '{}',
+        'settings' => '{}',
         'trigger_data' => '{}',
-        'source_data'  => '{}',
+        'source_data' => '{}',
     ];
 
     protected $guarded = [];
@@ -123,7 +125,6 @@ class Offer extends Model implements Auditable
         'status',
         'state',
     ];
-
 
     public function getSlugOptions(): SlugOptions
     {
@@ -163,5 +164,4 @@ class Offer extends Model implements Auditable
     {
         return $this->belongsToMany(InvoiceTransaction::class, 'invoice_transaction_has_offer_allowances');
     }
-
 }

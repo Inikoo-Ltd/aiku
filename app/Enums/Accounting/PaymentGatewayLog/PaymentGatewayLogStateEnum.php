@@ -19,5 +19,4 @@ enum PaymentGatewayLogStateEnum: string
     case PREPROCESSED = 'preprocessed';
     case PROCESSED = 'processed';
 
-
 }

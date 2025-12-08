@@ -25,8 +25,8 @@ class SendSlackNotification extends GrpAction
             $template = NewMasterProductCategoryCreated::run($parent);
         }
 
-        $notifiable = (new AnonymousNotifiable())
-                ->route('slack', []);
+        $notifiable = (new AnonymousNotifiable)
+            ->route('slack', []);
 
         try {
             $notifiable->notify(new SlackNotification($template));

@@ -24,9 +24,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Dropshipping\Platform $platform
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformSalesMetrics newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformSalesMetrics newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformSalesMetrics query()
+ *
  * @mixin \Eloquent
  */
 class PlatformSalesMetrics extends Model
@@ -34,7 +36,7 @@ class PlatformSalesMetrics extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'date' => 'datetime'
+        'date' => 'datetime',
     ];
 
     public function platform(): BelongsTo

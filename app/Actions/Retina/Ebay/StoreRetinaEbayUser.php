@@ -21,8 +21,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class StoreRetinaEbayUser extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     public function handle(Customer $customer, array $modelData): EbayUser
     {
@@ -32,7 +32,7 @@ class StoreRetinaEbayUser extends RetinaAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string']
+            'name' => ['required', 'string'],
         ];
     }
 

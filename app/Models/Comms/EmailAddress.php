@@ -30,9 +30,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Comms\Mailshot|null $mailshot
+ *
  * @method static Builder<static>|EmailAddress newModelQuery()
  * @method static Builder<static>|EmailAddress newQuery()
  * @method static Builder<static>|EmailAddress query()
+ *
  * @mixin Eloquent
  */
 class EmailAddress extends Model

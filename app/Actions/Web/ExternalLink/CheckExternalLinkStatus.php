@@ -20,6 +20,7 @@ class CheckExternalLinkStatus extends OrgAction
     {
         try {
             $result = Http::timeout(10)->get($url);
+
             return $result->status();
         } catch (Exception $e) {
             return 'error';

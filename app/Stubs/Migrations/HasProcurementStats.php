@@ -9,8 +9,8 @@
 namespace App\Stubs\Migrations;
 
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
@@ -41,7 +41,6 @@ trait HasProcurementStats
         return $table;
     }
 
-
     public function orgSuppliersStats(Blueprint $table): Blueprint
     {
         $table->unsignedInteger('number_org_suppliers')->default(0)->comment('Active + Archived  suppliers');
@@ -60,7 +59,6 @@ trait HasProcurementStats
 
         return $table;
     }
-
 
     public function orgSupplierProductsStats(Blueprint $table): Blueprint
     {
@@ -82,16 +80,13 @@ trait HasProcurementStats
         $table->unsignedInteger('number_current_purchase_orders')->default(0)->comment('Number purchase orders (except: cancelled and not_received) ');
         $table->unsignedInteger('number_open_purchase_orders')->default(0)->comment('Number purchase orders (except: in_process,settled,cancelled,not_received)');
 
-
         foreach (PurchaseOrderStateEnum::cases() as $purchaseOrderState) {
             $table->unsignedInteger('number_purchase_orders_state_'.$purchaseOrderState->snake())->default(0);
         }
 
-
         foreach (PurchaseOrderDeliveryStateEnum::cases() as $purchaseOrderStatus) {
             $table->unsignedInteger('number_purchase_orders_delivery_state_'.$purchaseOrderStatus->snake())->default(0);
         }
-
 
         return $table;
     }
@@ -102,20 +97,16 @@ trait HasProcurementStats
         $table->unsignedInteger('number_current_purchase_order_transactions')->default(0)->comment('Number purchase order transactions (except: cancelled and not_received) ');
         $table->unsignedInteger('number_open_purchase_order_transactions')->default(0)->comment('Number purchase order transactions (except: in_process,settled,cancelled,not_received)');
 
-
         foreach (PurchaseOrderTransactionStateEnum::cases() as $case) {
             $table->unsignedInteger('number_purchase_order_transactions_state_'.$case->snake())->default(0);
         }
-
 
         foreach (PurchaseOrderTransactionDeliveryStateEnum::cases() as $purchaseOrderStatus) {
             $table->unsignedInteger('number_purchase_orders_transactions_delivery_state_'.$purchaseOrderStatus->snake())->default(0);
         }
 
-
         return $table;
     }
-
 
     public function stockDeliveriesStats(Blueprint $table): Blueprint
     {
@@ -128,12 +119,9 @@ trait HasProcurementStats
         $table->unsignedInteger('number_is_costed_stock_deliveries_state_placed')->default(0)->comment('state=placed is_costed=true');
         $table->unsignedInteger('number_is_not_costed_stock_deliveries_state_placed')->default(0)->comment('state=placed  is_costed=true');
 
-
-
         foreach (StockDeliveryStateEnum::cases() as $case) {
             $table->unsignedInteger('number_stock_deliveries_state_'.$case->snake())->default(0);
         }
-
 
         return $table;
     }
@@ -147,9 +135,6 @@ trait HasProcurementStats
             $table->unsignedInteger('number_stock_delivery_items_state_'.$case->snake())->default(0);
         }
 
-
         return $table;
     }
-
-
 }

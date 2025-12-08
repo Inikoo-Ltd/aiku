@@ -12,8 +12,8 @@ namespace App\Actions\SysAdmin\Group\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Purge\PurgeStateEnum;
 use App\Enums\Ordering\Purge\PurgeTypeEnum;
-use App\Models\SysAdmin\Group;
 use App\Models\Ordering\Purge;
+use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -63,6 +63,4 @@ class GroupHydratePurges implements ShouldBeUnique
 
         $group->orderingStats()->update($stats);
     }
-
-
 }

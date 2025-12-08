@@ -17,19 +17,17 @@ class FetchAuroraOrderDispatchedEmails extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:order_dispatched_emails {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): null
     {
         $orderDispatchedEmailData = $organisationSource->fetchOrderDispatchedEmail($organisationSourceId);
-        if (!$orderDispatchedEmailData) {
-            //print "error no dispatched email data $organisationSourceId\n";
+        if (! $orderDispatchedEmailData) {
+            // print "error no dispatched email data $organisationSourceId\n";
 
             return null;
         }
 
-
-        if (!$orderDispatchedEmailData['dispatchedEmail']) {
-            //print "error no dispatched email (*) $organisationSourceId\n";
+        if (! $orderDispatchedEmailData['dispatchedEmail']) {
+            // print "error no dispatched email (*) $organisationSourceId\n";
 
             return null;
         }
@@ -47,16 +45,14 @@ class FetchAuroraOrderDispatchedEmails extends FetchAuroraAction
                     $orderDispatchedEmailData['dispatchedEmail']->id => [
                         'source_id' => $orderDispatchedEmailData['modelHasDispatchedEmail']['source_id'],
                         'fetched_at' => $orderDispatchedEmailData['modelHasDispatchedEmail']['fetched_at'],
-                        'outbox_id' => $orderDispatchedEmailData['outbox']->id
-                    ]
+                        'outbox_id' => $orderDispatchedEmailData['outbox']->id,
+                    ],
                 ]
             );
         }
 
-
         return null;
     }
-
 
     public function getModelsQuery(): Builder
     {

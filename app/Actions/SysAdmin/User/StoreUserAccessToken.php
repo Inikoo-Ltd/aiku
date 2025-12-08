@@ -23,9 +23,6 @@ use OwenIt\Auditing\Events\AuditCustom;
 
 class StoreUserAccessToken extends OrgAction
 {
-    /**
-     * @var \App\Models\SysAdmin\User
-     */
     private User $user;
 
     public function handle(User $user): string
@@ -39,37 +36,34 @@ class StoreUserAccessToken extends OrgAction
 
         $tokenName = $tokenParts[0].'|'.$tokenPrefix.'...-'.$user->slug;
 
-        if (!empty($tokenPrefix)) {
+        if (! empty($tokenPrefix)) {
             DB::table('personal_access_tokens')->where('id', $tokenParts[0])->update([
-                'name' => $tokenName
+                'name' => $tokenName,
             ]);
         }
 
-        $user->auditEvent     = 'create';
-        $user->isCustomEvent  = true;
+        $user->auditEvent = 'create';
+        $user->isCustomEvent = true;
         $user->auditCustomOld = [
-            'api_token' => ''
+            'api_token' => '',
         ];
         $user->auditCustomNew = [
-            'api_token' => __('Api token created').' ('.$tokenName.')'
+            'api_token' => __('Api token created').' ('.$tokenName.')',
         ];
-
 
         Event::dispatch(new AuditCustom($user));
         UserHydrateApiTokens::run($user); // Use run() instead of dispatch() to ensure immediate execution
         GroupHydrateApiTokens::dispatch($user->group);
-
 
         return $plainTextToken;
     }
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->user->status) {
+        if (! $this->user->status) {
             $validator->errors()->add('user', __('User is not active'));
         }
     }
-
 
     public function action(User $user, array $data): string
     {
@@ -82,7 +76,7 @@ class StoreUserAccessToken extends OrgAction
     public function jsonResponse(string $token): array
     {
         return [
-            'token' => $token
+            'token' => $token,
         ];
     }
 

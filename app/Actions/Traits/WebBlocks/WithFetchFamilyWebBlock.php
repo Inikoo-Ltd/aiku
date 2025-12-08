@@ -15,31 +15,33 @@ use Lorisleiva\Actions\Concerns\AsAction;
 trait WithFetchFamilyWebBlock
 {
     use AsAction;
-    public function processFamilyData(Webpage $webpage, $auroraBlock): array|null
+
+    public function processFamilyData(Webpage $webpage, $auroraBlock): ?array
     {
 
-        if (!isset($auroraBlock["type"])) {
+        if (! isset($auroraBlock['type'])) {
             return null;
         }
         data_set($layout, 'data.fieldValue.value.family_id', $webpage->model_id);
         $items = [];
         foreach ($auroraBlock['items'] as $index => $item) {
-            $type = $item["type"];
-            if ($type == "product") {
+            $type = $item['type'];
+            if ($type == 'product') {
                 continue;
-            } elseif ($type == "video") {
-                $items[] = ["position" => $index,"type" => $type, "video_id" => $item["video_id"]];
+            } elseif ($type == 'video') {
+                $items[] = ['position' => $index, 'type' => $type, 'video_id' => $item['video_id']];
             } elseif ($type == 'image') {
-                $items[] =  ['position' => $index, "type" => $type, "aurora_source" => $item["image_src"]];
+                $items[] = ['position' => $index, 'type' => $type, 'aurora_source' => $item['image_src']];
             } elseif ($type == 'text') {
-                $items[] =  ['position' => $index, "type" => $type, "text" => $item["text"]];
+                $items[] = ['position' => $index, 'type' => $type, 'text' => $item['text']];
             } else {
                 print_r($item);
-                dd("dd inside process Family Data => ", $type);
+                dd('dd inside process Family Data => ', $type);
             }
         }
 
-        data_set($layout, "data.fieldValue.value.items", $items);
+        data_set($layout, 'data.fieldValue.value.items', $items);
+
         return $layout;
     }
 }

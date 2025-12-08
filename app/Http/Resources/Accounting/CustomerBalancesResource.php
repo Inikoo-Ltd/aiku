@@ -28,16 +28,16 @@ class CustomerBalancesResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                => $this->id,
-            'slug'              => $this->slug,
-            'name'              => $this->name,
-            'balance'           => $this->balance,
-            'shop_slug'         => $this->shop_slug,
-            'shop_type'         => $this->shop_type,
-            'fulfilment_slug'   => $this->fulfilment_slug,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'balance' => $this->balance,
+            'shop_slug' => $this->shop_slug,
+            'shop_type' => $this->shop_type,
+            'fulfilment_slug' => $this->fulfilment_slug,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
-            'shop_name'         => $this->shop_name,
+            'shop_name' => $this->shop_name,
         ];
     }
 }

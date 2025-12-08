@@ -26,7 +26,6 @@ class StoreOrgPartner extends OrgAction
         data_set($modelData, 'partner_id', $partner->id);
         data_set($modelData, 'status', $partner->status, false);
 
-
         $orgPartner = DB::transaction(function () use ($organisation, $modelData) {
             /** @var OrgPartner $orgPartner */
             $orgPartner = $organisation->orgPartners()->create($modelData);
@@ -40,7 +39,6 @@ class StoreOrgPartner extends OrgAction
         return $orgPartner;
     }
 
-
     public function rules(ActionRequest $request): array
     {
         return [
@@ -52,12 +50,10 @@ class StoreOrgPartner extends OrgAction
      */
     public function action(Organisation $organisation, Organisation $partner, $modelData = [], $hydratorsDelay = 0): OrgPartner
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($organisation, $modelData);
 
         return $this->handle($organisation, $partner, $this->validatedData);
     }
-
-
 }

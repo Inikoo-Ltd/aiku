@@ -52,7 +52,7 @@ class FetchAuroraUploads extends FetchAuroraAction
                     Upload::enableAuditing();
                     $this->saveMigrationHistory(
                         $upload,
-                        Arr::except($uploadData['upload'], ['fetched_at', 'last_fetched_at','source_id'])
+                        Arr::except($uploadData['upload'], ['fetched_at', 'last_fetched_at', 'source_id'])
                     );
 
                     $sourceData = explode(':', $upload->source_id);
@@ -94,5 +94,4 @@ class FetchAuroraUploads extends FetchAuroraAction
 
         return $query->count();
     }
-
 }

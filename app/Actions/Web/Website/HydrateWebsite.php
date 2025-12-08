@@ -37,6 +37,4 @@ class HydrateWebsite extends HydrateModel
         WebsiteHydrateWebUserRequests::run($website->id);
 
     }
-
-
 }

@@ -89,6 +89,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory onlyTrashed()
@@ -99,33 +100,34 @@ use Spatie\Translatable\HasTranslations;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory whereLocales(string $column, array $locales)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class MasterProductCategory extends Model implements Auditable, HasMedia
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use HasImage;
-    use InGroup;
+    use HasSlug;
     use HasTranslations;
+    use HasUniversalSearch;
+    use InGroup;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'data'            => 'array',
-        'type'            => MasterProductCategoryTypeEnum::class,
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'type' => MasterProductCategoryTypeEnum::class,
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
-        'offers_data'     => 'array',
+        'offers_data' => 'array',
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'offers_data'   => '{}',
+        'data' => '{}',
+        'offers_data' => '{}',
     ];
 
     public function generateTags(): array
@@ -154,7 +156,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
     }
-
 
     public function stats(): HasOne
     {
@@ -186,7 +187,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->hasMany(MasterProductCategoryTimeSeries::class);
     }
 
-
     public function masterProductCategories(): HasMany
     {
         return $this->hasMany(MasterProductCategory::class);
@@ -217,8 +217,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
     }
 
-
-    public function masterAssets(): HasMany|null
+    public function masterAssets(): ?HasMany
     {
         return match ($this->type) {
             MasterProductCategoryTypeEnum::DEPARTMENT => $this->hasMany(MasterAsset::class, 'master_department_id'),
@@ -237,7 +236,4 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
-
-
-
 }

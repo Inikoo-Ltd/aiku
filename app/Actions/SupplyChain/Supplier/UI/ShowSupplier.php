@@ -30,18 +30,18 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowSupplier extends GrpAction
 {
     use WithSupplierSubNavigation;
+
     public function handle(Supplier $supplier): Supplier
     {
         return $supplier;
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit   = $request->user()->authTo('supply-chain.edit');
+        $this->canEdit = $request->user()->authTo('supply-chain.edit');
         $this->canDelete = $request->user()->authTo('supply-chain.edit');
 
-        return $request->user()->authTo("supply-chain.view");
+        return $request->user()->authTo('supply-chain.view');
     }
 
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
@@ -50,7 +50,6 @@ class ShowSupplier extends GrpAction
 
         return $this->handle($supplier);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inAgent(Agent $agent, Supplier $supplier, ActionRequest $request): Supplier
@@ -66,78 +65,77 @@ class ShowSupplier extends GrpAction
         return Inertia::render(
             'SupplyChain/Supplier',
             [
-                'title'       => __('supplier'),
+                'title' => __('supplier'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $supplier,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($supplier, $request),
-                    'next'     => $this->getNext($supplier, $request),
+                    'next' => $this->getNext($supplier, $request),
                 ],
-                'pageHead'    => [
-                    'model'   => __('Supplier'),
-                    'icon'    =>
-                        [
-                            'icon'  => 'fal fa-person-dolly',
-                            'title' => __('Supplier')
-                        ],
-                    'title'   => $supplier->name,
+                'pageHead' => [
+                    'model' => __('Supplier'),
+                    'icon' => [
+                        'icon' => 'fal fa-person-dolly',
+                        'title' => __('Supplier'),
+                    ],
+                    'title' => $supplier->name,
                     'subNavigation' => $this->getSupplierNavigation($supplier),
                     'actions' => [
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
                         $this->canDelete ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'delete',
                             'route' => [
-                                'name'       => 'grp.supply-chain.suppliers.remove',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => 'grp.supply-chain.suppliers.remove',
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
-                        $this->canEdit && !$supplier->agent_id ? [
-                            'type'  => 'button',
+                        $this->canEdit && ! $supplier->agent_id ? [
+                            'type' => 'button',
                             'style' => 'create',
                             'route' => [
-                                'name'       => 'grp.supply-chain.suppliers.show.purchase_orders.create',
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => 'grp.supply-chain.suppliers.show.purchase_orders.create',
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                            'label' => __('Purchase order')
+                            'label' => __('Purchase order'),
                         ] : false,
                     ],
-                    'meta'    => [
+                    'meta' => [
                         [
-                            'name'     => trans_choice('Purchases|Sales', $supplier->stats->number_open_purchase_orders),
-                            'number'   => $supplier->stats->number_open_purchase_orders,
-                            'route'     => [
+                            'name' => trans_choice('Purchases|Sales', $supplier->stats->number_open_purchase_orders),
+                            'number' => $supplier->stats->number_open_purchase_orders,
+                            'route' => [
                                 'grp.supply-chain.supplier_products.show',
-                                $supplier->slug
+                                $supplier->slug,
                             ],
                             'leftIcon' => [
-                                'icon'    => 'fal fa-person-dolly',
-                                'tooltip' => __('Sales')
-                            ]
+                                'icon' => 'fal fa-person-dolly',
+                                'tooltip' => __('Sales'),
+                            ],
                         ],
                         [
-                            'name'     => trans_choice('product|products', $supplier->stats->number_supplier_products),
-                            'number'   => $supplier->stats->number_supplier_products,
-                            'route'     => [
+                            'name' => trans_choice('product|products', $supplier->stats->number_supplier_products),
+                            'number' => $supplier->stats->number_supplier_products,
+                            'route' => [
                                 'grp.supply-chain.supplier_products.show',
-                                $supplier->slug
+                                $supplier->slug,
                             ],
                             'leftIcon' => [
-                                'icon'    => 'fal fa-box-usd',
-                                'tooltip' => __('Products')
-                            ]
+                                'icon' => 'fal fa-box-usd',
+                                'tooltip' => __('Products'),
+                            ],
                         ],
-                    ]
+                    ],
 
                 ],
                 'attachmentRoutes' => [
@@ -145,19 +143,19 @@ class ShowSupplier extends GrpAction
                         'name' => 'grp.models.supplier.attachment.attach',
                         'parameters' => [
                             'supplier' => $supplier->id,
-                        ]
+                        ],
                     ],
                     'detachRoute' => [
                         'name' => 'grp.models.supplier.attachment.detach',
                         'parameters' => [
                             'supplier' => $supplier->id,
                         ],
-                        'method'    => 'delete'
-                    ]
+                        'method' => 'delete',
+                    ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => SupplierTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => SupplierTabsEnum::navigation(),
                 ],
 
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
@@ -173,20 +171,18 @@ class ShowSupplier extends GrpAction
                     )
                     : Inertia::lazy(fn () => SupplierProductResource::collection(IndexSupplierProducts::run($supplier))),
 
-
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($supplier))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($supplier))),
 
                 SupplierTabsEnum::ATTACHMENTS->value => $this->tab == SupplierTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($supplier))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier)))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier))),
             ]
         )->table(IndexSupplierProducts::make()->tableStructure())
             ->table(IndexAttachments::make()->tableStructure(SupplierTabsEnum::ATTACHMENTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
     }
-
 
     public function getBreadcrumbs(Supplier $supplier, string $routeName, array $routeParameters, string $suffix = ''): array
     {
@@ -195,11 +191,11 @@ class ShowSupplier extends GrpAction
             return [
                 [
 
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Suppliers')
+                            'label' => __('Suppliers'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -207,7 +203,7 @@ class ShowSupplier extends GrpAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
 
                 ],
             ];
@@ -215,27 +211,25 @@ class ShowSupplier extends GrpAction
 
         return match ($routeName) {
             'grp.supply-chain.suppliers.supplier_products.index',
-            'grp.supply-chain.suppliers.show' =>
-            array_merge(
+            'grp.supply-chain.suppliers.show' => array_merge(
                 ShowSupplyChainDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     $supplier,
                     [
                         'index' => [
-                            'name'       => 'grp.supply-chain.suppliers.index',
-                            'parameters' => []
+                            'name' => 'grp.supply-chain.suppliers.index',
+                            'parameters' => [],
                         ],
                         'model' => [
-                            'name'       => 'grp.supply-chain.suppliers.show',
-                            'parameters' => [$supplier->slug]
-                        ]
+                            'name' => 'grp.supply-chain.suppliers.show',
+                            'parameters' => [$supplier->slug],
+                        ],
                     ],
                     $suffix
                 ),
             ),
-            'grp.supply-chain.agents.show.suppliers.show' =>
-            array_merge(
-                (new ShowAgent())->getBreadcrumbs(
+            'grp.supply-chain.agents.show.suppliers.show' => array_merge(
+                (new ShowAgent)->getBreadcrumbs(
                     $supplier->agent,
                     $routeParameters
                 ),
@@ -243,14 +237,14 @@ class ShowSupplier extends GrpAction
                     $supplier,
                     [
                         'index' => [
-                            'name'       => 'grp.supply-chain.agents.show.suppliers.index',
-                            'parameters' => Arr::only($routeParameters, 'agent')
+                            'name' => 'grp.supply-chain.agents.show.suppliers.index',
+                            'parameters' => Arr::only($routeParameters, 'agent'),
 
                         ],
                         'model' => [
-                            'name'       => 'grp.supply-chain.agents.show.suppliers.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.supply-chain.agents.show.suppliers.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -258,7 +252,6 @@ class ShowSupplier extends GrpAction
             default => []
         };
     }
-
 
     public function jsonResponse(Supplier $supplier): SupplierResource
     {
@@ -289,7 +282,7 @@ class ShowSupplier extends GrpAction
 
     private function getNavigation(?Supplier $supplier, string $routeName): ?array
     {
-        if (!$supplier) {
+        if (! $supplier) {
             return null;
         }
 
@@ -297,25 +290,24 @@ class ShowSupplier extends GrpAction
             'grp.supply-chain.suppliers.show' => [
                 'label' => $supplier->code,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'supplier' => $supplier->slug
-                    ]
+                        'supplier' => $supplier->slug,
+                    ],
 
-                ]
+                ],
             ],
             'grp.supply-chain.agents.show.suppliers.show' => [
                 'label' => $supplier->code,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'agent'    => $supplier->agent->slug,
-                        'supplier' => $supplier->slug
-                    ]
+                        'agent' => $supplier->agent->slug,
+                        'supplier' => $supplier->slug,
+                    ],
 
-                ]
+                ],
             ]
         };
     }
-
 }

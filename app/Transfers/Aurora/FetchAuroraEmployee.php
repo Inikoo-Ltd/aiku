@@ -18,7 +18,6 @@ class FetchAuroraEmployee extends FetchAurora
     use WithAuroraImages;
     use WithAuroraParsers;
 
-
     public function fetch(int $id): ?array
     {
         $this->auroraModelData = $this->fetchData($id);
@@ -28,14 +27,13 @@ class FetchAuroraEmployee extends FetchAurora
                 return null;
             }
 
-            $data   = [];
+            $data = [];
             $errors = [];
             if ($this->parseDatetime($this->auroraModelData->{'Staff Valid From'}) == '') {
                 $errors = [
-                    'missing' => ['created_at', 'employment_start_at']
+                    'missing' => ['created_at', 'employment_start_at'],
                 ];
             }
-
 
             $working_hours = json_decode($this->auroraModelData->{'Staff Working Hours'}, true);
             if ($working_hours) {
@@ -43,13 +41,12 @@ class FetchAuroraEmployee extends FetchAurora
                     json_decode($this->auroraModelData->{'Staff Working Hours Per Week Metadata'}, true)
                 );
             }
-            $workingHours     = json_decode($this->auroraModelData->{'Staff Working Hours'}, true);
+            $workingHours = json_decode($this->auroraModelData->{'Staff Working Hours'}, true);
             $weekDistribution = json_decode($this->auroraModelData->{'Staff Working Hours Per Week Metadata'}, true);
 
             if ($workingHours and $weekDistribution) {
                 $workingHours['week_distribution'] = array_change_key_case($weekDistribution);
             }
-
 
             $salary = json_decode($this->auroraModelData->{'Staff Salary'}, true);
             if ($salary) {
@@ -62,7 +59,6 @@ class FetchAuroraEmployee extends FetchAurora
 
             $this->parsedData['working_hours'] = $working_hours ?? [];
 
-
             if ($this->auroraModelData->{'Staff ID'}) {
                 $workerNumber = preg_replace('/[()]/', '', $this->auroraModelData->{'Staff ID'});
                 $workerNumber = preg_replace('/\s+/', '-', $workerNumber);
@@ -70,9 +66,8 @@ class FetchAuroraEmployee extends FetchAurora
                 $workerNumber = $this->auroraModelData->{'Staff Key'};
             }
 
-
             $createdAt = $this->auroraModelData->{'Staff Valid From'};
-            if (!$createdAt) {
+            if (! $createdAt) {
                 $firstAction = DB::connection('aurora')->table('History Dimension')
                     ->select('History Date as date')
                     ->where('Subject', 'Staff')
@@ -84,59 +79,52 @@ class FetchAuroraEmployee extends FetchAurora
                 }
             }
 
-
             $this->parsedData['employee'] = [
-                'alias'                    => $this->auroraModelData->{'Staff Alias'},
-                'contact_name'             => $this->auroraModelData->{'Staff Name'},
-                'email'                    => $this->auroraModelData->{'Staff Email'} ?: null,
-                'phone'                    => $this->auroraModelData->{'Staff Telephone'} ?: null,
+                'alias' => $this->auroraModelData->{'Staff Alias'},
+                'contact_name' => $this->auroraModelData->{'Staff Name'},
+                'email' => $this->auroraModelData->{'Staff Email'} ?: null,
+                'phone' => $this->auroraModelData->{'Staff Telephone'} ?: null,
                 'identity_document_number' => $this->auroraModelData->{'Staff Official ID'} ?: null,
-                'date_of_birth'            => $this->parseDate($this->auroraModelData->{'Staff Birthday'}),
-                'worker_number'            => $workerNumber,
-                'emergency_contact'        => $this->auroraModelData->{'Staff Next of Kind'} ?: null,
-                'job_title'                => $this->auroraModelData->{'Staff Job Title'} ?: null,
-                'salary'                   => $salary,
-                'employment_start_at'      => $this->parseDatetime($this->auroraModelData->{'Staff Valid From'}),
-                'employment_end_at'        => $this->parseDatetime($this->auroraModelData->{'Staff Valid To'}),
-                'type'                     => Str::snake($this->auroraModelData->{'Staff Type'}, '-'),
-                'state'                    => match ($this->auroraModelData->{'Staff Currently Working'}) {
+                'date_of_birth' => $this->parseDate($this->auroraModelData->{'Staff Birthday'}),
+                'worker_number' => $workerNumber,
+                'emergency_contact' => $this->auroraModelData->{'Staff Next of Kind'} ?: null,
+                'job_title' => $this->auroraModelData->{'Staff Job Title'} ?: null,
+                'salary' => $salary,
+                'employment_start_at' => $this->parseDatetime($this->auroraModelData->{'Staff Valid From'}),
+                'employment_end_at' => $this->parseDatetime($this->auroraModelData->{'Staff Valid To'}),
+                'type' => Str::snake($this->auroraModelData->{'Staff Type'}, '-'),
+                'state' => match ($this->auroraModelData->{'Staff Currently Working'}) {
                     'No' => EmployeeStateEnum::LEFT,
                     default => EmployeeStateEnum::WORKING
                 },
-                'data'                     => $data,
-                'errors'                   => $errors,
-                'source_id'                => $this->organisation->id.':'.$this->auroraModelData->{'Staff Key'},
-                'fetched_at'               => now(),
-                'last_fetched_at'          => now()
+                'data' => $data,
+                'errors' => $errors,
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Staff Key'},
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
             ];
 
             if ($createdAt) {
                 $this->parsedData['employee']['created_at'] = $createdAt;
             }
 
-
             $userData = $this->parseUserFromEmployee();
             $this->parsedData['user'] = $userData;
 
             $this->parsedData['photo'] = $this->parseUserPhoto();
 
-
             $userId = null;
-
 
             if (Arr::has($this->parsedData, 'user.source_id')) {
                 $userSourceData = explode(':', $this->parsedData['user']['source_id']);
-                $userId         = $userSourceData[1];
+                $userId = $userSourceData[1];
             }
-
 
             $this->parsedData['employee']['positions'] = $this->parsePositions($userId);
         }
 
-
         return $this->parsedData;
     }
-
 
     private function parseUserFromEmployee(): ?array
     {
@@ -148,7 +136,6 @@ class FetchAuroraEmployee extends FetchAurora
             ->where('users.aiku_ignore', 'No')
             ->where('User Parent Key', $this->auroraModelData->{'Staff Key'})->first();
 
-
         if ($auroraUserData) {
 
             $legacyPassword = $auroraUserData->{'User Password'};
@@ -156,13 +143,11 @@ class FetchAuroraEmployee extends FetchAurora
                 $legacyPassword = hash('sha256', 'hello');
             }
 
-
             if ($auroraUserData->aiku_alt_username) {
                 $username = $auroraUserData->aiku_alt_username;
             } else {
                 $username = $auroraUserData->{'User Handle'};
             }
-
 
             $status = $auroraUserData->{'User Active'} == 'Yes';
 
@@ -171,27 +156,25 @@ class FetchAuroraEmployee extends FetchAurora
                 $status = false;
             }
 
-
             return [
-                'source_id'         => $this->organisation->id.':'.$auroraUserData->{'User Key'},
-                'username'          => Str::kebab(Str::lower($username)),
-                'status'            => $status,
+                'source_id' => $this->organisation->id.':'.$auroraUserData->{'User Key'},
+                'username' => Str::kebab(Str::lower($username)),
+                'status' => $status,
                 'user_model_status' => $status,
-                'created_at'        => $auroraUserData->{'User Created'},
-                'legacy_password'   => $legacyPassword,
-                //'password'          => (app()->isLocal() ? 'hello' : wordwrap(Str::random(), 4, '-', true)),
-                'language_id'       => $this->parseLanguageID($auroraUserData->{'User Preferred Locale'}),
-                'reset_password'    => false,
-                'fetched_at'        => now(),
-                'last_fetched_at'   => now()
+                'created_at' => $auroraUserData->{'User Created'},
+                'legacy_password' => $legacyPassword,
+                // 'password'          => (app()->isLocal() ? 'hello' : wordwrap(Str::random(), 4, '-', true)),
+                'language_id' => $this->parseLanguageID($auroraUserData->{'User Preferred Locale'}),
+                'reset_password' => false,
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
             ];
         }
 
         return null;
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Staff Dimension')
@@ -200,6 +183,4 @@ class FetchAuroraEmployee extends FetchAurora
             ->selectRaw('(select GROUP_CONCAT(`User Group Key`) from `User Group User Bridge` UGUB where (UGUB.`User Key`=`User Dimension`.`User Key`) ) as staff_groups')
             ->where('Staff Key', $id)->first();
     }
-
-
 }

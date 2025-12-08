@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('stored_item_audits', function (Blueprint $table) {
@@ -23,7 +24,6 @@ return new class () extends Migration {
             $table->decimal('tax_amount', 16)->nullable();
             $table->decimal('total_amount', 16)->nullable();
 
-
             $table->unsignedSmallInteger('number_audited_pallets')->default(0);
             $table->unsignedSmallInteger('number_audited_stored_items')->default(0);
             $table->unsignedSmallInteger('number_audited_stored_items_with_additions')->default(0)->comment('Number of stored items with stock additions (found stock)');
@@ -33,10 +33,8 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('number_associated_stored_items')->default(0)->comment('Number of stored items associated to the pallet during the audit');
             $table->unsignedSmallInteger('number_created_stored_items')->default(0)->comment('Number of stored items created and associated to the pallet during the audit');
 
-
         });
     }
-
 
     public function down(): void
     {
@@ -55,8 +53,6 @@ return new class () extends Migration {
             $table->dropColumn('number_audited_stored_items_with_with_stock_checked');
             $table->dropColumn('number_associated_stored_items');
             $table->dropColumn('number_created_stored_items');
-
-
 
         });
     }

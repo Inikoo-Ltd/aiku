@@ -29,20 +29,18 @@ class TradeUnitImagesResource extends JsonResource
 
         $media = Media::find($this->id);
 
-
         $image = $media->getImage()->resize(0, 100);
         $imageSources = GetPictureSources::run($image);
 
-
         return [
-            'id'    => $this->id,
-            'name'  => $this->name,
-            'size'  => NaturalLanguage::make()->fileSize($this->size, 1, 'MB'),
+            'id' => $this->id,
+            'name' => $this->name,
+            'size' => NaturalLanguage::make()->fileSize($this->size, 1, 'MB'),
             'image' => $imageSources,
             'sub_scope' => $this->sub_scope,
             'dimensions' => [
-                'width'  => $this->width ?? 0,
-                'height' => $this->height ?? 0
+                'width' => $this->width ?? 0,
+                'height' => $this->height ?? 0,
             ],
 
         ];

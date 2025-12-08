@@ -41,35 +41,35 @@ class MasterProductsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'code'                   => $this->code,
-            'name'                   => $this->name,
-            'master_shop_slug'       => $this->master_shop_slug,
-            'master_shop_code'       => $this->master_shop_code,
-            'master_shop_name'       => $this->master_shop_name,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'master_shop_slug' => $this->master_shop_slug,
+            'master_shop_code' => $this->master_shop_code,
+            'master_shop_name' => $this->master_shop_name,
             'master_department_slug' => $this->master_department_slug,
             'master_department_code' => $this->master_department_code,
             'master_department_name' => $this->master_department_name,
-            'master_family_slug'     => $this->master_family_slug,
-            'master_family_code'     => $this->master_family_code,
-            'master_family_name'     => $this->master_family_name,
-            'show_in_website'        => $this->show_in_website,
-            'used_in'                => $this->used_in,
-            'unit'                   => $this->unit,
-            'units'                  => $this->units,
-            'price'                  => $this->price,
-            'rrp'                    => $this->rrp,
-            'status'                 => $this->status,
-            'currency_code'          => $this->currency_code,
-            'status_icon'            => $this->status ? [
+            'master_family_slug' => $this->master_family_slug,
+            'master_family_code' => $this->master_family_code,
+            'master_family_name' => $this->master_family_name,
+            'show_in_website' => $this->show_in_website,
+            'used_in' => $this->used_in,
+            'unit' => $this->unit,
+            'units' => $this->units,
+            'price' => $this->price,
+            'rrp' => $this->rrp,
+            'status' => $this->status,
+            'currency_code' => $this->currency_code,
+            'status_icon' => $this->status ? [
                 'tooltip' => __('Active'),
-                'icon'    => 'fas fa-check-circle',
-                'class'   => 'text-green-400'
+                'icon' => 'fas fa-check-circle',
+                'class' => 'text-green-400',
             ] : [
                 'tooltip' => __('Closed'),
-                'icon'    => 'fas fa-times-circle',
-                'class'   => 'text-red-400'
+                'icon' => 'fas fa-times-circle',
+                'class' => 'text-red-400',
             ],
         ];
     }

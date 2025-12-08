@@ -16,6 +16,7 @@ trait HasSoftDeletes
     {
         $table->softDeletesTz();
         $table->string('delete_comment')->nullable();
+
         return $table;
     }
 }

@@ -36,8 +36,8 @@ use App\Models\CRM\Prospect;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\WebUser;
 use App\Models\Discounts\Offer;
-use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferAllowance;
+use App\Models\Discounts\OfferCampaign;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
@@ -234,6 +234,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Upload> $uploads
  * @property-read LaravelCollection<int, WebUser> $webUsers
  * @property-read Website|null $website
+ *
  * @method static \Database\Factories\Catalogue\ShopFactory factory($count = null, $state = [])
  * @method static Builder<static>|Shop newModelQuery()
  * @method static Builder<static>|Shop newQuery()
@@ -241,40 +242,41 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Shop query()
  * @method static Builder<static>|Shop withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Shop withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class Shop extends Model implements HasMedia, Auditable
+class Shop extends Model implements Auditable, HasMedia
 {
     use HasAddress;
     use HasAddresses;
-    use SoftDeletes;
-    use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
-    use InOrganisation;
     use HasHistory;
     use HasImage;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InOrganisation;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'            => 'array',
-        'settings'        => 'array',
-        'location'        => 'array',
+        'data' => 'array',
+        'settings' => 'array',
+        'location' => 'array',
         'extra_languages' => 'array',
         'forbidden_dispatch_countries' => 'array',
-        'type'            => ShopTypeEnum::class,
-        'state'           => ShopStateEnum::class,
-        'fetched_at'      => 'datetime',
+        'type' => ShopTypeEnum::class,
+        'state' => ShopStateEnum::class,
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
-        'offers_data'     => 'array',
+        'offers_data' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
         'location' => '{}',
         'extra_languages' => '{}',
         'forbidden_dispatch_countries' => '{}',
-        'offers_data'   => '{}',
+        'offers_data' => '{}',
     ];
 
     protected $guarded = [];
@@ -287,7 +289,7 @@ class Shop extends Model implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'catalogue'
+            'catalogue',
         ];
     }
 
@@ -303,9 +305,8 @@ class Shop extends Model implements HasMedia, Auditable
         'timezone_id',
         'company_name',
         'contact_name',
-        'identity_document_number'
+        'identity_document_number',
     ];
-
 
     public function getSlugOptions(): SlugOptions
     {
@@ -455,6 +456,7 @@ class Shop extends Model implements HasMedia, Auditable
     public function getPaymentAccountTypeAccount(): ?PaymentAccount
     {
         $paymentAccountShop = $this->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
+
         return $paymentAccountShop ? $paymentAccountShop->paymentAccount : null;
     }
 
@@ -542,7 +544,6 @@ class Shop extends Model implements HasMedia, Auditable
     {
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
     }
-
 
     public function shopCollections(): HasMany
     {
@@ -673,7 +674,6 @@ class Shop extends Model implements HasMedia, Auditable
     {
         return $this->hasOne(ShopOutboxNewsletterIntervals::class);
     }
-
 
     public function outboxMarketingIntervals(): HasOne
     {

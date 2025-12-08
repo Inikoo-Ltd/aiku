@@ -36,16 +36,15 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             $this->packed_in
         );
 
-
         return [
-            'id'                           => $this->id,
-            'state'                        => $this->state,
-            'state_icon'                   => $this->state->stateIcon()[$this->state->value],
-            'quantity_required'            => $this->quantity_required,
+            'id' => $this->id,
+            'state' => $this->state,
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
+            'quantity_required' => $this->quantity_required,
             'quantity_required_fractional' => $requiredFactionalData,
-            'org_stock_slug'               => $this->org_stock_slug,
-            'org_stock_code'               => $this->org_stock_code,
-            'org_stock_name'               => $this->org_stock_name,
+            'org_stock_slug' => $this->org_stock_slug,
+            'org_stock_code' => $this->org_stock_code,
+            'org_stock_name' => $this->org_stock_name,
         ];
     }
 }

@@ -13,25 +13,24 @@ use Illuminate\Support\Facades\Route;
 Route::get('', IndexFulfilments::class)->name('index');
 Route::get('create', CreateFulfilment::class)->name('create');
 
-
 Route::prefix('{fulfilment}')->name('show.')
     ->group(function () {
 
-        Route::name("operations.")
-            ->group(__DIR__."/operations.php");
+        Route::name('operations.')
+            ->group(__DIR__.'/operations.php');
 
-        Route::name("catalogue.")
-             ->group(__DIR__."/fulfillment_catalogue.php");
+        Route::name('catalogue.')
+            ->group(__DIR__.'/fulfillment_catalogue.php');
 
-        Route::name("crm.")
-            ->group(__DIR__."/crm.php");
+        Route::name('crm.')
+            ->group(__DIR__.'/crm.php');
 
-        Route::prefix("web")
-            ->name("web.")
-            ->group(__DIR__."/websites.php");
+        Route::prefix('web')
+            ->name('web.')
+            ->group(__DIR__.'/websites.php');
 
-        Route::prefix("settings")
-            ->name("settings")
-            ->group(__DIR__."/settings.php");
+        Route::prefix('settings')
+            ->name('settings')
+            ->group(__DIR__.'/settings.php');
 
     });

@@ -19,25 +19,27 @@ use JsonSerializable;
 class WorkplaceResource extends JsonResource
 {
     public static $wrap = null;
+
     public function toArray($request): array|Arrayable|JsonSerializable
     {
         /** @var Workplace $workplace */
         $workplace = $this;
+
         return [
-            'id'                                       => $workplace->id,
-            'slug'                                     => $workplace->slug,
-            'name'                                     => $workplace->name,
-            'type'                                     => $workplace->type,
-            'created_at'                               => $workplace->created_at,
-            'updated_at'                               => $workplace->updated_at,
-            'status'                                   => $workplace->status,
-            'location'                                 => $workplace->location,
-            'timezone'                                 => TimezoneResource::make($workplace->timezone)->getArray(),
-            'address'                                  => AddressResource::make($workplace->address)->getArray(),
-            'number_clocking_machines'                 => $workplace->stats->number_clocking_machines,
+            'id' => $workplace->id,
+            'slug' => $workplace->slug,
+            'name' => $workplace->name,
+            'type' => $workplace->type,
+            'created_at' => $workplace->created_at,
+            'updated_at' => $workplace->updated_at,
+            'status' => $workplace->status,
+            'location' => $workplace->location,
+            'timezone' => TimezoneResource::make($workplace->timezone)->getArray(),
+            'address' => AddressResource::make($workplace->address)->getArray(),
+            'number_clocking_machines' => $workplace->stats->number_clocking_machines,
             'number_clocking_machines_type_static_nfc' => $workplace->stats->number_clocking_machines_type_static_nfc,
             'number_clocking_machines_type_mobile_app' => $workplace->stats->number_clocking_machines_type_mobile_app,
-            'number_clockings'                         => $workplace->stats->number_clockings,
+            'number_clockings' => $workplace->stats->number_clockings,
 
         ];
     }

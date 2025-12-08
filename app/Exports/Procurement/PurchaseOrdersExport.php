@@ -18,7 +18,7 @@ use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PurchaseOrdersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings, WithChunkReading
+class PurchaseOrdersExport implements FromQuery, ShouldAutoSize, WithChunkReading, WithHeadings, WithMapping
 {
     use Exportable;
 
@@ -27,7 +27,7 @@ class PurchaseOrdersExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
         return PurchaseOrder::query();
     }
 
-    /** @var PurchaseOrder $row */
+    /** @var PurchaseOrder */
     public function map($row): array
     {
         return [
@@ -55,7 +55,7 @@ class PurchaseOrdersExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
             $row->cost_duties,
             $row->cost_tax,
             $row->cost_total,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -86,7 +86,7 @@ class PurchaseOrdersExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
             'Cost Duties',
             'Cost Tax',
             'Cost Total',
-            'Created At'
+            'Created At',
         ];
     }
 

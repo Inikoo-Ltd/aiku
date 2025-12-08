@@ -14,11 +14,11 @@ use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Procurement\WithPrepareDeliveryStoreFields;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
-use App\Models\Production\Production;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\StockDelivery;
+use App\Models\Production\Production;
 use App\Rules\IUnique;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,10 +26,9 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreStockDelivery extends OrgAction
 {
     use HasStockDeliveryHydrators;
-    use WithPrepareDeliveryStoreFields;
-    use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
-
+    use WithNoStrictRules;
+    use WithPrepareDeliveryStoreFields;
 
     private OrgSupplier|OrgAgent|OrgPartner|Production $parent;
 
@@ -76,15 +75,11 @@ class StoreStockDelivery extends OrgAction
             );
         }
 
-
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictStoreRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictStockDeliveryRules($rules);
         }
-
-
-
 
         return $rules;
     }
@@ -101,18 +96,18 @@ class StoreStockDelivery extends OrgAction
     public function prepareForValidation(): void
     {
         if ($this->has('reference')) {
-            $this->set('reference', (string)$this->get('reference'));
+            $this->set('reference', (string) $this->get('reference'));
         }
     }
 
     public function action(OrgSupplier|OrgAgent|OrgPartner|Production $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): StockDelivery
     {
-        if (!$audit) {
+        if (! $audit) {
             StockDelivery::disableAuditing();
         }
-        $this->asAction       = true;
-        $this->parent         = $parent;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->parent = $parent;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisation($parent->organisation, $modelData);

@@ -18,7 +18,7 @@ class FetchAuroraPortfolio extends FetchAurora
     protected function parseModel(): void
     {
         $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Customer Portfolio Customer Key'});
-        if (!$customer) {
+        if (! $customer) {
             return;
         }
 
@@ -28,14 +28,13 @@ class FetchAuroraPortfolio extends FetchAurora
 
         /** @var Product $product */
         $product = $this->parseProduct($this->organisation->id.':'.$this->auroraModelData->{'Customer Portfolio Product ID'});
-        if (!$product) {
+        if (! $product) {
             return;
         }
 
         if ($product->trashed()) {
             return;
         }
-
 
         $this->parsedData['customer'] = $customer;
 
@@ -44,26 +43,25 @@ class FetchAuroraPortfolio extends FetchAurora
         $this->parsedData['product'] = $product;
 
         $this->parsedData['portfolio'] = [
-            'platform_id'     => $platform->id,
-            'shop_id'         => $customer->shop_id,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Customer Portfolio Key'},
-            'reference'       => $this->auroraModelData->{'Customer Portfolio Reference'},
-            'created_at'      => $this->auroraModelData->{'Customer Portfolio Creation Date'},
-            'last_added_at'   => $this->auroraModelData->{'Customer Portfolio Creation Date'},
-            'status'          => $this->auroraModelData->{'Customer Portfolio Customers State'} === 'Active',
-            'fetched_at'      => now(),
+            'platform_id' => $platform->id,
+            'shop_id' => $customer->shop_id,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Customer Portfolio Key'},
+            'reference' => $this->auroraModelData->{'Customer Portfolio Reference'},
+            'created_at' => $this->auroraModelData->{'Customer Portfolio Creation Date'},
+            'last_added_at' => $this->auroraModelData->{'Customer Portfolio Creation Date'},
+            'status' => $this->auroraModelData->{'Customer Portfolio Customers State'} === 'Active',
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
-            'item_name'       => $product->name,
-            'item_code'       => $product->code,
+            'item_name' => $product->name,
+            'item_code' => $product->code,
         ];
-        $lastRemoved                   = $this->auroraModelData->{'Customer Portfolio Removed Date'};
+        $lastRemoved = $this->auroraModelData->{'Customer Portfolio Removed Date'};
         if ($lastRemoved) {
             $this->parsedData['portfolio']['last_removed_at'] = $lastRemoved;
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Customer Portfolio Fact')

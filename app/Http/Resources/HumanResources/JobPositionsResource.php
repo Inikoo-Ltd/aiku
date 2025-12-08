@@ -24,13 +24,13 @@ class JobPositionsResource extends JsonResource
     public function toArray($request): array|Arrayable|JsonSerializable
     {
         return [
-            'slug'                               => $this->slug,
-            'code'                               => $this->code,
-            'name'                               => $this->name,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
             'number_employees_currently_working' => $this->number_employees_currently_working,
-            'share'                              => percentage($this->share, 1),
-            'organisation_name'                  =>  $this->organisation_name,
-            'organisation_slug'                  => $this->organisation_slug,
+            'share' => percentage($this->share, 1),
+            'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
 
         ];
     }

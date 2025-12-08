@@ -19,7 +19,6 @@ class LogUserLogin
     use AsAction;
     use WithLogUserableLogin;
 
-
     public function handle(User $user, string $ip, string $userAgent, Carbon $datetime): void
     {
         $this->logUserableLogin(
@@ -34,13 +33,10 @@ class LogUserLogin
         $stats = [
             'last_login_at' => $datetime,
             'last_login_ip' => $ip,
-            'number_logins' => $user->stats->number_logins + 1
+            'number_logins' => $user->stats->number_logins + 1,
         ];
 
         $user->stats()->update($stats);
 
-
     }
-
-
 }

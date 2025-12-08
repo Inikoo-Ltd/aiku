@@ -21,8 +21,8 @@ use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydratePurchaseOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePurchaseOrders;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
@@ -37,9 +37,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePurchaseOrder extends OrgAction
 {
-    use WithPrepareDeliveryStoreFields;
-    use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
+    use WithNoStrictRules;
+    use WithPrepareDeliveryStoreFields;
 
     private OrgSupplier|OrgAgent|OrgPartner $parent;
 
@@ -47,7 +47,7 @@ class StorePurchaseOrder extends OrgAction
     {
         // dd($parent);
         $modelData = $this->prepareDeliveryStoreFields($parent, $modelData);
-        if (!Arr::get($modelData, 'reference')) {
+        if (! Arr::get($modelData, 'reference')) {
             data_set(
                 $modelData,
                 'reference',
@@ -57,10 +57,10 @@ class StorePurchaseOrder extends OrgAction
                 )
             );
         }
-        if (!Arr::get($modelData, 'date')) {
+        if (! Arr::get($modelData, 'date')) {
             data_set($modelData, 'date', now());
         }
-        if (!Arr::get($modelData, 'currency_id')) {
+        if (! Arr::get($modelData, 'currency_id')) {
             data_set($modelData, 'currency_id', $parent->organisation->currency_id);
         }
         // dd($parent);
@@ -80,6 +80,7 @@ class StorePurchaseOrder extends OrgAction
 
         OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation)->delay($this->hydratorsDelay);
         PurchaseOrderRecordSearch::dispatch($purchaseOrder)->delay($this->hydratorsDelay);
+
         return $purchaseOrder;
     }
 
@@ -95,18 +96,18 @@ class StorePurchaseOrder extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'       => [
+            'reference' => [
                 'sometimes',
                 'required',
-                $this->strict ? 'alpha_dash' : 'string'
+                $this->strict ? 'alpha_dash' : 'string',
             ],
-            'state'           => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
+            'state' => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
             'delivery_state' => ['sometimes', 'required', Rule::enum(PurchaseOrderDeliveryStateEnum::class)],
-            'cost_items'      => ['sometimes', 'required', 'numeric', 'min:0'],
-            'cost_shipping'   => ['sometimes', 'required', 'numeric', 'min:0'],
-            'cost_total'      => ['sometimes', 'required', 'numeric', 'min:0'],
-            'date'            => ['sometimes', 'required'],
-            'currency_id'     => ['sometimes', 'required'],
+            'cost_items' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'cost_shipping' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'cost_total' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'date' => ['sometimes', 'required'],
+            'currency_id' => ['sometimes', 'required'],
         ];
 
         if ($this->strict) {
@@ -118,8 +119,7 @@ class StorePurchaseOrder extends OrgAction
             );
         }
 
-
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictStoreRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictPurchaseOrderDatesRules($rules);
@@ -148,15 +148,14 @@ class StorePurchaseOrder extends OrgAction
 
     public function action(OrgAgent|OrgSupplier|OrgPartner $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): PurchaseOrder
     {
-        if (!$audit) {
+        if (! $audit) {
             PurchaseOrder::disableAuditing();
         }
-        $this->asAction       = true;
-        $this->parent         = $parent;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->parent = $parent;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($parent->organisation, $modelData);
-
 
         return $this->handle($parent, $this->validatedData);
     }

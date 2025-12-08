@@ -15,11 +15,8 @@ class UpdateWebBlockType
 {
     use WithActionUpdate;
 
-
     public function handle(WebBlockType $webBlock, array $modelData): WebBlockType
     {
         return $this->update($webBlock, $modelData);
     }
-
-
 }

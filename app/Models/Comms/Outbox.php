@@ -10,8 +10,8 @@ namespace App\Models\Comms;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
-use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -71,6 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Comms\OutBoxHasSubscriber> $subscribedUsers
  * @property-read Collection<int, \App\Models\Comms\OutboxTimeSeries> $timeSeries
  * @property-read Website|null $website
+ *
  * @method static \Database\Factories\Comms\OutboxFactory factory($count = null, $state = [])
  * @method static Builder<static>|Outbox newModelQuery()
  * @method static Builder<static>|Outbox newQuery()
@@ -78,14 +79,15 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Outbox query()
  * @method static Builder<static>|Outbox withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Outbox withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Outbox extends Model
 {
-    use SoftDeletes;
-    use HasSlug;
     use HasFactory;
+    use HasSlug;
     use InShop;
+    use SoftDeletes;
 
     protected $table = 'outboxes';
 
@@ -95,17 +97,17 @@ class Outbox extends Model
     }
 
     protected $casts = [
-        'data'    => 'array',
+        'data' => 'array',
         'sources' => 'array',
-        'code'    => OutboxCodeEnum::class,
-        'type'    => OutboxTypeEnum::class,
-        'state'   => OutboxStateEnum::class,
-        'builder' => OutboxBuilderEnum::class
+        'code' => OutboxCodeEnum::class,
+        'type' => OutboxTypeEnum::class,
+        'state' => OutboxStateEnum::class,
+        'builder' => OutboxBuilderEnum::class,
     ];
 
     protected $attributes = [
-        'data'    => '{}',
-        'sources' => '{}'
+        'data' => '{}',
+        'sources' => '{}',
     ];
 
     protected $guarded = [];
@@ -137,7 +139,6 @@ class Outbox extends Model
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128);
     }
-
 
     public function stats(): HasOne
     {
@@ -208,5 +209,4 @@ class Outbox extends Model
     {
         return $this->hasMany(OutBoxHasSubscriber::class);
     }
-
 }

@@ -23,7 +23,6 @@ Route::get('/delivery-notes/{deliveryNote:id}', [ShowDeliveryNote::class, 'inWar
 Route::get('handling-fulfilment-returns', [IndexWarehousePalletReturns::class, 'inWarehouseHandling'])->name('pallet_returns.handling.index');
 Route::get('dispatched-fulfilment-returns', [IndexWarehousePalletReturns::class, 'inWarehouseDispatched'])->name('pallet_returns.dispatched.index');
 
-
 Route::get('fulfilment-returns/{palletReturn:id}', ShowWarehousePalletReturn::class)->name('pallet-returns.show')->withoutScopedBindings();
 Route::get('fulfilment-return-stored-items/{palletReturn:id}', ShowWarehouseStoredItemReturn::class)->name('pallet-return-with-stored-items.show')->withoutScopedBindings();
 Route::get('fulfilment-returns/{palletReturn:id}/pallets', IndexWarehousePalletsInReturnAtMaya::class)->name('pallet-returns.pallets.index')->withoutScopedBindings();

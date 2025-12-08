@@ -32,9 +32,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationSalesMetrics newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationSalesMetrics newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationSalesMetrics query()
+ *
  * @mixin \Eloquent
  */
 class OrganisationSalesMetrics extends Model
@@ -42,7 +44,7 @@ class OrganisationSalesMetrics extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'date' => 'datetime'
+        'date' => 'datetime',
     ];
 
     public function group(): BelongsTo

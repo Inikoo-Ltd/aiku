@@ -23,5 +23,4 @@ trait WithOrganisationsArgument
             })
             ->cursor();
     }
-
 }

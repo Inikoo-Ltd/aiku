@@ -26,11 +26,10 @@ class GroupHydrateStocks implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
-        $stats  = [
-            'number_stocks'         => $group->stocks()->count(),
+        $stats = [
+            'number_stocks' => $group->stocks()->count(),
         ];
 
         $stats = array_merge(
@@ -52,8 +51,5 @@ class GroupHydrateStocks implements ShouldBeUnique
 
         $group->goodsStats()->update($stats);
 
-
-
     }
-
 }

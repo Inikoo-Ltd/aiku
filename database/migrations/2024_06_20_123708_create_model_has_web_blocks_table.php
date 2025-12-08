@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('model_has_web_blocks', function (Blueprint $table) {
@@ -39,13 +40,10 @@ return new class () extends Migration {
             $table->timestampsTz();
             $table->string('migration_checksum')->index()->nullable();
 
-            $table->index(['model_type','model_id']);
-
-
+            $table->index(['model_type', 'model_id']);
 
         });
     }
-
 
     public function down(): void
     {

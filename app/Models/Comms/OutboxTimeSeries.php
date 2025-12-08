@@ -23,9 +23,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\OutboxTimeSeriesRecord> $records
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutboxTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutboxTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutboxTimeSeries query()
+ *
  * @mixin \Eloquent
  */
 class OutboxTimeSeries extends Model
@@ -35,7 +37,7 @@ class OutboxTimeSeries extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'data'      => 'array',
+        'data' => 'array',
         'frequency' => TimeSeriesFrequencyEnum::class,
 
     ];

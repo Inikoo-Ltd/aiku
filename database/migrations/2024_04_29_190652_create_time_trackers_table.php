@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('time_trackers', function (Blueprint $table) {
@@ -39,7 +40,6 @@ return new class () extends Migration {
             $table->foreign('time_tracker_id')->references('id')->on('time_trackers');
         });
     }
-
 
     public function down(): void
     {

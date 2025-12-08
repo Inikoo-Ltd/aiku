@@ -21,20 +21,18 @@ class FetchAuroraHistoricAsset extends FetchAurora
             $this->parsedData['asset_model'] = $this->parseService($this->organisation->id.':'.$this->auroraModelData->{'Product ID'});
         }
 
-        if (!$this->parsedData['asset_model']) {
+        if (! $this->parsedData['asset_model']) {
 
             dd($this->auroraModelData);
         }
 
-
-        $deleted_at                  = $this->parseDatetime($this->auroraModelData->{'Product History Valid To'});
+        $deleted_at = $this->parseDatetime($this->auroraModelData->{'Product History Valid To'});
 
         $status = 0;
         if (DB::connection('aurora')->table('Product Dimension')->where('Product Current Key', '=', $this->auroraModelData->{'Product Key'})->exists()) {
-            $status     = 1;
+            $status = 1;
             $deleted_at = null;
         }
-
 
         $units = $this->auroraModelData->{'Product History Units Per Case'};
         if ($units == 0) {
@@ -42,21 +40,19 @@ class FetchAuroraHistoricAsset extends FetchAurora
         }
 
         $this->parsedData['historic_asset'] = [
-            'code'       => $this->auroraModelData->{'Product History Code'},
-            'name'       => $this->auroraModelData->{'Product History Name'},
-            'price'      => $this->auroraModelData->{'Product History Price'} / $units,
-            'units'      => $units,
-            'status'     => $status,
+            'code' => $this->auroraModelData->{'Product History Code'},
+            'name' => $this->auroraModelData->{'Product History Name'},
+            'price' => $this->auroraModelData->{'Product History Price'} / $units,
+            'units' => $units,
+            'status' => $status,
             'created_at' => $this->parseDatetime($this->auroraModelData->{'Product History Valid From'}),
             'deleted_at' => $deleted_at,
-            'source_id'  => $this->organisation->id.':'.$this->auroraModelData->{'Product Key'}
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Product Key'},
         ];
-
 
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Product History Dimension')

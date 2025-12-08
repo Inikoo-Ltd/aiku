@@ -16,13 +16,12 @@ class ManufactureTaskHydrateUniversalSearch
         $manufactureTask->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'          => $manufactureTask->group_id,
-                'organisation_id'   => $manufactureTask->organisation_id,
+                'group_id' => $manufactureTask->group_id,
+                'organisation_id' => $manufactureTask->organisation_id,
                 'organisation_slug' => $manufactureTask->organisation->slug,
-                'sections'          => ['manufacture'],
-                'haystack_tier_1'   => trim($manufactureTask->name.' '.$manufactureTask->code),
+                'sections' => ['manufacture'],
+                'haystack_tier_1' => trim($manufactureTask->name.' '.$manufactureTask->code),
             ]
         );
     }
-
 }

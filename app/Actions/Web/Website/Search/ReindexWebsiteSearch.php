@@ -17,7 +17,6 @@ class ReindexWebsiteSearch extends HydrateModel
 {
     public string $commandSignature = 'search:websites {organisations?*} {--s|slugs=} ';
 
-
     public function handle(Website $website): void
     {
         WebsiteRecordSearch::run($website);
@@ -35,7 +34,7 @@ class ReindexWebsiteSearch extends HydrateModel
 
     protected function loopAll(Command $command): void
     {
-        $command->info("Reindex Websites");
+        $command->info('Reindex Websites');
         $count = Website::withTrashed()->count();
 
         $bar = $command->getOutput()->createProgressBar($count);
@@ -50,6 +49,6 @@ class ReindexWebsiteSearch extends HydrateModel
         });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
     }
 }

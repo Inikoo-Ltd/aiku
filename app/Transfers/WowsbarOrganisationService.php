@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 class WowsbarOrganisationService implements SourceOrganisationService
 {
     public Organisation $organisation;
+
     public ?Fetch $fetch = null;
 
     public function initialisation(Organisation $organisation, string $databaseSuffix = ''): void
@@ -500,6 +501,4 @@ class WowsbarOrganisationService implements SourceOrganisationService
     {
         return null;
     }
-
-
 }

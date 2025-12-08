@@ -10,22 +10,22 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('payment_account_stats', function (Blueprint $table) {
-            $table->unsignedInteger("number_customers")->default(0)->comment('Number distinct customer with successful payments');
+            $table->unsignedInteger('number_customers')->default(0)->comment('Number distinct customer with successful payments');
         });
 
         Schema::table('payment_service_provider_stats', function (Blueprint $table) {
-            $table->unsignedInteger("number_customers")->default(0)->comment('Number distinct customer with successful payments');
+            $table->unsignedInteger('number_customers')->default(0)->comment('Number distinct customer with successful payments');
         });
 
         Schema::table('payment_account_shop_stats', function (Blueprint $table) {
-            $table->unsignedInteger("number_customers")->default(0)->comment('Number distinct customer with successful payments');
+            $table->unsignedInteger('number_customers')->default(0)->comment('Number distinct customer with successful payments');
         });
     }
-
 
     public function down(): void
     {

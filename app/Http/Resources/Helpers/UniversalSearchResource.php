@@ -21,32 +21,32 @@ class UniversalSearchResource extends JsonResource
     {
         return [
             'model_type' => $this->model_type,
-            'model_id'   => $this->model_id,
-            'model_icon'    => $this->getModelIcon($this->model_type),
-            'result'     => $this->result,
+            'model_id' => $this->model_id,
+            'model_icon' => $this->getModelIcon($this->model_type),
+            'result' => $this->result,
         ];
     }
 
-    private function getModelIcon($model_type): array | null
+    private function getModelIcon($model_type): ?array
     {
         $icons = [
             'Customer' => [
                 'icon' => 'fal fa-user',
                 // 'color' => 'primary'
             ],
-            'order'    => [
+            'order' => [
                 'icon' => 'fal fa-shopping-cart',
                 // 'color' => 'success'
             ],
-            'product'  => [
+            'product' => [
                 'icon' => 'fal fa-box',
                 // 'color' => 'info'
             ],
-            'invoice'  => [
+            'invoice' => [
                 'icon' => 'fal fa-file-invoice',
                 // 'color' => 'warning'
             ],
-            'payment'  => [
+            'payment' => [
                 'icon' => 'fal fa-money-bill',
                 // 'color' => 'danger'
             ],
@@ -54,31 +54,31 @@ class UniversalSearchResource extends JsonResource
                 'icon' => 'fal fa-truck',
                 // 'color' => 'secondary'
             ],
-            'task'     => [
+            'task' => [
                 'icon' => 'fal fa-tasks',
                 // 'color' => 'dark'
             ],
-            'note'     => [
+            'note' => [
                 'icon' => 'fal fa-sticky-note',
                 // 'color' => 'info'
             ],
-            'event'    => [
+            'event' => [
                 'icon' => 'fal fa-calendar-alt',
                 // 'color' => 'primary'
             ],
-            'file'     => [
+            'file' => [
                 'icon' => 'fal fa-file',
                 // 'color' => 'secondary'
             ],
-            'user'     => [
+            'user' => [
                 'icon' => 'fal fa-user',
                 // 'color' => 'primary'
             ],
-            'group'    => [
+            'group' => [
                 'icon' => 'fal fa-users',
                 // 'color' => 'secondary'
             ],
-            'shop'     => [
+            'shop' => [
                 'icon' => 'fal fa-store',
                 // 'color' => 'info'
             ],
@@ -89,12 +89,10 @@ class UniversalSearchResource extends JsonResource
             'warehouse' => [
                 'icon' => 'fal fa-warehouse',
                 // 'color' => 'dark'
-            ]
+            ],
         ];
-
 
         return $icons[$model_type] ?? null;
 
     }
-
 }

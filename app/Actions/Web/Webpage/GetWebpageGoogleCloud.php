@@ -30,6 +30,7 @@ class GetWebpageGoogleCloud extends OrgAction
     use WithNoStrictRules;
 
     private Website $website;
+
     /**
      * @throws \Throwable
      */
@@ -38,8 +39,7 @@ class GetWebpageGoogleCloud extends OrgAction
 
         $user = auth()->user();
 
-
-        $cacheKey = "ui_state-user:{$user->id};webpage:{$webpage->id};filter-webpage-analytics:" . md5(json_encode($modelData));
+        $cacheKey = "ui_state-user:{$user->id};webpage:{$webpage->id};filter-webpage-analytics:".md5(json_encode($modelData));
 
         $cachedData = cache()->get($cacheKey);
 
@@ -49,17 +49,18 @@ class GetWebpageGoogleCloud extends OrgAction
 
         $settings = $webpage->group->settings;
         $oauthClientSecret = Arr::get($settings, 'gcp.oauthClientSecret');
-        if (!$oauthClientSecret) {
-            $oauthClientSecret = env("GOOGLE_OAUTH_CLIENT_SECRET");
-            if (!$oauthClientSecret) {
+        if (! $oauthClientSecret) {
+            $oauthClientSecret = env('GOOGLE_OAUTH_CLIENT_SECRET');
+            if (! $oauthClientSecret) {
                 debug("secret is empty \n");
+
                 return [];
             }
-            data_set($settings, "gcp.oauthClientSecret", $oauthClientSecret);
+            data_set($settings, 'gcp.oauthClientSecret', $oauthClientSecret);
             $webpage->group->update(['settings' => $settings]);
         }
 
-        $client = new Client();
+        $client = new Client;
         $gcpOauthClientSecretDecoded = base64_decode($oauthClientSecret);
         $client->setAuthConfig(json_decode($gcpOauthClientSecretDecoded, true));
         $client->addScope(Webmasters::WEBMASTERS_READONLY);
@@ -67,7 +68,7 @@ class GetWebpageGoogleCloud extends OrgAction
 
         $siteUrl = $this->getSiteUrl($webpage, $service);
 
-        if ($this->saveSecret || !$siteUrl) {
+        if ($this->saveSecret || ! $siteUrl) {
             return [];
         }
 
@@ -85,10 +86,10 @@ class GetWebpageGoogleCloud extends OrgAction
         }
         $websiteData = $webpage->website->data;
         $siteUrl = Arr::get($websiteData, 'gcp.siteUrl');
-        if (!$siteUrl) {
+        if (! $siteUrl) {
             try {
                 $siteEntry = $service->sites->listSites()->getSiteEntry();
-                $listSite = Arr::pluck($siteEntry, "siteUrl");
+                $listSite = Arr::pluck($siteEntry, 'siteUrl');
                 $siteUrl = Arr::where($listSite, function (string $value) use ($webpage) {
                     return str_contains($value, $webpage->website->domain);
                 });
@@ -104,6 +105,7 @@ class GetWebpageGoogleCloud extends OrgAction
                 debug($e);
             }
         }
+
         return $siteUrl;
     }
 
@@ -112,7 +114,7 @@ class GetWebpageGoogleCloud extends OrgAction
         if ($retry == 0) {
             return [];
         }
-        $query = new SearchAnalyticsQueryRequest();
+        $query = new SearchAnalyticsQueryRequest;
         $currentDate = Date::now()->setTimezone('UTC');
         $query->startDate = Arr::get($modelData, 'startDate') ?? $currentDate->copy()->subWeek()->toDateString();
         $query->endDate = Arr::get($modelData, 'endDate') ?? $currentDate->toDateString();
@@ -121,11 +123,11 @@ class GetWebpageGoogleCloud extends OrgAction
         $query->dataState = 'all';
         if ($webpage->url) {
             $query->setDimensionFilterGroups([
-                "filters" => [
-                    "dimension" => "PAGE",
-                    "expression" => "/$webpage->url$",
-                    "operator" => "INCLUDING_REGEX"
-                ]
+                'filters' => [
+                    'dimension' => 'PAGE',
+                    'expression' => "/$webpage->url$",
+                    'operator' => 'INCLUDING_REGEX',
+                ],
             ]);
         }
 
@@ -136,12 +138,14 @@ class GetWebpageGoogleCloud extends OrgAction
         } catch (Exception $e) {
             debug($e);
         }
+
         return $res;
     }
 
     public function asController(Webpage $webpage, ActionRequest $request): array
     {
         $this->initialisationFromShop($webpage->shop, $request);
+
         return $this->action($webpage, $this->validatedData);
     }
 
@@ -155,13 +159,13 @@ class GetWebpageGoogleCloud extends OrgAction
         return [
             'startDate' => ['sometimes', 'date'],
             'endDate' => ['sometimes', 'date'],
-            'searchType' => ['sometimes']
+            'searchType' => ['sometimes'],
         ];
     }
 
     public function action(Webpage $webpage, array $modelData, bool $strict = true): array
     {
-        $this->strict   = $strict;
+        $this->strict = $strict;
         $this->asAction = true;
         $this->setRawAttributes($modelData);
         $validatedData = $this->validateAttributes();

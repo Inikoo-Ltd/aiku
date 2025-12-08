@@ -25,7 +25,7 @@ class FetchAuroraOffers extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Offer
     {
         $offerData = $organisationSource->fetchOffer($organisationSourceId);
-        if (!$offerData) {
+        if (! $offerData) {
             return null;
         }
 
@@ -75,7 +75,6 @@ class FetchAuroraOffers extends FetchAuroraAction
             }
         }
 
-
         return $offer;
 
     }
@@ -92,6 +91,4 @@ class FetchAuroraOffers extends FetchAuroraAction
     {
         return DB::connection('aurora')->table('Deal Dimension')->count();
     }
-
-
 }

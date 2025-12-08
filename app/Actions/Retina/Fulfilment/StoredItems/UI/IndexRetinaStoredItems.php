@@ -66,7 +66,7 @@ class IndexRetinaStoredItems extends RetinaAction
 
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($parent, $prefix) {
 
             if ($prefix) {
                 $table
@@ -77,17 +77,17 @@ class IndexRetinaStoredItems extends RetinaAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title'         => __("No stored items found"),
-                        'count'         => $parent->count(),
-                        'description'   => __("No items stored in any pallets")
+                        'title' => __('No stored items found'),
+                        'count' => $parent->count(),
+                        'description' => __('No items stored in any pallets'),
                     ]
                 )
                 ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true)
-                ->column(key: 'number_pallets', label: __("Pallets"), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'number_audits', label: __("Audits"), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'total_quantity', label: __("Quantity"), canBeHidden: false, sortable: true, align: 'right');
+                ->column(key: 'number_pallets', label: __('Pallets'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_audits', label: __('Audits'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'total_quantity', label: __('Quantity'), canBeHidden: false, sortable: true, align: 'right');
 
             $table->defaultSort('reference');
         };
@@ -98,12 +98,10 @@ class IndexRetinaStoredItems extends RetinaAction
         return true;
     }
 
-
     public function jsonResponse(LengthAwarePaginator $storedItems): AnonymousResourceCollection
     {
         return StoredItemResource::collection($storedItems);
     }
-
 
     public function htmlResponse(LengthAwarePaginator $storedItems, ActionRequest $request): Response
     {
@@ -111,9 +109,9 @@ class IndexRetinaStoredItems extends RetinaAction
             'Storage/RetinaStoredItems',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __("SKUs"),
-                'pageHead'    => [
-                    'title'   => __("SKUs"),
+                'title' => __('SKUs'),
+                'pageHead' => [
+                    'title' => __('SKUs'),
 
                 ],
                 'data' => StoredItemResource::collection($storedItems),
@@ -134,16 +132,16 @@ class IndexRetinaStoredItems extends RetinaAction
             ShowRetinaStorageDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => 'retina.fulfilment.storage.stored-items.index'
+                            'name' => 'retina.fulfilment.storage.stored-items.index',
                         ],
-                        'label' => __("SKUs"),
-                        'icon'  => 'fal fa-bars',
+                        'label' => __('SKUs'),
+                        'icon' => 'fal fa-bars',
                     ],
 
-                ]
+                ],
             ]
         );
     }

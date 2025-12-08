@@ -23,7 +23,6 @@ class FetchAuroraTransactions
     use AsAction;
     use WithAuroraParsers;
 
-
     private SourceOrganisationService $organisationSource;
 
     public function handle(SourceOrganisationService $organisationSource, int $source_id, Order $order): ?Transaction
@@ -31,15 +30,14 @@ class FetchAuroraTransactions
         $this->organisationSource = $organisationSource;
 
         $transactionData = $organisationSource->fetchTransaction(id: $source_id);
-        if (!$transactionData) {
+        if (! $transactionData) {
             return null;
         }
 
-        $transactionData['transaction']['org_exchange']   = GetHistoricCurrencyExchange::run($order->shop->currency, $order->organisation->currency, $transactionData['transaction']['date']);
-        $transactionData['transaction']['grp_exchange']   = GetHistoricCurrencyExchange::run($order->shop->currency, $order->group->currency, $transactionData['transaction']['date']);
+        $transactionData['transaction']['org_exchange'] = GetHistoricCurrencyExchange::run($order->shop->currency, $order->organisation->currency, $transactionData['transaction']['date']);
+        $transactionData['transaction']['grp_exchange'] = GetHistoricCurrencyExchange::run($order->shop->currency, $order->group->currency, $transactionData['transaction']['date']);
         $transactionData['transaction']['org_net_amount'] = $transactionData['transaction']['net_amount'] * $transactionData['transaction']['org_exchange'];
         $transactionData['transaction']['grp_net_amount'] = $transactionData['transaction']['net_amount'] * $transactionData['transaction']['grp_exchange'];
-
 
         if ($order->submitted_at) {
             $transactionData['transaction']['submitted_at'] = $order->submitted_at;
@@ -72,7 +70,4 @@ class FetchAuroraTransactions
 
         return $transaction;
     }
-
-
-
 }

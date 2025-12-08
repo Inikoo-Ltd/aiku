@@ -24,14 +24,11 @@ class GroupHydrateAgents implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_agents'                 => $group->agents()->count(),
-            'number_active_agents'          => $group->agents()->where('status', 'true')->count(),
+            'number_agents' => $group->agents()->count(),
+            'number_active_agents' => $group->agents()->where('status', 'true')->count(),
         ];
         $stats['number_archived_agents'] = $stats['number_agents'] - $stats['number_active_agents'];
 
-
         $group->supplyChainStats()->update($stats);
     }
-
-
 }

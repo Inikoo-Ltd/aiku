@@ -14,14 +14,14 @@ enum PackingEngineEnum: string
 {
     use EnumHelperTrait;
 
-    case AIKU               = 'aiku';
-    case MAYA               = 'maya';
+    case AIKU = 'aiku';
+    case MAYA = 'maya';
 
     public static function labels(): array
     {
         return [
-            'aiku'              => __('Aiku'),
-            'maya'              => __('Maya'),
+            'aiku' => __('Aiku'),
+            'maya' => __('Maya'),
         ];
     }
 }

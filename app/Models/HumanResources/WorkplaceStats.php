@@ -50,9 +50,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\HumanResources\Workplace $workplace
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkplaceStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkplaceStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkplaceStats query()
+ *
  * @mixin \Eloquent
  */
 class WorkplaceStats extends Model

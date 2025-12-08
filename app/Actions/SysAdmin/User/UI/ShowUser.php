@@ -31,12 +31,11 @@ class ShowUser extends OrgAction
 {
     use WithUserSubNavigation;
 
-
     private mixed $authScope;
 
     public function asController(User $user, ActionRequest $request): User
     {
-        $group           = app('group');
+        $group = app('group');
         $this->authScope = $group;
         $this->initialisationFromGroup($group, $request)->withTab(UserTabsEnum::values());
 
@@ -62,7 +61,7 @@ class ShowUser extends OrgAction
         if ($this->authScope instanceof Group) {
             $this->canEdit = $request->user()->authTo('sysadmin.edit');
 
-            return $request->user()->authTo("sysadmin.view");
+            return $request->user()->authTo('sysadmin.view');
         } else {
             $this->canEdit = $request->user()->authTo("human-resources.{$this->organisation->id}.view");
 
@@ -75,44 +74,43 @@ class ShowUser extends OrgAction
         return Inertia::render(
             'SysAdmin/User',
             [
-                'title'                       => __('user'),
-                'breadcrumbs'                 => $this->getBreadcrumbs(
+                'title' => __('user'),
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                  => $this->authScope instanceof Group
+                'navigation' => $this->authScope instanceof Group
                     ? [
                         'previous' => $this->getPrevious($user, $request),
-                        'next'     => $this->getNext($user, $request),
+                        'next' => $this->getNext($user, $request),
                     ] : null,
-                'pageHead'                    => [
-                    'model'         => __('user'),
-                    'icon'          =>
-                        [
-                            'icon'  => ['fal', 'fa-user-circle'],
-                            'title' => __('user')
-                        ],
+                'pageHead' => [
+                    'model' => __('user'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-user-circle'],
+                        'title' => __('user'),
+                    ],
                     'subNavigation' => $this->getUserNavigation($user, $request),
-                    'title'         => $user->username,
-                    'actions'       => [
+                    'title' => $user->username,
+                    'actions' => [
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
-                    ]
+                    ],
                 ],
-                'tabs'                        => [
-                    'current'    => $this->tab,
-                    'navigation' => UserTabsEnum::navigation($user)
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => UserTabsEnum::navigation($user),
                 ],
-                'apiRoutes'                   => [
+                'apiRoutes' => [
                     'createToken' => [
-                        'name'       => 'grp.models.user.access-token.create',
-                        'parameters' => ['user' => $user->id]
+                        'name' => 'grp.models.user.access-token.create',
+                        'parameters' => ['user' => $user->id],
                     ],
                 ],
                 UserTabsEnum::SHOWCASE->value => $this->tab == UserTabsEnum::SHOWCASE->value ?
@@ -125,7 +123,7 @@ class ShowUser extends OrgAction
 
                 UserTabsEnum::HISTORY->value => $this->tab == UserTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($user))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($user)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($user))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: UserTabsEnum::HISTORY->value))
@@ -140,11 +138,11 @@ class ShowUser extends OrgAction
             return [
                 [
 
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Users')
+                            'label' => __('Users'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -152,54 +150,50 @@ class ShowUser extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
 
                 ],
             ];
         };
 
         $employee = null;
-        $user     = User::where('username', $routeParameters['user'])->first();
+        $user = User::where('username', $routeParameters['user'])->first();
         if (Arr::has($routeParameters, 'employee')) {
             $employee = Employee::where('slug', $routeParameters['employee'])->first();
         }
 
-
         return match ($routeName) {
             'grp.sysadmin.users.show',
-            'grp.sysadmin.users.edit' =>
-
-            array_merge(
+            'grp.sysadmin.users.edit' => array_merge(
                 ShowSysAdminDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     $user,
                     [
                         'index' => [
-                            'name'       => 'grp.sysadmin.users.index',
-                            'parameters' => []
+                            'name' => 'grp.sysadmin.users.index',
+                            'parameters' => [],
                         ],
                         'model' => [
-                            'name'       => 'grp.sysadmin.users.show',
-                            'parameters' => $user->username
-                        ]
+                            'name' => 'grp.sysadmin.users.show',
+                            'parameters' => $user->username,
+                        ],
                     ],
                     $suffix
                 ),
             ),
-            'grp.org.hr.employees.show.users.show' =>
-            array_merge(
+            'grp.org.hr.employees.show.users.show' => array_merge(
                 ShowEmployee::make()->getBreadcrumbs($employee, $routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => $routeName,
-                                'parameters' => $routeParameters
+                                'name' => $routeName,
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $user->username,
-                            'icon'  => 'fal fa-user-circle',
-                        ]
+                            'icon' => 'fal fa-user-circle',
+                        ],
                     ],
 
                 ],
@@ -225,7 +219,7 @@ class ShowUser extends OrgAction
 
     private function getNavigation(?User $user, string $routeName): ?array
     {
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 
@@ -233,12 +227,12 @@ class ShowUser extends OrgAction
             'grp.sysadmin.users.show' => [
                 'label' => $user->username,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'user' => $user->username
-                    ]
+                        'user' => $user->username,
+                    ],
 
-                ]
+                ],
             ]
         };
     }

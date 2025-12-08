@@ -112,11 +112,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_customer_sales_channels
  * @property int $number_customer_sales_channel_broken
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformStats query()
+ *
  * @mixin \Eloquent
  */
-class PlatformStats extends Model
-{
-}
+class PlatformStats extends Model {}

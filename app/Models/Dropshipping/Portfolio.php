@@ -77,36 +77,38 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Dropshipping\PortfolioStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Portfolio newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Portfolio newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Portfolio query()
+ *
  * @mixin \Eloquent
  */
 class Portfolio extends Model implements Auditable
 {
-    use InCustomer;
     use HasHistory;
     use HasUniversalSearch;
+    use InCustomer;
 
     protected $casts = [
-        'type'                            => PortfolioTypeEnum::class,
-        'data'                            => 'array',
-        'settings'                        => 'array',
-        'errors_response'                 => 'array',
+        'type' => PortfolioTypeEnum::class,
+        'data' => 'array',
+        'settings' => 'array',
+        'errors_response' => 'array',
         'platform_product_availabilities' => 'array',
-        'status'                          => 'boolean',
-        'added_at'                        => 'datetime',
-        'removed_at'                      => 'datetime',
-        'stock_last_updated_at'           => 'datetime',
-        'platform_possible_matches'       => 'array',
+        'status' => 'boolean',
+        'added_at' => 'datetime',
+        'removed_at' => 'datetime',
+        'stock_last_updated_at' => 'datetime',
+        'platform_possible_matches' => 'array',
     ];
 
     protected $attributes = [
-        'data'                            => '{}',
-        'settings'                        => '{}',
-        'errors_response'                 => '{}',
+        'data' => '{}',
+        'settings' => '{}',
+        'errors_response' => '{}',
         'platform_product_availabilities' => '{}',
-        'platform_possible_matches'       => '{}',
+        'platform_possible_matches' => '{}',
     ];
 
     protected $guarded = [];
@@ -126,7 +128,7 @@ class Portfolio extends Model implements Auditable
         'exist_in_platform',
         'platform_status',
         'number_platform_possible_matches',
-        'sku'
+        'sku',
     ];
 
     public function item(): BelongsTo
@@ -144,7 +146,6 @@ class Portfolio extends Model implements Auditable
         return $this->hasOne(PortfolioStats::class);
     }
 
-
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
@@ -154,5 +155,4 @@ class Portfolio extends Model implements Auditable
     {
         return $this->belongsTo(CustomerSalesChannel::class);
     }
-
 }

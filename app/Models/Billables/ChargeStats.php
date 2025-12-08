@@ -27,9 +27,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Billables\Charge $charge
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChargeStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChargeStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChargeStats query()
+ *
  * @mixin \Eloquent
  */
 class ChargeStats extends Model

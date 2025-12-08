@@ -27,18 +27,19 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class MarketplaceSupplierResource extends JsonResource
 {
     use HasSelfCall;
+
     public function toArray($request): array
     {
         return [
-            'code'                          => $this->code,
-            'name'                          => $this->name,
-            'slug'                          => $this->slug,
-            'agent_slug'                    => $this->agent_slug,
-            'location'                      => $this->location,
-            'number_suppliers_deliveries'   => $this->number_suppliers_deliveries,
-            'number_supplier_products'      => $this->number_supplier_products,
-            'number_purchase_orders'        => $this->number_purchase_orders,
-            'adoption'                      => $this->adoption ?? 'available'
+            'code' => $this->code,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'agent_slug' => $this->agent_slug,
+            'location' => $this->location,
+            'number_suppliers_deliveries' => $this->number_suppliers_deliveries,
+            'number_supplier_products' => $this->number_supplier_products,
+            'number_purchase_orders' => $this->number_purchase_orders,
+            'adoption' => $this->adoption ?? 'available',
 
         ];
     }

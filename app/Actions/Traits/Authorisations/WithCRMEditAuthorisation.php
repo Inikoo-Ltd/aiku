@@ -25,19 +25,19 @@ trait WithCRMEditAuthorisation
             return $request->user()->authTo(
                 [
                     "crm.{$this->shop->id}.prospects.edit",
-                    "crm.{$this->shop->id}.edit"
+                    "crm.{$this->shop->id}.edit",
                 ]
             );
         } elseif (str_starts_with($routeName, 'grp.org.shops.show.crm.prospects')) {
             return $request->user()->authTo(
                 [
-                    "crm.{$this->shop->id}.prospects.edit"
+                    "crm.{$this->shop->id}.prospects.edit",
                 ]
             );
         } elseif (str_starts_with($routeName, 'grp.org.shops.show.crm.')) {
             return $request->user()->authTo(
                 [
-                    "crm.{$this->shop->id}.edit"
+                    "crm.{$this->shop->id}.edit",
                 ]
             );
         } elseif (str_starts_with($routeName, 'grp.org.fulfilments.show.crm.')) {
@@ -56,12 +56,11 @@ trait WithCRMEditAuthorisation
             } else {
                 return $request->user()->authTo(
                     [
-                        "crm.{$this->shop->id}.edit"
+                        "crm.{$this->shop->id}.edit",
                     ]
                 );
             }
         }
-
 
         return false;
     }

@@ -21,27 +21,26 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property \App\Models\Helpers\Media $media
  * @property \App\Models\SysAdmin\Organisation $organisation
  * @property string $name
- *
  */
 class PaymentServiceProvidersResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'number_payments'         => $this->number_payments,
+            'number_payments' => $this->number_payments,
             'number_payment_accounts' => $this->number_payment_accounts,
-            'slug'                    => $this->slug,
-            'code'                    => $this->code,
-            'logo'                    => GetImgProxyUrl::run($this->media->getImage()),
-            'name'                    => $this->name,
-            'created_at'              => $this->created_at,
-            'storeRoute'              => [
-                'name'       => 'grp.models.org.payment-service-provider.store',
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'logo' => GetImgProxyUrl::run($this->media->getImage()),
+            'name' => $this->name,
+            'created_at' => $this->created_at,
+            'storeRoute' => [
+                'name' => 'grp.models.org.payment-service-provider.store',
                 'parameters' => [
-                    'organisation'           => $this->organisation->id,
-                    'paymentServiceProvider' => $this->id
-                ]
-            ]
+                    'organisation' => $this->organisation->id,
+                    'paymentServiceProvider' => $this->id,
+                ],
+            ],
         ];
     }
 }

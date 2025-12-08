@@ -24,18 +24,18 @@ class IrisAction
     use WithTab;
 
     protected Group $group;
-    protected Organisation $organisation;
-    protected Shop $shop;
-    protected Website $website;
 
+    protected Organisation $organisation;
+
+    protected Shop $shop;
+
+    protected Website $website;
 
     protected bool $asAction = false;
 
     public int $hydratorsDelay = 0;
 
-
     protected array $validatedData;
-
 
     public function initialisation(ActionRequest|array $request): static
     {
@@ -44,7 +44,7 @@ class IrisAction
         $this->shop = $this->website->shop;
 
         $this->organisation = $this->website->organisation;
-        $this->group        =  $this->website->group;
+        $this->group = $this->website->group;
         if (is_array($request)) {
             $this->setRawAttributes($request);
         } else {
@@ -54,6 +54,4 @@ class IrisAction
 
         return $this;
     }
-
-
 }

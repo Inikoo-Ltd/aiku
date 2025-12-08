@@ -9,8 +9,8 @@
 namespace App\Actions\Production\RawMaterial\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\Production\ProductionTabsEnum;
 use App\Enums\UI\Production\RawMaterialTabsEnum;
@@ -34,9 +34,8 @@ class ShowRawMaterial extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit   = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
+        $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
         $this->canDelete = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
-
 
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
@@ -56,7 +55,6 @@ class ShowRawMaterial extends OrgAction
         return $this->handle($rawMaterial);
     }
 
-
     public function htmlResponse(RawMaterial $rawMaterial, ActionRequest $request): Response
     {
         $title = __('Raw Material');
@@ -64,40 +62,38 @@ class ShowRawMaterial extends OrgAction
         return Inertia::render(
             'Org/Production/RawMaterial',
             [
-                'title'                            => $title,
-                'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'navigation'                       => [
+                'title' => $title,
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'navigation' => [
                     'previous' => $this->getPrevious($rawMaterial, $request),
-                    'next'     => $this->getNext($rawMaterial, $request),
+                    'next' => $this->getNext($rawMaterial, $request),
                 ],
-                'pageHead'                         => [
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'industry'],
-                            'title' => $title
-                        ],
-                    'title'   => $rawMaterial->code,
-                    'model'   => $title,
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'industry'],
+                        'title' => $title,
+                    ],
+                    'title' => $rawMaterial->code,
+                    'model' => $title,
                     'actions' => [
                         [
-                            'type'    => 'button',
-                        'tooltip'     => __('Edit'),
-                        'icon'        => 'fal fa-pencil',
-                        'style'       => 'secondary',
-                        'route'       => [
-                            'name'       => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
-                            'parameters' => $request->route()->originalParameters()
+                            'type' => 'button',
+                            'tooltip' => __('Edit'),
+                            'icon' => 'fal fa-pencil',
+                            'style' => 'secondary',
+                            'route' => [
+                                'name' => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters(),
 
-                            ]
-                        ]
+                            ],
+                        ],
 
                     ],
 
-
                 ],
-                'tabs'                             => [
+                'tabs' => [
 
-                    'current'    => $this->tab,
+                    'current' => $this->tab,
                     'navigation' => RawMaterialTabsEnum::navigation(),
                 ],
 
@@ -105,18 +101,13 @@ class ShowRawMaterial extends OrgAction
                     fn () => GetRawMaterialShowcase::run($rawMaterial)
                     : Inertia::lazy(fn () => GetRawMaterialShowcase::run($rawMaterial)),
 
-
-
-
-
-               RawMaterialTabsEnum::HISTORY->value => $this->tab == RawMaterialTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($rawMaterial))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($rawMaterial)))
+                RawMaterialTabsEnum::HISTORY->value => $this->tab == RawMaterialTabsEnum::HISTORY->value ?
+                     fn () => HistoryResource::collection(IndexHistory::run($rawMaterial))
+                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($rawMaterial))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));
     }
-
 
     public function jsonResponse(RawMaterial $rawMaterial): RawMaterialsResource
     {
@@ -131,26 +122,26 @@ class ShowRawMaterial extends OrgAction
             ShowCraftsDashboard::make()->getBreadcrumbs($routeParameters),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.show.crafts.raw_materials.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('raw materials'),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.raw_materials.show',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.show.crafts.raw_materials.show',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $rawMaterial?->code,
-                            'icon'  => 'fal fa-bars'
+                            'icon' => 'fal fa-bars',
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
             ]
@@ -173,7 +164,7 @@ class ShowRawMaterial extends OrgAction
 
     private function getNavigation(?RawMaterial $rawMaterial, string $routeName): ?array
     {
-        if (!$rawMaterial) {
+        if (! $rawMaterial) {
             return null;
         }
 
@@ -181,12 +172,12 @@ class ShowRawMaterial extends OrgAction
             'grp.org.productions.show.infrastructure.dashboard' => [
                 'label' => $rawMaterial->code,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $this->organisation->slug,
-                        'production'    => $rawMaterial->production->slug
-                    ]
-                ]
+                        'organisation' => $this->organisation->slug,
+                        'production' => $rawMaterial->production->slug,
+                    ],
+                ],
             ],
             default => null,
         };

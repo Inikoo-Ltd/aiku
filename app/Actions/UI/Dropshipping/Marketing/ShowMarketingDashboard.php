@@ -24,14 +24,12 @@ class ShowMarketingDashboard extends OrgAction
         return $request->user()->authTo("marketing.{$this->shop->id}.view");
     }
 
-
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): ActionRequest
     {
         $this->initialisationFromShop($shop, $request)->withTab(MarketingDashboardTabsEnum::values());
 
         return $request;
     }
-
 
     public function htmlResponse(ActionRequest $request): Response
     {
@@ -41,53 +39,52 @@ class ShowMarketingDashboard extends OrgAction
         return Inertia::render(
             'Org/Marketing/MarketingDashboard',
             [
-                'breadcrumbs'  => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'        =>  $title,
-                'pageHead'     => [
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-bullhorn'],
-                        'title' =>  $title,
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'title' => $title,
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-bullhorn'],
+                        'title' => $title,
                     ],
                     'iconRight' => [
-                        'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('Marketing')
+                        'icon' => ['fal', 'fa-chart-network'],
+                        'title' => __('Marketing'),
                     ],
                     'title' => $title,
                 ],
                 'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => MarketingDashboardTabsEnum::navigation()
+                    'current' => $this->tab,
+                    'navigation' => MarketingDashboardTabsEnum::navigation(),
                 ],
-                'dashboard_stats'   => [
+                'dashboard_stats' => [
                     [
                         'name' => __('Newsletters'),
                         'value' => $this->shop->commsStats->number_mailshots_type_newsletter,
-                        'icon'  => ['fal', 'fa-newspaper'],
+                        'icon' => ['fal', 'fa-newspaper'],
                         'route' => [
-                            'name'       => 'grp.org.shops.show.marketing.newsletters.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
+                            'name' => 'grp.org.shops.show.marketing.newsletters.index',
+                            'parameters' => $request->route()->originalParameters(),
+                        ],
                     ],
                     [
                         'name' => __('Mailshots'),
                         'value' => $this->shop->commsStats->number_mailshots_type_marketing,
-                        'icon'  => ['fal', 'fa-mail-bulk'],
+                        'icon' => ['fal', 'fa-mail-bulk'],
                         'route' => [
-                            'name'       => 'grp.org.shops.show.marketing.mailshots.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
+                            'name' => 'grp.org.shops.show.marketing.mailshots.index',
+                            'parameters' => $request->route()->originalParameters(),
+                        ],
                     ],
                     [
                         'name' => __('Traffic Sources'),
                         'value' => $this->shop->commsStats->number_traffic_sources ?? 0,
-                        'icon'  => ['fal', 'fa-traffic-light'],
+                        'icon' => ['fal', 'fa-traffic-light'],
                         'route' => [
-                            'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
-                    ]
-                ]
-
+                            'name' => 'grp.org.shops.show.marketing.traffic_sources.index',
+                            'parameters' => $request->route()->originalParameters(),
+                        ],
+                    ],
+                ],
 
             ]
         );
@@ -100,15 +97,15 @@ class ShowMarketingDashboard extends OrgAction
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.marketing.dashboard',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.shops.show.marketing.dashboard',
+                                'parameters' => $routeParameters,
                             ],
-                            'label' => __('Offers')
-                        ]
-                    ]
+                            'label' => __('Offers'),
+                        ],
+                    ],
                 ]
             );
     }

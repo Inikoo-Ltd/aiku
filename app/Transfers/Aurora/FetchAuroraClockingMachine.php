@@ -17,19 +17,18 @@ class FetchAuroraClockingMachine extends FetchAurora
     {
         $this->parsedData['workplace'] = $this->organisation->workplaces()->first();
 
-
         $type = match ($this->auroraModelData->{'Clocking Machine Code'}) {
             'app-v1' => ClockingMachineTypeEnum::MOBILE_APP,
-            default  => ClockingMachineTypeEnum::LEGACY
+            default => ClockingMachineTypeEnum::LEGACY
         };
 
         $this->parsedData['clocking-machine'] = [
-            'name'            => $this->auroraModelData->{'Clocking Machine Code'},
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Clocking Machine Key'},
-            'type'            => $type,
-            'created_at'      => $this->parseDatetime($this->auroraModelData->{'Clocking Machine Creation Date'}),
-            'fetched_at'      => now(),
-            'last_fetched_at' => now()
+            'name' => $this->auroraModelData->{'Clocking Machine Code'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Clocking Machine Key'},
+            'type' => $type,
+            'created_at' => $this->parseDatetime($this->auroraModelData->{'Clocking Machine Creation Date'}),
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
 
         $createdBy = $this->auroraModelData->{'Clocking Machine Creation Date'};
@@ -39,8 +38,7 @@ class FetchAuroraClockingMachine extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Clocking Machine Dimension')

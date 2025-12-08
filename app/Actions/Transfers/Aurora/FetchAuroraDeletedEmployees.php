@@ -57,7 +57,6 @@ class FetchAuroraDeletedEmployees extends FetchAuroraAction
                         Arr::except($employeeData['employee'], ['fetched_at', 'last_fetched_at', 'source_id', 'positions', 'user_model_status'])
                     );
 
-
                     $this->recordNew($organisationSource);
 
                     $sourceData = explode(':', $employee->source_id);

@@ -24,9 +24,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \App\Models\Comms\DispatchedEmail $dispatchedEmail
  * @property-read \App\Models\Comms\Mailshot $mailshot
  * @property-read Model|\Eloquent $recipient
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MailshotRecipient newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MailshotRecipient newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MailshotRecipient query()
+ *
  * @mixin \Eloquent
  */
 class MailshotRecipient extends Model

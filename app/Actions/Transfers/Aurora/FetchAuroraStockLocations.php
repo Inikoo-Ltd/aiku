@@ -19,10 +19,9 @@ use Illuminate\Support\Facades\DB;
 
 class FetchAuroraStockLocations extends FetchAuroraAction
 {
-    use WithAuroraAttachments;
     use HasStockLocationsFetch;
+    use WithAuroraAttachments;
     use WithFetchStock;
-
 
     public string $commandSignature = 'fetch:stock_locations {organisations?*} {--s|source_id=}  {--d|db_suffix=}';
 
@@ -30,27 +29,23 @@ class FetchAuroraStockLocations extends FetchAuroraAction
     {
         $orgStock = OrgStock::where('source_id', $organisationSource->getOrganisation()->id.':'.$organisationSourceId)->first();
 
-
         if ($orgStock) {
             $stockData = $this->getStockData($organisationSource->getOrganisation()->id.':'.$organisationSourceId);
 
-
             $orgStock->update([
                 'source_quantity_in_submitted_orders' => $stockData[0]->{'Part Current Stock Ordered Paid'},
-                'source_quantity_to_be_picked'        => $stockData[0]->{'Part Current Stock In Process'},
+                'source_quantity_to_be_picked' => $stockData[0]->{'Part Current Stock In Process'},
 
             ]);
 
             UpdateOrgStock::run($orgStock, [
-                'is_on_demand'                        => $stockData[0]->{'Part On Demand'} == 'Yes',
+                'is_on_demand' => $stockData[0]->{'Part On Demand'} == 'Yes',
             ]);
-
 
             $locationsData = $this->getStockLocationData($organisationSource, $organisationSource->getOrganisation()->id.':'.$organisationSourceId);
             SyncOrgStockLocations::make()->action($orgStock, [
-                'locationsData' => $locationsData
+                'locationsData' => $locationsData,
             ], 2, false);
-
 
             OrgStockHydrateQuantityInLocations::run($orgStock);
         }
@@ -58,13 +53,11 @@ class FetchAuroraStockLocations extends FetchAuroraAction
         return [];
     }
 
-
     public function getModelsQuery(): Builder
     {
         $query = DB::connection('aurora')
             ->table('Part Dimension')
             ->select('Part SKU as source_id');
-
 
         $query->orderBy('Part Valid From');
 
@@ -80,6 +73,4 @@ class FetchAuroraStockLocations extends FetchAuroraAction
 
         return $query->count();
     }
-
-
 }

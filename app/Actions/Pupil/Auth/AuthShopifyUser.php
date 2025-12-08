@@ -28,7 +28,7 @@ class AuthShopifyUser extends AuthController
 
     public function authenticate(Request $request, AuthenticateShop $authShop)
     {
-        if ($request->missing('shop') && !$request->user()) {
+        if ($request->missing('shop') && ! $request->user()) {
             return null;
         }
 
@@ -49,7 +49,7 @@ class AuthShopifyUser extends AuthController
             // Show exception, something is wrong
             throw new SignatureVerificationException('Invalid HMAC verification');
         } elseif ($status === false) {
-            if (!$result['url']) {
+            if (! $result['url']) {
                 throw new MissingAuthUrlException('Missing auth url');
             }
 
@@ -86,7 +86,6 @@ class AuthShopifyUser extends AuthController
         $shopDomain = ShopDomain::fromRequest($request);
         $target = $request->query('target');
         $query = parse_url($target, PHP_URL_QUERY);
-
 
         if ($query) {
             // remove "token" from the target's query string

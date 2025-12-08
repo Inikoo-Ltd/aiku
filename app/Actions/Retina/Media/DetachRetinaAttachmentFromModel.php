@@ -21,7 +21,6 @@ class DetachRetinaAttachmentFromModel extends RetinaAction
     {
         $model->attachments()->detach($attachment->id);
 
-
         return $model;
     }
 

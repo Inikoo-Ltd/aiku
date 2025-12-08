@@ -20,10 +20,8 @@ class UpdateUserStatus
 
     private bool $asAction = false;
 
-
     public function handle(User $user, array $modelData): User
     {
-
 
         return $this->update($user, $modelData);
     }
@@ -33,18 +31,17 @@ class UpdateUserStatus
         if ($this->asAction) {
             return true;
         }
-        return  $request->user()->authTo('sysadmin.edit');
+
+        return $request->user()->authTo('sysadmin.edit');
 
     }
-
 
     public function rules(): array
     {
         return [
-            'status' => ['required', 'boolean']
+            'status' => ['required', 'boolean'],
         ];
     }
-
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
@@ -53,19 +50,16 @@ class UpdateUserStatus
         }
     }
 
-
-
     public function asController(User $user, ActionRequest $request): User
     {
         return $this->handle($user, $request->validated());
     }
 
-
     public function action(User $user, bool $status): User
     {
         $this->asAction = true;
         $this->setRawAttributes([
-            'status' => $status
+            'status' => $status,
         ]);
         $validatedData = $this->validateAttributes();
 

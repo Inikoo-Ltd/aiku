@@ -35,7 +35,6 @@ class IndexRetinaWebUsers extends RetinaAction
         return $this->handle();
     }
 
-
     public function handle($prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -45,20 +44,17 @@ class IndexRetinaWebUsers extends RetinaAction
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
-
 
         $queryBuilder = QueryBuilder::for(WebUser::class);
         $queryBuilder->leftJoin('web_user_stats', 'web_user_stats.web_user_id', '=', 'web_users.id');
         $queryBuilder->where('customer_id', $this->customer->id);
 
-
-        return  $queryBuilder
+        return $queryBuilder
             ->defaultSort('username')
-            ->select(['web_users.slug','web_users.id', 'web_user_stats.last_device', 'web_user_stats.last_location', 'web_user_stats.last_os' ,'web_users.username', 'web_users.image_id','web_users.contact_name', 'web_users.status', 'web_users.is_root', 'web_user_stats.last_active_at as last_active'])
+            ->select(['web_users.slug', 'web_users.id', 'web_user_stats.last_device', 'web_user_stats.last_location', 'web_user_stats.last_os', 'web_users.username', 'web_users.image_id', 'web_users.contact_name', 'web_users.status', 'web_users.is_root', 'web_user_stats.last_active_at as last_active'])
             ->allowedSorts(['web_users.status', 'username', 'contact_name', 'last_active'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -102,28 +98,28 @@ class IndexRetinaWebUsers extends RetinaAction
             'SysAdmin/RetinaWebUsers',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
-                'title'       => $title,
-                'pageHead'    => [
-                    'title'   => $title,
-                    'icon'    => [
+                'title' => $title,
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => [
                         'type' => 'icon',
-                        'icon' => 'fal fa-user-circle'
+                        'icon' => 'fal fa-user-circle',
                     ],
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'create',
                             'label' => __('user'),
                             'route' => [
-                                'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ]
-                    ]
+                                'name' => preg_replace('/index$/', 'create', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
+                        ],
+                    ],
                 ],
 
                 'labels' => [
-                    'usernameNoSet' => __('username no set')
+                    'usernameNoSet' => __('username no set'),
                 ],
 
                 'data' => WebUsersRetinaResource::collection($webUsers),
@@ -133,29 +129,26 @@ class IndexRetinaWebUsers extends RetinaAction
         );
     }
 
-
     public function getBreadcrumbs(string $routeName): array
     {
         return match ($routeName) {
             'retina.sysadmin.web-users.index',
-            'retina.sysadmin.web-users.show' =>
-            array_merge(
+            'retina.sysadmin.web-users.show' => array_merge(
                 ShowRetinaFulfilmentSysAdminDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
                                 'name' => 'retina.sysadmin.web-users.index',
                             ],
                             'label' => __('Users'),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
 
-                    ]
+                    ],
                 ]
             ),
         };
     }
-
 }

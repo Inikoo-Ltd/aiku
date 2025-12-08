@@ -29,8 +29,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ShowProfile extends OrgAction
 {
     use AsAction;
-    use WithInertia;
     use WithActionButtons;
+    use WithInertia;
 
     public function asController(ActionRequest $request): User
     {
@@ -48,34 +48,32 @@ class ShowProfile extends OrgAction
     {
 
         $parent = $user->employees()->first();
-        if (!$parent) {
+        if (! $parent) {
             $parent = $user->guests()->first();
         }
 
-
-
         return Inertia::render(
-            "Profile",
+            'Profile',
             [
-                "title"                          => __("Profile"),
-                "breadcrumbs"                    => $this->getBreadcrumbs(),
-                "pageHead"                       => [
-                    "title"        => __("My Profile"),
-                    'actions'      => [
+                'title' => __('Profile'),
+                'breadcrumbs' => $this->getBreadcrumbs(),
+                'pageHead' => [
+                    'title' => __('My Profile'),
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'label' => __('Edit profile'),
                             'route' => [
-                                'name'       => 'grp.profile.edit',
-                                'parameters' => array_values(request()->route()->originalParameters())
+                                'name' => 'grp.profile.edit',
+                                'parameters' => array_values(request()->route()->originalParameters()),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
-                'tabs'                           => [
-                    'current'    => $this->tab,
-                    'navigation' => ProfileTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => ProfileTabsEnum::navigation(),
                 ],
 
                 ProfileTabsEnum::DASHBOARD->value => $this->tab == ProfileTabsEnum::DASHBOARD->value ?
@@ -94,8 +92,6 @@ class ShowProfile extends OrgAction
                     fn () => UserRequestLogsResource::collection(IndexUserRequestLogs::run())
                     : Inertia::lazy(fn () => UserRequestLogsResource::collection(IndexUserRequestLogs::run())),
 
-
-
             ]
         )
             ->table(
@@ -111,12 +107,12 @@ class ShowProfile extends OrgAction
     {
         return array_merge(ShowGroupDashboard::make()->getBreadcrumbs(), [
             [
-                "type"   => "simple",
-                "simple" => [
-                    "route" => [
-                        "name" => "grp.profile.show",
+                'type' => 'simple',
+                'simple' => [
+                    'route' => [
+                        'name' => 'grp.profile.show',
                     ],
-                    "label" => __("my profile"),
+                    'label' => __('my profile'),
                 ],
             ],
         ]);

@@ -17,6 +17,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ReindexSupplierProductsSearch extends HydrateModel
 {
     use AsAction;
+
     public string $commandSignature = 'search:supplier_products {organisations?*} {--s|slugs=}';
 
     public function handle(SupplierProduct $supplierProduct): void
@@ -31,7 +32,7 @@ class ReindexSupplierProductsSearch extends HydrateModel
 
     protected function loopAll(Command $command): void
     {
-        $command->info("Reindex Supplier Products");
+        $command->info('Reindex Supplier Products');
         $count = SupplierProduct::withTrashed()->count();
 
         $bar = $command->getOutput()->createProgressBar($count);
@@ -46,7 +47,6 @@ class ReindexSupplierProductsSearch extends HydrateModel
         });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
     }
-
 }

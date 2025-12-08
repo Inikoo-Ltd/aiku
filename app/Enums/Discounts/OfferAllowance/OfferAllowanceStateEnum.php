@@ -15,9 +15,8 @@ enum OfferAllowanceStateEnum: string
     use EnumHelperTrait;
 
     case IN_PROCESS = 'in_process';
-    case ACTIVE     = 'active';
-    case FINISHED   = 'finished';
-    case SUSPENDED  = 'suspended';
-
+    case ACTIVE = 'active';
+    case FINISHED = 'finished';
+    case SUSPENDED = 'suspended';
 
 }

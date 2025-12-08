@@ -5,8 +5,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
+
     public function up(): void
     {
         Schema::create('back_in_stock_reminders', function (Blueprint $table) {
@@ -38,7 +40,6 @@ return new class () extends Migration {
             $table->foreign('current_reminder_id')->references('id')->on('back_in_stock_reminders');
         });
     }
-
 
     public function down(): void
     {

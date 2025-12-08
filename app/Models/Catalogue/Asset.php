@@ -87,39 +87,40 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\AssetStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\AssetTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Asset newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Asset newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Asset onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Asset query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Asset withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Asset withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Asset extends Model implements HasMedia
 {
-    use SoftDeletes;
-    use HasSlug;
     use HasFactory;
-    use InShop;
     use HasImage;
+    use HasSlug;
+    use InShop;
+    use SoftDeletes;
 
     protected $casts = [
-        'units'                  => 'decimal:3',
-        'data'                   => 'array',
-        'status'                 => 'boolean',
-        'type'                   => AssetTypeEnum::class,
-        'state'                  => AssetStateEnum::class,
+        'units' => 'decimal:3',
+        'data' => 'array',
+        'status' => 'boolean',
+        'type' => AssetTypeEnum::class,
+        'state' => AssetStateEnum::class,
         'unit_relationship_type' => ProductUnitRelationshipType::class,
-        'offers_data'            => 'array',
+        'offers_data' => 'array',
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'offers_data'   => '{}',
+        'data' => '{}',
+        'offers_data' => '{}',
     ];
 
     protected $guarded = [];
-
 
     public function getRouteKeyName(): string
     {
@@ -231,6 +232,4 @@ class Asset extends Model implements HasMedia
     {
         return $this->belongsTo(Asset::class, 'master_asset_id');
     }
-
-
 }

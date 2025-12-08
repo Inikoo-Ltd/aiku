@@ -8,8 +8,8 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property string $slug
@@ -52,41 +52,41 @@ class ProductsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                        => $this->id,
-            'slug'                      => $this->slug,
-            'code'                      => $this->code,
-            'name'                      => $this->name,
-            'state'                     => $this->state->stateIcon()[$this->state->value],
-            'created_at'                => $this->created_at,
-            'updated_at'                => $this->updated_at,
-            'shop_slug'                 => $this->shop_slug,
-            'shop_code'                 => $this->shop_code,
-            'shop_name'                 => $this->shop_name,
-            'organisation_name'         => $this->organisation_name,
-            'organisation_code'         => $this->organisation_code,
-            'organisation_slug'         => $this->organisation_slug,
-            'department_slug'           => $this->department_slug,
-            'department_code'           => $this->department_code,
-            'department_name'           => $this->department_name,
-            'family_slug'               => $this->family_slug,
-            'family_code'               => $this->family_code,
-            'family_name'               => $this->family_name,
-            'price'                     => $this->price,
-            'units'                     => $this->units,
-            'unit'                      => $this->unit,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'state' => $this->state->stateIcon()[$this->state->value],
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'shop_slug' => $this->shop_slug,
+            'shop_code' => $this->shop_code,
+            'shop_name' => $this->shop_name,
+            'organisation_name' => $this->organisation_name,
+            'organisation_code' => $this->organisation_code,
+            'organisation_slug' => $this->organisation_slug,
+            'department_slug' => $this->department_slug,
+            'department_code' => $this->department_code,
+            'department_name' => $this->department_name,
+            'family_slug' => $this->family_slug,
+            'family_code' => $this->family_code,
+            'family_name' => $this->family_name,
+            'price' => $this->price,
+            'units' => $this->units,
+            'unit' => $this->unit,
             'current_historic_asset_id' => $this->current_historic_asset_id,
-            'asset_id'                  => $this->asset_id,
-            'available_quantity'        => $this->available_quantity,
-            'gross_weight'              => $this->gross_weight,
-            'rrp'                       => $this->rrp,
-            'customers_invoiced_all'    => $this->customers_invoiced_all,
-            'invoices_all'              => $this->invoices_all,
-            'sales_all'                 => $this->sales_all,
-            'currency_code'             => $this->currency_code,
-            'stock'                     => $this->available_quantity,
-            'images'                    => ImageResource::collection($this->images),
-            'image_thumbnail'           => $this->imageSources(720, 480),
-            'master_product_id'         => $this->master_product_id
+            'asset_id' => $this->asset_id,
+            'available_quantity' => $this->available_quantity,
+            'gross_weight' => $this->gross_weight,
+            'rrp' => $this->rrp,
+            'customers_invoiced_all' => $this->customers_invoiced_all,
+            'invoices_all' => $this->invoices_all,
+            'sales_all' => $this->sales_all,
+            'currency_code' => $this->currency_code,
+            'stock' => $this->available_quantity,
+            'images' => ImageResource::collection($this->images),
+            'image_thumbnail' => $this->imageSources(720, 480),
+            'master_product_id' => $this->master_product_id,
         ];
     }
 }

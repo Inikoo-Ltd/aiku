@@ -28,10 +28,10 @@ class AttachTaskToUser extends GrpAction
     public function rules(): array
     {
         return [
-            'start_date'    => ['sometimes', 'date'],
+            'start_date' => ['sometimes', 'date'],
             'complete_date' => ['sometimes', 'date'],
-            'deadline'      => ['sometimes', 'date'],
-            'status'        => ['sometimes', 'string', Rule::enum(TaskStatusEnum::class)],
+            'deadline' => ['sometimes', 'date'],
+            'status' => ['sometimes', 'string', Rule::enum(TaskStatusEnum::class)],
         ];
     }
 

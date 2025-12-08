@@ -22,7 +22,6 @@ class ShowOrganisation extends GrpAction
 {
     private Organisation $organisation;
 
-
     public function handle(Organisation $organisation): Organisation
     {
         return $organisation;
@@ -36,9 +35,9 @@ class ShowOrganisation extends GrpAction
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
         $this->initialisation(app('group'), $request)->withTab(OrgTabsEnum::values());
+
         return $this->handle($organisation);
     }
-
 
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
@@ -46,25 +45,25 @@ class ShowOrganisation extends GrpAction
             'Organisations/Organisation',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('Organisation'),
-                'pageHead'    => [
-                    'model'   => __('Organisation'),
-                    'title'   => $organisation->name,
+                'title' => __('Organisation'),
+                'pageHead' => [
+                    'model' => __('Organisation'),
+                    'title' => $organisation->name,
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
-                    ]
+                                'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
+                    ],
                 ],
 
                 'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => OrgTabsEnum::navigation()
+                    'current' => $this->tab,
+                    'navigation' => OrgTabsEnum::navigation(),
                 ],
                 OrgTabsEnum::SHOWCASE->value => $this->tab == OrgTabsEnum::SHOWCASE->value ?
                 fn () => OrganisationResource::make($organisation)
@@ -72,14 +71,11 @@ class ShowOrganisation extends GrpAction
 
                 OrgTabsEnum::HISTORY->value => $this->tab == OrgTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($organisation))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($organisation)))
-
-
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($organisation))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: OrgTabsEnum::HISTORY->value));
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
     {
@@ -88,11 +84,11 @@ class ShowOrganisation extends GrpAction
             return [
                 [
 
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Organisations')
+                            'label' => __('Organisations'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -100,7 +96,7 @@ class ShowOrganisation extends GrpAction
                         ],
 
                     ],
-                    'suffix' => $suffix
+                    'suffix' => $suffix,
 
                 ],
             ];
@@ -109,26 +105,23 @@ class ShowOrganisation extends GrpAction
         $organisation = Organisation::where('slug', $routeParameters['organisation'])->first();
 
         return match ($routeName) {
-            'grp.organisations.show' =>
-
-            array_merge(
+            'grp.organisations.show' => array_merge(
                 IndexOrganisations::make()->getBreadcrumbs(),
                 $headCrumb(
                     $organisation,
                     [
                         'index' => [
-                            'name'       => 'grp.organisations.index',
-                            'parameters' => []
+                            'name' => 'grp.organisations.index',
+                            'parameters' => [],
                         ],
                         'model' => [
-                            'name'       => 'grp.organisations.show',
-                            'parameters' => $organisation->slug
-                        ]
+                            'name' => 'grp.organisations.show',
+                            'parameters' => $organisation->slug,
+                        ],
                     ],
                     $suffix
                 ),
             ),
-
 
             default => []
         };

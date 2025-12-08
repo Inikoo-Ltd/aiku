@@ -129,9 +129,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_opt_out_prospects_success_status_invoiced
  * @property int $number_opt_out_prospects_dont_contact_me
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static Builder<static>|ShopCRMStats newModelQuery()
  * @method static Builder<static>|ShopCRMStats newQuery()
  * @method static Builder<static>|ShopCRMStats query()
+ *
  * @mixin Eloquent
  */
 class ShopCRMStats extends Model

@@ -14,20 +14,18 @@ enum ClockingMachineTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case BIOMETRIC  = 'biometric';
+    case BIOMETRIC = 'biometric';
     case STATIC_NFC = 'static-nfc';
     case MOBILE_APP = 'mobile-app';
-    case LEGACY     = 'legacy';
+    case LEGACY = 'legacy';
 
     public static function labels(): array
     {
         return [
-            'biometric'      => __('Biometric'),
-            'static-nfc'     => __('Static NFC'),
-            'mobile-app'     => __('Mobile App').' (Han)',
-            'legacy'         => __('Legacy'),
+            'biometric' => __('Biometric'),
+            'static-nfc' => __('Static NFC'),
+            'mobile-app' => __('Mobile App').' (Han)',
+            'legacy' => __('Legacy'),
         ];
     }
-
-
 }

@@ -21,18 +21,16 @@ class GroupHydrateSysadminIntervals implements ShouldBeUnique
     use AsAction;
     use WithIntervalsAggregators;
 
-
     public function getJobUniqueId(Group $group): string
     {
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
-        $stats     = [];
+        $stats = [];
         $queryBase = DB::table('user_requests')->where('group_id', $group->id)->selectRaw('count(*) as  sum_aggregate ');
-        $stats     = array_merge(
+        $stats = array_merge(
             $stats,
             $this->getIntervalsData(
                 stats: $stats,
@@ -44,6 +42,4 @@ class GroupHydrateSysadminIntervals implements ShouldBeUnique
         );
         $group->sysadminIntervals->update($stats);
     }
-
-
 }

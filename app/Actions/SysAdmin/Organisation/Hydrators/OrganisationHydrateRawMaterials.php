@@ -28,13 +28,11 @@ class OrganisationHydrateRawMaterials implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_raw_materials' => $organisation->rawMaterials()->count()
+            'number_raw_materials' => $organisation->rawMaterials()->count(),
         ];
-
 
         $stats = array_merge(
             $stats,

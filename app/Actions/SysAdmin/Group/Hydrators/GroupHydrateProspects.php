@@ -27,6 +27,7 @@ class GroupHydrateProspects implements ShouldBeUnique
     use WithEnumStats;
 
     public string $jobQueue = 'low-priority';
+
     public function getJobUniqueId(Group $group): string
     {
         return $group->id;
@@ -53,7 +54,7 @@ class GroupHydrateProspects implements ShouldBeUnique
         );
 
         foreach (GenderEnum::values() as $gender) {
-            $stats['number_prospects_gender_' . $gender] = $group->prospects()->where('data->gender', $gender)->count();
+            $stats['number_prospects_gender_'.$gender] = $group->prospects()->where('data->gender', $gender)->count();
         }
 
         $stats = array_merge(

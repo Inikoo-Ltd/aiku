@@ -47,6 +47,4 @@ class OrganisationHydrateSubDepartments implements ShouldBeUnique
 
         $organisation->catalogueStats()->update($stats);
     }
-
-
 }

@@ -36,9 +36,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockAuditDelta> $orgStockAuditDeltas
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockAudit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockAudit newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockAudit query()
+ *
  * @mixin \Eloquent
  */
 class OrgStockAudit extends Model implements Auditable
@@ -54,10 +56,10 @@ class OrgStockAudit extends Model implements Auditable
     }
 
     protected $casts = [
-        'state'         => OrgStockAuditStateEnum::class,
+        'state' => OrgStockAuditStateEnum::class,
         'in_process_at' => 'datetime',
-        'completed_at'  => 'datetime',
-        'data'          => 'array'
+        'completed_at' => 'datetime',
+        'data' => 'array',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -73,5 +75,4 @@ class OrgStockAudit extends Model implements Auditable
     {
         return $this->hasMany(OrgStockAuditDelta::class);
     }
-
 }

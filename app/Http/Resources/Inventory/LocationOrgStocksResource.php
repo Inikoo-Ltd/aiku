@@ -33,20 +33,20 @@ class LocationOrgStocksResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'               => $this->id,
-            'code'             => $this->location->code,
-            'quantity'         => $this->quantity,
-            'value'            => $this->value,
-            'audited_at'       => $this->audited_at,
+            'id' => $this->id,
+            'code' => $this->location->code,
+            'quantity' => $this->quantity,
+            'value' => $this->value,
+            'audited_at' => $this->audited_at,
             'commercial_value' => $this->commercial_value,
-            'type'             => $this->type,
+            'type' => $this->type,
             'picking_priority' => $this->picking_priority,
-            'notes'            => $this->notes,
-            'data'             => $this->data,
-            'settings'         => $this->settings,
-            'created_at'       => $this->created_at,
-            'updated_at'       => $this->updated_at,
-            'location'         => new LocationsResource($this->location)
+            'notes' => $this->notes,
+            'data' => $this->data,
+            'settings' => $this->settings,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'location' => new LocationsResource($this->location),
         ];
     }
 }

@@ -16,9 +16,9 @@ class EmailBulkRunResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'        => $this->id,
-            'subject'   => $this->subject,
-            'state'     => $this->state,
+            'id' => $this->id,
+            'subject' => $this->subject,
+            'state' => $this->state,
         ];
     }
 }

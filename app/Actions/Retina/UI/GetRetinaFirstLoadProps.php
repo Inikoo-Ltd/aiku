@@ -33,21 +33,19 @@ class GetRetinaFirstLoadProps
         } else {
             $language = Language::where('code', App::currentLocale())->first();
         }
-        if (!$language) {
+        if (! $language) {
             $language = Language::where('code', Arr::first($shop->extra_languages ?? []))->first();
         }
 
-
         return
             [
-                'localeData' =>
-                [
-                    'language'        => LanguageResource::make($language)->getArray(),
+                'localeData' => [
+                    'language' => LanguageResource::make($language)->getArray(),
                     'languageOptions' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->extra_languages),
                 ],
 
-                'layout'   => GetRetinaLayout::run($request, $webUser),
+                'layout' => GetRetinaLayout::run($request, $webUser),
                 'environment' => app()->environment(),
-        ];
+            ];
     }
 }

@@ -24,13 +24,13 @@ class IrisAttachmentsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'caption'        => $this->caption,
-            'scope'          => $this->scope,
-            'label'          => TradeAttachmentScopeEnum::labels()[$this->scope],
-            'media_id'       => $this->media_id,
-            'media_ulid'     => $this->media_ulid,
-            'mime_type'      => $this->mime_type,
-            'url'            => route('iris.iris_attachment', ['media' => $this->media_ulid]),
+            'caption' => $this->caption,
+            'scope' => $this->scope,
+            'label' => TradeAttachmentScopeEnum::labels()[$this->scope],
+            'media_id' => $this->media_id,
+            'media_ulid' => $this->media_ulid,
+            'mime_type' => $this->mime_type,
+            'url' => route('iris.iris_attachment', ['media' => $this->media_ulid]),
         ];
     }
 }

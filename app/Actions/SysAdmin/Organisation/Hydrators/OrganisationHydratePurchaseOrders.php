@@ -9,10 +9,10 @@
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
-use App\Models\SysAdmin\Organisation;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -29,9 +29,8 @@ class OrganisationHydratePurchaseOrders implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_purchase_orders' => $organisation->purchaseOrders->count()
+            'number_purchase_orders' => $organisation->purchaseOrders->count(),
         ];
-
 
         // $stats = array_merge(
         //     $stats,
@@ -45,7 +44,6 @@ class OrganisationHydratePurchaseOrders implements ShouldBeUnique
         //         }
         //     )
         // );
-
 
         $stats = array_merge(
             $stats,

@@ -24,17 +24,15 @@ class WebsitesDashboard extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("websites.view");
+        return $request->user()->authTo('websites.view');
     }
-
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
         $this->initialisation($organisation, $request);
+
         return $organisation;
     }
-
-
 
     public function htmlResponse(Organisation $organisation): Response
     {
@@ -42,33 +40,30 @@ class WebsitesDashboard extends OrgAction
         return Inertia::render(
             'Web/WebsitesDashboard',
             [
-                'breadcrumbs'  => $this->getBreadcrumbs(),
-                'title'        => __('websites dashboard'),
-                'pageHead'     => [
-                    'title'     => __('websites dashboard'),
+                'breadcrumbs' => $this->getBreadcrumbs(),
+                'title' => __('websites dashboard'),
+                'pageHead' => [
+                    'title' => __('websites dashboard'),
                 ],
                 'flatTreeMaps' => [
                     [
 
                         [
-                            'name'  => __('websites'),
-                            'icon'  => ['fal', 'fa-globe'],
-                            'route'  => ['grp.org.shops.show.web.websites.index'],
+                            'name' => __('websites'),
+                            'icon' => ['fal', 'fa-globe'],
+                            'route' => ['grp.org.shops.show.web.websites.index'],
                             'index' => [
-                                'number' => $organisation->webStats->number_websites
-                            ]
+                                'number' => $organisation->webStats->number_websites,
+                            ],
 
                         ],
 
-
-
-                    ]
-]
+                    ],
+                ],
 
             ]
         );
     }
-
 
     public function getBreadcrumbs(): array
     {
@@ -77,17 +72,15 @@ class WebsitesDashboard extends OrgAction
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.web.dashboard'
+                                'name' => 'grp.web.dashboard',
                             ],
                             'label' => __('websites dashboard'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }
-
-
 }

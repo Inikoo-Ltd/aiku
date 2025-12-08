@@ -17,25 +17,24 @@ class FetchAuroraBarcode extends FetchAurora
     protected function parseModel(): void
     {
         $status = match ($this->auroraModelData->{'Barcode Status'}) {
-            'Used'     => BarcodeStatusEnum::USED,
+            'Used' => BarcodeStatusEnum::USED,
             'Reserved' => BarcodeStatusEnum::RESERVED,
-            default    => BarcodeStatusEnum::AVAILABLE
+            default => BarcodeStatusEnum::AVAILABLE
         };
 
         $this->parsedData['barcode'] = [
-            'number'          => $this->auroraModelData->{'Barcode Number'},
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Barcode Key'},
-            'type'            => BarcodeTypeEnum::EAN,
-            'status'          => $status,
-            'note'            => $this->auroraModelData->{'Barcode Sticky Note'},
-            'assigned_at'     => $this->auroraModelData->{'Barcode Used From'} ? $this->parseDatetime($this->auroraModelData->{'Barcode Used From'}) : null,
-            'fetched_at'      => now(),
-            'last_fetched_at' => now()
+            'number' => $this->auroraModelData->{'Barcode Number'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Barcode Key'},
+            'type' => BarcodeTypeEnum::EAN,
+            'status' => $status,
+            'note' => $this->auroraModelData->{'Barcode Sticky Note'},
+            'assigned_at' => $this->auroraModelData->{'Barcode Used From'} ? $this->parseDatetime($this->auroraModelData->{'Barcode Used From'}) : null,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Barcode Dimension')

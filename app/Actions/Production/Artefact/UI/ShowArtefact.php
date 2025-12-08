@@ -9,8 +9,8 @@
 namespace App\Actions\Production\Artefact\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\Production\ArtefactTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -34,9 +34,8 @@ class ShowArtefact extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit   = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
+        $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
         $this->canDelete = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
-
 
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
@@ -48,7 +47,6 @@ class ShowArtefact extends OrgAction
 
         ]);
     }
-
 
     public function asController(Organisation $organisation, Production $production, Artefact $artefact, ActionRequest $request): Artefact
     {
@@ -62,22 +60,21 @@ class ShowArtefact extends OrgAction
         return Inertia::render(
             'Org/Production/Artefact',
             [
-                'title'                                => __('warehouse area'),
-                'breadcrumbs'                          => $this->getBreadcrumbs(
+                'title' => __('warehouse area'),
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'navigation'                           => [
+                'navigation' => [
                     'previous' => $this->getPrevious($artefact, $request),
-                    'next'     => $this->getNext($artefact, $request),
+                    'next' => $this->getNext($artefact, $request),
                 ],
-                'pageHead'                             => [
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'fa-map-signs'],
-                            'title' => __('Warehouse area')
-                        ],
-                    'model'   => __('artefact'),
-                    'title'   => $artefact->name,
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-map-signs'],
+                        'title' => __('Warehouse area'),
+                    ],
+                    'model' => __('artefact'),
+                    'title' => $artefact->name,
                     'actions' => [
                         // $this->canEdit ?
                         //     [
@@ -93,16 +90,16 @@ class ShowArtefact extends OrgAction
                         //     : null,
                         // $this->canDelete ? $this->getDeleteActionIcon($request) : null,
                         [
-                            'type'    => 'button',
-                        'tooltip'     => __('Edit'),
-                        'icon'        => 'fal fa-pencil',
-                        'style'       => 'secondary',
-                        'route'       => [
-                            'name'       => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
-                            'parameters' => $request->route()->originalParameters()
+                            'type' => 'button',
+                            'tooltip' => __('Edit'),
+                            'icon' => 'fal fa-pencil',
+                            'style' => 'secondary',
+                            'route' => [
+                                'name' => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters(),
 
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
                     // 'meta'    => [
                     //     [
@@ -119,9 +116,9 @@ class ShowArtefact extends OrgAction
                     //     ]
                     // ]
                 ],
-                'tabs'                                 => [
-                    'current'    => $this->tab,
-                    'navigation' => ArtefactTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => ArtefactTabsEnum::navigation(),
                 ],
                 ArtefactTabsEnum::SHOWCASE->value => $this->tab == ArtefactTabsEnum::SHOWCASE->value ?
                     fn () => GetArtefactShowcase::run($artefact)
@@ -148,7 +145,7 @@ class ShowArtefact extends OrgAction
 
                 ArtefactTabsEnum::HISTORY->value => $this->tab == ArtefactTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($artefact))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($artefact)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($artefact))),
 
             ]
             // )->table(
@@ -158,7 +155,6 @@ class ShowArtefact extends OrgAction
             //     )
         )->table(IndexHistory::make()->tableStructure(prefix: ArtefactTabsEnum::HISTORY->value));
     }
-
 
     public function jsonResponse(Artefact $artefact): ArtefactResource
     {
@@ -173,26 +169,26 @@ class ShowArtefact extends OrgAction
             ShowCraftsDashboard::make()->getBreadcrumbs($routeParameters),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.artefacts.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.show.crafts.artefacts.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Artefacts'),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.artefacts.show',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.show.crafts.artefacts.show',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $artefact?->code,
-                            'icon'  => 'fal fa-bars'
+                            'icon' => 'fal fa-bars',
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
             ]
@@ -213,10 +209,9 @@ class ShowArtefact extends OrgAction
         return $this->getNavigation($next, $request->route()->getName());
     }
 
-
     private function getNavigation(?Artefact $artefact, string $routeName): ?array
     {
-        if (!$artefact) {
+        if (! $artefact) {
             return null;
         }
 
@@ -224,15 +219,14 @@ class ShowArtefact extends OrgAction
             'grp.org.productions.show.infrastructure.dashboard' => [
                 'label' => $artefact->code,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $this->organisation->slug,
-                        'production'    => $artefact->production->slug
-                    ]
-                ]
+                        'organisation' => $this->organisation->slug,
+                        'production' => $artefact->production->slug,
+                    ],
+                ],
             ],
             default => null,
         };
     }
-
 }

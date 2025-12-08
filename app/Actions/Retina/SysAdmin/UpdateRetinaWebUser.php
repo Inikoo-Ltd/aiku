@@ -24,20 +24,18 @@ class UpdateRetinaWebUser extends RetinaAction
 
     private WebUser $webUserToUpdate;
 
-
     public function handle(WebUser $webUser, array $modelData): WebUser
     {
         return UpdateWebUser::run($webUser, $modelData);
     }
 
-
     public function rules(): array
     {
         return [
-            'username'     => [
+            'username' => [
                 'sometimes',
                 'required',
-                new AlphaDashDot(),
+                new AlphaDashDot,
                 'min:4',
                 'max:255',
                 new IUnique(
@@ -49,7 +47,7 @@ class UpdateRetinaWebUser extends RetinaAction
                     ]
                 ),
             ],
-            'email'        => [
+            'email' => [
                 'sometimes',
                 'required',
                 'email',
@@ -63,7 +61,7 @@ class UpdateRetinaWebUser extends RetinaAction
                 ),
             ],
             'contact_name' => ['sometimes', 'string', 'max:255'],
-            'password'     => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8)],
+            'password' => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8)],
         ];
     }
 
@@ -80,6 +78,7 @@ class UpdateRetinaWebUser extends RetinaAction
         $this->asAction = true;
         $this->webUserToUpdate = $webUser;
         $this->initialisationFulfilmentActions($webUser->customer->fulfilmentCustomer, $modelData);
+
         return $this->handle($webUser, $this->validatedData);
     }
 }

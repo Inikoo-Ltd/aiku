@@ -42,9 +42,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Appointment newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Appointment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Appointment query()
+ *
  * @mixin \Eloquent
  */
 class Appointment extends Model
@@ -54,10 +56,10 @@ class Appointment extends Model
     use InCustomer;
 
     protected $casts = [
-        'state'            => AppointmentStateEnum::class,
-        'type'             => AppointmentTypeEnum::class,
-        'event'            => AppointmentEventEnum::class,
-        'schedule_at'      => 'datetime'
+        'state' => AppointmentStateEnum::class,
+        'type' => AppointmentTypeEnum::class,
+        'event' => AppointmentEventEnum::class,
+        'schedule_at' => 'datetime',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -74,5 +76,4 @@ class Appointment extends Model
     {
         return 'slug';
     }
-
 }

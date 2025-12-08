@@ -43,9 +43,8 @@ class BreakAllWebsitesCache extends OrgAction
     public function asCommand(Command $command): int
     {
         $this->handle();
-        $command->info("All websites cache cleared");
+        $command->info('All websites cache cleared');
 
         return 0;
     }
-
 }

@@ -18,12 +18,11 @@ class SendLinkResetPassword
 {
     use AsAction;
 
-
     public function handle(string $token, User $user): void
     {
         $url = route('grp.email.reset-password.show', [
             'token' => $token,
-            'email' => $user->email
+            'email' => $user->email,
         ]);
 
         $user->notify(new ResetPasswordNotification($url));
@@ -31,17 +30,17 @@ class SendLinkResetPassword
 
     public function getEmailData(string $subject, string $sender, string $email, string $html, string $url): array
     {
-        if (preg_match_all("/{{(.*?)}}/", $html, $matches)) {
+        if (preg_match_all('/{{(.*?)}}/', $html, $matches)) {
             foreach ($matches[1] as $i => $placeholder) {
                 $placeholder = $this->replaceMergeTags($placeholder, $url);
-                $html        = str_replace($matches[0][$i], sprintf('%s', $placeholder), $html);
+                $html = str_replace($matches[0][$i], sprintf('%s', $placeholder), $html);
             }
         }
 
         if (preg_match_all("/\[(.*?)]/", $html, $matches)) {
             foreach ($matches[1] as $i => $placeholder) {
                 $placeholder = $this->replaceMergeTags($placeholder, $url);
-                $html        = str_replace($matches[0][$i], sprintf('%s', $placeholder), $html);
+                $html = str_replace($matches[0][$i], sprintf('%s', $placeholder), $html);
             }
         }
 
@@ -54,7 +53,7 @@ class SendLinkResetPassword
 
         return match ($placeholder) {
             'reset-password-url' => $url,
-            default              => ''
+            default => ''
         };
     }
 }

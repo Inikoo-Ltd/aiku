@@ -23,7 +23,7 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class PalletReturnItemImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class PalletReturnItemImport implements SkipsOnFailure, ToCollection, WithEvents, WithHeadingRow, WithValidation
 {
     use WithImport;
 
@@ -32,27 +32,26 @@ class PalletReturnItemImport implements ToCollection, WithHeadingRow, SkipsOnFai
     public function __construct(PalletReturn $palletReturn, Upload $upload)
     {
         $this->upload = $upload;
-        $this->scope  = $palletReturn;
+        $this->scope = $palletReturn;
     }
 
     public function storeModel($row, $uploadRecord): void
     {
-        $fields  = array_keys($this->rules());
+        $fields = array_keys($this->rules());
         $rowData = $row->only($fields)->toArray();
 
         $modelData = $rowData;
 
-        if (!Arr::get($modelData, 'type')) {
+        if (! Arr::get($modelData, 'type')) {
             data_set($modelData, 'type', PalletTypeEnum::PALLET->value);
         }
 
         data_set($modelData, 'data.bulk_import', [
-            'id'   => $this->upload->id,
+            'id' => $this->upload->id,
             'type' => 'Upload',
         ]);
 
         $fail = false;
-
 
         if ($this->scope->type == PalletReturnTypeEnum::PALLET) {
             try {

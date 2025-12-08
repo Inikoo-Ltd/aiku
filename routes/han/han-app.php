@@ -7,8 +7,8 @@
  */
 
 use App\Actions\HumanResources\Clocking\StoreClocking;
-use App\Actions\HumanResources\ClockingMachine\DisconnectClockingMachineFromHan;
 use App\Actions\HumanResources\ClockingMachine\ConnectClockingMachineToHan;
+use App\Actions\HumanResources\ClockingMachine\DisconnectClockingMachineFromHan;
 use App\Actions\HumanResources\Employee\ValidatePinEmployee;
 use Illuminate\Support\Facades\Route;
 

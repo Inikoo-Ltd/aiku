@@ -16,50 +16,50 @@ enum StockStateEnum: string
 {
     use EnumHelperTrait;
 
-    case IN_PROCESS    = 'in_process';
-    case ACTIVE        = 'active';
+    case IN_PROCESS = 'in_process';
+    case ACTIVE = 'active';
     case DISCONTINUING = 'discontinuing';
-    case DISCONTINUED  = 'discontinued';
-    case SUSPENDED     = 'suspended';
+    case DISCONTINUED = 'discontinued';
+    case SUSPENDED = 'suspended';
 
     public static function labels(): array
     {
         return [
-            'in_process'    => __('In process'),
-            'active'        => __('Active'),
+            'in_process' => __('In process'),
+            'active' => __('Active'),
             'discontinuing' => __('Discontinuing'),
-            'discontinued'  => __('Discontinued'),
-            'suspended'     => __('Suspended')
+            'discontinued' => __('Discontinued'),
+            'suspended' => __('Suspended'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'in_process'    => [
+            'in_process' => [
                 'tooltip' => __('in process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-green-500'
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-green-500',
             ],
-            'active'        => [
+            'active' => [
                 'tooltip' => __('Active'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-green-500'
+                'icon' => 'fal fa-check',
+                'class' => 'text-green-500',
             ],
             'discontinuing' => [
                 'tooltip' => __('discontinuing'),
-                'icon'    => 'fal fa-exclamation-triangle',
-                'class'   => 'text-orange-500'
+                'icon' => 'fal fa-exclamation-triangle',
+                'class' => 'text-orange-500',
             ],
-            'discontinued'  => [
+            'discontinued' => [
                 'tooltip' => __('discontinued'),
-                'icon'    => 'fal fa-skull',
-                'class'   => 'text-yellow-500'
+                'icon' => 'fal fa-skull',
+                'class' => 'text-yellow-500',
             ],
-            'suspended'     => [
+            'suspended' => [
                 'tooltip' => __('suspended'),
-                'icon'    => 'fas fa-pause-circle',
-                'class'   => 'text-slate-300'
+                'icon' => 'fas fa-pause-circle',
+                'class' => 'text-slate-300',
             ],
         ];
     }
@@ -73,12 +73,11 @@ enum StockStateEnum: string
         }
 
         return [
-            'in_process'    => $stats->number_stocks_state_in_process,
-            'active'        => $stats->number_stocks_state_active,
+            'in_process' => $stats->number_stocks_state_in_process,
+            'active' => $stats->number_stocks_state_active,
             'discontinuing' => $stats->number_stocks_state_discontinuing,
-            'discontinued'  => $stats->number_stocks_state_discontinued,
-            'suspended'     => $stats->number_stocks_state_suspended
+            'discontinued' => $stats->number_stocks_state_discontinued,
+            'suspended' => $stats->number_stocks_state_suspended,
         ];
     }
-
 }

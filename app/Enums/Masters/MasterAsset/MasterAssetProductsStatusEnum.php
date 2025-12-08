@@ -19,17 +19,14 @@ enum MasterAssetProductsStatusEnum: string
     case NO_FOR_SALE = 'no_for_sale';
     case ORPHAN = 'orphan';
 
-
     public static function labels(): array
     {
         return [
-            'na'            => __('No applicable'),
-            'active'        => __('Stocking'),
+            'na' => __('No applicable'),
+            'active' => __('Stocking'),
             'discontinuing' => __('Discontinuing'),
-            'discontinued'  => __('Discontinued'),
-            'orphan'        => __('Orphan'),
+            'discontinued' => __('Discontinued'),
+            'orphan' => __('Orphan'),
         ];
     }
-
-
 }

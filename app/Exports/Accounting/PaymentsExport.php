@@ -10,14 +10,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PaymentsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class PaymentsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Payment|Builder
     {
         return Payment::query();
     }
 
-    /** @var Payment $row */
+    /** @var Payment */
     public function map($row): array
     {
         return [
@@ -56,7 +56,7 @@ class PaymentsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHead
             'With Refund',
             'Status',
             'State',
-            'Date'
+            'Date',
         ];
     }
 }

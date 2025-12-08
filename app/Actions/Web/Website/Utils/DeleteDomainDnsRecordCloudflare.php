@@ -20,8 +20,8 @@ class DeleteDomainDnsRecordCloudflare
     public function handle(string $zoneId, string $dnsRecordId): Response|PromiseInterface
     {
         return Http::withHeaders([
-            'Content-Type'  => 'application/json',
-            'Authorization' => 'Bearer ' . config('app.cloudflare_api_token'),
-        ])->delete(config('app.cloudflare_api_url') . "/zones/$zoneId/dns_records/$dnsRecordId");
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer '.config('app.cloudflare_api_token'),
+        ])->delete(config('app.cloudflare_api_url')."/zones/$zoneId/dns_records/$dnsRecordId");
     }
 }

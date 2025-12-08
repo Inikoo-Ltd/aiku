@@ -38,6 +38,7 @@ class UpdateRetinaFulfilmentTransaction extends RetinaAction
     {
         $this->asAction = true;
         $this->initialisationFulfilmentActions($fulfilmentTransaction->fulfilmentCustomer, $modelData);
+
         return $this->handle($fulfilmentTransaction, $modelData);
     }
 }

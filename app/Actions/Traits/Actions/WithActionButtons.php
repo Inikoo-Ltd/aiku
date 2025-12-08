@@ -15,43 +15,43 @@ trait WithActionButtons
     protected function getDeleteActionIcon(ActionRequest $request): array
     {
         return [
-            'type'    => 'button',
+            'type' => 'button',
             'tooltip' => __('Delete'),
-            'icon'    => 'fal fa-trash-alt',
-            'style'   => 'negative',
-            'route'   => [
-                'name'       => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
+            'icon' => 'fal fa-trash-alt',
+            'style' => 'negative',
+            'route' => [
+                'name' => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
                 'parameters' => array_merge(
                     [
                         '_query' => [
-                            'section' => 'delete'
-                        ]
+                            'section' => 'delete',
+                        ],
                     ],
                     $request->route()->originalParameters()
-                )
-            ]
+                ),
+            ],
         ];
     }
 
-    protected function getEditActionIcon(ActionRequest $request, string|null $sectionName = 'properties'): array
+    protected function getEditActionIcon(ActionRequest $request, ?string $sectionName = 'properties'): array
     {
         return [
-            'type'    => 'button',
+            'type' => 'button',
             'tooltip' => __('Edit'),
-            'icon'    => 'fal fa-pencil',
-            'label'   => __('Edit'),
-            'style'   => 'edit',
-            'route'   => [
-                'name'       => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
+            'icon' => 'fal fa-pencil',
+            'label' => __('Edit'),
+            'style' => 'edit',
+            'route' => [
+                'name' => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
                 'parameters' => array_merge(
                     [
                         '_query' => [
-                            'section' => $sectionName
-                        ]
+                            'section' => $sectionName,
+                        ],
                     ],
                     $request->route()->originalParameters()
-                )
-            ]
+                ),
+            ],
         ];
     }
 }

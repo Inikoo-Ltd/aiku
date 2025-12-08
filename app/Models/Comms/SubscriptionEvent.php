@@ -35,9 +35,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox $outbox
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionEvent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionEvent newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionEvent query()
+ *
  * @mixin \Eloquent
  */
 class SubscriptionEvent extends Model
@@ -49,7 +51,7 @@ class SubscriptionEvent extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'data'               => 'array',
+        'data' => 'array',
     ];
 
     protected $attributes = [
@@ -65,7 +67,4 @@ class SubscriptionEvent extends Model
     {
         return $this->morphTo();
     }
-
-
-
 }

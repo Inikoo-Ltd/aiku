@@ -23,33 +23,31 @@ enum OfferCampaignTypeEnum: string
     case PRODUCT_OFFERS = 'product-offers';
     case DISCRETIONARY = 'discretionary';
 
-
     public function labels(): array
     {
         return [
-            'order-recursion'   => __('Order recursion'),
-            'volume-discount'   => __('Volume discount'),
-            'first-order'       => __('First order'),
-            'customer-offers'   => __('Customer offers'),
-            'shop-offers'       => __('Shop offers'),
+            'order-recursion' => __('Order recursion'),
+            'volume-discount' => __('Volume discount'),
+            'first-order' => __('First order'),
+            'customer-offers' => __('Customer offers'),
+            'shop-offers' => __('Shop offers'),
             'collection-offers' => __('Collection offers'),
-            'product-offers'    => __('Product offers'),
-            'discretionary'     => __('Discretionary discounts')
+            'product-offers' => __('Product offers'),
+            'discretionary' => __('Discretionary discounts'),
         ];
     }
 
     public function codes(): array
     {
         return [
-            'order-recursion'   => 'OR',
-            'volume-discount'   => 'VL',
-            'first-order'       => 'FO',
-            'customer-offers'   => 'CU',
-            'shop-offers'       => 'SO',
+            'order-recursion' => 'OR',
+            'volume-discount' => 'VL',
+            'first-order' => 'FO',
+            'customer-offers' => 'CU',
+            'shop-offers' => 'SO',
             'collection-offers' => 'CO',
-            'product-offers'    => 'PO',
-            'discretionary'     => 'DI'
+            'product-offers' => 'PO',
+            'discretionary' => 'DI',
         ];
     }
-
 }

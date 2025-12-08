@@ -19,7 +19,6 @@ class OrganisationHydrateOrderStateCreating implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $organisationID): string
@@ -30,12 +29,12 @@ class OrganisationHydrateOrderStateCreating implements ShouldBeUnique
     public function handle(int $organisationID): void
     {
         $organisation = Organisation::find($organisationID);
-        if (!$organisation) {
+        if (! $organisation) {
             return;
         }
 
         $stats = [
-            'number_orders_state_creating'              => $organisation->orders()->where('state', OrderStateEnum::CREATING)->count(),
+            'number_orders_state_creating' => $organisation->orders()->where('state', OrderStateEnum::CREATING)->count(),
             'orders_state_creating_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::CREATING)->sum('org_net_amount'),
             'orders_state_creating_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::CREATING)->sum('grp_net_amount'),
 
@@ -43,6 +42,4 @@ class OrganisationHydrateOrderStateCreating implements ShouldBeUnique
 
         $organisation->orderHandlingStats()->update($stats);
     }
-
-
 }

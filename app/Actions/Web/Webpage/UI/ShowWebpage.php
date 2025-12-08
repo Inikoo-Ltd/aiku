@@ -44,15 +44,15 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ShowWebpage extends OrgAction
 {
     use AsAction;
-    use WithInertia;
     use HasWorkshopAction;
+    use WithInertia;
     use WithWebAuthorisation;
     use WithWebpageSubNavigation;
-
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->initialisationFromShop($shop, $request)->withTab(WebpageTabsEnum::values());
+
         return $webpage;
     }
 
@@ -63,7 +63,6 @@ class ShowWebpage extends OrgAction
 
         return $webpage;
     }
-
 
     public function getModelActions(Webpage $webpage): array
     {
@@ -79,7 +78,6 @@ class ShowWebpage extends OrgAction
         return $actions;
     }
 
-
     public function createRedirectAction(Webpage $webpage): array
     {
         $actions = [];
@@ -87,39 +85,37 @@ class ShowWebpage extends OrgAction
         if ($this->canEdit) {
             if ($webpage->shop->type == ShopTypeEnum::FULFILMENT) {
                 $redirectRoute = [
-                    'name'       => 'grp.org.fulfilments.show.web.webpages.redirect.create',
+                    'name' => 'grp.org.fulfilments.show.web.webpages.redirect.create',
                     'parameters' => [
                         'organisation' => $webpage->organisation->slug,
-                        'fulfilment'   => $webpage->shop->fulfilment->slug,
-                        'website'      => $webpage->website->slug,
-                        'webpage'      => $webpage->slug
-                    ]
+                        'fulfilment' => $webpage->shop->fulfilment->slug,
+                        'website' => $webpage->website->slug,
+                        'webpage' => $webpage->slug,
+                    ],
                 ];
             } else {
                 $redirectRoute = [
-                    'name'       => 'grp.org.shops.show.web.webpages.redirect.create',
+                    'name' => 'grp.org.shops.show.web.webpages.redirect.create',
                     'parameters' => [
                         'organisation' => $webpage->organisation->slug,
-                        'shop'         => $webpage->shop->slug,
-                        'website'      => $webpage->website->slug,
-                        'webpage'      => $webpage->slug
-                    ]
+                        'shop' => $webpage->shop->slug,
+                        'website' => $webpage->website->slug,
+                        'webpage' => $webpage->slug,
+                    ],
                 ];
             }
 
             $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
-                'icon'    => ["fal", "fa-directions"],
+                'type' => 'button',
+                'style' => 'edit',
+                'icon' => ['fal', 'fa-directions'],
                 'tooltip' => __('New Redirect'),
-                'route'   => $redirectRoute
+                'route' => $redirectRoute,
             ];
         }
 
-
         return $actions;
     }
-
 
     public function getModelCollectionActions(Webpage $webpage): array
     {
@@ -128,22 +124,20 @@ class ShowWebpage extends OrgAction
         /** @var \App\Models\Catalogue\Collection $collection */
         $collection = $webpage->model;
 
-
         $actions[] = [
-            'type'    => 'button',
-            'style'   => 'edit',
+            'type' => 'button',
+            'style' => 'edit',
             'tooltip' => __('Collection'),
-            'icon'    => ["fal", "fa-album-collection"],
-            'route'   => [
-                'name'       => 'grp.org.shops.show.catalogue.collections.show',
+            'icon' => ['fal', 'fa-album-collection'],
+            'route' => [
+                'name' => 'grp.org.shops.show.catalogue.collections.show',
                 'parameters' => [
                     'organisation' => $webpage->organisation->slug,
-                    'shop'         => $webpage->shop->slug,
-                    'collection'   => $collection->slug
-                ]
-            ]
+                    'shop' => $webpage->shop->slug,
+                    'collection' => $collection->slug,
+                ],
+            ],
         ];
-
 
         return $actions;
     }
@@ -155,22 +149,20 @@ class ShowWebpage extends OrgAction
         /** @var Product $product */
         $product = $webpage->model;
 
-
         $actions[] = [
-            'type'    => 'button',
-            'style'   => 'edit',
+            'type' => 'button',
+            'style' => 'edit',
             'tooltip' => __('Product'),
-            'icon'    => ["fal", "fa-cube"],
-            'route'   => [
-                'name'       => 'grp.org.shops.show.catalogue.products.all_products.show',
+            'icon' => ['fal', 'fa-cube'],
+            'route' => [
+                'name' => 'grp.org.shops.show.catalogue.products.all_products.show',
                 'parameters' => [
                     'organisation' => $webpage->organisation->slug,
-                    'shop'         => $webpage->shop->slug,
-                    'product'      => $product->slug
-                ]
-            ]
+                    'shop' => $webpage->shop->slug,
+                    'product' => $product->slug,
+                ],
+            ],
         ];
-
 
         return $actions;
     }
@@ -184,49 +176,49 @@ class ShowWebpage extends OrgAction
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
+                'type' => 'button',
+                'style' => 'edit',
                 'tooltip' => __('Department'),
-                'icon'    => ["fal", "fa-folder-tree"],
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                'icon' => ['fal', 'fa-folder-tree'],
+                'route' => [
+                    'name' => 'grp.org.shops.show.catalogue.departments.show',
                     'parameters' => [
                         'organisation' => $webpage->organisation->slug,
-                        'shop'         => $webpage->shop->slug,
-                        'department'   => $productCategory->slug
-                    ]
-                ]
+                        'shop' => $webpage->shop->slug,
+                        'department' => $productCategory->slug,
+                    ],
+                ],
             ];
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
+                'type' => 'button',
+                'style' => 'edit',
                 'tooltip' => __('Sub Department'),
-                'icon'    => ["fal", "fa-folder-tree"],
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                'icon' => ['fal', 'fa-folder-tree'],
+                'route' => [
+                    'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
                     'parameters' => [
-                        'organisation'  => $webpage->organisation->slug,
-                        'shop'          => $webpage->shop->slug,
-                        'department'    => $productCategory->department->slug,
-                        'subDepartment' => $productCategory->slug
-                    ]
-                ]
+                        'organisation' => $webpage->organisation->slug,
+                        'shop' => $webpage->shop->slug,
+                        'department' => $productCategory->department->slug,
+                        'subDepartment' => $productCategory->slug,
+                    ],
+                ],
             ];
         } else {
             $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
-                'icon'    => ["fal", "fa-folder"],
+                'type' => 'button',
+                'style' => 'edit',
+                'icon' => ['fal', 'fa-folder'],
                 'tooltip' => __('See Family'),
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.catalogue.families.show',
+                'route' => [
+                    'name' => 'grp.org.shops.show.catalogue.families.show',
                     'parameters' => [
                         'organisation' => $webpage->organisation->slug,
-                        'shop'         => $webpage->shop->slug,
-                        'family'       => $productCategory->slug
-                    ]
-                ]
+                        'shop' => $webpage->shop->slug,
+                        'family' => $productCategory->slug,
+                    ],
+                ],
             ];
         }
 
@@ -237,25 +229,23 @@ class ShowWebpage extends OrgAction
     {
         $actions = [];
 
-        if (!$this->canEdit) {
+        if (! $this->canEdit) {
             return $actions;
         }
 
-
         if ($webpage->sub_type == WebpageSubTypeEnum::BLOG) {
             $actions[] = [
-                'type'  => 'button',
+                'type' => 'button',
                 'style' => 'create',
                 'label' => __('New article'),
                 'route' => [
-                    'name'       => 'org.websites.show.blog.article.create',
+                    'name' => 'org.websites.show.blog.article.create',
                     'parameters' => [
                         'website' => $webpage->website->slug,
-                    ]
-                ]
+                    ],
+                ],
             ];
         }
-
 
         return $actions;
     }
@@ -266,13 +256,11 @@ class ShowWebpage extends OrgAction
 
         $actions = $this->getModelActions($webpage);
 
-
         $actions = array_merge($actions, $this->createRedirectAction($webpage));
         $actions = array_merge($actions, $this->workshopActions($request));
         $actions = array_merge($actions, $this->getTypeSpecificActions($webpage));
 
         $subNavigationRoot = '';
-
 
         return Inertia::render(
             'Org/Web/Webpage',
@@ -281,27 +269,27 @@ class ShowWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpage'),
-                'pageHead'    => [
-                    'title'         => $webpage->code,
-                    'afterTitle'    => [
+                'title' => __('Webpage'),
+                'pageHead' => [
+                    'title' => $webpage->code,
+                    'afterTitle' => [
                         'label' => '../'.$webpage->url,
                     ],
-                    'icon'          => [
+                    'icon' => [
                         'title' => __('Webpage'),
-                        'icon'  => 'fal fa-browser'
+                        'icon' => 'fal fa-browser',
                     ],
-                    'iconRight'     => $webpage->state->stateIcon()[$webpage->state->value],
-                    'actions'       => $actions,
+                    'iconRight' => $webpage->state->stateIcon()[$webpage->state->value],
+                    'actions' => $actions,
                     'subNavigation' => $subNavigation,
                 ],
 
-                'tabs'                  => [
-                    'current'    => $this->tab,
-                    'navigation' => WebpageTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => WebpageTabsEnum::navigation(),
                 ],
-                'root_active'           => $subNavigationRoot,
-                'webpage_url'           => $webpage->getUrl(),
+                'root_active' => $subNavigationRoot,
+                'webpage_url' => $webpage->getUrl(),
                 'webpage_canonical_url' => $webpage->canonical_url,
 
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
@@ -316,7 +304,7 @@ class ShowWebpage extends OrgAction
                     fn () => ExternalLinksResource::collection(IndexExternalLinks::run($webpage))
                     : Inertia::lazy(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($webpage))),
 
-                WebpageTabsEnum::WEBPAGES->value  => $this->tab == WebpageTabsEnum::WEBPAGES->value
+                WebpageTabsEnum::WEBPAGES->value => $this->tab == WebpageTabsEnum::WEBPAGES->value
                     ?
                     fn () => WebpageResource::collection(
                         IndexWebpages::run(
@@ -344,8 +332,7 @@ class ShowWebpage extends OrgAction
 
                 WebpageTabsEnum::LABELED_SNAPSHOTS->value => $this->tab == WebpageTabsEnum::LABELED_SNAPSHOTS->value ?
                     fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true))
-                    : Inertia::lazy(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true)))
-
+                    : Inertia::lazy(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true))),
 
             ]
         )->table(
@@ -384,11 +371,11 @@ class ShowWebpage extends OrgAction
             return [
                 [
 
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Webpages')
+                            'label' => __('Webpages'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -396,12 +383,11 @@ class ShowWebpage extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
 
                 ],
             ];
         };
-
 
         $webpage = Webpage::where('slug', $routeParameters['webpage'])->first();
         /** @var Website $website */
@@ -418,13 +404,13 @@ class ShowWebpage extends OrgAction
                     $webpage,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.web.webpages.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website'])
+                            'name' => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website']),
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.web.webpages.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website', 'webpage'])
-                        ]
+                            'name' => 'grp.org.shops.show.web.webpages.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website', 'webpage']),
+                        ],
                     ],
                     $suffix
                 ),
@@ -439,13 +425,13 @@ class ShowWebpage extends OrgAction
                     $webpage,
                     [
                         'index' => [
-                            'name'       => 'grp.org.fulfilments.show.web.webpages.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'website'])
+                            'name' => 'grp.org.fulfilments.show.web.webpages.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'website']),
                         ],
                         'model' => [
-                            'name'       => 'grp.org.fulfilments.show.web.webpages.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'website', 'webpage'])
-                        ]
+                            'name' => 'grp.org.fulfilments.show.web.webpages.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'website', 'webpage']),
+                        ],
                     ],
                     $suffix
                 ),

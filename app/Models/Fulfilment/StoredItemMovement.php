@@ -30,16 +30,18 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $pallet_return_item_id
  * @property string|null $running_quantity
  * @property string|null $running_in_pallet_quantity
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemMovement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemMovement newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemMovement query()
+ *
  * @mixin \Eloquent
  */
 class StoredItemMovement extends Model
 {
     protected $guarded = [];
 
-    protected $casts   = [
-        'type'    => StoredItemMovementTypeEnum::class,
+    protected $casts = [
+        'type' => StoredItemMovementTypeEnum::class,
     ];
 }

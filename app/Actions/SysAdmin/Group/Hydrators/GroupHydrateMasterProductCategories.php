@@ -39,7 +39,7 @@ class GroupHydrateMasterProductCategories implements ShouldBeUnique
                 ->where('group_id', $group->id)
                 ->where('status', true)
                 ->whereNull('deleted_at')
-                ->count()
+                ->count(),
         ];
 
         $stats = array_merge(
@@ -56,7 +56,7 @@ class GroupHydrateMasterProductCategories implements ShouldBeUnique
         );
 
         foreach (MasterProductCategoryTypeEnum::cases() as $type) {
-            $stats['number_current_master_product_categories_type_' . $type->value] = DB::table('master_product_categories')
+            $stats['number_current_master_product_categories_type_'.$type->value] = DB::table('master_product_categories')
                 ->where('group_id', $group->id)
                 ->where('status', true)
                 ->where('type', $type->value)

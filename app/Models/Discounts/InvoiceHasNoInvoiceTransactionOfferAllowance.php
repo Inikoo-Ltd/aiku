@@ -35,16 +35,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Discounts\Offer $offer
  * @property-read \App\Models\Discounts\OfferAllowance $offerAllowance
  * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceHasNoInvoiceTransactionOfferAllowance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceHasNoInvoiceTransactionOfferAllowance newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceHasNoInvoiceTransactionOfferAllowance query()
+ *
  * @mixin \Eloquent
  */
 class InvoiceHasNoInvoiceTransactionOfferAllowance extends Model
 {
     protected $casts = [
-        'data'            => 'array',
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
@@ -73,5 +75,4 @@ class InvoiceHasNoInvoiceTransactionOfferAllowance extends Model
     {
         return $this->belongsTo(OfferAllowance::class);
     }
-
 }

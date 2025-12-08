@@ -29,10 +29,6 @@ class GuestHydrateTimesheets implements ShouldBeUnique
             'number_timesheets' => $guest->timesheets()->count(),
         ];
 
-
-
         $guest->stats()->update($stats);
     }
-
-
 }

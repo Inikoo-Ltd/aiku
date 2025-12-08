@@ -18,11 +18,8 @@ class ReindexSupplierSearch extends HydrateModel
 
     public string $commandSignature = 'search:suppliers {--s|slugs=}';
 
-
     public function handle(Supplier $supplier): void
     {
         SupplierRecordSearch::run($supplier);
     }
-
-
 }

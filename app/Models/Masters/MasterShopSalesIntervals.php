@@ -132,9 +132,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $baskets_updated_grp_currency_pq4
  * @property string $baskets_updated_grp_currency_pq5
  * @property-read \App\Models\Masters\MasterShop $masterShop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopSalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopSalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class MasterShopSalesIntervals extends Model

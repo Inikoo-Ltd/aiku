@@ -24,7 +24,7 @@ trait HasFulfilmentStats
     public function fulfilmentAssetsStats(Blueprint $table): Blueprint
     {
         $table->unsignedInteger('number_pallets')->default(0);
-        $table->unsignedInteger("number_pallets_with_stored_items")->default(0);
+        $table->unsignedInteger('number_pallets_with_stored_items')->default(0);
 
         foreach (PalletTypeEnum::cases() as $type) {
             $table->unsignedInteger("number_pallets_type_{$type->snake()}")->default(0);
@@ -42,13 +42,12 @@ trait HasFulfilmentStats
         return $this->storedItemsStatsFields($table);
     }
 
-
     public function storedItemsStatsFields(Blueprint $table): Blueprint
     {
 
         $table->unsignedInteger('number_stored_items')->default(0);
         foreach (StoredItemStateEnum::cases() as $state) {
-            if ($table->getTable() == 'pallets' and  $state == StoredItemStateEnum::DISCONTINUED) {
+            if ($table->getTable() == 'pallets' and $state == StoredItemStateEnum::DISCONTINUED) {
                 continue;
             }
             $table->unsignedInteger("number_stored_items_state_{$state->snake()}")->default(0);
@@ -56,7 +55,6 @@ trait HasFulfilmentStats
 
         return $table;
     }
-
 
     public function fulfilmentStats(Blueprint $table): Blueprint
     {
@@ -75,6 +73,7 @@ trait HasFulfilmentStats
             $table->unsignedInteger("number_pallet_returns_state_{$case->snake()}")->default(0);
         }
         $table = $this->storedItemsAuditStats($table);
+
         return $this->recurringBillStats($table);
     }
 
@@ -84,7 +83,6 @@ trait HasFulfilmentStats
         $table->unsignedInteger('number_customers_interest_pallets_storage')->default(0);
         $table->unsignedInteger('number_customers_interest_items_storage')->default(0);
         $table->unsignedInteger('number_customers_interest_dropshipping')->default(0);
-
 
         foreach (FulfilmentCustomerStatusEnum::cases() as $case) {
             $table->unsignedInteger("number_customers_status_{$case->snake()}")->default(0);
@@ -121,5 +119,4 @@ trait HasFulfilmentStats
 
         return $table;
     }
-
 }

@@ -34,10 +34,9 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
     {
         $deliveryNoteData = $organisationSource->fetchDeliveryNote($organisationSourceId);
 
-        if (!$deliveryNoteData or empty($deliveryNoteData['delivery_note']['source_id'])) {
+        if (! $deliveryNoteData or empty($deliveryNoteData['delivery_note']['source_id'])) {
             return null;
         }
-
 
         if ($deliveryNote = DeliveryNote::withTrashed()->where('source_id', $deliveryNoteData['delivery_note']['source_id'])->first()) {
             //  try {
@@ -56,7 +55,6 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
                 UpdateAddress::run($deliveryNote->address, $deliveryAddress->toArray());
             }
 
-
             $deliveryNote = UpdateDeliveryNote::make()->action(
                 $deliveryNote,
                 $deliveryNoteData['delivery_note'],
@@ -71,15 +69,14 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
             //                return null;
             //            }
 
-            if (in_array('transactions', $this->with) || in_array('full', $this->with) ||  $forceWithTransactions) {
+            if (in_array('transactions', $this->with) || in_array('full', $this->with) || $forceWithTransactions) {
                 $this->fetchDeliveryNoteTransactions($organisationSource, $deliveryNote);
             }
-
 
             return $deliveryNote;
         } else {
             if ($deliveryNoteData['order']) {
-                //try {
+                // try {
                 $deliveryNote = StoreDeliveryNote::make()->action(
                     $deliveryNoteData['order'],
                     $deliveryNoteData['delivery_note'],
@@ -106,13 +103,11 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
                 //                    return null;
                 //                }
 
-
-                if (in_array('transactions', $this->with) or in_array('full', $this->with) or  $forceWithTransactions) {
+                if (in_array('transactions', $this->with) or in_array('full', $this->with) or $forceWithTransactions) {
                     $this->fetchDeliveryNoteTransactions($organisationSource, $deliveryNote);
                 }
 
-
-                if ($deliveryNoteData['shipment'] and !Arr::get($deliveryNoteData['order'], 'data.delivery_data.collection')) {
+                if ($deliveryNoteData['shipment'] and ! Arr::get($deliveryNoteData['order'], 'data.delivery_data.collection')) {
                     if ($shipment = Shipment::withTrashed()->where('source_id', $deliveryNoteData['shipment']['source_id'])->first()) {
                         UpdateShipment::run($shipment, $deliveryNoteData['shipment']);
                     } else {
@@ -120,19 +115,17 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
                     }
                 }
 
-
                 return $deliveryNote;
             }
-            print "Warning delivery note $organisationSourceId do not have order\n";
+            echo "Warning delivery note $organisationSourceId do not have order\n";
             exit;
         }
     }
 
     private function fetchDeliveryNoteTransactions($organisationSource, $deliveryNote): void
     {
-        $organisation         = $organisationSource->getOrganisation();
+        $organisation = $organisationSource->getOrganisation();
         $transactionsToDelete = $deliveryNote->deliveryNoteItems()->pluck('source_id', 'id')->all();
-
 
         $sourceData = explode(':', $deliveryNote->source_id);
         foreach (
@@ -153,10 +146,8 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
             ->where('Delivery Note Key', $sourceData[1])
             ->update(['aiku_all_id' => $deliveryNote->id]);
 
-
         CalculateDeliveryNoteTotalAmounts::run($deliveryNote);
     }
-
 
     public function getModelsQuery(): Builder
     {
@@ -174,6 +165,7 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
     {
         $query = DB::connection('aurora')->table('Delivery Note Dimension');
         $query = $this->commonSelectModelsToFetch($query);
+
         return $query->count();
     }
 

@@ -18,12 +18,12 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
+use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use Closure;
 
 class IndexRetinaDropshippingOrders extends RetinaAction
 {
@@ -105,7 +105,7 @@ class IndexRetinaDropshippingOrders extends RetinaAction
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
                 'title' => __("This channel doesn't have any orders yet"),
-                'count' => 0
+                'count' => 0,
             ];
             $table->withLabelRecord([__('order'), __('orders')]);
             $table->withGlobalSearch()
@@ -116,10 +116,9 @@ class IndexRetinaDropshippingOrders extends RetinaAction
             $table->column(key: 'client_name', label: __('client'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
             $table->column(key: 'number_item_transactions', label: __('items'), canBeHidden: false, sortable: true);
-            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, align: "right");
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, align: 'right');
         };
     }
-
 
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
@@ -129,23 +128,22 @@ class IndexRetinaDropshippingOrders extends RetinaAction
             'Dropshipping/RetinaOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($this->customerSalesChannel),
-                'title'       => __('Orders'),
-                'pageHead'    => [
-                    'icon'       => 'fal fa-shopping-cart',
-                    'title'      => __('Orders'),
+                'title' => __('Orders'),
+                'pageHead' => [
+                    'icon' => 'fal fa-shopping-cart',
+                    'title' => __('Orders'),
                     'afterTitle' => [
                         'label' => '@'.$this->customerSalesChannel->name,
                     ],
-                    'actions'    => $actions
+                    'actions' => $actions,
                 ],
 
                 'is_platform_connected' => $this->checkStatus($this->customerSalesChannel) === 'connected',
-                'currency'              => CurrencyResource::make($this->shop->currency)->getArray(),
-                'data'                  => RetinaDropshippingOrdersInCustomerSalesChannelResources::collection($orders)
+                'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
+                'data' => RetinaDropshippingOrdersInCustomerSalesChannelResources::collection($orders),
             ]
         )->table($this->tableStructure());
     }
-
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel): array
     {
@@ -154,17 +152,17 @@ class IndexRetinaDropshippingOrders extends RetinaAction
                 ShowRetinaCustomerSalesChannelDashboard::make()->getBreadcrumbs($customerSalesChannel),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.customer_sales_channels.orders.index',
+                                'name' => 'retina.dropshipping.customer_sales_channels.orders.index',
                                 'parameters' => [
-                                    $customerSalesChannel->slug
-                                ]
+                                    $customerSalesChannel->slug,
+                                ],
                             ],
                             'label' => __('Orders'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

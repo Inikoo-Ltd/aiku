@@ -30,17 +30,15 @@ class UpdateUserPassword extends GrpAction
         return $this->update($user, $modelData, 'settings');
     }
 
-
     public function rules(): array
     {
         return [
             'password' => [
                 'required',
-                app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
+                app()->isLocal() || app()->environment('testing') ? null : Password::min(8),
             ],
         ];
     }
-
 
     public function asController(ActionRequest $request): User
     {
@@ -84,8 +82,6 @@ class UpdateUserPassword extends GrpAction
 
         $command->info('Password updated');
 
-
         return 0;
     }
-
 }

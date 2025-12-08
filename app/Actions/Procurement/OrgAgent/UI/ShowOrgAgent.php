@@ -25,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowOrgAgent extends OrgAction
 {
     use WithOrgAgentSubNavigation;
+
     public function handle(OrgAgent $orgAgent): OrgAgent
     {
         return $orgAgent;
@@ -32,7 +33,7 @@ class ShowOrgAgent extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit   = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
         $this->canDelete = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
 
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
@@ -47,8 +48,9 @@ class ShowOrgAgent extends OrgAction
 
     public function maya(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): OrgAgent
     {
-        $this->maya   = true;
+        $this->maya = true;
         $this->initialisation($organisation, $request)->withTab(OrgAgentTabsEnum::values());
+
         return $this->handle($orgAgent);
     }
 
@@ -57,40 +59,39 @@ class ShowOrgAgent extends OrgAction
         return Inertia::render(
             'Procurement/OrgAgent',
             [
-                'title'       => __('Agent'),
+                'title' => __('Agent'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($orgAgent, $request),
-                    'next'     => $this->getNext($orgAgent, $request),
+                    'next' => $this->getNext($orgAgent, $request),
                 ],
-                'pageHead'    => [
-                    'model'         => __('Agent'),
-                    'icon'          =>
-                        [
-                            'icon'  => ['fal', 'people-arrows'],
-                            'title' => __('Agent')
-                        ],
+                'pageHead' => [
+                    'model' => __('Agent'),
+                    'icon' => [
+                        'icon' => ['fal', 'people-arrows'],
+                        'title' => __('Agent'),
+                    ],
                     'subNavigation' => $this->getOrgAgentNavigation($orgAgent),
-                    'title'         => $orgAgent->agent->organisation->name,
-                    'actions'       => [
+                    'title' => $orgAgent->agent->organisation->name,
+                    'actions' => [
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'show.edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => preg_replace('/show$/', 'show.edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
                     ],
                     'create_direct' => $this->canEdit ? [
                         'route' => [
-                            'name'       => 'grp.models.org_agent.purchase-order.store',
-                            'parameters' => array_values($request->route()->originalParameters())
+                            'name' => 'grp.models.org_agent.purchase-order.store',
+                            'parameters' => array_values($request->route()->originalParameters()),
                         ],
-                        'label' => __('Purchase Order')
+                        'label' => __('Purchase Order'),
                     ] : false,
 
                     // 'meta' => [
@@ -121,9 +122,9 @@ class ShowOrgAgent extends OrgAction
                     // ]
 
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => OrgAgentTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => OrgAgentTabsEnum::navigation(),
                 ],
 
                 OrgAgentTabsEnum::SHOWCASE->value => $this->tab == OrgAgentTabsEnum::SHOWCASE->value ?
@@ -132,11 +133,10 @@ class ShowOrgAgent extends OrgAction
 
                 OrgAgentTabsEnum::HISTORY->value => $this->tab == OrgAgentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgAgent))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgAgent)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgAgent))),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value));
     }
-
 
     public function jsonResponse(OrgAgent $orgAgent): OrgAgentResource
     {
@@ -148,32 +148,32 @@ class ShowOrgAgent extends OrgAction
         $orgAgent = OrgAgent::where('slug', $routeParameters['orgAgent'])->first();
 
         return array_merge(
-            (new ShowProcurementDashboard())->getBreadcrumbs($routeParameters),
+            (new ShowProcurementDashboard)->getBreadcrumbs($routeParameters),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.index',
+                                'name' => 'grp.org.procurement.org_agents.index',
                                 'parameters' => [
                                     $routeParameters['organisation'],
-                                ]
+                                ],
                             ],
-                            'label' => __('Agents')
+                            'label' => __('Agents'),
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.show',
+                                'name' => 'grp.org.procurement.org_agents.show',
                                 'parameters' => [
                                     $routeParameters['organisation'],
-                                    $orgAgent->slug
-                                ]
+                                    $orgAgent->slug,
+                                ],
                             ],
                             'label' => $orgAgent->agent->code,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
             ]
@@ -196,7 +196,7 @@ class ShowOrgAgent extends OrgAction
 
     private function getNavigation(?OrgAgent $orgAgent, string $routeName): ?array
     {
-        if (!$orgAgent) {
+        if (! $orgAgent) {
             return null;
         }
 
@@ -204,15 +204,14 @@ class ShowOrgAgent extends OrgAction
             'grp.org.procurement.org_agents.show' => [
                 'label' => $orgAgent->organisation->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'organisation' => $orgAgent->organisation->slug,
-                        'orgAgent'     => $orgAgent->slug
-                    ]
+                        'orgAgent' => $orgAgent->slug,
+                    ],
 
-                ]
+                ],
             ]
         };
     }
-
 }

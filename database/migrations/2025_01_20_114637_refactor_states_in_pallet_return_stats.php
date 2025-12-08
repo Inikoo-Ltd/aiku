@@ -4,11 +4,12 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
 
-        $tables = ['pallet_return_stats','pallet_delivery_stats','location_stats','warehouse_area_stats'];
+        $tables = ['pallet_return_stats', 'pallet_delivery_stats', 'location_stats', 'warehouse_area_stats'];
 
         foreach ($tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName) {
@@ -16,17 +17,15 @@ return new class () extends Migration {
                     $table->renameColumn('number_pallets_state_request_return', 'number_pallets_state_request_return_in_process');
                 }
 
-                if (!Schema::hasColumn($tableName, 'number_pallets_state_request_return_submitted')) {
+                if (! Schema::hasColumn($tableName, 'number_pallets_state_request_return_submitted')) {
                     $table->unsignedInteger('number_pallets_state_request_return_submitted')->default(0);
                 }
 
-                if (!Schema::hasColumn($tableName, 'number_pallets_state_request_return_confirmed')) {
+                if (! Schema::hasColumn($tableName, 'number_pallets_state_request_return_confirmed')) {
                     $table->unsignedInteger('number_pallets_state_request_return_confirmed')->default(0);
                 }
             });
         }
-
-
 
     }
 

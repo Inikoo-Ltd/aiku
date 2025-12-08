@@ -33,9 +33,8 @@ class ShowProduction extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit   = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
+        $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
         $this->canDelete = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
-
 
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
@@ -55,48 +54,45 @@ class ShowProduction extends OrgAction
         return $this->handle($production);
     }
 
-
     public function htmlResponse(Production $production, ActionRequest $request): Response
     {
 
         return Inertia::render(
             'Org/Production/Production',
             [
-                'title'                            => __('Factory'),
-                'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'navigation'                       => [
+                'title' => __('Factory'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'navigation' => [
                     'previous' => $this->getPrevious($production, $request),
-                    'next'     => $this->getNext($production, $request),
+                    'next' => $this->getNext($production, $request),
                 ],
-                'pageHead'                         => [
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'industry'],
-                            'title' => __('Factory')
-                        ],
-                    'title'   => $production->name,
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'industry'],
+                        'title' => __('Factory'),
+                    ],
+                    'title' => $production->name,
                     'actions' => [
                         $this->canEdit ?
                             [
-                                'type'    => 'button',
-                                'style'   => 'create',
+                                'type' => 'button',
+                                'style' => 'create',
                                 'tooltip' => __('New job order'),
-                                'label'   => __('job order'),
-                                'route'   => [
-                                    'name'       => 'grp.org.productions.show.job-orders.create',
-                                    'parameters' => $request->route()->originalParameters()
-                                ]
+                                'label' => __('job order'),
+                                'route' => [
+                                    'name' => 'grp.org.productions.show.job-orders.create',
+                                    'parameters' => $request->route()->originalParameters(),
+                                ],
                             ]
                             : null,
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
 
                     ],
 
-
                 ],
-                'tabs'                             => [
+                'tabs' => [
 
-                    'current'    => $this->tab,
+                    'current' => $this->tab,
                     'navigation' => ProductionTabsEnum::navigation(),
                 ],
 
@@ -104,18 +100,13 @@ class ShowProduction extends OrgAction
                     fn () => GetProductionShowcase::run($production)
                     : Inertia::lazy(fn () => GetProductionShowcase::run($production)),
 
-
-
-
-
                 ProductionTabsEnum::HISTORY->value => $this->tab == ProductionTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($production))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($production)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($production))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));
     }
-
 
     public function jsonResponse(Production $production): ProductionResource
     {
@@ -127,29 +118,29 @@ class ShowProduction extends OrgAction
         $production = Production::where('slug', $routeParameters['production'])->first();
 
         return array_merge(
-            (new ShowOrganisationDashboard())->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
+            (new ShowOrganisationDashboard)->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.index',
-                                'parameters' => $routeParameters['organisation']
+                                'name' => 'grp.org.productions.index',
+                                'parameters' => $routeParameters['organisation'],
                             ],
                             'label' => __('Factories'),
-                            'icon'  => 'fal fa-bars'
+                            'icon' => 'fal fa-bars',
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $production?->code,
-                            'icon'  => 'fal fa-bars'
+                            'icon' => 'fal fa-bars',
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
             ]
@@ -172,7 +163,7 @@ class ShowProduction extends OrgAction
 
     private function getNavigation(?Production $production, string $routeName): ?array
     {
-        if (!$production) {
+        if (! $production) {
             return null;
         }
 
@@ -180,13 +171,13 @@ class ShowProduction extends OrgAction
             'grp.org.productions.show.infrastructure.dashboard' => [
                 'label' => $production->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $this->organisation->slug,
-                        'production'    => $production->slug
-                    ]
+                        'organisation' => $this->organisation->slug,
+                        'production' => $production->slug,
+                    ],
 
-                ]
+                ],
             ]
         };
     }

@@ -27,7 +27,6 @@ class SeedEmailTemplates
 {
     use AsAction;
 
-
     public function handle(Group $group): void
     {
         $templates = json_decode(file_get_contents(database_path('seeders/datasets/email-templates/email-templates.json')), true);
@@ -40,19 +39,18 @@ class SeedEmailTemplates
             /** @var Language $language */
             $language = Language::where('code', $languageCode)->firstOrFail();
 
-
             $data = [
-                'outboxes' => Arr::get($template, 'outboxes', [])
+                'outboxes' => Arr::get($template, 'outboxes', []),
             ];
 
             $builder = Arr::get($template, 'builder');
 
             $layout = [];
-            if (in_array($builder, ['unlayer','beefree'])) {
+            if (in_array($builder, ['unlayer', 'beefree'])) {
                 $layout = json_decode(file_get_contents($filePath), true);
             } elseif ($builder == 'blade') {
                 $layout = [
-                    'blade_template' => file_get_contents($filePath)
+                    'blade_template' => file_get_contents($filePath),
                 ];
             }
 
@@ -60,29 +58,28 @@ class SeedEmailTemplates
                 UpdateEmailTemplate::make()->action(
                     $emailTemplate,
                     [
-                        'name'      => Arr::get($template, 'name'),
-                        'layout'    => $layout,
+                        'name' => Arr::get($template, 'name'),
+                        'layout' => $layout,
                         'arguments' => Arr::get($template, 'arguments', []),
-                        'data'      => $data
+                        'data' => $data,
                     ]
                 );
             } else {
                 $emailTemplate = StoreEmailTemplate::make()->action(
                     $group,
                     [
-                        'name'        => Arr::get($template, 'name'),
-                        'layout'      => $layout,
-                        'is_seeded'   => true,
-                        'builder'     => $builder,
-                        'state'       => EmailTemplateStateEnum::ACTIVE,
-                        'active_at'   => now(),
+                        'name' => Arr::get($template, 'name'),
+                        'layout' => $layout,
+                        'is_seeded' => true,
+                        'builder' => $builder,
+                        'state' => EmailTemplateStateEnum::ACTIVE,
+                        'active_at' => now(),
                         'language_id' => $language->id,
-                        'data'        => $data
+                        'data' => $data,
                     ],
                     strict: false
                 );
             }
-
 
             $imagesPath = database_path($basePath.'/images');
 
@@ -100,30 +97,28 @@ class SeedEmailTemplates
                         }
                         $checksum = md5($file);
 
-
-                        if (!$media = $emailTemplate->images()->where('checksum', $checksum)->where('collection_name', 'content')->first()) {
+                        if (! $media = $emailTemplate->images()->where('checksum', $checksum)->where('collection_name', 'content')->first()) {
                             /** @var Media $media */
                             $media = StoreMediaFromFile::run(
                                 $emailTemplate,
                                 [
-                                    'path'         => $imagesPath.'/'.$imageName,
-                                    'checksum'     => $checksum,
-                                    'originalName' => $imageName
+                                    'path' => $imagesPath.'/'.$imageName,
+                                    'checksum' => $checksum,
+                                    'originalName' => $imageName,
                                 ],
                                 'content'
                             );
                         }
                         if ($media) {
-                            $pictureSrc    = Arr::get(GetPictureSources::run($media->getImage()), 'original').'?id='.$media->ulid;
+                            $pictureSrc = Arr::get(GetPictureSources::run($media->getImage()), 'original').'?id='.$media->ulid;
                             $encodedLayout = preg_replace('/{{media\('.$imageName.'\)}}/i', $pictureSrc, $encodedLayout);
                         }
                     }
 
                     $emailTemplate->update([
-                        'layout' => json_decode($encodedLayout, true)
+                        'layout' => json_decode($encodedLayout, true),
                     ]);
                 }
-
 
                 $checksum = md5_file(database_path($basePath).'/'.Arr::get($template, 'image'));
 
@@ -131,20 +126,19 @@ class SeedEmailTemplates
                     continue;
                 }
 
-
                 $media = StoreMediaFromFile::run(
                     $emailTemplate,
                     [
-                        'path'         => database_path($basePath).'/'.Arr::get($template, 'image'),
-                        'checksum'     => $checksum,
-                        'originalName' => Arr::get($template, 'image')
+                        'path' => database_path($basePath).'/'.Arr::get($template, 'image'),
+                        'checksum' => $checksum,
+                        'originalName' => Arr::get($template, 'image'),
                     ],
                     'screenshot'
                 );
 
                 if ($media) {
                     $emailTemplate->updateQuietly([
-                        'screenshot_id' => $media->id
+                        'screenshot_id' => $media->id,
                     ]);
                 }
             }
@@ -167,6 +161,4 @@ class SeedEmailTemplates
 
         return 0;
     }
-
-
 }

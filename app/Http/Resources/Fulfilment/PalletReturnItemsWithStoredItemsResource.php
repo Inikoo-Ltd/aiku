@@ -41,29 +41,28 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
     public function toArray($request): array
     {
         $storedItem = StoredItem::find($this->id);
+
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'reference'              => $this->reference,
-            'name'                   => $this->name,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'name' => $this->name,
             'total_quantity_ordered' => (int) ($this->total_quantity_ordered ?? 0),
-            'is_checked'             => (bool) $this->pallet_return_state === PalletStateEnum::IN_PROCESS->value ? $this->pallet_return_id : false,
-            'pallet_return_state'    => $this->pallet_return_state ?? null,
-            'pallet_stored_items'    => $storedItem->palletStoredItems()
+            'is_checked' => (bool) $this->pallet_return_state === PalletStateEnum::IN_PROCESS->value ? $this->pallet_return_id : false,
+            'pallet_return_state' => $this->pallet_return_state ?? null,
+            'pallet_stored_items' => $storedItem->palletStoredItems()
                 ->whereHas(
                     'pallet',
-                    fn ($q) =>
-                    $q->where('state', PalletStateEnum::STORING)
+                    fn ($q) => $q->where('state', PalletStateEnum::STORING)
                 )
                 ->when(
                     in_array($this->pallet_return_state, [PalletStateEnum::PICKED->value, PalletStateEnum::DISPATCHED->value]),
                     fn ($query) => $query->where(function ($q) {
                         $q->where('state', '!=', PalletStoredItemStateEnum::RETURNED)
-                        ->orWhereHas(
-                            'palletReturnItems',
-                            fn ($subQuery) =>
-                            $subQuery->where('pallet_return_id', $this->pallet_return_id)
-                        );
+                            ->orWhereHas(
+                                'palletReturnItems',
+                                fn ($subQuery) => $subQuery->where('pallet_return_id', $this->pallet_return_id)
+                            );
                     }),
                     fn ($query) => $query->where('state', '!=', PalletStoredItemStateEnum::RETURNED)
                 )
@@ -72,66 +71,67 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                     $palletReturnItem = $palletStoredItem->palletReturnItems
                         ->where('pallet_return_id', $this->pallet_return_id)
                         ->first();
+
                     return [
-                        'ordered_quantity'              => (int) $palletStoredItem->quantity_ordered,
-                        'id'                         => $palletStoredItem->id,
-                        'reference'                  => $palletStoredItem->pallet->reference ?? null,
-                        'selected_quantity'          => (int) ($palletReturnItem->quantity_ordered ?? 0),
-                        'available_quantity'         => (int) $palletStoredItem->quantity,
-                        'max_quantity'               => (int) $palletStoredItem->quantity,
-                        'quantity_in_pallet'         => (int) $palletStoredItem->quantity,
+                        'ordered_quantity' => (int) $palletStoredItem->quantity_ordered,
+                        'id' => $palletStoredItem->id,
+                        'reference' => $palletStoredItem->pallet->reference ?? null,
+                        'selected_quantity' => (int) ($palletReturnItem->quantity_ordered ?? 0),
+                        'available_quantity' => (int) $palletStoredItem->quantity,
+                        'max_quantity' => (int) $palletStoredItem->quantity,
+                        'quantity_in_pallet' => (int) $palletStoredItem->quantity,
                         'available_to_pick_quantity' => (int) ($palletReturnItem->quantity_ordered ?? 0),
-                        'picked_quantity'            => (int) ($palletReturnItem->quantity_picked ?? 0),
-                        'pallet_id'                  => $palletStoredItem->pallet_id,
-                        'state'                      => $palletReturnItem->state ?? null,
-                        'pallet_return_item_id'      => $palletReturnItem->id ?? null,
+                        'picked_quantity' => (int) ($palletReturnItem->quantity_picked ?? 0),
+                        'pallet_id' => $palletStoredItem->pallet_id,
+                        'state' => $palletReturnItem->state ?? null,
+                        'pallet_return_item_id' => $palletReturnItem->id ?? null,
                         'all_items_returned' => $palletStoredItem->pallet?->palletStoredItems?->every(fn ($item) => $item->state == PalletStoredItemStateEnum::RETURNED),
                         'is_pallet_returned' => $palletStoredItem->pallet?->status == PalletStatusEnum::RETURNED,
 
                         'syncRoute' => match (request()->routeIs('retina.*')) {
                             true => [
-                                'name'       => 'retina.models.pallet-return.stored_item.attach',
+                                'name' => 'retina.models.pallet-return.stored_item.attach',
                                 'parameters' => [
-                                    'palletReturn'     => $this->pallet_return_id,
-                                    'palletStoredItem' => $palletStoredItem->id
+                                    'palletReturn' => $this->pallet_return_id,
+                                    'palletStoredItem' => $palletStoredItem->id,
                                 ],
-                                'method'    => 'post'
+                                'method' => 'post',
                             ],
                             default => [
-                                'name'       => 'grp.models.pallet-return.stored_item.store',
+                                'name' => 'grp.models.pallet-return.stored_item.store',
                                 'parameters' => [
-                                    'palletReturn'     => $this->pallet_return_id,
-                                    'palletStoredItem' => $palletStoredItem->id
+                                    'palletReturn' => $this->pallet_return_id,
+                                    'palletStoredItem' => $palletStoredItem->id,
                                 ],
-                                'method'    => 'post'
+                                'method' => 'post',
                             ]
                         },
                         'newPickRoute' => [
-                            'name'       => 'grp.models.pallet-return.pallet_return_item.new_pick',
+                            'name' => 'grp.models.pallet-return.pallet_return_item.new_pick',
                             'parameters' => [
-                                'palletReturn'     => $this->pallet_return_id,
-                                'palletStoredItem' => $palletStoredItem->id
+                                'palletReturn' => $this->pallet_return_id,
+                                'palletStoredItem' => $palletStoredItem->id,
                             ],
-                            'method'    => 'post'
+                            'method' => 'post',
                         ],
                         'updateRoute' => [
-                            'name'       => 'grp.models.pallet-return-item.pick',
+                            'name' => 'grp.models.pallet-return-item.pick',
                             'parameters' => [
-                                'palletReturnItem' => $palletReturnItem->id ?? null
+                                'palletReturnItem' => $palletReturnItem->id ?? null,
                             ],
-                            'method'    => 'patch'
+                            'method' => 'patch',
                         ],
                         'undoRoute' => [
-                            'name'      => 'grp.models.pallet-return-item.undo-picking-stored-item',
+                            'name' => 'grp.models.pallet-return-item.undo-picking-stored-item',
                             'parameters' => [
-                                'palletReturnItem' => $palletReturnItem->id ?? null
+                                'palletReturnItem' => $palletReturnItem->id ?? null,
                             ],
-                            'method'    => 'patch'
+                            'method' => 'patch',
                         ],
                         'location' => isset($palletStoredItem->pallet, $palletStoredItem->pallet->location) ? [
                             'slug' => $palletStoredItem->pallet->location->slug ?? null,
-                            'code' => $palletStoredItem->pallet->location->code ?? null
-                        ] : null
+                            'code' => $palletStoredItem->pallet->location->code ?? null,
+                        ] : null,
                     ];
                 }),
             'total_quantity' => (int) $this->total_quantity,

@@ -9,7 +9,7 @@ class GetSelectedPathFromDomain extends OrgAction
 {
     use AsAction;
 
-    public function handle(string $domain): string|null
+    public function handle(string $domain): ?string
     {
         $path = $domain ? preg_replace('/^(https?:\/\/)?(www\.)?[^\/]+\/?(.*)$/', '$3', $domain) : null;
 

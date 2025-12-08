@@ -24,38 +24,38 @@ class UserResource extends JsonResource
         $user = $this;
 
         return [
-            'id'            => $user->id,
-            'username'      => $user->username,
-            'image'         => $user->imageSources(320, 320),
-            'email'         => $user->email,
-            'about'         => $user->about,
-            'status'        => match ($user->status) {
+            'id' => $user->id,
+            'username' => $user->username,
+            'image' => $user->imageSources(320, 320),
+            'email' => $user->email,
+            'about' => $user->about,
+            'status' => match ($user->status) {
                 true => [
                     'tooltip' => __('active'),
-                    'icon'    => 'fal fa-check',
-                    'class'   => 'text-green-500'
+                    'icon' => 'fal fa-check',
+                    'class' => 'text-green-500',
                 ],
                 default => [
                     'tooltip' => __('suspended'),
-                    'icon'    => 'fal fa-times',
-                    'class'   => 'text-red-500'
+                    'icon' => 'fal fa-times',
+                    'class' => 'text-red-500',
                 ]
             },
-            'parent_type'   => $user->parent_type,
-            'contact_name'  => $user->contact_name,
-            'parent'        => $this->when($this->relationLoaded('parent'), function () {
+            'parent_type' => $user->parent_type,
+            'contact_name' => $user->contact_name,
+            'parent' => $this->when($this->relationLoaded('parent'), function () {
                 return match (class_basename($this->resource->parent)) {
                     'Employee' => new EmployeeResource($this->resource->parent),
-                    'Guest'    => new GuestResource($this->resource->parent),
-                    default    => [],
+                    'Guest' => new GuestResource($this->resource->parent),
+                    default => [],
                 };
             }),
-            'group'         => GroupResource::make($user->group),
+            'group' => GroupResource::make($user->group),
             'organisations' => UserOrganisationResource::collectionForUser($user->authorisedOrganisations, $this->resource),
-            'created_at'    => $user->created_at,
-            'updated_at'    => $user->updated_at,
-            'roles'         => $user->getRoleNames()->toArray(),
-            'permissions'   => $user->getAllPermissions()->pluck('name')->toArray()
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+            'roles' => $user->getRoleNames()->toArray(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
         ];
     }
 }

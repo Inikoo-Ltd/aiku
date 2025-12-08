@@ -15,12 +15,12 @@ enum FeedbackOriginSourceEnum: string
 {
     use EnumHelperTrait;
 
-    case REFUND     = 'refund';
-    case RETURN     = 'return';
-    case REPLACEMENT     = 'replacement';
-    case COMPLAIN     = 'complain';
-    case REVIEW     = 'review';
-    case INSPECTION     = 'inspection';
-    case OTHER     = 'other';
+    case REFUND = 'refund';
+    case RETURN = 'return';
+    case REPLACEMENT = 'replacement';
+    case COMPLAIN = 'complain';
+    case REVIEW = 'review';
+    case INSPECTION = 'inspection';
+    case OTHER = 'other';
 
 }

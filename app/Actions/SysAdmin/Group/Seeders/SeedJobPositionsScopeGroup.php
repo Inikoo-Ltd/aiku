@@ -24,8 +24,7 @@ class SeedJobPositionsScopeGroup
 
     public function handle(Group $group): void
     {
-        $jobPositions = collect(config("blueprint.job_positions.positions"));
-
+        $jobPositions = collect(config('blueprint.job_positions.positions'));
 
         foreach ($jobPositions as $jobPositionData) {
 
@@ -37,7 +36,6 @@ class SeedJobPositionsScopeGroup
         }
     }
 
-
     private function processJobPosition(Group $group, array $jobPositionData): void
     {
 
@@ -47,34 +45,33 @@ class SeedJobPositionsScopeGroup
             UpdateJobPositionScopeGroup::make()->action(
                 $jobPosition,
                 [
-                    'name'       => $jobPositionData['name'],
+                    'name' => $jobPositionData['name'],
                     'department' => Arr::get($jobPositionData, 'department'),
-                    'team'       => Arr::get($jobPositionData, 'team'),
-                    'scope'      => Arr::get($jobPositionData, 'scope')
+                    'team' => Arr::get($jobPositionData, 'team'),
+                    'scope' => Arr::get($jobPositionData, 'scope'),
                 ]
             );
         } else {
             /** @var \App\Models\SysAdmin\JobPositionCategory $jobPositionCategory */
             $jobPositionCategory = $group->jobPositionCategories()->where('code', $jobPositionData['code'])->first();
 
-            $jobPosition        = StoreJobPositionScopeGroup::make()->action(
+            $jobPosition = StoreJobPositionScopeGroup::make()->action(
                 $group,
                 [
                     'group_job_position_id' => $jobPositionCategory->id,
-                    'code'                 => $jobPositionData['code'],
-                    'name'                 => $jobPositionData['name'],
-                    'department'           => Arr::get($jobPositionData, 'department'),
-                    'team'                 => Arr::get($jobPositionData, 'team'),
-                    'scope'                => Arr::get($jobPositionData, 'scope')
+                    'code' => $jobPositionData['code'],
+                    'name' => $jobPositionData['name'],
+                    'department' => Arr::get($jobPositionData, 'department'),
+                    'team' => Arr::get($jobPositionData, 'team'),
+                    'scope' => Arr::get($jobPositionData, 'scope'),
                 ],
             );
         }
 
-
         $roles = [];
         foreach ($jobPositionData['roles'] as $case) {
 
-            if ($role = (new Role())->where('name', $case->value)->first()) {
+            if ($role = (new Role)->where('name', $case->value)->first()) {
                 $roles[] = $role->id;
             }
 
@@ -83,15 +80,14 @@ class SeedJobPositionsScopeGroup
         $jobPosition->roles()->sync($roles);
     }
 
-
     public string $commandSignature = 'group:seed-job-positions {group?}';
 
     public function asCommand(Command $command): int
     {
         if ($command->argument('group')) {
             $group = Group::where('slug', $command->argument('group'))->first();
-            if (!$group) {
-                $command->error("Group not found");
+            if (! $group) {
+                $command->error('Group not found');
 
                 return 1;
             }
@@ -104,7 +100,6 @@ class SeedJobPositionsScopeGroup
                 $this->handle($group);
             }
         }
-
 
         return 0;
     }

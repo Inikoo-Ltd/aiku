@@ -31,7 +31,7 @@ export const useEchoRetinaPersonal = defineStore("echo-retina-personal", {
     }),
     actions: {
         subscribe(webUserID: number) {
-             window.Echo.private("retina.personal." + webUserID).listen(
+            window.Echo.private("retina.personal." + webUserID).listen(
                 ".action-progress",
                 (eventData) => {
 
@@ -42,7 +42,7 @@ export const useEchoRetinaPersonal = defineStore("echo-retina-personal", {
                                 [eventData.action_id]: {
                                     ...eventData,
                                     time_echo: new Date(),
-                                    estimatedTime: useMilisecondToTime(differenceInMilliseconds(new Date(), this.progressBars?.[eventData.action_type]?.[eventData.action_id]?.time_echo ?? new Date()) * (eventData.total-eventData.done))
+                                    estimatedTime: useMilisecondToTime(differenceInMilliseconds(new Date(), this.progressBars?.[eventData.action_type]?.[eventData.action_id]?.time_echo ?? new Date()) * (eventData.total - eventData.done))
                                     // useEstimatedTime(new Date(), (this.progressBars?.[eventData.action_type]?.[eventData.action_id]?.time_echo ?? 0))
                                 }
                             }
@@ -52,10 +52,10 @@ export const useEchoRetinaPersonal = defineStore("echo-retina-personal", {
                     // console.log(this.progressBars[eventData.action_type][eventData.action_id].estimatedTime)
 
                     // To show the progress bars
-                    if(!this.isShowProgress) this.isShowProgress = true
+                    if (!this.isShowProgress) this.isShowProgress = true
 
                     // If already reach 100%
-                    if(eventData.done >= eventData.total){
+                    if (eventData.done >= eventData.total) {
                         // Add data to recentlyUploaded, to show in history
                         this.recentlyUploaded.push(this.progressBars[eventData.action_type][eventData.action_id])
 
@@ -65,7 +65,7 @@ export const useEchoRetinaPersonal = defineStore("echo-retina-personal", {
 
                             // If no more progress, then hide the bar
                             const uploadCount = Object.values(this.progressBars[eventData.action_type])
-                            if(!uploadCount.length) this.isShowProgress = false
+                            if (!uploadCount.length) this.isShowProgress = false
                         }, 4000)
                     }
                 }

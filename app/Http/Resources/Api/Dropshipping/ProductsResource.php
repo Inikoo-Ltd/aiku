@@ -18,18 +18,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  * @property mixed $state
  * @property mixed $id
- *
  */
 class ProductsResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'         => $this->id,
-            'slug'       => $this->slug,
-            'code'       => $this->code,
-            'name'       => $this->name,
-            'state'      => $this->state,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'state' => $this->state,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

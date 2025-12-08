@@ -20,7 +20,6 @@ enum RetinaFamilyTabsEnum: string
     case SHOWCASE = 'showcase';
     case PRODUCTS = 'products';
 
-
     public function blueprint(ProductCategory $parent): array
     {
         $products = $parent->stats->number_products_state_active + $parent->stats->number_products_state_discontinuing;
@@ -28,12 +27,12 @@ enum RetinaFamilyTabsEnum: string
         return match ($this) {
             RetinaFamilyTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             RetinaFamilyTabsEnum::PRODUCTS => [
-                'title' => __('Products'). " ({$products})",
-                'icon'  => 'fal fa-cube',
-                'type'  => 'icon',
+                'title' => __('Products')." ({$products})",
+                'icon' => 'fal fa-cube',
+                'type' => 'icon',
             ],
         };
     }

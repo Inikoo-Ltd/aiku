@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -34,14 +35,13 @@ return new class () extends Migration {
             $table->datetimeTz('fetched_at')->nullable();
             $table->datetimeTz('last_fetched_at')->nullable();
             $table->string('source_id')->index()->nullable();
-            $table->unique(['date','subject_type', 'subject_id']);
+            $table->unique(['date', 'subject_type', 'subject_id']);
 
         });
 
         Schema::table('clockings', function (Blueprint $table) {
             $table->foreign('timesheet_id')->references('id')->on('timesheets');
         });
-
 
     }
 

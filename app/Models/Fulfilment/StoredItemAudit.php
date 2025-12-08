@@ -65,18 +65,20 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Model|\Eloquent|null $scope
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemAudit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemAudit newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemAudit query()
+ *
  * @mixin \Eloquent
  */
 class StoredItemAudit extends Model implements Auditable
 {
+    use HasHistory;
+    use HasRetinaSearch;
     use HasSlug;
     use HasUniversalSearch;
-    use HasRetinaSearch;
     use InFulfilmentCustomer;
-    use HasHistory;
 
     protected $guarded = [];
 
@@ -86,10 +88,10 @@ class StoredItemAudit extends Model implements Auditable
     }
 
     protected $casts = [
-        'state'         => StoredItemAuditStateEnum::class,
+        'state' => StoredItemAuditStateEnum::class,
         'in_process_at' => 'datetime',
-        'completed_at'  => 'datetime',
-        'data'          => 'array'
+        'completed_at' => 'datetime',
+        'data' => 'array',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -115,6 +117,4 @@ class StoredItemAudit extends Model implements Auditable
     {
         return $this->hasMany(StoredItemAuditDelta::class);
     }
-
-
 }

@@ -31,7 +31,6 @@ trait HasTimeSeries
         $table->unsignedInteger('delivery_notes')->default(0)->comment('Delivery notes dispatched date=dispatched_at');
         $table->unsignedBigInteger('invoice_transactions')->default(0);
 
-
         return $table;
     }
 }

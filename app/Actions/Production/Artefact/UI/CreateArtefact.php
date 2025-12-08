@@ -28,56 +28,56 @@ class CreateArtefact extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New artefact'),
-                'pageHead'    => [
-                    'title'        => __('New artefact'),
-                    'icon'         => [
+                'title' => __('New artefact'),
+                'pageHead' => [
+                    'title' => __('New artefact'),
+                    'icon' => [
                         'title' => __('Create artefact'),
-                        'icon'  => 'fal fa-industry'
+                        'icon' => 'fal fa-industry',
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.artefacts.index',
-                                'parameters' => $request->route()->originalParameters()
+                                'name' => 'grp.org.productions.show.crafts.artefacts.index',
+                                'parameters' => $request->route()->originalParameters(),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Create artefact'),
+                            'title' => __('Create artefact'),
                             'fields' => [
                                 'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('code'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'name' => [
-                                    'type'     => 'input',
-                                    'label'    => __('name'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('name'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'state' => [
-                                    'type'     => 'select',
-                                    'options'  => ArtefactStateEnum::values(),
-                                    'label'    => __('state'),
-                                    'value'    => '',
-                                    'required' => false
+                                    'type' => 'select',
+                                    'options' => ArtefactStateEnum::values(),
+                                    'label' => __('state'),
+                                    'value' => '',
+                                    'required' => false,
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    'route'      => [
-                        'name'       => 'grp.models.production.artefacts.store',
-                        'parameters' => [$this->parent->id]
-                    ]
+                    'route' => [
+                        'name' => 'grp.models.production.artefacts.store',
+                        'parameters' => [$this->parent->id],
+                    ],
                 ],
 
             ]
@@ -92,7 +92,7 @@ class CreateArtefact extends OrgAction
             return $request->user()->authTo(
                 [
                     'productions-view.'.$this->organisation->id,
-                    'org-supervisor.'.$this->organisation->id
+                    'org-supervisor.'.$this->organisation->id,
                 ]
             );
         }
@@ -101,7 +101,6 @@ class CreateArtefact extends OrgAction
 
         return $request->user()->authTo("productions_rd.{$this->production->id}.view");
     }
-
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): Response
     {
@@ -125,11 +124,11 @@ class CreateArtefact extends OrgAction
             IndexArtefacts::make()->getBreadcrumbs(request()->route()->getName(), $routeParameters),
             [
                 [
-                    'type'         => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating Artefact'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

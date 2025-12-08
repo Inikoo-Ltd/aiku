@@ -68,6 +68,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterCollectionStats|null $stats
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection onlyTrashed()
@@ -78,31 +79,32 @@ use Spatie\Translatable\HasTranslations;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereLocales(string $column, array $locales)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class MasterCollection extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
-    use HasSlug;
     use HasHistory;
     use HasImage;
+    use HasSlug;
+    use HasTranslations;
     use HasUniversalSearch;
     use InGroup;
-    use HasTranslations;
+    use SoftDeletes;
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'data'            => 'array',
-        'status'          => 'boolean',
-        'state'           => MasterCollectionStateEnum::class,
+        'data' => 'array',
+        'status' => 'boolean',
+        'state' => MasterCollectionStateEnum::class,
         'products_status' => MasterCollectionProductStatusEnum::class,
-        'offers_data'     => 'array',
+        'offers_data' => 'array',
     ];
 
     protected $attributes = [
         'data' => '{}',
-        'offers_data'   => '{}',
+        'offers_data' => '{}',
     ];
 
     protected $guarded = [];
@@ -115,7 +117,7 @@ class MasterCollection extends Model implements Auditable, HasMedia
     public function generateTags(): array
     {
         return [
-            'goods'
+            'goods',
         ];
     }
 

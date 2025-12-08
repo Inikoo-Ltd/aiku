@@ -16,9 +16,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  *
  * @property-read \App\Models\Fulfilment\Pallet|null $pallet
  * @property-read \App\Models\Fulfilment\PalletDelivery|null $palletDelivery
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDeliveryPallet newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDeliveryPallet newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDeliveryPallet query()
+ *
  * @mixin \Eloquent
  */
 class PalletDeliveryPallet extends Pivot

@@ -13,46 +13,62 @@ use Inertia\Response;
 class InertiaTable
 {
     private string $name = 'default';
+
     private string $pageName = 'page';
+
     private array $perPageOptions = [10, 25, 50, 100, 150]; // must be between config/ui.php for min_records_per_page - records_per_page - max_records_per_page
+
     private Request $request;
+
     private Collection $columns;
+
     private Collection $searchInputs;
+
     private Collection $elementGroups;
+
     private Collection $radioFilter;
+
     private array $periodFilters;
+
     private Collection $filters;
+
     private string $defaultSort = '';
 
     private array $title = [];
+
     private array $betweenDates = [];
+
     private ?DateIntervalEnum $dateInterval;
 
     private Collection $emptyState;
+
     private Collection $modelOperations;
+
     private Collection $exportLinks;
 
     private static bool|string $defaultGlobalSearch = false;
+
     private static array $defaultQueryBuilderConfig = [];
 
     private array $labelRecord;
+
     private mixed $footerRows;
 
     public function __construct(Request $request)
     {
-        $this->request         = $request;
-        $this->periodFilters   = [];
-        $this->columns         = new Collection();
-        $this->searchInputs    = new Collection();
-        $this->elementGroups   = new Collection();
-        $this->radioFilter     = new Collection();
-        $this->filters         = new Collection();
-        $this->modelOperations = new Collection();
-        $this->exportLinks     = new Collection();
-        $this->emptyState      = new Collection();
-        $this->labelRecord     = [];
-        $this->footerRows      = null;
-        $this->dateInterval    = null;
+        $this->request = $request;
+        $this->periodFilters = [];
+        $this->columns = new Collection;
+        $this->searchInputs = new Collection;
+        $this->elementGroups = new Collection;
+        $this->radioFilter = new Collection;
+        $this->filters = new Collection;
+        $this->modelOperations = new Collection;
+        $this->exportLinks = new Collection;
+        $this->emptyState = new Collection;
+        $this->labelRecord = [];
+        $this->footerRows = null;
+        $this->dateInterval = null;
 
         if (static::$defaultGlobalSearch !== false) {
             $this->withGlobalSearch(static::$defaultGlobalSearch);
@@ -62,9 +78,7 @@ class InertiaTable
     /**
      * Set the default global search label for all table instances.
      *
-     * @param  bool|string  $label
      *
-     * @return void
      * @noinspection PhpUnused
      */
     public static function defaultGlobalSearch(bool|string $label = 'default'): void
@@ -76,7 +90,6 @@ class InertiaTable
         static::$defaultGlobalSearch = $label !== false ? $label : false;
     }
 
-
     private function query(string $key, mixed $default = null): string|array|null
     {
         return $this->request->query(
@@ -84,7 +97,6 @@ class InertiaTable
             $default
         );
     }
-
 
     public static function updateQueryBuilderParameters(string $name): void
     {
@@ -99,14 +111,12 @@ class InertiaTable
         config(['query-builder.parameters' => $newConfig]);
     }
 
-
     public function name(string $name): self
     {
         $this->name = $name;
 
         return $this;
     }
-
 
     public function pageName(string $pageName): self
     {
@@ -125,9 +135,7 @@ class InertiaTable
     /**
      * Set the date interval to be shown in table columns.
      *
-     * @param  DateIntervalEnum  $dateInterval
      *
-     * @return self
      * @noinspection PhpUnused
      */
     public function dateInterval(DateIntervalEnum $dateInterval): self
@@ -140,9 +148,7 @@ class InertiaTable
     /**
      * Set the per page options for the table.
      *
-     * @param  array  $perPageOptions
      *
-     * @return self
      * @noinspection PhpUnused
      */
     public function perPageOptions(array $perPageOptions): self
@@ -152,14 +158,12 @@ class InertiaTable
         return $this;
     }
 
-
     public function defaultSort(string $defaultSort): self
     {
         $this->defaultSort = $defaultSort;
 
         return $this;
     }
-
 
     protected function getQueryBuilderProps(): array
     {
@@ -173,44 +177,43 @@ class InertiaTable
                 })
                 ->sort()
                 ->values(),
-            'columns'                         => $this->transformColumns(),
-            'hasHiddenColumns'                => $this->columns->filter(function (Column $item) {
+            'columns' => $this->transformColumns(),
+            'hasHiddenColumns' => $this->columns->filter(function (Column $item) {
                 return $item->hidden;
             })->isNotEmpty(),
-            'hasToggleableColumns'            => $this->columns->filter(function (Column $item) {
+            'hasToggleableColumns' => $this->columns->filter(function (Column $item) {
                 return $item->canBeHidden;
             })->isNotEmpty(),
-            'filters'                         => $this->transformFilters(),
-            'hasFilters'                      => $this->filters->isNotEmpty(),
-            'hasEnabledFilters'               => $this->filters->filter(function ($filter) {
+            'filters' => $this->transformFilters(),
+            'hasFilters' => $this->filters->isNotEmpty(),
+            'hasEnabledFilters' => $this->filters->filter(function ($filter) {
                 return $filter->value;
             })->isNotEmpty(),
-            'searchInputs'                    => $searchInputs = $this->transformSearchInputs(),
-            'searchInputsWithoutGlobal'       => $searchInputsWithoutGlobal = $searchInputs->where('key', '!=', 'global'),
-            'hasSearchInputs'                 => $searchInputsWithoutGlobal->isNotEmpty(),
-            'hasSearchInputsWithValue'        => $searchInputsWithoutGlobal->whereNotNull('value')->isNotEmpty(),
-            'hasSearchInputsWithoutValue'     => $searchInputsWithoutGlobal->whereNull('value')->isNotEmpty(),
-            'globalSearch'                    => $this->searchInputs->firstWhere('key', 'global'),
-            'cursor'                          => $this->query('cursor'),
-            'sort'                            => $this->query('sort', $this->defaultSort) ?: null,
-            'defaultSort'                     => $this->defaultSort,
-            'page'                            => Paginator::resolveCurrentPage($this->pageName),
-            'pageName'                        => $this->pageName,
-            'perPageOptions'                  => $this->perPageOptions,
-            'elementGroups'                   => $this->transformElementGroups(),
-            'radioFilter'                     => $this->transformRadioFilter(),
-            'period_filter'                   => $this->transformPeriodFilters(),
-            'modelOperations'                 => $this->modelOperations,
-            'exportLinks'                     => $this->exportLinks,
-            'emptyState'                      => $this->emptyState,
-            'labelRecord'                     => $this->labelRecord,
-            'title'                           => $this->title,
-            'footerRows'                      => $this->footerRows,
-            'betweenDates'                    => $this->betweenDates,
-            'dateInterval'                    => $this->dateInterval,
+            'searchInputs' => $searchInputs = $this->transformSearchInputs(),
+            'searchInputsWithoutGlobal' => $searchInputsWithoutGlobal = $searchInputs->where('key', '!=', 'global'),
+            'hasSearchInputs' => $searchInputsWithoutGlobal->isNotEmpty(),
+            'hasSearchInputsWithValue' => $searchInputsWithoutGlobal->whereNotNull('value')->isNotEmpty(),
+            'hasSearchInputsWithoutValue' => $searchInputsWithoutGlobal->whereNull('value')->isNotEmpty(),
+            'globalSearch' => $this->searchInputs->firstWhere('key', 'global'),
+            'cursor' => $this->query('cursor'),
+            'sort' => $this->query('sort', $this->defaultSort) ?: null,
+            'defaultSort' => $this->defaultSort,
+            'page' => Paginator::resolveCurrentPage($this->pageName),
+            'pageName' => $this->pageName,
+            'perPageOptions' => $this->perPageOptions,
+            'elementGroups' => $this->transformElementGroups(),
+            'radioFilter' => $this->transformRadioFilter(),
+            'period_filter' => $this->transformPeriodFilters(),
+            'modelOperations' => $this->modelOperations,
+            'exportLinks' => $this->exportLinks,
+            'emptyState' => $this->emptyState,
+            'labelRecord' => $this->labelRecord,
+            'title' => $this->title,
+            'footerRows' => $this->footerRows,
+            'betweenDates' => $this->betweenDates,
+            'dateInterval' => $this->dateInterval,
         ];
     }
-
 
     protected function transformColumns(): Collection
     {
@@ -221,8 +224,8 @@ class InertiaTable
         return $this->columns->map(function (Column $column) use ($columns, $sort) {
             $key = $column->key;
 
-            if (!empty($columns) && is_array($columns)) {
-                $column->hidden = !in_array($key, $columns);
+            if (! empty($columns) && is_array($columns)) {
+                $column->hidden = ! in_array($key, $columns);
             }
 
             if ($sort === $key) {
@@ -234,7 +237,6 @@ class InertiaTable
             return $column;
         });
     }
-
 
     protected function transformFilters(): Collection
     {
@@ -275,7 +277,7 @@ class InertiaTable
 
     protected function transformRadioFilter(): Collection
     {
-        $radioFilter   = $this->radioFilter;
+        $radioFilter = $this->radioFilter;
         $queryElements = $this->query('radioFilter', '');
 
         if (empty($queryElements)) {
@@ -287,7 +289,7 @@ class InertiaTable
         }
 
         return $radioFilter->map(function (RadioFilterGroup $elementRadioGroup) use ($queryElements) {
-            $elementRadioGroup->value = (string)$queryElements;
+            $elementRadioGroup->value = (string) $queryElements;
 
             return $elementRadioGroup;
         });
@@ -328,11 +330,10 @@ class InertiaTable
     {
         if (is_string($label)) {
             $label = $label ?: Str::headline($key);
-            $key   = $key ?: Str::kebab($label);
+            $key = $key ?: Str::kebab($label);
         } else {
             $key = $key ?: Str::kebab($label['tooltip']);
         }
-
 
         $this->elementGroups->put(
             $key,
@@ -342,7 +343,6 @@ class InertiaTable
                 elements: $elements
             )
         );
-
 
         return $this;
     }
@@ -367,7 +367,7 @@ class InertiaTable
     protected function transformPeriodFilters(): Collection
     {
         $periodFilters = collect($this->periodFilters);
-        $queryFilter   = $this->query('period', []);
+        $queryFilter = $this->query('period', []);
 
         if (empty($queryFilter)) {
             return $periodFilters;
@@ -384,17 +384,17 @@ class InertiaTable
 
     public function column(
         string $key,
-        array|string $label = null,
-        string $shortLabel = null,
-        array|string $icon = null,
-        string $tooltip = null,
+        array|string|null $label = null,
+        ?string $shortLabel = null,
+        array|string|null $icon = null,
+        ?string $tooltip = null,
         bool $canBeHidden = true,
         bool $hidden = false,
         bool $sortable = false,
         bool $searchable = false,
-        string $type = null,
-        string $align = null,
-        string $className = null,
+        ?string $type = null,
+        ?string $align = null,
+        ?string $className = null,
         bool $isInterval = false
     ): self {
         $this->columns = $this->columns->reject(function (Column $column) use ($key) {
@@ -429,31 +429,29 @@ class InertiaTable
             $this->searchInput($column->key, $column->label);
         }
 
-
         return $this;
     }
 
-
-    public function withGlobalSearch(string $label = null): self
+    public function withGlobalSearch(?string $label = null): self
     {
         return $this->searchInput('global', $label ?: __('Search on table...'));
     }
 
-    public function withModelOperations(array $modelOperations = null): self
+    public function withModelOperations(?array $modelOperations = null): self
     {
         $this->modelOperations = collect($modelOperations);
 
         return $this;
     }
 
-    public function withExportLinks(array $exportLinks = null): self
+    public function withExportLinks(?array $exportLinks = null): self
     {
         $this->exportLinks = collect($exportLinks);
 
         return $this;
     }
 
-    public function withEmptyState(array $emptyState = null): self
+    public function withEmptyState(?array $emptyState = null): self
     {
         $this->emptyState = collect($emptyState);
 
@@ -467,25 +465,24 @@ class InertiaTable
         return $this;
     }
 
-    public function withLabelRecord(array $labelRecord = null): self
+    public function withLabelRecord(?array $labelRecord = null): self
     {
         $this->labelRecord = $labelRecord;
 
         return $this;
     }
 
-    public function withTitle(string $title, array $leftIcon = null): self
+    public function withTitle(string $title, ?array $leftIcon = null): self
     {
         $this->title = [
-            'title'    => $title,
-            'leftIcon' => $leftIcon
+            'title' => $title,
+            'leftIcon' => $leftIcon,
         ];
 
         return $this;
     }
 
-
-    public function searchInput(string $key, string $label = null, string $defaultValue = null): self
+    public function searchInput(string $key, ?string $label = null, ?string $defaultValue = null): self
     {
         $this->searchInputs = $this->searchInputs->reject(function (SearchInput $searchInput) use ($key) {
             return $searchInput->key === $key;
@@ -503,17 +500,12 @@ class InertiaTable
     /**
      * Add a select filter to the table.
      *
-     * @param  string  $key
-     * @param  array  $options
-     * @param  string|null  $label
-     * @param  string|null  $defaultValue
-     * @param  bool  $noFilterOption
-     * @param  string|null  $noFilterOptionLabel
      *
      * @return $this
+     *
      * @noinspection PhpUnused
      */
-    public function selectFilter(string $key, array $options, string $label = null, string $defaultValue = null, bool $noFilterOption = true, string $noFilterOptionLabel = null): self
+    public function selectFilter(string $key, array $options, ?string $label = null, ?string $defaultValue = null, bool $noFilterOption = true, ?string $noFilterOptionLabel = null): self
     {
         $this->filters = $this->filters->reject(function (Filter $filter) use ($key) {
             return $filter->key === $key;
@@ -531,7 +523,6 @@ class InertiaTable
 
         return $this;
     }
-
 
     public function applyTo(Response $response): Response
     {

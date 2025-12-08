@@ -31,78 +31,77 @@ class EditRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit client'),
-                'pageHead'    => [
-                    'title'        => __('Edit client'),
-                    'icon'         => [
-                        'icon'  => ['fal', 'fa-user'],
-                        'title' => __('Client')
+                'title' => __('Edit client'),
+                'pageHead' => [
+                    'title' => __('Edit client'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-user'],
+                        'title' => __('Client'),
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => match ($request->route()->getName()) {
-                                    default                       => preg_replace('/edit$/', 'show', $request->route()->getName())
+                                'name' => match ($request->route()->getName()) {
+                                    default => preg_replace('/edit$/', 'show', $request->route()->getName())
                                 },
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
-                ],
-                'formData'    => [
-                    'blueprint' =>
-                        [
-                            [
-                                "label"  => __("Profile"),
-                                'title'  => __('contact'),
-                                'fields' => [
-                                    'company_name' => [
-                                        'type'  => 'input',
-                                        'label' => __('company'),
-                                        'value' => $customerClient->company_name
-                                    ],
-                                    'contact_name' => [
-                                        'type'  => 'input',
-                                        'label' => __('contact name'),
-                                        'value' => $customerClient->contact_name
-                                    ],
-                                    'email' => [
-                                        'type'  => 'input',
-                                        'label' => __('email'),
-                                        'value' => $customerClient->email
-                                    ],
-                                    'phone' => [
-                                        'type'  => 'input',
-                                        'label' => __('phone'),
-                                        'value' => $customerClient->phone
-                                    ],
-                                    'address'      => [
-                                        'type'    => 'address',
-                                        'label'   => __('Address'),
-                                        'value'   => AddressFormFieldsResource::make(
-                                            $customerClient->address
-                                        )->getArray(),
-                                        'options' => [
-                                            'countriesAddressData' => GetAddressData::run()
-
-                                        ]
-                                    ]
-                                ]
-                            ]
                         ],
-                    'args' => [
-                        'updateRoute'     => [
-                            'name'      => 'retina.models.customer-client.update',
-                            'parameters' => [
-                                'customerClient' => $customerClient->id
+                    ],
+                ],
+                'formData' => [
+                    'blueprint' => [
+                        [
+                            'label' => __('Profile'),
+                            'title' => __('contact'),
+                            'fields' => [
+                                'company_name' => [
+                                    'type' => 'input',
+                                    'label' => __('company'),
+                                    'value' => $customerClient->company_name,
+                                ],
+                                'contact_name' => [
+                                    'type' => 'input',
+                                    'label' => __('contact name'),
+                                    'value' => $customerClient->contact_name,
+                                ],
+                                'email' => [
+                                    'type' => 'input',
+                                    'label' => __('email'),
+                                    'value' => $customerClient->email,
+                                ],
+                                'phone' => [
+                                    'type' => 'input',
+                                    'label' => __('phone'),
+                                    'value' => $customerClient->phone,
+                                ],
+                                'address' => [
+                                    'type' => 'address',
+                                    'label' => __('Address'),
+                                    'value' => AddressFormFieldsResource::make(
+                                        $customerClient->address
+                                    )->getArray(),
+                                    'options' => [
+                                        'countriesAddressData' => GetAddressData::run(),
+
+                                    ],
+                                ],
                             ],
-                            'method' => 'patch'
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                    'args' => [
+                        'updateRoute' => [
+                            'name' => 'retina.models.customer-client.update',
+                            'parameters' => [
+                                'customerClient' => $customerClient->id,
+                            ],
+                            'method' => 'patch',
+                        ],
+                    ],
+                ],
             ]
         );
     }
@@ -127,11 +126,11 @@ class EditRetinaFulfilmentPlatformCustomerClient extends RetinaAction
             ),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Editing Client'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

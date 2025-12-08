@@ -26,7 +26,6 @@ class OrganisationHydrateOrgStockFamilies implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
         $stats = [
@@ -49,7 +48,6 @@ class OrganisationHydrateOrgStockFamilies implements ShouldBeUnique
         $stats['number_current_org_stock_families'] =
             Arr::get($stats, 'number_org_stock_families_state_active', 0) +
             Arr::get($stats, 'number_org_stock_families_state_discontinuing', 0);
-
 
         $organisation->inventoryStats()->update($stats);
     }

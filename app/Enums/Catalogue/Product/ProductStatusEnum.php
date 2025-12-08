@@ -27,13 +27,12 @@ enum ProductStatusEnum: string
     case COMING_SOON = 'coming-soon';
     case DISCONTINUED = 'discontinued';
 
-
     public static function labels(): array
     {
         return [
-            'in_process'   => __('In Process'),
-            'for-sale'     => __('For Sale'),
-            'coming-soon'  => __('Coming Soon'),
+            'in_process' => __('In Process'),
+            'for-sale' => __('For Sale'),
+            'coming-soon' => __('Coming Soon'),
             'not-for-sale' => __('Not For Sale'),
             'out-of-stock' => __('Out of Stock'),
             'discontinued' => __('Discontinued'),
@@ -43,65 +42,65 @@ enum ProductStatusEnum: string
     public static function stateIcon(): array
     {
         return [
-            'in_process'   => [
+            'in_process' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
-                'color'   => 'lime',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',  // Color for normal icon (Aiku)
+                'color' => 'lime',  // Color for box (Retina)
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'for-sale'     => [
+            'for-sale' => [
                 'tooltip' => __('For Sale'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-emerald-500',
-                'color'   => 'emerald',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-emerald-500',
+                'color' => 'emerald',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'not-for-sale' => [
                 'tooltip' => __('Not For Sale'),
-                'icon'    => 'fal fa-ban',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-ban',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'ban',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'out-of-stock' => [
                 'tooltip' => __('Out of Stock'),
-                'icon'    => 'fal fa-exclamation-triangle',
-                'class'   => 'text-orange-500',
-                'color'   => 'orange',
-                'app'     => [
+                'icon' => 'fal fa-exclamation-triangle',
+                'class' => 'text-orange-500',
+                'color' => 'orange',
+                'app' => [
                     'name' => 'exclamation-triangle',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'discontinued' => [
                 'tooltip' => __('Discontinued'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'coming-soon' => [
                 'tooltip' => __('Coming Soon'),
-                'icon'    => 'fal fa-clock',
-                'class'   => 'text-yellow-500',
-                'color'   => 'yellow',
-                'app'     => [
+                'icon' => 'fal fa-clock',
+                'class' => 'text-yellow-500',
+                'color' => 'yellow',
+                'app' => [
                     'name' => 'clock',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
         ];
     }
@@ -115,15 +114,13 @@ enum ProductStatusEnum: string
         $stats = $parent->stats;
 
         return [
-            'in_process'   => $stats->number_products_state_in_process,
-            'for-sale'     => $stats->number_products_state_for_sale,
+            'in_process' => $stats->number_products_state_in_process,
+            'for-sale' => $stats->number_products_state_for_sale,
             'not-for-sale' => $stats->number_products_state_not_for_sale,
             'out-of-stock' => $stats->number_products_state_out_of_stock,
             'discontinued' => $stats->number_products_state_discontinued,
-            'coming-soon'  => $stats->number_products_state_coming_soon,
+            'coming-soon' => $stats->number_products_state_coming_soon,
 
         ];
     }
-
-
 }

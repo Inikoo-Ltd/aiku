@@ -12,8 +12,8 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
-use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use Illuminate\Database\Schema\Blueprint;
 
 trait HasCommsStats
@@ -21,12 +21,14 @@ trait HasCommsStats
     public function postRoomsStats(Blueprint $table): Blueprint
     {
         $table->unsignedSmallInteger('number_post_rooms')->default(0);
+
         return $table;
     }
 
     public function orgPostRoomsStats(Blueprint $table): Blueprint
     {
         $table->unsignedSmallInteger('number_org_post_rooms')->default(0);
+
         return $table;
     }
 
@@ -67,7 +69,6 @@ trait HasCommsStats
         foreach (EmailBulkRunStateEnum::cases() as $state) {
             $table->unsignedInteger('number_bulk_runs_state_'.$state->snake())->default(0);
         }
-
 
         return $table;
     }

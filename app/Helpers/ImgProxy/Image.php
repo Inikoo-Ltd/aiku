@@ -30,7 +30,6 @@ class Image
 
     public bool $is_animated = false;
 
-
     public function make(string $path, $is_animated = false): static
     {
         $this->setOriginalPictureUrl($path);
@@ -40,23 +39,20 @@ class Image
         return $this;
     }
 
-
     public function getSizeProcessOption(): ?string
     {
         return $this->sizeProcessOption;
     }
 
-
     public function resize($width = null, $height = null, $type = null, $enlarge = null, $extend = null): static
     {
         $this->sizeProcessOption = 'resize';
-        $this->resize            = [
-            'type'    => null,
-            'width'   => null,
-            'height'  => null,
+        $this->resize = [
+            'type' => null,
+            'width' => null,
+            'height' => null,
             'enlarge' => null,
-            'extend'  => null,
-
+            'extend' => null,
 
         ];
 
@@ -65,11 +61,11 @@ class Image
         }
 
         if ($width !== null) {
-            $this->width           = $this->parseDimension($width);
+            $this->width = $this->parseDimension($width);
             $this->resize['width'] = $this->width;
         }
         if ($height !== null) {
-            $this->height           = $this->parseDimension($height);
+            $this->height = $this->parseDimension($height);
             $this->resize['height'] = $this->height;
         }
 
@@ -80,10 +76,8 @@ class Image
             $this->resize['extend'] = 1;
         }
 
-
         return $this;
     }
-
 
     public function getResize(): ?array
     {
@@ -115,12 +109,10 @@ class Image
         return $this;
     }
 
-
     public function getWidth(): int
     {
         return $this->width;
     }
-
 
     public function getHeight(): int
     {
@@ -132,11 +124,11 @@ class Image
         if ($extension) {
             $extension = Str::lower($extension);
 
-            if (!in_array($extension, config('img-proxy.formats'))) {
+            if (! in_array($extension, config('img-proxy.formats'))) {
                 throw new InvalidFormat($extension);
             }
         }
-        if (!$extension) {
+        if (! $extension) {
             $extension = '';
         }
         $this->extension = $extension;
@@ -144,12 +136,10 @@ class Image
         return $this;
     }
 
-
     public function getExtension(): ?string
     {
         return $this->extension;
     }
-
 
     public function setOriginalPictureUrl(string $url): static
     {
@@ -157,7 +147,6 @@ class Image
 
         return $this;
     }
-
 
     public function getOriginalPictureUrl(): string
     {

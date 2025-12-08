@@ -30,11 +30,11 @@ class OrganisationHydrateStoredItemAudits implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_stored_item_audits' => StoredItemAudit::where('organisation_id', $organisation->id)->count()
+            'number_stored_item_audits' => StoredItemAudit::where('organisation_id', $organisation->id)->count(),
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'stored_item_audits',
+            model: 'stored_item_audits',
             field: 'state',
             enum: StoredItemAuditStateEnum::class,
             models: StoredItemAudit::class,

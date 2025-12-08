@@ -48,5 +48,4 @@ class OrganisationHydrateCharges implements ShouldBeUnique
 
         $organisation->catalogueStats()->update($stats);
     }
-
 }

@@ -35,6 +35,4 @@ class UserHydrateModels implements ShouldBeUnique
 
         $user->updateQuietly($stats);
     }
-
-
 }

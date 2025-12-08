@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
 
@@ -21,7 +22,6 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('as_employee_id')->index()->nullable()->comment('Indicate customer is an employee');
             $table->foreign('as_employee_id')->references('id')->on('employees')->nullOnDelete();
         });
-
 
         Schema::table('invoices', function (Blueprint $table) {
             $table->boolean('is_vip')->index()->default('false')->comment('Indicate if invoice is for a VIP customer');
@@ -47,7 +47,6 @@ return new class () extends Migration {
             $table->foreign('as_employee_id')->references('id')->on('employees')->nullOnDelete();
         });
     }
-
 
     public function down(): void
     {

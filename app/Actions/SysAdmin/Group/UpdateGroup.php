@@ -17,13 +17,10 @@ class UpdateGroup extends GrpAction
 {
     use WithActionUpdate;
 
-
     public function handle(Group $group, array $modelData): Group
     {
         return $this->update($group, $modelData);
     }
-
-
 
     public function rules(): array
     {
@@ -39,8 +36,6 @@ class UpdateGroup extends GrpAction
 
         return $this->handle($group, $this->validatedData);
     }
-
-
 
     public function jsonResponse(Group $group): GroupResource
     {

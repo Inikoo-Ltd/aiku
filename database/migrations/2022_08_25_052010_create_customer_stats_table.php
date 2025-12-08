@@ -18,15 +18,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use HasSalesStats;
-    use HasWebStats;
-    use HasCreditsStats;
-    use HasFavouritesStats;
+return new class extends Migration
+{
     use HasBackInStockReminderStats;
-    use HasOrderingStats;
+    use HasCreditsStats;
     use HasCRMStats;
     use HasDropshippingStats;
+    use HasFavouritesStats;
+    use HasOrderingStats;
+    use HasSalesStats;
+    use HasWebStats;
+
     public function up(): void
     {
         Schema::create('customer_stats', function (Blueprint $table) {
@@ -37,14 +39,13 @@ return new class () extends Migration {
             $salesFields = [
                 'sales',
                 'sales_org_currency',
-                'sales_grp_currency'
+                'sales_grp_currency',
             ];
 
             foreach ($salesFields as $salesField) {
                 $col = '_all';
                 $table->decimal($salesField.$col, 16)->default(0);
             }
-
 
             $table = $this->orderingStatsFields($table);
             $table = $this->getWebUsersStatsFields($table);
@@ -57,7 +58,6 @@ return new class () extends Migration {
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

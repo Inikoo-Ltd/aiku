@@ -64,5 +64,4 @@ class GroupHydrateMailshots implements ShouldBeUnique
 
         $group->commsStats->update($stats);
     }
-
 }

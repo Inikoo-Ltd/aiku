@@ -28,7 +28,6 @@ class FetchAuroraPurchaseOrderTransactions
     {
         $transactionData = $organisationSource->fetchPurchaseOrderTransaction(id: $organisationSourceId, purchaseOrder: $purchaseOrder);
 
-
         if ($transactionData) {
             if ($purchaseOrderTransaction = PurchaseOrderTransaction::where('source_id', $transactionData['purchase_order_transaction']['source_id'])->first()) {
                 try {
@@ -75,12 +74,11 @@ class FetchAuroraPurchaseOrderTransactions
     {
         $organisationSource->fetch->records()->create([
             'model_data' => $modelData,
-            'data'       => $e->getMessage(),
-            'type'       => FetchRecordTypeEnum::ERROR,
-            'source_id'  => Arr::get($modelData, 'source_id'),
+            'data' => $e->getMessage(),
+            'type' => FetchRecordTypeEnum::ERROR,
+            'source_id' => Arr::get($modelData, 'source_id'),
             'model_type' => $modelType,
-            'error_on'   => $errorOn
+            'error_on' => $errorOn,
         ]);
     }
-
 }

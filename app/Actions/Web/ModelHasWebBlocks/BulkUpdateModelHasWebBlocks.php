@@ -17,9 +17,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class BulkUpdateModelHasWebBlocks extends OrgAction
 {
-    use WithWebAuthorisation;
     use WithActionUpdate;
-
+    use WithWebAuthorisation;
 
     public function handle(array $modelData): void
     {
@@ -38,7 +37,7 @@ class BulkUpdateModelHasWebBlocks extends OrgAction
     public function rules(): array
     {
         return [
-            'web_blocks' => ['required', 'array']
+            'web_blocks' => ['required', 'array'],
         ];
     }
 }

@@ -18,9 +18,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FetchDownloadImage newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FetchDownloadImage newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FetchDownloadImage query()
+ *
  * @mixin \Eloquent
  */
 class FetchDownloadImage extends Model

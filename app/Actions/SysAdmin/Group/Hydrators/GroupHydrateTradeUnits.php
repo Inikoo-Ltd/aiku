@@ -28,9 +28,8 @@ class GroupHydrateTradeUnits implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_trade_units' => $group->tradeUnits()->count()
+            'number_trade_units' => $group->tradeUnits()->count(),
         ];
-
 
         $stats = array_merge(
             $stats,

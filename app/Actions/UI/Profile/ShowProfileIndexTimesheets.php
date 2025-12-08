@@ -23,8 +23,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ShowProfileIndexTimesheets extends OrgAction
 {
     use AsAction;
-    use WithInertia;
     use WithActionButtons;
+    use WithInertia;
 
     public function asController(ActionRequest $request): ?LengthAwarePaginator
     {
@@ -37,6 +37,7 @@ class ShowProfileIndexTimesheets extends OrgAction
                 return IndexTimesheets::run($employee, null, ProfileTabsEnum::TIMESHEETS->value);
             }
         }
+
         return null;
     }
 
@@ -45,6 +46,7 @@ class ShowProfileIndexTimesheets extends OrgAction
         if ($timesheets == null) {
             return TimesheetsResource::collection(collect());
         }
+
         return TimesheetsResource::collection($timesheets);
     }
 }

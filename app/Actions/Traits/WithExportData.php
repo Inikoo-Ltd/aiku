@@ -50,7 +50,7 @@ trait WithExportData
      */
     public function xlsx($callback, $prefix): BinaryFileResponse
     {
-        $filename = now()->format('Y-m-d') . '-' . $prefix . '-' . rand(111, 999) . '.xlsx';
+        $filename = now()->format('Y-m-d').'-'.$prefix.'-'.rand(111, 999).'.xlsx';
 
         return Excel::download($callback, $filename, \Maatwebsite\Excel\Excel::XLSX);
     }
@@ -61,7 +61,7 @@ trait WithExportData
      */
     public function csv($callback, $prefix): BinaryFileResponse
     {
-        $filename = now()->format('Y-m-d') . '-' . $prefix . '-' . rand(111, 999) . '.csv';
+        $filename = now()->format('Y-m-d').'-'.$prefix.'-'.rand(111, 999).'.csv';
 
         return Excel::download($callback, $filename, \Maatwebsite\Excel\Excel::CSV);
     }
@@ -72,7 +72,7 @@ trait WithExportData
      */
     public function pdf($callback, $prefix): BinaryFileResponse
     {
-        $filename = now()->format('Y-m-d') . '-' . $prefix . '-' . rand(111, 999) . '.pdf';
+        $filename = now()->format('Y-m-d').'-'.$prefix.'-'.rand(111, 999).'.pdf';
 
         return Excel::download($callback, $filename, \Maatwebsite\Excel\Excel::DOMPDF);
     }
@@ -80,7 +80,7 @@ trait WithExportData
     public function rules(): array
     {
         return [
-            'type' => ['required', Rule::in([ExportTypeEnum::XLSX->value, ExportTypeEnum::CSV->value, ExportTypeEnum::PDF->value])]
+            'type' => ['required', Rule::in([ExportTypeEnum::XLSX->value, ExportTypeEnum::CSV->value, ExportTypeEnum::PDF->value])],
         ];
     }
 }

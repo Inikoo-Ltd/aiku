@@ -60,7 +60,6 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
 
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
-
         $queryBuilder
             ->defaultSort('products.code')
             ->select([
@@ -92,7 +91,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
             'available_quantity',
             'gross_weight',
             'rrp',
-            'price'
+            'price',
         ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -134,38 +133,35 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $products, ActionRequest $request): Response
     {
 
-
         $title = __('Products');
 
-        $icon       = [
-            'icon'  => ['fal', 'fa-cube'],
-            'title' => $title
+        $icon = [
+            'icon' => ['fal', 'fa-cube'],
+            'title' => $title,
         ];
         $afterTitle = null;
-        $iconRight  = null;
-        $model      = null;
-
+        $iconRight = null;
+        $model = null;
 
         return Inertia::render(
             'Catalogue/RetinaProducts',
             [
-                'breadcrumbs'                  => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                        => $title,
-                'pageHead'                     => [
-                    'title'         => $title,
-                    'model'         => $model,
-                    'icon'          => $icon,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => $title,
+                'pageHead' => [
+                    'title' => $title,
+                    'model' => $model,
+                    'icon' => $icon,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                 ],
-                'data'                         => ProductsResource::collection($products),
+                'data' => ProductsResource::collection($products),
             ]
         )->table($this->tableStructure());
     }
-
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
@@ -174,37 +170,33 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
         return $this->handle(parent: $this->shop);
     }
 
-
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Products'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
-                ]
+                    'suffix' => $suffix,
+                ],
             ];
         };
 
         return match ($routeName) {
-            'retina.catalogue.products.index' =>
-            array_merge(
+            'retina.catalogue.products.index' => array_merge(
                 ShowRetinaCatalogue::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ],
                     $suffix
                 )
             ),
-
-
 
             default => []
         };

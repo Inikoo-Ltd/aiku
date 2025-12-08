@@ -25,11 +25,10 @@ class OrganisationHydratePaymentAccounts implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_payment_accounts'          => $organisation->paymentAccounts()->count(),
+            'number_payment_accounts' => $organisation->paymentAccounts()->count(),
         ];
 
         $stats = array_merge(

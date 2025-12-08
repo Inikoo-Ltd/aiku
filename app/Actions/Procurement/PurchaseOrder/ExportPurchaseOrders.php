@@ -28,7 +28,7 @@ class ExportPurchaseOrders
     {
         $type = $modelData['type'];
 
-        return $this->export(new PurchaseOrdersExport(), 'purchase-orders', $type);
+        return $this->export(new PurchaseOrdersExport, 'purchase-orders', $type);
     }
 
     /**

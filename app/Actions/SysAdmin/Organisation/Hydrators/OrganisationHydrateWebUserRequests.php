@@ -16,7 +16,6 @@ class OrganisationHydrateWebUserRequests implements ShouldBeUnique
 {
     use AsAction;
 
-
     public string $jobQueue = 'low-priority';
 
     public function getJobUniqueId(int $organisationID): string
@@ -27,13 +26,10 @@ class OrganisationHydrateWebUserRequests implements ShouldBeUnique
     public function handle(int $organisationID): void
     {
         $organisation = Organisation::findOrFail($organisationID);
-        $stats        = [
+        $stats = [
             'number_web_user_requests' => $organisation->webUserRequests()->count(),
         ];
 
-
         $organisation->webStats->update($stats);
     }
-
-
 }

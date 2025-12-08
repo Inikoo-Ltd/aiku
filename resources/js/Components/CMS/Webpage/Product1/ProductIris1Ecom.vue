@@ -469,7 +469,7 @@ onUnmounted(() => {
                     :styleData="fieldValue?.information_style"
                     :fullWidth="true"
                 />
-                
+
                 <div v-if="fieldValue.setting?.information" class="mt-2">
                     <InformationSideProduct
                         v-if="fieldValue?.information?.length > 0"

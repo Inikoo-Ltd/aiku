@@ -20,10 +20,11 @@ class WebBlockResource extends JsonResource
     {
         /** @var WebBlock $webBlock */
         $webBlock = $this;
+
         return [
-            'id'     => $webBlock->id,
+            'id' => $webBlock->id,
             'layout' => $webBlock->layout,
-            'data'   => $webBlock->data,
+            'data' => $webBlock->data,
         ];
     }
 }

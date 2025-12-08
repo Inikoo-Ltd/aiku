@@ -21,11 +21,10 @@ use Illuminate\Support\Arr;
 
 class UpdateOrderPaymentsStatus extends OrgAction
 {
-    use WithHydrateCommand;
     use HasOrderHydrators;
+    use WithHydrateCommand;
 
     public string $commandSignature = 'orders:set_payments {organisations?*} {--S|shop= shop slug} {--s|slug=}';
-
 
     public function __construct()
     {
@@ -35,19 +34,18 @@ class UpdateOrderPaymentsStatus extends OrgAction
     protected function handle(Order $order): Order
     {
         $runningPaymentsAmount = 0;
-        $payStatus             = OrderPayStatusEnum::UNPAID;
-        $payDetailedStatus     = OrderPayDetailedStatusEnum::UNPAID;
+        $payStatus = OrderPayStatusEnum::UNPAID;
+        $payDetailedStatus = OrderPayDetailedStatusEnum::UNPAID;
         /** @var Payment $payment */
         foreach ($order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment) {
             $runningPaymentsAmount += $payment->amount;
         }
         $runningPaymentsAmount = round($runningPaymentsAmount, 2);
-        $totalAmount =  $order->total_amount;
+        $totalAmount = $order->total_amount;
 
         if ($runningPaymentsAmount >= $totalAmount) {
             $payStatus = OrderPayStatusEnum::PAID;
         }
-
 
         if ($runningPaymentsAmount > $totalAmount) {
             $payDetailedStatus = OrderPayDetailedStatusEnum::OVERPAID;
@@ -57,23 +55,21 @@ class UpdateOrderPaymentsStatus extends OrgAction
             $payDetailedStatus = OrderPayDetailedStatusEnum::PARTIALLY_PAID;
         }
 
-
         $cutOffDate = Arr::get($order->shop->settings, 'unpaid_invoices_unknown_before', config('app.unpaid_invoices_unknown_before'));
         if ($cutOffDate) {
             $cutOffDate = Carbon::parse($cutOffDate);
         }
 
         if ($runningPaymentsAmount == 0 && $cutOffDate && $order->created_at->lt($cutOffDate)) {
-            $payStatus         = OrderPayStatusEnum::UNKNOWN;
+            $payStatus = OrderPayStatusEnum::UNKNOWN;
             $payDetailedStatus = OrderPayDetailedStatusEnum::UNKNOWN;
         }
 
-
         $order->update(
             [
-                'payment_amount'      => $runningPaymentsAmount,
+                'payment_amount' => $runningPaymentsAmount,
                 'pay_detailed_status' => $payDetailedStatus,
-                'pay_status'          => $payStatus,
+                'pay_status' => $payStatus,
             ]
         );
         $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
@@ -83,5 +79,4 @@ class UpdateOrderPaymentsStatus extends OrgAction
 
         return $order;
     }
-
 }

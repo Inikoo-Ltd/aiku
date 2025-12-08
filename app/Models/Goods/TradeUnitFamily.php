@@ -40,28 +40,30 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Goods\TradeUnitFamilyStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class TradeUnitFamily extends Model implements Auditable, HasMedia
 {
-    use HasSlug;
-    use SoftDeletes;
-    use InGroup;
-    use HasHistory;
-    use HasUniversalSearch;
-    use HasFactory;
     use HasAttachments;
+    use HasFactory;
+    use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InGroup;
+    use SoftDeletes;
 
     protected $table = 'trade_unit_families';
 
     protected $casts = [
-        'data'                        => 'array',
+        'data' => 'array',
     ];
 
     protected $attributes = [
@@ -73,14 +75,14 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     public function generateTags(): array
     {
         return [
-            'goods'
+            'goods',
         ];
     }
 
     protected array $auditInclude = [
         'code',
         'name',
-        'description'
+        'description',
     ];
 
     public function getSlugOptions(): SlugOptions

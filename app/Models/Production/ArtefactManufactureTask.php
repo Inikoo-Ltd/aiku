@@ -15,12 +15,13 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Production\Artefact $artefact
  * @property-read \App\Models\Production\ManufactureTask $manufactureTask
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactManufactureTask newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactManufactureTask newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactManufactureTask query()
+ *
  * @mixin \Eloquent
  */
-
 class ArtefactManufactureTask extends Pivot
 {
     protected $table = 'artefacts_manufacture_tasks';

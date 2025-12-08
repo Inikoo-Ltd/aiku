@@ -21,21 +21,18 @@ class GroupHydrateUsers implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
 
-        $numberUsers       = $group->users()->count();
+        $numberUsers = $group->users()->count();
         $numberActiveUsers = $group->users()->where('status', true)->count();
 
         $stats = [
-            'number_users'                 => $numberUsers,
-            'number_users_status_active'   => $numberActiveUsers,
-            'number_users_status_inactive' => $numberUsers - $numberActiveUsers
+            'number_users' => $numberUsers,
+            'number_users_status_active' => $numberActiveUsers,
+            'number_users_status_inactive' => $numberUsers - $numberActiveUsers,
 
         ];
-
-
 
         $group->sysadminStats->update($stats);
     }

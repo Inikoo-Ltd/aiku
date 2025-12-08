@@ -43,9 +43,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $gateway_payment_id
  * @property-read Group $group
  * @property-read Payment|null $payment
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGatewayLog newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGatewayLog newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGatewayLog query()
+ *
  * @mixin \Eloquent
  */
 class PaymentGatewayLog extends Model
@@ -53,14 +55,14 @@ class PaymentGatewayLog extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'state'   => PaymentGatewayLogStateEnum::class,
-        'status'  => PaymentGatewayLogStatusEnum::class,
-        'data'    => 'array',
+        'state' => PaymentGatewayLogStateEnum::class,
+        'status' => PaymentGatewayLogStatusEnum::class,
+        'data' => 'array',
         'payload' => 'array',
     ];
 
     protected $attributes = [
-        'data'    => '{}',
+        'data' => '{}',
         'payload' => '{}',
     ];
 

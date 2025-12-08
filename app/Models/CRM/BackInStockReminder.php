@@ -35,9 +35,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Product $product
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BackInStockReminder newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BackInStockReminder newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BackInStockReminder query()
+ *
  * @mixin \Eloquent
  */
 class BackInStockReminder extends Model
@@ -45,7 +47,7 @@ class BackInStockReminder extends Model
     use InShop;
 
     protected $casts = [
-        'un_reminded_at'  => 'datetime'
+        'un_reminded_at' => 'datetime',
     ];
 
     protected $guarded = [];

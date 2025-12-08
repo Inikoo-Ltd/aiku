@@ -36,7 +36,7 @@ class IndexRawMaterials extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
+            return $request->user()->authTo('group-overview');
         }
 
         if ($this->parent instanceof Organisation) {
@@ -45,7 +45,7 @@ class IndexRawMaterials extends OrgAction
             return $request->user()->authTo(
                 [
                     'productions-view.'.$this->organisation->id,
-                    'org-supervisor.'.$this->organisation->id
+                    'org-supervisor.'.$this->organisation->id,
                 ]
             );
         }
@@ -62,7 +62,6 @@ class IndexRawMaterials extends OrgAction
 
         return $this->handle(parent: $this->parent, prefix: RawMaterialsTabsEnum::RAW_MATERIALS->value);
     }
-
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -93,7 +92,7 @@ class IndexRawMaterials extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(RawMaterial::class)
-                        ->leftJoin('organisations', 'raw_materials.organisation_id', '=', 'organisations.id');
+            ->leftJoin('organisations', 'raw_materials.organisation_id', '=', 'organisations.id');
 
         if ($parent instanceof Organisation) {
             $queryBuilder->where('raw_materials.organisation_id', $parent->id);
@@ -102,7 +101,6 @@ class IndexRawMaterials extends OrgAction
         } else {
             $queryBuilder->where('raw_materials.production_id', $parent->id);
         }
-
 
         return $queryBuilder
             ->defaultSort('raw_materials.code')
@@ -138,28 +136,28 @@ class IndexRawMaterials extends OrgAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Organisation' => [
-                            'title'  => __("No raw materials found"),
-                            'count'  => $parent->manufactureStats->number_raw_materials,
-                            'action' => null
+                            'title' => __('No raw materials found'),
+                            'count' => $parent->manufactureStats->number_raw_materials,
+                            'action' => null,
                         ],
                         'Production' => [
-                            'title'       => __("No raw materials found"),
+                            'title' => __('No raw materials found'),
                             'description' => $this->canEdit ? __('Get started by creating your first raw material. ✨')
                                 : null,
-                            'count'       => $parent->stats->number_raw_materials,
-                            'action'      => $canEdit ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
+                            'count' => $parent->stats->number_raw_materials,
+                            'action' => $canEdit ? [
+                                'type' => 'button',
+                                'style' => 'create',
                                 'tooltip' => __('New raw material'),
-                                'label'   => __('raw material'),
-                                'route'   => [
-                                    'name'       => 'grp.org.productions.show.crafts.raw_materials.create',
+                                'label' => __('raw material'),
+                                'route' => [
+                                    'name' => 'grp.org.productions.show.crafts.raw_materials.create',
                                     'parameters' => [
                                         $parent->organisation->slug,
-                                        $parent->slug
-                                    ]
-                                ]
-                            ] : null
+                                        $parent->slug,
+                                    ],
+                                ],
+                            ] : null,
                         ],
                         default => null
                     }
@@ -167,7 +165,7 @@ class IndexRawMaterials extends OrgAction
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->defaultSort('code');
         };
@@ -187,51 +185,51 @@ class IndexRawMaterials extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Raw Materials'),
-                'pageHead'    => [
-                    'title'     => __('Raw Materials'),
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-drone'],
+                'title' => __('Raw Materials'),
+                'pageHead' => [
+                    'title' => __('Raw Materials'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-drone'],
                         'title' => __('Raw Materials'),
                     ],
-                    'actions'   => [
+                    'actions' => [
                         $this->canEdit && $this->parent instanceof Production ? [
-                            'type'   => 'buttonGroup',
-                            'key'    => 'upload-add',
+                            'type' => 'buttonGroup',
+                            'key' => 'upload-add',
                             'button' => [
                                 [
-                                    'type'  => 'button',
+                                    'type' => 'button',
                                     'style' => 'primary',
-                                    'icon'  => ['fal', 'fa-upload'],
+                                    'icon' => ['fal', 'fa-upload'],
                                     'label' => 'upload',
                                     'route' => [
-                                        'name'       => 'grp.models.production.raw_materials.upload',
+                                        'name' => 'grp.models.production.raw_materials.upload',
                                         'parameters' => [
-                                            $this->parent->id
-                                        ]
-                                    ]
+                                            $this->parent->id,
+                                        ],
+                                    ],
                                 ],
                                 [
 
-                                    'type'  => 'button',
+                                    'type' => 'button',
                                     'style' => 'create',
                                     'label' => __('Raw Material'),
                                     'route' => [
-                                        'name'       => 'grp.org.productions.show.crafts.raw_materials.create',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ]
+                                        'name' => 'grp.org.productions.show.crafts.raw_materials.create',
+                                        'parameters' => $request->route()->originalParameters(),
+                                    ],
 
-                                ]
-                            ]
+                                ],
+                            ],
                         ] : null,
-                    ]
+                    ],
                 ],
                 'upload' => $this->parent instanceof Group ? null : [
-                    'event'   => 'action-progress',
-                    'channel' => 'grp.personal.' . $this->organisation->id
+                    'event' => 'action-progress',
+                    'channel' => 'grp.personal.'.$this->organisation->id,
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
+                'tabs' => [
+                    'current' => $this->tab,
                     'navigation' => RawMaterialsTabsEnum::navigation(),
                 ],
 
@@ -241,7 +239,7 @@ class IndexRawMaterials extends OrgAction
 
                 RawMaterialsTabsEnum::RAW_MATERIALS_HISTORIES->value => $this->tab == RawMaterialsTabsEnum::RAW_MATERIALS_HISTORIES->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($rawMaterials))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($rawMaterials)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($rawMaterials))),
 
             ]
         )->table(
@@ -255,47 +253,44 @@ class IndexRawMaterials extends OrgAction
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
     {
         return match ($routeName) {
-            'grp.overview.production.raw-materials.index' =>
-            array_merge(
+            'grp.overview.production.raw-materials.index' => array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(
                     $routeParameters
                 ),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => $routeName,
-                                'parameters' => $routeParameters
+                                'name' => $routeName,
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Raw materials'),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
-                        'suffix' => $suffix
+                        'suffix' => $suffix,
 
-                    ]
+                    ],
                 ]
             ),
             default => array_merge(
                 ShowCraftsDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.show.crafts.raw_materials.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Raw materials'),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
-                        'suffix' => $suffix
+                        'suffix' => $suffix,
 
-                    ]
+                    ],
                 ]
             )
         };
     }
-
-
 }

@@ -43,7 +43,6 @@ beforeAll(function () {
 beforeEach(function () {
     \Tests\Helpers\setupDropshippingTest($this);
 
-
 });
 
 test('test platform were seeded', function () {
@@ -59,22 +58,18 @@ test('test platform were seeded', function () {
 test('add sales channel to customer', function () {
     $platform = $this->group->platforms()->where('type', PlatformTypeEnum::SHOPIFY)->first();
 
-
     expect($this->customer->customerSalesChannels()->count())->toBe(0);
     $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
         $this->customer,
         $platform,
         [
-            'reference' => 'test_shopify_reference'
+            'reference' => 'test_shopify_reference',
         ]
     );
 
-
     $customer = $customerSalesChannel->customer;
 
-
     expect($customer->customerSalesChannels()->first())->toBeInstanceOf(CustomerSalesChannel::class);
-
 
     return $customer;
 });
@@ -99,8 +94,6 @@ test('update customer client', function ($customerClient) {
 
 test('add product to customer portfolio', function () {
 
-
-
     $customerSalesChannel = $this->customer->customerSalesChannels()->first();
     expect($customerSalesChannel)->toBeInstanceOf(CustomerSalesChannel::class);
     $dropshippingCustomerPortfolio = StorePortfolio::make()->action(
@@ -113,7 +106,6 @@ test('add product to customer portfolio', function () {
     return $dropshippingCustomerPortfolio;
 });
 
-
 test('add image to product', function () {
     Storage::fake('public');
 
@@ -121,18 +113,18 @@ test('add image to product', function () {
         ->and($this->product->images->count())->toBe(0);
 
     $fakeImage = UploadedFile::fake()->image('hello.jpg');
-    $path      = $fakeImage->store('photos', 'public');
+    $path = $fakeImage->store('photos', 'public');
 
     SaveModelImages::run(
         model: $this->product,
         mediaData: [
-            'path'         => Storage::disk('public')->path($path),
-            'originalName' => $fakeImage->getClientOriginalName()
+            'path' => Storage::disk('public')->path($path),
+            'originalName' => $fakeImage->getClientOriginalName(),
 
         ],
         mediaScope: 'product_images',
         modelHasMediaData: [
-            'scope' => 'photo'
+            'scope' => 'photo',
         ]
     );
 
@@ -147,18 +139,17 @@ test('add 2nd image to product', function () {
 
     $fakeImage2 = UploadedFile::fake()->image('hello2.jpg', 20, 20);
 
-
     $path2 = $fakeImage2->store('photos', 'public');
 
     SaveModelImages::run(
         model: $this->product,
         mediaData: [
-            'path'         => Storage::disk('public')->path($path2),
-            'originalName' => $fakeImage2->getClientOriginalName()
+            'path' => Storage::disk('public')->path($path2),
+            'originalName' => $fakeImage2->getClientOriginalName(),
         ],
         mediaScope: 'product_images',
         modelHasMediaData: [
-            'scope' => 'photo'
+            'scope' => 'photo',
         ]
     );
 
@@ -184,7 +175,6 @@ test('get product 2nd images and show resized sources', function () {
     $media2 = $this->product->images->last();
     expect($media2)->toBeInstanceOf(Media::class);
 
-
     $image2 = $media2->getImage()->resize(5, 5);
     expect($image2)->toBeInstanceOf(Image::class);
 
@@ -192,19 +182,17 @@ test('get product 2nd images and show resized sources', function () {
     expect($imageSources2)->toBeArray()->toHaveCount(8);
 })->depends('add 2nd image to product');
 
-
 test('update customer portfolio', function (Portfolio $dropshippingCustomerPortfolio) {
     $dropshippingCustomerPortfolio = UpdatePortfolio::make()->action(
         $dropshippingCustomerPortfolio,
         [
-            'reference' => 'new_reference'
+            'reference' => 'new_reference',
         ]
     );
     expect($dropshippingCustomerPortfolio->reference)->toBe('new_reference');
 
     return $dropshippingCustomerPortfolio;
 })->depends('add product to customer portfolio');
-
 
 test('get dropshipping access token', function () {
     $token = CreateAccessToken::make()->action($this->group, ['name' => 'test_token', 'abilities' => ['bk-api']]);
@@ -214,7 +202,7 @@ test('get dropshipping access token', function () {
 
 test('UI Index customer clients', function (CustomerClient $customerClient) {
     $this->withoutExceptionHandling();
-    $customer             = $customerClient->customer;
+    $customer = $customerClient->customer;
     $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
     $response = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index', [
@@ -224,7 +212,7 @@ test('UI Index customer clients', function (CustomerClient $customerClient) {
         $customerSalesChannel->slug,
     ]));
 
-    $response->assertInertia(function (AssertableInertia $page) use ($customer) {
+    $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Shop/CRM/CustomerClients')
             ->has('title')
@@ -240,11 +228,10 @@ test('UI Index customer clients', function (CustomerClient $customerClient) {
     });
 })->depends('create customer client');
 
-
 test('UI Show customer client', function (CustomerClient $customerClient) {
     $this->withoutExceptionHandling();
 
-    $customer             = $customerClient->customer;
+    $customer = $customerClient->customer;
     $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
     $response = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show', [
@@ -252,7 +239,7 @@ test('UI Show customer client', function (CustomerClient $customerClient) {
         $customer->shop->slug,
         $customer->slug,
         $customerSalesChannel->slug,
-        $customerClient->ulid
+        $customerClient->ulid,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
@@ -272,7 +259,7 @@ test('UI Show customer client', function (CustomerClient $customerClient) {
 })->depends('create customer client');
 
 test('UI create customer client', function (CustomerClient $customerClient) {
-    $customer             = $customerClient->customer;
+    $customer = $customerClient->customer;
     $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
     $response = get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create', [
@@ -290,7 +277,7 @@ test('UI create customer client', function (CustomerClient $customerClient) {
 
 test('UI edit customer client', function (CustomerClient $customerClient) {
     $this->withoutExceptionHandling();
-    $customer             = $customerClient->customer;
+    $customer = $customerClient->customer;
     $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
     $response = get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.edit', [
@@ -298,9 +285,9 @@ test('UI edit customer client', function (CustomerClient $customerClient) {
         $customer->shop->slug,
         $customer->slug,
         $customerSalesChannel->slug,
-        $customerClient->ulid
+        $customerClient->ulid,
     ]));
-    $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
+    $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('EditModel')
             ->where('title', 'Edit client')
@@ -322,7 +309,7 @@ test('UI edit customer client', function (CustomerClient $customerClient) {
 })->depends('create customer client');
 
 test('UI Index customer portfolios', function (CustomerClient $customerClient) {
-    $customer             = Customer::first();
+    $customer = Customer::first();
     $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
     $response = $this->get(
@@ -337,7 +324,7 @@ test('UI Index customer portfolios', function (CustomerClient $customerClient) {
         )
     );
 
-    $response->assertInertia(function (AssertableInertia $page) use ($customer) {
+    $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Dropshipping/Portfolios')
             ->has('title')
@@ -358,15 +345,14 @@ test('UI get section route client dropshipping', function (CustomerClient $custo
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index', [
         'organisation' => $customer->organisation->slug,
-        'shop'         => $customer->shop->slug,
-        'customer'     => $customer->slug
+        'shop' => $customer->shop->slug,
+        'customer' => $customer->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_CRM->value)
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
 })->depends('create customer client');
-
 
 test('UI index customer client order', function () {
     $this->withoutExceptionHandling();
@@ -414,7 +400,7 @@ test('UI index customer client portfolios', function (CustomerClient $customerCl
     $customer = $customerClient->customer;
 
     $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
-    $response             = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index', [
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
@@ -422,7 +408,7 @@ test('UI index customer client portfolios', function (CustomerClient $customerCl
 
     ]));
 
-    $response->assertInertia(function (AssertableInertia $page) use ($customer) {
+    $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Dropshipping/Portfolios')
             ->has('title')

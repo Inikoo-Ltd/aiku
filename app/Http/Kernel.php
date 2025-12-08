@@ -11,35 +11,35 @@ namespace App\Http;
 use App\Http\Middleware\AddSentryBrowserProfilingHeader;
 use App\Http\Middleware\AddVaryHeader;
 use App\Http\Middleware\ApiBindGroupInstance;
-use App\Http\Middleware\CorneaAuthenticate;
-use App\Http\Middleware\DisableSSR;
-use App\Http\Middleware\DetectIrisWebsite;
-use App\Http\Middleware\HandleCorneaInertiaRequests;
-use App\Http\Middleware\HandlePupilInertiaRequests;
-use App\Http\Middleware\RetinaPreparingAccount;
-use App\Http\Middleware\SameSiteSession;
-use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
 use App\Http\Middleware\CaptureTrafficSourceMiddleWare;
 use App\Http\Middleware\CheckWebsiteState;
+use App\Http\Middleware\CorneaAuthenticate;
+use App\Http\Middleware\DetectIrisWebsite;
 use App\Http\Middleware\DetectWebsite;
-use App\Http\Middleware\HandleAikuPublicInertiaRequests;
-use App\Http\Middleware\HandleRetinaInertiaRequests;
-use App\Http\Middleware\LogUserRequestMiddleware;
+use App\Http\Middleware\DisableSSR;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\ForceJsonResponse;
-use App\Http\Middleware\HandleIrisInertiaRequests;
-use App\Http\Middleware\ResetUserPasswordMiddleware;
-use App\Http\Middleware\ResetWebUserPasswordMiddleware;
-use App\Http\Middleware\RetinaAuthenticate;
-use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\HandleAikuPublicInertiaRequests;
+use App\Http\Middleware\HandleCorneaInertiaRequests;
 use App\Http\Middleware\HandleInertiaGrpRequests;
+use App\Http\Middleware\HandleIrisInertiaRequests;
+use App\Http\Middleware\HandlePupilInertiaRequests;
+use App\Http\Middleware\HandleRetinaInertiaRequests;
 use App\Http\Middleware\IrisRelaxAuthenticate;
+use App\Http\Middleware\LogUserRequestMiddleware;
 use App\Http\Middleware\LogWebUserRequestMiddleware;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Http\Middleware\ResetUserPasswordMiddleware;
+use App\Http\Middleware\ResetWebUserPasswordMiddleware;
+use App\Http\Middleware\RetinaAuthenticate;
+use App\Http\Middleware\RetinaPreparingAccount;
+use App\Http\Middleware\SameSiteSession;
 use App\Http\Middleware\SetGrpApiTreblle;
+use App\Http\Middleware\SetHanAsAppScope;
+use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetRetinaApiTreblle;
 use App\Http\Middleware\SetWebUserLocale;
 use App\Http\Middleware\TrimStrings;
@@ -80,7 +80,7 @@ class Kernel extends HttpKernel
         ValidatePostSize::class,
         TrimStrings::class,
         ConvertEmptyStringsToNull::class,
-        AddSentryBrowserProfilingHeader::class
+        AddSentryBrowserProfilingHeader::class,
     ];
 
     protected $middlewareGroups = [
@@ -102,7 +102,7 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
         ],
 
         'grp-api' => [
@@ -111,7 +111,7 @@ class Kernel extends HttpKernel
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
             ApiBindGroupInstance::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
         ],
 
         'han' => [
@@ -127,12 +127,12 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
         ],
 
-        'api'         => [
+        'api' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
         ],
-        'grp'         => [
+        'grp' => [
             DisableSSR::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
@@ -142,12 +142,12 @@ class Kernel extends HttpKernel
             BindGroupInstance::class,
             SubstituteBindings::class,
             SetLocale::class,
-            //LogUserRequestMiddleware::class,
+            // LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
         ],
-        'web_errors'  => [
+        'web_errors' => [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -167,7 +167,7 @@ class Kernel extends HttpKernel
             HandleAikuPublicInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ],
-        'iris'        => [
+        'iris' => [
             DetectIrisWebsite::class,
             CheckWebsiteState::class,
             AddVaryHeader::class,
@@ -180,11 +180,11 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //LogWebUserRequestMiddleware::class,
+            // LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
-            //CaptureTrafficSourceMiddleWare::class,
+            // CaptureTrafficSourceMiddleWare::class,
         ],
-        'retina'      => [
+        'retina' => [
             DisableSSR::class,
             DetectWebsite::class,
             CheckWebsiteState::class,
@@ -198,11 +198,11 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //LogWebUserRequestMiddleware::class,
+            // LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
-            //CaptureTrafficSourceMiddleWare::class,
+            // CaptureTrafficSourceMiddleWare::class,
         ],
-        'pupil'       => [
+        'pupil' => [
             DisableSSR::class,
             VerifyShopify::class,
             EncryptCookies::class,
@@ -216,7 +216,7 @@ class Kernel extends HttpKernel
             SameSiteSession::class,
         ],
 
-        'cornea'  => [
+        'cornea' => [
             DisableSSR::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
@@ -225,11 +225,11 @@ class Kernel extends HttpKernel
             VerifyCsrfToken::class,
             SubstituteBindings::class,
             HandleCorneaInertiaRequests::class,
-            //AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class
+            // AddLinkHeadersForPreloadedAssets::class,
+            InspectorOctaneMiddleware::class,
         ],
 
-        //==== Other Middleware Groups
+        // ==== Other Middleware Groups
         'horizon' => [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
@@ -247,34 +247,33 @@ class Kernel extends HttpKernel
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
-            'auth:broadcasting'
+            'auth:broadcasting',
         ],
-
 
     ];
 
     protected $routeMiddleware = [
-        'auth'                   => Authenticate::class,
-        'retina-auth'            => RetinaAuthenticate::class,
-        'cornea-auth'            => CorneaAuthenticate::class,
-        'iris-relax-auth'        => IrisRelaxAuthenticate::class, // Everybody can access, but we have user data if logged in
-        'auth.basic'             => AuthenticateWithBasicAuth::class,
-        'auth.session'           => AuthenticateSession::class,
-        'cache.headers'          => SetCacheHeaders::class,
-        'can'                    => Authorize::class,
-        'guest'                  => RedirectIfAuthenticated::class,
-        'password.confirm'       => RequirePassword::class,
-        'signed'                 => ValidateSignature::class,
-        'throttle'               => ThrottleRequests::class,
-        'verified'               => EnsureEmailIsVerified::class,
-        'inertia'                => HandleInertiaGrpRequests::class,
-        'bind_group'             => ApiBindGroupInstance::class,
-        'grp-reset-pass'         => ResetUserPasswordMiddleware::class,
-        'retina-reset-pass'      => ResetWebUserPasswordMiddleware::class,
+        'auth' => Authenticate::class,
+        'retina-auth' => RetinaAuthenticate::class,
+        'cornea-auth' => CorneaAuthenticate::class,
+        'iris-relax-auth' => IrisRelaxAuthenticate::class, // Everybody can access, but we have user data if logged in
+        'auth.basic' => AuthenticateWithBasicAuth::class,
+        'auth.session' => AuthenticateSession::class,
+        'cache.headers' => SetCacheHeaders::class,
+        'can' => Authorize::class,
+        'guest' => RedirectIfAuthenticated::class,
+        'password.confirm' => RequirePassword::class,
+        'signed' => ValidateSignature::class,
+        'throttle' => ThrottleRequests::class,
+        'verified' => EnsureEmailIsVerified::class,
+        'inertia' => HandleInertiaGrpRequests::class,
+        'bind_group' => ApiBindGroupInstance::class,
+        'grp-reset-pass' => ResetUserPasswordMiddleware::class,
+        'retina-reset-pass' => ResetWebUserPasswordMiddleware::class,
         'retina-prepare-account' => RetinaPreparingAccount::class,
-        'abilities'              => CheckAbilities::class,
-        'ability'                => CheckForAnyAbility::class,
+        'abilities' => CheckAbilities::class,
+        'ability' => CheckForAnyAbility::class,
         'verify.shopify.webhook' => VerifyShopifyWebhook::class,
-        'treblle'                => TreblleMiddleware::class,
+        'treblle' => TreblleMiddleware::class,
     ];
 }

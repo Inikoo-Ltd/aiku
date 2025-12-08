@@ -17,11 +17,11 @@ enum StoredItemTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
-    case PALLETS  = 'pallets';
-    case MOVEMENTS  = 'movements';
-    case AUDITS  = 'audits';
+    case PALLETS = 'pallets';
+    case MOVEMENTS = 'movements';
+    case AUDITS = 'audits';
 
-    case DATA    = 'data';
+    case DATA = 'data';
     case HISTORY = 'history';
 
     public function blueprint(): array
@@ -29,30 +29,30 @@ enum StoredItemTabsEnum: string
         return match ($this) {
             StoredItemTabsEnum::SHOWCASE => [
                 'title' => __('Stored item'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
             StoredItemTabsEnum::PALLETS => [
                 'title' => __('Pallets'),
-                'icon'  => 'fal fa-pallet',
+                'icon' => 'fal fa-pallet',
             ],
             StoredItemTabsEnum::MOVEMENTS => [
                 'title' => __('Movements'),
-                'icon'  => 'fal fa-exchange',
+                'icon' => 'fal fa-exchange',
             ],
             StoredItemTabsEnum::AUDITS => [
                 'title' => __('Audits'),
-                'icon'  => 'fal fa-ballot-check',
+                'icon' => 'fal fa-ballot-check',
             ],
             StoredItemTabsEnum::DATA => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('Data'),
-                'icon'  => 'fal fa-database',
+                'icon' => 'fal fa-database',
             ],
             StoredItemTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
         };

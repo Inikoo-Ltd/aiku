@@ -16,9 +16,8 @@ enum ChargeTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE      = 'showcase';
-    case HISTORY       = 'history';
-
+    case SHOWCASE = 'showcase';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
@@ -26,13 +25,13 @@ enum ChargeTabsEnum: string
 
             ChargeTabsEnum::SHOWCASE => [
                 'title' => __('Details'),
-                'icon'  => 'fal fa-shopping-cart',
+                'icon' => 'fal fa-shopping-cart',
             ],
             ChargeTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
-                'align' => 'right'
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ],
         };
     }

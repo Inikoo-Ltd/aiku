@@ -24,76 +24,75 @@ class CreateGuest extends InertiaAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('New guest'),
-                'pageHead'    => [
-                    'title'   => __('New guest'),
+                'title' => __('New guest'),
+                'pageHead' => [
+                    'title' => __('New guest'),
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.sysadmin.guests.index',
-                                'parameters' => []
+                                'name' => 'grp.sysadmin.guests.index',
+                                'parameters' => [],
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => [
                         [
                             'title' => __('Credentials'),
 
                             'fields' => [
                                 'user.username' => [
-                                    'type'     => 'input',
-                                    'label'    => __('username'),
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('username'),
+                                    'required' => true,
                                 ],
                                 'user.password' => [
-                                    'type'     => 'password',
-                                    'label'    => __('password'),
-                                    'required' => true
+                                    'type' => 'password',
+                                    'label' => __('password'),
+                                    'required' => true,
                                 ],
 
                             ],
 
                         ],
                         [
-                            'title'  => __('personal information'),
+                            'title' => __('personal information'),
                             'fields' => [
                                 'company_name' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('company'),
                                     'value' => '',
                                 ],
                                 'contact_name' => [
-                                    'type'     => 'input',
-                                    'label'    => __('name'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('name'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
-                                'phone'        => [
-                                    'type'  => 'phone',
+                                'phone' => [
+                                    'type' => 'phone',
                                     'label' => __('phone'),
-                                    'value' => ''
+                                    'value' => '',
                                 ],
-                                'email'        => [
-                                    'type'  => 'input',
+                                'email' => [
+                                    'type' => 'input',
                                     'label' => __('email'),
-                                    'value' => ''
+                                    'value' => '',
                                 ],
-                            ]
+                            ],
                         ],
 
                     ],
-                    'route'     => [
+                    'route' => [
                         'name' => 'grp.models.guest.store',
 
-                    ]
+                    ],
 
                 ],
-
 
             ]
         );
@@ -103,7 +102,6 @@ class CreateGuest extends InertiaAction
     {
         return $request->user()->authTo('sysadmin.users.edit');
     }
-
 
     /**
      * @throws \Exception
@@ -121,11 +119,11 @@ class CreateGuest extends InertiaAction
             IndexGuests::make()->getBreadcrumbs('grp.sysadmin.guests.index'),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating guest'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

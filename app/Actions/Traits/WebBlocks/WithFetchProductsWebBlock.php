@@ -14,7 +14,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 trait WithFetchProductsWebBlock
 {
     use AsAction;
-    public function processProductsData($auroraBlock): array|null
+
+    public function processProductsData($auroraBlock): ?array
     {
         return null;
     }

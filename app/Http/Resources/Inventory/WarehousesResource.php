@@ -24,14 +24,14 @@ class WarehousesResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'                   => $this->slug,
-            'code'                   => $this->code,
-            'name'                   => $this->name,
-            'number_locations'       => $this->number_locations,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'number_locations' => $this->number_locations,
             'number_warehouse_areas' => $this->number_warehouse_areas,
-            'state_icon'             => $this->state->stateIcon()[$this->state->value],
-            'organisation_name'      => $this->organisation_name,
-            'organisation_slug'      => $this->organisation_slug,
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
+            'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
         ];
     }
 }

@@ -212,9 +212,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Catalogue\ProductCategory $productCategory
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingIntervals query()
+ *
  * @mixin \Eloquent
  */
 class ProductCategoryOrderingIntervals extends Model

@@ -30,12 +30,12 @@ class ProductCategoriesResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'               => $this->id,
-            'slug'               => $this->slug,
-            'code'               => $this->code,
-            'name'               => $this->name,
-            'description'       => $this->description,
-            'type'              => $this->type,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'description' => $this->description,
+            'type' => $this->type,
         ];
     }
 }

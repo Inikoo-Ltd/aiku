@@ -2,14 +2,14 @@
 
 namespace App\Models\CRM\Livechat;
 
-use App\Models\Helpers\Media;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Models\Helpers\Media;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property-read \App\Models\CRM\Livechat\ChatSession|null $chatSession
  * @property-read Media|null $media
  * @property-read Model|\Eloquent|null $sender
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage fromSenderType(\App\Enums\CRM\Livechat\ChatSenderTypeEnum $senderType)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newQuery()
@@ -37,6 +38,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage unread()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class ChatMessage extends Model
@@ -59,91 +61,77 @@ class ChatMessage extends Model
 
     protected $guarded = [];
 
-
     public function chatSession(): BelongsTo
     {
         return $this->belongsTo(ChatSession::class);
     }
-
 
     public function media(): BelongsTo
     {
         return $this->belongsTo(Media::class);
     }
 
-
     public function sender(): MorphTo
     {
         return $this->morphTo();
     }
 
-
     public function markAsDelivered(): void
     {
-        if (!$this->delivered_at) {
+        if (! $this->delivered_at) {
             $this->update(['delivered_at' => now()]);
         }
     }
 
-
     public function markAsRead(): void
     {
-        if (!$this->is_read) {
+        if (! $this->is_read) {
             $this->update([
                 'is_read' => true,
-                'read_at' => now()
+                'read_at' => now(),
             ]);
         }
     }
-
 
     public function isFromUser(): bool
     {
         return $this->sender_type === ChatSenderTypeEnum::USER;
     }
 
-
     public function isFromAgent(): bool
     {
         return $this->sender_type === ChatSenderTypeEnum::AGENT;
     }
-
 
     public function isFromAI(): bool
     {
         return $this->sender_type === ChatSenderTypeEnum::AI;
     }
 
-
     public function isText(): bool
     {
         return $this->message_type === ChatMessageTypeEnum::TEXT;
     }
-
 
     public function isImage(): bool
     {
         return $this->message_type === ChatMessageTypeEnum::IMAGE;
     }
 
-
     public function isFile(): bool
     {
         return $this->message_type === ChatMessageTypeEnum::FILE;
     }
-
 
     public function scopeUnread($query)
     {
         return $query->where('is_read', false);
     }
 
-
     public function scopeFromSenderType($query, ChatSenderTypeEnum $senderType)
     {
         return $query->where('sender_type', $senderType);
     }
-
 
     public function scopeTextMessages($query)
     {

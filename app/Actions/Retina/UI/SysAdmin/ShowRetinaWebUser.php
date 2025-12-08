@@ -28,7 +28,6 @@ class ShowRetinaWebUser extends RetinaAction
         return $request->user()->is_root;
     }
 
-
     public function asController(WebUser $webUser, ActionRequest $request): WebUser
     {
         $this->initialisation($request);
@@ -43,45 +42,43 @@ class ShowRetinaWebUser extends RetinaAction
         return Inertia::render(
             'SysAdmin/RetinaWebUser',
             [
-                'title'       => __('User').': '.$webUser->username,
+                'title' => __('User').': '.$webUser->username,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'           => [
+                'navigation' => [
                     'previous' => $this->getPrevious($webUser, $request),
-                    'next'     => $this->getNext($webUser, $request),
+                    'next' => $this->getNext($webUser, $request),
                 ],
-                'pageHead'    => [
-                    //'model'         => $model,
-                    'title'     => $webUser->username,
-                    'icon'      => 'fal fa-user-circle',
-                    'noCapitalise'  => true,
+                'pageHead' => [
+                    // 'model'         => $model,
+                    'title' => $webUser->username,
+                    'icon' => 'fal fa-user-circle',
+                    'noCapitalise' => true,
                     'iconRight' => $iconRight,
-                    'actions'   => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
+                                'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
                         ],
 
                     ],
 
                 ],
-                'data'        => new WebUserResource($webUser)
+                'data' => new WebUserResource($webUser),
             ]
         );
     }
-
 
     public function jsonResponse(WebUser $webUser): WebUserResource
     {
         return new WebUserResource($webUser);
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
     {
@@ -89,11 +86,11 @@ class ShowRetinaWebUser extends RetinaAction
             return [
                 [
 
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Users')
+                            'label' => __('Users'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -101,7 +98,7 @@ class ShowRetinaWebUser extends RetinaAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
 
                 ],
             ];
@@ -110,20 +107,19 @@ class ShowRetinaWebUser extends RetinaAction
         $webUser = WebUser::where('slug', $routeParameters['webUser'])->first();
 
         return match ($routeName) {
-            'retina.sysadmin.web-users.show' =>
-            array_merge(
+            'retina.sysadmin.web-users.show' => array_merge(
                 ShowRetinaFulfilmentSysAdminDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     $webUser,
                     [
                         'index' => [
-                            'name'       => 'retina.sysadmin.web-users.index',
-                            'parameters' => $routeParameters
+                            'name' => 'retina.sysadmin.web-users.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'retina.sysadmin.web-users.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'retina.sysadmin.web-users.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 ),
@@ -152,7 +148,7 @@ class ShowRetinaWebUser extends RetinaAction
 
     private function getNavigation(?WebUser $webUser, string $routeName): ?array
     {
-        if (!$webUser) {
+        if (! $webUser) {
             return null;
         }
 
@@ -160,15 +156,13 @@ class ShowRetinaWebUser extends RetinaAction
             'retina.sysadmin.web-users.show' => [
                 'label' => $webUser->username,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'webUser' => $webUser->slug,
-                    ]
+                    ],
 
-                ]
+                ],
             ],
         };
     }
-
-
 }

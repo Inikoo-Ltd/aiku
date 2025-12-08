@@ -43,6 +43,7 @@ class WorkshopFamiliesResource extends JsonResource
         } elseif (is_array($this->web_images)) {
             $webImages = $this->web_images;
         }
+
         return [
             'id' => $this->id,
             'slug' => $this->slug,

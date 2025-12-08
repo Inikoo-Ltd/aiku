@@ -13,7 +13,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -39,7 +40,6 @@ return new class () extends Migration {
             $table->string('exit_status')->default(EmailPushExitStatusEnum::IN_PROCESS->value)->index();
             $table->string('exit_breakpoint')->nullable()->index();
 
-
             $table->jsonb('data');
             $table->timestampsTz();
 
@@ -49,7 +49,6 @@ return new class () extends Migration {
             $table->index(['recipient_type', 'recipient_id']);
         });
     }
-
 
     public function down(): void
     {

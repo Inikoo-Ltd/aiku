@@ -60,6 +60,4 @@ class GroupHydrateCollections implements ShouldBeUnique
 
         $group->catalogueStats()->update($stats);
     }
-
-
 }

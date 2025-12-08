@@ -33,12 +33,14 @@ class DeleteAgent extends GrpAction
         if ($this->asAction) {
             return true;
         }
-        return $request->user()->authTo("procurement.edit");
+
+        return $request->user()->authTo('procurement.edit');
     }
 
     public function action(Agent $agent): Agent
     {
         $this->asAction = true;
+
         return $this->handle($agent);
     }
 
@@ -53,5 +55,4 @@ class DeleteAgent extends GrpAction
     {
         return Redirect::route('grp.supply-chain.agents.index');
     }
-
 }

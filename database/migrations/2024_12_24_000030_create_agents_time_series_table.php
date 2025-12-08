@@ -11,8 +11,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasTimeSeries;
+
     public function up(): void
     {
         Schema::create('agent_time_series', function (Blueprint $table) {
@@ -22,7 +24,6 @@ return new class () extends Migration {
             $this->getTimeSeriesFields($table);
         });
     }
-
 
     public function down(): void
     {

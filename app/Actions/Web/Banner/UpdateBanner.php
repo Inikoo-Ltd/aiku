@@ -20,8 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateBanner extends OrgAction
 {
-    use WithWebEditAuthorisation;
     use WithActionUpdate;
+    use WithWebEditAuthorisation;
 
     public function handle(Banner $banner, array $modelData): Banner
     {
@@ -32,14 +32,12 @@ class UpdateBanner extends OrgAction
         return $banner;
     }
 
-
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'required','string','max:255']
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
         ];
     }
-
 
     public function asController(Shop $shop, Website $website, Banner $banner, ActionRequest $request): Banner
     {

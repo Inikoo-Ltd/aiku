@@ -24,30 +24,29 @@ Route::prefix('{warehouse}')
         Route::name('show')
             ->group(function () {
 
-
                 Route::prefix('inventory')->name('.inventory.')
-                    ->group(__DIR__."/inventory.php");
+                    ->group(__DIR__.'/inventory.php');
 
                 Route::prefix('incoming')->name('.incoming.')
-                    ->group(__DIR__."/incoming.php");
+                    ->group(__DIR__.'/incoming.php');
 
                 Route::prefix('dispatching')->name('.dispatching.')
-                    ->group(__DIR__."/dispatching.php");
+                    ->group(__DIR__.'/dispatching.php');
 
                 Route::prefix('agent-inventory')->name('.agent_inventory.')
-                    ->group(__DIR__."/agent_inventory.php");
+                    ->group(__DIR__.'/agent_inventory.php');
 
                 Route::prefix('agent-incoming')->name('.agent_incoming.')
-                    ->group(__DIR__."/agent_incoming.php");
+                    ->group(__DIR__.'/agent_incoming.php');
 
                 Route::prefix('agent-dispatching')->name('.agent_dispatching.')
-                    ->group(__DIR__."/agent_dispatching.php");
+                    ->group(__DIR__.'/agent_dispatching.php');
 
                 Route::name('.infrastructure.')
-                    ->group(__DIR__."/infrastructure.php");
+                    ->group(__DIR__.'/infrastructure.php');
 
                 Route::prefix('fulfilment')->name('.fulfilment.')
-                    ->group(__DIR__."/fulfilment.php");
+                    ->group(__DIR__.'/fulfilment.php');
 
             });
     });

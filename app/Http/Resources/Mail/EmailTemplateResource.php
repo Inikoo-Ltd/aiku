@@ -16,24 +16,23 @@ class EmailTemplateResource extends JsonResource
 {
     use HasSelfCall;
 
-
     public function toArray($request): array
     {
         /** @var \App\Models\Comms\EmailTemplate $emailTemplate */
         $emailTemplate = $this;
 
-        $image          = null;
+        $image = null;
         $imageThumbnail = null;
         if ($emailTemplate->screenshot) {
-            $image          = $emailTemplate->screenshot->getImage();
+            $image = $emailTemplate->screenshot->getImage();
             $imageThumbnail = $emailTemplate->screenshot->getImage()->resize(0, 200);
         }
 
         return [
-            'id'              => $emailTemplate->id,
-            'slug'            => $emailTemplate->slug,
-            'title'           => $emailTemplate->name,
-            'image'           => $image ? GetPictureSources::run($image) : null,
+            'id' => $emailTemplate->id,
+            'slug' => $emailTemplate->slug,
+            'title' => $emailTemplate->name,
+            'image' => $image ? GetPictureSources::run($image) : null,
             'image_thumbnail' => $imageThumbnail ? GetPictureSources::run($imageThumbnail) : null,
         ];
     }

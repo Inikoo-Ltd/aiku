@@ -51,7 +51,7 @@ class HydrateModels extends HydrateModel
             $this->hydrateCatalogue($command);
         }
 
-        if ($this->checkIfCanHydrate(['billables', 'bil','bill'], $command)) {
+        if ($this->checkIfCanHydrate(['billables', 'bil', 'bill'], $command)) {
             $this->hydrateBillables($command);
         }
 
@@ -109,10 +109,9 @@ class HydrateModels extends HydrateModel
         /** @var Shop $shop */
         foreach (Shop::where('type', ShopTypeEnum::DROPSHIPPING)->get() as $shop) {
             $command->call('hydrate:shops', [
-                '-s' => $shop->slug
+                '-s' => $shop->slug,
             ]);
         }
-
 
         $command->call('hydrate:platforms');
         $command->call('hydrate:customer_sales_channels');
@@ -122,7 +121,7 @@ class HydrateModels extends HydrateModel
         /** @var Shop $shop */
         foreach (Shop::where('type', ShopTypeEnum::DROPSHIPPING)->get() as $shop) {
             $command->call('hydrate:customers', [
-                '-S' => $shop->slug
+                '-S' => $shop->slug,
             ]);
         }
     }
@@ -190,7 +189,7 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:mailshots');
         foreach (Shop::all() as $shop) {
             $command->call('hydrate:mailshots', [
-                '-s' => $shop->slug
+                '-s' => $shop->slug,
             ]);
         }
     }
@@ -289,11 +288,11 @@ class HydrateModels extends HydrateModel
         /** @var Shop $shop */
         foreach (Shop::where('type', ShopTypeEnum::FULFILMENT)->get() as $shop) {
             $command->call('hydrate:shops', [
-                '-s' => $shop->slug
+                '-s' => $shop->slug,
             ]);
 
             $command->call('hydrate:customers', [
-                '-S' => $shop->slug
+                '-S' => $shop->slug,
             ]);
         }
     }
@@ -312,5 +311,4 @@ class HydrateModels extends HydrateModel
 
         return false;
     }
-
 }

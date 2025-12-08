@@ -21,20 +21,16 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdatePurchaseOrderStateToConfirmed extends OrgAction
 {
-    use WithActionUpdate;
     use AsAction;
     use HasPurchaseOrderHydrators;
+    use WithActionUpdate;
 
-
-    /**
-     * @var \App\Models\Procurement\PurchaseOrder
-     */
     private PurchaseOrder $purchaseOrder;
 
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
         $data = [
-            'state' => PurchaseOrderStateEnum::CONFIRMED
+            'state' => PurchaseOrderStateEnum::CONFIRMED,
         ];
 
         $purchaseOrder->purchaseOrderTransactions()->update($data);
@@ -59,21 +55,19 @@ class UpdatePurchaseOrderStateToConfirmed extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!in_array($this->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED])) {
+        if (! in_array($this->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED])) {
             $validator->errors()->add('state', __('Purchase order can only be confirmed if it is submitted'));
         }
     }
 
-
     public function action(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
-        $this->asAction      = true;
+        $this->asAction = true;
         $this->purchaseOrder = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, []);
 
         return $this->handle($purchaseOrder);
     }
-
 
     public function asController(PurchaseOrder $purchaseOrder): PurchaseOrder
     {

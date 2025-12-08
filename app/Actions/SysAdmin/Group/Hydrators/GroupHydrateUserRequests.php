@@ -19,7 +19,6 @@ class GroupHydrateUserRequests implements ShouldBeUnique
 {
     use AsAction;
 
-
     public string $jobQueue = 'analytics';
 
     public function getJobUniqueId(Group $group): string
@@ -32,6 +31,4 @@ class GroupHydrateUserRequests implements ShouldBeUnique
         $stats['number_user_requests'] = DB::table('user_requests')->where('group_id', $group->id)->count();
         $group->sysadminStats->update($stats);
     }
-
-
 }

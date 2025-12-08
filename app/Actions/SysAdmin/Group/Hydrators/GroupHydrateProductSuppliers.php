@@ -28,17 +28,16 @@ class GroupHydrateProductSuppliers implements ShouldBeUnique
     {
         $stats = [
 
-            'number_supplier_products'                                => SupplierProduct::count(),
-            'number_current_supplier_products'                        => SupplierProduct::whereIn(
+            'number_supplier_products' => SupplierProduct::count(),
+            'number_current_supplier_products' => SupplierProduct::whereIn(
                 'supplier_products.state',
                 [
                     SupplierProductStateEnum::ACTIVE,
-                    SupplierProductStateEnum::DISCONTINUING
+                    SupplierProductStateEnum::DISCONTINUING,
                 ]
             )
                 ->count(),
         ];
-
 
         $stateCounts = SupplierProduct::selectRaw('state, count(*) as total')
             ->groupBy('state')
@@ -47,10 +46,6 @@ class GroupHydrateProductSuppliers implements ShouldBeUnique
             $stats['number_supplier_products_state_'.$productState->snake()] = Arr::get($stateCounts, $productState->value, 0);
         }
 
-
-
         $group->supplyChainStats()->update($stats);
     }
-
-
 }

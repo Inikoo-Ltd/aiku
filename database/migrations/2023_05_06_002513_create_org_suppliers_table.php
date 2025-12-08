@@ -11,8 +11,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
+
     public function up(): void
     {
         Schema::create('org_suppliers', function (Blueprint $table) {
@@ -30,10 +32,9 @@ return new class () extends Migration {
             $table->foreign('image_id')->references('id')->on('media')->onDelete('cascade');
             $table->timestampsTz();
             $table->string('source_id')->index()->nullable();
-            $table->unique(['group_id','organisation_id','supplier_id']);
+            $table->unique(['group_id', 'organisation_id', 'supplier_id']);
         });
     }
-
 
     public function down(): void
     {

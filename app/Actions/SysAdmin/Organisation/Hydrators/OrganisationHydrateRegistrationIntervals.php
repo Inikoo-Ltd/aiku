@@ -24,6 +24,7 @@ class OrganisationHydrateRegistrationIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
 
     public string $jobQueue = 'urgent';
+
     public string $commandSignature = 'hydrate:organisation-registration-intervals {organisation}';
 
     public function getJobUniqueId(int $organisationId, ?array $intervals = null, ?array $doPreviousPeriods = null): string
@@ -43,14 +44,14 @@ class OrganisationHydrateRegistrationIntervals implements ShouldBeUnique
     public function handle(int $organisationId, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
         $organisation = Organisation::find($organisationId);
-        if (!$organisation) {
+        if (! $organisation) {
             return;
         }
 
         $stats = [];
 
         $queryBase = Customer::where('organisation_id', $organisation->id)->selectRaw('count(*) as  sum_aggregate');
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'registrations_',
@@ -87,6 +88,4 @@ class OrganisationHydrateRegistrationIntervals implements ShouldBeUnique
 
         $organisation->orderingIntervals()->update($stats);
     }
-
-
 }

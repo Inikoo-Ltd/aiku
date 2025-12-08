@@ -38,6 +38,7 @@ class FetchAuroraTopUps extends FetchAuroraAction
                     $this->recordChange($organisationSource, $topUp->wasChanged());
                 } catch (Exception $e) {
                     $this->recordError($organisationSource, $e, $topUpData['topUp'], 'TopUp', 'update');
+
                     return null;
                 }
             } else {
@@ -65,10 +66,10 @@ class FetchAuroraTopUps extends FetchAuroraAction
                         ->update(['aiku_id' => $topUp->id]);
                 } catch (Exception|Throwable $e) {
                     $this->recordError($organisationSource, $e, $topUpData['topUp'], 'TopUp', 'store');
+
                     return null;
                 }
             }
-
 
             return $topUp;
         }
@@ -83,7 +84,6 @@ class FetchAuroraTopUps extends FetchAuroraAction
             ->select('Top Up Key as source_id')
             ->orderBy('source_id');
     }
-
 
     public function count(): ?int
     {

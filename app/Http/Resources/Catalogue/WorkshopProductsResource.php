@@ -27,23 +27,23 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $shop_name
  * @property mixed $department_code
  * @property mixed $department_name
- *
  */
 class WorkshopProductsResource extends JsonResource
 {
     public function toArray($request): array
     {
         $product = Product::find($this->id);
+
         return [
-            'id'                 => $this->id,
-            'name'               => $this->name,
-            'slug'               => $this->slug,
-            'image'              => $product->imageSources(720, 480),
-            'code'              => $this->code,
-            'description'       => $this->description,
-            'created_at'        => $this->created_at,
-            'updated_at'        => $this->updated_at,
-            'contents'          => ModelHasContentsResource::collection($this->contents())->resolve(),
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'image' => $product->imageSources(720, 480),
+            'code' => $this->code,
+            'description' => $this->description,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'contents' => ModelHasContentsResource::collection($this->contents())->resolve(),
         ];
     }
 }

@@ -78,6 +78,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SupplyChain\Supplier|null $supplier
  * @property-read Collection<int, TradeUnit> $tradeUnits
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\SupplyChain\SupplierProductFactory factory($count = null, $state = [])
  * @method static Builder<static>|SupplierProduct newModelQuery()
  * @method static Builder<static>|SupplierProduct newQuery()
@@ -85,33 +86,34 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|SupplierProduct query()
  * @method static Builder<static>|SupplierProduct withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|SupplierProduct withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class SupplierProduct extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
     use InGroup;
+    use SoftDeletes;
 
     protected $casts = [
-        'cost'                   => 'decimal:4',
-        'data'                   => 'array',
-        'settings'               => 'array',
-        'sources'                => 'array',
-        'status'                 => 'boolean',
-        'state'                  => SupplierProductStateEnum::class,
+        'cost' => 'decimal:4',
+        'data' => 'array',
+        'settings' => 'array',
+        'sources' => 'array',
+        'status' => 'boolean',
+        'state' => SupplierProductStateEnum::class,
         'trade_unit_composition' => SupplierProductTradeUnitCompositionEnum::class,
-        'fetched_at'             => 'datetime',
-        'last_fetched_at'        => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
-        'sources'  => '{}',
+        'sources' => '{}',
     ];
 
     protected $guarded = [];
@@ -132,7 +134,7 @@ class SupplierProduct extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'supply-chain'
+            'supply-chain',
         ];
     }
 
@@ -171,7 +173,6 @@ class SupplierProduct extends Model implements Auditable
     {
         return $this->belongsTo(Agent::class);
     }
-
 
     public function tradeUnits(): MorphToMany
     {

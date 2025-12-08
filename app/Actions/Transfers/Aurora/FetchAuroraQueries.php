@@ -24,7 +24,6 @@ class FetchAuroraQueries extends FetchAuroraAction
 
     public string $commandSignature = 'fetch:queries {organisations?*} {--s|source_id=} {--N|only_new : Fetch only new} {--d|db_suffix=}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Query
     {
 
@@ -70,8 +69,6 @@ class FetchAuroraQueries extends FetchAuroraAction
             }
         }
 
-
-
         if ($query && $query->is_static) {
             $sourceData = explode(':', $query->source_id);
             foreach (
@@ -81,21 +78,16 @@ class FetchAuroraQueries extends FetchAuroraAction
                     ->get() as $eventData
             ) {
 
-
-
                 $customer = $this->parseCustomer($this->organisationSource->getOrganisation()->id.':'.$eventData->{'Customer Key'});
                 if ($customer) {
                     $query->customers()->attach($customer->id);
                 }
 
-
             }
         }
 
-
         return $query;
     }
-
 
     public function getModelsQuery(): Builder
     {

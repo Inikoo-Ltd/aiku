@@ -52,6 +52,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SupplyChain\Supplier $supplier
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\SupplyChain\SupplierUserFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser newQuery()
@@ -59,23 +60,24 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser withoutTrashed()
+ *
  * @mixin \Eloquent
  */
-class SupplierUser extends Authenticatable implements HasMedia, Auditable
+class SupplierUser extends Authenticatable implements Auditable, HasMedia
 {
-    use IsUserable;
+    use HasFactory;
     use HasImage;
     use InGroup;
-    use HasFactory;
+    use IsUserable;
 
     protected $casts = [
-        'data'            => 'array',
-        'settings'        => 'array',
-        'status'          => 'boolean',
+        'data' => 'array',
+        'settings' => 'array',
+        'status' => 'boolean',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 
@@ -85,7 +87,7 @@ class SupplierUser extends Authenticatable implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'supply-chain'
+            'supply-chain',
         ];
     }
 
@@ -126,6 +128,4 @@ class SupplierUser extends Authenticatable implements HasMedia, Auditable
     {
         return $this->hasOne(SupplierUserStats::class);
     }
-
-
 }

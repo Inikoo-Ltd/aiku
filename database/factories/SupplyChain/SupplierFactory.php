@@ -19,15 +19,15 @@ class SupplierFactory extends Factory
         $currency = Currency::where('code', 'USD')->firstOrFail();
 
         return [
-            'code'         => fake()->lexify(),
-            'name'         => fake()->name,
+            'code' => fake()->lexify(),
+            'name' => fake()->name,
             'company_name' => fake()->company,
             'contact_name' => fake()->name,
-            'email'        => fake()->email,
-            'currency_id'  => $currency->id,
-            'address'      => Address::factory()->definition(),
-            'scope_type'   => 'Group',
-            'scope_id'     => 1
+            'email' => fake()->email,
+            'currency_id' => $currency->id,
+            'address' => Address::factory()->definition(),
+            'scope_type' => 'Group',
+            'scope_id' => 1,
         ];
     }
 }

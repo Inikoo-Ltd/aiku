@@ -29,22 +29,22 @@ class ServicesResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                => $this->id,
-            'asset_id'          => $this->asset_id,
-            'state_icon'        => $this->state->stateIcon()[$this->state->value],
-            'slug'              => $this->slug,
-            'name'              => $this->name,
-            'code'              => $this->code,
-            'price'             => $this->price,
-            'agreed_price'      => $this->agreed_price ?? $this->price,
-            'percentage_off'    => 0,
-            'unit'              => $this->unit,
+            'id' => $this->id,
+            'asset_id' => $this->asset_id,
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'code' => $this->code,
+            'price' => $this->price,
+            'agreed_price' => $this->agreed_price ?? $this->price,
+            'percentage_off' => 0,
+            'unit' => $this->unit,
             'unit_abbreviation' => Abbreviate::run($this->unit),
-            'currency_code'     => $this->currency_code,
+            'currency_code' => $this->currency_code,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
-            'shop_name'         => $this->shop_name,
-            'shop_slug'         => $this->shop_slug,
+            'shop_name' => $this->shop_name,
+            'shop_slug' => $this->shop_slug,
         ];
     }
 }

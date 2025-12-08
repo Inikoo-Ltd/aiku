@@ -22,7 +22,7 @@ class FetchAuroraTransactionHasOfferComponent extends FetchAurora
 
         $transaction = $this->parseTransaction($this->organisation->id.':'.$this->auroraModelData->{'Order Transaction Fact Key'});
 
-        if (!$transaction) {
+        if (! $transaction) {
             return;
         }
 
@@ -33,20 +33,18 @@ class FetchAuroraTransactionHasOfferComponent extends FetchAurora
         }
 
         $data = [];
-        if (!$offerAllowance) {
-            $data           = [
-                'fetch_error'      => true,
+        if (! $offerAllowance) {
+            $data = [
+                'fetch_error' => true,
                 'fetch_error_data' => [
                     'aurora_deal_component_key' => $this->auroraModelData->{'Deal Component Key'},
-                ]
+                ],
             ];
             $offerAllowance = $order->shop->offerAllowances()->where('is_discretionary', true)->first();
         }
 
-
-        $this->parsedData['transaction']     = $transaction;
+        $this->parsedData['transaction'] = $transaction;
         $this->parsedData['offer_allowance'] = $offerAllowance;
-
 
         $fractionDiscount = $this->auroraModelData->{'Fraction Discount'};
         if ($fractionDiscount > 1) {
@@ -57,27 +55,26 @@ class FetchAuroraTransactionHasOfferComponent extends FetchAurora
         }
 
         $this->parsedData['transaction_has_offer_component'] = [
-            'source_id'          => $this->organisation->id.':'.$this->auroraModelData->{'Order Transaction Deal Key'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Order Transaction Deal Key'},
             'offer_allowance_id' => $offerAllowance->id,
-            'discounted_amount'  => $this->auroraModelData->{'Amount Discount'},
-            'info'               => $this->auroraModelData->{'Deal Info'},
-            'is_pinned'          => $this->auroraModelData->{'Order Transaction Deal Pinned'} == 'Yes',
-            'fetched_at'         => now(),
-            'last_fetched_at'    => now(),
-            'data'               => $data,
+            'discounted_amount' => $this->auroraModelData->{'Amount Discount'},
+            'info' => $this->auroraModelData->{'Deal Info'},
+            'is_pinned' => $this->auroraModelData->{'Order Transaction Deal Pinned'} == 'Yes',
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'data' => $data,
         ];
 
         if (isset($fractionDiscount)) {
             $this->parsedData['transaction_has_offer_component']['discounted_amount'] = $fractionDiscount;
         }
 
-        if (!($this->auroraModelData->{'Order Transaction Deal Metadata'} == '' or $this->auroraModelData->{'Order Transaction Deal Metadata'} == '{}')) {
+        if (! ($this->auroraModelData->{'Order Transaction Deal Metadata'} == '' or $this->auroraModelData->{'Order Transaction Deal Metadata'} == '{}')) {
             $this->parsedData['transaction_has_offer_component']['data'] = json_decode($this->auroraModelData->{'Order Transaction Deal Metadata'}, true);
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Order Transaction Deal Bridge')

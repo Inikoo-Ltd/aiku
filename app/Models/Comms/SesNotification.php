@@ -18,9 +18,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SesNotification newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SesNotification newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SesNotification query()
+ *
  * @mixin \Eloquent
  */
 class SesNotification extends Model

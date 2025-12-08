@@ -17,14 +17,17 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * App\Models\Procurement\SupplierProductTradeUnit
  *
  * @property-read \App\Models\SupplyChain\Supplier|null $supplier
+ *
  * @method static Builder<static>|SupplierProductTradeUnit newModelQuery()
  * @method static Builder<static>|SupplierProductTradeUnit newQuery()
  * @method static Builder<static>|SupplierProductTradeUnit query()
+ *
  * @mixin Eloquent
  */
 class SupplierProductTradeUnit extends Pivot
 {
-    protected $table     = 'supplier_product_trade_unit';
+    protected $table = 'supplier_product_trade_unit';
+
     public $incrementing = true;
 
     protected $guarded = [];

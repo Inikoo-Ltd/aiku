@@ -25,7 +25,6 @@ class FetchAuroraWebpages extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:webpages {organisations?*} {--S|shop= : Shop slug} {--A|all= : import non online webpages as well} {--s|source_id=} {--d|db_suffix=} {--w|with=* : Accepted values: web_blocks}  {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Webpage
     {
         if ($webpageData = $organisationSource->fetchWebpage($organisationSourceId)) {
@@ -36,13 +35,13 @@ class FetchAuroraWebpages extends FetchAuroraAction
             $isHone = false;
             if (Arr::get($webpageData, 'is_home_logged_out') || Arr::get($webpageData, 'is_home_logged_in')) {
                 $webpage = $webpageData['website']->storefront;
-                $isHone  = true;
+                $isHone = true;
             } else {
                 $webpage = Webpage::where('source_id', $webpageData['webpage']['source_id'])->first();
             }
 
             if ($webpage) {
-                if (!$webpage->allow_fetch) {
+                if (! $webpage->allow_fetch) {
                     return $webpage;
                 }
                 $shop = $webpage->shop;
@@ -64,7 +63,7 @@ class FetchAuroraWebpages extends FetchAuroraAction
                     if (Arr::get($webpageData, 'is_home_logged_out')) {
                         $migrationData['webpage'] = [];
                         $migrationData['webpage'] = [
-                            'migration_data' => $migrationData
+                            'migration_data' => $migrationData,
                         ];
                     }
                 }
@@ -74,7 +73,6 @@ class FetchAuroraWebpages extends FetchAuroraAction
                     $lastPublishedAt = Carbon::parse($lastPublishedAt);
                 }
 
-
                 $webpage = UpdateWebpage::make()->action(
                     webpage: $webpage,
                     modelData: $webpageData['webpage'],
@@ -83,7 +81,6 @@ class FetchAuroraWebpages extends FetchAuroraAction
                     audit: false
                 );
 
-
                 if (in_array('web_blocks', $this->with)) {
                     FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: false, dbSuffix: $this->dbSuffix);
                     $currentPublishedAt = Arr::get($webpage->migration_data, 'webpage.last_published_at');
@@ -91,7 +88,7 @@ class FetchAuroraWebpages extends FetchAuroraAction
                         $currentPublishedAt = Carbon::parse($currentPublishedAt);
                     }
 
-                    if (!$lastPublishedAt and $currentPublishedAt and $currentPublishedAt->gt($lastPublishedAt)) {
+                    if (! $lastPublishedAt and $currentPublishedAt and $currentPublishedAt->gt($lastPublishedAt)) {
                         PublishWebpage::make()->action(
                             $webpage,
                             [
@@ -106,7 +103,6 @@ class FetchAuroraWebpages extends FetchAuroraAction
                 //
                 //                    return null;
                 //                }
-
 
             } else {
                 if (Arr::get($webpageData, 'is_home_logout')) {
@@ -133,7 +129,6 @@ class FetchAuroraWebpages extends FetchAuroraAction
                             ]
                         );
                     }
-
 
                     $this->saveMigrationHistory(
                         $webpage,
@@ -166,10 +161,8 @@ class FetchAuroraWebpages extends FetchAuroraAction
             ->where('Page Store Dimension.aiku_ignore', 'No')
             ->orderBy('source_id');
 
-
         $query->where('Website Status', 'Active');
         $query->where('Webpage State', 'Online');
-
 
         if ($this->onlyNew) {
             $query->whereNull('Page Store Dimension.aiku_id');
@@ -194,7 +187,6 @@ class FetchAuroraWebpages extends FetchAuroraAction
 
         $query->where('Website Status', 'Active');
         $query->where('Webpage State', 'Online');
-
 
         if ($this->shop) {
             $sourceData = explode(':', $this->shop->source_id);

@@ -140,14 +140,17 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property-read Group|null $group
  * @property-read \App\Models\Accounting\InvoiceCategory $invoiceCategory
  * @property-read Organisation|null $organisation
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryOrderingIntervals query()
+ *
  * @mixin \Eloquent
  */
 class InvoiceCategoryOrderingIntervals extends Model
 {
     protected $table = 'invoice_category_ordering_intervals';
+
     protected $guarded = [];
 
     public function invoiceCategory(): BelongsTo
@@ -178,8 +181,4 @@ class InvoiceCategoryOrderingIntervals extends Model
             'group_id'           // Local key on Shop
         );
     }
-
-
-
-
 }

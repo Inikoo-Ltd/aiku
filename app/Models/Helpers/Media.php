@@ -48,12 +48,14 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media as BaseMedia;
  * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent|null $model
  * @property-read mixed $original_url
  * @property-read mixed $preview_url
+ *
  * @method static \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, static> all($columns = ['*'])
  * @method static \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, static> get($columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Media newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Media newQuery()
  * @method static Builder<static>|Media ordered()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Media query()
+ *
  * @mixin \Eloquent
  */
 class Media extends BaseMedia
@@ -69,14 +71,15 @@ class Media extends BaseMedia
 
     public function getImage(): Image
     {
-        return (new Image())->make($this->getImgProxyFilename(), $this->is_animated);
+        return (new Image)->make($this->getImgProxyFilename(), $this->is_animated);
     }
 
     public function getBase64Image(): string
     {
-        $path   = GetImgProxyUrl::run($this->getImage()
+        $path = GetImgProxyUrl::run($this->getImage()
             ->resize(480, 480));
-        $data   = file_get_contents($path);
+        $data = file_get_contents($path);
+
         return base64_encode($data);
     }
 }

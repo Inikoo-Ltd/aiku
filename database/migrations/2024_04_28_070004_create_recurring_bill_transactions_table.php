@@ -12,7 +12,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
     use HasOrderFields;
 
@@ -38,16 +39,13 @@ return new class () extends Migration {
             $table->decimal('quantity', 16, 3)->default(0);
             $table = $this->orderMoneyFields($table);
 
-
             $table->jsonb('data');
             $table->timestampsTz();
             $table->softDeletesTz();
             $table->string('source_id')->nullable()->index();
         });
 
-
     }
-
 
     public function down(): void
     {

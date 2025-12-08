@@ -19,11 +19,11 @@ class ShopResource extends JsonResource
         $shop = $this;
 
         return [
-            'id'      => $shop->id,
-            'slug'    => $shop->slug,
-            'code'    => $shop->code,
-            'name'    => $shop->name,
-            'state'   => $shop->state,
+            'id' => $shop->id,
+            'slug' => $shop->slug,
+            'code' => $shop->code,
+            'name' => $shop->name,
+            'state' => $shop->state,
             'created' => $shop->created_at,
             'updated' => $shop->updated_at,
             'website' => $shop->website ? WebsitesResource::make($shop->website) : null,

@@ -28,20 +28,20 @@ class EditSupplier extends GrpAction
         return $supplier;
     }
 
-
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
         $group = group();
         $this->initialisation($group, $request);
+
         return $this->handle($supplier);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inAgent(Agent $agent, Supplier $supplier, ActionRequest $request): Supplier
     {
         $group = group();
         $this->initialisation($group, $request);
+
         return $this->handle($supplier);
     }
 
@@ -50,82 +50,82 @@ class EditSupplier extends GrpAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Edit supplier'),
+                'title' => __('Edit supplier'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $supplier,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                              => [
+                'navigation' => [
                     'previous' => $this->getPrevious($supplier, $request),
-                    'next'     => $this->getNext($supplier, $request),
+                    'next' => $this->getNext($supplier, $request),
                 ],
-                'pageHead'    => [
-                    'title'     => $supplier->code,
-                    'actions'   => [
+                'pageHead' => [
+                    'title' => $supplier->code,
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
-                    ]
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
+                    ],
                 ],
 
-                'formData'    => [
+                'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('ID/contact details '),
-                            'icon'   => 'fal fa-address-book',
+                            'title' => __('ID/contact details '),
+                            'icon' => 'fal fa-address-book',
                             'fields' => [
 
-                                'code'         => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => $supplier->code,
+                                'code' => [
+                                    'type' => 'input',
+                                    'label' => __('code'),
+                                    'value' => $supplier->code,
                                     'required' => true,
                                 ],
                                 'company_name' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('company'),
-                                    'value' => $supplier->company_name
+                                    'value' => $supplier->company_name,
                                 ],
                                 'contact_name' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('contact name'),
-                                    'value' => $supplier->contact_name
+                                    'value' => $supplier->contact_name,
                                 ],
                                 'contact_website' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('contact website'),
-                                    'value' => $supplier->contact_website
+                                    'value' => $supplier->contact_website,
                                 ],
-                                'email'        => [
-                                    'type'    => 'input',
-                                    'label'   => __('email'),
-                                    'value'   => $supplier->email,
+                                'email' => [
+                                    'type' => 'input',
+                                    'label' => __('email'),
+                                    'value' => $supplier->email,
                                     'options' => [
-                                        'inputType' => 'email'
-                                    ]
+                                        'inputType' => 'email',
+                                    ],
                                 ],
-                                'phone'        => [
-                                    'type'    => 'phone',
-                                    'label'   => __('phone'),
-                                    'value'   => $supplier->phone,
+                                'phone' => [
+                                    'type' => 'phone',
+                                    'label' => __('phone'),
+                                    'value' => $supplier->phone,
                                 ],
-                                'address'      => [
-                                    'type'    => 'address',
-                                    'label'   => __('Address'),
-                                    'value'   => AddressResource::make($supplier->getAddress('contact'))->getArray(),
+                                'address' => [
+                                    'type' => 'address',
+                                    'label' => __('Address'),
+                                    'value' => AddressResource::make($supplier->getAddress('contact'))->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
+                                        'countriesAddressData' => GetAddressData::run(),
 
-                                    ]
+                                    ],
                                 ],
 
-                            ]
+                            ],
                         ],
 
                         /*
@@ -237,45 +237,43 @@ class EditSupplier extends GrpAction
                         */
 
                         [
-                            'title'  => __('settings '),
-                            'icon'   => 'fa-light fa-cog',
+                            'title' => __('settings '),
+                            'icon' => 'fa-light fa-cog',
                             'fields' => [
                                 'currency_id' => [
-                                    'type'        => 'select',
-                                    'label'       => __('currency'),
+                                    'type' => 'select',
+                                    'label' => __('currency'),
                                     'placeholder' => __('Select a currency'),
-                                    'options'     => GetCurrenciesOptions::run(),
-                                    'value'       => $supplier->currency_id,
-                                    'searchable'  => true,
-                                    'required'    => true,
-                                    'mode'        => 'single'
+                                    'options' => GetCurrenciesOptions::run(),
+                                    'value' => $supplier->currency_id,
+                                    'searchable' => true,
+                                    'required' => true,
+                                    'mode' => 'single',
                                 ],
 
                                 'default_product_country_origin' => [
-                                    'type'        => 'select',
-                                    'label'       => __("Asset's country of origin"),
+                                    'type' => 'select',
+                                    'label' => __("Asset's country of origin"),
                                     'placeholder' => __('Select a country'),
-                                    'value'       => $supplier->code,
-                                    'options'     => GetCountriesOptions::run(),
-                                    'mode'        => 'single'
+                                    'value' => $supplier->code,
+                                    'options' => GetCountriesOptions::run(),
+                                    'mode' => 'single',
                                 ],
-                            ]
-                        ]
-
+                            ],
+                        ],
 
                     ],
                     'args' => [
                         'updateRoute' => [
-                            'name'      => 'grp.models.supplier.update',
-                            'parameters' => $supplier->id
+                            'name' => 'grp.models.supplier.update',
+                            'parameters' => $supplier->id,
 
                         ],
-                    ]
+                    ],
                 ],
             ]
         );
     }
-
 
     public function getBreadcrumbs(Supplier $supplier, string $routeName, array $routeParameters): array
     {
@@ -312,7 +310,7 @@ class EditSupplier extends GrpAction
 
     private function getNavigation(?Supplier $supplier, string $routeName): ?array
     {
-        if (!$supplier) {
+        if (! $supplier) {
             return null;
         }
 
@@ -320,23 +318,23 @@ class EditSupplier extends GrpAction
             'grp.supply-chain.suppliers.edit' => [
                 'label' => $supplier->name,
                 'route' => [
-                    'name'      => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'supplier'  => $supplier->slug
-                    ]
+                        'supplier' => $supplier->slug,
+                    ],
 
-                ]
+                ],
             ],
             'grp.supply-chain.agents.show.suppliers.edit' => [
                 'label' => $supplier->name,
                 'route' => [
-                    'name'      => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'agent'     => $supplier->agent->slug,
-                        'supplier'  => $supplier->slug
-                    ]
+                        'agent' => $supplier->agent->slug,
+                        'supplier' => $supplier->slug,
+                    ],
 
-                ]
+                ],
             ]
         };
     }

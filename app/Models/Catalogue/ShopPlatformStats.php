@@ -55,9 +55,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sales_grp_currency
  * @property-read Platform $platform
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopPlatformStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopPlatformStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopPlatformStats query()
+ *
  * @mixin \Eloquent
  */
 class ShopPlatformStats extends Model

@@ -14,7 +14,6 @@ enum DeliveryNoteItemSalesTypeEnum: string
 {
     use EnumHelperTrait;
 
-
     case B2B = 'b2b';
     case DROPSHIPPING = 'dropshipping';
     case MARKETPLACE = 'marketplace';
@@ -23,17 +22,16 @@ enum DeliveryNoteItemSalesTypeEnum: string
     case VIP = 'vip';
     case NA = 'na';
 
-
     public static function labels(): array
     {
         return [
-            'b2b'          => 'B2B',
+            'b2b' => 'B2B',
             'dropshipping' => 'Dropshipping',
-            'marketplace'  => 'Marketplace',
-            'partner'      => 'Partner',
-            'employee'     => 'Employee',
-            'vip'          => 'VIP',
-            'na'           => 'N/A',
+            'marketplace' => 'Marketplace',
+            'partner' => 'Partner',
+            'employee' => 'Employee',
+            'vip' => 'VIP',
+            'na' => 'N/A',
         ];
     }
 }

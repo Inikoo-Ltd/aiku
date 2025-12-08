@@ -23,8 +23,6 @@ class UpdateGroupSettings extends GrpAction
 {
     use WithActionUpdate;
 
-
-
     public function handle(Group $group, array $modelData): Group
     {
 
@@ -32,10 +30,10 @@ class UpdateGroupSettings extends GrpAction
             /** @var UploadedFile $image */
             $image = Arr::get($modelData, 'logo');
             data_forget($modelData, 'logo');
-            $imageData    = [
-                'path'         => $image->getPathName(),
+            $imageData = [
+                'path' => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
-                'extension'    => $image->getClientOriginalExtension(),
+                'extension' => $image->getClientOriginalExtension(),
             ];
             $group = SaveModelImage::run(
                 model: $group,
@@ -81,23 +79,23 @@ class UpdateGroupSettings extends GrpAction
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit");
+        return $request->user()->authTo('sysadmin.edit');
     }
 
     public function rules(): array
     {
         return [
-            'name'                    => ['sometimes', 'required', 'string', 'max:64'],
-            'logo'                    => [
+            'name' => ['sometimes', 'required', 'string', 'max:64'],
+            'logo' => [
                 'sometimes',
                 'nullable',
                 File::image()
-                    ->max(12 * 1024)
+                    ->max(12 * 1024),
             ],
-            'client_id'                         => ['sometimes', 'string', 'nullable'],
-            'client_secret'                     => ['sometimes', 'string', 'nullable'],
-            'grant_type'                        => ['sometimes', 'string', 'nullable'],
-            'extra_languages'                   => ['sometimes', 'array', 'nullable'],
+            'client_id' => ['sometimes', 'string', 'nullable'],
+            'client_secret' => ['sometimes', 'string', 'nullable'],
+            'grant_type' => ['sometimes', 'string', 'nullable'],
+            'extra_languages' => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
         ];
@@ -108,7 +106,6 @@ class UpdateGroupSettings extends GrpAction
         $this->asAction = true;
         $this->initialisation($group, $modelData);
 
-
         return $this->handle($group, $this->validatedData);
     }
 
@@ -118,7 +115,6 @@ class UpdateGroupSettings extends GrpAction
 
         return $this->handle($this->group, $this->validatedData);
     }
-
 
     public function jsonResponse(Group $group): GroupResource
     {

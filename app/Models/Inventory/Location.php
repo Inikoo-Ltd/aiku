@@ -73,6 +73,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read UniversalSearch|null $universalSearch
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @property-read \App\Models\Inventory\WarehouseArea|null $warehouseArea
+ *
  * @method static \Database\Factories\Inventory\LocationFactory factory($count = null, $state = [])
  * @method static Builder<static>|Location newModelQuery()
  * @method static Builder<static>|Location newQuery()
@@ -80,26 +81,27 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Location query()
  * @method static Builder<static>|Location withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Location withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Location extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
     use InWarehouse;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'               => 'array',
-        'audited_at'         => 'datetime',
-        'status'             => LocationStatusEnum::class,
-        'stock_value'        => 'decimal:2',
-        'max_weight'         => 'decimal:3',
-        'max_volume'         => 'decimal:4',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data' => 'array',
+        'audited_at' => 'datetime',
+        'status' => LocationStatusEnum::class,
+        'stock_value' => 'decimal:2',
+        'max_weight' => 'decimal:3',
+        'max_volume' => 'decimal:4',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -111,7 +113,7 @@ class Location extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'warehouse'
+            'warehouse',
         ];
     }
 
@@ -167,6 +169,4 @@ class Location extends Model implements Auditable
     {
         return $this->belongsToMany(PickingRoute::class, 'picking_route_has_locations');
     }
-
-
 }

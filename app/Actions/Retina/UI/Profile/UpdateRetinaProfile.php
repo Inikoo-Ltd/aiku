@@ -30,12 +30,11 @@ class UpdateRetinaProfile extends RetinaAction
         return UpdateWebUser::run($webUser, $modelData);
     }
 
-
     public function rules(): array
     {
         $rules = [
             'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'        => [
+            'email' => [
                 'sometimes',
                 'required',
                 'email',
@@ -46,14 +45,14 @@ class UpdateRetinaProfile extends RetinaAction
                         ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->webUser->id, 'operator' => '!='],
                     ]
-                )
+                ),
             ],
-            'about'        => 'sometimes|nullable|string|max:255',
-            'image'        => [
+            'about' => 'sometimes|nullable|string|max:255',
+            'image' => [
                 'sometimes',
                 'nullable',
                 File::image()
-                    ->max(12 * 1024)
+                    ->max(12 * 1024),
             ],
 
             'username' => [
@@ -67,26 +66,22 @@ class UpdateRetinaProfile extends RetinaAction
                         ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->webUser->id, 'operator' => '!='],
                     ]
-                )
+                ),
             ],
             'password' => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? Password::min(4) : Password::min(8)],
 
-
             'language_id' => ['sometimes', 'required', 'exists:languages,id'],
-
 
         ];
 
         if ($this->webUser->is_root) {
-            $rules['company_name']    = ['sometimes', 'nullable', 'string', 'max:255'];
-            $rules['phone']           = ['sometimes', 'nullable', new Phone()];
-            $rules['contact_address'] = ['sometimes', 'required', new ValidAddress()];
+            $rules['company_name'] = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['phone'] = ['sometimes', 'nullable', new Phone];
+            $rules['contact_address'] = ['sometimes', 'required', new ValidAddress];
         }
-
 
         return $rules;
     }
-
 
     public function asController(ActionRequest $request): WebUser
     {

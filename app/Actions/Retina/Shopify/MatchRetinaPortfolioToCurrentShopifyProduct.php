@@ -23,7 +23,6 @@ class MatchRetinaPortfolioToCurrentShopifyProduct extends RetinaAction
         MatchPortfolioToCurrentShopifyProduct::run($portfolio, $modelData);
     }
 
-
     public function rules(): array
     {
         return [
@@ -37,5 +36,4 @@ class MatchRetinaPortfolioToCurrentShopifyProduct extends RetinaAction
         $this->initialisation($request);
         $this->handle($portfolio, $this->validatedData);
     }
-
 }

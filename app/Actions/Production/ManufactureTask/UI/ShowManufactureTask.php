@@ -9,8 +9,8 @@
 namespace App\Actions\Production\ManufactureTask\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\Production\ManufactureTaskTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -34,9 +34,8 @@ class ShowManufactureTask extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit   = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
+        $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
         $this->canDelete = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
-
 
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
@@ -56,46 +55,43 @@ class ShowManufactureTask extends OrgAction
         return $this->handle($manufactureTask);
     }
 
-
     public function htmlResponse(ManufactureTask $manufactureTask, ActionRequest $request): Response
     {
 
         return Inertia::render(
             'Org/Production/ManufactureTask',
             [
-                'title'                            => __('manufacture task'),
-                'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'navigation'                       => [
+                'title' => __('manufacture task'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'navigation' => [
                     'previous' => $this->getPrevious($manufactureTask, $request),
-                    'next'     => $this->getNext($manufactureTask, $request),
+                    'next' => $this->getNext($manufactureTask, $request),
                 ],
-                'pageHead'                         => [
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'industry'],
-                            'title' => __('Manufacture task')
-                        ],
-                    'title'   => $manufactureTask->name,
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'industry'],
+                        'title' => __('Manufacture task'),
+                    ],
+                    'title' => $manufactureTask->name,
                     'actions' => [
                         [
-                            'type'    => 'button',
-                        'tooltip'     => __('Edit'),
-                        'icon'        => 'fal fa-pencil',
-                        'style'       => 'secondary',
-                        'route'       => [
-                            'name'       => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
-                            'parameters' => $request->route()->originalParameters()
+                            'type' => 'button',
+                            'tooltip' => __('Edit'),
+                            'icon' => 'fal fa-pencil',
+                            'style' => 'secondary',
+                            'route' => [
+                                'name' => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters(),
 
-                            ]
-                        ]
+                            ],
+                        ],
 
                     ],
 
-
                 ],
-                'tabs'                             => [
+                'tabs' => [
 
-                    'current'    => $this->tab,
+                    'current' => $this->tab,
                     'navigation' => ManufactureTaskTabsEnum::navigation(),
                 ],
 
@@ -109,12 +105,11 @@ class ShowManufactureTask extends OrgAction
 
                 ManufactureTaskTabsEnum::HISTORY->value => $this->tab == ManufactureTaskTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($manufactureTask))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($manufactureTask)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($manufactureTask))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ManufactureTaskTabsEnum::HISTORY->value));
     }
-
 
     public function jsonResponse(ManufactureTask $manufactureTask): ManufactureTasksResource
     {
@@ -129,26 +124,26 @@ class ShowManufactureTask extends OrgAction
             ShowCraftsDashboard::make()->getBreadcrumbs($routeParameters),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.show.crafts.manufacture_tasks.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('manufacture tasks'),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.show',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.show.crafts.manufacture_tasks.show',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $manufactureTask?->code,
-                            'icon'  => 'fal fa-bars'
+                            'icon' => 'fal fa-bars',
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
             ]
@@ -171,7 +166,7 @@ class ShowManufactureTask extends OrgAction
 
     private function getNavigation(?ManufactureTask $manufactureTask, string $routeName): ?array
     {
-        if (!$manufactureTask) {
+        if (! $manufactureTask) {
             return null;
         }
 
@@ -179,12 +174,12 @@ class ShowManufactureTask extends OrgAction
             'grp.org.productions.show.infrastructure.dashboard' => [
                 'label' => $manufactureTask->code,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $this->organisation->slug,
-                        'production'    => $manufactureTask->production->slug
-                    ]
-                ]
+                        'organisation' => $this->organisation->slug,
+                        'production' => $manufactureTask->production->slug,
+                    ],
+                ],
             ],
             default => null,
         };

@@ -21,9 +21,9 @@ class FetchAuroraEmailBulkRun extends FetchAurora
             return;
         }
 
-        if (!in_array($this->auroraModelData->{'Email Campaign Type'}, [
+        if (! in_array($this->auroraModelData->{'Email Campaign Type'}, [
             'GR Reminder',
-            'OOS Notification'
+            'OOS Notification',
 
         ])) {
             return;
@@ -41,73 +41,67 @@ class FetchAuroraEmailBulkRun extends FetchAurora
             'Stopped' => EmailBulkRunStateEnum::STOPPED,
             default => null
         };
-        if (!$state) {
+        if (! $state) {
             return;
         }
-
 
         $emailOngoingRun = $this->parseEmailOngoingRun($this->organisation->id.':'.$this->auroraModelData->{'Email Campaign Email Template Type Key'});
 
-        if (!$emailOngoingRun) {
+        if (! $emailOngoingRun) {
             return;
         }
 
-
         $scheduledAt = $this->parseDatetime($this->auroraModelData->{'Email Campaign Scheduled Date'});
-        if (!$scheduledAt) {
+        if (! $scheduledAt) {
             $scheduledAt = $this->parseDatetime($this->auroraModelData->{'Email Campaign Start Send Date'});
         }
 
-
-        $layout              = json_decode($this->auroraModelData->{'Email Template Editing JSON'}, true);
+        $layout = json_decode($this->auroraModelData->{'Email Template Editing JSON'}, true);
         $snapshotPublishedAt = $this->parseDatetime($this->auroraModelData->{'Email Template Last Edited'});
 
-        if (!$snapshotPublishedAt) {
+        if (! $snapshotPublishedAt) {
             $snapshotPublishedAt = $this->parseDatetime($this->auroraModelData->{'Email Template Created'});
         }
-        if (!$snapshotPublishedAt) {
+        if (! $snapshotPublishedAt) {
             $snapshotPublishedAt = now();
         }
 
-
-        //$code=$emailOngoingRun->code;
+        // $code=$emailOngoingRun->code;
         $this->parsedData['email_ongoing_run'] = $emailOngoingRun;
-        $this->parsedData['email_bulk_run']    = [
-            'subject'          => $this->auroraModelData->{'Email Campaign Name'},
+        $this->parsedData['email_bulk_run'] = [
+            'subject' => $this->auroraModelData->{'Email Campaign Name'},
             // 'code'       => $code,
-            'state'            => $state,
-            'source_id'        => $this->organisation->id.':'.$this->auroraModelData->{'Email Campaign Key'},
-            'created_at'       => $this->parseDatetime($this->auroraModelData->{'Email Campaign Creation Date'}),
-            'scheduled_at'     => $scheduledAt,
+            'state' => $state,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Email Campaign Key'},
+            'created_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign Creation Date'}),
+            'scheduled_at' => $scheduledAt,
             'start_sending_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign Start Send Date'}),
-            'sent_at'          => $this->parseDatetime($this->auroraModelData->{'Email Campaign End Send Date'}),
-            'stopped_at'       => $this->parseDatetime($this->auroraModelData->{'Email Campaign Stopped Date'}),
-            'fetched_at'       => now(),
-            'last_fetched_at'  => now(),
+            'sent_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign End Send Date'}),
+            'stopped_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign Stopped Date'}),
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
 
-
         $this->parsedData['snapshot'] = [
-            'builder'         => SnapshotBuilderEnum::BEEFREE,
-            'layout'          => $layout,
+            'builder' => SnapshotBuilderEnum::BEEFREE,
+            'layout' => $layout,
             'compiled_layout' => $this->auroraModelData->{'Email Template HTML'},
-            'state'           => SnapshotStateEnum::HISTORIC,
-            'checksum'        => md5(
+            'state' => SnapshotStateEnum::HISTORIC,
+            'checksum' => md5(
                 json_encode(
                     $layout
                 )
             ),
-            'published_at'    => $snapshotPublishedAt,
-            'recyclable'      => false,
-            'first_commit'    => false,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Email Template Key'},
-            'fetched_at'      => now(),
+            'published_at' => $snapshotPublishedAt,
+            'recyclable' => false,
+            'first_commit' => false,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Email Template Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Email Campaign Dimension')

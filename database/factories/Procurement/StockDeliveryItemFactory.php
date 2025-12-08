@@ -18,9 +18,9 @@ class StockDeliveryItemFactory extends Factory
         $supplierProduct = SupplierProduct::latest()->first();
 
         return [
-            'group_id'            => $supplierProduct->group_id,
+            'group_id' => $supplierProduct->group_id,
             'supplier_product_id' => $supplierProduct->id,
-            'unit_quantity'       => fake()->numberBetween(1, 100)
+            'unit_quantity' => fake()->numberBetween(1, 100),
         ];
     }
 }

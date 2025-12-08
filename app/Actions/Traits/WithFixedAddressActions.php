@@ -26,12 +26,11 @@ trait WithFixedAddressActions
             ->first();
     }
 
-
     protected function createFixedAddress(Order|Invoice|DeliveryNote|PalletReturn $model, Address $addressTemplate, string $fixedScope, $scope, $addressField): Address
     {
         $groupId = $model->group_id;
 
-        if (!$address = $this->findFixedAddress($addressTemplate, $fixedScope)) {
+        if (! $address = $this->findFixedAddress($addressTemplate, $fixedScope)) {
             $modelData = $addressTemplate->toArray();
             data_set($modelData, 'is_fixed', true);
             data_set($modelData, 'fixed_scope', $fixedScope);
@@ -48,7 +47,7 @@ trait WithFixedAddressActions
                 'country_code',
                 'country_id',
                 'is_fixed',
-                'fixed_scope'
+                'fixed_scope',
             ]);
 
             $address = Address::create($modelData);
@@ -58,13 +57,11 @@ trait WithFixedAddressActions
             $address->id,
             [
                 'scope' => $scope,
-                'group_id' => $groupId
+                'group_id' => $groupId,
             ]
         );
 
-
         AddressHydrateFixedUsage::dispatch($address);
-
 
         $model->updateQuietly([$addressField => $address->id]);
         $model->refresh();
@@ -74,17 +71,16 @@ trait WithFixedAddressActions
 
     protected function updateFixedAddress(Order|Invoice|DeliveryNote $model, ?Address $currentAddress, Address $addressData, string $fixedScope, $scope, $addressField): Address
     {
-        if (!$currentAddress  || $currentAddress->checksum != $addressData->getChecksum()) {
-
+        if (! $currentAddress || $currentAddress->checksum != $addressData->getChecksum()) {
 
             if ($currentAddress) {
                 $model->fixedAddresses()->detach($currentAddress->id);
                 AddressHydrateFixedUsage::dispatch($currentAddress);
             }
+
             return $this->createFixedAddress($model, $addressData, $fixedScope, $scope, $addressField);
         }
 
         return $currentAddress;
     }
-
 }

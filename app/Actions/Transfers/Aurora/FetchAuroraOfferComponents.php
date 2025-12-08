@@ -25,7 +25,7 @@ class FetchAuroraOfferComponents extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OfferAllowance
     {
         $offerAllowanceData = $organisationSource->fetchOfferComponent($organisationSourceId);
-        if (!$offerAllowanceData) {
+        if (! $offerAllowanceData) {
             return null;
         }
         $offerAllowance = OfferAllowance::withTrashed()->where('source_id', $offerAllowanceData['offerAllowance']['source_id'])->first();
@@ -116,5 +116,4 @@ class FetchAuroraOfferComponents extends FetchAuroraAction
 
         return $query;
     }
-
 }

@@ -19,9 +19,9 @@ trait WithHydrateSalesMetrics
     public function getSalesMetrics(array $params): array
     {
         $context = $params['context'];
-        $start   = $params['start'];
-        $end     = $params['end'];
-        $fields  = $params['fields'] ?? [];
+        $start = $params['start'];
+        $end = $params['end'];
+        $fields = $params['fields'] ?? [];
 
         $results = [];
 

@@ -168,9 +168,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_master_products_no_master_family
  * @property int $number_products_status_coming_soon
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCatalogueStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCatalogueStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCatalogueStats query()
+ *
  * @mixin \Eloquent
  */
 class GroupCatalogueStats extends Model

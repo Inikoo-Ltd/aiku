@@ -31,7 +31,8 @@ class IndexProductions extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
-        return $request->user()->authTo(['org-supervisor.'.$this->organisation->id,'productions-view.'.$this->organisation->id]);
+
+        return $request->user()->authTo(['org-supervisor.'.$this->organisation->id, 'productions-view.'.$this->organisation->id]);
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
@@ -58,7 +59,6 @@ class IndexProductions extends OrgAction
 
         $queryBuilder->where('organisation_id', $organisation->id);
 
-
         return $queryBuilder
             ->defaultSort('productions.code')
             ->select([
@@ -73,7 +73,7 @@ class IndexProductions extends OrgAction
 
             ])
             ->leftJoin('production_stats', 'production_stats.production_id', 'productions.id')
-            ->allowedSorts(['code', 'name', 'number_raw_materials', 'number_artefacts','number_manufacture_tasks'])
+            ->allowedSorts(['code', 'name', 'number_raw_materials', 'number_artefacts', 'number_manufacture_tasks'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -91,19 +91,19 @@ class IndexProductions extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title'       => __('no production plant'),
+                        'title' => __('no production plant'),
                         'description' => $this->canEdit ? __('Get started set up your new production plant.') : null,
-                        'count'       => $organisation->manufactureStats->number_productions,
-                        'action'      => $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
+                        'count' => $organisation->manufactureStats->number_productions,
+                        'action' => $this->canEdit ? [
+                            'type' => 'button',
+                            'style' => 'create',
                             'tooltip' => __('New production plant'),
-                            'label'   => __('production plant'),
-                            'route'   => [
-                                'name'       => 'grp.org.productions.create',
-                                'parameters' => $organisation->slug
-                            ]
-                        ] : null
+                            'label' => __('production plant'),
+                            'route' => [
+                                'name' => 'grp.org.productions.create',
+                                'parameters' => $organisation->slug,
+                            ],
+                        ] : null,
                     ]
                 )
                 ->column(key: 'state_icon', label: '', canBeHidden: false, sortable: false, searchable: false, type: 'icon')
@@ -116,12 +116,10 @@ class IndexProductions extends OrgAction
         };
     }
 
-
     public function jsonResponse(LengthAwarePaginator $productions): AnonymousResourceCollection
     {
         return ProductionsResource::collection($productions);
     }
-
 
     public function htmlResponse(LengthAwarePaginator $productions, ActionRequest $request): Response
     {
@@ -129,29 +127,29 @@ class IndexProductions extends OrgAction
             'Org/Production/Productions',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('factories'),
-                'pageHead'    => [
-                    'title'   => __('Production plants'),
-                    'icon'    => [
+                'title' => __('factories'),
+                'pageHead' => [
+                    'title' => __('Production plants'),
+                    'icon' => [
                         'title' => __('Factories'),
-                        'icon'  => 'fal fa-industry'
+                        'icon' => 'fal fa-industry',
                     ],
                     'actions' => [
                         $this->canEdit && $request->route()->routeName == 'grp.org.productions.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
+                            'type' => 'button',
+                            'style' => 'create',
                             'tooltip' => __('Set production'),
-                            'label'   => __('Factory'),
-                            'route'   => [
-                                'name'       => 'grp.org.productions.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                            'label' => __('Factory'),
+                            'route' => [
+                                'name' => 'grp.org.productions.create',
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
-                    ]
+                    ],
                 ],
 
                 'tabs' => [
-                    'current'    => $this->tab,
+                    'current' => $this->tab,
                     'navigation' => ProductionsTabsEnum::navigation(),
                 ],
 
@@ -159,11 +157,9 @@ class IndexProductions extends OrgAction
                     fn () => ProductionsResource::collection($productions)
                     : Inertia::lazy(fn () => ProductionsResource::collection($productions)),
 
-
                 ProductionsTabsEnum::PRODUCTIONS_HISTORIES->value => $this->tab == ProductionsTabsEnum::PRODUCTIONS_HISTORIES->value ?
                     fn () => HistoryResource::collection(IndexHistory::run(Production::class))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run(Production::class)))
-
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run(Production::class))),
 
             ]
         )->table(
@@ -180,18 +176,18 @@ class IndexProductions extends OrgAction
             ShowOrganisationDashboard::make()->getBreadcrumbs($routeParameters),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.productions.index',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.productions.index',
+                            'parameters' => $routeParameters,
                         ],
                         'label' => __('Factories'),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
+                    'suffix' => $suffix,
 
-                ]
+                ],
             ]
         );
     }

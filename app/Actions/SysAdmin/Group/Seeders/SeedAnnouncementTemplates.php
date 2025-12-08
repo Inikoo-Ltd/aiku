@@ -29,14 +29,14 @@ class SeedAnnouncementTemplates
             $announcementTemplate = AnnouncementTemplate::where('code', $announcementTemplateCode)->first();
             if ($announcementTemplate) {
                 $announcementTemplate->update([
-                    'code' => $announcementTemplateCode
+                    'code' => $announcementTemplateCode,
                 ]);
 
                 $announcementTemplate->refresh();
             } else {
                 $announcementTemplate = AnnouncementTemplate::create([
                     'group_id' => $group->id,
-                    'code' => $announcementTemplateCode
+                    'code' => $announcementTemplateCode,
                 ]);
             }
 

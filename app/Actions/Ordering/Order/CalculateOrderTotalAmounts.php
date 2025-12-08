@@ -23,29 +23,27 @@ class CalculateOrderTotalAmounts extends OrgAction
     public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): void
     {
 
-
-
-        $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
+        $itemsNet = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
-        $tax        = $order->taxCategory->rate;
+        $tax = $order->taxCategory->rate;
 
         $numberItemTransactions = $order->transactions()->where('model_type', 'Product')->count();
 
-        $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
+        $chargesAmount = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
         if ($order->collection_address_id) {
             $shippingAmount = 0;
         } else {
-            $shippingAmount  = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
+            $shippingAmount = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         }
 
         $netAmount = $itemsNet + $shippingAmount + $chargesAmount;
 
-        $taxAmount   = $netAmount * $tax;
+        $taxAmount = $netAmount * $tax;
         $totalAmount = $netAmount + $taxAmount;
-        $grpNet      = $netAmount * $order->grp_exchange;
-        $orgNet      = $netAmount * $order->org_exchange;
+        $grpNet = $netAmount * $order->grp_exchange;
+        $orgNet = $netAmount * $order->org_exchange;
 
         data_set($modelData, 'net_amount', $netAmount);
         data_set($modelData, 'total_amount', $totalAmount);
@@ -59,18 +57,14 @@ class CalculateOrderTotalAmounts extends OrgAction
         data_set($modelData, 'estimated_weight', $estimatedWeight);
         data_set($modelData, 'number_item_transactions', $numberItemTransactions);
 
-
-
         $order->update($modelData);
         $order->stats->update(
             [
-                'number_item_transactions' => $numberItemTransactions
+                'number_item_transactions' => $numberItemTransactions,
             ]
         );
 
-
         $changes = $order->getChanges();
-
 
         if ($order->state == OrderStateEnum::CREATING && Arr::has($changes, 'total_amount')) {
             if ($order->customer_client_id) {
@@ -84,7 +78,6 @@ class CalculateOrderTotalAmounts extends OrgAction
             }
         }
 
-
         if (in_array($order->state, [
             OrderStateEnum::CREATING,
             OrderStateEnum::SUBMITTED,
@@ -93,7 +86,7 @@ class CalculateOrderTotalAmounts extends OrgAction
         ])) {
 
             $calculateCharges = false;
-            if ((Arr::hasAny($changes, ['goods_amount', 'number_item_transactions']) && $calculateDiscounts) || $forceRecalculate) { //todo remove true when all orders are updated with number_item_transactions
+            if ((Arr::hasAny($changes, ['goods_amount', 'number_item_transactions']) && $calculateDiscounts) || $forceRecalculate) { // todo remove true when all orders are updated with number_item_transactions
                 CalculateOrderDiscounts::run($order);
                 $calculateCharges = true;
             }
@@ -102,7 +95,6 @@ class CalculateOrderTotalAmounts extends OrgAction
                 CalculateOrderShipping::run($order);
                 $calculateCharges = true;
             }
-
 
             if ($calculateCharges) {
                 CalculateOrderHangingCharges::run($order);
@@ -115,22 +107,22 @@ class CalculateOrderTotalAmounts extends OrgAction
     public function asCommand(Command $command): int
     {
         $exitCode = 0;
-        if (!$command->option('slugs')) {
+        if (! $command->option('slugs')) {
             if ($command->argument('organisations')) {
                 /** @var Organisation $organisation */
-                $organisation       = $this->getOrganisations($command)->first();
+                $organisation = $this->getOrganisations($command)->first();
                 $this->organisation = $organisation;
             }
 
             $this->loopAll($command);
         } else {
-            $slug  = $command->option('slugs');
+            $slug = $command->option('slugs');
             $order = Order::where('slug', $slug)->first();
             if ($order) {
                 $this->handle($order);
                 $command->line("Order $order->reference totals calculated. 🧮");
             } else {
-                $command->error("Model not found");
+                $command->error('Model not found');
                 $exitCode = 1;
             }
         }
@@ -145,7 +137,6 @@ class CalculateOrderTotalAmounts extends OrgAction
                 $this->handle($model);
             }
         });
-        $command->info("");
+        $command->info('');
     }
-
 }

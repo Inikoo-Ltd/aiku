@@ -18,6 +18,7 @@ class IrisRelaxAuthenticate extends Middleware
     {
         return null;
     }
+
     protected function redirectTo($request): ?string
     {
         return null;

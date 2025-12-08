@@ -16,11 +16,10 @@ enum ShippingTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SCHEMAS      = 'schemas';
-    case CURRENT      = 'current';
-    case OFFER        = 'offer';
-    case HISTORY      = 'history';
-
+    case SCHEMAS = 'schemas';
+    case CURRENT = 'current';
+    case OFFER = 'offer';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
@@ -28,21 +27,21 @@ enum ShippingTabsEnum: string
 
             ShippingTabsEnum::CURRENT => [
                 'title' => __('Current'),
-                'icon'  => 'fal fa-shopping-cart',
+                'icon' => 'fal fa-shopping-cart',
             ],
             ShippingTabsEnum::OFFER => [
                 'title' => __('Offer'),
-                'icon'  => 'fal fa-chart-pie',
+                'icon' => 'fal fa-chart-pie',
             ],
             ShippingTabsEnum::SCHEMAS => [
                 'title' => __('Schemas'),
-                'icon'  => 'fal fa-tags',
+                'icon' => 'fal fa-tags',
             ],
             ShippingTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
-                'align' => 'right'
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ],
         };
     }

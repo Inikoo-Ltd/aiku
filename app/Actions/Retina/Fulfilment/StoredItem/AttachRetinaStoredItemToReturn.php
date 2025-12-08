@@ -27,7 +27,7 @@ class AttachRetinaStoredItemToReturn extends RetinaAction
     public function rules(): array
     {
         return [
-            'quantity_ordered' => ['required', 'numeric', 'min:0', 'max:'.$this->palletStoredItem->quantity]
+            'quantity_ordered' => ['required', 'numeric', 'min:0', 'max:'.$this->palletStoredItem->quantity],
         ];
     }
 
@@ -41,7 +41,7 @@ class AttachRetinaStoredItemToReturn extends RetinaAction
 
     public function action(PalletReturn $palletReturn, PalletStoredItem $palletStoredItem, array $modelData, int $hydratorsDelay = 0)
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->palletStoredItem = $palletStoredItem;
         $this->initialisationFulfilmentActions($palletReturn->fulfilmentCustomer, $modelData);

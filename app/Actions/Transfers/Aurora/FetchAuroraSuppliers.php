@@ -17,12 +17,10 @@ class FetchAuroraSuppliers extends FetchAuroraAction
 
     public string $commandSignature = 'fetch:suppliers {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new}';
 
-
     public function fetch($organisationSource, $organisationSourceId)
     {
         return $organisationSource->fetchSupplier($organisationSourceId);
     }
-
 
     public function getModelsQuery(): Builder
     {

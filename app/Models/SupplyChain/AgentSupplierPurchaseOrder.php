@@ -93,45 +93,47 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read PurchaseOrder|null $purchaseOrder
  * @property-read \App\Models\SupplyChain\Supplier|null $supplier
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static Builder<static>|AgentSupplierPurchaseOrder newModelQuery()
  * @method static Builder<static>|AgentSupplierPurchaseOrder newQuery()
  * @method static Builder<static>|AgentSupplierPurchaseOrder onlyTrashed()
  * @method static Builder<static>|AgentSupplierPurchaseOrder query()
  * @method static Builder<static>|AgentSupplierPurchaseOrder withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|AgentSupplierPurchaseOrder withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
+class AgentSupplierPurchaseOrder extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
     use HasAddress;
     use HasAddresses;
-    use HasSlug;
-    use HasHistory;
-    use InGroup;
     use HasAttachments;
+    use HasHistory;
+    use HasSlug;
     use HasUniversalSearch;
+    use InGroup;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'            => 'array',
-        'cost_data'       => 'array',
-        'state'           => AgentSupplierPurchaseOrderStateEnum::class,
+        'data' => 'array',
+        'cost_data' => 'array',
+        'state' => AgentSupplierPurchaseOrderStateEnum::class,
         'delivery_state' => AgentSupplierPurchaseOrderDeliveryStateEnum::class,
-        'date'            => 'datetime',
-        'submitted_at'    => 'datetime',
-        'confirmed_at'    => 'datetime',
+        'date' => 'datetime',
+        'submitted_at' => 'datetime',
+        'confirmed_at' => 'datetime',
         'manufactured_at' => 'datetime',
-        'dispatched_at'   => 'datetime',
-        'received_at'     => 'datetime',
-        'checked_at'      => 'datetime',
-        'settled_at'      => 'datetime',
-        'cancelled_at'    => 'datetime',
-        'fetched_at'      => 'datetime',
+        'dispatched_at' => 'datetime',
+        'received_at' => 'datetime',
+        'checked_at' => 'datetime',
+        'settled_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'cost_data' => '{}',
         'sources' => '{}',
     ];
@@ -154,7 +156,7 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'supply-chain'
+            'supply-chain',
         ];
     }
 

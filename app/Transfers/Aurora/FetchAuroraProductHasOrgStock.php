@@ -21,7 +21,6 @@ class FetchAuroraProductHasOrgStock extends FetchAurora
             if ($orgStock) {
                 $ratio = $modelData->{'Product Part Ratio'};
 
-
                 if ($ratio == 0.08400) {
                     $ratio = 1 / 12;
                 }
@@ -34,7 +33,6 @@ class FetchAuroraProductHasOrgStock extends FetchAurora
                     $ratio = 1 / 108;
                 }
 
-
                 if ($ratio == 0.23900) {
                     $ratio = 1 / 42;
                 }
@@ -46,7 +44,6 @@ class FetchAuroraProductHasOrgStock extends FetchAurora
                 if ($ratio == 0.02800 || $ratio == 0.27800 || $ratio == 0.27700) {
                     $ratio = 1 / 36;
                 }
-
 
                 if ($ratio == 0.35700) {
                     $ratio = 1 / 28;
@@ -68,23 +65,16 @@ class FetchAuroraProductHasOrgStock extends FetchAurora
                     $ratio = 1 / 18;
                 }
 
-
-                list($smallestDividend, $correspondingDivisor) = findSmallestFactors($ratio);
-
-
-
+                [$smallestDividend, $correspondingDivisor] = findSmallestFactors($ratio);
 
                 $ratio = $smallestDividend / $correspondingDivisor;
 
-
-
-
                 $productStocks[$orgStock->id] = [
-                    'quantity'        => $ratio,
-                    'notes'           => $modelData->{'Product Part Note'} ?? null,
-                    'source_id'       => $this->organisation->id.':'.$modelData->{'Product Part Key'},
-                    'dividend'        => $smallestDividend,
-                    'divisor'         => $correspondingDivisor,
+                    'quantity' => $ratio,
+                    'notes' => $modelData->{'Product Part Note'} ?? null,
+                    'source_id' => $this->organisation->id.':'.$modelData->{'Product Part Key'},
+                    'dividend' => $smallestDividend,
+                    'divisor' => $correspondingDivisor,
                     'last_fetched_at' => now(),
                 ];
             }
@@ -92,7 +82,7 @@ class FetchAuroraProductHasOrgStock extends FetchAurora
         $this->parsedData['org_stocks'] = $productStocks;
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Product Part Bridge')

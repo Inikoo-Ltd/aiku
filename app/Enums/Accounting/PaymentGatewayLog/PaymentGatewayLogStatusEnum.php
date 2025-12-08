@@ -24,9 +24,9 @@ enum PaymentGatewayLogStatusEnum: string
     {
         return [
             'processing' => __('Processing'),
-            'ok'         => __('Ok'),
-            'fail'       => __('Fail'),
-            'na'         => __('N/A'),
+            'ok' => __('Ok'),
+            'fail' => __('Fail'),
+            'na' => __('N/A'),
         ];
     }
 }

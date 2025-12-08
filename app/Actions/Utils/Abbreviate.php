@@ -15,12 +15,13 @@ class Abbreviate
 {
     use AsAction;
 
-    protected string $case              = 'upper';
-    protected int $maximumLength        = 3;
-    protected bool $digits              = false;
+    protected string $case = 'upper';
+
+    protected int $maximumLength = 3;
+
+    protected bool $digits = false;
+
     protected bool $removeAbbreviations = true;
-
-
 
     public function handle(
         string $string,
@@ -33,19 +34,18 @@ class Abbreviate
             throw new InvalidArgumentException('Abbreviations maximum length must be greater than 0.');
         }
 
-        if (!in_array($case, ['lower', 'upper', 'original'])) {
+        if (! in_array($case, ['lower', 'upper', 'original'])) {
             throw new InvalidArgumentException('Abbreviations case must be either "lower", "upper" or "original".');
         }
 
-        $this->maximumLength       = intval($maximumLength);
-        $this->case                = $case;
-        $this->digits              = (bool)$digits;
-        $this->removeAbbreviations = (bool)$removeAbbreviations;
+        $this->maximumLength = intval($maximumLength);
+        $this->case = $case;
+        $this->digits = (bool) $digits;
+        $this->removeAbbreviations = (bool) $removeAbbreviations;
 
         if ($this->removeAbbreviations) {
             $string = $this->removeAbbreviations($string);
         }
-
 
         if (preg_match_all('/(^|\s)(\p{L})|(^|\p{Ll})(\p{Lu})|(\p{Lu})(\p{Ll})/u', $string, $matches) && $this->countNonEmpty($matches[2]) + $this->countNonEmpty($matches[4]) + $this->countNonEmpty($matches[5]) >= 2) {
             $letters = [];
@@ -63,7 +63,7 @@ class Abbreviate
         }
 
         $clean_string = trim(preg_replace($this->digits ? '/[\s\W]+/siu' : '/[0-9\s\W]+/siu', ' ', $string));
-        $parts        = explode(' ', $clean_string);
+        $parts = explode(' ', $clean_string);
         if (count($parts) >= 2) {
             $abbreviation = '';
             foreach ($parts as $part) {

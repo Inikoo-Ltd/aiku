@@ -4,9 +4,9 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 
 class UploadPortfolioToR2Event implements ShouldBroadcastNow
 {
@@ -15,6 +15,7 @@ class UploadPortfolioToR2Event implements ShouldBroadcastNow
     use SerializesModels;
 
     public string $download_url;
+
     public string $randomString;
 
     /**
@@ -27,7 +28,6 @@ class UploadPortfolioToR2Event implements ShouldBroadcastNow
         $this->download_url = $download_url;
         $this->randomString = $randomString;
     }
-
 
     public function broadcastOn()
     {

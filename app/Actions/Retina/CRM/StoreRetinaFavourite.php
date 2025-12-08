@@ -27,5 +27,4 @@ class StoreRetinaFavourite extends RetinaAction
 
         $this->handle($this->customer, $product);
     }
-
 }

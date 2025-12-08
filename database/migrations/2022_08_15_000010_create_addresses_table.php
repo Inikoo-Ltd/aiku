@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create(
@@ -23,7 +24,6 @@ return new class () extends Migration {
                 $table->unsignedInteger('usage')->default(0)->comment('usage by models/scopes');
                 $table->unsignedInteger('fixed_usage')->default(0)->comment('count usage by fixed models/fixed_scopes');
                 $table->unsignedInteger('multiplicity')->default(0)->comment('count address with same checksum');
-
 
                 // $table->nullableMorphs('owner');
                 $table->string('address_line_1', 255)->nullable();
@@ -81,7 +81,6 @@ return new class () extends Migration {
         });
 
     }
-
 
     public function down(): void
     {

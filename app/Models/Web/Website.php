@@ -140,6 +140,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Web\WebsiteStats|null $webStats
  * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Collection<int, \App\Models\Web\Webpage> $webpages
+ *
  * @method static \Database\Factories\Web\WebsiteFactory factory($count = null, $state = [])
  * @method static Builder<static>|Website newModelQuery()
  * @method static Builder<static>|Website newQuery()
@@ -147,40 +148,41 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Website query()
  * @method static Builder<static>|Website withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Website withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Website extends Model implements Auditable, HasMedia
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasHistory;
-    use HasUniversalSearch;
     use HasFactory;
+    use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
     use InShop;
     use InteractsWithMedia;
+    use SoftDeletes;
 
     protected $casts = [
-        'type'              => WebsiteTypeEnum::class,
-        'data'              => 'array',
-        'settings'          => 'array',
-        'structure'         => 'array',
-        'layout'            => 'array',
-        'published_layout'  => 'array',
-        'state'             => WebsiteStateEnum::class,
-        'status'            => 'boolean',
+        'type' => WebsiteTypeEnum::class,
+        'data' => 'array',
+        'settings' => 'array',
+        'structure' => 'array',
+        'layout' => 'array',
+        'published_layout' => 'array',
+        'state' => WebsiteStateEnum::class,
+        'status' => 'boolean',
         'cloudflare_status' => WebsiteCloudflareStatusEnum::class,
-        'launched_at'       => 'datetime',
-        'closed_at'         => 'datetime',
-        'fetched_at'        => 'datetime',
-        'last_fetched_at'   => 'datetime',
+        'launched_at' => 'datetime',
+        'closed_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
 
     ];
 
     protected $attributes = [
-        'data'             => '{}',
-        'settings'         => '{}',
-        'structure'        => '{}',
-        'layout'           => '{}',
+        'data' => '{}',
+        'settings' => '{}',
+        'structure' => '{}',
+        'layout' => '{}',
         'published_layout' => '{}',
     ];
 
@@ -189,7 +191,7 @@ class Website extends Model implements Auditable, HasMedia
     public function generateTags(): array
     {
         return [
-            'websites'
+            'websites',
         ];
     }
 
@@ -200,7 +202,6 @@ class Website extends Model implements Auditable, HasMedia
         'state',
         'status',
     ];
-
 
     public function getRouteKeyName(): string
     {
@@ -244,8 +245,10 @@ class Website extends Model implements Auditable, HasMedia
     {
         if ($this->logo) {
             $avatarThumbnail = $this->logo->getImage()->resize($width, $height);
+
             return GetPictureSources::run($avatarThumbnail);
         }
+
         return null;
     }
 
@@ -253,12 +256,12 @@ class Website extends Model implements Auditable, HasMedia
     {
         if ($this->favicon) {
             $avatarThumbnail = $this->favicon->getImage()->resize($width, $height);
+
             return GetPictureSources::run($avatarThumbnail);
         }
+
         return null;
     }
-
-
 
     public function images(): MorphToMany
     {
@@ -350,8 +353,8 @@ class Website extends Model implements Auditable, HasMedia
     public function externalLinks()
     {
         return $this->belongsToMany(ExternalLink::class, 'web_block_has_external_link')
-                    ->withPivot('webpage_id', 'web_block_id', 'show')
-                    ->withTimestamps();
+            ->withPivot('webpage_id', 'web_block_id', 'show')
+            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany
@@ -362,8 +365,8 @@ class Website extends Model implements Auditable, HasMedia
     public function getFullUrl(): string
     {
         return match (app()->environment()) {
-            'production' => 'https://'.$this->domain . '/app',
-            'staging' => 'https://canary.'.$this->domain . '/app',
+            'production' => 'https://'.$this->domain.'/app',
+            'staging' => 'https://canary.'.$this->domain.'/app',
             default => match ($this->shop->type) {
                 ShopTypeEnum::DROPSHIPPING => 'https://ds.test/app',
                 default => 'https://fulfilment.test/app'
@@ -380,5 +383,4 @@ class Website extends Model implements Auditable, HasMedia
     {
         return $this->hasMany(Announcement::class);
     }
-
 }

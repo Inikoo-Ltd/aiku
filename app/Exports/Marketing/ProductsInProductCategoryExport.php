@@ -14,10 +14,10 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ProductsInProductCategoryExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class ProductsInProductCategoryExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
-    use Exportable;
     use DataFeedsMapping;
+    use Exportable;
 
     protected ProductCategory $productCategory;
 
@@ -33,7 +33,6 @@ class ProductsInProductCategoryExport implements FromQuery, WithMapping, ShouldA
             ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
             ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
 
-
         if ($this->productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $query->where('products.department_id', $this->productCategory->id);
         } elseif ($this->productCategory->type == ProductCategoryTypeEnum::FAMILY) {
@@ -44,5 +43,4 @@ class ProductsInProductCategoryExport implements FromQuery, WithMapping, ShouldA
 
         return $query->orderBy('products.id');
     }
-
 }

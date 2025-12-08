@@ -16,8 +16,8 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
 {
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        $items       = $purchaseOrder->purchaseOrderTransactions()->get();
-        $itemsNet    = $items->sum('net_amount');
+        $items = $purchaseOrder->purchaseOrderTransactions()->get();
+        $itemsNet = $items->sum('net_amount');
 
         data_set($modelData, 'cost_total', $itemsNet);
         data_set($modelData, 'cost_items', $itemsNet);

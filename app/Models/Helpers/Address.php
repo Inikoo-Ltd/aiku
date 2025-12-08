@@ -39,10 +39,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read \App\Models\Helpers\Country|null $country
  * @property-read string $formatted_address
  * @property-read Model|\Eloquent $owner
+ *
  * @method static \Database\Factories\Helpers\AddressFactory factory($count = null, $state = [])
  * @method static Builder<static>|Address newModelQuery()
  * @method static Builder<static>|Address newQuery()
  * @method static Builder<static>|Address query()
+ *
  * @mixin Eloquent
  */
 class Address extends Model
@@ -58,9 +60,9 @@ class Address extends Model
     {
         static::created(
             function (Address $address) {
-                if ($country = (new Country())->firstWhere('id', $address->country_id)) {
+                if ($country = (new Country)->firstWhere('id', $address->country_id)) {
                     $address->country_code = $country->code;
-                    $address->checksum     = $address->getChecksum();
+                    $address->checksum = $address->getChecksum();
                     $address->save();
                 }
             }

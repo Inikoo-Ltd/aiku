@@ -43,17 +43,15 @@ class FetchAuroraTradeUnitImages extends FetchAurora
             $images = array_merge($images, $productImages);
         }
 
-
         $this->parsedData['images'] = $images;
 
         $this->parsedData['trade_unit'] = [
-            'source_id'                => $this->organisation->id.':'.$this->auroraModelData->{'Part SKU'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Part SKU'},
         ];
-
 
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Part Dimension')

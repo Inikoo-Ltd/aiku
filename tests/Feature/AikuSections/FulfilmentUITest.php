@@ -92,7 +92,6 @@ use function Pest\Laravel\getJson;
 
 uses()->group('ui');
 
-
 beforeAll(function () {
     loadDB();
 });
@@ -104,11 +103,11 @@ beforeEach(function () {
         ->andReturn();
 
     $this->organisation = createOrganisation();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
-    $this->warehouse    = createWarehouse();
-    $this->fulfilment   = createFulfilment($this->organisation);
-    $location           = $this->warehouse->locations()->first();
-    if (!$location) {
+    $this->adminGuest = createAdminGuest($this->organisation->group);
+    $this->warehouse = createWarehouse();
+    $this->fulfilment = createFulfilment($this->organisation);
+    $location = $this->warehouse->locations()->first();
+    if (! $location) {
         StoreLocation::run(
             $this->warehouse,
             Location::factory()->definition()
@@ -120,7 +119,7 @@ beforeEach(function () {
     }
 
     $shop = Shop::first();
-    if (!$shop) {
+    if (! $shop) {
         $storeData = Shop::factory()->definition();
         data_set($storeData, 'type', ShopTypeEnum::FULFILMENT);
         data_set($storeData, 'warehouses', [$this->warehouse->id]);
@@ -134,10 +133,10 @@ beforeEach(function () {
 
     $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
 
-    list(
+    [
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+    ] = createProduct($this->shop);
 
     $this->website = createWebsite($this->shop);
 
@@ -149,22 +148,20 @@ beforeEach(function () {
 
     $marketingOutbox = Outbox::where('shop_id', $this->shop->id)->where('type', OutboxTypeEnum::CUSTOMER_NOTIFICATION)->first();
 
-    if (!$marketingOutbox) {
+    if (! $marketingOutbox) {
         StoreOutbox::make()->action($orgPostRoom, $this->shop, [
-            'code'  => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-            'type'  => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
+            'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            'type' => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
             'state' => OutboxStateEnum::ACTIVE,
-            'name'  => 'invoice outbox'
+            'name' => 'invoice outbox',
         ]);
     }
 
-
     $pallet = Pallet::first();
-    if (!$pallet) {
+    if (! $pallet) {
         $storeData = Pallet::factory()->definition();
         data_set($storeData, 'state', PalletStateEnum::SUBMITTED);
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
-
 
         $pallet = StorePallet::make()->action(
             $this->customer->fulfilmentCustomer,
@@ -175,7 +172,7 @@ beforeEach(function () {
     $this->pallet = $pallet;
 
     $palletDelivery = PalletDelivery::first();
-    if (!$palletDelivery) {
+    if (! $palletDelivery) {
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
         data_set($storeData, 'state', PalletDeliveryStateEnum::IN_PROCESS);
 
@@ -188,7 +185,7 @@ beforeEach(function () {
     $this->palletDelivery = $palletDelivery;
 
     $palletReturn = PalletReturn::first();
-    if (!$palletReturn) {
+    if (! $palletReturn) {
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
         data_set($storeData, 'state', PalletReturnStateEnum::IN_PROCESS);
 
@@ -201,7 +198,7 @@ beforeEach(function () {
     $this->palletReturn = $palletReturn;
 
     $storedItemReturn = PalletReturn::where('type', PalletReturnTypeEnum::STORED_ITEM)->first();
-    if (!$storedItemReturn) {
+    if (! $storedItemReturn) {
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
         data_set($storeData, 'state', PalletReturnStateEnum::IN_PROCESS);
 
@@ -214,7 +211,7 @@ beforeEach(function () {
     $this->storedItemReturn = $storedItemReturn;
 
     $rental = Rental::first();
-    if (!$rental) {
+    if (! $rental) {
         data_set($storeData, 'code', 'TEST');
         data_set($storeData, 'state', RentalStateEnum::ACTIVE);
         data_set($storeData, 'name', 'test');
@@ -230,7 +227,7 @@ beforeEach(function () {
     $this->rental = $rental;
 
     $service = Service::first();
-    if (!$service) {
+    if (! $service) {
         data_set($storeData, 'code', 'TEST');
         data_set($storeData, 'state', ServiceStateEnum::ACTIVE);
         data_set($storeData, 'name', 'test');
@@ -246,7 +243,7 @@ beforeEach(function () {
     $this->service = $service;
 
     $storedItem = StoredItem::first();
-    if (!$storedItem) {
+    if (! $storedItem) {
         data_set($storeData, 'reference', 'stored-item-ref');
 
         $storedItem = StoreStoredItem::make()->action(
@@ -258,12 +255,11 @@ beforeEach(function () {
     $this->storedItem = $storedItem;
 
     $rentalAgreement = RentalAgreement::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->first();
-    if (!$rentalAgreement) {
+    if (! $rentalAgreement) {
         data_set($storeData, 'billing_cycle', RentalAgreementBillingCycleEnum::MONTHLY);
         data_set($storeData, 'state', RentalAgreementStateEnum::ACTIVE);
         data_set($storeData, 'username', 'test');
         data_set($storeData, 'email', 'test@aiku.io');
-
 
         $rentalAgreement = StoreRentalAgreement::make()->action(
             $this->customer->fulfilmentCustomer,
@@ -273,7 +269,7 @@ beforeEach(function () {
     $this->rentalAgreement = $rentalAgreement;
 
     $recurringBill = RecurringBill::first();
-    if (!$recurringBill) {
+    if (! $recurringBill) {
         data_set($storeData, 'start_date', now());
 
         $recurringBill = StoreRecurringBill::make()->action(
@@ -283,30 +279,29 @@ beforeEach(function () {
     }
     $this->recurringBill = $recurringBill;
 
-    $invoice = Invoice::where("type", InvoiceTypeEnum::INVOICE->value)->first();
-    if (!$invoice) {
+    $invoice = Invoice::where('type', InvoiceTypeEnum::INVOICE->value)->first();
+    if (! $invoice) {
         $invoice = ConsolidateRecurringBill::make()->action($recurringBill);
     }
 
     $this->invoice = $invoice;
 
-    $refund = Invoice::where("type", InvoiceTypeEnum::REFUND->value)->first();
-    if (!$refund) {
+    $refund = Invoice::where('type', InvoiceTypeEnum::REFUND->value)->first();
+    if (! $refund) {
         $refund = StoreRefund::make()->action($invoice, []);
     }
     $this->refund = $refund;
 
-
     $space = $this->customer->fulfilmentCustomer->spaces()->first();
-    if (!$space) {
+    if (! $space) {
         $space = StoreSpace::run(
             $this->customer->fulfilmentCustomer,
             [
-                'reference'       => 'test',
+                'reference' => 'test',
                 'exclude_weekend' => false,
-                'start_at'        => now(),
-                'end_at'          => now()->addDays(10),
-                'rental_id'       => $this->rental->id
+                'start_at' => now(),
+                'end_at' => now()->addDays(10),
+                'rental_id' => $this->rental->id,
             ]
         );
     }
@@ -314,7 +309,7 @@ beforeEach(function () {
     $this->space = $space;
 
     $storedItemAudit = StoredItemAudit::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->first();
-    if (!$storedItemAudit) {
+    if (! $storedItemAudit) {
         $storedItemAudit = StoreStoredItemAudit::make()->action(
             $this->customer->fulfilmentCustomer,
             [
@@ -374,12 +369,12 @@ test('UI edit fulfilment', function () {
 
 test('UI show fulfilment shop', function () {
     $fulfilment = $this->shop->fulfilment;
-    $response   = get(
+    $response = get(
         route(
             'grp.org.fulfilments.show.operations.dashboard',
             [
                 $this->organisation->slug,
-                $fulfilment->slug
+                $fulfilment->slug,
             ]
         )
     );
@@ -391,7 +386,6 @@ test('UI show fulfilment shop', function () {
     });
 });
 
-
 test('UI show fulfilment shop customers list', function () {
     $fulfilment = $this->shop->fulfilment;
 
@@ -400,7 +394,7 @@ test('UI show fulfilment shop customers list', function () {
             'grp.org.fulfilments.show.crm.customers.index',
             [
                 $this->organisation->slug,
-                $fulfilment->slug
+                $fulfilment->slug,
             ]
         )
     );
@@ -420,7 +414,7 @@ test('UI show fulfilment shop customers pending approval list', function () {
             'grp.org.fulfilments.show.crm.customers.pending_approval.index',
             [
                 $this->organisation->slug,
-                $fulfilment->slug
+                $fulfilment->slug,
             ]
         )
     );
@@ -440,7 +434,7 @@ test('UI show fulfilment shop customers reject list', function () {
             'grp.org.fulfilments.show.crm.customers.rejected.index',
             [
                 $this->organisation->slug,
-                $fulfilment->slug
+                $fulfilment->slug,
             ]
         )
     );
@@ -451,7 +445,6 @@ test('UI show fulfilment shop customers reject list', function () {
             ->has('breadcrumbs', 3);
     });
 });
-
 
 // Indexes
 
@@ -562,7 +555,7 @@ test('UI show fulfilment customer web users (tab requests)', function () {
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->customer->fulfilmentCustomer->slug,
-        'tab' => 'requests'
+        'tab' => 'requests',
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -578,7 +571,7 @@ test('UI show fulfilment customer web users (tab requests)', function () {
             ->has('tabs')
             ->has('requests');
     });
-})->todo();// Need no move this request tab to ShowWebUser
+})->todo(); // Need no move this request tab to ShowWebUser
 
 test('UI show fulfilment customer (agreed prices tab)', function () {
     $response = get('http://app.aiku.test/org/'.$this->organisation->slug.'/fulfilments/'.$this->fulfilment->slug.'/customers/'.$this->customer->fulfilmentCustomer->slug.'?tab=agreed_prices');
@@ -601,7 +594,7 @@ test('UI show fulfilment customer (tab balance)', function () {
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->customer->fulfilmentCustomer->slug,
-        'tab' => 'balance'
+        'tab' => 'balance',
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -618,7 +611,6 @@ test('UI show fulfilment customer (tab balance)', function () {
             ->has('balance');
     });
 });
-
 
 test('UI edit fulfilment customer', function () {
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.edit', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->slug]));
@@ -640,12 +632,12 @@ test('UI edit fulfilment customer', function () {
 
 test('UI index fulfilment invoices all', function () {
     $fulfilment = $this->shop->fulfilment;
-    $response   = get(
+    $response = get(
         route(
             'grp.org.fulfilments.show.operations.invoices.all.index',
             [
                 $this->organisation->slug,
-                $fulfilment->slug
+                $fulfilment->slug,
             ]
         )
     );
@@ -709,12 +701,12 @@ test('UI show invoice (in Fulfilment Customer)', function () {
 
 test('UI index fulfilment invoices unpaid', function () {
     $fulfilment = $this->shop->fulfilment;
-    $response   = get(
+    $response = get(
         route(
             'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.index',
             [
                 $this->organisation->slug,
-                $fulfilment->slug
+                $fulfilment->slug,
             ]
         )
     );
@@ -736,12 +728,12 @@ test('UI index fulfilment invoices unpaid', function () {
 
 test('UI index fulfilment invoices paid', function () {
     $fulfilment = $this->shop->fulfilment;
-    $response   = get(
+    $response = get(
         route(
             'grp.org.fulfilments.show.operations.invoices.paid_invoices.index',
             [
                 $this->organisation->slug,
-                $fulfilment->slug
+                $fulfilment->slug,
             ]
         )
     );
@@ -854,7 +846,7 @@ test('UI show fulfilment customer refund', function () {
         $this->fulfilment->slug,
         $this->customer->slug,
         $this->invoice->slug,
-        $this->refund->slug
+        $this->refund->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -871,7 +863,7 @@ test('UI show fulfilment customer refund', function () {
             ->has('box_stats')
             ->has('invoice_refund')
             ->has('breadcrumbs', 5);
-        if (!$this->refund->in_process) {
+        if (! $this->refund->in_process) {
             $page->has('exportPdfRoute');
         } else {
             $page->missing('exportPdfRoute');
@@ -1000,7 +992,7 @@ test('UI show fulfilment customer invoice sub navigation', function () {
                     ->etc()
             )
             ->has('breadcrumbs', 4);
-        if (!app()->environment('production')) {
+        if (! app()->environment('production')) {
             $page->has('tabs');
         } else {
             $page->has('data');
@@ -1013,7 +1005,7 @@ test('UI show fulfilment customer invoice sub navigation (tab in process)', func
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->customer->slug,
-        'tab' => InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value
+        'tab' => InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1027,7 +1019,7 @@ test('UI show fulfilment customer invoice sub navigation (tab in process)', func
                     ->etc()
             )
             ->has('breadcrumbs', 4);
-        if (!app()->environment('production')) {
+        if (! app()->environment('production')) {
             $page->has(InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value);
             $page->has('tabs');
         } else {
@@ -1043,7 +1035,7 @@ test('UI show standalone invoice fulfilment customer', function () {
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->customer->slug,
-        $standaloneInvoice->slug
+        $standaloneInvoice->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($standaloneInvoice) {
@@ -1066,13 +1058,12 @@ test('UI show standalone invoice fulfilment customer', function () {
     });
 });
 
-
 test('UI show recurring bills in fulfilment customer', function () {
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.recurring_bills.show', [
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->customer->slug,
-        $this->recurringBill->slug
+        $this->recurringBill->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1194,7 +1185,7 @@ test('UI show pallet in fulfilment customer', function () {
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->customer->fulfilmentCustomer->slug,
-        $this->pallet->slug
+        $this->pallet->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -1422,15 +1413,14 @@ test('UI show pallet delivery (Physical goods Tab)', function () {
     });
 });
 
-
 test('UI show pallet delivery (confirmed)', function () {
     $palletDelivery = $this->palletDelivery;
 
     StorePalletCreatedInPalletDelivery::make()->action(
         $palletDelivery,
         [
-            'type'               => PalletTypeEnum::PALLET,
-            'customer_reference' => 'A001BB'
+            'type' => PalletTypeEnum::PALLET,
+            'customer_reference' => 'A001BB',
         ]
     );
 
@@ -1461,12 +1451,12 @@ test('UI show pallet delivery (received)', function (PalletDelivery $palletDeliv
     StoreRental::make()->action(
         $palletDelivery->fulfilment->shop,
         [
-            'price'                  => 100,
-            'unit'                   => RentalUnitEnum::WEEK->value,
-            'code'                   => 'R00002',
-            'name'                   => 'Rental Asset B',
-            'auto_assign_asset'      => 'Pallet',
-            'auto_assign_asset_type' => PalletTypeEnum::PALLET->value
+            'price' => 100,
+            'unit' => RentalUnitEnum::WEEK->value,
+            'code' => 'R00002',
+            'name' => 'Rental Asset B',
+            'auto_assign_asset' => 'Pallet',
+            'auto_assign_asset_type' => PalletTypeEnum::PALLET->value,
         ]
     );
 
@@ -1590,7 +1580,7 @@ test('UI show pallet return', function () {
 test('UI json get pallet return whole pallet', function () {
     $this->withoutExceptionHandling();
     $response = getJson(route('grp.json.pallet-return.pallets.index', [
-        $this->palletReturn->slug
+        $this->palletReturn->slug,
     ]));
     $response->assertStatus(200)
         ->assertJsonStructure([
@@ -1633,9 +1623,9 @@ test('UI show pallet return (services tab)', function () {
 });
 
 test('UI show pallet return (confirmed)', function () {
-    $palletReturn       = $this->palletReturn;
+    $palletReturn = $this->palletReturn;
     $fulfilmentCustomer = $this->customer->fulfilmentCustomer;
-    $pallet             = $fulfilmentCustomer->pallets()->where('status', PalletStatusEnum::STORING)->first();
+    $pallet = $fulfilmentCustomer->pallets()->where('status', PalletStatusEnum::STORING)->first();
     AttachPalletToReturn::make()->action(
         $palletReturn,
         $pallet,
@@ -1727,13 +1717,12 @@ test('UI show pallet return (dispatched)', function (PalletReturn $palletReturn)
     return $palletReturn;
 })->depends('UI show pallet return (picked)');
 
-
 test('UI show pallet return with stored items', function () {
     // dd($this->customer->fulfilmentCustomer->pallets);
     $response = get(route('grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show', [
         $this->organisation->slug,
         $this->fulfilment->slug,
-        $this->storedItemReturn->slug
+        $this->storedItemReturn->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -1793,7 +1782,7 @@ test('UI edit rental', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.rentals.update')
                     ->where('parameters', [
-                        'rental' => $this->rental->id
+                        'rental' => $this->rental->id,
                     ])
             )
             ->has('breadcrumbs', 4);
@@ -1828,7 +1817,7 @@ test('UI edit rental agreement', function () {
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.rental-agreement.edit', [
         $fulfilmentCustomer->organisation->slug,
         $fulfilmentCustomer->fulfilment->slug,
-        $fulfilmentCustomer->slug
+        $fulfilmentCustomer->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1864,8 +1853,7 @@ test('UI billables dashboard', function () {
             )
             ->has('tabs');
     });
-})->todo();//permissions issue
-
+})->todo(); // permissions issue
 
 // Service
 
@@ -1899,7 +1887,7 @@ test('UI edit service', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.fulfilment.services.update')
                     ->where('parameters', [
-                        'service' => $this->service->id
+                        'service' => $this->service->id,
                     ])
             )
             ->has('breadcrumbs', 4);
@@ -1946,7 +1934,7 @@ test('UI edit physical goods', function () {
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.product.update')
-                    ->where('parameters', $this->product->id) //wrong route
+                    ->where('parameters', $this->product->id) // wrong route
             )
             ->has('breadcrumbs', 4);
     });
@@ -1960,7 +1948,6 @@ test('UI create physical goods', function () {
             ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 5);
     });
 });
-
 
 test('UI Index stored items', function () {
     $response = $this->get(route('grp.org.fulfilments.show.crm.customers.show.stored-items.index', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->fulfilmentCustomer->slug]));
@@ -2010,7 +1997,7 @@ test('UI edit stored item', function () {
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.stored-items.update')
-                    ->where('parameters', $this->storedItem->id) //wrong route
+                    ->where('parameters', $this->storedItem->id) // wrong route
             )
             ->has('breadcrumbs', 4);
     });
@@ -2057,8 +2044,8 @@ test('UI show Recurring Bill', function () {
 
 test('UI show Recurring Bill in operation (current)', function () {
     $this->withoutExceptionHandling();
-    $recurringBill = RecurringBill::where("status", RecurringBillStatusEnum::CURRENT)->first();
-    $response      = get(route('grp.org.fulfilments.show.operations.recurring_bills.current.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
+    $recurringBill = RecurringBill::where('status', RecurringBillStatusEnum::CURRENT)->first();
+    $response = get(route('grp.org.fulfilments.show.operations.recurring_bills.current.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
     $response->assertInertia(function (AssertableInertia $page) use ($recurringBill) {
         $page
             ->component('Org/Fulfilment/RecurringBill')
@@ -2080,8 +2067,8 @@ test('UI show Recurring Bill in operation (current)', function () {
 
 test('UI show Recurring Bill in operation (former)', function () {
     $this->withoutExceptionHandling();
-    $recurringBill = RecurringBill::where("status", RecurringBillStatusEnum::FORMER)->first();
-    $response      = get(route('grp.org.fulfilments.show.operations.recurring_bills.former.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
+    $recurringBill = RecurringBill::where('status', RecurringBillStatusEnum::FORMER)->first();
+    $response = get(route('grp.org.fulfilments.show.operations.recurring_bills.former.show', [$this->organisation->slug, $this->fulfilment->slug, $recurringBill->slug]));
     $response->assertInertia(function (AssertableInertia $page) use ($recurringBill) {
         $page
             ->component('Org/Fulfilment/RecurringBill')
@@ -2101,11 +2088,10 @@ test('UI show Recurring Bill in operation (former)', function () {
     });
 });
 
-
 test('UI get section route fulfilment catalogue index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.fulfilments.show.catalogue.index', [
         'organisation' => $this->organisation->slug,
-        'fulfilment'   => $this->fulfilment->slug
+        'fulfilment' => $this->fulfilment->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -2116,7 +2102,7 @@ test('UI get section route fulfilment catalogue index', function () {
 test('UI get section route fulfilment operations dashboard', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.fulfilments.show.operations.dashboard', [
         'organisation' => $this->organisation->slug,
-        'fulfilment'   => $this->fulfilment->slug
+        'fulfilment' => $this->fulfilment->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -2127,7 +2113,7 @@ test('UI get section route fulfilment operations dashboard', function () {
 test('UI get section route fulfilment web index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.fulfilments.show.web.websites.index', [
         'organisation' => $this->organisation->slug,
-        'fulfilment'   => $this->fulfilment->slug
+        'fulfilment' => $this->fulfilment->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -2138,7 +2124,7 @@ test('UI get section route fulfilment web index', function () {
 test('UI get section route fulfilment crm index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.fulfilments.show.crm.customers.index', [
         'organisation' => $this->organisation->slug,
-        'fulfilment'   => $this->fulfilment->slug
+        'fulfilment' => $this->fulfilment->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -2149,7 +2135,7 @@ test('UI get section route fulfilment crm index', function () {
 test('UI get section route fulfilment settings edit', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.fulfilments.show.settings.edit', [
         'organisation' => $this->organisation->slug,
-        'fulfilment'   => $this->fulfilment->slug
+        'fulfilment' => $this->fulfilment->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -2167,7 +2153,6 @@ test('UI get section route org fulfilments index', function () {
         ->and($sectionScope->model_slug)->toBe($this->organisation->slug);
 });
 
-
 // ui stored item audit
 test('UI show stored item audit', function () {
     $this->withoutExceptionHandling();
@@ -2175,7 +2160,7 @@ test('UI show stored item audit', function () {
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->customer->fulfilmentCustomer->slug,
-        $this->storedItemAudit->slug
+        $this->storedItemAudit->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -2196,12 +2181,12 @@ test('UI create stored item audit for pallet (first time)', function () {
     $rental = Rental::where('auto_assign_asset', 'Pallet')->first();
     $pallet = StorePallet::make()->action($this->customer->fulfilmentCustomer, [
         'customer_reference' => 'audit-pallet',
-        'state'              => PalletStateEnum::STORING,
-        'status'             => PalletStatusEnum::STORING,
-        'type'               => PalletTypeEnum::PALLET,
-        'warehouse_id'       => $this->warehouse->id,
-        'location_id'        => $this->warehouse->locations()->first()->id,
-        'rental_id'          => $rental->id
+        'state' => PalletStateEnum::STORING,
+        'status' => PalletStatusEnum::STORING,
+        'type' => PalletTypeEnum::PALLET,
+        'warehouse_id' => $this->warehouse->id,
+        'location_id' => $this->warehouse->locations()->first()->id,
+        'rental_id' => $rental->id,
     ]);
 
     $this->withoutExceptionHandling();
@@ -2271,7 +2256,7 @@ test('UI create stored item audit for pallet (already created)', function (Store
 
 // ui stored item audit
 test('UI show stored item audit for pallet', function () {
-    $pallet      = Pallet::where('state', PalletStateEnum::STORING)->where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->first();
+    $pallet = Pallet::where('state', PalletStateEnum::STORING)->where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->first();
     $palletAudit = StoreStoredItemAuditFromPallet::make()->action($pallet, []);
 
     $this->withoutExceptionHandling();
@@ -2280,7 +2265,7 @@ test('UI show stored item audit for pallet', function () {
         $this->fulfilment->slug,
         $this->customer->fulfilmentCustomer->slug,
         $pallet->slug,
-        $palletAudit->slug
+        $palletAudit->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -2289,7 +2274,7 @@ test('UI show stored item audit for pallet', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', "Audit")
+                    ->where('title', 'Audit')
                     ->has('subNavigation')
                     ->etc()
             )
@@ -2297,14 +2282,13 @@ test('UI show stored item audit for pallet', function () {
     });
 });
 
-
 test('UI json index pallets in stored item', function () {
     $this->withoutExceptionHandling();
     $response = getJson(route('grp.org.fulfilments.show.crm.customers.show.pallets.stored-item.index', [
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->customer->fulfilmentCustomer->slug,
-        $this->storedItem->slug
+        $this->storedItem->slug,
     ]));
     $response->assertStatus(200)
         ->assertJsonStructure([
@@ -2317,13 +2301,13 @@ test('UI create refund', function () {
     $this->withoutExceptionHandling();
     $response = $this->post(route('grp.models.refund.create', [$this->invoice->id]), [
         'referral_route' => [
-            'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
+            'name' => 'grp.org.fulfilments.show.operations.invoices.show',
             'parameters' => [
                 'organisation' => $this->organisation->slug,
-                'fulfilment'   => $this->fulfilment->slug,
-                'invoice'      => $this->invoice->slug
-            ]
-        ]
+                'fulfilment' => $this->fulfilment->slug,
+                'invoice' => $this->invoice->slug,
+            ],
+        ],
     ]);
 
     /** @var Invoice $invoice */
@@ -2335,13 +2319,11 @@ test('UI create refund', function () {
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->invoice->slug,
-        $refund->slug
+        $refund->slug,
     ]));
-
 
     return $refund;
 });
-
 
 test('UI show refund', function (Invoice $refund) {
     $this->withoutExceptionHandling();
@@ -2349,9 +2331,8 @@ test('UI show refund', function (Invoice $refund) {
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->invoice->slug,
-        $refund->slug
+        $refund->slug,
     ]));
-
 
     $response->assertInertia(function (AssertableInertia $page) use ($refund) {
         $page

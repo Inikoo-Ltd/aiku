@@ -93,6 +93,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Shop $shop
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\CRM\ProspectFactory factory($count = null, $state = [])
  * @method static Builder<static>|Prospect newModelQuery()
  * @method static Builder<static>|Prospect newQuery()
@@ -100,45 +101,46 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Prospect query()
  * @method static Builder<static>|Prospect withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Prospect withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Prospect extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasUniversalSearch;
-    use HasFactory;
-    use InCustomer;
     use HasAddress;
     use HasAddresses;
+    use HasFactory;
     use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InCustomer;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'                    => 'array',
-        'location'                => 'array',
+        'data' => 'array',
+        'location' => 'array',
         'contact_name_components' => 'array',
-        'state'                   => ProspectStateEnum::class,
-        'contacted_state'         => ProspectContactedStateEnum::class,
-        'fail_status'             => ProspectFailStatusEnum::class,
-        'success_status'          => ProspectSuccessStatusEnum::class,
-        'dont_contact_me'         => 'boolean',
-        'last_contacted_at'       => 'datetime',
-        'last_opened_at'          => 'datetime',
-        'last_clicked_at'         => 'datetime',
-        'dont_contact_me_at'      => 'datetime',
-        'failed_at'               => 'datetime',
-        'registered_at'           => 'datetime',
-        'invoiced_at'             => 'datetime',
-        'last_soft_bounced_at'    => 'datetime',
-        'fetched_at'              => 'datetime',
-        'last_fetched_at'         => 'datetime',
+        'state' => ProspectStateEnum::class,
+        'contacted_state' => ProspectContactedStateEnum::class,
+        'fail_status' => ProspectFailStatusEnum::class,
+        'success_status' => ProspectSuccessStatusEnum::class,
+        'dont_contact_me' => 'boolean',
+        'last_contacted_at' => 'datetime',
+        'last_opened_at' => 'datetime',
+        'last_clicked_at' => 'datetime',
+        'dont_contact_me_at' => 'datetime',
+        'failed_at' => 'datetime',
+        'registered_at' => 'datetime',
+        'invoiced_at' => 'datetime',
+        'last_soft_bounced_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
 
     ];
 
     protected $attributes = [
         'contact_name_components' => '{}',
-        'data'                    => '{}',
-        'location'                => '{}',
+        'data' => '{}',
+        'location' => '{}',
     ];
 
     protected $guarded = [];
@@ -146,7 +148,7 @@ class Prospect extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'crm'
+            'crm',
         ];
     }
 
@@ -160,7 +162,6 @@ class Prospect extends Model implements Auditable
         'identity_document_number',
     ];
 
-
     protected static function booted(): void
     {
         static::creating(
@@ -172,7 +173,7 @@ class Prospect extends Model implements Auditable
             if ($prospect->wasChanged(['company_name', 'contact_name'])) {
                 $prospect->updateQuietly(
                     [
-                        'name' => $prospect->company_name == '' ? $prospect->contact_name : $prospect->company_name
+                        'name' => $prospect->company_name == '' ? $prospect->contact_name : $prospect->company_name,
                     ]
                 );
             }
@@ -191,18 +192,16 @@ class Prospect extends Model implements Auditable
                 $slug = '';
                 if ($this->email) {
                     $tmp = explode('@', $this->email);
-                    if (!empty($tmp[0])) {
+                    if (! empty($tmp[0])) {
                         $slug = substr($tmp[0], 0, 8);
                     }
                 }
-
 
                 $name = $this->company_name ? ' '.Abbreviate::run(string: $this->company_name, maximumLength: 4) : '';
                 if ($name == '') {
                     $name = $this->contact_name ? ' '.Abbreviate::run(string: $this->contact_name, maximumLength: 4) : '';
                 }
                 $slug .= $name;
-
 
                 if ($slug == '') {
                     $slug = ReadableRandomStringGenerator::run();
@@ -219,6 +218,4 @@ class Prospect extends Model implements Auditable
     {
         return $this->morphMany(SubscriptionEvent::class, 'model');
     }
-
-
 }

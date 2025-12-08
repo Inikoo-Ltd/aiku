@@ -14,8 +14,8 @@ enum DnsCloudflareTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case MX    = 'MX';
+    case MX = 'MX';
     case CNAME = 'CNAME';
-    case A     = 'A';
-    case TXT   = 'TXT';
+    case A = 'A';
+    case TXT = 'TXT';
 }

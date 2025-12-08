@@ -20,7 +20,6 @@ class UpdateFcmTokenUser extends GrpAction
 {
     use WithActionUpdate;
 
-
     private User $user;
 
     public function handle(User $user, $modelData): User
@@ -41,7 +40,8 @@ class UpdateFcmTokenUser extends GrpAction
         if ($this->asAction) {
             return true;
         }
-        return  $request->user()->authTo('sysadmin.edit');
+
+        return $request->user()->authTo('sysadmin.edit');
 
     }
 
@@ -63,7 +63,7 @@ class UpdateFcmTokenUser extends GrpAction
 
     public function action(User $user, $modelData): User
     {
-        $this->user     = $user;
+        $this->user = $user;
         $this->asAction = true;
         $this->initialisation($user->group, $modelData);
 

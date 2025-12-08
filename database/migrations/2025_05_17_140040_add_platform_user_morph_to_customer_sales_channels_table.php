@@ -10,14 +10,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
 
         Schema::table('customer_sales_channels', function (Blueprint $table) {
             $table->string('platform_user_type')->nullable()->index();
             $table->unsignedInteger('platform_user_id')->nullable();
-            $table->index(['platform_user_type', 'platform_user_id','customer_id']);
+            $table->index(['platform_user_type', 'platform_user_id', 'customer_id']);
         });
 
         Schema::table('shopify_users', function (Blueprint $table) {
@@ -29,7 +30,6 @@ return new class () extends Migration {
 
         });
 
-
         Schema::table('tiktok_users', function (Blueprint $table) {
 
             $table->dropColumn('source_id');
@@ -39,9 +39,6 @@ return new class () extends Migration {
             $table->foreign('customer_sales_channel_id')->references('id')->on('customer_sales_channels')->nullOnDelete();
         });
 
-
-
-
         Schema::table('woo_commerce_users', function (Blueprint $table) {
 
             $table->unsignedBigInteger('platform_id')->nullable()->index();
@@ -50,9 +47,7 @@ return new class () extends Migration {
             $table->foreign('customer_sales_channel_id')->references('id')->on('customer_sales_channels')->nullOnDelete();
         });
 
-
     }
-
 
     public function down(): void
     {
@@ -78,7 +73,7 @@ return new class () extends Migration {
         });
 
         Schema::table('customer_sales_channels', function (Blueprint $table) {
-            $table->dropIndex(['platform_user_type', 'platform_user_id','customer_id']);
+            $table->dropIndex(['platform_user_type', 'platform_user_id', 'customer_id']);
             $table->dropColumn('platform_user_type');
             $table->dropColumn('platform_user_id');
         });

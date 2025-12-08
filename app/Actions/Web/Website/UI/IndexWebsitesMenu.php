@@ -27,16 +27,13 @@ class IndexWebsitesMenu extends InertiaAction
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): array
     {
-        return  $modelOperations;
+        return $modelOperations;
     }
-
-
 
     public function jsonResponse(Website $website): AnonymousResourceCollection
     {
         return WebsiteResource::collection($this->handle(website: $website));
     }
-
 
     public function htmlResponse(LengthAwarePaginator $websites, ActionRequest $request): Response
     {
@@ -47,22 +44,21 @@ class IndexWebsitesMenu extends InertiaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Websites menu'),
-                'pageHead'    => [
-                    'title'  => __('websites menu'),
+                'title' => __('Websites menu'),
+                'pageHead' => [
+                    'title' => __('websites menu'),
                 ],
             ]
         );
     }
 
-
     public function asController(Website $website, ActionRequest $request): Website
     {
 
         $this->initialisation($request);
+
         return $this->handle($website);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
@@ -70,24 +66,23 @@ class IndexWebsitesMenu extends InertiaAction
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('websites menu'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
         return match ($routeName) {
-            'websites.menu.index' =>
-            array_merge(
+            'websites.menu.index' => array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => 'websites.menu.index',
-                        null
+                        null,
                     ]
                 ),
             ),

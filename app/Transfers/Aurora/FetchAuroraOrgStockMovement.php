@@ -17,7 +17,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
 {
     protected function parseModel(): void
     {
-        if (!in_array(
+        if (! in_array(
             $this->auroraModelData->{'Inventory Transaction Record Type'},
             ['Movement', 'Helper', 'Info']
         )) {
@@ -28,7 +28,6 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             return;
         }
 
-
         if ($this->auroraModelData->aiku_picking_id) {
             return;
         }
@@ -37,15 +36,13 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             return;
         }
 
-
-        $type        = null;
+        $type = null;
         $isDelivered = false;
 
         $quantity = $this->auroraModelData->{'Inventory Transaction Quantity'};
 
-
         if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
-            $type        = OrgStockMovementTypeEnum::PICKED;
+            $type = OrgStockMovementTypeEnum::PICKED;
             $isDelivered = true;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Adjust') {
             $type = OrgStockMovementTypeEnum::ADJUSTMENT;
@@ -81,15 +78,15 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $type = OrgStockMovementTypeEnum::WRITE_OFF;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Associate') {
             $quantity = 0;
-            $type     = OrgStockMovementTypeEnum::ASSOCIATE;
+            $type = OrgStockMovementTypeEnum::ASSOCIATE;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Disassociate') {
             $quantity = 0;
-            $type     = OrgStockMovementTypeEnum::DISASSOCIATE;
+            $type = OrgStockMovementTypeEnum::DISASSOCIATE;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Audit') {
             $quantity = $this->auroraModelData->{'Part Location Stock'};
-            $type     = OrgStockMovementTypeEnum::AUDIT;
+            $type = OrgStockMovementTypeEnum::AUDIT;
         }
-        if (!$type) {
+        if (! $type) {
             dd($this->auroraModelData);
         }
 
@@ -97,11 +94,11 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $quantity = 0;
         }
 
-        if ($quantity == 0 && !in_array($type, [
-                OrgStockMovementTypeEnum::ASSOCIATE,
-                OrgStockMovementTypeEnum::DISASSOCIATE,
-                OrgStockMovementTypeEnum::AUDIT,
-            ])) {
+        if ($quantity == 0 && ! in_array($type, [
+            OrgStockMovementTypeEnum::ASSOCIATE,
+            OrgStockMovementTypeEnum::DISASSOCIATE,
+            OrgStockMovementTypeEnum::AUDIT,
+        ])) {
             return;
         }
 
@@ -113,46 +110,41 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $type = OrgStockMovementTypeEnum::FOUND;
         }
 
-
         $orgStock = $this->parseOrgStock($this->organisation->id.':'.$this->auroraModelData->{'Part SKU'});
-        if (!$orgStock) {
+        if (! $orgStock) {
             return;
         }
 
-
         $location = $this->parseLocation($this->organisation->id.':'.$this->auroraModelData->{'Location Key'}, $this->organisationSource);
 
-        if (!$location) {
+        if (! $location) {
             $locationCode = 'not_found_aiku_'.$this->organisation->id.'_'.$this->auroraModelData->{'Location Key'};
 
             $location = Location::withTrashed()->where('code', $locationCode)->first();
 
-            if (!$location) {
+            if (! $location) {
                 $deletedAtAuroraData = DB::connection('aurora')->table('Inventory Transaction Fact')
                     ->where('Location Key', $this->auroraModelData->{'Location Key'})
                     ->select('Date')
                     ->orderBy('Date', 'desc')->first();
 
-
                 $deletedAt = $this->parseDatetime($deletedAtAuroraData->Date)->addHours(2);
 
-
                 $warehouse = $this->parseWarehouse($this->organisation->id.':'.$this->auroraModelData->{'Warehouse Key'});
-
 
                 $location = StoreLocation::make()->action(
                     parent: $warehouse,
                     modelData: [
-                        'code'       => $locationCode,
+                        'code' => $locationCode,
                         'deleted_at' => $deletedAt,
-                        'data'       => [
-                            'not_found_while_fetching'          => true,
+                        'data' => [
+                            'not_found_while_fetching' => true,
                             'not_found_while_fetching_metadata' => [
-                                'command'   => 'fetch:stock_movements',
+                                'command' => 'fetch:stock_movements',
                                 'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
-                            ]
+                            ],
 
-                        ]
+                        ],
                     ],
                     hydratorsDelay: 60,
                     strict: false
@@ -162,25 +154,22 @@ class FetchAuroraOrgStockMovement extends FetchAurora
 
         $date = $this->parseDatetime($this->auroraModelData->{'Date'});
 
-
         $this->parsedData['orgStock'] = $orgStock;
         $this->parsedData['location'] = $location;
 
-
         $this->parsedData['orgStockMovement'] = [
-            'is_delivered'    => $isDelivered,
-            'type'            => $type,
-            'quantity'        => $quantity,
-            'org_amount'      => $this->auroraModelData->{'Inventory Transaction Amount'},
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
-            'date'            => $date,
-            'fetched_at'      => now(),
-            'last_fetched_at' => now()
+            'is_delivered' => $isDelivered,
+            'type' => $type,
+            'quantity' => $quantity,
+            'org_amount' => $this->auroraModelData->{'Inventory Transaction Amount'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
+            'date' => $date,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Inventory Transaction Fact')

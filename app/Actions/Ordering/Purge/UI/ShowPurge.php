@@ -33,6 +33,7 @@ class ShowPurge extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Purge $purge, ActionRequest $request): Purge
     {
         $this->initialisationFromShop($shop, $request)->withTab(PurgeTabsEnum::values());
+
         return $this->handle($purge);
     }
 
@@ -41,39 +42,38 @@ class ShowPurge extends OrgAction
         return Inertia::render(
             'Org/Ordering/Purge',
             [
-                'title'       => __('purge'),
+                'title' => __('purge'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $purge,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation' => [
                     'previous' => $this->getPrevious($purge, $request),
-                    'next'     => $this->getNext($purge, $request),
+                    'next' => $this->getNext($purge, $request),
                 ],
-                'pageHead'    => [
-                    'title'     => $purge->scheduled_at,
-                    'model'     => __('Purge'),
-                    'icon'      =>
-                        [
-                            'icon'  => ['fal', 'fa-trash-alt'],
-                            'title' => __('Purge')
-                        ],
+                'pageHead' => [
+                    'title' => $purge->scheduled_at,
+                    'model' => __('Purge'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-trash-alt'],
+                        'title' => __('Purge'),
+                    ],
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
+                                'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
                     ],
                     // 'subNavigation' => $this->getCollectionSubNavigation($collection),
                 ],
                 'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => PurgeTabsEnum::navigation()
+                    'current' => $this->tab,
+                    'navigation' => PurgeTabsEnum::navigation(),
                 ],
 
                 PurgeTabsEnum::SHOWCASE->value => $this->tab == PurgeTabsEnum::SHOWCASE->value ?
@@ -84,9 +84,8 @@ class ShowPurge extends OrgAction
                     fn () => PurgedOrdersResource::collection(IndexPurgedOrders::run($purge))
                     : Inertia::lazy(fn () => PurgedOrdersResource::collection(IndexPurgedOrders::run($purge))),
 
-
             ]
-        )->table(IndexPurgedOrders::make()->tableStructure(prefix:PurgeTabsEnum::PURGED_ORDERS->value));
+        )->table(IndexPurgedOrders::make()->tableStructure(prefix: PurgeTabsEnum::PURGED_ORDERS->value));
     }
 
     public function jsonResponse(Purge $purge): PurgeResource
@@ -100,11 +99,11 @@ class ShowPurge extends OrgAction
             return [
                 [
 
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Purges')
+                            'label' => __('Purges'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -112,27 +111,26 @@ class ShowPurge extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
 
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.ordering.purges.show',
-            => array_merge(
-                (new ShowShop())->getBreadcrumbs($routeParameters),
+            'grp.org.shops.show.ordering.purges.show', => array_merge(
+                (new ShowShop)->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $purge,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.ordering.purges.index',
-                            'parameters' => Arr::except($routeParameters, ['purge'])
+                            'name' => 'grp.org.shops.show.ordering.purges.index',
+                            'parameters' => Arr::except($routeParameters, ['purge']),
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.ordering.purges.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.shops.show.ordering.purges.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -144,6 +142,7 @@ class ShowPurge extends OrgAction
     public function getPrevious(Purge $purge, ActionRequest $request): ?array
     {
         $previous = Purge::where('id', '<', $purge->id)->orderBy('id', 'desc')->first();
+
         return $this->getNavigation($previous, $request->route()->getName());
 
     }
@@ -151,12 +150,13 @@ class ShowPurge extends OrgAction
     public function getNext(Purge $purge, ActionRequest $request): ?array
     {
         $next = Purge::where('id', '>', $purge->id)->orderBy('id')->first();
+
         return $this->getNavigation($next, $request->route()->getName());
     }
 
     private function getNavigation(?Purge $purge, string $routeName): ?array
     {
-        if (!$purge) {
+        if (! $purge) {
             return null;
         }
 
@@ -164,14 +164,14 @@ class ShowPurge extends OrgAction
             'grp.org.shops.show.ordering.purges.show' => [
                 'label' => $purge->scheduled_at,
                 'route' => [
-                    'name'      => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'organisation' => $purge->organisation->slug,
-                        'shop'         => $purge->shop->slug,
-                        'purge'        => $purge->id
-                    ]
+                        'shop' => $purge->shop->slug,
+                        'purge' => $purge->id,
+                    ],
 
-                ]
+                ],
             ],
         };
     }

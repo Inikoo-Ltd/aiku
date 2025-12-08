@@ -18,14 +18,12 @@ class FetchAuroraInvoiceTransaction extends FetchAurora
         if ($this->auroraModelData->{'Product Key'}) {
             $transactionId = null;
 
-
             $transaction = $invoice->customer->transactions()->where('source_id', $this->organisation->id.':'.$this->auroraModelData->{'Order Transaction Fact Key'})->first();
-
 
             if ($transaction) {
                 $this->parsedData['model'] = $transaction;
-                $transactionId             = $transaction->id;
-                $historicAsset             = $transaction->getHistoricAssetWithTrashed();
+                $transactionId = $transaction->id;
+                $historicAsset = $transaction->getHistoricAssetWithTrashed();
             } else {
                 $historicAsset = $this->parseHistoricAsset(
                     $this->organisation,
@@ -35,17 +33,16 @@ class FetchAuroraInvoiceTransaction extends FetchAurora
                 $this->parsedData['model'] = $historicAsset;
             }
 
-            if (!$isFulfilment) {
+            if (! $isFulfilment) {
                 $order = $this->parseOrder($this->organisation->id.':'.$this->auroraModelData->{'Order Key'});
 
-                if (!$order) {
-                    print "Order not found >".$this->auroraModelData->{'Order Transaction Fact Key'}."\n";
+                if (! $order) {
+                    echo 'Order not found >'.$this->auroraModelData->{'Order Transaction Fact Key'}."\n";
                 }
                 $orderId = $order?->id;
             } else {
                 $orderId = null;
             }
-
 
             $quantity = $this->auroraModelData->{'Delivery Note Quantity'};
             if ($this->auroraModelData->{'Order Transaction Product Type'} == 'Service') {
@@ -54,30 +51,29 @@ class FetchAuroraInvoiceTransaction extends FetchAurora
 
             $taxCategory = $this->parseTaxCategory($this->auroraModelData->{'Order Transaction Tax Category Key'});
 
-
             $date = $this->parseDatetime($this->auroraModelData->{'Invoice Date'});
-            if (!$date) {
+            if (! $date) {
                 $date = $invoice->date;
             }
 
             $this->parsedData['transaction'] = [
-                'order_id'          => $orderId,
-                'transaction_id'    => $transactionId,
-                'tax_category_id'   => $taxCategory->id,
-                'quantity'          => $quantity,
-                'gross_amount'      => $this->auroraModelData->{'Order Transaction Gross Amount'},
-                'net_amount'        => $this->auroraModelData->{'Order Transaction Amount'},
-                'grp_exchange'      => $invoice->grp_exchange,
-                'org_exchange'      => $invoice->org_exchange,
-                'fetched_at'        => now(),
-                'last_fetched_at'   => now(),
-                'source_id'         => $this->organisation->id.':'.$this->auroraModelData->{'Order Transaction Fact Key'},
-                'date'              => $date,
+                'order_id' => $orderId,
+                'transaction_id' => $transactionId,
+                'tax_category_id' => $taxCategory->id,
+                'quantity' => $quantity,
+                'gross_amount' => $this->auroraModelData->{'Order Transaction Gross Amount'},
+                'net_amount' => $this->auroraModelData->{'Order Transaction Amount'},
+                'grp_exchange' => $invoice->grp_exchange,
+                'org_exchange' => $invoice->org_exchange,
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Order Transaction Fact Key'},
+                'date' => $date,
                 'historic_asset_id' => $historicAsset->id,
-                'asset_id'          => $historicAsset->asset_id,
+                'asset_id' => $historicAsset->asset_id,
             ];
         } else {
-            print "Warning Asset Key missing in invoice transaction >".$this->auroraModelData->{'Order Transaction Fact Key'}."\n";
+            echo 'Warning Asset Key missing in invoice transaction >'.$this->auroraModelData->{'Order Transaction Fact Key'}."\n";
         }
     }
 
@@ -92,7 +88,7 @@ class FetchAuroraInvoiceTransaction extends FetchAurora
         return $this->parsedData;
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Order Transaction Fact')

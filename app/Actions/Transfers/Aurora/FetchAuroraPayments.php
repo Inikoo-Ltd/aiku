@@ -22,7 +22,6 @@ class FetchAuroraPayments extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:payments {organisations?*} {--s|source_id=} {--N|only_new : Fetch only new}  {--d|db_suffix=}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Payment
     {
         if ($paymentData = $organisationSource->fetchPayment($organisationSourceId)) {
@@ -53,7 +52,6 @@ class FetchAuroraPayments extends FetchAuroraAction
                         audit: false
                     );
 
-
                     Payment::enableAuditing();
                     $this->saveMigrationHistory(
                         $payment,
@@ -74,14 +72,11 @@ class FetchAuroraPayments extends FetchAuroraAction
                 }
             }
 
-
             return $payment;
         }
 
         return null;
     }
-
-
 
     public function getModelsQuery(): Builder
     {

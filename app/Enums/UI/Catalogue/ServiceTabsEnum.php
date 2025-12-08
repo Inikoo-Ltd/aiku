@@ -16,28 +16,26 @@ enum ServiceTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE   = 'showcase';
+    case SHOWCASE = 'showcase';
     // case VARIATIONS = 'variations';
     // case WEBPAGES   = 'webpages';
-    case SALES      = 'sales';
-    case ORDERS     = 'orders';
-    case CUSTOMERS  = 'customers';
-    case MAILSHOTS  = 'mailshots';
+    case SALES = 'sales';
+    case ORDERS = 'orders';
+    case CUSTOMERS = 'customers';
+    case MAILSHOTS = 'mailshots';
 
     case HISTORY = 'history';
 
-    case DATA   = 'data';
+    case DATA = 'data';
     case IMAGES = 'images';
-    case PARTS  = 'parts';
-
-
+    case PARTS = 'parts';
 
     public function blueprint(): array
     {
         return match ($this) {
             ServiceTabsEnum::SHOWCASE => [
                 'title' => __('Product'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
             // ServiceTabsEnum::VARIATIONS => [
             //     'title' => __('Variations'),
@@ -49,40 +47,39 @@ enum ServiceTabsEnum: string
             // ],
             ServiceTabsEnum::SALES => [
                 'title' => __('Sales'),
-                'icon'  => 'fal fa-money-bill-wave',
+                'icon' => 'fal fa-money-bill-wave',
             ],
             ServiceTabsEnum::ORDERS => [
                 'title' => __('Orders'),
-                'icon'  => 'fal fa-shopping-cart',
+                'icon' => 'fal fa-shopping-cart',
             ],
             ServiceTabsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
-                'icon'  => 'fal fa-users',
+                'icon' => 'fal fa-users',
 
             ],
             ServiceTabsEnum::MAILSHOTS => [
                 'title' => __('Mailshots'),
-                'icon'  => 'fal fa-bullhorn',
+                'icon' => 'fal fa-bullhorn',
 
             ],
 
-
             ServiceTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             ServiceTabsEnum::DATA => [
                 'title' => __('Data'),
-                'icon'  => 'fal fa-database',
-                'type'  => 'icon',
+                'icon' => 'fal fa-database',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             ServiceTabsEnum::PARTS => [
                 'title' => __('Parts'),
-                'icon'  => 'fal fa-box',
-                'type'  => 'icon',
+                'icon' => 'fal fa-box',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             // ServiceTabsEnum::SERVICE => [
@@ -100,8 +97,8 @@ enum ServiceTabsEnum: string
 
             ServiceTabsEnum::IMAGES => [
                 'title' => __('Images'),
-                'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
+                'icon' => 'fal fa-camera-retro',
+                'type' => 'icon',
                 'align' => 'right',
             ]
         };

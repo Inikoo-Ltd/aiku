@@ -10,7 +10,8 @@ use App\Stubs\Migrations\HasCRMStats;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasCRMStats;
 
     public function up(): void
@@ -19,7 +20,6 @@ return new class () extends Migration {
         Schema::dropIfExists('taggables');
         Schema::dropIfExists('tags');
     }
-
 
     public function down(): void
     {

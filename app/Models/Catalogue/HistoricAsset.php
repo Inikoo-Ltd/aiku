@@ -41,19 +41,20 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Model|\Eloquent $model
  * @property-read \App\Models\Catalogue\HistoricAssetStats|null $stats
+ *
  * @method static Builder<static>|HistoricAsset newModelQuery()
  * @method static Builder<static>|HistoricAsset newQuery()
  * @method static Builder<static>|HistoricAsset onlyTrashed()
  * @method static Builder<static>|HistoricAsset query()
  * @method static Builder<static>|HistoricAsset withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|HistoricAsset withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class HistoricAsset extends Model implements Auditable
 {
-    use SoftDeletes;
     use HasHistory;
-
+    use SoftDeletes;
 
     protected $casts = [
         'status' => 'boolean',
@@ -86,6 +87,4 @@ class HistoricAsset extends Model implements Auditable
     {
         return $this->morphTo();
     }
-
-
 }

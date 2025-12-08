@@ -19,7 +19,6 @@ class UnlinkAndDeleteBulkRetinaPortfolio extends RetinaAction
 {
     use WithActionUpdate;
 
-
     private CustomerSalesChannel $customerSalesChannel;
 
     public function handle(array $modelData): void
@@ -38,7 +37,7 @@ class UnlinkAndDeleteBulkRetinaPortfolio extends RetinaAction
     {
         return [
             'portfolios' => ['required', 'array'],
-            'portfolios.*' => ['required', 'integer']
+            'portfolios.*' => ['required', 'integer'],
         ];
     }
 

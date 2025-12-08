@@ -24,13 +24,13 @@ class AttachRetinaAttachmentToModel extends RetinaAction
     public function handle(PalletDelivery|PalletReturn $model, array $modelData): void
     {
         foreach (Arr::get($modelData, 'attachments') as $attachment) {
-            $file           = $attachment;
+            $file = $attachment;
             $attachmentData = [
-                'path'         => $file->getPathName(),
+                'path' => $file->getPathName(),
                 'originalName' => $file->getClientOriginalName(),
-                'scope'        => $modelData['scope'],
-                'caption'      => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-                'extension'    => $file->getClientOriginalExtension()
+                'scope' => $modelData['scope'],
+                'caption' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                'extension' => $file->getClientOriginalExtension(),
             ];
 
             SaveModelAttachment::make()->action($model, $attachmentData);
@@ -44,7 +44,7 @@ class AttachRetinaAttachmentToModel extends RetinaAction
         return [
             'attachments' => ['required', 'array'],
             'attachments.*' => ['required', 'file', 'max:50000'],
-            'scope'      => [
+            'scope' => [
                 'required',
                 'string',
                 Rule::in($allowedScopes),

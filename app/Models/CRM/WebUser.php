@@ -16,6 +16,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasEmail;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasRoles;
 use App\Models\Traits\InCustomer;
@@ -32,7 +33,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Sluggable\SlugOptions;
-use App\Models\Traits\HasHistory;
 
 /**
  * App\Models\CRM\WebUser
@@ -87,6 +87,7 @@ use App\Models\Traits\HasHistory;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Website $website
+ *
  * @method static \Database\Factories\CRM\WebUserFactory factory($count = null, $state = [])
  * @method static Builder<static>|WebUser newModelQuery()
  * @method static Builder<static>|WebUser newQuery()
@@ -98,31 +99,32 @@ use App\Models\Traits\HasHistory;
  * @method static Builder<static>|WebUser withoutPermission($permissions)
  * @method static Builder<static>|WebUser withoutRole($roles, $guard = null)
  * @method static Builder<static>|WebUser withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class WebUser extends Authenticatable implements HasMedia, Auditable
+class WebUser extends Authenticatable implements Auditable, HasMedia
 {
-    use IsUserable;
-    use HasPermissions;
     use HasEmail;
-    use HasImage;
-    use InCustomer;
-    use HasRoles;
     use HasHistory;
+    use HasImage;
+    use HasPermissions;
+    use HasRoles;
+    use InCustomer;
+    use IsUserable;
 
     protected $casts = [
 
-        'data'            => 'array',
-        'settings'        => 'array',
-        'status'          => 'boolean',
-        'type'            => WebUserTypeEnum::class,
-        'auth_type'       => WebUserAuthTypeEnum::class,
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'settings' => 'array',
+        'status' => 'boolean',
+        'type' => WebUserTypeEnum::class,
+        'auth_type' => WebUserAuthTypeEnum::class,
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 

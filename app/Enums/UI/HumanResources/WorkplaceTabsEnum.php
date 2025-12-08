@@ -16,25 +16,23 @@ enum WorkplaceTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE           = 'showcase';
+    case SHOWCASE = 'showcase';
 
-    case HISTORY            = 'history';
-
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
 
-
             WorkplaceTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             WorkplaceTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-info-circle',
+                'icon' => 'fal fa-info-circle',
             ],
         };
     }

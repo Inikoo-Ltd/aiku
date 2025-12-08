@@ -27,12 +27,9 @@ class FetchAuroraProducts extends FetchAuroraAction
     {
         $productData = $organisationSource->fetchProduct($organisationSourceId);
 
-
-        if (!$productData) {
+        if (! $productData) {
             return null;
         }
-
-
 
         /** @var Product $product */
         if ($product = Product::withTrashed()->where('source_id', $productData['product']['source_id'])->first()) {
@@ -40,12 +37,10 @@ class FetchAuroraProducts extends FetchAuroraAction
                 if ($productData['family']) {
                     if ($product->shop->type != ShopTypeEnum::DROPSHIPPING) {
                         $productData['product']['family_id'] = $productData['family']->id;
-                    } elseif (!$product->family) {
+                    } elseif (! $product->family) {
                         $productData['product']['family_id'] = $productData['family']->id;
                     }
                 }
-
-
 
                 $product = UpdateProduct::make()->action(
                     product: $product,
@@ -63,14 +58,13 @@ class FetchAuroraProducts extends FetchAuroraAction
             try {
 
                 $sourceData = explode(':', $productData['product']['source_id']);
-                $orgStocks  = $organisationSource->fetchProductHasOrgStock($sourceData[1])['org_stocks'];
+                $orgStocks = $organisationSource->fetchProductHasOrgStock($sourceData[1])['org_stocks'];
 
                 data_set(
                     $productData,
                     'product.org_stocks',
                     $orgStocks
                 );
-
 
                 $product = StoreProduct::make()->action(
                     parent: $productData['parent'],
@@ -102,7 +96,6 @@ class FetchAuroraProducts extends FetchAuroraAction
 
         $sourceData = explode(':', $product->source_id);
 
-
         foreach (
             DB::connection('aurora')
                 ->table('Product Dimension')
@@ -114,7 +107,6 @@ class FetchAuroraProducts extends FetchAuroraAction
         ) {
             FetchAuroraProducts::run($organisationSource, $productVariantData->source_id);
         }
-
 
         return $product;
     }

@@ -45,9 +45,11 @@ use Laravel\Scout\Searchable;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model|\Eloquent|null $model
+ *
  * @method static Builder<static>|UniversalSearch newModelQuery()
  * @method static Builder<static>|UniversalSearch newQuery()
  * @method static Builder<static>|UniversalSearch query()
+ *
  * @mixin \Eloquent
  */
 class UniversalSearch extends Model
@@ -55,15 +57,15 @@ class UniversalSearch extends Model
     use Searchable;
 
     protected $casts = [
-        'sections'    => 'array',
+        'sections' => 'array',
         'permissions' => 'array',
-        'result'      => 'array',
+        'result' => 'array',
     ];
 
     protected $attributes = [
-        'sections'    => '{}',
+        'sections' => '{}',
         'permissions' => '{}',
-        'result'      => '{}',
+        'result' => '{}',
     ];
 
     protected $guarded = [];
@@ -107,6 +109,4 @@ class UniversalSearch extends Model
     {
         return $this->morphTo();
     }
-
-
 }

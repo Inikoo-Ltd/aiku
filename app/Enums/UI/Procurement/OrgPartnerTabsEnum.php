@@ -16,16 +16,14 @@ enum OrgPartnerTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
     case SHOWCASE = 'showcase';
-
 
     public function blueprint(): array
     {
         return match ($this) {
             OrgPartnerTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

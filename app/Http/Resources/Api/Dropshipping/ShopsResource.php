@@ -27,15 +27,15 @@ class ShopsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                => $this->id,
-            'slug'              => $this->slug,
-            'code'              => $this->code,
-            'name'              => $this->name,
-            'type'              => $this->type->labels()[$this->type->value],
-            'state'             => [
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'type' => $this->type->labels()[$this->type->value],
+            'state' => [
                 'label' => $this->state->labels()[$this->state->value],
-                'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],
-                'class' => $this->state->stateIcon()[$this->state->value]['class']
+                'icon' => $this->state->stateIcon()[$this->state->value]['icon'],
+                'class' => $this->state->stateIcon()[$this->state->value]['class'],
             ],
             'organisation_name' => $this->organisation_name,
             'organisation_code' => $this->organisation_code,

@@ -41,22 +41,22 @@ class EditOrgAgent extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Edit Agent'),
+                'title' => __('Edit Agent'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($orgAgent, $request),
-                    'next'     => $this->getNext($orgAgent, $request),
+                    'next' => $this->getNext($orgAgent, $request),
                 ],
-                'pageHead'    => [
-                    'title'   => $orgAgent->agent->organisation->name,
+                'pageHead' => [
+                    'title' => $orgAgent->agent->organisation->name,
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => preg_replace('/\.edit$/', '', $request->route()->getName()),
+                                'name' => preg_replace('/\.edit$/', '', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
@@ -66,18 +66,18 @@ class EditOrgAgent extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Agent Details'),
-                            'icon'   => 'fal fa-address-book',
+                            'title' => __('Agent Details'),
+                            'icon' => 'fal fa-address-book',
                             'fields' => [
                                 'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('Code'),
-                                    'value'    => $orgAgent->agent->code,
+                                    'type' => 'input',
+                                    'label' => __('Code'),
+                                    'value' => $orgAgent->agent->code,
                                     'required' => true,
                                     'readonly' => true,
                                 ],
                                 'name' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('Name'),
                                     'value' => $orgAgent->agent->organisation->name,
                                 ],
@@ -86,7 +86,7 @@ class EditOrgAgent extends OrgAction
                     ],
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.org_agent.update',
+                            'name' => 'grp.models.org_agent.update',
                             'parameters' => $orgAgent->id,
                         ],
                     ],
@@ -99,7 +99,7 @@ class EditOrgAgent extends OrgAction
     {
         return ShowOrgAgent::make()->getBreadcrumbs(
             routeParameters: $routeParameters,
-            suffix: '(' . __('Editing') . ')'
+            suffix: '('.__('Editing').')'
         );
     }
 
@@ -119,7 +119,7 @@ class EditOrgAgent extends OrgAction
 
     private function getNavigation(?OrgAgent $orgAgent, string $routeName): ?array
     {
-        if (!$orgAgent) {
+        if (! $orgAgent) {
             return null;
         }
 
@@ -127,12 +127,12 @@ class EditOrgAgent extends OrgAction
             'grp.org.procurement.org_agents.show.edit' => [
                 'label' => $orgAgent->agent->organisation->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'organisation' => $orgAgent->organisation->slug,
-                        'orgAgent'     => $orgAgent->slug
-                    ]
-                ]
+                        'orgAgent' => $orgAgent->slug,
+                    ],
+                ],
             ],
             default => null
         };

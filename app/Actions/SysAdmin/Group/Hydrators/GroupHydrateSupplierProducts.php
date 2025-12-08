@@ -31,6 +31,4 @@ class GroupHydrateSupplierProducts implements ShouldBeUnique
 
         $group->supplyChainStats()->update($stats);
     }
-
-
 }

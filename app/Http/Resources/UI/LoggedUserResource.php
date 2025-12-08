@@ -23,14 +23,14 @@ class LoggedUserResource extends JsonResource
         $user = $this;
 
         return [
-            'id'       => $user->id,
+            'id' => $user->id,
             'username' => $user->username,
-            'email'    => $user->email,
+            'email' => $user->email,
             'settings' => [
                 'timezones' => Arr::get($user->settings, 'timezones'),
                 'app_theme' => Arr::get($user->settings, 'app_theme'),
                 'hide_logo' => Arr::get($user->settings, 'hide_logo', false),
-            ]
+            ],
         ];
     }
 }

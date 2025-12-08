@@ -23,12 +23,10 @@ class DetectWebsite
         }
 
         $request->merge([
-            'domain'  => $website->domain,
-            'website' => $website
+            'domain' => $website->domain,
+            'website' => $website,
         ]);
 
         return $next($request);
     }
-
-
 }

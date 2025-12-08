@@ -17,7 +17,7 @@ class DropshippingClientTemplateExport implements FromArray
     public function array(): array
     {
         return [
-            ["contact_name", "company_name", "email", "phone", "address_line_1", "address_line_2", "postal_code", "locality", "country_code"]
+            ['contact_name', 'company_name', 'email', 'phone', 'address_line_1', 'address_line_2', 'postal_code', 'locality', 'country_code'],
         ];
     }
 }

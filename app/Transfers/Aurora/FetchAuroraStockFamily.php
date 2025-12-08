@@ -23,25 +23,24 @@ class FetchAuroraStockFamily extends FetchAurora
             return;
         }
 
-
         $code = preg_replace('/\(BOX\)$/', '-BOX', $code);
         $code = preg_replace('/\s+/', '-', $code);
 
         $sourceSlug = Str::kebab(strtolower($code));
 
         $this->parsedData['stock_family'] = [
-            'code'            => $code,
-            'name'            => $this->auroraModelData->{'Category Label'},
-            'state'           => match ($this->auroraModelData->{'Part Category Status'}) {
-                'InUse'         => StockFamilyStateEnum::ACTIVE,
+            'code' => $code,
+            'name' => $this->auroraModelData->{'Category Label'},
+            'state' => match ($this->auroraModelData->{'Part Category Status'}) {
+                'InUse' => StockFamilyStateEnum::ACTIVE,
                 'Discontinuing' => StockFamilyStateEnum::DISCONTINUING,
-                'NotInUse'      => StockFamilyStateEnum::DISCONTINUED,
-                default         => StockFamilyStateEnum::IN_PROCESS
+                'NotInUse' => StockFamilyStateEnum::DISCONTINUED,
+                default => StockFamilyStateEnum::IN_PROCESS
             },
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
-            'source_slug'     => $sourceSlug,
-            'images'          => $this->parseImages(),
-            'fetched_at'      => now(),
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
+            'source_slug' => $sourceSlug,
+            'images' => $this->parseImages(),
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
     }
@@ -58,13 +57,11 @@ class FetchAuroraStockFamily extends FetchAurora
         return $images->toArray();
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Category Dimension')
             ->leftJoin('Part Category Dimension', 'Part Category Key', 'Category Key')
             ->where('Category Key', $id)->first();
     }
-
 }

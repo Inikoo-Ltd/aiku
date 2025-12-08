@@ -19,13 +19,13 @@ class PalletDeliveryResource extends JsonResource
     {
         /** @var PalletDelivery $palletDelivery */
         $palletDelivery = $this;
-        $timeline       = [];
+        $timeline = [];
         foreach (PalletDeliveryStateEnum::cases() as $state) {
             $timeline[$state->value] = [
-                'label'     => $state->labels()[$state->value],
-                'tooltip'   => $state->labels()[$state->value],
-                'key'       => $state->value,
-                'timestamp' => $palletDelivery->{$state->snake().'_at'} ? $palletDelivery->{$state->snake().'_at'}->toISOString() : null
+                'label' => $state->labels()[$state->value],
+                'tooltip' => $state->labels()[$state->value],
+                'key' => $state->value,
+                'timestamp' => $palletDelivery->{$state->snake().'_at'} ? $palletDelivery->{$state->snake().'_at'}->toISOString() : null,
             ];
         }
 
@@ -34,32 +34,32 @@ class PalletDeliveryResource extends JsonResource
             [
                 $palletDelivery->state->value == PalletDeliveryStateEnum::NOT_RECEIVED->value
                     ? PalletDeliveryStateEnum::BOOKED_IN->value
-                    : PalletDeliveryStateEnum::NOT_RECEIVED->value
+                    : PalletDeliveryStateEnum::NOT_RECEIVED->value,
             ]
         );
 
         return [
-            'id'                      => $palletDelivery->id,
-            'customer_name'           => $palletDelivery->fulfilmentCustomer->customer->name,
-            'customer_reference'      => $palletDelivery->customer_reference,
-            'reference'               => $palletDelivery->reference,
-            'state'                   => $palletDelivery->state->value,
-            'timeline'                => $finalTimeline,
-            'number_pallets'          => $palletDelivery->stats->number_pallets_type_pallet,
-            'number_boxes'            => $palletDelivery->stats->number_pallets_type_box,
-            'number_oversizes'        => $palletDelivery->stats->number_pallets_type_oversize,
-            'number_services'         => $palletDelivery->stats->number_services,
-            'number_physical_goods'   => $palletDelivery->stats->number_physical_goods,
-            'state_label'             => $palletDelivery->state->labels()[$palletDelivery->state->value],
-            'state_icon'              => $palletDelivery->state->stateIcon()[$palletDelivery->state->value],
+            'id' => $palletDelivery->id,
+            'customer_name' => $palletDelivery->fulfilmentCustomer->customer->name,
+            'customer_reference' => $palletDelivery->customer_reference,
+            'reference' => $palletDelivery->reference,
+            'state' => $palletDelivery->state->value,
+            'timeline' => $finalTimeline,
+            'number_pallets' => $palletDelivery->stats->number_pallets_type_pallet,
+            'number_boxes' => $palletDelivery->stats->number_pallets_type_box,
+            'number_oversizes' => $palletDelivery->stats->number_pallets_type_oversize,
+            'number_services' => $palletDelivery->stats->number_services,
+            'number_physical_goods' => $palletDelivery->stats->number_physical_goods,
+            'state_label' => $palletDelivery->state->labels()[$palletDelivery->state->value],
+            'state_icon' => $palletDelivery->state->stateIcon()[$palletDelivery->state->value],
             'estimated_delivery_date' => $palletDelivery->estimated_delivery_date,
-            'public_notes'            => $palletDelivery->public_notes,
-            'number_pallet_storing'   => $palletDelivery->stats->number_pallets_state_storing,
-            'number_pallets_state_other_incident'   => $palletDelivery->stats->number_pallets_state_other_incident,
-            'number_pallets_state_lost'   => $palletDelivery->stats->number_pallets_state_lost,
-            "number_pallets_state_damaged" => $palletDelivery->stats->number_pallets_state_damaged,
-            "number_pallets_state_booked_in" => $palletDelivery->stats->number_pallets_state_booked_in,
-            "number_pallets_state_not_received" => $palletDelivery->stats->number_pallets_state_not_received
+            'public_notes' => $palletDelivery->public_notes,
+            'number_pallet_storing' => $palletDelivery->stats->number_pallets_state_storing,
+            'number_pallets_state_other_incident' => $palletDelivery->stats->number_pallets_state_other_incident,
+            'number_pallets_state_lost' => $palletDelivery->stats->number_pallets_state_lost,
+            'number_pallets_state_damaged' => $palletDelivery->stats->number_pallets_state_damaged,
+            'number_pallets_state_booked_in' => $palletDelivery->stats->number_pallets_state_booked_in,
+            'number_pallets_state_not_received' => $palletDelivery->stats->number_pallets_state_not_received,
         ];
     }
 }

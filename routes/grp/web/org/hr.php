@@ -57,25 +57,21 @@ Route::prefix('employees')->as('employees.')->group(function () {
         Route::get('pin', GeneratePinEmployee::class)->name('generate-pin');
 
         Route::as('show.')->group(function () {
-            Route::get('/positions', [IndexJobPositions::class,'inEmployee'])->name('positions.index');
-            Route::get('/users/{user:slug}', [ShowUser::class,'inEmployee'])->name('users.show');
-            Route::get('/users/{user:slug}/edit', [EditUser::class,'inEmployee'])->name('users.edit');
+            Route::get('/positions', [IndexJobPositions::class, 'inEmployee'])->name('positions.index');
+            Route::get('/users/{user:slug}', [ShowUser::class, 'inEmployee'])->name('users.show');
+            Route::get('/users/{user:slug}/edit', [EditUser::class, 'inEmployee'])->name('users.edit');
 
             Route::get('/timesheets-pdf', [PdfTimesheet::class, 'inEmployee'])->name('timesheets.pdf');
-            Route::get('timesheets', [IndexTimesheets::class,'inEmployee'])->name('timesheets.index');
+            Route::get('timesheets', [IndexTimesheets::class, 'inEmployee'])->name('timesheets.index');
             Route::get('timesheets/export', ExportEmployeeTimesheets::class)->name('timesheets.export');
             Route::get('timesheets/{timesheet}', [ShowTimesheet::class, 'inEmployee'])->name('timesheets.show');
         });
 
-
-
     });
 });
 
-
 Route::get('/positions', IndexJobPositions::class)->name('job_positions.index');
 Route::get('/positions/{jobPosition}', ShowJobPosition::class)->name('job_positions.show');
-
 
 Route::get('/calendars', IndexCalendars::class)->name('calendars.index');
 Route::get('/calendars/{calendar}', ShowCalendar::class)->name('calendars.show');
@@ -115,11 +111,9 @@ Route::scopeBindings()->group(function () {
 Route::prefix('clocking-machines')->as('clocking_machines.')->group(function () {
     Route::get('', [IndexClockingMachines::class, 'inOrganisation'])->name('index');
     Route::get('create', [CreateClockingMachine::class, 'inOrganisation'])->name('create');
-    Route::get('{clockingMachine}', [ShowClockingMachine::class,'inOrganisation'])->name('show');
+    Route::get('{clockingMachine}', [ShowClockingMachine::class, 'inOrganisation'])->name('show');
     Route::get('{clockingMachine}/edit', EditClockingMachine::class)->name('edit');
 });
-
-
 
 Route::get('/clocking', IndexClockings::class)->name('clockings.index');
 Route::get('/clocking/create', CreateClocking::class)->name('clockings.create');

@@ -47,9 +47,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Accounting\Payment|null $payment
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Accounting\TopUp|null $topUp
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditTransaction newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditTransaction newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditTransaction query()
+ *
  * @mixin \Eloquent
  */
 class CreditTransaction extends Model
@@ -57,18 +59,18 @@ class CreditTransaction extends Model
     use InCustomer;
 
     protected $casts = [
-        'data'            => 'array',
-        'date'            => 'datetime',
-        'amount'          => 'decimal:2',
-        'running_amount'  => 'decimal:2',
-        'grp_exchange'    => 'decimal:4',
-        'org_exchange'    => 'decimal:4',
-        'grp_amount'      => 'decimal:2',
-        'org_amount'      => 'decimal:2',
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'date' => 'datetime',
+        'amount' => 'decimal:2',
+        'running_amount' => 'decimal:2',
+        'grp_exchange' => 'decimal:4',
+        'org_exchange' => 'decimal:4',
+        'grp_amount' => 'decimal:2',
+        'org_amount' => 'decimal:2',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
-        'type'            => CreditTransactionTypeEnum::class,
-        'reason'          => CreditTransactionReasonEnum::class,
+        'type' => CreditTransactionTypeEnum::class,
+        'reason' => CreditTransactionReasonEnum::class,
     ];
 
     protected $attributes = [
@@ -91,6 +93,4 @@ class CreditTransaction extends Model
     {
         return $this->belongsTo(Payment::class);
     }
-
-
 }

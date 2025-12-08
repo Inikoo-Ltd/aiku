@@ -25,8 +25,8 @@ class UploadProductToAmazonProgressEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
-
     public AmazonUser $amazonUser;
+
     public Portfolio $portfolio;
 
     public function __construct(AmazonUser $amazonUser, Portfolio $portfolio)
@@ -38,8 +38,9 @@ class UploadProductToAmazonProgressEvent implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         Log::info('Broadcasting Amazon upload progress', $this->portfolio->toArray());
+
         return [
-            new PrivateChannel("amazon.{$this->amazonUser->id}.upload-product.{$this->portfolio->id}")
+            new PrivateChannel("amazon.{$this->amazonUser->id}.upload-product.{$this->portfolio->id}"),
 
         ];
     }

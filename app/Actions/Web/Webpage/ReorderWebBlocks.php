@@ -40,7 +40,7 @@ class ReorderWebBlocks extends OrgAction
     public function rules(): array
     {
         return [
-            'positions' => ['required', 'array']
+            'positions' => ['required', 'array'],
         ];
     }
 
@@ -58,5 +58,4 @@ class ReorderWebBlocks extends OrgAction
 
         return $this->handle($webpage, $this->validatedData);
     }
-
 }

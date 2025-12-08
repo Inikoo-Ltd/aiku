@@ -54,12 +54,12 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class StoreOrder extends OrgAction
 {
     use AsAction;
+    use HasOrderHydrators;
     use WithAttributes;
     use WithFixedAddressActions;
     use WithModelAddressActions;
-    use HasOrderHydrators;
-    use WithOrderExchanges;
     use WithNoStrictRules;
+    use WithOrderExchanges;
 
     public int $hydratorsDelay = 0;
 
@@ -70,7 +70,7 @@ class StoreOrder extends OrgAction
      */
     public function handle(Shop|Customer|CustomerClient $parent, array $modelData): Order
     {
-        if (!Arr::get($modelData, 'reference')) {
+        if (! Arr::get($modelData, 'reference')) {
             data_set(
                 $modelData,
                 'reference',
@@ -83,43 +83,43 @@ class StoreOrder extends OrgAction
         data_set($modelData, 'date', now(), overwrite: false);
 
         if ($this->strict) {
-            $modelData['pay_status']          = OrderPayStatusEnum::UNPAID->value;
+            $modelData['pay_status'] = OrderPayStatusEnum::UNPAID->value;
             $modelData['pay_detailed_status'] = OrderPayDetailedStatusEnum::UNPAID->value;
             if ($parent instanceof Customer) {
                 data_forget($modelData, 'billing_address'); // Just in case is added by mistake
                 data_forget($modelData, 'delivery_address'); // Just in case is added by mistake
-                $billingAddress  = $parent->address;
+                $billingAddress = $parent->address;
                 $deliveryAddress = $parent->deliveryAddress;
             } elseif ($parent instanceof CustomerClient) {
                 data_forget($modelData, 'billing_address'); // Just in case is added by mistake
-                $billingAddress  = $parent->customer->address;
+                $billingAddress = $parent->customer->address;
                 $deliveryAddress = Arr::pull($modelData, 'delivery_address') ?? $parent->address;
             } else {
-                $billingAddress  = Arr::pull($modelData, 'billing_address');
+                $billingAddress = Arr::pull($modelData, 'billing_address');
                 $deliveryAddress = Arr::pull($modelData, 'delivery_address');
             }
         } else {
-            $billingAddress  = Arr::pull($modelData, 'billing_address');
+            $billingAddress = Arr::pull($modelData, 'billing_address');
             $deliveryAddress = Arr::pull($modelData, 'delivery_address');
         }
 
         if ($parent instanceof Customer) {
             $modelData['customer_id'] = $parent->id;
             $modelData['currency_id'] = $parent->shop->currency_id;
-            $modelData['shop_id']     = $parent->shop_id;
-            $shop                     = $parent->shop;
+            $modelData['shop_id'] = $parent->shop_id;
+            $shop = $parent->shop;
         } elseif ($parent instanceof CustomerClient) {
-            $modelData['customer_id']               = $parent->customer_id;
-            $modelData['customer_client_id']        = $parent->id;
-            $modelData['currency_id']               = $parent->shop->currency_id;
-            $modelData['shop_id']                   = $parent->shop_id;
-            $modelData['platform_id']               = $parent->salesChannel->platform_id;
+            $modelData['customer_id'] = $parent->customer_id;
+            $modelData['customer_client_id'] = $parent->id;
+            $modelData['currency_id'] = $parent->shop->currency_id;
+            $modelData['shop_id'] = $parent->shop_id;
+            $modelData['platform_id'] = $parent->salesChannel->platform_id;
             $modelData['customer_sales_channel_id'] = $parent->customer_sales_channel_id;
-            $shop                                   = $parent->shop;
+            $shop = $parent->shop;
         } else {
             $modelData['currency_id'] = $parent->currency_id;
-            $modelData['shop_id']     = $parent->id;
-            $shop                     = $parent;
+            $modelData['shop_id'] = $parent->id;
+            $shop = $parent;
         }
 
         data_set($modelData, 'master_shop_id', $shop->master_shop_id);
@@ -131,8 +131,7 @@ class StoreOrder extends OrgAction
             $isRe = $parent->customer->is_re;
         }
 
-
-        if (!Arr::exists($modelData, 'tax_category_id')) {
+        if (! Arr::exists($modelData, 'tax_category_id')) {
             if ($parent instanceof Shop) {
                 $taxNumber = null;
             } elseif ($parent instanceof Customer) {
@@ -158,9 +157,7 @@ class StoreOrder extends OrgAction
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
-
         $modelData = $this->processExchanges($modelData, $parent->shop);
-
 
         if ($this->strict) {
             data_set($modelData, 'customer_locked', true);
@@ -176,7 +173,7 @@ class StoreOrder extends OrgAction
             if ($shop->masterShop) {
                 $shop->masterShop->orderingStats->update(
                     [
-                        'last_order_created_at' => now()
+                        'last_order_created_at' => now(),
                     ]
                 );
             }
@@ -194,11 +191,10 @@ class StoreOrder extends OrgAction
                     $order,
                     [
                         'address' => $billingAddress,
-                        'type'    => 'billing'
+                        'type' => 'billing',
                     ]
                 );
             }
-
 
             if ($order->handing_type == OrderHandingTypeEnum::SHIPPING) {
                 if ($order->delivery_locked) {
@@ -214,7 +210,7 @@ class StoreOrder extends OrgAction
                         $order,
                         [
                             'address' => $deliveryAddress,
-                            'type'    => 'delivery'
+                            'type' => 'delivery',
                         ]
                     );
                 }
@@ -222,7 +218,7 @@ class StoreOrder extends OrgAction
                 $order->updateQuietly(
                     [
                         'collection_address_id' => $order->shop->collection_address_id,
-                        'delivery_country_id'   => $order->shop->collectionAddress->country_id
+                        'delivery_country_id' => $order->shop->collectionAddress->country_id,
                     ]
                 );
             }
@@ -260,21 +256,19 @@ class StoreOrder extends OrgAction
             CustomerClientHydrateOrders::dispatch($order->customerClient)->delay($this->hydratorsDelay);
         }
 
-
         if ($order->state == OrderStateEnum::CREATING) {
             if ($order->customer_client_id) {
                 $order->customerClient()->update([
-                    'amount_in_basket'           => $order->total_amount,
-                    'current_order_in_basket_id' => $order->id
+                    'amount_in_basket' => $order->total_amount,
+                    'current_order_in_basket_id' => $order->id,
                 ]);
             } else {
                 $order->customer()->update([
-                    'amount_in_basket'           => $order->total_amount,
-                    'current_order_in_basket_id' => $order->id
+                    'amount_in_basket' => $order->total_amount,
+                    'current_order_in_basket_id' => $order->id,
                 ]);
             }
         }
-
 
         OrderRecordSearch::dispatch($order);
 
@@ -296,33 +290,31 @@ class StoreOrder extends OrgAction
                 ),
             ],
 
-
-            'customer_reference'        => ['sometimes', 'string', 'max:255'],
-            'state'                     => ['sometimes', Rule::enum(OrderStateEnum::class)],
-            'status'                    => ['sometimes', Rule::enum(OrderStatusEnum::class)],
-            'handing_type'              => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
-            'tax_category_id'           => ['sometimes', 'required', 'exists:tax_categories,id'],
-            'platform_id'               => ['sometimes', 'nullable', 'integer'],
-            'platform_order_id'         => ['sometimes', 'nullable'],
-            'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
+            'customer_reference' => ['sometimes', 'string', 'max:255'],
+            'state' => ['sometimes', Rule::enum(OrderStateEnum::class)],
+            'status' => ['sometimes', Rule::enum(OrderStatusEnum::class)],
+            'handing_type' => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
+            'tax_category_id' => ['sometimes', 'required', 'exists:tax_categories,id'],
+            'platform_id' => ['sometimes', 'nullable', 'integer'],
+            'platform_order_id' => ['sometimes', 'nullable'],
+            'customer_client_id' => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
-            'data'                      => ['sometimes', 'array'],
-            'sales_channel_id'          => [
+            'data' => ['sometimes', 'array'],
+            'sales_channel_id' => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {
                     $query->where('group_id', $this->shop->group_id);
-                })
+                }),
             ],
-            'billing_address'           => ['sometimes', 'required', new ValidAddress()], // only need when parent is Shop
-            'delivery_address'          => ['sometimes', 'required', new ValidAddress()],  // only need when the parent is Shop|CustomerClient
-
+            'billing_address' => ['sometimes', 'required', new ValidAddress], // only need when parent is Shop
+            'delivery_address' => ['sometimes', 'required', new ValidAddress],  // only need when the parent is Shop|CustomerClient
 
         ];
 
-        if (!$this->strict) {
-            $rules['billing_address']  = ['required', new ValidAddress()];
-            $rules['delivery_address'] = ['required', new ValidAddress()];
+        if (! $this->strict) {
+            $rules['billing_address'] = ['required', new ValidAddress];
+            $rules['delivery_address'] = ['required', new ValidAddress];
 
             $rules = $this->orderNoStrictFields($rules);
             $rules = $this->noStrictStoreRules($rules);
@@ -333,11 +325,11 @@ class StoreOrder extends OrgAction
 
     public function prepareForValidation(): void
     {
-        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION && !$this->shop->collection_address_id) {
+        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION && ! $this->shop->collection_address_id) {
             abort(400, 'Collection orders require a collection address');
         }
 
-        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION && !$this->shop->collectionAddress->country_id) {
+        if ($this->get('handing_type') == OrderHandingTypeEnum::COLLECTION && ! $this->shop->collectionAddress->country_id) {
             abort(400, 'Invalid collection address');
         }
     }
@@ -351,7 +343,7 @@ class StoreOrder extends OrgAction
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,
-                $order->slug
+                $order->slug,
             ]),
             'grp.models.customer_client.order.store' => Redirect::route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show', [
                 $order->organisation->slug,
@@ -359,14 +351,14 @@ class StoreOrder extends OrgAction
                 $order->customer->slug,
                 $order->customerSalesChannel->slug,
                 $order->customerClient->ulid,
-                $order->slug
+                $order->slug,
             ]),
             'grp.models.customer_client.order' => Redirect::route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show', [
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,
                 $order->platform->slug,
-                $order->slug
+                $order->slug,
             ]),
         };
     }
@@ -376,14 +368,13 @@ class StoreOrder extends OrgAction
      */
     public function action(Shop|Customer|CustomerClient $parent, array $modelData, bool $strict = true, int $hydratorsDelay = 60, $audit = true): Order
     {
-        if (!$audit) {
+        if (! $audit) {
             Order::disableAuditing();
         }
 
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->strict         = $strict;
-
+        $this->strict = $strict;
 
         $shop = match (class_basename($parent)) {
             'Shop' => $parent,
@@ -440,6 +431,4 @@ class StoreOrder extends OrgAction
 
         return $this->handle($customerClient, $this->validatedData);
     }
-
-
 }

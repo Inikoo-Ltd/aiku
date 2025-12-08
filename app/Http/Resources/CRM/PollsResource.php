@@ -9,8 +9,8 @@
 
 namespace App\Http\Resources\CRM;
 
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\CRM\Poll;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property mixed $number_customers
@@ -29,20 +29,20 @@ class PollsResource extends JsonResource
         }
 
         return [
-            'id'                       => $poll->id,
-            'slug'                     => $poll->slug,
-            'name'                     => $poll->name,
-            'label'                    => $poll->label,
-            'position'                 => $poll->position,
-            'number_customers'         => $poll->number_customers ?? 0,
-            'type'                     => $poll->type->label(),
-            'type_icon'                => $poll->type->stateIcon(),
-            'percentage'               => round($percentage, 3) . '%',
-            'in_registration'          => $poll->in_registration,
+            'id' => $poll->id,
+            'slug' => $poll->slug,
+            'name' => $poll->name,
+            'label' => $poll->label,
+            'position' => $poll->position,
+            'number_customers' => $poll->number_customers ?? 0,
+            'type' => $poll->type->label(),
+            'type_icon' => $poll->type->stateIcon(),
+            'percentage' => round($percentage, 3).'%',
+            'in_registration' => $poll->in_registration,
             'in_registration_required' => $poll->in_registration_required,
-            'in_iris'                  => $poll->in_iris,
-            'in_iris_required'         => $poll->in_iris_required,
-            'options'                  => PollOptionsResource::collection($poll->pollOptions)->toArray($request),
+            'in_iris' => $poll->in_iris,
+            'in_iris_required' => $poll->in_iris_required,
+            'options' => PollOptionsResource::collection($poll->pollOptions)->toArray($request),
         ];
     }
 }

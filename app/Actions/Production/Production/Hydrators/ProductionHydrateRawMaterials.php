@@ -31,9 +31,8 @@ class ProductionHydrateRawMaterials implements ShouldBeUnique
     public function handle(Production $production): void
     {
         $stats = [
-            'number_raw_materials' => $production->rawMaterials()->count()
+            'number_raw_materials' => $production->rawMaterials()->count(),
         ];
-
 
         $stats = array_merge(
             $stats,

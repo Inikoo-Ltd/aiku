@@ -28,7 +28,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->whereHas('supplierProduct', function ($query) use ($value) {
                 $query->where('code', 'ILIKE', "%$value%")
-                ->orWhere('name', 'ILIKE', "%$value%");
+                    ->orWhere('name', 'ILIKE', "%$value%");
             });
         });
 
@@ -47,7 +47,6 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
-
 
     public function tableStructure($prefix = null): Closure
     {
@@ -73,7 +72,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit   = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
         $this->canDelete = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
 
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
@@ -83,6 +82,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
     {
 
         $this->initialisation($purchaseOrder->organisation, $request);
+
         return $this->handle($purchaseOrder);
     }
 
@@ -91,7 +91,6 @@ class IndexPurchaseOrderTransactions extends OrgAction
         return PurchaseOrderTransactionResource::collection($purchaseOrders);
     }
 
-
     public function getBreadcrumbs(): array
     {
         return
@@ -99,15 +98,15 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 ShowProcurementDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.org.procurement.purchase_orders.index'
+                                'name' => 'grp.org.procurement.purchase_orders.index',
                             ],
                             'label' => __('Purchase orders'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             );
     }

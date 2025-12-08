@@ -37,9 +37,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Product $product
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read Website|null $website
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Favourite newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Favourite newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Favourite query()
+ *
  * @mixin \Eloquent
  */
 class Favourite extends Model
@@ -47,7 +49,7 @@ class Favourite extends Model
     use InShop;
 
     protected $casts = [
-        'unfavourited_at'  => 'datetime',
+        'unfavourited_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 

@@ -27,11 +27,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexUsers extends OrgAction
 {
+    use WithEmployeeSubNavigation;
     use WithSysAdminAuthorization;
     use WithUsersSubNavigation;
-    use WithEmployeeSubNavigation;
 
     private string $scope;
+
     private Group $parent;
 
     protected function getElementGroups(Group $group): array
@@ -39,21 +40,20 @@ class IndexUsers extends OrgAction
         return
             [
                 'status' => [
-                    'label'    => __('Status'),
+                    'label' => __('Status'),
                     'elements' => [
-                        'active'    =>
-                            [
-                                __('Active'),
-                                $group->sysadminStats->number_users_status_active
-                            ],
+                        'active' => [
+                            __('Active'),
+                            $group->sysadminStats->number_users_status_active,
+                        ],
                         'suspended' => [
                             __('Suspended'),
-                            $group->sysadminStats->number_users_status_inactive
-                        ]
+                            $group->sysadminStats->number_users_status_inactive,
+                        ],
                     ],
-                    'engine'   => function ($query, $elements) {
+                    'engine' => function ($query, $elements) {
                         $query->where('status', array_pop($elements) === 'active');
-                    }
+                    },
 
                 ],
             ];
@@ -61,9 +61,9 @@ class IndexUsers extends OrgAction
 
     public function inSuspended(ActionRequest $request): LengthAwarePaginator
     {
-        $group        = group();
+        $group = group();
         $this->parent = $group;
-        $this->scope  = 'suspended';
+        $this->scope = 'suspended';
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->scope);
@@ -71,9 +71,9 @@ class IndexUsers extends OrgAction
 
     public function inActive(ActionRequest $request): LengthAwarePaginator
     {
-        $group        = group();
+        $group = group();
         $this->parent = $group;
-        $this->scope  = 'active';
+        $this->scope = 'active';
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->scope);
@@ -81,14 +81,13 @@ class IndexUsers extends OrgAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $group        = group();
+        $group = group();
         $this->parent = $group;
-        $this->scope  = 'all';
+        $this->scope = 'all';
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->scope);
     }
-
 
     public function handle(Group $group, $scope = 'active', $prefix = null): LengthAwarePaginator
     {
@@ -101,16 +100,13 @@ class IndexUsers extends OrgAction
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-
         $queryBuilder = QueryBuilder::for(User::class);
 
         $queryBuilder->leftJoin('user_stats', 'user_stats.user_id', '=', 'users.id');
-
 
         if ($scope == 'active') {
             $queryBuilder->where('status', true);
@@ -126,7 +122,6 @@ class IndexUsers extends OrgAction
                 );
             }
         }
-
 
         return $queryBuilder
             ->defaultSort('username')
@@ -167,43 +162,41 @@ class IndexUsers extends OrgAction
         };
     }
 
-
     public function htmlResponse(LengthAwarePaginator $users, ActionRequest $request): Response
     {
         $subNavigation = $this->getUsersNavigation($this->group, $request);
-        $title         = __('Active users');
-        $icon          = [
-            'icon'  => ['fal', 'fa-user-circle'],
-            'title' => __('Active users')
+        $title = __('Active users');
+        $icon = [
+            'icon' => ['fal', 'fa-user-circle'],
+            'title' => __('Active users'),
         ];
         if ($this->scope == 'suspended') {
             $title = __('Suspended users');
-            $icon  = [
-                'icon'  => ['fal', 'fa-user-slash'],
-                'title' => __('Suspended users')
+            $icon = [
+                'icon' => ['fal', 'fa-user-slash'],
+                'title' => __('Suspended users'),
             ];
         } elseif ($this->scope == 'all') {
             $title = __('Users');
-            $icon  = [
-                'icon'  => ['fal', 'fa-users'],
-                'title' => __('All users')
+            $icon = [
+                'icon' => ['fal', 'fa-users'],
+                'title' => __('All users'),
             ];
         }
-
 
         return Inertia::render(
             'SysAdmin/Users',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
-                'title'       => __('users'),
-                'pageHead'    => [
-                    'title'         => $title,
-                    'icon'          => $icon,
+                'title' => __('users'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
                     'subNavigation' => $subNavigation,
                 ],
 
                 'labels' => [
-                    'usernameNoSet' => __('username no set')
+                    'usernameNoSet' => __('username no set'),
                 ],
 
                 'data' => UsersResource::collection($users),
@@ -216,58 +209,51 @@ class IndexUsers extends OrgAction
         );
     }
 
-
     public function getBreadcrumbs(string $routeName): array
     {
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Users'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.sysadmin.users.index' =>
-            array_merge(
+            'grp.sysadmin.users.index' => array_merge(
                 ShowSysAdminDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => 'grp.sysadmin.users.index',
-                        null
+                        null,
                     ]
                 ),
             ),
-            'grp.sysadmin.users.suspended.index' =>
-            array_merge(
+            'grp.sysadmin.users.suspended.index' => array_merge(
                 ShowSysAdminDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => 'grp.sysadmin.users.suspended.index',
-                        null
+                        null,
                     ]
                 ),
             ),
-            'grp.sysadmin.users.all.index' =>
-            array_merge(
+            'grp.sysadmin.users.all.index' => array_merge(
                 ShowSysAdminDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => 'grp.sysadmin.users.all.index',
-                        null
+                        null,
                     ]
                 ),
             ),
 
-
-
             default => []
         };
     }
-
 }

@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -53,7 +54,6 @@ return new class () extends Migration {
             $table->string('source_id')->nullable()->index();
         });
     }
-
 
     public function down(): void
     {

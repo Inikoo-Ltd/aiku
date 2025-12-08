@@ -18,23 +18,22 @@ class StockDeliveriesHydrateItems implements ShouldBeUnique
 {
     use AsAction;
 
-
     public function handle(StockDelivery $stockDelivery): void
     {
         $stats = [
             'number_of_items' => $stockDelivery->items()->count(),
-            'cost_items'      => $this->getTotalCostItem($stockDelivery),
-            'gross_weight'    => $this->getGrossWeight($stockDelivery),
-            'net_weight'      => $this->getNetWeight($stockDelivery)
+            'cost_items' => $this->getTotalCostItem($stockDelivery),
+            'gross_weight' => $this->getGrossWeight($stockDelivery),
+            'net_weight' => $this->getNetWeight($stockDelivery),
         ];
 
         $checkedItemsCount = $stockDelivery->items()->where('state', StockDeliveryItemStateEnum::CHECKED)->count();
-        $items             = $stockDelivery->items()->count();
+        $items = $stockDelivery->items()->count();
 
         if (($checkedItemsCount === $items) && ($items > 0)) {
-            $stats['state']                                 = StockDeliveryStateEnum::CHECKED;
-            $stats['checked_at']                            = now();
-            $stats[$stockDelivery->state->value . '_at']    = null;
+            $stats['state'] = StockDeliveryStateEnum::CHECKED;
+            $stats['checked_at'] = now();
+            $stats[$stockDelivery->state->value.'_at'] = null;
         }
 
         $stockDelivery->update($stats);

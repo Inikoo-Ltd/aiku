@@ -28,32 +28,27 @@ class StoreTransaction extends OrgAction
 {
     use WithOrderExchanges;
 
-
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
         data_set($modelData, 'tax_category_id', $order->tax_category_id, overwrite: false);
 
-
         data_set($modelData, 'model_type', $historicAsset->asset->model_type);
         data_set($modelData, 'model_id', $historicAsset->asset->model_id);
 
-
         if (Arr::get($modelData, 'model_type') == 'Product') {
-            $net   = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+            $net = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
             $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
         } else {
-            $net   = Arr::get($modelData, 'net_amount', 0);
+            $net = Arr::get($modelData, 'net_amount', 0);
             $gross = Arr::get($modelData, 'gross_amount', 0);
         }
 
-
-        if (!is_numeric($net)) {
+        if (! is_numeric($net)) {
             $net = 0;
         }
-        if (!is_numeric($gross)) {
+        if (! is_numeric($gross)) {
             $gross = 0;
         }
-
 
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);
@@ -69,18 +64,14 @@ class StoreTransaction extends OrgAction
         data_set($modelData, 'state', TransactionStateEnum::CREATING, overwrite: false);
         data_set($modelData, 'status', TransactionStatusEnum::CREATING, overwrite: false);
 
-
         $unitWeight = $historicAsset->model->gross_weight ?? 0;
 
         $estimatedWeight = $unitWeight * Arr::get($modelData, 'quantity_ordered', 1);
-        $estimatedWeight = (int)ceil($estimatedWeight);
-
+        $estimatedWeight = (int) ceil($estimatedWeight);
 
         data_set($modelData, 'estimated_weight', $estimatedWeight);
 
-
         $modelData = $this->processExchanges($modelData, $order->shop);
-
 
         /** @var Transaction $transaction */
         $transaction = $order->transactions()->create($modelData);
@@ -91,11 +82,9 @@ class StoreTransaction extends OrgAction
             OrderHydrateTransactions::dispatch($order);
         }
 
-
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
         AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-
 
         return $transaction;
     }
@@ -103,33 +92,33 @@ class StoreTransaction extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'quantity_ordered'        => ['required', 'numeric', 'min:0'],
-            'quantity_bonus'          => ['sometimes', 'required', 'numeric', 'min:0'],
-            'quantity_dispatched'     => ['sometimes', 'required', 'numeric', 'min:0'],
-            'quantity_fail'           => ['sometimes', 'required', 'numeric', 'min:0'],
-            'quantity_cancelled'      => ['sometimes', 'sometimes', 'numeric', 'min:0'],
+            'quantity_ordered' => ['required', 'numeric', 'min:0'],
+            'quantity_bonus' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'quantity_dispatched' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'quantity_fail' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'quantity_cancelled' => ['sometimes', 'sometimes', 'numeric', 'min:0'],
             'platform_transaction_id' => ['sometimes', 'nullable'],
-            'state'                   => ['sometimes', Rule::enum(TransactionStateEnum::class)],
-            'status'                  => ['sometimes', Rule::enum(TransactionStatusEnum::class)],
-            'fail_status'             => ['sometimes', 'nullable', Rule::enum(TransactionFailStatusEnum::class)],
-            'gross_amount'            => ['sometimes', 'numeric'],
-            'net_amount'              => ['sometimes', 'numeric'],
-            'org_exchange'            => ['sometimes', 'numeric'],
-            'grp_exchange'            => ['sometimes', 'numeric'],
-            'org_net_amount'          => ['sometimes', 'numeric'],
-            'grp_net_amount'          => ['sometimes', 'numeric'],
-            'tax_category_id'         => ['sometimes', 'required', 'exists:tax_categories,id'],
-            'date'                    => ['sometimes', 'required', 'date'],
-            'submitted_at'            => ['sometimes', 'required', 'date'],
-            'data'                    => ['sometimes', 'array'],
+            'state' => ['sometimes', Rule::enum(TransactionStateEnum::class)],
+            'status' => ['sometimes', Rule::enum(TransactionStatusEnum::class)],
+            'fail_status' => ['sometimes', 'nullable', Rule::enum(TransactionFailStatusEnum::class)],
+            'gross_amount' => ['sometimes', 'numeric'],
+            'net_amount' => ['sometimes', 'numeric'],
+            'org_exchange' => ['sometimes', 'numeric'],
+            'grp_exchange' => ['sometimes', 'numeric'],
+            'org_net_amount' => ['sometimes', 'numeric'],
+            'grp_net_amount' => ['sometimes', 'numeric'],
+            'tax_category_id' => ['sometimes', 'required', 'exists:tax_categories,id'],
+            'date' => ['sometimes', 'required', 'date'],
+            'submitted_at' => ['sometimes', 'required', 'date'],
+            'data' => ['sometimes', 'array'],
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules['in_warehouse_at'] = ['sometimes', 'required', 'date'];
-            $rules['source_alt_id']   = ['sometimes', 'string', 'max:255'];
-            $rules['source_id']       = ['sometimes', 'string', 'max:255'];
-            $rules['created_at']      = ['sometimes', 'required', 'date'];
-            $rules['fetched_at']      = ['sometimes', 'required', 'date'];
+            $rules['source_alt_id'] = ['sometimes', 'string', 'max:255'];
+            $rules['source_id'] = ['sometimes', 'string', 'max:255'];
+            $rules['created_at'] = ['sometimes', 'required', 'date'];
+            $rules['fetched_at'] = ['sometimes', 'required', 'date'];
         }
 
         return $rules;
@@ -137,8 +126,8 @@ class StoreTransaction extends OrgAction
 
     public function action(Order $order, HistoricAsset $historicAsset, array $modelData, int $hydratorsDelay = 0, bool $strict = true): Transaction
     {
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($order->shop, $modelData);
 

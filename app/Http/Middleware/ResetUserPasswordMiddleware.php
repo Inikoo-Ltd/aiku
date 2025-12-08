@@ -20,6 +20,7 @@ class ResetUserPasswordMiddleware
         if ($request->user(Auth::getDefaultDriver())->reset_password) {
             return redirect()->route('grp.reset-password.edit');
         }
+
         return $next($request);
     }
 }

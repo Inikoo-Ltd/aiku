@@ -22,14 +22,14 @@ class AgentFactory extends Factory
         $currency = Currency::latest()->first();
 
         return [
-            'code'        => fake()->lexify(),
-            'name'        => fake()->company,
-            'email'       => fake()->email,
+            'code' => fake()->lexify(),
+            'name' => fake()->company,
+            'email' => fake()->email,
             'currency_id' => $currency->id,
-            'country_id'  => Country::first()->id,
+            'country_id' => Country::first()->id,
             'timezone_id' => Timezone::first()->id,
             'language_id' => Language::where('code', 'en')->first()->id,
-            'address'     => Address::factory()->definition()
+            'address' => Address::factory()->definition(),
 
         ];
     }

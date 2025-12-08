@@ -25,6 +25,7 @@ class BroadcastPreviewHeaderFooter implements ShouldBroadcast
     use SerializesModels;
 
     public array $data;
+
     public Website $website;
 
     public function __construct(Website $website)
@@ -37,14 +38,14 @@ class BroadcastPreviewHeaderFooter implements ShouldBroadcast
         return [
             'header' => GetWebsiteWorkshopHeader::run($this->website),
             'footer' => GetWebsiteWorkshopFooter::run($this->website),
-            'navigation' => GetWebsiteWorkshopMenuPreview::run($this->website)
+            'navigation' => GetWebsiteWorkshopMenuPreview::run($this->website),
         ];
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("header-footer.".$this->website->slug.".preview")
+            new PrivateChannel('header-footer.'.$this->website->slug.'.preview'),
         ];
     }
 

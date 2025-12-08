@@ -41,7 +41,6 @@ class ShowRetinaDropshippingPortfolio extends RetinaAction
         /** @var Product $product */
         $product = $portfolio->item;
 
-
         $title = $product->code;
         if ($portfolio->reference && $portfolio->reference != $product->code) {
             $title .= ' ('.$portfolio->reference.')';
@@ -50,24 +49,23 @@ class ShowRetinaDropshippingPortfolio extends RetinaAction
         return Inertia::render(
             'Dropshipping/Product/Product',
             [
-                'title'       => __('product'),
+                'title' => __('product'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters(),
                     $title
                 ),
-                'pageHead'    => [
+                'pageHead' => [
                     'title' => $title,
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-cube'],
-                        'title' => $title
+                    'icon' => [
+                        'icon' => ['fal', 'fa-cube'],
+                        'title' => $title,
                     ],
                     'model' => __('Product'),
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => RetinaProductTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => RetinaProductTabsEnum::navigation(),
                 ],
-
 
                 RetinaProductTabsEnum::SHOWCASE->value => $this->tab == RetinaProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
@@ -89,17 +87,16 @@ class ShowRetinaDropshippingPortfolio extends RetinaAction
                 IndexRetinaPortfolios::make()->getBreadcrumbs($this->customerSalesChannel),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.show',
-                                'parameters' => $routeParameters
+                                'name' => 'retina.dropshipping.customer_sales_channels.portfolios.show',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $label,
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }
-
 }

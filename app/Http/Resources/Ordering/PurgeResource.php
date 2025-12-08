@@ -16,14 +16,14 @@ class PurgeResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                                => $this->id,
-            'state'                             => $this->state,
-            'type'                              => $this->type,
-            'scheduled_at'                      => $this->scheduled_at,
-            'start_at'                          => $this->start_at,
-            'end_at'                            => $this->end_at,
-            'cancelled_at'                      => $this->cancelled_at,
-            'inactive_days'                     => $this->inactive_days,
+            'id' => $this->id,
+            'state' => $this->state,
+            'type' => $this->type,
+            'scheduled_at' => $this->scheduled_at,
+            'start_at' => $this->start_at,
+            'end_at' => $this->end_at,
+            'cancelled_at' => $this->cancelled_at,
+            'inactive_days' => $this->inactive_days,
         ];
     }
 }

@@ -32,17 +32,17 @@ class CreateRedirect extends OrgAction
     {
         if ($parent instanceof Website) {
             $route = [
-                'name'       => 'grp.models.website.redirect.store',
+                'name' => 'grp.models.website.redirect.store',
                 'parameters' => [
                     'website' => $parent->id,
-                ]
+                ],
             ];
         } else {
             $route = [
-                'name'       => 'grp.models.webpage.redirect.store',
+                'name' => 'grp.models.webpage.redirect.store',
                 'parameters' => [
-                    'webpage' => $parent->id
-                ]
+                    'webpage' => $parent->id,
+                ],
             ];
         }
 
@@ -55,43 +55,42 @@ class CreateRedirect extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => $title,
-                'pageHead'    => [
+                'title' => $title,
+                'pageHead' => [
                     'title' => $title,
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => preg_replace('/redirect.create$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => preg_replace('/redirect.create$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
-                'formData'    => [
+                'formData' => [
                     'fullLayout' => true,
-                    'blueprint'  =>
-                    [
+                    'blueprint' => [
                         [
-                            'title'  => $title,
+                            'title' => $title,
                             'fields' => [
                                 'type' => [
-                                    'type'     => 'select',
-                                    'label'    => __('type'),
+                                    'type' => 'select',
+                                    'label' => __('type'),
                                     'required' => true,
-                                    'options'  => Options::forEnum(RedirectTypeEnum::class),
+                                    'options' => Options::forEnum(RedirectTypeEnum::class),
                                 ],
                                 'path' => [
-                                    'type'     => 'input',
-                                    'label'    => __('path'),
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('path'),
+                                    'required' => true,
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    'route'      => $route
+                    'route' => $route,
                 ],
 
             ]
@@ -100,6 +99,7 @@ class CreateRedirect extends OrgAction
 
     /**
      * @throws Exception
+     *
      * @noinspection PhpUnusedParameterInspection
      */
     public function inWebpage(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Response
@@ -129,11 +129,11 @@ class CreateRedirect extends OrgAction
             ),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating Redirect'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

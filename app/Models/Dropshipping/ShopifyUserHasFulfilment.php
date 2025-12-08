@@ -30,9 +30,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property-read \App\Models\Dropshipping\CustomerClient|null $customerClient
  * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $model
  * @property-read \App\Models\Dropshipping\ShopifyUser $shopifyUser
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasFulfilment newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasFulfilment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasFulfilment query()
+ *
  * @mixin \Eloquent
  */
 class ShopifyUserHasFulfilment extends Pivot
@@ -41,7 +43,7 @@ class ShopifyUserHasFulfilment extends Pivot
 
     protected $casts = [
         'state' => ChannelFulfilmentStateEnum::class,
-        'no_fulfilment_reason' => ShopifyFulfilmentReasonEnum::class
+        'no_fulfilment_reason' => ShopifyFulfilmentReasonEnum::class,
     ];
 
     public function shopifyUser(): BelongsTo

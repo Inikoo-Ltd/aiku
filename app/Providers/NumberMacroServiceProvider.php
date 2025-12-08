@@ -34,15 +34,15 @@ class NumberMacroServiceProvider extends ServiceProvider
             // Format with fixed precision to avoid values like $1.00M
             $abbreviated = round($abbreviated, $precision);
 
-            return Number::currency($abbreviated, $currency) . $suffix;
+            return Number::currency($abbreviated, $currency).$suffix;
         });
 
         Number::macro('delta', function ($current, $previous) {
 
-            if (!is_numeric($current)) {
+            if (! is_numeric($current)) {
                 $current = 0;
             }
-            if (!is_numeric($previous)) {
+            if (! is_numeric($previous)) {
                 $previous = 0;
             }
 
@@ -62,10 +62,10 @@ class NumberMacroServiceProvider extends ServiceProvider
 
         Number::macro('rawDelta', function ($current, $previous) {
 
-            if (!is_numeric($current)) {
+            if (! is_numeric($current)) {
                 $current = 0;
             }
-            if (!is_numeric($previous)) {
+            if (! is_numeric($previous)) {
                 $previous = 0;
             }
 
@@ -78,7 +78,6 @@ class NumberMacroServiceProvider extends ServiceProvider
             } else {
                 return $current / $previous;
             }
-
 
         });
 
@@ -103,8 +102,6 @@ class NumberMacroServiceProvider extends ServiceProvider
 
             return $data;
         });
-
-
 
     }
 }

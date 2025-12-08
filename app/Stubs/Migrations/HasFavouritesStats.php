@@ -16,6 +16,7 @@ trait HasFavouritesStats
     {
         $table->unsignedSmallInteger('number_favourites')->default(0);
         $table->unsignedSmallInteger('number_unfavourited')->default(0);
+
         return $table;
     }
 
@@ -23,10 +24,7 @@ trait HasFavouritesStats
     {
         $table->unsignedSmallInteger('number_customers_who_favourited')->default(0);
         $table->unsignedSmallInteger('number_customers_who_un_favourited')->default(0);
+
         return $table;
     }
-
-
-
-
 }

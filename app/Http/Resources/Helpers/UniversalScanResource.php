@@ -24,14 +24,14 @@ class UniversalScanResource extends JsonResource
     {
         return [
             'model_type' => $this->model_type,
-            'model'      => $this->when(true, function () {
+            'model' => $this->when(true, function () {
                 return match ($this->model_type) {
-                    'Location'       => new LocationResource($this->resource->model),
-                    'Pallet'         => new PalletResource($this->resource->model),
-                    'Item'           => new StoredItemResource($this->resource->model),
+                    'Location' => new LocationResource($this->resource->model),
+                    'Pallet' => new PalletResource($this->resource->model),
+                    'Item' => new StoredItemResource($this->resource->model),
                     'PalletDelivery' => new PalletDeliveryResource($this->resource->model),
-                    'PalletReturn'   => new PalletReturnResource($this->resource->model),
-                    default          => [],
+                    'PalletReturn' => new PalletReturnResource($this->resource->model),
+                    default => [],
                 };
             }),
         ];

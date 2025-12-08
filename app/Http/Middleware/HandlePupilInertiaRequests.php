@@ -18,13 +18,12 @@ class HandlePupilInertiaRequests extends Middleware
 {
     protected $rootView = 'app-pupil';
 
-
     public function share(Request $request): array
     {
         /** @var \App\Models\Dropshipping\ShopifyUser $shopifyUser */
         $shopifyUser = $request->user('pupil');
 
-        $firstLoadOnlyProps          = GetPupilFirstLoadProps::run($request, $shopifyUser);
+        $firstLoadOnlyProps = GetPupilFirstLoadProps::run($request, $shopifyUser);
         $firstLoadOnlyProps['ziggy'] = function () use ($request) {
             return array_merge((new Ziggy('pupil'))->toArray(), [
                 'location' => $request->url(),
@@ -34,11 +33,11 @@ class HandlePupilInertiaRequests extends Middleware
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'auth'  => [
+                'auth' => [
                     'user' => $shopifyUser ? LoggedShopifyUserResource::make($shopifyUser)->getArray() : null,
                 ],
                 'flash' => [
-                    'notification' => fn () => $request->session()->get('notification')
+                    'notification' => fn () => $request->session()->get('notification'),
                 ],
                 'ziggy' => [
                     'location' => $request->url(),

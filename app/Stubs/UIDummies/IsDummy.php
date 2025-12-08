@@ -28,11 +28,10 @@ trait IsDummy
             'Devel/Dummy',
             [
 
-                'title'    => __('dummy'),
+                'title' => __('dummy'),
                 'pageHead' => [
-                    'title' => $request->route()->getName()
+                    'title' => $request->route()->getName(),
                 ],
-
 
             ]
         );

@@ -25,6 +25,7 @@ class BroadcastPreviewWebpage implements ShouldBroadcast
     use SerializesModels;
 
     public array $data;
+
     public Webpage $webpage;
 
     public function __construct(Webpage $webpage)
@@ -35,15 +36,15 @@ class BroadcastPreviewWebpage implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'webpage'       => WebpageResource::make($this->webpage)->getArray(),
-            'webBlockTypes' => WebBlockTypesResource::collection(WebBlockType::all())
+            'webpage' => WebpageResource::make($this->webpage)->getArray(),
+            'webBlockTypes' => WebBlockTypesResource::collection(WebBlockType::all()),
         ];
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("webpage.".$this->webpage->slug.".preview")
+            new PrivateChannel('webpage.'.$this->webpage->slug.'.preview'),
         ];
     }
 

@@ -23,8 +23,8 @@ use Illuminate\Validation\Validator;
 
 class StoreTransactionFromShipping extends OrgAction
 {
-    use WithOrderExchanges;
     use WithNoProductStoreTransaction;
+    use WithOrderExchanges;
     use WithStoreNoProductTransaction;
 
     private ?ShippingZone $shippingZone;
@@ -34,10 +34,8 @@ class StoreTransactionFromShipping extends OrgAction
         $modelData = $this->prepareShippingTransaction($shippingZone, $modelData);
         $modelData = $this->transactionFieldProcess($order, $modelData);
 
-
         /** @var Transaction $transaction */
         $transaction = $order->transactions()->create($modelData);
-
 
         if ($this->strict) {
             CalculateOrderTotalAmounts::run($order);
@@ -50,29 +48,28 @@ class StoreTransactionFromShipping extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'state'          => ['sometimes', Rule::enum(TransactionStateEnum::class)],
-            'status'         => ['sometimes', Rule::enum(TransactionStatusEnum::class)],
-            'gross_amount'   => ['sometimes', 'numeric'],
-            'net_amount'     => ['sometimes', 'numeric'],
-            'org_exchange'   => ['sometimes', 'numeric'],
-            'grp_exchange'   => ['sometimes', 'numeric'],
+            'state' => ['sometimes', Rule::enum(TransactionStateEnum::class)],
+            'status' => ['sometimes', Rule::enum(TransactionStatusEnum::class)],
+            'gross_amount' => ['sometimes', 'numeric'],
+            'net_amount' => ['sometimes', 'numeric'],
+            'org_exchange' => ['sometimes', 'numeric'],
+            'grp_exchange' => ['sometimes', 'numeric'],
             'org_net_amount' => ['sometimes', 'numeric'],
             'grp_net_amount' => ['sometimes', 'numeric'],
 
-            'tax_category_id'     => ['sometimes', 'required', 'exists:tax_categories,id'],
-            'date'                => ['sometimes', 'required', 'date'],
-            'quantity_ordered'    => ['required', 'numeric', 'min:0'],
+            'tax_category_id' => ['sometimes', 'required', 'exists:tax_categories,id'],
+            'date' => ['sometimes', 'required', 'date'],
+            'quantity_ordered' => ['required', 'numeric', 'min:0'],
             'quantity_dispatched' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'submitted_at'        => ['sometimes', 'required', 'date'],
+            'submitted_at' => ['sometimes', 'required', 'date'],
 
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules['source_alt_id'] = ['sometimes', 'string', 'max:255'];
-            $rules['fetched_at']    = ['sometimes', 'required', 'date'];
-            $rules['created_at']    = ['sometimes', 'required', 'date'];
+            $rules['fetched_at'] = ['sometimes', 'required', 'date'];
+            $rules['created_at'] = ['sometimes', 'required', 'date'];
         }
-
 
         return $rules;
     }
@@ -86,12 +83,10 @@ class StoreTransactionFromShipping extends OrgAction
 
     public function action(Order $order, ?ShippingZone $shippingZone, array $modelData, bool $strict = true): Transaction
     {
-        $this->strict       = $strict;
+        $this->strict = $strict;
         $this->shippingZone = $shippingZone;
         $this->initialisationFromShop($order->shop, $modelData);
 
         return $this->handle($order, $shippingZone, $this->validatedData);
     }
-
-
 }

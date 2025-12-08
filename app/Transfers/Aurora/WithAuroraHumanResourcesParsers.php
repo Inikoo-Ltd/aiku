@@ -18,9 +18,7 @@ trait WithAuroraHumanResourcesParsers
     {
         $rawJobPositions = $this->parseJobPositions();
 
-
         $shops = [];
-
 
         if ($userID) {
             $shops = $this->getAuroraUserShopScopes($userID);
@@ -30,9 +28,8 @@ trait WithAuroraHumanResourcesParsers
         foreach ($rawJobPositions as $jobPositionCode) {
             /** @var JobPosition $jobPosition */
             $jobPosition = $this->organisation->jobPositions()->where('code', $jobPositionCode)->firstOrFail();
-            $scopes      = [];
-            $add         = true;
-
+            $scopes = [];
+            $add = true;
 
             if ($jobPosition->scope == JobPositionScopeEnum::SHOPS) {
                 $scopes = ['shops' => ['slug' => $shops]];
@@ -41,49 +38,42 @@ trait WithAuroraHumanResourcesParsers
                 }
             } elseif ($jobPosition->scope == JobPositionScopeEnum::WAREHOUSES) {
                 $scopes = [
-                    'warehouses' =>
-                        [
-                            'slug' => $this->organisation->warehouses()->pluck('slug')->all()
-                        ]
+                    'warehouses' => [
+                        'slug' => $this->organisation->warehouses()->pluck('slug')->all(),
+                    ],
                 ];
             } elseif ($jobPosition->scope == JobPositionScopeEnum::PRODUCTIONS) {
                 $scopes = [
-                    'productions' =>
-                        [
-                            'slug' => $this->organisation->productions()->pluck('slug')->all()
-                        ]
+                    'productions' => [
+                        'slug' => $this->organisation->productions()->pluck('slug')->all(),
+                    ],
                 ];
             } elseif ($jobPosition->scope == JobPositionScopeEnum::ORGANISATION) {
                 $scopes = [
-                    'organisations' =>
-                        [
-                            'slug' => [$this->organisation->slug]
-                        ]
+                    'organisations' => [
+                        'slug' => [$this->organisation->slug],
+                    ],
 
                 ];
             } elseif ($jobPosition->scope == JobPositionScopeEnum::FULFILMENTS || $jobPosition->scope == JobPositionScopeEnum::FULFILMENTS_WAREHOUSES) {
                 $scopes = [
-                    'fulfilments' =>
-                        [
-                            'slug' => $this->organisation->fulfilments()->pluck('slug')->all()
-                        ],
-                    'warehouses'  =>
-                        [
-                            'slug' => $this->organisation->warehouses()->pluck('slug')->all()
-                        ]
+                    'fulfilments' => [
+                        'slug' => $this->organisation->fulfilments()->pluck('slug')->all(),
+                    ],
+                    'warehouses' => [
+                        'slug' => $this->organisation->warehouses()->pluck('slug')->all(),
+                    ],
 
                 ];
             }
-
 
             if ($add) {
                 $positions[] = [
-                    'slug'   => $jobPosition->slug,
-                    'scopes' => $scopes
+                    'slug' => $jobPosition->slug,
+                    'scopes' => $scopes,
                 ];
             }
         }
-
 
         return $positions;
     }
@@ -91,7 +81,6 @@ trait WithAuroraHumanResourcesParsers
     private function parseJobPositions(): array
     {
         $jobPositions = $this->organisation->jobPositions()->pluck('id', 'code')->all();
-
 
         $jobPositionCodes = [];
 
@@ -133,7 +122,6 @@ trait WithAuroraHumanResourcesParsers
             }
         }
 
-
         $jobPositionIds = [];
 
         foreach ($jobPositionCodes as $jobPositionCode) {
@@ -147,7 +135,7 @@ trait WithAuroraHumanResourcesParsers
 
     protected function parseStaffGroups($isSupervisor, $staffGroupKey): ?string
     {
-        return match ((int)$staffGroupKey) {
+        return match ((int) $staffGroupKey) {
             1 => 'org-admin',
             6 => 'hr-c',
             20 => 'hr-m',
@@ -193,26 +181,22 @@ trait WithAuroraHumanResourcesParsers
     {
         $shops = [];
 
-
         foreach (
             DB::connection('aurora')->table('User Right Scope Bridge')->where('User Key', $userID)->get() as $rawScope
         ) {
             if ($rawScope->{'Scope'} == 'Store') {
-                $shop               = $this->parseShop($this->organisation->id.':'.$rawScope->{'Scope Key'});
+                $shop = $this->parseShop($this->organisation->id.':'.$rawScope->{'Scope Key'});
                 $shops[$shop->slug] = true;
             }
             if ($rawScope->{'Scope'} == 'Website') {
                 $auroraShopFromWebsiteData = DB::connection('aurora')->table('Website Dimension')->select('Website Store Key')->where('Website Key', $userID)->first();
                 if ($auroraShopFromWebsiteData) {
-                    $shop               = $this->parseShop($this->organisation->id.':'.$auroraShopFromWebsiteData->{'Website Store Key'});
+                    $shop = $this->parseShop($this->organisation->id.':'.$auroraShopFromWebsiteData->{'Website Store Key'});
                     $shops[$shop->slug] = true;
                 }
             }
         }
 
-
         return array_keys($shops);
     }
-
-
 }

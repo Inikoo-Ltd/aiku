@@ -47,25 +47,26 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\PollReply> $pollReplies
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\CRM\PollStat|null $stats
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Poll newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Poll newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Poll onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Poll query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Poll withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Poll withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Poll extends Model implements Auditable
 {
-    use InShop;
-    use SoftDeletes;
     use HasHistory;
     use HasSlug;
-
+    use InShop;
+    use SoftDeletes;
 
     protected $casts = [
-        'type'            => PollTypeEnum::class,
-        'fetched_at'      => 'datetime',
+        'type' => PollTypeEnum::class,
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
@@ -88,7 +89,7 @@ class Poll extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'crm'
+            'crm',
         ];
     }
 
@@ -101,7 +102,6 @@ class Poll extends Model implements Auditable
         'in_iris',
         'in_iris_required',
     ];
-
 
     public function stats(): HasOne
     {

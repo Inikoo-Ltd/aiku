@@ -23,7 +23,7 @@ class OrganisationHydrateClockingMachines
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_clocking_machines' => $organisation->clockingMachines()->count()
+            'number_clocking_machines' => $organisation->clockingMachines()->count(),
         ];
         $stats = array_merge(
             $stats,

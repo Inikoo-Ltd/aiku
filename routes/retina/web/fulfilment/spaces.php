@@ -6,7 +6,6 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Retina\Spaces\UI\IndexRetinaSpaces;
 use App\Actions\Retina\Spaces\UI\ShowRetinaSpace;
 

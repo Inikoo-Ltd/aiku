@@ -13,15 +13,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use IsProcurementOrder;
+return new class extends Migration
+{
     use HasProcurementStats;
+    use IsProcurementOrder;
 
     public function up(): void
     {
         Schema::create('stock_deliveries', function (Blueprint $table) {
             $table = $this->headProcurementOrder($table);
-
 
             $table->string('state')->index()->default(StockDeliveryStateEnum::IN_PROCESS->value);
             $table->dateTimeTz('date')->comment('latest relevant date');
@@ -40,11 +40,11 @@ return new class () extends Migration {
             $table = $this->statsProcurementOrder($table);
             $table = $this->stockDeliveryItemsStats($table);
             $table = $this->costingProcurementOrder($table);
+
             return $this->footerProcurementOrder($table);
 
         });
     }
-
 
     public function down(): void
     {

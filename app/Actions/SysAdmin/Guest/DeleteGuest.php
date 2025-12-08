@@ -22,7 +22,6 @@ class DeleteGuest
     use AsAction;
     use WithAttributes;
 
-
     private bool $isAction = false;
 
     public function handle(Guest $guest): Guest
@@ -42,7 +41,8 @@ class DeleteGuest
         if ($this->isAction) {
             return true;
         }
-        return $request->user()->authTo("sysadmin.edit");
+
+        return $request->user()->authTo('sysadmin.edit');
     }
 
     public function asController(Guest $guest, ActionRequest $request): Guest
@@ -55,6 +55,7 @@ class DeleteGuest
     public function action(Guest $guest): Guest
     {
         $this->isAction = true;
+
         return $this->handle($guest);
     }
 
@@ -62,5 +63,4 @@ class DeleteGuest
     {
         return Redirect::route('grp.sysadmin.guests.index');
     }
-
 }

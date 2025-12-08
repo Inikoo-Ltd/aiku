@@ -59,22 +59,22 @@ class StoreWebsite extends OrgAction
         $headerSnapshot = StoreWebsiteSnapshot::run(
             $website,
             [
-                'scope'  => SnapshotScopeEnum::HEADER,
-                'layout' => []
+                'scope' => SnapshotScopeEnum::HEADER,
+                'layout' => [],
             ]
         );
         $menuSnapshot = StoreWebsiteSnapshot::run(
             $website,
             [
-                'scope'  => SnapshotScopeEnum::MENU,
-                'layout' => []
+                'scope' => SnapshotScopeEnum::MENU,
+                'layout' => [],
             ]
         );
         $footerSnapshot = StoreWebsiteSnapshot::run(
             $website,
             [
-                'scope'  => SnapshotScopeEnum::FOOTER,
-                'layout' => []
+                'scope' => SnapshotScopeEnum::FOOTER,
+                'layout' => [],
             ],
         );
         $website->update(
@@ -82,11 +82,11 @@ class StoreWebsite extends OrgAction
                 'unpublished_header_snapshot_id' => $headerSnapshot->id,
                 'unpublished_menu_snapshot_id' => $menuSnapshot->id,
                 'unpublished_footer_snapshot_id' => $footerSnapshot->id,
-                'published_layout'               => [
+                'published_layout' => [
                     'header' => $headerSnapshot->layout,
                     'menu' => $menuSnapshot->layout,
-                    'footer' => $footerSnapshot->layout
-                ]
+                    'footer' => $footerSnapshot->layout,
+                ],
             ]
         );
         $website->webStats()->create();
@@ -102,7 +102,6 @@ class StoreWebsite extends OrgAction
         return $website;
     }
 
-
     public function rules(): array
     {
         $rules = [
@@ -117,17 +116,17 @@ class StoreWebsite extends OrgAction
                     extraConditions: [
                         [
                             'column' => 'group_id',
-                            'value'  => $this->organisation->group_id
+                            'value' => $this->organisation->group_id,
                         ],
                         [
-                            'column'    => 'status',
+                            'column' => 'status',
                             'operation' => '=',
-                            'value'     => true
+                            'value' => true,
                         ],
                     ]
                 ),
             ],
-            'code'   => [
+            'code' => [
                 'required',
                 'ascii',
                 'lowercase',
@@ -140,17 +139,17 @@ class StoreWebsite extends OrgAction
                     ]
                 ),
             ],
-            'name'   => ['required', 'string', 'max:255'],
-            'state'  => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
+            'name' => ['required', 'string', 'max:255'],
+            'state' => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
             'status' => ['sometimes', 'boolean'],
         ];
 
-        if (!$this->strict) {
-            $rules['fetched_at']  = ['sometimes', 'date'];
-            $rules['source_id']   = ['sometimes', 'string'];
-            $rules['created_at']  = ['sometimes', 'nullable', 'date'];
+        if (! $this->strict) {
+            $rules['fetched_at'] = ['sometimes', 'date'];
+            $rules['source_id'] = ['sometimes', 'string'];
+            $rules['created_at'] = ['sometimes', 'nullable', 'date'];
             $rules['launched_at'] = ['sometimes', 'nullable', 'date'];
-            $rules['domain']      = [
+            $rules['domain'] = [
                 'required',
                 'string',
                 'ascii',
@@ -161,8 +160,8 @@ class StoreWebsite extends OrgAction
                     extraConditions: [
                         [
                             'column' => 'organisation_id',
-                            'value'  => $this->organisation->id
-                        ]
+                            'value' => $this->organisation->id,
+                        ],
                     ]
                 ),
             ];
@@ -191,21 +190,21 @@ class StoreWebsite extends OrgAction
             return Redirect::route('grp.org.fulfilments.show.web.websites.show', [
                 $this->organisation->slug,
                 $this->parent->slug,
-                $website->slug
+                $website->slug,
             ]);
         }
 
         return Redirect::route('grp.org.shops.show.web.websites.show', [
             $this->organisation->slug,
             $this->parent->slug,
-            $website->slug
+            $website->slug,
         ]);
     }
 
     public function asController(Shop $shop, ActionRequest $request): Website
     {
         $this->parent = $shop;
-        $this->shop   = $shop;
+        $this->shop = $shop;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, $this->validatedData);
@@ -214,7 +213,7 @@ class StoreWebsite extends OrgAction
     public function inFulfilment(Fulfilment $fulfilment, ActionRequest $request): Website
     {
         $this->parent = $fulfilment;
-        $this->shop   = $fulfilment->shop;
+        $this->shop = $fulfilment->shop;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($fulfilment->shop, $this->validatedData);
@@ -222,18 +221,16 @@ class StoreWebsite extends OrgAction
 
     public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Website
     {
-        if (!$audit) {
+        if (! $audit) {
             Website::disableAuditing();
         }
 
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->shop           = $shop;
+        $this->shop = $shop;
         $this->initialisation($shop->organisation, $modelData);
 
         return $this->handle($shop, $this->validatedData);
     }
-
-
 }

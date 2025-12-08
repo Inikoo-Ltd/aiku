@@ -19,8 +19,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class MatchRetinaBulkPortfoliosToCurrentShopifyProduct extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     /**
      * @throws \Exception

@@ -23,17 +23,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $source_id
  * @property bool $is_body_encoded
  * @property-read \App\Models\Comms\DispatchedEmail $dispatchedEmail
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailCopy newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailCopy newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailCopy query()
+ *
  * @mixin \Eloquent
  */
 class EmailCopy extends Model
 {
     protected $casts = [
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
-        'is_body_encoded'    => 'boolean',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
+        'is_body_encoded' => 'boolean',
     ];
 
     protected $guarded = [];
@@ -42,5 +44,4 @@ class EmailCopy extends Model
     {
         return $this->belongsTo(DispatchedEmail::class);
     }
-
 }

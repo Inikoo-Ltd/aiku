@@ -14,8 +14,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnPhysicalGood newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnPhysicalGood newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnPhysicalGood query()
+ *
  * @mixin \Eloquent
  */
-class PalletReturnPhysicalGood extends Pivot
-{
-}
+class PalletReturnPhysicalGood extends Pivot {}

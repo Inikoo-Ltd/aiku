@@ -251,9 +251,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOutboxCustomerNotificationIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOutboxCustomerNotificationIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOutboxCustomerNotificationIntervals query()
+ *
  * @mixin \Eloquent
  */
 class OrganisationOutboxCustomerNotificationIntervals extends Model

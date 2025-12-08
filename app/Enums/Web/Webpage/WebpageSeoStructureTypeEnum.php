@@ -22,11 +22,9 @@ enum WebpageSeoStructureTypeEnum: string
     /*   case SPORT = 'sport';
       case JOB = 'job';
       case ENTERTAINMENT = 'entertainment'; */
-    case NEWS = 'news';/*
+    case NEWS = 'news'; /*
     case FOOD_AND_DRINK = 'food_and_drink';
     case EDUCATION_AND_SCIENCE = 'education_and_science'; */
-
-
 
     public static function labels(): array
     {
@@ -37,7 +35,7 @@ enum WebpageSeoStructureTypeEnum: string
             'job' => __('Job'),
             'entertainment' => __('Entertainment'), */
             'news' => __('News'),
-          /*   'food_and_drink' => __('Food and Drink'),
+            /*   'food_and_drink' => __('Food and Drink'),
             'education_and_science' => __('Education and Science'), */
         ];
     }

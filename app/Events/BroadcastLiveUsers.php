@@ -3,10 +3,10 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\PresenceChannel;
 
 class BroadcastLiveUsers implements ShouldBroadcast
 {
@@ -18,6 +18,7 @@ class BroadcastLiveUsers implements ShouldBroadcast
      * Create a new event instance.
      */
     public array $data;
+
     public mixed $user;
 
     public function __construct(array $data, $user)
@@ -30,8 +31,8 @@ class BroadcastLiveUsers implements ShouldBroadcast
     {
         return [
             'active_page' => $this->data['active_page'],
-            'user_id'     => $this->user->id,
-            'user_alias'  => $this->user->alias,
+            'user_id' => $this->user->id,
+            'user_alias' => $this->user->alias,
         ];
     }
 

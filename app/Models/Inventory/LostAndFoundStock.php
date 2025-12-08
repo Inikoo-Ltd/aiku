@@ -23,17 +23,18 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property LostAndFoundOrgStockStateEnum $state
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Inventory\LostAndFoundStockFactory factory($count = null, $state = [])
  * @method static Builder<static>|LostAndFoundStock newModelQuery()
  * @method static Builder<static>|LostAndFoundStock newQuery()
  * @method static Builder<static>|LostAndFoundStock query()
+ *
  * @mixin Eloquent
  */
-
 class LostAndFoundStock extends Model
 {
-    use HasUniversalSearch;
     use HasFactory;
+    use HasUniversalSearch;
 
     protected $casts = [
         'state' => LostAndFoundOrgStockStateEnum::class,

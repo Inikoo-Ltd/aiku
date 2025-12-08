@@ -23,17 +23,18 @@ trait WithImageSeo
             /** @var UploadedFile $image */
             $image = Arr::pull($modelData, 'image');
             $imageData = [
-                'path'         => $image->getPathName(),
+                'path' => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
-                'extension'    => $image->getClientOriginalExtension(),
+                'extension' => $image->getClientOriginalExtension(),
             ];
-            $model     = SaveModelImage::run(
+            $model = SaveModelImage::run(
                 model: $model,
                 imageData: $imageData,
                 scope: 'seo',
                 foreignKeyMedia: 'seo_image_id'
             );
         }
+
         return $model;
     }
 }

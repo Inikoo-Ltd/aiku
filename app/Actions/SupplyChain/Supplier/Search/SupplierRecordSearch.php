@@ -27,17 +27,17 @@ class SupplierRecordSearch implements ShouldBeUnique
     {
         if ($supplier->trashed()) {
             $supplier->universalSearch()->delete();
+
             return;
         }
 
         $supplier->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'        => $supplier->group_id,
-                'sections'        => ['supply-chain'],
+                'group_id' => $supplier->group_id,
+                'sections' => ['supply-chain'],
                 'haystack_tier_1' => trim($supplier->name.' '.$supplier->email.' '.$supplier->company_name.' '.$supplier->contact_name),
             ]
         );
     }
-
 }

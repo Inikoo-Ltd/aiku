@@ -17,8 +17,7 @@ class ResetOrderTaxCategory
 {
     use asAction;
 
-
-    public function handle(Order $order, Command $command = null): Order
+    public function handle(Order $order, ?Command $command = null): Order
     {
         $customer = $order->customer;
         if ($customer) {
@@ -35,14 +34,12 @@ class ResetOrderTaxCategory
             );
             $command?->info("New tax category rate $tacCategory->rate");
 
-
             UpdateOrder::make()->action($order, [
                 'tax_category_id' => $tacCategory->id,
             ]);
 
             CalculateOrderTotalAmounts::run($order);
         }
-
 
         return $order;
     }
@@ -59,5 +56,4 @@ class ResetOrderTaxCategory
 
         return 0;
     }
-
 }

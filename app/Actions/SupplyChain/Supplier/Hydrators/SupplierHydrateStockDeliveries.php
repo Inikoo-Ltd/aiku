@@ -38,9 +38,6 @@ class SupplierHydrateStockDeliveries implements ShouldBeUnique
             $stats['number_stock_deliveries_state_'.$productState->snake()] = Arr::get($stockDeliveryStateCounts, $productState->value, 0);
         }
 
-
         $supplier->stats()->update($stats);
     }
-
-
 }

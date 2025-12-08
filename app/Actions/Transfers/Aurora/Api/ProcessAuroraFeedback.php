@@ -22,5 +22,4 @@ class ProcessAuroraFeedback extends OrgAction
     {
         $this->fetcher = FetchAuroraFeedbacks::class;
     }
-
 }

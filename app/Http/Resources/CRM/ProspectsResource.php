@@ -29,14 +29,14 @@ class ProspectsResource extends JsonResource
         $prospect = $this;
 
         return [
-            'id'         => $prospect->id,
-            'slug'       => $prospect->slug,
-            'name'       => $prospect->name,
-            'email'      => $this->email,
-            'phone'      => $prospect->phone,
-            'is_opt_in'  => $prospect->is_opt_in,
-            'website'    => $prospect->contact_website,
-            'state'      => $prospect->state,
+            'id' => $prospect->id,
+            'slug' => $prospect->slug,
+            'name' => $prospect->name,
+            'email' => $this->email,
+            'phone' => $prospect->phone,
+            'is_opt_in' => $prospect->is_opt_in,
+            'website' => $prospect->contact_website,
+            'state' => $prospect->state,
             'state_icon' => $prospect->state->stateIcon()[$prospect->state->value],
         ];
     }

@@ -19,7 +19,6 @@ class GetWebBlockBlog
 {
     use AsObject;
 
-
     public function handle(Webpage $webpage, array $webBlock): array
     {
         $website = $webpage->website;

@@ -22,5 +22,4 @@ class ProcessAuroraWebpage extends OrgAction
     {
         $this->fetcher = FetchAuroraWebpages::class;
     }
-
 }

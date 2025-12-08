@@ -15,8 +15,8 @@ enum DimensionTypeEnum: string
     use EnumHelperTrait;
 
     case RECTANGULAR = 'rectangular';
-    case SHEET   = 'sheet';
-    case CILINDER     = 'cilinder';
-    case SPHERE     = 'sphere';
-    case STRING     = 'string';
+    case SHEET = 'sheet';
+    case CILINDER = 'cilinder';
+    case SPHERE = 'sphere';
+    case STRING = 'string';
 }

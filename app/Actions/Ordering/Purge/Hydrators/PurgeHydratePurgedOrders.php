@@ -33,12 +33,12 @@ class PurgeHydratePurgedOrders implements ShouldBeUnique
             ->count();
 
         $stats = [
-            'estimated_number_orders'          => $purge->purgedOrders()->count(),
-            'number_purged_orders'             => $purgedOrders,
+            'estimated_number_orders' => $purge->purgedOrders()->count(),
+            'number_purged_orders' => $purgedOrders,
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'purged_orders',
+            model: 'purged_orders',
             field: 'status',
             enum: PurgedOrderStatusEnum::class,
             models: PurgedOrder::class,
@@ -49,7 +49,7 @@ class PurgeHydratePurgedOrders implements ShouldBeUnique
         $purge->stats()->update($stats);
 
         // Excluding amountStats & transactionsStats for aurora migrated purges
-        if (!$purge->source_id) {
+        if (! $purge->source_id) {
             $this->amountStats($purge);
             $this->transactionsStats($purge);
         }
@@ -65,17 +65,15 @@ class PurgeHydratePurgedOrders implements ShouldBeUnique
             ->sum('number_transactions');
 
         $stats = [
-            'estimated_number_transactions'    => $estimatedNumberTransactions,
-            'number_purged_transactions'       => $purgedTransactions,
+            'estimated_number_transactions' => $estimatedNumberTransactions,
+            'number_purged_transactions' => $purgedTransactions,
         ];
         $purge->stats()->update($stats);
 
     }
 
-
     private function amountStats(Purge $purge): void
     {
-
 
         $estimatedPurgedOrderAmounts = $purge->purgedOrders()
             ->get();
@@ -110,12 +108,12 @@ class PurgeHydratePurgedOrders implements ShouldBeUnique
 
         $stats = [
 
-            'estimated_net_amount'                 => $estimatedPurgedAmount,
-            'estimated_org_net_amount'             => $estimatedPurgedOrgAmount,
-            'estimated_grp_net_amount'             => $estimatedPurgedGrpAmount,
-            'purged_net_amount'                    => $purgedAmount,
-            'purged_org_net_amount'                => $purgedOrgAmount,
-            'purged_grp_net_amount'                => $purgedGrpAmount
+            'estimated_net_amount' => $estimatedPurgedAmount,
+            'estimated_org_net_amount' => $estimatedPurgedOrgAmount,
+            'estimated_grp_net_amount' => $estimatedPurgedGrpAmount,
+            'purged_net_amount' => $purgedAmount,
+            'purged_org_net_amount' => $purgedOrgAmount,
+            'purged_grp_net_amount' => $purgedGrpAmount,
         ];
         $purge->stats()->update($stats);
 

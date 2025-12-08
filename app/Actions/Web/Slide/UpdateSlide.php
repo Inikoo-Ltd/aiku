@@ -15,15 +15,11 @@ class UpdateSlide
 {
     use WithActionUpdate;
 
-
     public function handle(Slide $slide, array $modelData): Slide
     {
 
         $this->update($slide, $modelData, ['layout']);
 
-
         return $slide;
     }
-
-
 }

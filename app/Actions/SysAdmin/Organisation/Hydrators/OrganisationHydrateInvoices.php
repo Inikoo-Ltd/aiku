@@ -48,6 +48,4 @@ class OrganisationHydrateInvoices implements ShouldBeUnique
 
         $organisation->orderingStats()->update($stats);
     }
-
-
 }

@@ -22,5 +22,4 @@ class ProcessAuroraOrgStockMovement extends OrgAction
     {
         $this->fetcher = FetchAuroraOrgStockMovements::class;
     }
-
 }

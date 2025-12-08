@@ -37,19 +37,21 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Dropshipping\PlatformSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Dropshipping\PlatformStats|null $stats
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Platform newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Platform newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Platform query()
+ *
  * @mixin \Eloquent
  */
 class Platform extends Model
 {
+    use HasImage;
     use HasSlug;
     use InGroup;
-    use HasImage;
 
     protected $casts = [
-        'type' => PlatformTypeEnum::class
+        'type' => PlatformTypeEnum::class,
     ];
 
     protected $guarded = [];

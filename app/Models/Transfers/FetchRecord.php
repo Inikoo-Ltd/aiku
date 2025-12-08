@@ -27,21 +27,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Transfers\Fetch $fetch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FetchRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FetchRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FetchRecord query()
+ *
  * @mixin \Eloquent
  */
 class FetchRecord extends Model
 {
     protected $casts = [
-        'data'       => 'array',
+        'data' => 'array',
         'model_data' => 'array',
-        'type'       => FetchRecordTypeEnum::class,
+        'type' => FetchRecordTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'       => '{}',
+        'data' => '{}',
         'model_data' => '{}',
     ];
 
@@ -51,6 +53,4 @@ class FetchRecord extends Model
     {
         return $this->belongsTo(Fetch::class);
     }
-
-
 }

@@ -40,7 +40,7 @@ class ShowPurchaseOrder extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit   = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
         $this->canDelete = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
 
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
@@ -76,8 +76,9 @@ class ShowPurchaseOrder extends OrgAction
 
     public function maya(Organisation $organisation, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        $this->maya   = true;
+        $this->maya = true;
         $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+
         return $this->handle($purchaseOrder);
     }
 
@@ -95,17 +96,17 @@ class ShowPurchaseOrder extends OrgAction
             if ($state === PurchaseOrderStateEnum::IN_PROCESS) {
                 $timestamp = $purchaseOrder->created_at;
             } else {
-                $timestamp = $purchaseOrder->{$state->snake() . '_at'} ? $purchaseOrder->{$state->snake() . '_at'} : null;
+                $timestamp = $purchaseOrder->{$state->snake().'_at'} ? $purchaseOrder->{$state->snake().'_at'} : null;
             }
 
             // If all possible values are null, set the timestamp to null explicitly
             $timestamp = $timestamp ?: null;
 
             $timeline[$state->value] = [
-                'label'     => $state->labels()[$state->value],
-                'tooltip'   => $state->labels()[$state->value],
-                'key'       => $state->value,
-                'timestamp' => $timestamp
+                'label' => $state->labels()[$state->value],
+                'tooltip' => $state->labels()[$state->value],
+                'key' => $state->value,
+                'timestamp' => $timestamp,
             ];
         }
 
@@ -114,7 +115,7 @@ class ShowPurchaseOrder extends OrgAction
             [
                 $purchaseOrder->state->value == PurchaseOrderStateEnum::CANCELLED->value
                     ? PurchaseOrderStateEnum::SETTLED->value
-                    : PurchaseOrderStateEnum::CANCELLED->value
+                    : PurchaseOrderStateEnum::CANCELLED->value,
             ]
         );
 
@@ -123,22 +124,22 @@ class ShowPurchaseOrder extends OrgAction
         if ($purchaseOrder->parent instanceof OrgAgent) {
             $orderer = OrgAgentResource::make($purchaseOrder->parent)->toArray($request);
             $productListRoute = [
-                'method'     => 'get',
-                'name'       => 'grp.json.org-agent.org-supplier-products',
+                'method' => 'get',
+                'name' => 'grp.json.org-agent.org-supplier-products',
                 'parameters' => [
                     'orgAgent' => $purchaseOrder->parent->slug,
-                    'purchaseOrder' => $purchaseOrder->slug
-                ]
+                    'purchaseOrder' => $purchaseOrder->slug,
+                ],
             ];
         } elseif ($purchaseOrder->parent instanceof OrgSupplier) {
             $orderer = OrgSupplierResource::make($purchaseOrder->parent)->toArray($request);
             $productListRoute = [
-                'method'     => 'get',
-                'name'       => 'grp.json.org-supplier.org-supplier-products',
+                'method' => 'get',
+                'name' => 'grp.json.org-supplier.org-supplier-products',
                 'parameters' => [
                     'orgSupplier' => $purchaseOrder->parent->slug,
-                    'purchaseOrder' => $purchaseOrder->slug
-                ]
+                    'purchaseOrder' => $purchaseOrder->slug,
+                ],
             ];
         }
 
@@ -147,224 +148,224 @@ class ShowPurchaseOrder extends OrgAction
             $actions = match ($purchaseOrder->state) {
                 PurchaseOrderStateEnum::IN_PROCESS => [
                     [
-                        'type'    => 'button',
-                        'style'   => 'secondary',
-                        'icon'    => 'fal fa-plus',
-                        'key'     => 'add-products',
-                        'label'   => __('Add products'),
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'icon' => 'fal fa-plus',
+                        'key' => 'add-products',
+                        'label' => __('Add products'),
                         'tooltip' => __('Add products'),
-                        'route'   => [
-                            'name'       => 'grp.models.purchase-order.transaction.store',
+                        'route' => [
+                            'name' => 'grp.models.purchase-order.transaction.store',
                             'parameters' => [
                                 'purchaseOrder' => $purchaseOrder->id,
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
                     ($purchaseOrder->purchaseOrderTransactions()->count() > 0) ?
                         [
-                            'type'    => 'button',
-                            'style'   => 'save',
+                            'type' => 'button',
+                            'style' => 'save',
                             'tooltip' => __('Submit'),
-                            'label'   => __('Submit'),
-                            'key'     => 'action',
-                            'route'   => [
-                                'method'     => 'patch',
-                                'name'       => 'grp.models.purchase-order.submit',
+                            'label' => __('Submit'),
+                            'key' => 'action',
+                            'route' => [
+                                'method' => 'patch',
+                                'name' => 'grp.models.purchase-order.submit',
                                 'parameters' => [
-                                    'purchaseOrder' => $purchaseOrder->id
-                                ]
-                            ]
+                                    'purchaseOrder' => $purchaseOrder->id,
+                                ],
+                            ],
                         ] : [],
                 ],
                 PurchaseOrderStateEnum::SUBMITTED => [
                     [
-                        'type'    => 'button',
-                        'style'   => 'save',
+                        'type' => 'button',
+                        'style' => 'save',
                         'tooltip' => __('Confirm'),
-                        'label'   => __('Confirm'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.confirm',
+                        'label' => __('Confirm'),
+                        'key' => 'action',
+                        'route' => [
+                            'method' => 'patch',
+                            'name' => 'grp.models.purchase-order.confirm',
                             'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id
-                            ]
-                        ]
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
                     ],
                     [
-                        'type'    => 'button',
-                        'style'   => 'delete',
+                        'type' => 'button',
+                        'style' => 'delete',
                         'tooltip' => __('Cancel'),
-                        'label'   => __('Cancel'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.cancel',
+                        'label' => __('Cancel'),
+                        'key' => 'action',
+                        'route' => [
+                            'method' => 'patch',
+                            'name' => 'grp.models.purchase-order.cancel',
                             'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id
-                            ]
-                        ]
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
                     ],
 
                 ],
                 PurchaseOrderStateEnum::CONFIRMED => [
                     [
-                        'type'    => 'button',
-                        'style'   => 'save',
+                        'type' => 'button',
+                        'style' => 'save',
                         'tooltip' => __('Settle'),
-                        'label'   => __('Settle'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.settle',
+                        'label' => __('Settle'),
+                        'key' => 'action',
+                        'route' => [
+                            'method' => 'patch',
+                            'name' => 'grp.models.purchase-order.settle',
                             'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id
-                            ]
-                        ]
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
                     ],
                     [
-                        'type'    => 'button',
-                        'style'   => 'delete',
+                        'type' => 'button',
+                        'style' => 'delete',
                         'tooltip' => __('Cancel'),
-                        'label'   => __('Cancel'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.cancel',
+                        'label' => __('Cancel'),
+                        'key' => 'action',
+                        'route' => [
+                            'method' => 'patch',
+                            'name' => 'grp.models.purchase-order.cancel',
                             'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id
-                            ]
-                        ]
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
                     ],
                 ],
                 PurchaseOrderStateEnum::SETTLED => [
                     [
-                        'type'    => 'button',
-                        'style'   => 'delete',
+                        'type' => 'button',
+                        'style' => 'delete',
                         'tooltip' => __('Not Received'),
-                        'label'   => __('Not Received'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.not-received',
+                        'label' => __('Not Received'),
+                        'key' => 'action',
+                        'route' => [
+                            'method' => 'patch',
+                            'name' => 'grp.models.purchase-order.not-received',
                             'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id
-                            ]
-                        ]
-                    ]
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
+                    ],
                 ],
                 default => []
             };
         }
+
         // dd($orderer);
         return Inertia::render(
             'Procurement/PurchaseOrder',
             [
-                'title'       => __('purchase order'),
+                'title' => __('purchase order'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $purchaseOrder,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($purchaseOrder, $request),
-                    'next'     => $this->getNext($purchaseOrder, $request),
+                    'next' => $this->getNext($purchaseOrder, $request),
                 ],
-                'pageHead'    => [
-                    'icon'  =>
-                    [
-                        'icon'  => ['fal', 'clipboard-list'],
-                        'title' => __('Purchase order')
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'clipboard-list'],
+                        'title' => __('Purchase order'),
                     ],
                     'title' => $purchaseOrder->reference,
-                    'afterTitle'    => [
-                        'label' => __($purchaseOrder->parent_type)
+                    'afterTitle' => [
+                        'label' => __($purchaseOrder->parent_type),
                     ],
-                    'edit'  => $this->canEdit ? [
+                    'edit' => $this->canEdit ? [
                         'route' => [
-                            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                            'parameters' => array_values($request->route()->originalParameters())
-                        ]
+                            'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                            'parameters' => array_values($request->route()->originalParameters()),
+                        ],
                     ] : false,
-                    'actions' => $actions
+                    'actions' => $actions,
 
                 ],
-                'routes'      => [
+                'routes' => [
                     'updatePurchaseOrderRoute' => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.purchase-order.update',
+                        'method' => 'patch',
+                        'name' => 'grp.models.purchase-order.update',
                         'parameters' => [
                             'purchaseOrder' => $purchaseOrder->id,
-                        ]
+                        ],
                     ],
-                    'products_list'    => $productListRoute,
+                    'products_list' => $productListRoute,
                 ],
                 // 'alert'   => [  // TODO
                 //     'status'        => 'danger',
                 //     'title'         => 'Dummy Alert from BE',
                 //     'description'   => 'Dummy description'
                 // ],
-                'timelines'   => $finalTimeline,
+                'timelines' => $finalTimeline,
 
-                'box_stats'      => [
-                    'orderer'      => [
+                'box_stats' => [
+                    'orderer' => [
                         'type' => $purchaseOrder->parent_type,
-                        'data' => $orderer
+                        'data' => $orderer,
                     ],
-                    'mid_block'      => [
+                    'mid_block' => [
                         'gross_weight' => $purchaseOrder->gross_weight,
-                        'net_weight'   => $purchaseOrder->net_weight,
-                        'notes'          => $purchaseOrder->notes,
+                        'net_weight' => $purchaseOrder->net_weight,
+                        'notes' => $purchaseOrder->notes,
                         'delivery_state' => $purchaseOrder->delivery_state,
                     ],
 
                     'order_summary' => [
                         [
                             [
-                                'label'       => 'Transactions',
-                                'quantity'    => $purchaseOrder->purchaseOrderTransactions()->count(),
-                                'price_base'  => 'Multiple',
-                                'price_total' => $purchaseOrder->cost_items
+                                'label' => 'Transactions',
+                                'quantity' => $purchaseOrder->purchaseOrderTransactions()->count(),
+                                'price_base' => 'Multiple',
+                                'price_total' => $purchaseOrder->cost_items,
                             ],
                         ],
                         [
                             [
-                                'label'       => 'Extra',
+                                'label' => 'Extra',
                                 'information' => '',
-                                'price_total' => $purchaseOrder->cost_extra
+                                'price_total' => $purchaseOrder->cost_extra,
                             ],
                             [
-                                'label'       => 'Shipping',
+                                'label' => 'Shipping',
                                 'information' => '',
-                                'price_total' => $purchaseOrder->cost_shipping
-                            ]
+                                'price_total' => $purchaseOrder->cost_shipping,
+                            ],
                         ],
                         [
                             [
-                                'label'       => 'Duties',
+                                'label' => 'Duties',
                                 'information' => '',
-                                'price_total' => $purchaseOrder->cost_duties
+                                'price_total' => $purchaseOrder->cost_duties,
                             ],
                             [
-                                'label'       => 'Tax',
+                                'label' => 'Tax',
                                 'information' => '',
-                                'price_total' => $purchaseOrder->cost_tax
-                            ]
+                                'price_total' => $purchaseOrder->cost_tax,
+                            ],
                         ],
                         [
                             [
-                                'label'       => 'Total',
-                                'price_total' => $purchaseOrder->cost_total
-                            ]
+                                'label' => 'Total',
+                                'price_total' => $purchaseOrder->cost_total,
+                            ],
                         ],
                         'currency' => CurrencyResource::make($purchaseOrder->currency),
                     ],
                 ],
-                'currency'       => CurrencyResource::make($purchaseOrder->currency)->toArray(request()),
-                'data'           => PurchaseOrderResource::make($purchaseOrder),
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => PurchaseOrderTabsEnum::navigation()
+                'currency' => CurrencyResource::make($purchaseOrder->currency)->toArray(request()),
+                'data' => PurchaseOrderResource::make($purchaseOrder),
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => PurchaseOrderTabsEnum::navigation(),
                 ],
 
                 // PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
@@ -385,7 +386,7 @@ class ShowPurchaseOrder extends OrgAction
 
                 PurchaseOrderTabsEnum::ATTACHMENTS->value => $this->tab == PurchaseOrderTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder)))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))),
             ]
         )->table(IndexPurchaseOrderTransactions::make()->tableStructure(prefix: PurchaseOrderTabsEnum::TRANSACTIONS->value))
             ->table(IndexAttachments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ATTACHMENTS->value))
@@ -403,11 +404,11 @@ class ShowPurchaseOrder extends OrgAction
             return [
                 [
 
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Purchase Orders')
+                            'label' => __('Purchase Orders'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -415,81 +416,77 @@ class ShowPurchaseOrder extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
 
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.org.procurement.purchase_orders.show',
-            => array_merge(
-                (new ShowProcurementDashboard())->getBreadcrumbs($routeParameters),
+            'grp.org.procurement.purchase_orders.show', => array_merge(
+                (new ShowProcurementDashboard)->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $purchaseOrder,
                     [
                         'index' => [
-                            'name'       => 'grp.org.procurement.purchase_orders.index',
-                            'parameters' => Arr::except($routeParameters, ['purchaseOrder'])
+                            'name' => 'grp.org.procurement.purchase_orders.index',
+                            'parameters' => Arr::except($routeParameters, ['purchaseOrder']),
                         ],
                         'model' => [
-                            'name'       => 'grp.org.procurement.purchase_orders.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.procurement.purchase_orders.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
             ),
-            'grp.org.procurement.org_agents.show.purchase-orders.show'
-            => array_merge(
-                (new ShowOrgAgent())->getBreadcrumbs($routeParameters),
+            'grp.org.procurement.org_agents.show.purchase-orders.show' => array_merge(
+                (new ShowOrgAgent)->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $purchaseOrder,
                     [
                         'index' => [
-                            'name'       => 'grp.org.procurement.org_agents.show.purchase-orders.index',
-                            'parameters' => Arr::except($routeParameters, ['purchaseOrder'])
+                            'name' => 'grp.org.procurement.org_agents.show.purchase-orders.index',
+                            'parameters' => Arr::except($routeParameters, ['purchaseOrder']),
                         ],
                         'model' => [
-                            'name'       => 'grp.org.procurement.org_agents.show.purchase-orders.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.procurement.org_agents.show.purchase-orders.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
             ),
-            'grp.org.procurement.org_suppliers.show.purchase-orders.show'
-            => array_merge(
-                (new ShowOrgSupplier())->getBreadcrumbs('grp.org.procurement.org_suppliers.show', $routeParameters),
+            'grp.org.procurement.org_suppliers.show.purchase-orders.show' => array_merge(
+                (new ShowOrgSupplier)->getBreadcrumbs('grp.org.procurement.org_suppliers.show', $routeParameters),
                 $headCrumb(
                     $purchaseOrder,
                     [
                         'index' => [
-                            'name'       => 'grp.org.procurement.org_suppliers.show',
-                            'parameters' => Arr::except($routeParameters, ['purchaseOrder'])
+                            'name' => 'grp.org.procurement.org_suppliers.show',
+                            'parameters' => Arr::except($routeParameters, ['purchaseOrder']),
                         ],
                         'model' => [
-                            'name'       => 'grp.org.procurement.org_suppliers.show.purchase-orders.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.procurement.org_suppliers.show.purchase-orders.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
             ),
-            'grp.org.procurement.org_partners.show.purchase-orders.show'
-            => array_merge(
-                (new ShowOrgPartner())->getBreadcrumbs($purchaseOrder->parent, $routeParameters),
+            'grp.org.procurement.org_partners.show.purchase-orders.show' => array_merge(
+                (new ShowOrgPartner)->getBreadcrumbs($purchaseOrder->parent, $routeParameters),
                 $headCrumb(
                     $purchaseOrder,
                     [
                         'index' => [
-                            'name'       => 'grp.org.procurement.org_partners.show.purchase-orders.index',
-                            'parameters' => Arr::except($routeParameters, ['purchaseOrder'])
+                            'name' => 'grp.org.procurement.org_partners.show.purchase-orders.index',
+                            'parameters' => Arr::except($routeParameters, ['purchaseOrder']),
                         ],
                         'model' => [
-                            'name'       => 'grp.org.procurement.org_partners.show.purchase-orders.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.procurement.org_partners.show.purchase-orders.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -497,7 +494,6 @@ class ShowPurchaseOrder extends OrgAction
             default => []
         };
     }
-
 
     public function getPrevious(PurchaseOrder $purchaseOrder, ActionRequest $request): ?array
     {
@@ -515,7 +511,7 @@ class ShowPurchaseOrder extends OrgAction
 
     private function getNavigation(?PurchaseOrder $purchaseOrder, string $routeName): ?array
     {
-        if (!$purchaseOrder) {
+        if (! $purchaseOrder) {
             return null;
         }
 
@@ -523,49 +519,49 @@ class ShowPurchaseOrder extends OrgAction
             'grp.org.procurement.purchase_orders.show' => [
                 'label' => $purchaseOrder->reference,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
-                        'purchaseOrder' => $purchaseOrder->slug
-                    ]
+                        'organisation' => $purchaseOrder->organisation->slug,
+                        'purchaseOrder' => $purchaseOrder->slug,
+                    ],
 
-                ]
+                ],
             ],
             'grp.org.procurement.org_agents.show.purchase-orders.show' => [
                 'label' => $purchaseOrder->reference,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
-                        'orgAgent'     => $purchaseOrder->parent->slug,
-                        'purchaseOrder' => $purchaseOrder->slug
-                    ]
+                        'organisation' => $purchaseOrder->organisation->slug,
+                        'orgAgent' => $purchaseOrder->parent->slug,
+                        'purchaseOrder' => $purchaseOrder->slug,
+                    ],
 
-                ]
+                ],
             ],
             'grp.org.procurement.org_suppliers.show.purchase-orders.show' => [
                 'label' => $purchaseOrder->reference,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
-                        'orgSupplier'   => $purchaseOrder->parent->slug,
-                        'purchaseOrder' => $purchaseOrder->slug
-                    ]
+                        'organisation' => $purchaseOrder->organisation->slug,
+                        'orgSupplier' => $purchaseOrder->parent->slug,
+                        'purchaseOrder' => $purchaseOrder->slug,
+                    ],
 
-                ]
+                ],
             ],
             'grp.org.procurement.org_partners.show.purchase-orders.show' => [
                 'label' => $purchaseOrder->reference,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
-                        'orgPartner'    => $purchaseOrder->parent->id,
-                        'purchaseOrder' => $purchaseOrder->slug
-                    ]
+                        'organisation' => $purchaseOrder->organisation->slug,
+                        'orgPartner' => $purchaseOrder->parent->id,
+                        'purchaseOrder' => $purchaseOrder->slug,
+                    ],
 
-                ]
+                ],
             ],
         };
     }

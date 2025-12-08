@@ -11,8 +11,8 @@ namespace App\Actions\SysAdmin\Group\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Models\SysAdmin\Group;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -34,7 +34,7 @@ class GroupHydrateShops implements ShouldBeUnique
             'number_current_shops' => DB::table('shops')->where('group_id', $group->id)->whereIn('state', [
                 ShopStateEnum::OPEN,
                 ShopStateEnum::CLOSING_DOWN,
-            ])->count()
+            ])->count(),
         ];
 
         $stats = array_merge(
@@ -79,7 +79,6 @@ class GroupHydrateShops implements ShouldBeUnique
                 }
             )
         );
-
 
         $group->catalogueStats()->update($stats);
     }

@@ -18,13 +18,13 @@ class ProspectQueriesResource extends JsonResource
         $query = $this;
 
         return [
-            'slug'          => $query->slug,
-            'name'          => $query->name,
-            'number_items'  => $query->number_items,
-            'constrains'    => $query->constrains,
+            'slug' => $query->slug,
+            'name' => $query->name,
+            'number_items' => $query->number_items,
+            'constrains' => $query->constrains,
             'has_arguments' => $query->has_arguments,
-            'is_seeded'     => $query->is_seeded,
-            'state'         => $query->state
+            'is_seeded' => $query->is_seeded,
+            'state' => $query->state,
         ];
     }
 }

@@ -29,10 +29,8 @@ class ProductionHydrateManufactureTasks implements ShouldBeUnique
     public function handle(Production $production): void
     {
         $stats = [
-            'number_manufacture_tasks' => $production->manufactureTasks()->count()
+            'number_manufacture_tasks' => $production->manufactureTasks()->count(),
         ];
-
-
 
         $stats = array_merge(
             $stats,
@@ -59,7 +57,6 @@ class ProductionHydrateManufactureTasks implements ShouldBeUnique
                 }
             )
         );
-
 
         $production->stats()->update($stats);
     }

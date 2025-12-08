@@ -18,7 +18,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property string $name
- *
  */
 class OfferAllowanceResource extends JsonResource
 {
@@ -26,12 +25,12 @@ class OfferAllowanceResource extends JsonResource
     {
         return [
             'offer_campaign_id' => $this->offer_campaign_id,
-            'slug'              => $this->slug,
-            'code'              => $this->code,
-            'name'              => $this->name,
-            'data'              => $this->data,
-            'created_at'        => $this->created_at,
-            'updated_at'        => $this->updated_at,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'data' => $this->data,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

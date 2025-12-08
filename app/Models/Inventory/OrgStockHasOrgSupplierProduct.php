@@ -23,9 +23,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Inventory\OrgStock $orgStock
  * @property-read OrgSupplierProduct|null $orgSupplierProduct
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockHasOrgSupplierProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockHasOrgSupplierProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockHasOrgSupplierProduct query()
+ *
  * @mixin \Eloquent
  */
 class OrgStockHasOrgSupplierProduct extends Model
@@ -46,6 +48,4 @@ class OrgStockHasOrgSupplierProduct extends Model
     {
         return $this->belongsTo(OrgSupplierProduct::class);
     }
-
-
 }

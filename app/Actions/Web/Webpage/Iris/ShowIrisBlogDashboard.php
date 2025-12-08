@@ -25,12 +25,12 @@ class ShowIrisBlogDashboard
         return $this->handle($request);
     }
 
-
     public function handle(ActionRequest $request): Response
     {
         $website = $request->get('website');
 
         $blogs = BlogWebpagesResource::collection($website->webpages()->where('type', WebpageTypeEnum::BLOG)->where('state', WebpageStateEnum::LIVE)->get())->resolve();
+
         return Inertia::render(
             'BlogDashboard',
             [

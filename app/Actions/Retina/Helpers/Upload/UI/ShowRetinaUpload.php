@@ -25,7 +25,7 @@ class ShowRetinaUpload extends RetinaAction
 
     private bool $action = false;
 
-    public function handle(Upload $upload, string $prefix = null): Upload
+    public function handle(Upload $upload, ?string $prefix = null): Upload
     {
         return $upload;
     }
@@ -36,14 +36,14 @@ class ShowRetinaUpload extends RetinaAction
             'Uploads/RetinaUploadRecords',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Upload Records'),
-                'pageHead'    => [
-                    'icon'          => ['fal', 'fa-upload'],
-                    'model'         => __('Upload'),
-                    'title'         => __('Records'),
-                    'iconRight'     => 'fal fa-history'
+                'title' => __('Upload Records'),
+                'pageHead' => [
+                    'icon' => ['fal', 'fa-upload'],
+                    'model' => __('Upload'),
+                    'title' => __('Records'),
+                    'iconRight' => 'fal fa-history',
                 ],
-                'data'        => UploadRecordsResource::collection(IndexRetinaUploadRecords::run($upload)),
+                'data' => UploadRecordsResource::collection(IndexRetinaUploadRecords::run($upload)),
             ]
         )->table(IndexRetinaUploadRecords::make()->tableStructure());
     }
@@ -53,15 +53,15 @@ class ShowRetinaUpload extends RetinaAction
         return [
             [
 
-                'type'   => 'simple',
+                'type' => 'simple',
                 'simple' => [
-                    'icon'  => 'fal fa-tachometer-alt-fast',
+                    'icon' => 'fal fa-tachometer-alt-fast',
                     'label' => 'Upload Records',
                     'route' => [
                         'name' => 'retina.helpers.uploads.records.show',
-                        'parameters' => request()->route()->originalParameters()
-                    ]
-                ]
+                        'parameters' => request()->route()->originalParameters(),
+                    ],
+                ],
 
             ],
 
@@ -71,6 +71,7 @@ class ShowRetinaUpload extends RetinaAction
     public function asController(Upload $upload, ActionRequest $request): Upload
     {
         $this->initialisation($request);
+
         return $this->handle($upload);
     }
 }

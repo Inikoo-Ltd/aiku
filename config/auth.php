@@ -18,7 +18,7 @@ return [
     */
 
     'defaults' => [
-        'guard'     => 'web',
+        'guard' => 'web',
         'passwords' => 'users',
     ],
 
@@ -40,16 +40,16 @@ return [
     */
 
     'guards' => [
-        'web'            => [
-            'driver'   => 'session',
+        'web' => [
+            'driver' => 'session',
             'provider' => 'users',
         ],
-        'retina'     => [
-            'driver'   => 'session',
+        'retina' => [
+            'driver' => 'session',
             'provider' => 'web-users',
         ],
-        'pupil'     => [
-            'driver'   => 'session',
+        'pupil' => [
+            'driver' => 'session',
             'provider' => 'pupil',
         ],
         'broadcasting' => [
@@ -76,18 +76,18 @@ return [
     */
 
     'providers' => [
-        'users'      => [
+        'users' => [
             'driver' => 'eloquent',
-            'model'  => User::class,
+            'model' => User::class,
         ],
-        'web-users'   => [
+        'web-users' => [
             'driver' => 'eloquent',
-            'model'  => WebUser::class,
+            'model' => WebUser::class,
         ],
-        'pupil'   => [
+        'pupil' => [
             'driver' => 'eloquent',
-            'model'  => ShopifyUser::class,
-        ]
+            'model' => ShopifyUser::class,
+        ],
     ],
 
     /*
@@ -108,14 +108,14 @@ return [
     'passwords' => [
         'users' => [
             'provider' => 'users',
-            'table'    => 'password_resets',
-            'expire'   => 60,
+            'table' => 'password_resets',
+            'expire' => 60,
             'throttle' => 60,
         ],
         'web-users' => [
             'provider' => 'web-users',
-            'table'    => 'password_resets',
-            'expire'   => 60,
+            'table' => 'password_resets',
+            'expire' => 60,
             'throttle' => 60,
         ],
     ],

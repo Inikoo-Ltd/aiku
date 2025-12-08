@@ -50,7 +50,6 @@ class StoreGuest extends GrpAction
         data_forget($modelData, 'positions');
         $positions = $this->reorganisePositionsSlugsToIds($positions);
 
-
         data_set($modelData, 'status', true, overwrite: false);
 
         $userData = Arr::get($modelData, 'user', []);
@@ -60,7 +59,7 @@ class StoreGuest extends GrpAction
 
         $guest = DB::transaction(function () use ($group, $modelData, $userData, $positions) {
             /** @var Guest $guest */
-            $guest = $group->guests()->create(Arr::except($modelData, ['user',]));
+            $guest = $group->guests()->create(Arr::except($modelData, ['user']));
             $guest->stats()->create();
             $user = StoreUser::make()->action($guest, $userData, $this->hydratorsDelay, strict: $this->strict);
             SyncUserJobPositions::run($user, $positions);
@@ -80,7 +79,7 @@ class StoreGuest extends GrpAction
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit");
+        return $request->user()->authTo('sysadmin.edit');
     }
 
     public function prepareForValidation(): void
@@ -94,8 +93,7 @@ class StoreGuest extends GrpAction
             $this->set('user.password', $this->get('password'));
         }
 
-
-        if (!$this->has('code')) {
+        if (! $this->has('code')) {
             $this->set('code', $this->get('user.username'));
         }
         if ($this->get('phone')) {
@@ -121,9 +119,8 @@ class StoreGuest extends GrpAction
         $phoneValidation = ['sometimes', 'nullable'];
 
         if ($this->validatePhone) {
-            $phoneValidation[] = new Phone();
+            $phoneValidation[] = new Phone;
         }
-
 
         $rules = [
             'code' => [
@@ -137,23 +134,22 @@ class StoreGuest extends GrpAction
 
             'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_name' => ['required', 'string', 'max:255'],
-            'phone'        => $phoneValidation,
-            'email'        => ['sometimes', 'nullable', 'email'],
-            'positions'    => ['sometimes', 'array'],
-            'status'       => ['sometimes', 'boolean'],
+            'phone' => $phoneValidation,
+            'email' => ['sometimes', 'nullable', 'email'],
+            'positions' => ['sometimes', 'array'],
+            'status' => ['sometimes', 'boolean'],
 
-            'positions.*.slug'   => ['sometimes', 'string'],
+            'positions.*.slug' => ['sometimes', 'string'],
             'positions.*.scopes' => ['sometimes', 'array'],
 
             'positions.*.scopes.organisations.slug.*' => ['sometimes', Rule::exists('organisations', 'slug')->where('group_id', $this->group->id)],
-            'positions.*.scopes.warehouses.slug.*'    => ['sometimes', Rule::exists('warehouses', 'slug')->where('group_id', $this->group->id)],
-            'positions.*.scopes.fulfilments.slug.*'   => ['sometimes', Rule::exists('fulfilments', 'slug')->where('group_id', $this->group->id)],
-            'positions.*.scopes.shops.slug.*'         => ['sometimes', Rule::exists('shops', 'slug')->where('group_id', $this->group->id)],
+            'positions.*.scopes.warehouses.slug.*' => ['sometimes', Rule::exists('warehouses', 'slug')->where('group_id', $this->group->id)],
+            'positions.*.scopes.fulfilments.slug.*' => ['sometimes', Rule::exists('fulfilments', 'slug')->where('group_id', $this->group->id)],
+            'positions.*.scopes.shops.slug.*' => ['sometimes', Rule::exists('shops', 'slug')->where('group_id', $this->group->id)],
 
-
-            'user.username'          => [
+            'user.username' => [
                 'required',
-                $this->strict ? new AlphaDashDot() : 'string',
+                $this->strict ? new AlphaDashDot : 'string',
                 new IUnique(
                     table: 'users',
                     column: 'username',
@@ -161,15 +157,15 @@ class StoreGuest extends GrpAction
 
                         [
                             'column' => 'group_id',
-                            'value'  => $this->group->id
+                            'value' => $this->group->id,
                         ],
                     ]
                 ),
-                Rule::notIn(['export', 'create'])
+                Rule::notIn(['export', 'create']),
             ],
-            'user.password'          => ['required', app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)],
-            'user.reset_password'    => ['sometimes', 'boolean'],
-            'user.email'             => [
+            'user.password' => ['required', app()->isLocal() || app()->environment('testing') || ! $this->strict ? Password::min(3) : Password::min(8)],
+            'user.reset_password' => ['sometimes', 'boolean'],
+            'user.email' => [
                 'sometimes',
                 'nullable',
                 'email',
@@ -178,37 +174,35 @@ class StoreGuest extends GrpAction
                     extraConditions: [
                         [
                             'column' => 'group_id',
-                            'value'  => $this->group->id
+                            'value' => $this->group->id,
                         ],
                     ]
                 ),
 
             ],
-            'user.contact_name'      => ['sometimes', 'string', 'max:255'],
-            'user.auth_type'         => ['sometimes', Rule::enum(UserAuthTypeEnum::class)],
-            'user.status'            => ['sometimes', 'required', 'boolean'],
+            'user.contact_name' => ['sometimes', 'string', 'max:255'],
+            'user.auth_type' => ['sometimes', Rule::enum(UserAuthTypeEnum::class)],
+            'user.status' => ['sometimes', 'required', 'boolean'],
             'user.user_model_status' => ['sometimes', 'boolean'],
-            'user.language_id'       => ['sometimes', 'required', 'exists:languages,id'],
+            'user.language_id' => ['sometimes', 'required', 'exists:languages,id'],
 
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules['deleted_at'] = ['sometimes', 'date'];
             $rules['created_at'] = ['sometimes', 'date'];
             $rules['fetched_at'] = ['sometimes', 'date'];
-            $rules['source_id']  = ['sometimes', 'string', 'max:255'];
+            $rules['source_id'] = ['sometimes', 'string', 'max:255'];
 
-            $rules['user.deleted_at']      = ['sometimes', 'date'];
-            $rules['user.created_at']      = ['sometimes', 'date'];
-            $rules['user.fetched_at']      = ['sometimes', 'date'];
-            $rules['user.source_id']       = ['sometimes', 'string', 'max:255'];
+            $rules['user.deleted_at'] = ['sometimes', 'date'];
+            $rules['user.created_at'] = ['sometimes', 'date'];
+            $rules['user.fetched_at'] = ['sometimes', 'date'];
+            $rules['user.source_id'] = ['sometimes', 'string', 'max:255'];
             $rules['user.legacy_password'] = ['sometimes', 'required', 'string', 'max:255'];
         }
 
-
         return $rules;
     }
-
 
     /**
      * @throws \Throwable
@@ -221,20 +215,18 @@ class StoreGuest extends GrpAction
         return $this->handle($this->group, $this->validatedData);
     }
 
-
     /**
      * @throws \Throwable
      */
     public function action(Group $group, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Guest
     {
-        if (!$audit) {
+        if (! $audit) {
             Guest::disableAuditing();
         }
-        $this->strict         = $strict;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisation($group, $modelData);
-
 
         return $this->handle($group, $this->validatedData);
     }
@@ -243,14 +235,13 @@ class StoreGuest extends GrpAction
      {--positions=}
      {--P|password=} {--e|email=} {--t|phone=} {--identity_document_number=} {--identity_document_type=}';
 
-
     public function asCommand(Command $command): int
     {
         $this->asAction = true;
 
         try {
             /** @var Group $group */
-            $group       = Group::where('slug', $command->argument('group'))->firstOrFail();
+            $group = Group::where('slug', $command->argument('group'))->firstOrFail();
             $this->group = $group;
             app()->instance('group', $group);
             setPermissionsTeamId($group->id);
@@ -262,17 +253,16 @@ class StoreGuest extends GrpAction
 
         $positions = json_decode($command->option('positions'), true);
 
-
         $fields = [
-            'positions'    => $positions,
+            'positions' => $positions,
             'contact_name' => $command->argument('name'),
-            'email'        => $command->option('email'),
-            'phone'        => $command->option('phone'),
-            'user'         => [
+            'email' => $command->option('email'),
+            'phone' => $command->option('phone'),
+            'user' => [
                 'username' => $command->argument('username'),
-                'password' => $command->option('password') ?? (app()->isLocal() ? 'hello' : wordwrap(Str::random(), 4, '-', true))
+                'password' => $command->option('password') ?? (app()->isLocal() ? 'hello' : wordwrap(Str::random(), 4, '-', true)),
 
-            ]
+            ],
 
         ];
 
@@ -288,7 +278,6 @@ class StoreGuest extends GrpAction
 
         $command->info("Guest <fg=yellow>$guest->slug</> created 👍");
 
-
         return 0;
     }
 
@@ -296,5 +285,4 @@ class StoreGuest extends GrpAction
     {
         return Redirect::route('grp.sysadmin.guests.show', $guest->slug);
     }
-
 }

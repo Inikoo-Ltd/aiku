@@ -14,61 +14,60 @@ enum EmailTrackingEventTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case SENT                 = 'sent';
+    case SENT = 'sent';
     case DECLINED_BY_PROVIDER = 'declined_by_provider';
-    case DELIVERED            = 'delivered';
-    case OPENED               = 'opened';
-    case CLICKED              = 'clicked';
-    case SOFT_BOUNCE          = 'soft_bounce';
-    case HARD_BOUNCE          = 'hard_bounce';
-    case MARKED_AS_SPAM       = 'marked_as_spam';
-    case ERROR                = 'error';
-    case DELAY                = 'delay';
+    case DELIVERED = 'delivered';
+    case OPENED = 'opened';
+    case CLICKED = 'clicked';
+    case SOFT_BOUNCE = 'soft_bounce';
+    case HARD_BOUNCE = 'hard_bounce';
+    case MARKED_AS_SPAM = 'marked_as_spam';
+    case ERROR = 'error';
+    case DELAY = 'delay';
 
     public static function typeIcon(): array
     {
         return [
-            'sent'                => [
+            'sent' => [
                 'tooltip' => __('Sent'),
-                'icon'    => 'fal fa-paper-plane',
+                'icon' => 'fal fa-paper-plane',
             ],
             'declined_by_provider' => [
                 'tooltip' => __('Declined by provider'),
-                'icon'    => 'fal fa-ban',
+                'icon' => 'fal fa-ban',
             ],
-            'delivered'           => [
+            'delivered' => [
                 'tooltip' => __('Delivered'),
-                'icon'    => 'fal fa-inbox-in',
+                'icon' => 'fal fa-inbox-in',
             ],
-            'opened'              => [
+            'opened' => [
                 'tooltip' => __('Opened'),
-                'icon'    => 'fal fa-envelope-open',
+                'icon' => 'fal fa-envelope-open',
             ],
-            'clicked'             => [
+            'clicked' => [
                 'tooltip' => __('Clicked'),
-                'icon'    => 'fal fa-mouse-pointer',
+                'icon' => 'fal fa-mouse-pointer',
             ],
-            'soft_bounce'         => [
+            'soft_bounce' => [
                 'tooltip' => __('Soft bounce'),
-                'icon'    => 'fal fa-square',
+                'icon' => 'fal fa-square',
             ],
-            'hard_bounce'         => [
+            'hard_bounce' => [
                 'tooltip' => __('Hard bounce'),
-                'icon'    => 'fal fa-exclamation-triangle',
+                'icon' => 'fal fa-exclamation-triangle',
             ],
-            'marked_as_spam'      => [
+            'marked_as_spam' => [
                 'tooltip' => __('Marked as spam'),
-                'icon'    => 'fal fa-dumpster',
+                'icon' => 'fal fa-dumpster',
             ],
-            'error'               => [
+            'error' => [
                 'tooltip' => __('Error'),
-                'icon'    => 'fal fa-exclamation-circle',
+                'icon' => 'fal fa-exclamation-circle',
             ],
-            'delay'               => [
+            'delay' => [
                 'tooltip' => __('Delay'),
-                'icon'    => 'fal fa-clock',
+                'icon' => 'fal fa-clock',
             ],
         ];
     }
-
 }

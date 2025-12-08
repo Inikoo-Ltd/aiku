@@ -11,8 +11,8 @@ namespace App\Actions\Web\Website;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\StoreWebpage;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\SysAdmin\Organisation;
@@ -28,32 +28,31 @@ class SeedWebsiteFixedWebpages extends OrgAction
 {
     use WithActionUpdate;
 
-
     public function handle(Website $website): Website
     {
         $storefrontData = [
-            'code'     => 'storefront',
-            'title'    => 'Home',
-            'type'     => WebpageTypeEnum::STOREFRONT,
+            'code' => 'storefront',
+            'title' => 'Home',
+            'type' => WebpageTypeEnum::STOREFRONT,
             'sub_type' => WebpageSubTypeEnum::STOREFRONT,
             'is_fixed' => true,
-            'state'    => WebpageStateEnum::READY,
+            'state' => WebpageStateEnum::READY,
             'ready_at' => now(),
         ];
 
         if ($website->state == WebsiteStateEnum::LIVE) {
             unset($storefrontData['ready_at']);
-            $storefrontData['state']   = WebpageStateEnum::LIVE;
+            $storefrontData['state'] = WebpageStateEnum::LIVE;
             $storefrontData['live_at'] = now();
         }
 
         $storefront = $website->webpages()->where('code', 'storefront')->first();
 
-        if (!$storefront) {
+        if (! $storefront) {
             $storefront = StoreWebpage::make()->action($website, $storefrontData);
             $website->updateQuietly(
                 [
-                    'storefront_id' => $storefront->id
+                    'storefront_id' => $storefront->id,
                 ]
             );
         }
@@ -64,11 +63,8 @@ class SeedWebsiteFixedWebpages extends OrgAction
             $this->addWebpages($storefront, $webpagesData);
         }
 
-
         return $website;
     }
-
-
 
     private function addWebpages(Webpage $parent, $webpagesData): void
     {
@@ -90,32 +86,29 @@ class SeedWebsiteFixedWebpages extends OrgAction
         $children = Arr::pull($webpageData, 'children', []);
 
         $webpage = $parent->website->webpages()->where('code', $webpageData['code'])->first();
-        if (!$webpage) {
+        if (! $webpage) {
             $webpage = StoreWebpage::make()->action($parent, $webpageData);
         }
 
         $this->addWebpages($webpage, $children);
     }
 
-
     private function getBaseData(Website $website): array
     {
         $webpageData = [
             'is_fixed' => true,
             'ready_at' => now(),
-            'state'    => WebpageStateEnum::READY,
+            'state' => WebpageStateEnum::READY,
         ];
 
         if ($website->state == WebsiteStateEnum::LIVE) {
             unset($webpageData['ready_at']);
-            $webpageData['state']   = WebpageStateEnum::LIVE;
+            $webpageData['state'] = WebpageStateEnum::LIVE;
             $webpageData['live_at'] = now();
         }
 
-
         return $webpageData;
     }
-
 
     public function authorize(ActionRequest $request): bool
     {
@@ -125,7 +118,6 @@ class SeedWebsiteFixedWebpages extends OrgAction
 
         return $request->user()->authTo("web.{$this->shop->website->id}.edit");
     }
-
 
     public function asController(Organisation $organisation, Website $website, ActionRequest $request): Website
     {
@@ -159,8 +151,6 @@ class SeedWebsiteFixedWebpages extends OrgAction
             }
         }
 
-
         return 0;
     }
-
 }

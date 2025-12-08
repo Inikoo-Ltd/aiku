@@ -17,14 +17,12 @@ class ProcessFetchStacks
 {
     use AsAction;
 
-
     /**
      * @throws \Exception
      */
-    public function handle(bool $runInBackground = true, Command $command = null): void
+    public function handle(bool $runInBackground = true, ?Command $command = null): void
     {
         StoreFetchStacks::run();
-
 
         $query = FetchStack::where('state', FetchStackStateEnum::IN_PROCESS)
             ->orderBy('submitted_at');
@@ -45,8 +43,8 @@ class ProcessFetchStacks
         foreach ($stack as $fetchStackId) {
             $fetchStack = FetchStack::find($fetchStackId);
             $fetchStack->update([
-                'state'            => FetchStackStateEnum::SEND_TO_QUEUE,
-                'send_to_queue_at' => now()
+                'state' => FetchStackStateEnum::SEND_TO_QUEUE,
+                'send_to_queue_at' => now(),
             ]);
 
             $command?->info("Processing: $fetchStack->id $fetchStack->operation $fetchStack->operation_id $fetchStack->submitted_at ");
@@ -54,7 +52,6 @@ class ProcessFetchStacks
             ProcessFetchStack::run($fetchStack, $runInBackground);
         }
     }
-
 
     public function getCommandSignature(): string
     {

@@ -23,11 +23,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderPremiumDispatch extends OrgAction
 {
-    use WithActionUpdate;
     use HasOrderHydrators;
-    use WithOrderingEditAuthorisation;
+    use WithActionUpdate;
     use WithChargeTransactions;
-
+    use WithOrderingEditAuthorisation;
 
     public function handle(Order $order, array $modelData): void
     {
@@ -37,7 +36,7 @@ class UpdateOrderPremiumDispatch extends OrgAction
         if ($charge) {
 
             $chargeApplies = Arr::get($modelData, 'is_premium_dispatch', false);
-            $chargeTransaction   = null;
+            $chargeTransaction = null;
             $chargeTransactionID = DB::table('transactions')->where('order_id', $order->id)
                 ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
                 ->where('model_type', 'Charge')->where('charges.type', ChargeTypeEnum::PREMIUM->value)->value('transactions.id');
@@ -61,15 +60,12 @@ class UpdateOrderPremiumDispatch extends OrgAction
 
     }
 
-
-
     public function rules(): array
     {
         return [
             'is_premium_dispatch' => ['required', 'boolean'],
         ];
     }
-
 
     public function action(Order $order, array $modelData): void
     {
@@ -78,7 +74,6 @@ class UpdateOrderPremiumDispatch extends OrgAction
 
         $this->handle($order, $modelData);
     }
-
 
     public function asController(Order $order, ActionRequest $request): void
     {

@@ -12,7 +12,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ProspectsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class ProspectsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public Organisation|Shop $parent;
 
@@ -28,7 +28,7 @@ class ProspectsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
         return Prospect::where($key, $this->parent->id);
     }
 
-    /** @var Prospect $row */
+    /** @var Prospect */
     public function map($row): array
     {
         return [
@@ -40,7 +40,7 @@ class ProspectsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             $row->contact_name,
             $row->state->value,
             $row->company_name,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -55,7 +55,7 @@ class ProspectsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             'Contact Name',
             'State',
             'Company Name',
-            'Created At'
+            'Created At',
         ];
     }
 }

@@ -20,13 +20,11 @@ class UploadImagesToModelHasWebBlocks extends OrgAction
     use WithUploadWebImage;
     use WithWebEditAuthorisation;
 
-
     public function asController(ModelHasWebBlocks $modelHasWebBlocks, ActionRequest $request): Collection
     {
 
         $this->initialisationFromShop($modelHasWebBlocks->shop, $request);
+
         return $this->handle($modelHasWebBlocks->webBlock, 'image', $this->validatedData);
     }
-
-
 }

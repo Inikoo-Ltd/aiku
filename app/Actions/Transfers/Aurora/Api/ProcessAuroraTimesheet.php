@@ -22,5 +22,4 @@ class ProcessAuroraTimesheet extends OrgAction
     {
         $this->fetcher = FetchAuroraTimesheets::class;
     }
-
 }

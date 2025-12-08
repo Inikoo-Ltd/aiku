@@ -14,18 +14,16 @@ enum GuestTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case CONTRACTOR             = 'contractor';
-    case EXTERNAL_EMPLOYEE      = 'external_employee';
+    case CONTRACTOR = 'contractor';
+    case EXTERNAL_EMPLOYEE = 'external_employee';
     case EXTERNAL_ADMINISTRATOR = 'external_administrator';
-
 
     public static function labels(): array
     {
         return [
-            'contractor'             => 'Contractor',
-            'external_employee'      => 'External Employee',
+            'contractor' => 'Contractor',
+            'external_employee' => 'External Employee',
             'external_administrator' => 'External Administrator',
         ];
     }
-
 }

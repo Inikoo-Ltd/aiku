@@ -22,30 +22,30 @@ class ProfileResource extends JsonResource
         $user = $this;
 
         return [
-            'id'            => $user->id,
-            'username'      => $user->username,
-            'avatar'        => $user->imageSources(300, 300),
-            'email'         => $user->email,
-            'about'         => $user->about,
-            'created_at'    => $user->created_at,
-            'status'        => match ($user->status) {
+            'id' => $user->id,
+            'username' => $user->username,
+            'avatar' => $user->imageSources(300, 300),
+            'email' => $user->email,
+            'about' => $user->about,
+            'created_at' => $user->created_at,
+            'status' => match ($user->status) {
                 true => [
                     'tooltip' => __('active'),
-                    'icon'    => 'fal fa-check',
-                    'class'   => 'text-green-500'
+                    'icon' => 'fal fa-check',
+                    'class' => 'text-green-500',
                 ],
                 default => [
                     'tooltip' => __('suspended'),
-                    'icon'    => 'fal fa-times',
-                    'class'   => 'text-red-500'
+                    'icon' => 'fal fa-times',
+                    'class' => 'text-red-500',
                 ]
             },
-            'settings'         => [
-                'language'  => $user->language_id,
-                'app_theme' => Arr::get($user->settings, 'app_theme')
+            'settings' => [
+                'language' => $user->language_id,
+                'app_theme' => Arr::get($user->settings, 'app_theme'),
             ],
-            'roles'         => $user->getRoleNames()->toArray(),
-            'permissions'   => $user->getAllPermissions()->pluck('name')->toArray()
+            'roles' => $user->getRoleNames()->toArray(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
         ];
     }
 }

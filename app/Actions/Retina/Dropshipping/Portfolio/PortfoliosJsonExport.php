@@ -25,7 +25,7 @@ class PortfoliosJsonExport
     {
         return [
             'schema' => $this->schema(),
-            'data'   => $this->getData($customer, $customerSalesChannel),
+            'data' => $this->getData($customer, $customerSalesChannel),
         ];
     }
 

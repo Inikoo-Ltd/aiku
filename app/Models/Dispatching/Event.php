@@ -16,29 +16,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- *
- */
-
-/**
  * App\Models\Dispatching\Event
  *
  * @property-read \App\Models\Dispatching\Shipment|null $shipment
+ *
  * @method static Builder<static>|Event newModelQuery()
  * @method static Builder<static>|Event newQuery()
  * @method static Builder<static>|Event onlyTrashed()
  * @method static Builder<static>|Event query()
  * @method static Builder<static>|Event withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Event withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Event extends Model
 {
+    use HasFactory;
     use SoftDeletes;
 
-    use HasFactory;
-
     protected $casts = [
-        'data'   => 'array',
+        'data' => 'array',
     ];
 
     protected $attributes = [
@@ -55,9 +52,9 @@ class Event extends Model
             }
         );
     }
+
     public function shipment(): BelongsTo
     {
         return $this->belongsTo(Shipment::class);
     }
-
 }

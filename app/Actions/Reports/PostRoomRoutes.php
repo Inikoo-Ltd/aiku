@@ -15,7 +15,7 @@ class PostRoomRoutes
 {
     public function __invoke($parent): void
     {
-        //todo review this
+        // todo review this
         Route::get('/post_rooms', [IndexPostRooms::class, $parent == 'organisation' ? 'inOrganisation' : 'asController'])->name('post_rooms.index');
 
     }

@@ -38,9 +38,9 @@ class StoreTask extends OrgAction
     public function rules(): array
     {
         return [
-            'code'              => ['required','alpha_dash','max:64','unique:tasks,code'],
-            'name'              => ['required', 'string', 'max:255'],
-            'description'       => ['sometimes', 'string'],
+            'code' => ['required', 'alpha_dash', 'max:64', 'unique:tasks,code'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['sometimes', 'string'],
         ];
     }
 

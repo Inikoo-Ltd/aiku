@@ -16,12 +16,12 @@ class ReadableRandomStringGenerator
 
     public function handle($length = 6): string
     {
-        $string     = '';
-        $vowels     = array("a","e","i","o","u");
-        $consonants = array(
+        $string = '';
+        $vowels = ['a', 'e', 'i', 'o', 'u'];
+        $consonants = [
             'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm',
-            'n', 'p', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'
-        );
+            'n', 'p', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z',
+        ];
 
         $max = $length / 2;
         for ($i = 1; $i <= $max; $i++) {

@@ -9,8 +9,8 @@
 
 namespace App\Http\Resources\Web;
 
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Web\ModelHasContent;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class ModelHasContentsResource extends JsonResource
 {
@@ -18,13 +18,14 @@ class ModelHasContentsResource extends JsonResource
     {
         /** @var ModelHasContent $content */
         $content = $this;
+
         return [
-            'id'            => $content->id,
-            'type'          => $content->type,
-            'title'         => $content->title,
-            'text'          => $content->text,
-            'position'      => $content->position,
-            'image'         => $content->imageSources(64, 64)
+            'id' => $content->id,
+            'type' => $content->type,
+            'title' => $content->title,
+            'text' => $content->text,
+            'position' => $content->position,
+            'image' => $content->imageSources(64, 64),
         ];
     }
 }

@@ -17,30 +17,28 @@ class FetchAuroraShippingZoneSchema extends FetchAurora
     {
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Shipping Zone Schema Store Key'});
 
-        $isCurrent         = false;
+        $isCurrent = false;
         $isCurrentDiscount = false;
-        $state             = ShippingZoneSchemaStateEnum::DECOMMISSIONED;
+        $state = ShippingZoneSchemaStateEnum::DECOMMISSIONED;
         if ($this->auroraModelData->{'Shipping Zone Schema Type'} == 'Current') {
             $isCurrent = true;
-            $state     = ShippingZoneSchemaStateEnum::LIVE;
+            $state = ShippingZoneSchemaStateEnum::LIVE;
         } elseif ($this->auroraModelData->{'Shipping Zone Schema Type'} == 'Deal') {
             $isCurrentDiscount = true;
-            $state             = ShippingZoneSchemaStateEnum::LIVE;
+            $state = ShippingZoneSchemaStateEnum::LIVE;
         }
 
-
-        $this->parsedData['shop']                 = $shop;
+        $this->parsedData['shop'] = $shop;
         $this->parsedData['shipping-zone-schema'] = [
-            'state'               => $state,
-            'is_current'          => $isCurrent,
+            'state' => $state,
+            'is_current' => $isCurrent,
             'is_current_discount' => $isCurrentDiscount,
-            'name'                => $this->auroraModelData->{'Shipping Zone Schema Label'},
-            'fetched_at'          => now(),
-            'last_fetched_at'     => now(),
-            'source_id'           => $this->organisation->id.':'.$this->auroraModelData->{'Shipping Zone Schema Key'},
+            'name' => $this->auroraModelData->{'Shipping Zone Schema Label'},
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Shipping Zone Schema Key'},
 
         ];
-
 
         $createdBy = $this->auroraModelData->{'Shipping Zone Schema Creation Date'};
 
@@ -49,8 +47,7 @@ class FetchAuroraShippingZoneSchema extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Shipping Zone Schema Dimension')

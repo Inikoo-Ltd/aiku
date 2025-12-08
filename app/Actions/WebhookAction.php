@@ -17,7 +17,6 @@ class WebhookAction
     use AsAction;
     use WithAttributes;
 
-
     protected array $validatedData;
 
     public function initialisation(ActionRequest $request): static
@@ -25,7 +24,7 @@ class WebhookAction
 
         $this->fillFromRequest($request);
         $this->validatedData = $this->validateAttributes();
+
         return $this;
     }
-
 }

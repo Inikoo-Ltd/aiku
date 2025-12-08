@@ -49,6 +49,4 @@ class GroupHydrateDepartments implements ShouldBeUnique
 
         $group->catalogueStats()->update($stats);
     }
-
-
 }

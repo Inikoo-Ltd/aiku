@@ -22,13 +22,12 @@ class ProductionRecordSearch
         $production->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'                    => $production->group_id,
-                'organisation_id'             => $production->organisation_id,
-                'organisation_slug'           => $production->organisation->slug,
-                'sections'                    => ['manufacture'],
-                'haystack_tier_1'             => trim($production->name.' '.$production->code),
+                'group_id' => $production->group_id,
+                'organisation_id' => $production->organisation_id,
+                'organisation_slug' => $production->organisation->slug,
+                'sections' => ['manufacture'],
+                'haystack_tier_1' => trim($production->name.' '.$production->code),
             ]
         );
     }
-
 }

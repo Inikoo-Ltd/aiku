@@ -52,30 +52,32 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Shop> $shops
  * @property-read \App\Models\Masters\MasterShopStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterShopTimeSeries> $timeSeries
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class MasterShop extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
     use HasHistory;
+    use HasSlug;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'            => 'array',
-        'type'            => ShopTypeEnum::class,
-        'status'           => 'boolean',
-        'offers_data'      => 'array',
+        'data' => 'array',
+        'type' => ShopTypeEnum::class,
+        'status' => 'boolean',
+        'offers_data' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'offers_data'   => '{}',
+        'data' => '{}',
+        'offers_data' => '{}',
     ];
 
     protected $guarded = [];
@@ -88,7 +90,7 @@ class MasterShop extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'goods'
+            'goods',
         ];
     }
 
@@ -96,7 +98,6 @@ class MasterShop extends Model implements Auditable
         'code',
         'name',
     ];
-
 
     public function getSlugOptions(): SlugOptions
     {
@@ -163,7 +164,6 @@ class MasterShop extends Model implements Auditable
             ->withTimestamps();
     }
 
-
     public function timeSeries(): HasMany
     {
         return $this->hasMany(MasterShopTimeSeries::class);
@@ -183,6 +183,4 @@ class MasterShop extends Model implements Auditable
     {
         return $this->hasMany(MasterCollection::class);
     }
-
-
 }

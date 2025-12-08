@@ -38,6 +38,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexRetinaPayments extends RetinaAction
 {
     use WithPaymentAccountSubNavigation;
+
     private Group|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice $parent;
 
     public function handle(Group|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice|Order $parent, $prefix = null): LengthAwarePaginator
@@ -79,7 +80,7 @@ class IndexRetinaPayments extends RetinaAction
         $queryBuilder->leftjoin('organisations', 'payments.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftjoin('shops', 'payments.shop_id', '=', 'shops.id');
 
-        if (!($parent instanceof Order || $parent instanceof Invoice)) {
+        if (! ($parent instanceof Order || $parent instanceof Invoice)) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
                     key: $key,
@@ -107,8 +108,7 @@ class IndexRetinaPayments extends RetinaAction
             ])
             ->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')
-            ->when($parent, function ($query) use ($parent) {
-            })
+            ->when($parent, function ($query) {})
             ->allowedSorts(['reference', 'status', 'date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -121,7 +121,7 @@ class IndexRetinaPayments extends RetinaAction
         return [
 
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     PaymentStateEnum::labels(),
                     PaymentStateEnum::count($parent),
@@ -130,7 +130,7 @@ class IndexRetinaPayments extends RetinaAction
 
                 'engine' => function ($query, $elements) {
                     $query->whereIn('payments.state', $elements);
-                }
+                },
 
             ],
         ];
@@ -145,7 +145,7 @@ class IndexRetinaPayments extends RetinaAction
                     ->pageName($prefix.'Page');
             }
 
-            if (!($parent instanceof Order || $parent instanceof Invoice)) {
+            if (! ($parent instanceof Order || $parent instanceof Invoice)) {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
@@ -164,21 +164,20 @@ class IndexRetinaPayments extends RetinaAction
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
                 $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
             }
-            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type:'number');
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type:'number');
+            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
         };
     }
 
     public function authorize(ActionRequest $request): bool
     {
         if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
+            return $request->user()->authTo('group-overview');
         }
         $this->canEdit = $request->user()->authTo("accounting.{$this->organisation->id}.edit");
 
         return $request->user()->authTo("accounting.{$this->organisation->id}.view");
     }
-
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -201,15 +200,16 @@ class IndexRetinaPayments extends RetinaAction
     {
         $this->parent = $paymentAccount;
         $this->initialisation($organisation, $request);
+
         return $this->handle($paymentAccount);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inPaymentAccountInOrgPaymentServiceProvider(Organisation $organisation, OrgPaymentServiceProvider $OrgPaymentServiceProvider, PaymentAccount $paymentAccount, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $paymentAccount;
         $this->initialisation($organisation, $request);
+
         return $this->handle($paymentAccount);
     }
 
@@ -217,6 +217,7 @@ class IndexRetinaPayments extends RetinaAction
     {
         $this->parent = $shop;
         $this->initialisation($organisation, $request);
+
         return $this->handle($shop);
     }
 
@@ -233,12 +234,11 @@ class IndexRetinaPayments extends RetinaAction
         return PaymentsResource::collection($payments);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $payments, ActionRequest $request): Response
     {
-        $routeName       = $request->route()->getName();
+        $routeName = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
-        $subNavigation   = null;
+        $subNavigation = null;
 
         if ($this->parent instanceof PaymentAccount) {
             $subNavigation = $this->getPaymentAccountNavigation($this->parent);
@@ -251,41 +251,39 @@ class IndexRetinaPayments extends RetinaAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('payments'),
-                'pageHead'    => [
+                'title' => __('payments'),
+                'pageHead' => [
                     'subNavigation' => $subNavigation,
-                    'icon'      => ['fal', 'fa-coins'],
-                    'title'     => __('payments'),
+                    'icon' => ['fal', 'fa-coins'],
+                    'title' => __('payments'),
                     'container' => match ($routeName) {
                         'grp.org.accounting.shops.show.payments.index' => [
-                            'icon'    => ['fal', 'fa-store-alt'],
+                            'icon' => ['fal', 'fa-store-alt'],
                             'tooltip' => __('Shop'),
-                            'label'   => Str::possessive($routeParameters['shop']->name)
+                            'label' => Str::possessive($routeParameters['shop']->name),
                         ],
                         default => null
                     },
                 ],
-                'data'        => PaymentsResource::collection($payments),
-
+                'data' => PaymentsResource::collection($payments),
 
             ]
         )->table($this->tableStructure($this->parent));
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         $headCrumb = function () use ($routeName, $routeParameters) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => $routeName,
-                            'parameters' => $routeParameters
+                            'name' => $routeName,
+                            'parameters' => $routeParameters,
                         ],
                         'label' => __('Payments'),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
 
                     ],
                 ],
@@ -293,39 +291,33 @@ class IndexRetinaPayments extends RetinaAction
         };
 
         return match ($routeName) {
-            'grp.org.accounting.shops.show.payments.index' =>
-            array_merge(
+            'grp.org.accounting.shops.show.payments.index' => array_merge(
                 ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.shops.show.dashboard', $routeParameters),
                 $headCrumb()
             ),
-            'grp.org.accounting.payments.index' =>
-            array_merge(
+            'grp.org.accounting.payments.index' => array_merge(
                 ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
                 $headCrumb()
             ),
-            'grp.org.accounting.org_payment_service_providers.show.payments.index' =>
-            array_merge(
-                (new ShowOrgPaymentServiceProvider())->getBreadcrumbs($routeParameters['OrgPaymentServiceProvider']),
+            'grp.org.accounting.org_payment_service_providers.show.payments.index' => array_merge(
+                (new ShowOrgPaymentServiceProvider)->getBreadcrumbs($routeParameters['OrgPaymentServiceProvider']),
                 $headCrumb()
             ),
-            'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.index' =>
-            array_merge(
-                (new ShowPaymentAccount())->getBreadcrumbs('grp.org.accounting.org_payment_service_providers.show.payment-accounts.show', $routeParameters),
+            'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.index' => array_merge(
+                (new ShowPaymentAccount)->getBreadcrumbs('grp.org.accounting.org_payment_service_providers.show.payment-accounts.show', $routeParameters),
                 $headCrumb()
             ),
 
-            'grp.org.accounting.payment-accounts.show.payments.index' =>
-            array_merge(
-                (new ShowPaymentAccount())->getBreadcrumbs('grp.org.accounting.payment-accounts.show', $routeParameters),
+            'grp.org.accounting.payment-accounts.show.payments.index' => array_merge(
+                (new ShowPaymentAccount)->getBreadcrumbs('grp.org.accounting.payment-accounts.show', $routeParameters),
                 $headCrumb()
             ),
-            'grp.overview.accounting.payments.index' =>
-            array_merge(
+            'grp.overview.accounting.payments.index' => array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => $routeName,
-                        'parameters' => $routeParameters
+                        'parameters' => $routeParameters,
                     ]
                 )
             ),

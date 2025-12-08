@@ -31,9 +31,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Helpers\Snapshot $snapshot
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SnapshotStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SnapshotStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SnapshotStats query()
+ *
  * @mixin \Eloquent
  */
 class SnapshotStats extends Model

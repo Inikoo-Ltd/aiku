@@ -15,7 +15,6 @@ enum PickingSessionStateEnum: string
 {
     use EnumHelperTrait;
 
-
     case IN_PROCESS = 'in_process';
     case HANDLING = 'handling'; // picking and packing
     case HANDLING_BLOCKED = 'handling_blocked';
@@ -25,8 +24,8 @@ enum PickingSessionStateEnum: string
     public static function labels(): array
     {
         return [
-            'in_process'       => __('In Process'),
-            'handling'         => __('Handling'),
+            'in_process' => __('In Process'),
+            'handling' => __('Handling'),
             'handling_blocked' => __('Handling Blocked'),
             'picking_finished' => __('Picking Finished'),
             'packing_finished' => __('Packing Finished'),
@@ -36,55 +35,55 @@ enum PickingSessionStateEnum: string
     public static function stateIcon(): array
     {
         return [
-            'in_process'     => [
+            'in_process' => [
                 'tooltip' => __('In Process'),
-                'icon'    => 'fal fa-chair',
-                'class'   => 'text-lime-500',
-                'color'   => 'lime',
-                'app'     => [
+                'icon' => 'fal fa-chair',
+                'class' => 'text-lime-500',
+                'color' => 'lime',
+                'app' => [
                     'name' => 'chair',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'handling'   => [
+            'handling' => [
                 'tooltip' => __('Handling'),
-                'icon'    => 'fal fa-hand-paper',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-hand-paper',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'handling_blocked' => [
                 'tooltip' => __('Handling Blocked'),
-                'icon'    => 'fal fa-hand-paper',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-hand-paper',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'picking_finished'     => [
+            'picking_finished' => [
                 'tooltip' => __('Picking Finished'),
-                'icon'    => 'fal fa-box-check',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-box-check',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'packing_finished'     => [
+            'packing_finished' => [
                 'tooltip' => __('Picking Finished'),
-                'icon'    => 'fal fa-box-check',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-box-check',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
 
         ];

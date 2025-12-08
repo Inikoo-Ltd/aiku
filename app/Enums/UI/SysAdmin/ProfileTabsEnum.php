@@ -16,18 +16,16 @@ enum ProfileTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
+    case DASHBOARD = 'dashboard';
+    case TODO = 'todo';
+    case NOTIFICATIONS = 'notifications';
+    case KPI = 'kpi';
 
-    case DASHBOARD          = 'dashboard';
-    case TODO               = 'todo';
-    case NOTIFICATIONS      = 'notifications';
-    case KPI                = 'kpi';
-
-    case HISTORY    = 'history';
+    case HISTORY = 'history';
     case VISIT_LOGS = 'visit_logs';
     case TIMESHEETS = 'timesheets';
 
     // case MY_DATA = 'my_data';
-
 
     public function blueprint(): array
     {
@@ -35,36 +33,36 @@ enum ProfileTabsEnum: string
 
             ProfileTabsEnum::DASHBOARD => [
                 'title' => __('Dashboard'),
-                'icon'  => 'fal fa-clipboard-list-check',
+                'icon' => 'fal fa-clipboard-list-check',
             ],
             ProfileTabsEnum::TODO => [
                 'title' => __('To do'),
-                'icon'  => 'fal fa-clipboard-list-check',
+                'icon' => 'fal fa-clipboard-list-check',
             ],
             ProfileTabsEnum::NOTIFICATIONS => [
                 'title' => __('Notifications'),
-                'icon'  => 'fal fa-bell',
+                'icon' => 'fal fa-bell',
             ],
 
             ProfileTabsEnum::KPI => [
-                'title'   => __('KPIs'),
+                'title' => __('KPIs'),
                 'tooltip' => __('key performance indicators'),
-                'icon'    => 'fal fa-rabbit-fast',
+                'icon' => 'fal fa-rabbit-fast',
             ],
 
             ProfileTabsEnum::VISIT_LOGS => [
                 'title' => __('Visit logs'),
-                'icon'  => 'fal fa-eye',
+                'icon' => 'fal fa-eye',
             ],
             ProfileTabsEnum::TIMESHEETS => [
                 'title' => __('Timesheets'),
-                'icon'  => 'fal fa-stopwatch',
+                'icon' => 'fal fa-stopwatch',
             ],
 
             ProfileTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             // ProfileTabsEnum::MY_DATA => [

@@ -13,7 +13,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
     use HasProcurementOrderFields;
 
@@ -36,11 +37,9 @@ return new class () extends Migration {
             $table->decimal('net_unit_price', 16, 4)->default(0);
             $table->decimal('gross_unit_price', 16, 4)->default(0);
 
-
             $table->decimal('net_amount', 16)->default(0);
             $table->decimal('grp_net_amount', 16)->nullable();
             $table->decimal('org_net_amount', 16)->nullable();
-
 
             $table->boolean('is_costed')->default(false)->index();
             $table->decimal('gross_amount', 16)->default(0);
@@ -49,7 +48,6 @@ return new class () extends Migration {
 
             $table->decimal('grp_exchange', 16, 4)->nullable();
             $table->decimal('org_exchange', 16, 4)->nullable();
-
 
             $table->timestampsTz();
             $table->dateTimeTz('dispatched_at')->nullable();

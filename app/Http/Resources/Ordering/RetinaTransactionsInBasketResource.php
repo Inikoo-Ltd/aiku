@@ -42,33 +42,33 @@ class RetinaTransactionsInBasketResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                 => $this->id,
-            'quantity_ordered'   => $this->quantity_ordered,
-            'quantity_bonus'     => $this->quantity_bonus,
-            'gross_amount'       => $this->gross_amount,
-            'net_amount'         => $this->net_amount,
-            'price'              => $this->price,
-            'asset_code'         => $this->asset_code,
-            'asset_name'         => $this->asset_name,
-            'asset_type'         => $this->asset_type,
-            'product_slug'       => $this->product_slug,
-            'created_at'         => $this->created_at,
-            'currency_code'      => $this->currency_code,
+            'id' => $this->id,
+            'quantity_ordered' => $this->quantity_ordered,
+            'quantity_bonus' => $this->quantity_bonus,
+            'gross_amount' => $this->gross_amount,
+            'net_amount' => $this->net_amount,
+            'price' => $this->price,
+            'asset_code' => $this->asset_code,
+            'asset_name' => $this->asset_name,
+            'asset_type' => $this->asset_type,
+            'product_slug' => $this->product_slug,
+            'created_at' => $this->created_at,
+            'currency_code' => $this->currency_code,
             'available_quantity' => $this->available_quantity ?? 0,
 
             'deleteRoute' => [
-                'name'       => 'retina.models.transaction.delete',
+                'name' => 'retina.models.transaction.delete',
                 'parameters' => [
-                    'transaction' => $this->id
+                    'transaction' => $this->id,
                 ],
-                'method'     => 'delete'
+                'method' => 'delete',
             ],
             'updateRoute' => [
-                'name'       => 'retina.models.transaction.update',
+                'name' => 'retina.models.transaction.update',
                 'parameters' => [
-                    'transaction' => $this->id
+                    'transaction' => $this->id,
                 ],
-                'method'     => 'patch'
+                'method' => 'patch',
             ],
         ];
     }

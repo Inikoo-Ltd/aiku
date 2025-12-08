@@ -26,9 +26,9 @@ use OwenIt\Auditing\Resolvers\UserResolver;
 
 class PublishWebpage extends OrgAction
 {
+    use WebpageContentManagement;
     use WithActionUpdate;
     use WithWebEditAuthorisation;
-    use WebpageContentManagement;
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
@@ -47,49 +47,47 @@ class PublishWebpage extends OrgAction
 
         foreach ($webpage->snapshots()->where('state', SnapshotStateEnum::LIVE)->get() as $liveSnapshot) {
             UpdateSnapshot::run($liveSnapshot, [
-                'state'           => SnapshotStateEnum::HISTORIC,
-                'published_until' => now()
+                'state' => SnapshotStateEnum::HISTORIC,
+                'published_until' => now(),
             ]);
         }
 
         $currentUnpublishedLayout = $webpage->unpublishedSnapshot->layout;
 
-
         /** @var Snapshot $snapshot */
         $snapshot = StoreWebpageSnapshot::run(
             $webpage,
             [
-                'state'          => SnapshotStateEnum::LIVE,
-                'published_at'   => now(),
-                'layout'         => $currentUnpublishedLayout,
-                'checksum'       => $webpage->unpublishedSnapshot->checksum,
-                'first_commit'   => $firstCommit,
-                'comment'        => Arr::get($modelData, 'comment'),
-                'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                'state' => SnapshotStateEnum::LIVE,
+                'published_at' => now(),
+                'layout' => $currentUnpublishedLayout,
+                'checksum' => $webpage->unpublishedSnapshot->checksum,
+                'first_commit' => $firstCommit,
+                'comment' => Arr::get($modelData, 'comment'),
+                'publisher_id' => Arr::get($modelData, 'publisher_id'),
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
             ]
         );
 
-
         $deployment = StoreDeployment::run(
             $webpage,
             [
-                'snapshot_id'    => $snapshot->id,
-                'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                'snapshot_id' => $snapshot->id,
+                'publisher_id' => Arr::get($modelData, 'publisher_id'),
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
             ]
         );
 
         $webpage->stats()->update([
-            'last_deployed_at' => $deployment->date
+            'last_deployed_at' => $deployment->date,
         ]);
 
         $updateData = [
-            'live_snapshot_id'   => $snapshot->id,
-            'published_layout'   => $snapshot->layout,
+            'live_snapshot_id' => $snapshot->id,
+            'published_layout' => $snapshot->layout,
             'published_checksum' => $snapshot->checksum,
-            'state'              => WebpageStateEnum::LIVE,
-            'is_dirty'           => false,
+            'state' => WebpageStateEnum::LIVE,
+            'is_dirty' => false,
         ];
 
         if ($webpage->state == WebpageStateEnum::IN_PROCESS || $webpage->state == WebpageStateEnum::READY) {
@@ -110,23 +108,22 @@ class PublishWebpage extends OrgAction
             'comment' => ['sometimes', 'required', 'string', 'max:1024'],
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules['publisher_type'] = ['sometimes', Rule::in(['User'])];
-            $rules['publisher_id']   = ['sometimes', 'required', 'integer'];
+            $rules['publisher_id'] = ['sometimes', 'required', 'integer'];
         }
 
         return $rules;
     }
 
-
     public function jsonResponse(Webpage $webpage): string
     {
-        return "🚀";
+        return '🚀';
     }
 
     public function action(Webpage $webpage, array $modelData, bool $strict = true): Webpage
     {
-        $this->strict   = $strict;
+        $this->strict = $strict;
         $this->asAction = true;
         $this->setRawAttributes($modelData);
         $validatedData = $this->validateAttributes();

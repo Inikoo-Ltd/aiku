@@ -42,7 +42,6 @@ trait HasHumanResourcesStats
         $table->unsignedSmallInteger('number_employees')->default(0);
         $table->unsignedSmallInteger('number_employees_currently_working')->default(0);
 
-
         foreach (EmployeeStateEnum::cases() as $case) {
             $table->unsignedSmallInteger('number_employees_state_'.$case->snake())->default(0);
         }
@@ -53,7 +52,6 @@ trait HasHumanResourcesStats
         foreach (GenderEnum::cases() as $case) {
             $table->unsignedSmallInteger('number_employees_gender_'.$case->snake())->default(0);
         }
-
 
         return $table;
     }
@@ -88,6 +86,7 @@ trait HasHumanResourcesStats
     public function getTimesheetsStats(Blueprint $table): Blueprint
     {
         $table->unsignedInteger('number_timesheets')->default(0);
+
         return $table;
     }
 
@@ -97,7 +96,7 @@ trait HasHumanResourcesStats
         foreach (TimeTrackerStatusEnum::cases() as $case) {
             $table->unsignedInteger('number_time_trackers_status_'.$case->snake())->default(0);
         }
+
         return $table;
     }
-
 }

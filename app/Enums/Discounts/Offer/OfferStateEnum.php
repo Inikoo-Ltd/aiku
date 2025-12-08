@@ -19,5 +19,4 @@ enum OfferStateEnum: string
     case FINISHED = 'finished';
     case SUSPENDED = 'suspended';
 
-
 }

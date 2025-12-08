@@ -74,6 +74,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Shop|null $shop
  * @property-read \App\Models\Dropshipping\CustomerClientStats|null $stats
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Dropshipping\CustomerClientFactory factory($count = null, $state = [])
  * @method static Builder<static>|CustomerClient newModelQuery()
  * @method static Builder<static>|CustomerClient newQuery()
@@ -81,23 +82,24 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @method static Builder<static>|CustomerClient query()
  * @method static Builder<static>|CustomerClient withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|CustomerClient withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class CustomerClient extends Model implements Auditable
 {
-    use SoftDeletes;
     use HasAddress;
     use HasAddresses;
-    use HasUniversalSearch;
     use HasFactory;
-    use InCustomer;
     use HasHistory;
+    use HasUniversalSearch;
+    use InCustomer;
+    use SoftDeletes;
 
     protected $casts = [
-        'location'         => 'array',
-        'deactivated_at'   => 'datetime',
-        'status'           => 'boolean',
-        'amount_in_basket' => 'decimal:2'
+        'location' => 'array',
+        'deactivated_at' => 'datetime',
+        'status' => 'boolean',
+        'amount_in_basket' => 'decimal:2',
     ];
 
     protected $attributes = [
@@ -128,8 +130,8 @@ class CustomerClient extends Model implements Auditable
     {
         static::creating(
             function (CustomerClient $customerClient) {
-                $name                 = $customerClient->company_name == '' ? $customerClient->contact_name : $customerClient->company_name;
-                $name                 = trim($name);
+                $name = $customerClient->company_name == '' ? $customerClient->contact_name : $customerClient->company_name;
+                $name = trim($name);
                 $customerClient->name = $name;
             }
         );
@@ -142,10 +144,9 @@ class CustomerClient extends Model implements Auditable
                 $name = $customerClient->company_name == '' ? $customerClient->contact_name : $customerClient->company_name;
                 $name = trim($name);
 
-
                 $customerClient->updateQuietly(
                     [
-                        'name' => $name
+                        'name' => $name,
                     ]
                 );
             }
@@ -176,5 +177,4 @@ class CustomerClient extends Model implements Auditable
     {
         return $this->belongsTo(CustomerSalesChannel::class, 'customer_sales_channel_id');
     }
-
 }

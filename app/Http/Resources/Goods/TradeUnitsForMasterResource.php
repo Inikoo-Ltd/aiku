@@ -42,32 +42,31 @@ class TradeUnitsForMasterResource extends JsonResource
             $media = Media::find($this->image_id);
         }
 
-        $tradeUnit = TradeUnit::find($this->id);// Todo remove this get tags the proper way
-
+        $tradeUnit = TradeUnit::find($this->id); // Todo remove this get tags the proper way
 
         return [
-            'slug'                    => $this->slug,
-            'code'                    => $this->code,
-            'name'                    => $this->name,
-            'description'             => $this->description,
-            'description_title'       => $this->description_title,
-            'description_extra'       => $this->description_extra,
-            'type'                    => $this->type,
-            'net_weight'              => $this->net_weight,
-            'marketing_weight'        => $this->marketing_weight,
-            'gross_weight'            => $this->gross_weight,
-            'dimensions'              => $this->marketing_dimensions,
-            'number_current_stocks'   => $this->number_current_stocks,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'description' => $this->description,
+            'description_title' => $this->description_title,
+            'description_extra' => $this->description_extra,
+            'type' => $this->type,
+            'net_weight' => $this->net_weight,
+            'marketing_weight' => $this->marketing_weight,
+            'gross_weight' => $this->gross_weight,
+            'dimensions' => $this->marketing_dimensions,
+            'number_current_stocks' => $this->number_current_stocks,
             'number_current_products' => $this->number_current_products,
-            'id'                      => $this->id,
-            'image'                   => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'cost_price'              => $this->cost_price ?? 0,
-            'tags'                    => TagsResource::collection($tradeUnit->tags)->resolve(),
-            'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
-            'packed_in'               => trimDecimalZeros($this->quantity ?? 0),
-            'quantity'                => trimDecimalZeros($this->quantity ?? 0),
-            'ds_quantity'             => trimDecimalZeros(1),
-            'pick_fractional'         => riseDivisor(divideWithRemainder(findSmallestFactors(1)), 1),
+            'id' => $this->id,
+            'image' => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'cost_price' => $this->cost_price ?? 0,
+            'tags' => TagsResource::collection($tradeUnit->tags)->resolve(),
+            'brands' => BrandResource::collection($tradeUnit->brands)->resolve(),
+            'packed_in' => trimDecimalZeros($this->quantity ?? 0),
+            'quantity' => trimDecimalZeros($this->quantity ?? 0),
+            'ds_quantity' => trimDecimalZeros(1),
+            'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors(1)), 1),
         ];
     }
 }

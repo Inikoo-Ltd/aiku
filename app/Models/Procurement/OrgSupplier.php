@@ -47,16 +47,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\StockDelivery> $stockDeliveries
  * @property-read Supplier $supplier
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static Builder<static>|OrgSupplier newModelQuery()
  * @method static Builder<static>|OrgSupplier newQuery()
  * @method static Builder<static>|OrgSupplier query()
+ *
  * @mixin Eloquent
  */
 class OrgSupplier extends Model
 {
-    use InOrganisation;
     use HasSlug;
     use HasUniversalSearch;
+    use InOrganisation;
 
     protected $table = 'org_suppliers';
 
@@ -68,6 +70,7 @@ class OrgSupplier extends Model
             ->generateSlugsFrom(function () {
 
                 $supplier = $this->supplier()->withTrashed()->first();
+
                 return $supplier->code.'-'.$this->organisation->code;
             })
             ->saveSlugsTo('slug')
@@ -109,5 +112,4 @@ class OrgSupplier extends Model
     {
         return $this->hasMany(OrgSupplierProduct::class);
     }
-
 }

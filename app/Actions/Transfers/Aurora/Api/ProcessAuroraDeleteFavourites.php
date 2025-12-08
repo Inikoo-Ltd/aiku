@@ -25,34 +25,33 @@ class ProcessAuroraDeleteFavourites extends OrgAction
     public function rules(): array
     {
         return [
-            'id'              => ['required', 'integer'],
+            'id' => ['required', 'integer'],
             'unfavourited_at' => ['required', 'date'],
-            'bg'              => ['sometimes', 'boolean'],
-            'delay'           => ['sometimes', 'integer']
+            'bg' => ['sometimes', 'boolean'],
+            'delay' => ['sometimes', 'integer'],
         ];
     }
-
 
     public function action(Organisation $organisation, array $modelData): array
     {
         $this->asAction = true;
-        $fetcher        = $this->fetcher;// hack to avoid reset of attributes in initialisation
+        $fetcher = $this->fetcher; // hack to avoid reset of attributes in initialisation
         $this->initialisation($organisation, $modelData);
         $this->fetcher = $fetcher;
         $validatedData = $this->validatedData;
 
         $favourite = Favourite::where('source_id', $organisation->id.':'.$validatedData['id'])->first();
         $res = [
-            'status'  => 'error',
+            'status' => 'error',
             'message' => 'Favourite not found',
-            'model'   => 'DeleteFavourite'
+            'model' => 'DeleteFavourite',
         ];
         if ($favourite) {
             UnFavourite::make()->action($favourite, Arr::only($validatedData, 'unfavourited_at'));
             $res = [
                 'status' => 'ok',
-                'id'     => $favourite->source_id,
-                'model'  => 'DeleteFavourite',
+                'id' => $favourite->source_id,
+                'model' => 'DeleteFavourite',
             ];
         }
 
@@ -60,16 +59,15 @@ class ProcessAuroraDeleteFavourites extends OrgAction
 
     }
 
-
     /**
      * @throws \Exception
      */
     public function asController(Organisation $organisation, ActionRequest $request): array
     {
         $res = [
-            'status'  => 'error',
+            'status' => 'error',
             'message' => 'Favourite not found',
-            'model'   => 'DeleteFavourite'
+            'model' => 'DeleteFavourite',
         ];
 
         $this->initialisation($organisation, $request);
@@ -81,12 +79,11 @@ class ProcessAuroraDeleteFavourites extends OrgAction
             UnFavourite::make()->action($favourite, Arr::only($validatedData, 'unfavourited_at'));
             $res = [
                 'status' => 'ok',
-                'id'     => $favourite->source_id,
-                'model'  => 'DeleteFavourite',
+                'id' => $favourite->source_id,
+                'model' => 'DeleteFavourite',
             ];
         }
 
         return $res;
     }
-
 }

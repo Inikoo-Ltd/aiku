@@ -37,7 +37,6 @@ trait HasCRMStats
             $table->unsignedInteger('number_customers_trade_state_'.$tradeState->snake())->default(0);
         }
 
-
         return $table;
     }
 
@@ -65,7 +64,6 @@ trait HasCRMStats
         $table->unsignedSmallInteger('number_polls_in_iris')->default(0);
         $table->unsignedSmallInteger('number_polls_required_in_iris')->default(0);
 
-
         foreach (PollTypeEnum::cases() as $case) {
             $table->unsignedInteger('number_polls_type_'.$case->snake())->default(0);
             $table->unsignedSmallInteger('number_polls_in_registration_type_'.$case->snake())->default(0);
@@ -89,7 +87,6 @@ trait HasCRMStats
             $table->unsignedSmallInteger('number_prospects_gender_'.$case->snake())->default(0);
         }
 
-
         foreach (ProspectContactedStateEnum::cases() as $case) {
             $table->unsignedInteger("number_prospects_contacted_state_{$case->snake()}")->default(0);
         }
@@ -102,9 +99,7 @@ trait HasCRMStats
             $table->unsignedInteger("number_prospects_success_status_{$case->snake()}")->default(0);
         }
 
-
-        $table->unsignedInteger("number_prospects_dont_contact_me")->default(0);
-
+        $table->unsignedInteger('number_prospects_dont_contact_me')->default(0);
 
         return $table;
     }
@@ -120,9 +115,6 @@ trait HasCRMStats
         $table->unsignedSmallInteger('number_customer_static_queries')->default(0)->comment('is_static=true');
         $table->unsignedSmallInteger('number_customer_dynamic_queries')->default(0)->comment('is_static=false');
 
-
         return $table;
     }
-
-
 }

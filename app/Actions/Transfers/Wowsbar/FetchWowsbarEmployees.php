@@ -30,7 +30,6 @@ class FetchWowsbarEmployees extends FetchWowsbarAction
     {
         setPermissionsTeamId($organisationSource->getOrganisation()->group_id);
 
-
         if ($employeeData = $organisationSource->fetchEmployee($organisationSourceId)) {
             if ($employee = Employee::where('source_id', $employeeData['employee']['source_id'])->first()) {
                 $employee = UpdateEmployee::make()->action(
@@ -43,7 +42,7 @@ class FetchWowsbarEmployees extends FetchWowsbarAction
             } else {
                 /* @var $workplace Workplace */
                 $workplace = $organisationSource->getOrganisation()->workplaces()->first();
-                $employee  = StoreEmployee::make()->action(
+                $employee = StoreEmployee::make()->action(
                     parent: $workplace,
                     modelData: $employeeData['employee'],
                     hydratorsDelay: 60,
@@ -74,7 +73,6 @@ class FetchWowsbarEmployees extends FetchWowsbarAction
                     }
                 }
             }
-
 
             return $employee;
         }

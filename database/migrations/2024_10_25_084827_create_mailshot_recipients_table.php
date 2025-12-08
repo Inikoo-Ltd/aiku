@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('mailshot_recipients', function (Blueprint $table) {
@@ -23,11 +24,10 @@ return new class () extends Migration {
             $table->unsignedInteger('recipient_id');
             $table->unsignedSmallInteger('channel')->index();
             $table->timestampsTz();
-            $table->index(['recipient_type','recipient_id','mailshot_id']);
-            $table->unique(['mailshot_id','dispatched_email_id']);
+            $table->index(['recipient_type', 'recipient_id', 'mailshot_id']);
+            $table->unique(['mailshot_id', 'dispatched_email_id']);
         });
     }
-
 
     public function down(): void
     {

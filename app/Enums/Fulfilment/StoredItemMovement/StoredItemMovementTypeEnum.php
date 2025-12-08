@@ -15,10 +15,10 @@ enum StoredItemMovementTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case RECEIVED   = 'received';
+    case RECEIVED = 'received';
     case PICKED = 'picked';
-    case AUDIT_ADDITION        = 'audit_addition';
-    case AUDIT_SUBTRACTION       = 'audit_subtraction';
-    case MOVE_OUT       = 'move_out';
-    case MOVE_IN      = 'move_in';
+    case AUDIT_ADDITION = 'audit_addition';
+    case AUDIT_SUBTRACTION = 'audit_subtraction';
+    case MOVE_OUT = 'move_out';
+    case MOVE_IN = 'move_in';
 }

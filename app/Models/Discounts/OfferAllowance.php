@@ -9,10 +9,10 @@
 namespace App\Models\Discounts;
 
 use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
-use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\HasHistory;
@@ -71,6 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Discounts\OfferAllowanceStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
+ *
  * @method static \Database\Factories\Discounts\OfferAllowanceFactory factory($count = null, $state = [])
  * @method static Builder<static>|OfferAllowance newModelQuery()
  * @method static Builder<static>|OfferAllowance newQuery()
@@ -78,33 +79,34 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|OfferAllowance query()
  * @method static Builder<static>|OfferAllowance withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|OfferAllowance withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class OfferAllowance extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
     use HasFactory;
     use HasHistory;
+    use HasSlug;
     use InShop;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'            => 'array',
-        'source_data'     => 'array',
-        'target_data'     => 'array',
-        'state'           => OfferAllowanceStateEnum::class,
-        'type'            => OfferAllowanceType::class,
-        'class'           => OfferAllowanceClass::class,
-        'target_type'     => OfferAllowanceTargetTypeEnum::class,
-        'duration'        => OfferDurationEnum::class,
-        'begin_at'        => 'datetime',
-        'end_at'          => 'datetime',
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'source_data' => 'array',
+        'target_data' => 'array',
+        'state' => OfferAllowanceStateEnum::class,
+        'type' => OfferAllowanceType::class,
+        'class' => OfferAllowanceClass::class,
+        'target_type' => OfferAllowanceTargetTypeEnum::class,
+        'duration' => OfferDurationEnum::class,
+        'begin_at' => 'datetime',
+        'end_at' => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'        => '{}',
+        'data' => '{}',
         'target_data' => '{}',
         'source_data' => '{}',
     ];
@@ -170,5 +172,4 @@ class OfferAllowance extends Model implements Auditable
     {
         return $this->belongsToMany(InvoiceTransaction::class, 'invoice_transaction_has_offer_allowances');
     }
-
 }

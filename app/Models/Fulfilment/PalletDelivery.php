@@ -19,6 +19,7 @@ use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasRetinaSearch;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilmentCustomer;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,7 +30,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
  * App\Models\Fulfilment\PalletDelivery
@@ -98,37 +98,40 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property-read Collection<int, \App\Models\Fulfilment\FulfilmentTransaction> $transactions
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class PalletDelivery extends Model implements HasMedia
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasUniversalSearch;
-    use HasRetinaSearch;
-    use InFulfilmentCustomer;
     use HasAttachments;
+    use HasRetinaSearch;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InFulfilmentCustomer;
+    use SoftDeletes;
 
     protected $guarded = [];
-    protected $casts   = [
-        'state'                   => PalletDeliveryStateEnum::class,
-        'in_process_at'           => 'datetime',
-        'submitted_at'            => 'datetime',
-        'confirmed_at'            => 'datetime',
-        'received_at'             => 'datetime',
-        'not_received_at'         => 'datetime',
-        'booked_in_at'            => 'datetime',
-        'booking_in_at'           => 'datetime',
-        'dispatched_at'           => 'datetime',
-        'date'                    => 'datetime',
+
+    protected $casts = [
+        'state' => PalletDeliveryStateEnum::class,
+        'in_process_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'received_at' => 'datetime',
+        'not_received_at' => 'datetime',
+        'booked_in_at' => 'datetime',
+        'booking_in_at' => 'datetime',
+        'dispatched_at' => 'datetime',
+        'date' => 'datetime',
         'estimated_delivery_date' => 'datetime:Y-m-d',
-        'data'                    => 'array'
+        'data' => 'array',
     ];
 
     public function getRouteKeyName(): string
@@ -151,6 +154,7 @@ class PalletDelivery extends Model implements HasMedia
             get: fn (mixed $value, array $attributes) => $this->gross_amount - $this->net_amount
         );
     }
+
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);

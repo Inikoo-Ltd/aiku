@@ -25,17 +25,17 @@ enum InvoicesInFulfilmentCustomerTabsEnum: string
         return match ($this) {
             InvoicesInFulfilmentCustomerTabsEnum::INVOICES => [
                 'title' => __('Invoices'),
-                'icon'  => 'fal fa-file-invoice-dollar',
+                'icon' => 'fal fa-file-invoice-dollar',
             ],
 
             InvoicesInFulfilmentCustomerTabsEnum::REFUNDS => [
                 'title' => __('Refunds'),
-                'icon'  => 'fal fa-arrow-circle-left',
+                'icon' => 'fal fa-arrow-circle-left',
             ],
 
             InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS => [
                 'title' => __('Standalone invoices in process'),
-                'icon'  => 'fal fa-seedling',
+                'icon' => 'fal fa-seedling',
                 'align' => 'right',
             ],
         };

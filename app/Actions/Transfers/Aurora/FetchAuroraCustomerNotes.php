@@ -21,7 +21,6 @@ class FetchAuroraCustomerNotes extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:customer_notes {organisations?*} {--s|source_id=} {--N|only_new : Fetch only new}  {--d|db_suffix=} {--r|reset}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?CustomerNote
     {
         if ($customerNoteData = $organisationSource->fetchCustomerNote($organisationSourceId)) {
@@ -60,7 +59,6 @@ class FetchAuroraCustomerNotes extends FetchAuroraAction
                 }
             }
 
-
             return $customerNote;
         }
 
@@ -80,7 +78,6 @@ class FetchAuroraCustomerNotes extends FetchAuroraAction
             $query->whereNull('aiku_notes_id');
         }
 
-
         return $query;
     }
 
@@ -96,6 +93,4 @@ class FetchAuroraCustomerNotes extends FetchAuroraAction
 
         return $query->count();
     }
-
-
 }

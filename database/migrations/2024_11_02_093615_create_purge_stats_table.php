@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('purge_stats', function (Blueprint $table) {
@@ -37,16 +38,13 @@ return new class () extends Migration {
             $table->decimal('estimated_org_net_amount', 18)->default(0);
             $table->decimal('estimated_grp_net_amount', 18)->default(0);
 
-
             $table->decimal('purged_net_amount', 18)->default(0);
             $table->decimal('purged_org_net_amount', 18)->default(0);
             $table->decimal('purged_grp_net_amount', 18)->default(0);
 
-
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

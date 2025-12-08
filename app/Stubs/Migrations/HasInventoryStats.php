@@ -61,7 +61,6 @@ trait HasInventoryStats
         $table->unsignedSmallInteger('number_locations_allow_fulfilment')->default(0);
         $table->unsignedSmallInteger('number_locations_allow_dropshipping')->default(0);
 
-
         $table->decimal('stock_value', 14)->default(0);
         $table->decimal('stock_commercial_value', 14)->default(0);
 
@@ -86,14 +85,12 @@ trait HasInventoryStats
         $table->unsignedInteger('number_current_org_stocks')->default(0)->comment('active + discontinuing');
         $table->unsignedInteger('number_dropped_org_stocks')->default(0)->comment('discontinued + abnormality');
 
-
         foreach (OrgStockStateEnum::cases() as $stockState) {
             $table->unsignedInteger('number_org_stocks_state_'.$stockState->snake())->default(0);
         }
         foreach (OrgStockQuantityStatusEnum::cases() as $stockQuantityStatus) {
             $table->unsignedInteger('number_org_stocks_quantity_status_'.$stockQuantityStatus->snake())->default(0);
         }
-
 
         return $table;
     }
@@ -125,6 +122,4 @@ trait HasInventoryStats
 
         return $table;
     }
-
-
 }

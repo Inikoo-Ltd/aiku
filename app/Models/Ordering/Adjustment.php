@@ -36,9 +36,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment query()
+ *
  * @mixin \Eloquent
  */
 class Adjustment extends Model
@@ -48,22 +50,19 @@ class Adjustment extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'type'            => AdjustmentTypeEnum::class,
-        'net_amount'      => 'decimal:2',
-        'net_org_amount'  => 'decimal:2',
-        'net_grp_amount'  => 'decimal:2',
-        'tax_amount'      => 'decimal:2',
-        'tax_org_amount'  => 'decimal:2',
-        'tax_grp_amount'  => 'decimal:2',
-        'fetched_at'      => 'datetime',
-        'last_fetched_at' => 'datetime'
+        'type' => AdjustmentTypeEnum::class,
+        'net_amount' => 'decimal:2',
+        'net_org_amount' => 'decimal:2',
+        'net_grp_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'tax_org_amount' => 'decimal:2',
+        'tax_grp_amount' => 'decimal:2',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
-
 
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
     }
-
-
 }

@@ -21,43 +21,41 @@ class UpdateOrderNotesEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
-
     public DeliveryNote $deliveryNote;
 
     public function __construct(DeliveryNote $deliveryNote)
     {
-        $this->deliveryNote         = $deliveryNote;
+        $this->deliveryNote = $deliveryNote;
     }
-
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('grp.dn.' . $this->deliveryNote->id)
+            new PrivateChannel('grp.dn.'.$this->deliveryNote->id),
         ];
     }
 
     public function broadcastWith(): array
     {
         return [
-            "note_list" => [
+            'note_list' => [
                 [
-                    "note"     => $this->deliveryNote->shipping_notes ?? '',
-                    "field"    => "shipping_notes"
+                    'note' => $this->deliveryNote->shipping_notes ?? '',
+                    'field' => 'shipping_notes',
                 ],
                 [
-                    "note"     => $this->deliveryNote->customer_notes ?? '',
-                    "field"    => "customer_notes"
+                    'note' => $this->deliveryNote->customer_notes ?? '',
+                    'field' => 'customer_notes',
                 ],
                 [
-                    "note"     => $this->deliveryNote->public_notes ?? '',
-                    "field"    => "public_notes"
+                    'note' => $this->deliveryNote->public_notes ?? '',
+                    'field' => 'public_notes',
                 ],
                 [
-                    "note"     => $this->deliveryNote->internal_notes ?? '',
-                    "field"    => "internal_notes"
-                ]
-            ]
+                    'note' => $this->deliveryNote->internal_notes ?? '',
+                    'field' => 'internal_notes',
+                ],
+            ],
         ];
     }
 

@@ -25,7 +25,7 @@ class SlackTestNotification extends Notification
 
     public function toSlack(object $notifiable): SlackMessage
     {
-        return (new SlackMessage())
+        return (new SlackMessage)
             ->sectionBlock(function (SectionBlock $block) {
                 $block->text($this->message);
             });

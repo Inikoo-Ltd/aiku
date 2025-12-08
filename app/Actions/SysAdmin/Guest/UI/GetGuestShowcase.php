@@ -20,34 +20,32 @@ class GetGuestShowcase
     use AsObject;
     use WithPermissionsPictogram;
 
-
     public function handle(Guest $guest): array
     {
         $user = $guest->getUser();
 
         $jobPositionsOrganisationsData = [];
         foreach ($guest->group->organisations as $organisation) {
-            $jobPositionsOrganisationData                       = GetUserOrganisationScopeJobPositionsData::run($user, $organisation);
+            $jobPositionsOrganisationData = GetUserOrganisationScopeJobPositionsData::run($user, $organisation);
             $jobPositionsOrganisationsData[$organisation->slug] = $jobPositionsOrganisationData;
         }
-
 
         $permissionsGroupData = GetUserGroupScopeJobPositionsData::run($user);
 
         return [
             'data' => [
-                'id'                    => $guest->id,
-                'username'              => $user->username,
-                'email'                 => $guest->email,
-                'about'                 => $user->about,
-                'contact_name'          => $guest->contact_name,
+                'id' => $guest->id,
+                'username' => $user->username,
+                'email' => $guest->email,
+                'about' => $user->about,
+                'contact_name' => $guest->contact_name,
                 'permissions_pictogram' => $this->getPermissionsPictogram($user, $permissionsGroupData, $jobPositionsOrganisationsData),
-                'last_active_at'        => $user->stats->last_active_at,
-                'last_login'            => [
-                    'ip'          => $user->stats->last_login_ip,
-                    'geolocation' => GetLocationFromIp::run($user->stats->last_login_ip)
-                ]
-            ]
+                'last_active_at' => $user->stats->last_active_at,
+                'last_login' => [
+                    'ip' => $user->stats->last_login_ip,
+                    'geolocation' => GetLocationFromIp::run($user->stats->last_login_ip),
+                ],
+            ],
         ];
     }
 }

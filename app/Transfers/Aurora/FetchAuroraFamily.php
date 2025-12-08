@@ -24,7 +24,6 @@ class FetchAuroraFamily extends FetchAurora
             return;
         }
 
-
         $familiesRootAuroraIDs = DB::connection('aurora')->table('Category Dimension')
             ->select('Category Key', 'Category Code', 'Category Subject')
             ->where('Category Branch Type', 'Root')
@@ -42,13 +41,11 @@ class FetchAuroraFamily extends FetchAurora
         if ($this->auroraModelData->{'Product Category Department Category Key'}) {
             $parent = $this->parseDepartment($this->organisation->id.':'.$this->auroraModelData->{'Product Category Department Category Key'});
         }
-        if (!$parent) {
+        if (! $parent) {
             $parent = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Category Store Key'});
         }
 
-
         $code = $this->cleanTradeUnitReference($this->auroraModelData->{'Category Code'});
-
 
         if ($code == '') {
             return;
@@ -56,15 +53,14 @@ class FetchAuroraFamily extends FetchAurora
 
         $this->parsedData['parent'] = $parent;
 
-
         $this->parsedData['family'] = [
-            'type'             => ProductCategoryTypeEnum::FAMILY,
-            'code'             => $code,
-            'name'             => $this->auroraModelData->{'Category Label'},
+            'type' => ProductCategoryTypeEnum::FAMILY,
+            'code' => $code,
+            'name' => $this->auroraModelData->{'Category Label'},
             'source_family_id' => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
-            'image'            => $this->parseImage(),
-            'fetched_at'       => now(),
-            'last_fetched_at'  => now(),
+            'image' => $this->parseImage(),
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
 
         $createdAt = $this->parseDatetime($this->auroraModelData->{'Product Category Valid From'});
@@ -86,11 +82,9 @@ class FetchAuroraFamily extends FetchAurora
             return [];
         }
 
-
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Category Dimension')

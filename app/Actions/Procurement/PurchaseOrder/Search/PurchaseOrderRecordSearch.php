@@ -22,53 +22,52 @@ class PurchaseOrderRecordSearch
     public function handle(PurchaseOrder $purchaseOrder): void
     {
 
-
         $modelData = [
-            'group_id'          => $purchaseOrder->group_id,
-            'organisation_id'   => $purchaseOrder->organisation_id,
+            'group_id' => $purchaseOrder->group_id,
+            'organisation_id' => $purchaseOrder->organisation_id,
             'organisation_slug' => $purchaseOrder->organisation->slug,
-            'sections'          => ['procurement'],
-            'haystack_tier_1'   => trim($purchaseOrder->reference.' '.$purchaseOrder->parent_name),
-            'result'            => [
-                'route'     => [
-                    'name'          => 'grp.org.procurement.purchase_orders.show',
-                    'parameters'    => [
+            'sections' => ['procurement'],
+            'haystack_tier_1' => trim($purchaseOrder->reference.' '.$purchaseOrder->parent_name),
+            'result' => [
+                'route' => [
+                    'name' => 'grp.org.procurement.purchase_orders.show',
+                    'parameters' => [
                         $purchaseOrder->organisation->slug,
-                        $purchaseOrder->slug
-                    ]
+                        $purchaseOrder->slug,
+                    ],
                 ],
-                'description'     => [
-                    'label'   => $purchaseOrder->parent_name
+                'description' => [
+                    'label' => $purchaseOrder->parent_name,
                 ],
-                'code'         => [
+                'code' => [
                     'label' => $purchaseOrder->reference,
                 ],
-                'icon'          => [
-                    'icon' => 'fal fa-clipboard-list'
+                'icon' => [
+                    'icon' => 'fal fa-clipboard-list',
                 ],
-                'meta'          => [
+                'meta' => [
                     [
                         'icon' => $purchaseOrder->state->stateIcon()[$purchaseOrder->state->value],
-                        'label'  => __($purchaseOrder->state->labels()[$purchaseOrder->state->value]),
-                        'tooltip'   => __('State'),
+                        'label' => __($purchaseOrder->state->labels()[$purchaseOrder->state->value]),
+                        'tooltip' => __('State'),
                     ],
                     [
                         'type' => 'date',
-                        'label'  => $purchaseOrder->created_at,
-                        'tooltip'   => __('Date created'),
+                        'label' => $purchaseOrder->created_at,
+                        'tooltip' => __('Date created'),
                     ],
                     [
                         'type' => 'number',
-                        'number'     => $purchaseOrder->number_of_items,
-                        'label' => __('Items') . ": "
+                        'number' => $purchaseOrder->number_of_items,
+                        'label' => __('Items').': ',
                     ],
                     [
                         'type' => 'currency',
-                        'amount'     => $purchaseOrder->cost_total,
-                        'tooltip' => __('Amount')
+                        'amount' => $purchaseOrder->cost_total,
+                        'tooltip' => __('Amount'),
                     ],
                 ],
-            ]
+            ],
         ];
 
         $purchaseOrder->universalSearch()->updateOrCreate(
@@ -76,8 +75,5 @@ class PurchaseOrderRecordSearch
             $modelData
         );
 
-
     }
-
-
 }

@@ -10,10 +10,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
-        $pickingStates          = ['queued', 'picking', 'picking_blocked'];
+        $pickingStates = ['queued', 'picking', 'picking_blocked'];
         $pickingCompletedFields = ['done_today'];
 
         Schema::table('shop_order_handling_stats', function (Blueprint $table) use ($pickingStates, $pickingCompletedFields) {
@@ -47,10 +48,9 @@ return new class () extends Migration {
         });
     }
 
-
     public function down(): void
     {
-        $pickingStates          = ['queued', 'picking', 'picking_blocked'];
+        $pickingStates = ['queued', 'picking', 'picking_blocked'];
         $pickingCompletedFields = ['done_today'];
 
         Schema::table('shop_order_handling_stats', function (Blueprint $table) use ($pickingStates, $pickingCompletedFields) {

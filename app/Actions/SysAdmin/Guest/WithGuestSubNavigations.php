@@ -18,32 +18,31 @@ trait WithGuestSubNavigations
     {
         return [
             [
-                "label"    => __($guest->contact_name),
-                "route"     => [
-                    "name"       => "grp.sysadmin.guests.show",
-                    "parameters" => [
-                        'guest' => $guest->slug
+                'label' => __($guest->contact_name),
+                'route' => [
+                    'name' => 'grp.sysadmin.guests.show',
+                    'parameters' => [
+                        'guest' => $guest->slug,
                     ],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-user-alien"],
-                    "tooltip" => __("Guest"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-user-alien'],
+                    'tooltip' => __('Guest'),
                 ],
             ],
             [
-                "label"    => __("Requests"),
-                "route"     => [
+                'label' => __('Requests'),
+                'route' => [
                     // "name"       => "grp.sysadmin.analytics.request.index",
                     // "parameters" => [
                     //     'user' => $user->username
                     // ],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-clock"],
-                    "tooltip" => __("Requests"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-clock'],
+                    'tooltip' => __('Requests'),
                 ],
             ],
-
 
         ];
     }

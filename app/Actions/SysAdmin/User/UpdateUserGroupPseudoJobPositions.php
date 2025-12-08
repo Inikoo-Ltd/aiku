@@ -10,8 +10,8 @@ namespace App\Actions\SysAdmin\User;
 
 use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateEmployees;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
 use App\Http\Resources\SysAdmin\UserResource;
 use App\Models\HumanResources\JobPosition;
@@ -29,14 +29,13 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
 
     protected bool $asAction = false;
 
-
     public function handle(User $user, array $modelData): User
     {
         $jobPositionsIds = $this->getJobPositionsFromCodes($this->group, Arr::get($modelData, 'job_position_codes', []));
 
         $currentJobPositions = $user->pseudoJobPositions()->where('scope', 'group')->pluck('job_positions.id')->all();
-        $newJobPositionsIds  = array_diff($jobPositionsIds, $currentJobPositions);
-        $removeJobPositions  = array_diff($currentJobPositions, $jobPositionsIds);
+        $newJobPositionsIds = array_diff($jobPositionsIds, $currentJobPositions);
+        $removeJobPositions = array_diff($currentJobPositions, $jobPositionsIds);
 
         $user->pseudoJobPositions()->detach($removeJobPositions);
         foreach ($newJobPositionsIds as $jobPositionId) {
@@ -44,7 +43,7 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
                 [
                     $jobPositionId => [
                         'group_id' => $user->group_id,
-                    ]
+                    ],
                 ],
             );
         }
@@ -64,19 +63,17 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
         return $user;
     }
 
-
     public function getJobPositionsFromCodes(Group $group, array $jobPositionsCodes): array
     {
         $jobPositions = [];
         foreach ($jobPositionsCodes as $positionCode) {
             /** @var JobPosition $jobPosition */
-            $jobPosition                     = JobPosition::where('group_id', $group->id)->where('code', $positionCode)->where('scope', 'group')->first();
-            $jobPositions [$jobPosition->id] = $jobPosition->id;
+            $jobPosition = JobPosition::where('group_id', $group->id)->where('code', $positionCode)->where('scope', 'group')->first();
+            $jobPositions[$jobPosition->id] = $jobPosition->id;
         }
 
         return $jobPositions;
     }
-
 
     public function authorize(ActionRequest $request): bool
     {
@@ -84,13 +81,13 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit");
+        return $request->user()->authTo('sysadmin.edit');
     }
 
     public function rules(): array
     {
         return [
-            'job_position_codes'   => ['sometimes', 'array'],
+            'job_position_codes' => ['sometimes', 'array'],
             'job_position_codes.*' => ['string', Rule::exists('job_positions', 'code')->where('group_id', $this->group->id)->where('scope', 'group')],
         ];
     }

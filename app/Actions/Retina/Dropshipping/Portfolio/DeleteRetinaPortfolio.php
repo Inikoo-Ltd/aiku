@@ -19,7 +19,6 @@ class DeleteRetinaPortfolio extends RetinaAction
 {
     use WithActionUpdate;
 
-
     private Portfolio $portfolio;
 
     public function handle(Portfolio $portfolio): void

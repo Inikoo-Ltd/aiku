@@ -29,19 +29,18 @@ class TimesheetsResource extends JsonResource
     public function toArray($request): array|Arrayable|JsonSerializable
     {
 
-
         return [
-            'id'                                       => $this->id,
-            'date'                                     => $this->date,
-            'subject_name'                             => $this->subject_name,
-            'start_at'                                 => $this->start_at,
-            'end_at'                                   => $this->end_at,
-            'working_duration'                         => $this->working_duration,
-            'breaks_duration'                          => $this->breaks_duration,
-            'number_time_trackers'                     => $this->number_time_trackers,
-            'number_open_time_trackers'                => $this->number_open_time_trackers,
-            'organisation_name'                        => $this->organisation_name,
-            'organisation_slug'                        => $this->organisation_slug,
+            'id' => $this->id,
+            'date' => $this->date,
+            'subject_name' => $this->subject_name,
+            'start_at' => $this->start_at,
+            'end_at' => $this->end_at,
+            'working_duration' => $this->working_duration,
+            'breaks_duration' => $this->breaks_duration,
+            'number_time_trackers' => $this->number_time_trackers,
+            'number_open_time_trackers' => $this->number_open_time_trackers,
+            'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
 
         ];
     }

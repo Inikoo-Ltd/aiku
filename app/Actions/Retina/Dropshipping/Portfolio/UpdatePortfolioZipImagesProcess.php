@@ -8,8 +8,8 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdatePortfolioZipImagesProcess
 {
@@ -18,6 +18,7 @@ class UpdatePortfolioZipImagesProcess
     public function handle(array $modelData): bool
     {
         $record = DownloadPortfolioCustomerSalesChannel::where('id', $modelData['id'])->update($modelData);
+
         return $record > 0;
     }
 }

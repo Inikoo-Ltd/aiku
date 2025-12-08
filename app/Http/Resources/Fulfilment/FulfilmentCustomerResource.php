@@ -24,39 +24,39 @@ class FulfilmentCustomerResource extends JsonResource
         $fulfilmentCustomer = $this;
 
         return [
-            'radioTabs'                     => [
+            'radioTabs' => [
                 'pallets_storage' => $fulfilmentCustomer->pallets_storage,
-                'items_storage'   => $fulfilmentCustomer->items_storage,
+                'items_storage' => $fulfilmentCustomer->items_storage,
                 // 'dropshipping'    => $fulfilmentCustomer->dropshipping,
-                'space_rental'    => $fulfilmentCustomer->space_rental,
+                'space_rental' => $fulfilmentCustomer->space_rental,
             ],
-            'number_pallets'                => $fulfilmentCustomer->number_pallets,
+            'number_pallets' => $fulfilmentCustomer->number_pallets,
             'number_pallets_state_received' => $fulfilmentCustomer->number_pallets_state_received,
-            'number_stored_items'           => $fulfilmentCustomer->number_stored_items,
-            'number_pallet_deliveries'      => $fulfilmentCustomer->number_pallet_deliveries,
-            'number_pallet_returns'         => $fulfilmentCustomer->number_pallet_returns,
-            'slug'                          => $fulfilmentCustomer->slug,
-            'fulfilment'                    => [
+            'number_stored_items' => $fulfilmentCustomer->number_stored_items,
+            'number_pallet_deliveries' => $fulfilmentCustomer->number_pallet_deliveries,
+            'number_pallet_returns' => $fulfilmentCustomer->number_pallet_returns,
+            'slug' => $fulfilmentCustomer->slug,
+            'fulfilment' => [
                 'slug' => $fulfilmentCustomer->fulfilment->slug,
                 'name' => $fulfilmentCustomer->fulfilment->shop->name,
             ],
-            'customer'                      => [
-                'id'           => $fulfilmentCustomer->customer->id,
-                'slug'         => $fulfilmentCustomer->customer->slug,
-                'reference'    => $fulfilmentCustomer->customer->reference,
-                'name'         => $fulfilmentCustomer->customer->name,
+            'customer' => [
+                'id' => $fulfilmentCustomer->customer->id,
+                'slug' => $fulfilmentCustomer->customer->slug,
+                'reference' => $fulfilmentCustomer->customer->reference,
+                'name' => $fulfilmentCustomer->customer->name,
                 'contact_name' => $fulfilmentCustomer->customer->contact_name,
                 'company_name' => $fulfilmentCustomer->customer->company_name,
-                'location'     => $fulfilmentCustomer->customer->location,
-                'address'      => AddressResource::make($fulfilmentCustomer->customer->address),
-                'email'        => $fulfilmentCustomer->customer->email,
-                'phone'        => $fulfilmentCustomer->customer->phone,
-                'created_at'   => $fulfilmentCustomer->customer->created_at,
-                'status'       => $fulfilmentCustomer->customer->status,
-                'approved_at'  => $fulfilmentCustomer->customer->approved_at ?? null,
-                'tax_number'   => $fulfilmentCustomer->customer->taxNumber ? TaxNumberResource::make($fulfilmentCustomer->customer->taxNumber)->getArray() : [],
+                'location' => $fulfilmentCustomer->customer->location,
+                'address' => AddressResource::make($fulfilmentCustomer->customer->address),
+                'email' => $fulfilmentCustomer->customer->email,
+                'phone' => $fulfilmentCustomer->customer->phone,
+                'created_at' => $fulfilmentCustomer->customer->created_at,
+                'status' => $fulfilmentCustomer->customer->status,
+                'approved_at' => $fulfilmentCustomer->customer->approved_at ?? null,
+                'tax_number' => $fulfilmentCustomer->customer->taxNumber ? TaxNumberResource::make($fulfilmentCustomer->customer->taxNumber)->getArray() : [],
 
-            ]
+            ],
 
         ];
     }

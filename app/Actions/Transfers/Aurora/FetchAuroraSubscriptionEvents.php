@@ -20,12 +20,11 @@ class FetchAuroraSubscriptionEvents extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:subscription_events {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?SubscriptionEvent
     {
         $subscriptionEventData = $organisationSource->fetchSubscriptionEvent($organisationSourceId);
         if ($subscriptionEventData) {
-            if (!$subscriptionEventData['subscription_event']) {
+            if (! $subscriptionEventData['subscription_event']) {
                 return null;
             }
 
@@ -63,13 +62,11 @@ class FetchAuroraSubscriptionEvents extends FetchAuroraAction
                 //                }
             }
 
-
             return $subscriptionEvent;
         }
 
         return null;
     }
-
 
     public function getModelsQuery(): Builder
     {
@@ -92,7 +89,7 @@ class FetchAuroraSubscriptionEvents extends FetchAuroraAction
                         'Not interested status removed',
                         'Nemám zájem',
                         'Nezaujíma',
-                        'No interesado'
+                        'No interesado',
                     ]);
             })
             ->select('History Key as source_id');
@@ -124,7 +121,7 @@ class FetchAuroraSubscriptionEvents extends FetchAuroraAction
                         'Not interested status removed',
                         'Nemám zájem',
                         'Nezaujíma',
-                        'No interesado'
+                        'No interesado',
                     ]);
             });
 

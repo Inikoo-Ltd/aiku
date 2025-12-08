@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('trade_units', function (Blueprint $table) {
@@ -21,7 +22,6 @@ return new class () extends Migration {
             $table->renameColumn('number_trade_units_with_dimensions', 'number_trade_units_with_marketing_dimensions');
         });
     }
-
 
     public function down(): void
     {

@@ -56,10 +56,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Procurement\PurchaseOrder $purchaseOrder
  * @property-read SupplierProduct|null $supplierProduct
+ *
  * @method static \Database\Factories\Procurement\PurchaseOrderTransactionFactory factory($count = null, $state = [])
  * @method static Builder<static>|PurchaseOrderTransaction newModelQuery()
  * @method static Builder<static>|PurchaseOrderTransaction newQuery()
  * @method static Builder<static>|PurchaseOrderTransaction query()
+ *
  * @mixin Eloquent
  */
 class PurchaseOrderTransaction extends Model
@@ -68,9 +70,9 @@ class PurchaseOrderTransaction extends Model
     use InOrganisation;
 
     protected $casts = [
-        'data'            => 'array',
-        'state'           => PurchaseOrderTransactionStateEnum::class,
-        'delivery_state' => PurchaseOrderTransactionDeliveryStateEnum::class
+        'data' => 'array',
+        'state' => PurchaseOrderTransactionStateEnum::class,
+        'delivery_state' => PurchaseOrderTransactionDeliveryStateEnum::class,
     ];
 
     protected $attributes = [

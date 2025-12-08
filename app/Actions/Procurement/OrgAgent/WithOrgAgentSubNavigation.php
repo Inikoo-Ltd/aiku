@@ -17,52 +17,52 @@ trait WithOrgAgentSubNavigation
     {
         return [
             [
-                "isAnchor" => true,
-                "label"    => __($parent->slug),
+                'isAnchor' => true,
+                'label' => __($parent->slug),
 
-                "route"     => [
-                    "name"       => "grp.org.procurement.org_agents.show",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                'route' => [
+                    'name' => 'grp.org.procurement.org_agents.show',
+                    'parameters' => [$parent->organisation->slug, $parent->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-people-arrows"],
-                    "tooltip" => __("Org Agent"),
-                ],
-            ],
-            [
-                "number"   => $parent->stats->number_org_suppliers,
-                "label"    => __("Suppliers"),
-                "route"     => [
-                    "name"       => "grp.org.procurement.org_agents.show.suppliers.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-person-dolly"],
-                    "tooltip" => __("Suppliers"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-people-arrows'],
+                    'tooltip' => __('Org Agent'),
                 ],
             ],
             [
-                "number"   => $parent->stats->number_org_supplier_products,
-                "label"    => __("Products"),
-                "route"     => [
-                    "name"       => "grp.org.procurement.org_agents.show.supplier_products.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                'number' => $parent->stats->number_org_suppliers,
+                'label' => __('Suppliers'),
+                'route' => [
+                    'name' => 'grp.org.procurement.org_agents.show.suppliers.index',
+                    'parameters' => [$parent->organisation->slug, $parent->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-box-usd"],
-                    "tooltip" => __("Products"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-person-dolly'],
+                    'tooltip' => __('Suppliers'),
                 ],
             ],
             [
-                "number"   => $parent->stats->number_purchase_orders,
-                "label"    => __("Purchase Orders"),
-                "route"     => [
-                    "name"       => "grp.org.procurement.org_agents.show.purchase-orders.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                'number' => $parent->stats->number_org_supplier_products,
+                'label' => __('Products'),
+                'route' => [
+                    'name' => 'grp.org.procurement.org_agents.show.supplier_products.index',
+                    'parameters' => [$parent->organisation->slug, $parent->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-clipboard"],
-                    "tooltip" => __("Purchase Orders"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-box-usd'],
+                    'tooltip' => __('Products'),
+                ],
+            ],
+            [
+                'number' => $parent->stats->number_purchase_orders,
+                'label' => __('Purchase Orders'),
+                'route' => [
+                    'name' => 'grp.org.procurement.org_agents.show.purchase-orders.index',
+                    'parameters' => [$parent->organisation->slug, $parent->slug],
+                ],
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-clipboard'],
+                    'tooltip' => __('Purchase Orders'),
                 ],
             ],
             // [
@@ -78,15 +78,15 @@ trait WithOrgAgentSubNavigation
             //     ],
             // ],
             [
-                "number"   => $parent->stats->number_stock_deliveries,
-                "label"    => __("Stock Deliveries"),
-                "route"     => [
-                    "name"       => "grp.org.procurement.org_agents.show.stock-deliveries.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                'number' => $parent->stats->number_stock_deliveries,
+                'label' => __('Stock Deliveries'),
+                'route' => [
+                    'name' => 'grp.org.procurement.org_agents.show.stock-deliveries.index',
+                    'parameters' => [$parent->organisation->slug, $parent->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-truck-container"],
-                    "tooltip" => __("Stock Deliveries"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-truck-container'],
+                    'tooltip' => __('Stock Deliveries'),
                 ],
             ],
 

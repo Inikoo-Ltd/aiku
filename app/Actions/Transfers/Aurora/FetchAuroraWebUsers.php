@@ -22,13 +22,12 @@ class FetchAuroraWebUsers extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:web_users {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?WebUser
     {
         if ($webUserData = $organisationSource->fetchWebUser($organisationSourceId)) {
             $customer = $webUserData['customer'];
 
-            if ($customer and !$customer->trashed()) {
+            if ($customer and ! $customer->trashed()) {
                 if ($webUser = WebUser::withTrashed()->where('source_id', $webUserData['webUser']['source_id'])
                     ->first()) {
                     try {
@@ -72,7 +71,6 @@ class FetchAuroraWebUsers extends FetchAuroraAction
                         return null;
                     }
                 }
-
 
                 return $webUser;
             }

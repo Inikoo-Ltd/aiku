@@ -30,6 +30,7 @@ class PdfRetinaInvoice extends RetinaAction
         if ($this->customer->id == $request->route()->parameter('invoice')->customer_id) {
             return true;
         }
+
         return false;
     }
 

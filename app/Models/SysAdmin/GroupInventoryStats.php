@@ -77,9 +77,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_org_stock_movements_type_audit
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupInventoryStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupInventoryStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupInventoryStats query()
+ *
  * @mixin \Eloquent
  */
 class GroupInventoryStats extends Model

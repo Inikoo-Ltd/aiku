@@ -14,6 +14,6 @@ enum TopUpStatusEnum: string
 {
     use EnumHelperTrait;
     case IN_PROCESS = 'in_process';
-    case SUCCESS    = 'success';
-    case FAIL       = 'fail';
+    case SUCCESS = 'success';
+    case FAIL = 'fail';
 }

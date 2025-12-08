@@ -23,6 +23,4 @@ trait InOrganisation
     {
         return $this->belongsTo(Organisation::class);
     }
-
-
 }

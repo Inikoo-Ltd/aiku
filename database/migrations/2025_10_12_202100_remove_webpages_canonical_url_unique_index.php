@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -44,7 +45,7 @@ return new class () extends Migration {
                 SQL
             );
 
-            if (!$exists) {
+            if (! $exists) {
                 DB::statement('ALTER TABLE webpages ADD CONSTRAINT webpages_canonical_url_unique UNIQUE (canonical_url)');
             }
         }

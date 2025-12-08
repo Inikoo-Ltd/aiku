@@ -31,87 +31,86 @@ class EditRetinaCustomerClient extends RetinaAction
                     $customerClient,
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit client'),
-                'pageHead'    => [
-                    'title'        => __('Edit client'),
-                    'icon'         => [
-                        'icon'  => ['fal', 'fa-user'],
-                        'title' => __('Client')
+                'title' => __('Edit client'),
+                'pageHead' => [
+                    'title' => __('Edit client'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-user'],
+                        'title' => __('Client'),
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'label' => __('Exit edit'),
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
-                ],
-                'formData'    => [
-                    'blueprint' =>
-                        [
-                            [
-                                "label"  => __("Profile"),
-                                'title'  => __('contact'),
-                                'fields' => [
-                                    'company_name' => [
-                                        'type'  => 'input',
-                                        'label' => __('company'),
-                                        'value' => $customerClient->company_name
-                                    ],
-                                    'contact_name' => [
-                                        'type'  => 'input',
-                                        'label' => __('contact name'),
-                                        'value' => $customerClient->contact_name
-                                    ],
-                                    'email' => [
-                                        'type'  => 'input',
-                                        'label' => __('email'),
-                                        'value' => $customerClient->email
-                                    ],
-                                    'phone' => [
-                                        'type'  => 'input',
-                                        'label' => __('phone'),
-                                        'value' => $customerClient->phone
-                                    ],
-                                    'address'      => [
-                                        'type'    => 'address',
-                                        'label'   => __('Delivery Address'),
-                                        'value'   => AddressFormFieldsResource::make(
-                                            $customerClient->address
-                                        )->getArray(),
-                                        'options' => [
-                                            'countriesAddressData' => GetAddressData::run()
-
-                                        ]
-                                    ]
-                                ]
-                            ],
-                            [
-                                "label"  => __("Status"),
-                                'title'  => __('status'),
-                                'fields' => [
-                                    'status' => [
-                                        'type'  => 'toggle',
-                                        'label' => __('status'),
-                                        'value' => $customerClient->status
-                                    ],
-                                ]
-                            ]
                         ],
-                    'args' => [
-                        'updateRoute'     => [
-                            'name'      => 'retina.models.customer-client.update',
-                            'parameters' => [
-                                'customerClient' => $customerClient->id
+                    ],
+                ],
+                'formData' => [
+                    'blueprint' => [
+                        [
+                            'label' => __('Profile'),
+                            'title' => __('contact'),
+                            'fields' => [
+                                'company_name' => [
+                                    'type' => 'input',
+                                    'label' => __('company'),
+                                    'value' => $customerClient->company_name,
+                                ],
+                                'contact_name' => [
+                                    'type' => 'input',
+                                    'label' => __('contact name'),
+                                    'value' => $customerClient->contact_name,
+                                ],
+                                'email' => [
+                                    'type' => 'input',
+                                    'label' => __('email'),
+                                    'value' => $customerClient->email,
+                                ],
+                                'phone' => [
+                                    'type' => 'input',
+                                    'label' => __('phone'),
+                                    'value' => $customerClient->phone,
+                                ],
+                                'address' => [
+                                    'type' => 'address',
+                                    'label' => __('Delivery Address'),
+                                    'value' => AddressFormFieldsResource::make(
+                                        $customerClient->address
+                                    )->getArray(),
+                                    'options' => [
+                                        'countriesAddressData' => GetAddressData::run(),
+
+                                    ],
+                                ],
                             ],
-                            'method' => 'patch'
-                        ]
-                    ]
-                ]
+                        ],
+                        [
+                            'label' => __('Status'),
+                            'title' => __('status'),
+                            'fields' => [
+                                'status' => [
+                                    'type' => 'toggle',
+                                    'label' => __('status'),
+                                    'value' => $customerClient->status,
+                                ],
+                            ],
+                        ],
+                    ],
+                    'args' => [
+                        'updateRoute' => [
+                            'name' => 'retina.models.customer-client.update',
+                            'parameters' => [
+                                'customerClient' => $customerClient->id,
+                            ],
+                            'method' => 'patch',
+                        ],
+                    ],
+                ],
             ]
         );
     }
@@ -132,11 +131,11 @@ class EditRetinaCustomerClient extends RetinaAction
             ),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Editing Client'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

@@ -21,16 +21,15 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Throwable;
 
-class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation
+class CustomerClientImport implements SkipsOnFailure, ToCollection, WithHeadingRow, WithValidation
 {
     use WithImport;
-
 
     protected CustomerSalesChannel $customerSalesChannel;
 
     public function __construct(CustomerSalesChannel $customerSalesChannel, Upload $upload)
     {
-        $this->customerSalesChannel  = $customerSalesChannel;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->upload = $upload;
     }
 
@@ -45,12 +44,12 @@ class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailu
         $modelData = $row->only($fields)->all();
         $country = Country::where('code', Arr::pull($modelData, 'country_code'))->first();
         $addressData = [
-            'address_line_1'        => $modelData['address_line_1'],
-            'address_line_2'        => $modelData['address_line_2'] ?? null,
-            'postal_code'           => $modelData['postal_code'],
-            'locality'              => $modelData['locality'],
-            'country_code'          => $country->code,
-            'country_id'            => $country->id
+            'address_line_1' => $modelData['address_line_1'],
+            'address_line_2' => $modelData['address_line_2'] ?? null,
+            'postal_code' => $modelData['postal_code'],
+            'locality' => $modelData['locality'],
+            'country_code' => $country->code,
+            'country_id' => $country->id,
         ];
 
         $phone = (string) Arr::pull($modelData, 'phone');
@@ -59,10 +58,9 @@ class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailu
         data_set($modelData, 'phone', $phone);
 
         data_set($modelData, 'data.bulk_import', [
-            'id'   => $this->upload->id,
+            'id' => $this->upload->id,
             'type' => 'Upload',
         ]);
-
 
         try {
             StoreCustomerClient::make()->action(
@@ -76,19 +74,18 @@ class CustomerClientImport implements ToCollection, WithHeadingRow, SkipsOnFailu
         }
     }
 
-
     public function rules(): array
     {
         return [
-            'contact_name'          => ['required', 'string', 'max:255'],
-            'company_name'          => ['required', 'string', 'max:255'],
-            'email'                 => ['required', 'email'],
-            'phone'                 => ['required'],
-            'address_line_1'        => ['required'],
-            'address_line_2'        => ['nullable'],
-            'postal_code'           => ['required'],
-            'locality'              => ['required'],
-            'country_code'          => ['required'],
+            'contact_name' => ['required', 'string', 'max:255'],
+            'company_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email'],
+            'phone' => ['required'],
+            'address_line_1' => ['required'],
+            'address_line_2' => ['nullable'],
+            'postal_code' => ['required'],
+            'locality' => ['required'],
+            'country_code' => ['required'],
         ];
     }
 }

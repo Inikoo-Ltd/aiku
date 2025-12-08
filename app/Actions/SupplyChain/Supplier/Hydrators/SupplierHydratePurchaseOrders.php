@@ -40,6 +40,4 @@ class SupplierHydratePurchaseOrders implements ShouldBeUnique
 
         $supplier->stats()->update($stats);
     }
-
-
 }

@@ -22,16 +22,16 @@ class PlatformsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'      => $this->id,
-            'code'    => $this->code,
-            'slug'    => $this->slug,
-            'name'    => $this->name,
-            'type'    => $this->type,
+            'id' => $this->id,
+            'code' => $this->code,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'type' => $this->type,
             'number_customers' => $this->stats?->number_customers,
             'number_customer_sales_channels' => $this->stats?->number_customer_sales_channels,
             'number_customer_sales_channel_broken' => $this->stats?->number_customer_sales_channel_broken,
             'number_products' => $this->stats?->number_products,
-            'number_orders' => $this->stats?->number_orders
+            'number_orders' => $this->stats?->number_orders,
         ];
     }
 }

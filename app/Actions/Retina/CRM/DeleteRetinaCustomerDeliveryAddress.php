@@ -20,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 class DeleteRetinaCustomerDeliveryAddress extends RetinaAction
 {
     protected Address $address;
+
     public function handle(Customer $customer, Address $address): Customer
     {
         return DeleteCustomerDeliveryAddress::run($customer, $address);
@@ -37,7 +38,7 @@ class DeleteRetinaCustomerDeliveryAddress extends RetinaAction
     public function asController(Customer $customer, Address $address, ActionRequest $request): void
     {
         $this->address = $address;
-        $customer      = $request->user()->customer;
+        $customer = $request->user()->customer;
 
         $this->initialisation($request);
 

@@ -19,11 +19,13 @@ class RetinaAuthenticate extends Middleware
 
         return $next($request);
     }
+
     protected function redirectTo($request): ?string
     {
-        if (!$request->expectsJson()) {
+        if (! $request->expectsJson()) {
             return route('retina.login.show');
         }
+
         return null;
     }
 }

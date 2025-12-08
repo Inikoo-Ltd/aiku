@@ -48,5 +48,4 @@ class GroupHydrateSubscriptions implements ShouldBeUnique
 
         $group->catalogueStats()->update($stats);
     }
-
 }

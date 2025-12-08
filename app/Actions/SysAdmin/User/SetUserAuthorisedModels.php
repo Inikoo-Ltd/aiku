@@ -27,16 +27,15 @@ class SetUserAuthorisedModels
         setPermissionsTeamId($user->group->id);
 
         $authorisedOrganisations = [];
-        $authorisedShops         = [];
-        $authorisedFulfilments   = [];
-        $authorisedWarehouses    = [];
-        $authorisedProductions   = [];
-
+        $authorisedShops = [];
+        $authorisedFulfilments = [];
+        $authorisedWarehouses = [];
+        $authorisedProductions = [];
 
         if ($user->authTo(['group-webmaster.view', 'group-webmaster.edit', 'group-webmaster.view'])) {
             foreach ($user->group->websites as $website) {
                 $authorisedOrganisations[$website->organisation_id] = ['org_id' => $website->organisation_id];
-                $shop                                               = $website->shop;
+                $shop = $website->shop;
                 if ($shop->type === ShopTypeEnum::FULFILMENT) {
                     $authorisedFulfilments[$shop->fulfilment->id] = ['org_id' => $shop->organisation_id];
                 } else {
@@ -45,31 +44,30 @@ class SetUserAuthorisedModels
             }
         }
 
-
         foreach ($user->getAllPermissions() as $permission) {
             if ($permission->scope_type === 'Organisation') {
                 $authorisedOrganisations[$permission->scope_id] = ['org_id' => $permission->scope_id];
             } elseif ($permission->scope_type === 'Shop') {
                 /** @var Shop $shop */
-                $shop                                            = Shop::find($permission->scope_id);
-                $authorisedShops[$permission->scope_id]          = ['org_id' => $shop->organisation_id];
+                $shop = Shop::find($permission->scope_id);
+                $authorisedShops[$permission->scope_id] = ['org_id' => $shop->organisation_id];
                 $authorisedOrganisations[$shop->organisation_id] = ['org_id' => $shop->organisation_id];
             } elseif ($permission->scope_type === 'Fulfilment') {
                 /** @var Fulfilment $fulfilment */
-                $fulfilment                                            = Fulfilment::find($permission->scope_id);
-                $authorisedFulfilments[$permission->scope_id]          = ['org_id' => $fulfilment->organisation_id];
+                $fulfilment = Fulfilment::find($permission->scope_id);
+                $authorisedFulfilments[$permission->scope_id] = ['org_id' => $fulfilment->organisation_id];
                 $authorisedOrganisations[$fulfilment->organisation_id] = ['org_id' => $fulfilment->organisation_id];
             } elseif ($permission->scope_type === 'Warehouse') {
                 /** @var Warehouse $warehouse */
                 $warehouse = Warehouse::find($permission->scope_id);
                 if ($warehouse) {
-                    $authorisedWarehouses[$permission->scope_id]          = ['org_id' => $warehouse->organisation_id];
+                    $authorisedWarehouses[$permission->scope_id] = ['org_id' => $warehouse->organisation_id];
                     $authorisedOrganisations[$warehouse->organisation_id] = ['org_id' => $warehouse->organisation_id];
                 }
             } elseif ($permission->scope_type === 'Production') {
                 /** @var Production $production */
-                $production                                            = Production::find($permission->scope_id);
-                $authorisedProductions[$permission->scope_id]          = ['org_id' => $production->organisation_id];
+                $production = Production::find($permission->scope_id);
+                $authorisedProductions[$permission->scope_id] = ['org_id' => $production->organisation_id];
                 $authorisedOrganisations[$production->organisation_id] = ['org_id' => $production->organisation_id];
             }
         }
@@ -86,20 +84,18 @@ class SetUserAuthorisedModels
             }
         }
 
-
         $user->authorisedOrganisations()->sync($authorisedOrganisations);
         $user->authorisedShops()->sync($authorisedShops);
         $user->authorisedFulfilments()->sync($authorisedFulfilments);
         $user->authorisedWarehouses()->sync($authorisedWarehouses);
         $user->authorisedProductions()->sync($authorisedProductions);
 
-
         $stats = [
             'number_authorised_organisations' => count($authorisedOrganisations),
-            'number_authorised_shops'         => count($authorisedShops),
-            'number_authorised_fulfilments'   => count($authorisedFulfilments),
-            'number_authorised_warehouses'    => count($authorisedWarehouses),
-            'number_authorised_productions'   => count($authorisedProductions),
+            'number_authorised_shops' => count($authorisedShops),
+            'number_authorised_fulfilments' => count($authorisedFulfilments),
+            'number_authorised_warehouses' => count($authorisedWarehouses),
+            'number_authorised_productions' => count($authorisedProductions),
         ];
 
         $user->update($stats);
@@ -111,16 +107,14 @@ class SetUserAuthorisedModels
 
         $directPermissions = [];
         foreach ($authorisedShops as $shop) {
-            $directPermissions['shops-view.'.$shop['org_id']]    = true;
+            $directPermissions['shops-view.'.$shop['org_id']] = true;
             $directPermissions['websites-view.'.$shop['org_id']] = true;
         }
 
         $user->givePermissionTo(array_keys($directPermissions));
     }
 
-
     public string $commandSignature = 'user:set_authorised_models {user : User slug}';
-
 
     public function asCommand(Command $command): int
     {
@@ -139,6 +133,4 @@ class SetUserAuthorisedModels
 
         return 0;
     }
-
-
 }

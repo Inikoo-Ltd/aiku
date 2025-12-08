@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('job_positions', function (Blueprint $table) {
@@ -31,10 +32,9 @@ return new class () extends Migration {
             $table->jsonb('data');
             $table->boolean('locked')->default(true)->comment('Seeded job positions should be locked');
             $table->timestampsTz();
-            $table->index(['code','organisation_id']);
+            $table->index(['code', 'organisation_id']);
         });
     }
-
 
     public function down(): void
     {

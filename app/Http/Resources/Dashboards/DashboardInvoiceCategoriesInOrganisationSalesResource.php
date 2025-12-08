@@ -26,13 +26,12 @@ class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
-
     protected string $categoryCurrencyCode;
+
     protected string $organisationCurrencyCode;
 
     public function toArray($request): array
     {
-
 
         $currencyCategoryId = $this->category_currency_id;
         $categoryCurrencyCode = Cache::remember('currency_code_'.$currencyCategoryId, 3600 * 24 * 30, function () use ($currencyCategoryId) {
@@ -82,15 +81,15 @@ class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
             [
                 'label' => [
                     'formatted_value' => $this->name,
-                    ...$routeTargets['invoiceCategories']
-                ]
+                    ...$routeTargets['invoiceCategories'],
+                ],
             ],
             [
                 'label_minified' => [
                     'formatted_value' => Abbreviate::run($this->name),
-                    'tooltip'         => $this->name,
-                    ...$routeTargets['invoiceCategories']
-                ]
+                    'tooltip' => $this->name,
+                    ...$routeTargets['invoiceCategories'],
+                ],
             ],
             $this->getDashboardTableColumn($this, 'refunds', $routeTargets['refunds']),
             $this->getDashboardTableColumn($this, 'refunds_minified', $routeTargets['refunds']),
@@ -106,13 +105,11 @@ class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
             $this->getDashboardTableColumn($this, 'sales_org_currency_delta'),
         );
 
-
         return [
-            'slug'    => $this->slug,
-            'state'   => $this->state == InvoiceCategoryStateEnum::ACTIVE ? 'active' : 'inactive',
+            'slug' => $this->slug,
+            'state' => $this->state == InvoiceCategoryStateEnum::ACTIVE ? 'active' : 'inactive',
             'columns' => $columns,
-            'colour'  => $this?->colour,
-
+            'colour' => $this?->colour,
 
         ];
     }

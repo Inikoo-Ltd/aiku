@@ -288,9 +288,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $unsubscribed_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomIntervals query()
+ *
  * @mixin \Eloquent
  */
 class OrgPostRoomIntervals extends Model
@@ -298,6 +300,4 @@ class OrgPostRoomIntervals extends Model
     protected $table = 'org_post_room_intervals';
 
     protected $guarded = [];
-
-
 }

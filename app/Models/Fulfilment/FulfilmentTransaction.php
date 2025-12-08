@@ -51,9 +51,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Model|\Eloquent $parent
  * @property-read \App\Models\Fulfilment\RecurringBillTransaction|null $recurringBillTransaction
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentTransaction newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentTransaction newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentTransaction query()
+ *
  * @mixin \Eloquent
  */
 class FulfilmentTransaction extends Model
@@ -61,11 +63,10 @@ class FulfilmentTransaction extends Model
     use HasFactory;
     use InFulfilment;
 
-
     protected $casts = [
-        'data'             => 'array',
+        'data' => 'array',
         'quantity_ordered' => 'decimal:3',
-        'type'             => FulfilmentTransactionTypeEnum::class
+        'type' => FulfilmentTransactionTypeEnum::class,
     ];
 
     protected $attributes = [

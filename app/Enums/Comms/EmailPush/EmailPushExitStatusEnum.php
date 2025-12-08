@@ -23,47 +23,47 @@ enum EmailPushExitStatusEnum: string
     public static function labels(): array
     {
         return [
-            'in_process'   => __('In Process'),
-            'finished'     => __('Finished'),
-            'break_point'  => __('Break Point'),
+            'in_process' => __('In Process'),
+            'finished' => __('Finished'),
+            'break_point' => __('Break Point'),
             'unsubscribed' => __('Unsubscribed'),
-            'cancelled'    => __('Cancelled')
+            'cancelled' => __('Cancelled'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'in_process'   => [
+            'in_process' => [
 
                 'tooltip' => __('In Process'),
-                'icon'    => 'fal fa-spinner-third',
-                'class'   => 'text-indigo-500'
+                'icon' => 'fal fa-spinner-third',
+                'class' => 'text-indigo-500',
             ],
-            'finished'     => [
+            'finished' => [
 
                 'tooltip' => __('Finished'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-green-600'
+                'icon' => 'fal fa-check',
+                'class' => 'text-green-600',
             ],
-            'break_point'  => [
+            'break_point' => [
 
                 'tooltip' => __('Break Point'),
-                'icon'    => 'fal fa-exclamation-triangle',
-                'class'   => 'text-yellow-600'
+                'icon' => 'fal fa-exclamation-triangle',
+                'class' => 'text-yellow-600',
             ],
             'unsubscribed' => [
 
                 'tooltip' => __('Unsubscribed'),
-                'icon'    => 'fal fa-user-slash',
-                'class'   => 'text-red-600'
+                'icon' => 'fal fa-user-slash',
+                'class' => 'text-red-600',
             ],
-            'cancelled'    => [
+            'cancelled' => [
 
                 'tooltip' => __('Cancelled'),
-                'icon'    => 'fal fa-ban',
-                'class'   => 'text-red-600'
-            ]
+                'icon' => 'fal fa-ban',
+                'class' => 'text-red-600',
+            ],
 
         ];
     }

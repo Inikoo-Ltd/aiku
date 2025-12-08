@@ -11,13 +11,13 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('chat_messages', function (Blueprint $table) {
 
             $table->id();
-
 
             $table->unsignedInteger('chat_session_id')->index()->nullable();
             $table->foreign('chat_session_id')->references('id')->on('chat_sessions')->nullOnDelete();
@@ -30,21 +30,17 @@ return new class () extends Migration {
 
             $table->text('message_text')->nullable();
 
-
             $table->unsignedInteger('media_id')->index()->nullable();
             $table->foreign('media_id')->references('id')->on('media')->nullOnDelete();
-
 
             $table->boolean('is_read')->index()->default(false);
             $table->timestampTz('delivered_at')->nullable();
             $table->timestampTz('read_at')->nullable();
 
-
             $table->timestampsTz();
             $table->softDeletesTz();
         });
     }
-
 
     public function down(): void
     {

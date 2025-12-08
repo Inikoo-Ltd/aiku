@@ -32,15 +32,15 @@ class CreditTransactionResource extends JsonResource
         $creditTransaction = $this;
 
         return [
-            'id'                => $creditTransaction->id,
-            'payment_id'        => $creditTransaction->payment_id,
-            'type'              => $creditTransaction->type->label(),
-            'amount'            => $creditTransaction->amount,
-            'running_amount'    => $creditTransaction->running_amount,
+            'id' => $creditTransaction->id,
+            'payment_id' => $creditTransaction->payment_id,
+            'type' => $creditTransaction->type->label(),
+            'amount' => $creditTransaction->amount,
+            'running_amount' => $creditTransaction->running_amount,
             'payment_reference' => $creditTransaction->payment?->reference,
-            'payment_type'      => $creditTransaction->payment?->type,
-            'currency_code'     => $creditTransaction->currency->code,
-            'created_at'        => $creditTransaction->created_at
+            'payment_type' => $creditTransaction->payment?->type,
+            'currency_code' => $creditTransaction->currency->code,
+            'created_at' => $creditTransaction->created_at,
         ];
     }
 }

@@ -27,10 +27,10 @@ class GroupHydrateDropshipping implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_portfolios'                                  => $group->portfolios()->count(),
-            'number_current_portfolios'                          => $group->portfolios()->where('status', true)->count(),
-            'number_products'                                    => $group->products()->count(),
-            'number_current_products'                            => $group->products()->where('status', true)->count(),
+            'number_portfolios' => $group->portfolios()->count(),
+            'number_current_portfolios' => $group->portfolios()->where('status', true)->count(),
+            'number_products' => $group->products()->count(),
+            'number_current_products' => $group->products()->where('status', true)->count(),
         ];
 
         foreach (ProductStateEnum::cases() as $case) {
@@ -39,6 +39,4 @@ class GroupHydrateDropshipping implements ShouldBeUnique
 
         $group->dropshippingStats()->update($stats);
     }
-
-
 }

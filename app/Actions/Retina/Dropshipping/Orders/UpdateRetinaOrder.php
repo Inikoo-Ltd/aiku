@@ -21,8 +21,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class UpdateRetinaOrder extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     public function handle(Order $order, array $modelData): Order
     {
@@ -37,9 +37,9 @@ class UpdateRetinaOrder extends RetinaAction
     public function rules(): array
     {
         return [
-            'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'shipping_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')]
+            'customer_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'shipping_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
         ];
     }
 

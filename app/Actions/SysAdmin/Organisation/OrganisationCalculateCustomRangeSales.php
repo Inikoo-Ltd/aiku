@@ -8,8 +8,8 @@
 
 namespace App\Actions\SysAdmin\Organisation;
 
-use App\Models\SysAdmin\OrganisationSalesMetrics;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\OrganisationSalesMetrics;
 use Carbon\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 

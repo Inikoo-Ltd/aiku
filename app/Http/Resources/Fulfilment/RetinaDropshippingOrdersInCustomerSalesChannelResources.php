@@ -36,38 +36,37 @@ class RetinaDropshippingOrdersInCustomerSalesChannelResources extends JsonResour
 {
     use HasSelfCall;
 
-
     public function toArray($request): array
     {
-        if (!$this->order_state) {
+        if (! $this->order_state) {
             $stateIcons = [
                 'state_label' => OrderStateEnum::labels()[$this->state->value],
-                'state_icon'  => OrderStateEnum::stateIcon()[$this->state->value]
+                'state_icon' => OrderStateEnum::stateIcon()[$this->state->value],
             ];
         } else {
             $stateIcons = [
                 'state_label' => OrderStateEnum::labels()[$this->order_state],
-                'state_icon'  => OrderStateEnum::stateIcon()[$this->order_state]
+                'state_icon' => OrderStateEnum::stateIcon()[$this->order_state],
             ];
         }
 
         return [
-            'id'                       => $this->id,
-            'date'                     => $this->date,
-            'platform_order_id'        => $this->platform_order_id,
-            'reference'                => $this->reference,
-            'slug'                     => $this->slug,
-            'is_premium_dispatch'      => $this->is_premium_dispatch,
-            'has_extra_packing'        => $this->has_extra_packing,
-            'has_insurance'            => $this->has_insurance,
-            'client_name'              => $this->client_name,
-            'state'                    => $this->state,
-            'total_amount'             => $this->total_amount,
-            'payment_amount'           => $this->payment_amount,
-            'is_fully_paid'            => $this->total_amount == $this->payment_amount,
+            'id' => $this->id,
+            'date' => $this->date,
+            'platform_order_id' => $this->platform_order_id,
+            'reference' => $this->reference,
+            'slug' => $this->slug,
+            'is_premium_dispatch' => $this->is_premium_dispatch,
+            'has_extra_packing' => $this->has_extra_packing,
+            'has_insurance' => $this->has_insurance,
+            'client_name' => $this->client_name,
+            'state' => $this->state,
+            'total_amount' => $this->total_amount,
+            'payment_amount' => $this->payment_amount,
+            'is_fully_paid' => $this->total_amount == $this->payment_amount,
             'number_item_transactions' => $this->number_item_transactions,
-            'client_ulid'              => $this->client_ulid,
-            ...$stateIcons
+            'client_ulid' => $this->client_ulid,
+            ...$stateIcons,
         ];
     }
 }

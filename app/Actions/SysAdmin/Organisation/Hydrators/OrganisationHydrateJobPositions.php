@@ -24,7 +24,7 @@ class OrganisationHydrateJobPositions implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_job_positions' => $organisation->jobPositions()->count()
+            'number_job_positions' => $organisation->jobPositions()->count(),
         ];
         $organisation->humanResourcesStats()->update($stats);
     }

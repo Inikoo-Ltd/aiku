@@ -19,16 +19,16 @@ class WarehousesNavigationResource extends JsonResource
         $warehouse = $this;
 
         return [
-            'id'     => $warehouse->id,
-            'slug'   => $warehouse->slug,
-            'code'   => $warehouse->code,
-            'label'  => $warehouse->name,
-            'route'  => [
-                'name'       => 'grp.org.warehouses.show.infrastructure.dashboard',
+            'id' => $warehouse->id,
+            'slug' => $warehouse->slug,
+            'code' => $warehouse->code,
+            'label' => $warehouse->name,
+            'route' => [
+                'name' => 'grp.org.warehouses.show.infrastructure.dashboard',
                 'parameters' => [
                     $warehouse->organisation->slug,
-                    $warehouse->slug
-                ]
+                    $warehouse->slug,
+                ],
             ],
         ];
     }

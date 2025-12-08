@@ -19,7 +19,6 @@ class StoreRetinaBackInStockReminder extends RetinaAction
 {
     use WithActionUpdate;
 
-
     public function handle(Customer $customer, Product $product, array $modelData): void
     {
         StoreBackInStockReminder::make()->action($customer, $product, $modelData);
@@ -31,6 +30,7 @@ class StoreRetinaBackInStockReminder extends RetinaAction
         if ($product->shop_id !== $this->shop->id) {
             return false;
         }
+
         return true;
     }
 

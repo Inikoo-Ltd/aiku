@@ -31,27 +31,27 @@ class MasterFamiliesResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'code'                   => $this->code,
-            'name'                   => $this->name,
-            'master_shop_slug'       => $this->master_shop_slug,
-            'master_shop_code'       => $this->master_shop_code,
-            'master_shop_name'       => $this->master_shop_name,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'master_shop_slug' => $this->master_shop_slug,
+            'master_shop_code' => $this->master_shop_code,
+            'master_shop_name' => $this->master_shop_name,
             'master_department_slug' => $this->master_department_slug,
             'master_department_code' => $this->master_department_code,
             'master_department_name' => $this->master_department_name,
-            'used_in'                => $this->used_in,
-            'products'               => $this->products,
-            'show_in_website'        => $this->show_in_website,
-            'status_icon'            => $this->status ? [
+            'used_in' => $this->used_in,
+            'products' => $this->products,
+            'show_in_website' => $this->show_in_website,
+            'status_icon' => $this->status ? [
                 'tooltip' => __('Active'),
-                'icon'    => 'fas fa-check-circle',
-                'class'   => 'text-green-400'
+                'icon' => 'fas fa-check-circle',
+                'class' => 'text-green-400',
             ] : [
                 'tooltip' => __('Closed'),
-                'icon'    => 'fas fa-times-circle',
-                'class'   => 'text-red-400'
+                'icon' => 'fas fa-times-circle',
+                'class' => 'text-red-400',
             ],
             'number_current_products' => $this->current_master_assets,
         ];

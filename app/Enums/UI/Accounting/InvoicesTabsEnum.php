@@ -26,12 +26,12 @@ enum InvoicesTabsEnum: string
         return match ($this) {
             InvoicesTabsEnum::INVOICES => [
                 'title' => __('Invoices'),
-                'icon'  => 'fal fa-file-invoice-dollar',
+                'icon' => 'fal fa-file-invoice-dollar',
             ],
 
             InvoicesTabsEnum::REFUNDS => [
                 'title' => __('Refunds'),
-                'icon'  => 'fal fa-arrow-circle-left',
+                'icon' => 'fal fa-arrow-circle-left',
             ],
         };
     }

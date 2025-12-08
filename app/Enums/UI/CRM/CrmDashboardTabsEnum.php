@@ -25,11 +25,11 @@ enum CrmDashboardTabsEnum: string
         return match ($this) {
             CrmDashboardTabsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
-                'icon'  => 'fal fa-users',
+                'icon' => 'fal fa-users',
             ],
             CrmDashboardTabsEnum::PROSPECTS => [
                 'title' => __('Prospects'),
-                'icon'  => 'fal fa-transporter',
+                'icon' => 'fal fa-transporter',
             ]
         };
     }

@@ -26,12 +26,10 @@ class ResetPasswordNotification extends Notification implements ShouldQueue
         $this->url = $url;
     }
 
-
     public function via($notifiable): array
     {
         return ['mail'];
     }
-
 
     public function toMail(WebUser|User $notifiable): MailMessage
     {
@@ -39,12 +37,11 @@ class ResetPasswordNotification extends Notification implements ShouldQueue
         $outbox = $notifiable->shop?->outboxes()->where('type', OutboxCodeEnum::PASSWORD_REMINDER->value)
             ->first();
 
-        if (!$outbox) {
+        if (! $outbox) {
             throw ValidationException::withMessages(['outbox' => 'No outboxes in this shop']);
         }
 
         $data = $outbox->emailTemplate->published_layout;
-
 
         $message = (new CustomMailMessage($notifiable))
             ->subject(Lang::get(Arr::get($data, 'subject', 'Reset Password Notification')))

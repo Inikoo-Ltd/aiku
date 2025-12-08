@@ -29,8 +29,6 @@ class ShowOrderingDashboard extends OrgAction
         return $shop;
     }
 
-
-
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request);
@@ -49,51 +47,48 @@ class ShowOrderingDashboard extends OrgAction
         return Inertia::render(
             'Org/Ordering/OrderingDashboard',
             [
-                'title'       => __('ordering dashboard'),
+                'title' => __('ordering dashboard'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($shop, $request),
-                    'next'     => $this->getNext($shop, $request),
+                    'next' => $this->getNext($shop, $request),
                 ],
-                'pageHead'    => [
+                'pageHead' => [
                     'title' => __('Ordering'),
                     'model' => '',
-                    'icon'  => [
+                    'icon' => [
                         'title' => __('Ordering'),
-                        'icon'  => 'fal fa-chart-network'
+                        'icon' => 'fal fa-chart-network',
                     ],
                 ],
-                'stats'       => [
+                'stats' => [
                     [
-                        'label'           => __('Orders excesses payment'),
-                        'is_negative'     => true,
-                        'route'           => [
-                            'name'       => 'grp.org.shops.show.ordering.orders.index',
+                        'label' => __('Orders excesses payment'),
+                        'is_negative' => true,
+                        'route' => [
+                            'name' => 'grp.org.shops.show.ordering.orders.index',
                             'parameters' => [
                                 'organisation' => $shop->organisation->slug,
-                                'shop'         => $shop->slug,
-                                'tab'          => OrdersTabsEnum::EXCESS_ORDERS->value,
-                            ]
+                                'shop' => $shop->slug,
+                                'tab' => OrdersTabsEnum::EXCESS_ORDERS->value,
+                            ],
                         ],
-                        'icon'            => 'fal fa-shopping-cart',
-                        "backgroundColor" => "#ff000011",
-                        'value'           => $excessOrderCount,
+                        'icon' => 'fal fa-shopping-cart',
+                        'backgroundColor' => '#ff000011',
+                        'value' => $excessOrderCount,
                     ],
                 ],
-
 
             ]
         );
     }
 
-
     public function jsonResponse(Shop $shop): ShopResource
     {
         return new ShopResource($shop);
     }
-
 
     public function getPrevious(Shop $shop, ActionRequest $request): ?array
     {
@@ -111,7 +106,7 @@ class ShowOrderingDashboard extends OrgAction
 
     private function getNavigation(?Shop $shop, string $routeName): ?array
     {
-        if (!$shop) {
+        if (! $shop) {
             return null;
         }
 
@@ -119,13 +114,13 @@ class ShowOrderingDashboard extends OrgAction
             'grp.org.shops.show.ordering.dashboard' => [
                 'label' => $shop->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
-                        'shop'         => $shop->slug
-                    ]
+                        'shop' => $shop->slug,
+                    ],
 
-                ]
+                ],
             ]
         };
     }
@@ -137,15 +132,15 @@ class ShowOrderingDashboard extends OrgAction
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.ordering.dashboard',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.shops.show.ordering.dashboard',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Ordering'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

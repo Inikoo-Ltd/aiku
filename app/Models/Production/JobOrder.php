@@ -42,38 +42,39 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production $production
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder withoutTrashed()
+ *
  * @mixin \Eloquent
  */
-
 class JobOrder extends Model
 {
     use HasSlug;
-    use SoftDeletes;
     use HasUniversalSearch;
+    use SoftDeletes;
 
     protected $guarded = [];
 
-    protected $casts   = [
-        'state'               => JobOrderStateEnum::class,
-        'in_process_at'       => 'datetime',
-        'submitted_at'        => 'datetime',
-        'confirmed_at'        => 'datetime',
-        'received_at'         => 'datetime',
-        'not_received_at'     => 'datetime',
-        'booked_in_at'        => 'datetime',
-        'booking_in_at'       => 'datetime',
-        'dispatched_at'       => 'datetime',
-        'data'                => 'array'
+    protected $casts = [
+        'state' => JobOrderStateEnum::class,
+        'in_process_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'received_at' => 'datetime',
+        'not_received_at' => 'datetime',
+        'booked_in_at' => 'datetime',
+        'booking_in_at' => 'datetime',
+        'dispatched_at' => 'datetime',
+        'data' => 'array',
     ];
 
     protected $attributes = [
-        'data'  => '{}',
+        'data' => '{}',
     ];
 
     public function getRouteKeyName(): string

@@ -14,15 +14,14 @@ enum StoredItemAuditDeltaStateEnum: string
 {
     use EnumHelperTrait;
 
-    case IN_PROCESS   = 'in_process';
-    case COMPLETED    = 'completed';
-
+    case IN_PROCESS = 'in_process';
+    case COMPLETED = 'completed';
 
     public static function labels(): array
     {
         return [
-            'in_process'   => __('In Process'),
-            'completed'    => __('Completed'),
+            'in_process' => __('In Process'),
+            'completed' => __('Completed'),
         ];
     }
 
@@ -31,23 +30,23 @@ enum StoredItemAuditDeltaStateEnum: string
         return [
             'in_process' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
-                'color'   => 'lime',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',  // Color for normal icon (Aiku)
+                'color' => 'lime',  // Color for box (Retina)
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'completed' => [
                 'tooltip' => __('Completed'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-indigo-400',
-                'color'   => 'indigo',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-indigo-400',
+                'color' => 'indigo',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
         ];
     }

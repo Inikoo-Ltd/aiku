@@ -22,8 +22,8 @@ use App\Actions\Goods\UI\ShowGoodsDashboard;
 use Illuminate\Support\Facades\Route;
 
 // Include the common trade units routes
-require_once __DIR__ . '/common/trade_units.php';
-require_once __DIR__ . '/common/trade_unit_families.php';
+require_once __DIR__.'/common/trade_units.php';
+require_once __DIR__.'/common/trade_unit_families.php';
 
 Route::get('/', ShowGoodsDashboard::class)->name('dashboard');
 
@@ -32,7 +32,6 @@ Route::prefix('stocks')->as('stocks.')->group(function () {
     Route::get('/export', ExportStocks::class)->name('export');
     Route::get('/create', CreateStock::class)->name('create');
 
-
     Route::prefix('active')->as('active_stocks.')->group(function () {
         Route::get('/', [IndexStocks::class, 'active'])->name('index');
         Route::prefix('{stock}')->group(function () {
@@ -40,7 +39,6 @@ Route::prefix('stocks')->as('stocks.')->group(function () {
             Route::get('edit', EditStock::class)->name('edit');
         });
     });
-
 
     Route::prefix('in-process')->as('in_process_stocks.')->group(function () {
         Route::get('/', [IndexStocks::class, 'inProcess'])->name('index');
@@ -66,7 +64,6 @@ Route::prefix('stocks')->as('stocks.')->group(function () {
         });
     });
 
-
     Route::prefix('{stock}')->group(function () {
         Route::get('', ShowStock::class)->name('show');
         Route::get('edit', EditStock::class)->name('edit');
@@ -86,7 +83,6 @@ Route::prefix('families')->as('stock-families.')->group(function () {
         Route::get('', ShowStockFamily::class)->name('show');
         Route::get('/edit', EditStockFamily::class)->name('edit');
 
-
         Route::prefix('stocks')->as('show.stocks.')->group(function () {
             Route::get('/', [IndexStocks::class, 'inStockFamily'])->name('index');
             Route::get('/export', [ExportStocks::class, 'inStockFamily'])->name('export');
@@ -103,7 +99,6 @@ Route::prefix('families')->as('stock-families.')->group(function () {
 // Use the common trade units routes
 tradeUnitsRoutes();
 tradeUnitFamiliesRoutes();
-
 
 Route::prefix('ingredients')->as('ingredients.')->group(function () {
     Route::get('/', IndexIngredients::class)->name('index');

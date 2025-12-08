@@ -87,6 +87,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Shop $shop
  * @property-read \App\Models\Accounting\TopUp|null $topUp
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Accounting\PaymentFactory factory($count = null, $state = [])
  * @method static Builder<static>|Payment newModelQuery()
  * @method static Builder<static>|Payment newQuery()
@@ -94,26 +95,27 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @method static Builder<static>|Payment query()
  * @method static Builder<static>|Payment withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Payment withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Payment extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasUniversalSearch;
     use HasFactory;
-    use InCustomer;
     use HasHistory;
+    use HasUniversalSearch;
+    use InCustomer;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'              => 'array',
-        'state'             => PaymentStateEnum::class,
-        'status'            => PaymentStatusEnum::class,
+        'data' => 'array',
+        'state' => PaymentStateEnum::class,
+        'status' => PaymentStatusEnum::class,
         'subsequent_status' => PaymentSubsequentStatusEnum::class,
-        'type'              => PaymentTypeEnum::class,
-        'class'             => PaymentClassEnum::class,
-        'amount'            => 'decimal:2',
-        'grp_amount'        => 'decimal:2',
-        'org_amount'        => 'decimal:2',
+        'type' => PaymentTypeEnum::class,
+        'class' => PaymentClassEnum::class,
+        'amount' => 'decimal:2',
+        'grp_amount' => 'decimal:2',
+        'org_amount' => 'decimal:2',
     ];
 
     protected $attributes = [
@@ -144,7 +146,6 @@ class Payment extends Model implements Auditable
             }
         );
     }
-
 
     public function orgPaymentServiceProvider(): BelongsTo
     {

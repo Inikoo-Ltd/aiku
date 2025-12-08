@@ -18,13 +18,12 @@ enum BasketTabsEnum: string
 
     case TRANSACTIONS = 'transactions';
 
-
     public function blueprint(): array
     {
         return match ($this) {
             BasketTabsEnum::TRANSACTIONS => [
                 'title' => __('Items'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
         };
     }

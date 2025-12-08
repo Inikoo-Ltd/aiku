@@ -34,6 +34,7 @@ class CreateRetinaNewAllPortfoliosToEbay extends RetinaAction
 
         CreateRetinaNewBulkPortfoliosToEbay::run($customerSalesChannel, $payload);
     }
+
     /**
      * @throws \Exception
      */

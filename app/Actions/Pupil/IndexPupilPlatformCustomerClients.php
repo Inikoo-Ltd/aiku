@@ -54,7 +54,7 @@ class IndexPupilPlatformCustomerClients extends RetinaAction
                 'customer_clients.id',
                 'customer_clients.name',
                 'customer_clients.ulid',
-                'customer_clients.created_at'
+                'customer_clients.created_at',
             ])
             ->allowedSorts(['reference', 'name', 'created_at'])
             ->allowedFilters([$globalSearch])
@@ -101,33 +101,33 @@ class IndexPupilPlatformCustomerClients extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $customerClients, ActionRequest $request): Response
     {
-        $title            = __('Clients');
+        $title = __('Clients');
         $fetchClientLabel = __('Fetch Client');
 
         $shopifyActions = match (class_basename($this->platformUser)) {
             'ShopifyUser' => [
-                'type'    => 'button',
-                'style'   => 'create',
+                'type' => 'button',
+                'style' => 'create',
                 'tooltip' => $fetchClientLabel,
-                'label'   => $fetchClientLabel,
-                'route'   => [
-                    'name'       => $this->asPupil ? 'pupil.dropshipping.platforms.client.fetch' : 'retina.dropshipping.customer_sales_channels.client.fetch',
+                'label' => $fetchClientLabel,
+                'route' => [
+                    'name' => $this->asPupil ? 'pupil.dropshipping.platforms.client.fetch' : 'retina.dropshipping.customer_sales_channels.client.fetch',
                     'parameters' => [
-                        'platform' => $this->platform->slug
-                    ]
-                ]
+                        'platform' => $this->platform->slug,
+                    ],
+                ],
             ],
             'WooCommerceUser' => [
-                'type'    => 'button',
-                'style'   => 'create',
+                'type' => 'button',
+                'style' => 'create',
                 'tooltip' => $fetchClientLabel,
-                'label'   => $fetchClientLabel,
-                'route'   => [
-                    'name'       => 'retina.dropshipping.customer_sales_channels.client.wc-fetch',
+                'label' => $fetchClientLabel,
+                'route' => [
+                    'name' => 'retina.dropshipping.customer_sales_channels.client.wc-fetch',
                     'parameters' => [
-                        'platform' => $this->platform->slug
-                    ]
-                ]
+                        'platform' => $this->platform->slug,
+                    ],
+                ],
             ],
             default => []
         };
@@ -136,15 +136,15 @@ class IndexPupilPlatformCustomerClients extends RetinaAction
 
         if ($this->shop->type != ShopTypeEnum::FULFILMENT) {
             $createButton = [
-                'type'  => 'button',
+                'type' => 'button',
                 'style' => 'create',
                 'label' => __('Create Customer Client'),
                 'route' => [
-                    'name'       => 'retina.dropshipping.customer_sales_channels.client.create',
+                    'name' => 'retina.dropshipping.customer_sales_channels.client.create',
                     'parameters' => [
-                        'platform' => $this->platform->slug
-                    ]
-                ]
+                        'platform' => $this->platform->slug,
+                    ],
+                ],
             ];
         }
 
@@ -154,12 +154,12 @@ class IndexPupilPlatformCustomerClients extends RetinaAction
         );
 
         $spreadsheetRoute = [
-            'event'           => 'action-progress',
-            'channel'         => 'grp.personal.'.$this->platform->group->id,
-            'required_fields' => ["contact_name", "company_name", "email", "phone", "address_line_1", "address_line_2", "postal_code", "locality", "country_code"],
-            'route'           => [
+            'event' => 'action-progress',
+            'channel' => 'grp.personal.'.$this->platform->group->id,
+            'required_fields' => ['contact_name', 'company_name', 'email', 'phone', 'address_line_1', 'address_line_2', 'postal_code', 'locality', 'country_code'],
+            'route' => [
                 'upload' => [
-                    'name'       => 'retina.models.customer-client.platform.upload',
+                    'name' => 'retina.models.customer-client.platform.upload',
                     'parameters' => [
                         'platform' => $this->platform->id,
                     ],
@@ -170,22 +170,22 @@ class IndexPupilPlatformCustomerClients extends RetinaAction
         return Inertia::render(
             'Dropshipping/Client/CustomerClients',
             [
-                'breadcrumbs'        => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters(),
                 ),
-                'title'              => __('customer clients'),
-                'pageHead'           => [
-                    'title'   => $title,
-                    'model'   => $this->platformUser->name ?? 'Web/API',
-                    'icon'    => [
-                        'icon'  => ['fal', 'fa-user-friends'],
-                        'title' => __('Customer client')
+                'title' => __('customer clients'),
+                'pageHead' => [
+                    'title' => $title,
+                    'model' => $this->platformUser->name ?? 'Web/API',
+                    'icon' => [
+                        'icon' => ['fal', 'fa-user-friends'],
+                        'title' => __('Customer client'),
                     ],
                     // 'actions' => $actions
 
                 ],
-                'data'               => CustomerClientResource::collection($customerClients),
-                'upload_spreadsheet' => $spreadsheetRoute
+                'data' => CustomerClientResource::collection($customerClients),
+                'upload_spreadsheet' => $spreadsheetRoute,
 
             ]
         )->table($this->tableStructure());
@@ -198,15 +198,15 @@ class IndexPupilPlatformCustomerClients extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.customer_sales_channels.client.index',
-                                'parameters' => $routeParameters
+                                'name' => 'retina.dropshipping.customer_sales_channels.client.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Clients'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

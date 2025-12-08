@@ -12,8 +12,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
+
     public function up(): void
     {
         Schema::create('delivery_note_items', function (Blueprint $table) {
@@ -36,13 +38,11 @@ return new class () extends Migration {
             $table->unsignedInteger('org_stock_id')->index()->nullable();
             $table->foreign('org_stock_id')->references('id')->on('org_stocks')->nullOnUpdate();
 
-
             $table->unsignedBigInteger('transaction_id')->index()->nullable();
             $table->foreign('transaction_id')->references('id')->on('transactions')->nullOnDelete();
 
             $table->unsignedBigInteger('invoice_transaction_id')->index()->nullable();
             $table->foreign('invoice_transaction_id')->references('id')->on('invoice_transactions')->nullOnDelete();
-
 
             $table->string('notes')->nullable();
 
@@ -63,7 +63,6 @@ return new class () extends Migration {
             $table->decimal('org_profit_amount', 16)->nullable();
             $table->decimal('grp_profit_amount', 16)->nullable();
 
-
             $table->jsonb('data');
             $table->timestampsTz();
             $table->datetimeTz('fetched_at')->nullable();
@@ -71,7 +70,6 @@ return new class () extends Migration {
             $table->string('source_id')->nullable()->unique();
         });
     }
-
 
     public function down(): void
     {

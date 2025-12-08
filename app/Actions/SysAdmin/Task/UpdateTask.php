@@ -28,9 +28,9 @@ class UpdateTask
     public function rules(): array
     {
         return [
-            'organisation_id'   => ['sometimes', 'exists:organisations,id'],
-            'name'              => ['sometimes', 'string', 'max:255'],
-            'description'       => ['sometimes', 'string'],
+            'organisation_id' => ['sometimes', 'exists:organisations,id'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'description' => ['sometimes', 'string'],
         ];
     }
 

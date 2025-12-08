@@ -97,24 +97,24 @@ beforeEach(function () {
         ->shouldReceive('getJobUniqueId')
         ->andReturn(1);
     $this->organisation = createOrganisation();
-    $this->warehouse    = createWarehouse();
-    $this->fulfilment   = createFulfilment($this->organisation);
-    $this->website      = createWebsite($this->fulfilment->shop);
+    $this->warehouse = createWarehouse();
+    $this->fulfilment = createFulfilment($this->organisation);
+    $this->website = createWebsite($this->fulfilment->shop);
     if ($this->website->state != WebsiteStateEnum::LIVE) {
         LaunchWebsite::make()->action($this->website);
     }
-    $this->shop               = $this->fulfilment->shop;
-    $this->shop               = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
-    $this->customer           = createCustomer($this->shop);
+    $this->shop = $this->fulfilment->shop;
+    $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
+    $this->customer = createCustomer($this->shop);
     $this->fulfilmentCustomer = $this->customer->fulfilmentCustomer;
 
-    list(
+    [
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+    ] = createProduct($this->shop);
 
     $rental = Rental::first();
-    if (!$rental) {
+    if (! $rental) {
         data_set($storeData, 'code', 'TEST');
         data_set($storeData, 'state', RentalStateEnum::ACTIVE);
         data_set($storeData, 'name', 'test');
@@ -130,7 +130,7 @@ beforeEach(function () {
     $this->rental = $rental;
 
     $service = Service::first();
-    if (!$service) {
+    if (! $service) {
         data_set($storeData, 'code', 'TEST');
         data_set($storeData, 'state', ServiceStateEnum::ACTIVE);
         data_set($storeData, 'name', 'test');
@@ -145,14 +145,12 @@ beforeEach(function () {
 
     $this->service = $service;
 
-
     $rentalAgreement = RentalAgreement::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->first();
-    if (!$rentalAgreement) {
+    if (! $rentalAgreement) {
         data_set($storeData, 'billing_cycle', RentalAgreementBillingCycleEnum::MONTHLY);
         data_set($storeData, 'state', RentalAgreementStateEnum::ACTIVE);
         data_set($storeData, 'username', 'test');
         data_set($storeData, 'email', 'test@aiku.io');
-
 
         $rentalAgreement = StoreRentalAgreement::make()->action(
             $this->customer->fulfilmentCustomer,
@@ -162,7 +160,7 @@ beforeEach(function () {
     $this->rentalAgreement = $rentalAgreement;
 
     $location = $this->warehouse->locations()->first();
-    if (!$location) {
+    if (! $location) {
         StoreLocation::run(
             $this->warehouse,
             Location::factory()->definition()
@@ -176,56 +174,55 @@ beforeEach(function () {
 
     $this->webUser = createWebUser($this->customer);
 
-    $palletRental =  Rental::where('auto_assign_asset_type', PalletTypeEnum::PALLET)->first();
-    if (!$palletRental) {
+    $palletRental = Rental::where('auto_assign_asset_type', PalletTypeEnum::PALLET)->first();
+    if (! $palletRental) {
 
-        $palletRental         = StoreRental::make()->action(
+        $palletRental = StoreRental::make()->action(
             $this->fulfilment->shop,
             [
-                'price'                  => 100,
-                'unit'                   => RentalUnitEnum::WEEK->value,
-                'code'                   => 'R00002',
-                'name'                   => 'Rental Asset B',
-                'auto_assign_asset'      => 'Pallet',
-                'auto_assign_asset_type' => PalletTypeEnum::PALLET->value
+                'price' => 100,
+                'unit' => RentalUnitEnum::WEEK->value,
+                'code' => 'R00002',
+                'name' => 'Rental Asset B',
+                'auto_assign_asset' => 'Pallet',
+                'auto_assign_asset_type' => PalletTypeEnum::PALLET->value,
             ]
         );
     }
-    $this->palletRental   = $palletRental;
+    $this->palletRental = $palletRental;
 
     $oversizeRental = Rental::where('auto_assign_asset_type', PalletTypeEnum::OVERSIZE)->first();
 
-    if (!$oversizeRental) {
+    if (! $oversizeRental) {
         $oversizeRental = StoreRental::make()->action(
             $this->fulfilment->shop,
             [
-                'price'                  => 100,
-                'unit'                   => RentalUnitEnum::WEEK->value,
-                'code'                   => 'R00003',
-                'name'                   => 'Rental Asset C',
-                'auto_assign_asset'      => 'Pallet',
-                'auto_assign_asset_type' => PalletTypeEnum::OVERSIZE->value
+                'price' => 100,
+                'unit' => RentalUnitEnum::WEEK->value,
+                'code' => 'R00003',
+                'name' => 'Rental Asset C',
+                'auto_assign_asset' => 'Pallet',
+                'auto_assign_asset_type' => PalletTypeEnum::OVERSIZE->value,
             ]
         );
     }
     $this->oversizeRental = $oversizeRental;
     $boxRental = Rental::where('auto_assign_asset_type', PalletTypeEnum::BOX)->first();
-    if (!$boxRental) {
-        $boxRental            = StoreRental::make()->action(
+    if (! $boxRental) {
+        $boxRental = StoreRental::make()->action(
             $this->fulfilment->shop,
             [
-                'price'                  => 100,
-                'unit'                   => RentalUnitEnum::WEEK->value,
-                'code'                   => 'R00004',
-                'name'                   => 'Rental Asset D',
-                'auto_assign_asset'      => 'Pallet',
-                'auto_assign_asset_type' => PalletTypeEnum::BOX->value
+                'price' => 100,
+                'unit' => RentalUnitEnum::WEEK->value,
+                'code' => 'R00004',
+                'name' => 'Rental Asset D',
+                'auto_assign_asset' => 'Pallet',
+                'auto_assign_asset_type' => PalletTypeEnum::BOX->value,
             ]
         );
     }
 
-
-    $this->boxRental      = $boxRental;
+    $this->boxRental = $boxRental;
 
     Config::set(
         'inertia.testing.page_paths',
@@ -239,7 +236,7 @@ beforeEach(function () {
 test('Update Retina Profile', function () {
     $webUser = UpdateRetinaProfile::make()->action($this->webUser, [
         'username' => 'joko',
-        'about'    => 'decent human being'
+        'about' => 'decent human being',
     ]);
 
     expect($webUser)->toBeInstanceOf(WebUser::class)
@@ -250,7 +247,7 @@ test('Update Retina Profile', function () {
 test('Create Retina Pallet Delivery', function () {
     $this->withoutExceptionHandling();
     $fulfilmentCustomer = $this->fulfilmentCustomer;
-    $palletDelivery     = StoreRetinaPalletDelivery::make()->action($fulfilmentCustomer, []);
+    $palletDelivery = StoreRetinaPalletDelivery::make()->action($fulfilmentCustomer, []);
 
     $fulfilmentCustomer->refresh();
 
@@ -275,21 +272,21 @@ test('Create Stored Item', function () {
     $storedItem = StoreRetinaStoredItem::make()->action(
         $this->fulfilmentCustomer,
         [
-            'reference' => 'item1'
+            'reference' => 'item1',
         ]
     );
 
     $storedItem2 = StoreRetinaStoredItem::make()->action(
         $this->fulfilmentCustomer,
         [
-            'reference' => 'item2'
+            'reference' => 'item2',
         ]
     );
 
     $storedItem3 = StoreRetinaStoredItem::make()->action(
         $this->fulfilmentCustomer,
         [
-            'reference' => 'item3'
+            'reference' => 'item3',
         ]
     );
 
@@ -311,9 +308,9 @@ test('Sync Stored Item to Pallet', function (Pallet $pallet) {
         [
             'stored_item_ids' => [
                 1 => [
-                    'quantity' => 100
-                ]
-            ]
+                    'quantity' => 100,
+                ],
+            ],
         ]
     );
 
@@ -322,14 +319,13 @@ test('Sync Stored Item to Pallet', function (Pallet $pallet) {
     expect($pallet)->toBeInstanceOf(Pallet::class)
         ->and($pallet->number_stored_items)->toBe(1);
 
-
     return $pallet;
 })->depends('Add Retina Pallet to PalletDelivery');
 
 test('Add Retina Multiple Pallets to Pallet Delivery', function (PalletDelivery $palletDelivery) {
     StoreRetinaMultiplePalletsFromDelivery::make()->action($palletDelivery, [
         'number_pallets' => 9,
-        'type'           => PalletTypeEnum::PALLET
+        'type' => PalletTypeEnum::PALLET,
     ]);
 
     $palletDelivery->refresh();
@@ -353,16 +349,16 @@ test('Delete Retina Pallet', function (PalletDelivery $palletDelivery) {
 })->depends('Create Retina Pallet Delivery');
 
 test('Sync Stored Item to Pallet (again)', function (PalletDelivery $palletDelivery) {
-    $pallet  = $palletDelivery->pallets()->skip(1)->first();
+    $pallet = $palletDelivery->pallets()->skip(1)->first();
     $pallet2 = $palletDelivery->pallets()->skip(2)->first();
     SyncRetinaStoredItemToPallet::make()->action(
         $pallet,
         [
             'stored_item_ids' => [
                 2 => [
-                    'quantity' => 200
-                ]
-            ]
+                    'quantity' => 200,
+                ],
+            ],
         ]
     );
     SyncRetinaStoredItemToPallet::make()->action(
@@ -370,9 +366,9 @@ test('Sync Stored Item to Pallet (again)', function (PalletDelivery $palletDeliv
         [
             'stored_item_ids' => [
                 3 => [
-                    'quantity' => 300
-                ]
-            ]
+                    'quantity' => 300,
+                ],
+            ],
         ]
     );
 
@@ -403,7 +399,7 @@ test('Update Retina Pallet Delivery', function (PalletDelivery $palletDelivery) 
 test('Store Retina Fulfilment Transaction in Pallet Delivery', function (PalletDelivery $palletDelivery) {
     $fulfilmentTransaction = StoreRetinaFulfilmentTransaction::make()->action($palletDelivery, [
         'historic_asset_id' => $this->product->current_historic_asset_id,
-        'quantity'          => 5
+        'quantity' => 5,
     ]);
 
     $palletDelivery->refresh();
@@ -416,7 +412,7 @@ test('Store Retina Fulfilment Transaction in Pallet Delivery', function (PalletD
 
 test('Update Retina Fulfilment Transaction in Pallet Delivery', function (FulfilmentTransaction $fulfilmentTransaction) {
     $fulfilmentTransaction = UpdateRetinaFulfilmentTransaction::make()->action($fulfilmentTransaction, [
-        'quantity' => 7
+        'quantity' => 7,
     ]);
 
     $fulfilmentTransaction->refresh();
@@ -445,14 +441,14 @@ test('Import Pallet (xlsx) for Pallet Delivery', function (PalletDelivery $palle
     $tmpPath = 'tmp/uploads/';
 
     $filePath = base_path('tests/fixtures/PalletsOnlyTest.xlsx');
-    $file     = new UploadedFile($filePath, 'PalletsOnlyTest.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+    $file = new UploadedFile($filePath, 'PalletsOnlyTest.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
     Storage::fake('local')->put($tmpPath, $file);
 
     expect($palletDelivery->stats->number_pallets)->toBe(9);
 
     $upload = ImportRetinaPallet::run($palletDelivery, $file, [
-        'with_stored_item' => false
+        'with_stored_item' => false,
     ]);
     $palletDelivery->refresh();
     expect($upload)->toBeInstanceOf(Upload::class)
@@ -473,7 +469,7 @@ test('Import Pallet (xlsx) for Pallet Delivery Duplicate', function (PalletDeliv
     $tmpPath = 'tmp/uploads/';
 
     $filePath = base_path('tests/fixtures/PalletsOnlyTest.xlsx');
-    $file     = new UploadedFile($filePath, 'PalletsOnlyTest.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+    $file = new UploadedFile($filePath, 'PalletsOnlyTest.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
     Storage::fake('local')->put($tmpPath, $file);
 
@@ -483,7 +479,7 @@ test('Import Pallet (xlsx) for Pallet Delivery Duplicate', function (PalletDeliv
         ->and($palletDelivery->stats->number_pallets_type_oversize)->toBe(1);
 
     $upload = ImportRetinaPallet::run($palletDelivery, $file, [
-        'with_stored_item' => false
+        'with_stored_item' => false,
     ]);
     $palletDelivery->refresh();
     expect($upload)->toBeInstanceOf(Upload::class)
@@ -504,7 +500,7 @@ test('Import Pallet (xlsx) for Pallet Delivery Invalid Types', function (PalletD
     $tmpPath = 'tmp/uploads/';
 
     $filePath = base_path('tests/fixtures/PalletsOnlyTestInvalidType.xlsx');
-    $file     = new UploadedFile($filePath, 'PalletsOnlyTestInvalidType.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+    $file = new UploadedFile($filePath, 'PalletsOnlyTestInvalidType.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
     Storage::fake('local')->put($tmpPath, $file);
 
@@ -514,7 +510,7 @@ test('Import Pallet (xlsx) for Pallet Delivery Invalid Types', function (PalletD
         ->and($palletDelivery->stats->number_pallets_type_oversize)->toBe(1);
 
     $upload = ImportRetinaPallet::run($palletDelivery, $file, [
-        'with_stored_item' => false
+        'with_stored_item' => false,
     ]);
     $palletDelivery->refresh();
     expect($upload)->toBeInstanceOf(Upload::class)
@@ -530,7 +526,7 @@ test('Import Pallet (xlsx) for Pallet Delivery Invalid Types', function (PalletD
 })->depends('Import Pallet (xlsx) for Pallet Delivery Duplicate');
 
 test('Submit Retina Pallet Delivery', function (PalletDelivery $palletDelivery) {
-    $palletDelivery     = SubmitRetinaPalletDelivery::make()->action($palletDelivery, []);
+    $palletDelivery = SubmitRetinaPalletDelivery::make()->action($palletDelivery, []);
     $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
     $palletDelivery->refresh();
     $fulfilmentCustomer->refresh();
@@ -555,31 +551,26 @@ test('Process Pallet Delivery (from aiku)', function (PalletDelivery $palletDeli
     expect($palletDelivery)->toBeInstanceOf(PalletDelivery::class)
         ->and($palletDelivery->state)->toBe(PalletDeliveryStateEnum::CONFIRMED);
 
-
     $palletDelivery = ReceivePalletDelivery::make()->action($palletDelivery);
 
     expect($palletDelivery)->toBeInstanceOf(PalletDelivery::class)
         ->and($palletDelivery->state)->toBe(PalletDeliveryStateEnum::RECEIVED);
-
 
     $palletDelivery = StartBookingPalletDelivery::make()->action($palletDelivery);
 
     expect($palletDelivery)->toBeInstanceOf(PalletDelivery::class)
         ->and($palletDelivery->state)->toBe(PalletDeliveryStateEnum::BOOKING_IN);
 
-
     foreach ($palletDelivery->pallets as $pallet) {
         BookInPallet::make()->action($pallet, ['location_id' => $this->location->id]);
     }
 
-
     $palletDelivery = SetPalletDeliveryAsBookedIn::make()->action($palletDelivery);
-    $pallet         = $palletDelivery->pallets->first();
+    $pallet = $palletDelivery->pallets->first();
 
     expect($pallet->location)->toBeInstanceOf(Location::class)
         ->and($pallet->location->id)->toBe($this->location->id)
         ->and($pallet->state)->toBe(PalletStateEnum::STORING);
-
 
     return $palletDelivery;
 })->depends('Submit Retina Pallet Delivery');
@@ -589,7 +580,7 @@ test('Update Pallet', function (PalletDelivery $palletDelivery) {
     $pallet = UpdateRetinaPallet::make()->action(
         $pallet,
         [
-            'reference'          => '000001-diam-p0001',
+            'reference' => '000001-diam-p0001',
             'customer_reference' => 'hello-01',
         ]
     );
@@ -605,7 +596,7 @@ test('Update Pallet', function (PalletDelivery $palletDelivery) {
 
 test('Create Retina Pallet Return', function () {
     $fulfilmentCustomer = $this->fulfilmentCustomer;
-    $palletReturn       = StoreRetinaPalletReturn::make()->action(
+    $palletReturn = StoreRetinaPalletReturn::make()->action(
         $fulfilmentCustomer,
         [
             'warehouse_id' => $this->warehouse->id,
@@ -643,7 +634,7 @@ test('import pallets in return (xlsx)  whole pallets ', function (PalletReturn $
     $tmpPath = 'tmp/uploads/';
     //
     $filePath = base_path('tests/fixtures/returnRetinaPalletItems.xlsx');
-    $file     = new UploadedFile($filePath, 'returnRetinaPalletItems.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+    $file = new UploadedFile($filePath, 'returnRetinaPalletItems.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
     Storage::fake('local')->put($tmpPath, $file);
     $palletReturn->refresh();
@@ -670,7 +661,7 @@ test('import pallets in return (xlsx) duplicate', function (PalletReturn $pallet
     $tmpPath = 'tmp/uploads/';
     //
     $filePath = base_path('tests/fixtures/returnRetinaPalletItems.xlsx');
-    $file     = new UploadedFile($filePath, 'returnRetinaPalletItems.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+    $file = new UploadedFile($filePath, 'returnRetinaPalletItems.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
     Storage::fake('local')->put($tmpPath, $file);
     $palletReturn->refresh();
@@ -697,7 +688,7 @@ test('import pallets in return (xlsx) invalid reference', function (PalletReturn
     $tmpPath = 'tmp/uploads/';
     //
     $filePath = base_path('tests/fixtures/PalletReturnInvalid.xlsx');
-    $file     = new UploadedFile($filePath, 'PalletReturnInvalid.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+    $file = new UploadedFile($filePath, 'PalletReturnInvalid.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
     Storage::fake('local')->put($tmpPath, $file);
     $palletReturn->refresh();
@@ -719,8 +710,8 @@ test('import pallets in return (xlsx) invalid reference', function (PalletReturn
 })->depends('Create Retina Pallet Return');
 
 test('Attach Pallet to Retina Pallet Return', function (PalletReturn $palletReturn) {
-    $pallet1      = Pallet::Find(3);
-    $pallet2      = Pallet::Find(4);
+    $pallet1 = Pallet::Find(3);
+    $pallet2 = Pallet::Find(4);
     $palletReturn = AttachRetinaPalletToReturn::make()->action(
         $palletReturn,
         $pallet1
@@ -739,7 +730,6 @@ test('Attach Pallet to Retina Pallet Return', function (PalletReturn $palletRetu
 
     return $palletReturn;
 })->depends('import pallets in return (xlsx)  whole pallets ');
-
 
 test('Detach Pallet to Retina Pallet Return', function (PalletReturn $palletReturn) {
     $pallet = $palletReturn->pallets()->first();
@@ -761,8 +751,8 @@ test('Add Transaction to Retina Pallet Return', function (PalletReturn $palletRe
     $fulfilmentTransaction = StoreRetinaFulfilmentTransaction::make()->action(
         $palletReturn,
         [
-            'quantity'          => 10,
-            'historic_asset_id' => $this->product->current_historic_asset_id
+            'quantity' => 10,
+            'historic_asset_id' => $this->product->current_historic_asset_id,
         ]
     );
 
@@ -829,9 +819,9 @@ test('Attach Stored Item to Retina Pallet Return (with stored item)', function (
         [
             'stored_items' => [
                 2 => [
-                    'quantity' => 200
-                ]
-            ]
+                    'quantity' => 200,
+                ],
+            ],
         ]
     );
 
@@ -847,7 +837,7 @@ test('Update Retina Customer', function () {
     $customer = UpdateRetinaCustomer::make()->action(
         $this->fulfilmentCustomer->customer,
         [
-            'contact_name' => 'John'
+            'contact_name' => 'John',
         ]
     );
 
@@ -863,7 +853,7 @@ test('Store retina delivery address to fulfilment customer', function () {
     $fulfilmentCustomer = AddRetinaDeliveryAddressToFulfilmentCustomer::make()->action(
         $this->fulfilmentCustomer,
         [
-            'delivery_address' => Address::factory()->definition()
+            'delivery_address' => Address::factory()->definition(),
         ]
     );
 
@@ -880,7 +870,7 @@ test('Update retina customer delivery address', function () {
     $customer = UpdateRetinaCustomerDeliveryAddress::make()->action(
         $this->fulfilmentCustomer->customer,
         [
-            'delivery_address_id' => 6
+            'delivery_address_id' => 6,
         ]
     );
 
@@ -896,7 +886,7 @@ test('Delete retina customer delivery address', function () {
     UpdateRetinaCustomerDeliveryAddress::make()->action(
         $this->fulfilmentCustomer->customer,
         [
-            'delivery_address_id' => 5
+            'delivery_address_id' => 5,
         ]
     );
 
@@ -919,18 +909,17 @@ test('Store retina customer client', function () {
     $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
     $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, []);
 
-
     $customerClient = StoreRetinaCustomerClient::run(
         $customerSalesChannel,
         [
-            'reference'    => 'ref1',
+            'reference' => 'ref1',
             'contact_name' => 'Acme',
             'company_name' => 'Acme.inc',
-            'email'        => 'acme@acme.com',
-            'phone'        => '123456789',
-            'address'      => Address::factory()->definition(),
-            'status'       => true,
-            'platform_id'  => $platform->id,
+            'email' => 'acme@acme.com',
+            'phone' => '123456789',
+            'address' => Address::factory()->definition(),
+            'status' => true,
+            'platform_id' => $platform->id,
         ]
     );
 
@@ -949,9 +938,9 @@ test('Store retina web user', function () {
         $this->fulfilmentCustomer->customer,
         [
             'contact_name' => 'Sunshine',
-            'username'     => 'camel',
-            'email'        => 'acme@acme.com',
-            'password'     => 'joko'
+            'username' => 'camel',
+            'email' => 'acme@acme.com',
+            'password' => 'joko',
         ]
     );
 

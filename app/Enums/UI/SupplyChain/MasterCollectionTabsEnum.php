@@ -19,7 +19,6 @@ enum MasterCollectionTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
     case SHOWCASE = 'showcase';
 
     case PRODUCTS = 'products';
@@ -30,7 +29,6 @@ enum MasterCollectionTabsEnum: string
 
     case IMAGES = 'images';
     case SHOP_COLLECTIONS = 'shop_collections';
-
 
     public static function navigationWithStats(MasterCollection $masterCollection): array
     {
@@ -56,38 +54,38 @@ enum MasterCollectionTabsEnum: string
         return match ($this) {
             MasterCollectionTabsEnum::HISTORY => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('Changelog'),
-                'icon'  => 'fal fa-clock',
+                'icon' => 'fal fa-clock',
 
             ],
             MasterCollectionTabsEnum::FAMILIES => [
                 'title' => __('Master Families'),
-                'icon'  => 'fal fa-folder',
+                'icon' => 'fal fa-folder',
             ],
             MasterCollectionTabsEnum::PRODUCTS => [
                 'title' => __('Master Products'),
-                'icon'  => 'fal fa-cube',
+                'icon' => 'fal fa-cube',
             ],
             MasterCollectionTabsEnum::COLLECTIONS => [
                 'title' => __('Master Collections'),
-                'icon'  => 'fal fa-album-collection',
+                'icon' => 'fal fa-album-collection',
             ],
             MasterCollectionTabsEnum::SHOP_COLLECTIONS => [
                 'align' => 'right',
                 'title' => __('Shop Collections'),
-                'icon'  => 'fal fa-store',
+                'icon' => 'fal fa-store',
             ],
             MasterCollectionTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
 
             MasterCollectionTabsEnum::IMAGES => [
-               'title' => __('Media'),
-               'icon'  => 'fal fa-camera-retro',
-               'type'  => 'icon',
-               'align' => 'right',
+                'title' => __('Media'),
+                'icon' => 'fal fa-camera-retro',
+                'type' => 'icon',
+                'align' => 'right',
             ],
         };
     }

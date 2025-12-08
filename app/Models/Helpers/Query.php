@@ -50,37 +50,39 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Query extends Model implements Auditable
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use HasSlug;
+    use HasSlug;
+    use HasUniversalSearch;
     use InShop;
+    use SoftDeletes;
 
     protected $casts = [
-        'constrains'          => 'array',
+        'constrains' => 'array',
         'compiled_constrains' => 'array',
-        'informatics'         => 'array',
-        'source_constrains'   => 'array',
-        'is_seeded'           => 'boolean',
-        'is_static'           => 'boolean',
-        'has_arguments'       => 'boolean'
+        'informatics' => 'array',
+        'source_constrains' => 'array',
+        'is_seeded' => 'boolean',
+        'is_static' => 'boolean',
+        'has_arguments' => 'boolean',
     ];
 
     protected $attributes = [
-        'constrains'          => '{}',
+        'constrains' => '{}',
         'compiled_constrains' => '{}',
-        'source_constrains'   => '{}',
+        'source_constrains' => '{}',
     ];
 
     protected $guarded = [];
@@ -88,25 +90,23 @@ class Query extends Model implements Auditable
     public function generateTags(): array
     {
 
-        if (in_array($this->model, ['Prospect','Customer'])) {
+        if (in_array($this->model, ['Prospect', 'Customer'])) {
             return [
-                'crm'
+                'crm',
             ];
         }
 
         return [
-            'helpers'
+            'helpers',
         ];
 
-
     }
-
 
     protected array $auditInclude = [
         'name',
         'model',
         'is_static',
-        'constrains'
+        'constrains',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -121,6 +121,7 @@ class Query extends Model implements Auditable
                 } else {
                     $slug .= '-'.$this->group->slug;
                 }
+
                 return $slug;
             })
             ->saveSlugsTo('slug')
@@ -133,11 +134,8 @@ class Query extends Model implements Auditable
         return 'slug';
     }
 
-
     public function customers(): MorphToMany
     {
         return $this->morphedByMany(Customer::class, 'model', 'query_has_models')->withTimestamps();
     }
-
-
 }

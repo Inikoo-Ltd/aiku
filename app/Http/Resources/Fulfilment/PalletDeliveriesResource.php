@@ -27,30 +27,30 @@ class PalletDeliveriesResource extends JsonResource
     {
 
         return [
-            'id'                         => $this->id,
-            'slug'                       => $this->slug,
-            'reference'                  => $this->reference,
-            'state'                      => $this->state,
-            'state_label'                => $this->state->labels()[$this->state->value],
-            'state_icon'                 => $this->state->stateIcon()[$this->state->value],
-            'customer_reference'         => $this->customer_reference,
-            'number_pallets'             => $this->number_pallets,
-            'customer_name'              => $this->customer_name,
-            'customer_slug'              => $this->customer_slug,
-            'estimated_delivery_date'    => $this->estimated_delivery_date,
-            'date'                       => $this->date,
-            'organisation_name'          => $this->organisation_name,
-            'organisation_slug'          => $this->organisation_slug,
-            'shop_name'                  => $this->shop_name,
-            'shop_slug'                  => $this->shop_slug,
-            'fulfilment_slug'            => $this->fulfilment_slug,
-            'amount'                     => $this->net_amount,
-            'currency_code'              => $this->currency_code,
-            'receiveRoute'               => [
-                'name'       => 'grp.models.pallet-delivery.received',
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'state' => $this->state,
+            'state_label' => $this->state->labels()[$this->state->value],
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
+            'customer_reference' => $this->customer_reference,
+            'number_pallets' => $this->number_pallets,
+            'customer_name' => $this->customer_name,
+            'customer_slug' => $this->customer_slug,
+            'estimated_delivery_date' => $this->estimated_delivery_date,
+            'date' => $this->date,
+            'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
+            'shop_name' => $this->shop_name,
+            'shop_slug' => $this->shop_slug,
+            'fulfilment_slug' => $this->fulfilment_slug,
+            'amount' => $this->net_amount,
+            'currency_code' => $this->currency_code,
+            'receiveRoute' => [
+                'name' => 'grp.models.pallet-delivery.received',
                 'parameters' => $this->id,
-                'method'     => 'post'
-            ]
+                'method' => 'post',
+            ],
         ];
     }
 }

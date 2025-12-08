@@ -23,10 +23,10 @@ trait WithHydrateOrgSupplierProducts
     public function getOrgSupplierProductsStats(Organisation|OrgAgent|OrgSupplier $model): array
     {
         $stats = [
-            'number_org_supplier_products'           => $model->orgSupplierProducts()->count(),
+            'number_org_supplier_products' => $model->orgSupplierProducts()->count(),
             'number_available_org_supplier_products' => $model->orgSupplierProducts()->whereIn('state', [
                 SupplierProductStateEnum::ACTIVE,
-                SupplierProductStateEnum::DISCONTINUING
+                SupplierProductStateEnum::DISCONTINUING,
             ])->where('is_available', true)->count(),
         ];
 
@@ -41,8 +41,8 @@ trait WithHydrateOrgSupplierProducts
                     $q->where(
                         match (class_basename($model)) {
                             'Organisation' => 'organisation_id',
-                            'OrgAgent'     => 'org_agent_id',
-                            'OrgSupplier'  => 'org_supplier_id',
+                            'OrgAgent' => 'org_agent_id',
+                            'OrgSupplier' => 'org_supplier_id',
                         },
                         $model->id
                     );
@@ -50,10 +50,9 @@ trait WithHydrateOrgSupplierProducts
             )
         );
 
-        $stats['number_current_org_supplier_products']      = $stats['number_org_supplier_products_state_active'] + $stats['number_org_supplier_products_state_discontinuing'];
+        $stats['number_current_org_supplier_products'] = $stats['number_org_supplier_products_state_active'] + $stats['number_org_supplier_products_state_discontinuing'];
         $stats['number_no_available_org_supplier_products'] = $stats['number_current_org_supplier_products'] - $stats['number_available_org_supplier_products'];
 
         return $stats;
     }
-
 }

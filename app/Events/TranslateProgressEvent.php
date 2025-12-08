@@ -14,9 +14,10 @@ class TranslateProgressEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
-
     public string $text;
+
     public string $randomString;
+
     /**
      * Create a new event instance.
      *
@@ -31,7 +32,7 @@ class TranslateProgressEvent implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'translated_text' => $this->text
+            'translated_text' => $this->text,
         ];
     }
 

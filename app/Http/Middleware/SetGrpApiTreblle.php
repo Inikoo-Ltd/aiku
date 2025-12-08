@@ -18,11 +18,10 @@ class SetGrpApiTreblle
     public function handle(Request $request, Closure $next)
     {
         config([
-            'treblle.enable'     => config('treblle.grp.enable'),
-            'treblle.api_key'    => config('treblle.grp.api_key'),
+            'treblle.enable' => config('treblle.grp.enable'),
+            'treblle.api_key' => config('treblle.grp.api_key'),
             'treblle.project_id' => config('treblle.grp.project_id'),
         ]);
-
 
         return $next($request);
     }

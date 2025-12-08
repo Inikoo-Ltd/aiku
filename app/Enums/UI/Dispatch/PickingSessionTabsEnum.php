@@ -20,22 +20,21 @@ enum PickingSessionTabsEnum: string
     case ITEMIZED = 'itemized';
     case GROUPED = 'grouped';
 
-
     public function blueprint(): array
     {
 
         return match ($this) {
             PickingSessionTabsEnum::ITEMS => [
                 'title' => __('Items'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
             PickingSessionTabsEnum::ITEMIZED => [
                 'title' => __('Pick by location'),
-                'icon'  => 'fal fa-inventory',
+                'icon' => 'fal fa-inventory',
             ],
             PickingSessionTabsEnum::GROUPED => [
                 'title' => __('Group by delivery'),
-                'icon'  => 'fal fa-truck',
+                'icon' => 'fal fa-truck',
             ],
         };
     }

@@ -17,5 +17,5 @@ enum WebsiteCloudflareStatusEnum: string
     case NOT_SET = 'not-set';
 
     case PENDING = 'pending';
-    case ACTIVE  = 'active';
+    case ACTIVE = 'active';
 }

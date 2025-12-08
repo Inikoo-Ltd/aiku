@@ -30,7 +30,7 @@ class OrganisationHydrateDeliveryNotes implements ShouldBeUnique
     {
 
         $organisation = Organisation::find($organisationId);
-        if (!$organisation) {
+        if (! $organisation) {
             return;
         }
 
@@ -40,9 +40,6 @@ class OrganisationHydrateDeliveryNotes implements ShouldBeUnique
             $stats = $this->getStoreReplacementsStats($organisation);
         }
 
-
         $organisation->orderingStats()->update($stats);
     }
-
-
 }

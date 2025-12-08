@@ -26,49 +26,48 @@ enum DepartmentTabsEnum: string
     case IMAGES = 'images';
     case CUSTOMERS = 'customers';
 
-
     public function blueprint(): array
     {
         return match ($this) {
             DepartmentTabsEnum::DATA => [
                 'title' => __('Database'),
-                'icon'  => 'fal fa-database',
-                'type'  => 'icon',
+                'icon' => 'fal fa-database',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             DepartmentTabsEnum::SALES => [
                 'title' => __('Sales'),
-                'icon'  => 'fal fa-money-bill-wave',
+                'icon' => 'fal fa-money-bill-wave',
             ],
             DepartmentTabsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
-                'icon'  => 'fal fa-user',
-                'type'  => 'icon',
+                'icon' => 'fal fa-user',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             DepartmentTabsEnum::OFFERS => [
                 'title' => __('Offers'),
-                'icon'  => 'fal fa-tags',
+                'icon' => 'fal fa-tags',
             ],
             DepartmentTabsEnum::RELATED_CATEGORIES => [
                 'title' => __('Related categories'),
-                'icon'  => 'fal fa-project-diagram',
+                'icon' => 'fal fa-project-diagram',
             ],
             DepartmentTabsEnum::IMAGES => [
                 'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
+                'icon' => 'fal fa-camera-retro',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             DepartmentTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             DepartmentTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

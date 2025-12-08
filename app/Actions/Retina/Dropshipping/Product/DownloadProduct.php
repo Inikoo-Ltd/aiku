@@ -16,12 +16,12 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
-use Illuminate\Support\Facades\Storage;
-use Lorisleiva\Actions\ActionRequest;
 use Excel;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Lorisleiva\Actions\ActionRequest;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class DownloadProduct extends RetinaAction
 {
@@ -37,11 +37,12 @@ class DownloadProduct extends RetinaAction
             $baseFilename = $parent->type->value;
         }
 
-        $filename = $baseFilename . '_' . $parent->slug . '.csv';
-        $path = Str::snake(class_basename($parent)) . '/' . $filename;
+        $filename = $baseFilename.'_'.$parent->slug.'.csv';
+        $path = Str::snake(class_basename($parent)).'/'.$filename;
 
         if ($type == 'products_images') {
             $filename .= '_images.zip';
+
             return response()->streamDownload(function () use ($parent, $filename) {
                 ProductZipExport::make()->handle($parent, $filename);
             }, $filename);
@@ -56,20 +57,19 @@ class DownloadProduct extends RetinaAction
             }
         }
     }
+
     /**
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      */
-
     public function asController(Shop $shop, ActionRequest $request): BinaryFileResponse|Response
     {
 
         $type = $request->query('type', 'products_csv');
 
-        if (!in_array($type, ['products_csv', 'products_images'])) {
+        if (! in_array($type, ['products_csv', 'products_images'])) {
             abort(404);
         }
-
 
         $this->initialisation($request);
 
@@ -80,7 +80,7 @@ class DownloadProduct extends RetinaAction
     {
         $type = $request->query('type', 'products_csv');
 
-        if (!in_array($type, ['products_csv', 'products_images'])) {
+        if (! in_array($type, ['products_csv', 'products_images'])) {
             abort(404);
         }
 
@@ -93,7 +93,7 @@ class DownloadProduct extends RetinaAction
     {
         $type = $request->query('type', 'products_csv');
 
-        if (!in_array($type, ['products_csv', 'products_images'])) {
+        if (! in_array($type, ['products_csv', 'products_images'])) {
             abort(404);
         }
 
@@ -106,10 +106,9 @@ class DownloadProduct extends RetinaAction
     {
         $type = $request->query('type', 'products_csv');
 
-        if (!in_array($type, ['products_csv', 'products_images'])) {
+        if (! in_array($type, ['products_csv', 'products_images'])) {
             abort(404);
         }
-
 
         $this->initialisation($request);
 

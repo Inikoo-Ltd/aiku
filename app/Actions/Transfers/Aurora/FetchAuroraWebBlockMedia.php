@@ -22,7 +22,7 @@ class FetchAuroraWebBlockMedia extends OrgAction
 {
     use WithAuroraImages;
 
-    public function handle(WebBlock $webBlock, Webpage $webpage, string $auroraImage): Media|null
+    public function handle(WebBlock $webBlock, Webpage $webpage, string $auroraImage): ?Media
     {
         if ($auroraImage == '/') {
             return null;
@@ -36,40 +36,36 @@ class FetchAuroraWebBlockMedia extends OrgAction
         }
 
         $this->organisation = $webpage->website->organisation;
-        $auroraImageId      = null;
-
+        $auroraImageId = null;
 
         if (preg_match('/wi\/(\d+)\.([a-zA-Z]+)/', $auroraImage, $matches)) {
             $auroraImageId = $matches[1];
         }
-        if (!$auroraImageId) {
+        if (! $auroraImageId) {
             if (preg_match('/^\/wi.php\?.*id=(\d+)/', $auroraImage, $matches)) {
                 $auroraImageId = $matches[1];
             }
         }
 
-        if (!$auroraImageId) {
+        if (! $auroraImageId) {
             if (preg_match('/^\/image_root.php\?.*id=(\d+)/', $auroraImage, $matches)) {
                 $auroraImageId = $matches[1];
             }
         }
 
-
         if ($auroraImageId) {
             $auroraImageData = DB::connection('aurora')->table('Image Dimension')
                 ->where('Image Key', $auroraImageId)->first();
 
-
             if ($auroraImageData) {
                 $imageData = $this->fetchImageLight($auroraImageData);
-
 
                 if (isset($imageData['image_path']) && file_exists($imageData['image_path'])) {
                     return SaveModelImages::run(
                         model: $webBlock,
                         mediaData: [
-                            "path"         => $imageData['image_path'],
-                            "originalName" => $imageData['filename'],
+                            'path' => $imageData['image_path'],
+                            'originalName' => $imageData['filename'],
                         ]
                     );
                 }
@@ -79,43 +75,42 @@ class FetchAuroraWebBlockMedia extends OrgAction
         return $this->downloadMediaFromWebpage($webBlock, $webpage, $auroraImage);
     }
 
-
     private function getStaticImages($webBlock, $imageName)
     {
         return SaveModelImages::run(
             model: $webBlock,
             mediaData: [
-                "path"         => resource_path('aurora/'.$imageName),
-                "originalName" => $imageName,
+                'path' => resource_path('aurora/'.$imageName),
+                'originalName' => $imageName,
             ]
         );
     }
 
-    public function downloadMediaFromWebpage(WebBlock $webBlock, Webpage $webpage, string $auroraImage): Media|null
+    public function downloadMediaFromWebpage(WebBlock $webBlock, Webpage $webpage, string $auroraImage): ?Media
     {
-        $urlToFile = "https://www.".$webpage->website->domain.$auroraImage;
+        $urlToFile = 'https://www.'.$webpage->website->domain.$auroraImage;
 
-        if (!$fetchNotFoundImage = FetchDownloadImage::where('url', $urlToFile)->first()) {
+        if (! $fetchNotFoundImage = FetchDownloadImage::where('url', $urlToFile)->first()) {
             $fetchNotFoundImage = FetchDownloadImage::create([
                 'domain' => $webpage->website->domain,
-                'path'   => $auroraImage,
-                'url'    => $urlToFile
+                'path' => $auroraImage,
+                'url' => $urlToFile,
             ]);
         }
 
         try {
-            $content  = file_get_contents($urlToFile);
-            $tempPath = tempnam(sys_get_temp_dir(), "img_");
+            $content = file_get_contents($urlToFile);
+            $tempPath = tempnam(sys_get_temp_dir(), 'img_');
 
-            $headers  = get_headers($urlToFile, 1);
-            $mimeType = $headers["Content-Type"];
+            $headers = get_headers($urlToFile, 1);
+            $mimeType = $headers['Content-Type'];
 
-            if ($mimeType == "image/jpeg") {
-                $extension = ".jpg";
-            } elseif ($mimeType == "image/png") {
-                $extension = ".png";
+            if ($mimeType == 'image/jpeg') {
+                $extension = '.jpg';
+            } elseif ($mimeType == 'image/png') {
+                $extension = '.png';
             } else {
-                $extension = ".jpg";
+                $extension = '.jpg';
             }
 
             $tempFile = $tempPath.$extension;
@@ -126,8 +121,8 @@ class FetchAuroraWebBlockMedia extends OrgAction
             return SaveModelImages::run(
                 model: $webBlock,
                 mediaData: [
-                    "path"         => $tempFile,
-                    "originalName" => "aurora_image",
+                    'path' => $tempFile,
+                    'originalName' => 'aurora_image',
                 ]
             );
         } catch (Exception) {
@@ -136,6 +131,4 @@ class FetchAuroraWebBlockMedia extends OrgAction
             return null;
         }
     }
-
-
 }

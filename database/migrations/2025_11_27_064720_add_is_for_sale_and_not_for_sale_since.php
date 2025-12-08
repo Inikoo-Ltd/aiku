@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // MASTER ASSETS
@@ -25,16 +26,15 @@ return new class () extends Migration {
         });
 
         DB::table('master_assets')->update([
-            'is_for_sale' => DB::raw("CASE WHEN status = true THEN true ELSE false END")
+            'is_for_sale' => DB::raw('CASE WHEN status = true THEN true ELSE false END'),
         ]);
         DB::table('product_categories')->update([
-            'is_for_sale' => DB::raw("CASE WHEN state != 'discontinued' THEN true ELSE false END")
+            'is_for_sale' => DB::raw("CASE WHEN state != 'discontinued' THEN true ELSE false END"),
         ]);
         DB::table('master_product_categories')->update([
-            'is_for_sale' => DB::raw("CASE WHEN status = true THEN true ELSE false END")
+            'is_for_sale' => DB::raw('CASE WHEN status = true THEN true ELSE false END'),
         ]);
     }
-
 
     public function down(): void
     {

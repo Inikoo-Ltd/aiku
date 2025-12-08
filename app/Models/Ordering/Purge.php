@@ -42,31 +42,33 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ordering\PurgedOrder> $purgedOrders
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Ordering\PurgeStats|null $stats
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Purge newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Purge newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Purge query()
+ *
  * @mixin \Eloquent
  */
 class Purge extends Model implements Auditable
 {
-    use InShop;
     use HasHistory;
+    use InShop;
 
     protected $guarded = [];
 
     protected $casts = [
-        'type'                 => PurgeTypeEnum::class,
-        'state'                => PurgeStateEnum::class,
-        'scheduled_at'         => 'datetime',
-        'start_at'             => 'datetime',
-        'end_at'               => 'datetime',
-        'cancelled_at'         => 'datetime',
-        'estimated_amount'     => 'decimal:2',
+        'type' => PurgeTypeEnum::class,
+        'state' => PurgeStateEnum::class,
+        'scheduled_at' => 'datetime',
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'estimated_amount' => 'decimal:2',
         'estimated_org_amount' => 'decimal:2',
         'estimated_grp_amount' => 'decimal:2',
-        'purged_amount'        => 'decimal:2',
-        'purged_org_amount'    => 'decimal:2',
-        'purged_grp_amount'    => 'decimal:2',
+        'purged_amount' => 'decimal:2',
+        'purged_org_amount' => 'decimal:2',
+        'purged_grp_amount' => 'decimal:2',
     ];
 
     public function purgedOrders(): HasMany
@@ -82,12 +84,11 @@ class Purge extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'ordering'
+            'ordering',
         ];
     }
 
     protected array $auditInclude = [
         'scheduled_at',
     ];
-
 }

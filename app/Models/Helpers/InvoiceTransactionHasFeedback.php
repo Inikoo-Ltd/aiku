@@ -30,9 +30,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read InvoiceTransaction|null $postInvoiceTransaction
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasFeedback newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasFeedback newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasFeedback query()
+ *
  * @mixin \Eloquent
  */
 class InvoiceTransactionHasFeedback extends Model
@@ -40,12 +42,11 @@ class InvoiceTransactionHasFeedback extends Model
     use InShop;
 
     protected $casts = [
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $guarded = [];
-
 
     public function invoiceTransaction(): BelongsTo
     {
@@ -56,8 +57,4 @@ class InvoiceTransactionHasFeedback extends Model
     {
         return $this->belongsTo(InvoiceTransaction::class);
     }
-
-
-
-
 }

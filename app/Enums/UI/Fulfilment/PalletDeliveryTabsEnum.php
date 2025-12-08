@@ -17,10 +17,9 @@ enum PalletDeliveryTabsEnum: string
     use EnumHelperTrait;
     use HasTabsWithQuantity;
 
-    case PALLETS        = 'pallets';
-    case SERVICES       = 'services';
+    case PALLETS = 'pallets';
+    case SERVICES = 'services';
     case PHYSICAL_GOODS = 'physical_goods';
-
 
     case ATTACHMENTS = 'attachments';
     case HISTORY = 'history';
@@ -30,28 +29,28 @@ enum PalletDeliveryTabsEnum: string
         return match ($this) {
             PalletDeliveryTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             PalletDeliveryTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
                 'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
-                'type'  => 'icon'
+                'icon' => 'fal fa-paperclip',
+                'type' => 'icon',
             ],
             PalletDeliveryTabsEnum::PALLETS => [
-                'title'     => __("pallets")." ({$parent->stats->number_pallets})",
-                'icon'      => 'fal fa-pallet',
-                'indicator' => $parent->pallets()->whereNotNull('location_id')->count() < $parent->pallets()->count()
+                'title' => __('pallets')." ({$parent->stats->number_pallets})",
+                'icon' => 'fal fa-pallet',
+                'indicator' => $parent->pallets()->whereNotNull('location_id')->count() < $parent->pallets()->count(),
             ],
             PalletDeliveryTabsEnum::SERVICES => [
-                'title' => __("services")." ({$parent->stats->number_services})",
-                'icon'  => 'fal fa-concierge-bell',
+                'title' => __('services')." ({$parent->stats->number_services})",
+                'icon' => 'fal fa-concierge-bell',
             ],
             PalletDeliveryTabsEnum::PHYSICAL_GOODS => [
-                'title' => __("physical goods")." ({$parent->stats->number_physical_goods})",
-                'icon'  => 'fal fa-cube',
+                'title' => __('physical goods')." ({$parent->stats->number_physical_goods})",
+                'icon' => 'fal fa-cube',
             ],
         };
     }

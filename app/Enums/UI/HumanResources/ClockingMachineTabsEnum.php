@@ -16,35 +16,34 @@ enum ClockingMachineTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE            = 'showcase';
-    case CLOCKINGS           = 'clockings';
+    case SHOWCASE = 'showcase';
+    case CLOCKINGS = 'clockings';
 
-    case HISTORY             = 'history';
-    case DATA                = 'data';
-
+    case HISTORY = 'history';
+    case DATA = 'data';
 
     public function blueprint(): array
     {
         return match ($this) {
             ClockingMachineTabsEnum::CLOCKINGS => [
                 'title' => __('Clockings'),
-                'icon'  => 'fal fa-clock',
+                'icon' => 'fal fa-clock',
             ],
             ClockingMachineTabsEnum::DATA => [
                 'title' => __('Database'),
-                'icon'  => 'fal fa-database',
-                'type'  => 'icon',
+                'icon' => 'fal fa-database',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             ClockingMachineTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             ClockingMachineTabsEnum::SHOWCASE => [
                 'title' => __('Clocking machine'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
         };
     }

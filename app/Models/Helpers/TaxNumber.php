@@ -43,12 +43,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $manual_validation_user_id
  * @property string|null $manual_validation_notes
  * @property-read \App\Models\Helpers\Country|null $country
+ *
  * @method static Builder<static>|TaxNumber newModelQuery()
  * @method static Builder<static>|TaxNumber newQuery()
  * @method static Builder<static>|TaxNumber onlyTrashed()
  * @method static Builder<static>|TaxNumber query()
  * @method static Builder<static>|TaxNumber withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|TaxNumber withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class TaxNumber extends Model
@@ -56,14 +58,14 @@ class TaxNumber extends Model
     use SoftDeletes;
 
     protected $casts = [
-        'data'               => 'array',
-        'audited_at'         => 'datetime',
-        'checked_at'         => 'datetime',
+        'data' => 'array',
+        'audited_at' => 'datetime',
+        'checked_at' => 'datetime',
         'invalid_checked_at' => 'datetime',
-        'validation_type'    => TaxNumberValidationTypeEnum::class,
-        'status'             => TaxNumberStatusEnum::class,
-        'type'               => TaxNumberTypeEnum::class,
-        'valid'              => 'boolean',
+        'validation_type' => TaxNumberValidationTypeEnum::class,
+        'status' => TaxNumberStatusEnum::class,
+        'type' => TaxNumberTypeEnum::class,
+        'valid' => 'boolean',
     ];
 
     protected $attributes = [
@@ -72,7 +74,6 @@ class TaxNumber extends Model
 
     protected $guarded = [];
 
-
     public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class);
@@ -80,12 +81,12 @@ class TaxNumber extends Model
 
     public function getFormattedTaxNumber(): string
     {
-        if (!in_array($this->type, [TaxNumberTypeEnum::GB_VAT, TaxNumberTypeEnum::EU_VAT])) {
+        if (! in_array($this->type, [TaxNumberTypeEnum::GB_VAT, TaxNumberTypeEnum::EU_VAT])) {
             return $this->number;
         }
 
         $number = strtoupper(trim($this->number));
-        $cc     = strtoupper(trim((string)$this->country_code));
+        $cc = strtoupper(trim((string) $this->country_code));
 
         if ($cc === '') {
             return $number;
@@ -98,10 +99,8 @@ class TaxNumber extends Model
         return $cc.' '.$number;
     }
 
-
     public static function getType(?Country $country): TaxNumberTypeEnum
     {
-
 
         if ($country) {
             if ($country->code == 'GB') {
@@ -117,5 +116,4 @@ class TaxNumber extends Model
             return TaxNumberTypeEnum::UNKNOWN;
         }
     }
-
 }

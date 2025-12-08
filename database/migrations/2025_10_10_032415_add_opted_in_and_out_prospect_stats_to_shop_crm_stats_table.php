@@ -15,7 +15,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up()
     {
         Schema::table('shop_crm_stats', function (Blueprint $table) {
@@ -36,7 +37,7 @@ return new class () extends Migration {
             foreach (ProspectSuccessStatusEnum::cases() as $case) {
                 $table->unsignedInteger("number_opt_in_prospects_success_status_{$case->snake()}")->default(0);
             }
-            $table->unsignedInteger("number_opt_in_prospects_dont_contact_me")->default(0);
+            $table->unsignedInteger('number_opt_in_prospects_dont_contact_me')->default(0);
 
             // Opt Out
             $table->unsignedInteger('number_opt_out_prospects')->default(0);
@@ -55,11 +56,10 @@ return new class () extends Migration {
             foreach (ProspectSuccessStatusEnum::cases() as $case) {
                 $table->unsignedInteger("number_opt_out_prospects_success_status_{$case->snake()}")->default(0);
             }
-            $table->unsignedInteger("number_opt_out_prospects_dont_contact_me")->default(0);
+            $table->unsignedInteger('number_opt_out_prospects_dont_contact_me')->default(0);
 
         });
     }
-
 
     public function down()
     {
@@ -81,7 +81,7 @@ return new class () extends Migration {
             foreach (ProspectSuccessStatusEnum::cases() as $case) {
                 $table->dropColumn("number_opt_in_prospects_success_status_{$case->snake()}");
             }
-            $table->dropColumn("number_opt_in_prospects_dont_contact_me");
+            $table->dropColumn('number_opt_in_prospects_dont_contact_me');
 
             // Opt Out
             $table->dropColumn('number_opt_out_prospects');
@@ -100,7 +100,7 @@ return new class () extends Migration {
             foreach (ProspectSuccessStatusEnum::cases() as $case) {
                 $table->dropColumn("number_opt_out_prospects_success_status_{$case->snake()}");
             }
-            $table->dropColumn("number_opt_out_prospects_dont_contact_me");
+            $table->dropColumn('number_opt_out_prospects_dont_contact_me');
         });
     }
 };

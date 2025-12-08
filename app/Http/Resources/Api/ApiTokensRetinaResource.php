@@ -10,8 +10,8 @@
 
 namespace App\Http\Resources\Api;
 
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
 
 /**
@@ -27,18 +27,18 @@ class ApiTokensRetinaResource extends JsonResource
     public function toArray($request): array|Arrayable|JsonSerializable
     {
         return [
-            'id'                 => $this->id,
-            'name'               => $this->name,
-            'last_used_at'       => $this->last_used_at,
-            'created_at'         => $this->created_at,
-            'updated_at'         => $this->updated_at,
-            'expires_at'         => $this->expires_at,
+            'id' => $this->id,
+            'name' => $this->name,
+            'last_used_at' => $this->last_used_at,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'expires_at' => $this->expires_at,
             'route_delete_token' => [
-                'name'       => 'retina.models.access_token.delete',
+                'name' => 'retina.models.access_token.delete',
                 'parameters' => [
-                    'token' => $this->id
-                ]
-            ]
+                    'token' => $this->id,
+                ],
+            ],
         ];
     }
 }

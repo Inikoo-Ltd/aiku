@@ -251,9 +251,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOutboxMarketingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOutboxMarketingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOutboxMarketingIntervals query()
+ *
  * @mixin \Eloquent
  */
 class GroupOutboxMarketingIntervals extends Model

@@ -14,7 +14,7 @@ enum CustomerTradeStateEnum: string
 {
     use EnumHelperTrait;
 
-    case NONE     = 'none';
-    case ONE      = 'one';
-    case MANY     = 'many';
+    case NONE = 'none';
+    case ONE = 'one';
+    case MANY = 'many';
 }

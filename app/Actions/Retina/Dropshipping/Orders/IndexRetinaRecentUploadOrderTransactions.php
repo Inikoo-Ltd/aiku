@@ -20,8 +20,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class IndexRetinaRecentUploadOrderTransactions extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     public function handle(Order $order): Order
     {

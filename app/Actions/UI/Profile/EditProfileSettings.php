@@ -38,7 +38,7 @@ class EditProfileSettings
     public function generateBlueprint(User $user): array
     {
         try {
-            $cacheKey = "user_printers_" . $user->id;
+            $cacheKey = 'user_printers_'.$user->id;
             $printers = cache()->remember($cacheKey, now()->addMinutes(), function () {
                 return GetPrintNodePrinters::make()->action([])->map(function ($printer) {
 
@@ -51,85 +51,85 @@ class EditProfileSettings
 
                     return [
                         'value' => $printer->id,
-                        'label' => '['.$printer->id.'] '.$printer->name . ' (' . $printer->computer->name . ')'  . ' ' . $state,
+                        'label' => '['.$printer->id.'] '.$printer->name.' ('.$printer->computer->name.')'.' '.$state,
                     ];
                 })->values()->toArray();
             });
         } catch (\Throwable $e) {
-            Log::error('Failed to fetch printers: ' . $e->getMessage());
+            Log::error('Failed to fetch printers: '.$e->getMessage());
             $printers = [];
         }
 
         return [
-            "title"       => __("Preferences"),
-            "pageHead"    => [
-                "title"        => __("Preferences"),
+            'title' => __('Preferences'),
+            'pageHead' => [
+                'title' => __('Preferences'),
 
             ],
-            "formData" => [
-                "blueprint" => [
+            'formData' => [
+                'blueprint' => [
                     [
-                        "label"  => __("Preferences"),
-                        "icon"   => "fal fa-sliders-v",
-                        "fields" => [
-                            "language_id" => [
-                                "type"    => "select",
-                                "label"   => __("language"),
-                                "value"   => $user->language_id,
+                        'label' => __('Preferences'),
+                        'icon' => 'fal fa-sliders-v',
+                        'fields' => [
+                            'language_id' => [
+                                'type' => 'select',
+                                'label' => __('language'),
+                                'value' => $user->language_id,
                                 'options' => GetLanguagesOptions::make()->translated(),
                             ],
-                            "app_theme" => [
-                                "type"  => "app_theme",
-                                "label" => __("theme color"),
-                                "value" => Arr::get($user->settings, 'app_theme'),
+                            'app_theme' => [
+                                'type' => 'app_theme',
+                                'label' => __('theme color'),
+                                'value' => Arr::get($user->settings, 'app_theme'),
                             ],
-                            "hide_logo" => [
-                                "type"    => "toggle",
-                                "label"   => __("Hide logo"),
-                                "noIcon"    => true,
-                                "value"   => Arr::get($user->settings, 'hide_logo'),
+                            'hide_logo' => [
+                                'type' => 'toggle',
+                                'label' => __('Hide logo'),
+                                'noIcon' => true,
+                                'value' => Arr::get($user->settings, 'hide_logo'),
 
                             ],
                             'preferred_printer' => [
-                                'type'     => 'select_printer',
-                                'label'    => __('preferred printer'),
+                                'type' => 'select_printer',
+                                'label' => __('preferred printer'),
                                 'required' => false,
-                                'options'  => $printers,
-                                'value'    => Arr::get($user->settings, 'preferred_printer_id'),
+                                'options' => $printers,
+                                'value' => Arr::get($user->settings, 'preferred_printer_id'),
                             ],
                         ],
                     ],
                     app()->environment('local') ? [
-                        "label"  => __("Timezone"),
-                        "icon"   => "fal fa-clock",
-                        "fields" => [
-                            "timezones"  =>  [
-                                "type"    => "select_infinite",
-                                "label"   => __("Timezone"),
-                                "information"   => __("Select your timezone to show in the footer"),
-                                "options"   => collect(Arr::get($user->settings, 'timezones', []))
+                        'label' => __('Timezone'),
+                        'icon' => 'fal fa-clock',
+                        'fields' => [
+                            'timezones' => [
+                                'type' => 'select_infinite',
+                                'label' => __('Timezone'),
+                                'information' => __('Select your timezone to show in the footer'),
+                                'options' => collect(Arr::get($user->settings, 'timezones', []))
                                     ->map(fn ($tz) => ['label' => $tz, 'value' => $tz])
                                     ->values()
                                     ->toArray(),
-                                "mode"      => "multiple",
-                                "fetchRoute"    => [
-                                    "name"       => "grp.json.timezones",
+                                'mode' => 'multiple',
+                                'fetchRoute' => [
+                                    'name' => 'grp.json.timezones',
                                 ],
-                                "valueProp" => "value",
-                                "labelProp" => "label",
-                                "required" => false,
-                                "value"   => Arr::get($user->settings, 'timezones')
-                            ]
+                                'valueProp' => 'value',
+                                'labelProp' => 'label',
+                                'required' => false,
+                                'value' => Arr::get($user->settings, 'timezones'),
+                            ],
                         ],
                     ] : [],
                 ],
-                "args"      => [
-                    "updateRoute" => [
-                        "name"       => "grp.models.profile.update"
+                'args' => [
+                    'updateRoute' => [
+                        'name' => 'grp.models.profile.update',
                     ],
                 ],
             ],
-            'auth'          => [
+            'auth' => [
                 'user' => LoggedUserResource::make($user)->getArray(),
             ],
         ];
@@ -138,6 +138,6 @@ class EditProfileSettings
     public function htmlResponse(User $user): Response
     {
 
-        return Inertia::render("EditModel", $this->generateBlueprint($user));
+        return Inertia::render('EditModel', $this->generateBlueprint($user));
     }
 }

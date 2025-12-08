@@ -25,57 +25,55 @@ enum MarketplaceSupplierTabsEnum: string
     case ATTACHMENTS = 'attachments';
     case IMAGES = 'images';
 
-
     public function blueprint(): array
     {
         return match ($this) {
             MarketplaceSupplierTabsEnum::SUPPLIER_PRODUCTS => [
                 'title' => __('Products'),
-                'icon'  => 'fal fa-box-usd',
+                'icon' => 'fal fa-box-usd',
             ],
-
 
             MarketplaceSupplierTabsEnum::SHOWCASE => [
                 'title' => __('Supplier'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
 
             MarketplaceSupplierTabsEnum::DATA => [
                 'title' => __('Data'),
-                'icon'  => 'fal fa-database',
-                'type'  => 'icon',
+                'icon' => 'fal fa-database',
+                'type' => 'icon',
                 'align' => 'right',
             ],
 
             MarketplaceSupplierTabsEnum::FEEDBACKS => [
                 'title' => __('Issues'),
-                'icon'  => 'fal fa-poop',
-                'type'  => 'icon',
+                'icon' => 'fal fa-poop',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             MarketplaceSupplierTabsEnum::IMAGES => [
                 'title' => __('Images'),
-                'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
+                'icon' => 'fal fa-camera-retro',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             MarketplaceSupplierTabsEnum::ATTACHMENTS => [
                 'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
-                'type'  => 'icon',
+                'icon' => 'fal fa-paperclip',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             MarketplaceSupplierTabsEnum::SYSTEM_USERS => [
                 'title' => __('System/users'),
-                'icon'  => 'fal fa-paper-plane',
-                'type'  => 'icon',
+                'icon' => 'fal fa-paper-plane',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             MarketplaceSupplierTabsEnum::HISTORY => [
                 'title' => __('Changelog'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
-                'align' => 'right'
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ],
         };
     }

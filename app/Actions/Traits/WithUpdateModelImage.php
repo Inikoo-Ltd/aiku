@@ -31,11 +31,10 @@ trait WithUpdateModelImage
         string $field,
         string $imagePath,
         string $originalFilename,
-        string $extension = null,
+        ?string $extension = null,
         array $properties = []
     ): Website|Organisation|User|EmailTemplate|WebUser|Clocking {
         $checksum = md5_file($imagePath);
-
 
         $extension = $extension ?? Str::afterLast($imagePath, '.');
 
@@ -50,7 +49,7 @@ trait WithUpdateModelImage
                         [
                             'checksum' => $checksum,
                             'group_id' => group()->id,
-                            'ulid'     => Str::ulid()
+                            'ulid' => Str::ulid(),
                         ],
                         $properties
                     )
@@ -63,7 +62,6 @@ trait WithUpdateModelImage
             MediaHydrateDimensions::run($media);
             $model->update([$field => $media->id]);
         }
-
 
         return $model;
     }

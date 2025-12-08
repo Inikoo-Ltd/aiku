@@ -24,10 +24,9 @@ class FetchAuroraDeletedStocks extends FetchAuroraAction
 
     public string $commandSignature = 'fetch:deleted_stocks {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): array
     {
-        $stock    = null;
+        $stock = null;
         $orgStock = null;
 
         if ($stockData = $organisationSource->fetchDeletedStock($organisationSourceId)) {
@@ -46,8 +45,8 @@ class FetchAuroraDeletedStocks extends FetchAuroraAction
                         $this->recordError($organisationSource, $e, $stockData['stock'], 'DeletedStock', 'update');
 
                         return [
-                            'stock'    => null,
-                            'orgStock' => null
+                            'stock' => null,
+                            'orgStock' => null,
                         ];
                     }
                 }
@@ -78,16 +77,13 @@ class FetchAuroraDeletedStocks extends FetchAuroraAction
                     $this->recordError($organisationSource, $e, $stockData['stock'], 'DeletedStock', 'store');
 
                     return [
-                        'stock'    => null,
-                        'orgStock' => null
+                        'stock' => null,
+                        'orgStock' => null,
                     ];
                 }
             }
 
-
-
             $effectiveStock = $stock ?? $baseStock;
-
 
             if ($effectiveStock) {
                 $orgStock = $this->processOrgStock($organisationSource, $effectiveStock, $stockData);
@@ -95,11 +91,10 @@ class FetchAuroraDeletedStocks extends FetchAuroraAction
         }
 
         return [
-            'stock'    => $stock,
-            'orgStock' => $orgStock
+            'stock' => $stock,
+            'orgStock' => $orgStock,
         ];
     }
-
 
     public function getModelsQuery(): Builder
     {

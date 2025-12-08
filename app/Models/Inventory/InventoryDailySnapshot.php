@@ -30,9 +30,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Inventory\OrgStock $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Inventory\Warehouse $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InventoryDailySnapshot newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InventoryDailySnapshot newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InventoryDailySnapshot query()
+ *
  * @mixin \Eloquent
  */
 class InventoryDailySnapshot extends Model
@@ -54,5 +56,4 @@ class InventoryDailySnapshot extends Model
     {
         return $this->belongsTo(OrgStock::class);
     }
-
 }

@@ -17,27 +17,21 @@ class ComingSoon
     use AsAction;
     use WithInertia;
 
-
-
     public function asController(): void
     {
         $this->validateAttributes();
     }
 
-
     public function htmlResponse(): Response
     {
-
 
         return Inertia::render(
             'ComingSoon',
             [
                 'breadcrumbs' => [],
-                'title'       => __('coming soon'),
+                'title' => __('coming soon'),
 
             ]
         );
     }
-
-
 }

@@ -88,7 +88,7 @@ enum ChatEventTypeEnum: string
                 'tooltip' => __('Message Reply'),
                 'icon' => 'fas fa-reply',
                 'class' => 'text-gray-500',
-            ]
+            ],
         ];
     }
 }

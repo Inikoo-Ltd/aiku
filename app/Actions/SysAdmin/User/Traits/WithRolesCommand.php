@@ -22,6 +22,7 @@ trait WithRolesCommand
             $user = User::where('slug', $command->argument('user'))->firstOrFail();
         } catch (Exception) {
             $command->error("User {$command->argument('user')} not found");
+
             return 1;
         }
 
@@ -32,15 +33,13 @@ trait WithRolesCommand
         $this->validateAttributes();
         $user = $this->handle($user, $this->get('roles'));
 
-
         $actionMessage = match ($command->getName()) {
-            'user:sync-roles'   => 'Roles synced',
-            'user:add-roles'    => 'Roles added',
+            'user:sync-roles' => 'Roles synced',
+            'user:add-roles' => 'Roles added',
             'user:remove-roles' => 'Roles removed',
         };
 
-
-        $command->info("User <fg=yellow>$user->username</> $actionMessage: ".join($command->argument('roles'))." 👍");
+        $command->info("User <fg=yellow>$user->username</> $actionMessage: ".implode($command->argument('roles')).' 👍');
 
         return 0;
     }

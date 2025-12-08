@@ -24,20 +24,16 @@ class OrganisationHydrateLocations implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
-        $locations            = $organisation->locations()->count();
+        $locations = $organisation->locations()->count();
         $operationalLocations = $organisation->locations()->where('status', LocationStatusEnum::OPERATIONAL)->count();
 
-
         $stats = [
-            'number_locations'                    => $locations,
+            'number_locations' => $locations,
             'number_locations_status_operational' => $operationalLocations,
-            'number_locations_status_broken'      => $locations - $operationalLocations
+            'number_locations_status_broken' => $locations - $operationalLocations,
         ];
-
-
 
         $organisation->inventoryStats()->update($stats);
     }

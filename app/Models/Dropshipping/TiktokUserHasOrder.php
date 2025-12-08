@@ -24,9 +24,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model|\Eloquent $model
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasOrder newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasOrder newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUserHasOrder query()
+ *
  * @mixin \Eloquent
  */
 class TiktokUserHasOrder extends Model
@@ -34,7 +36,7 @@ class TiktokUserHasOrder extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'state' => ChannelFulfilmentStateEnum::class
+        'state' => ChannelFulfilmentStateEnum::class,
     ];
 
     public function model(): MorphTo

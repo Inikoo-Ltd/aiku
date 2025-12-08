@@ -57,9 +57,9 @@ beforeEach(function () {
         ->shouldReceive('getJobUniqueId')
         ->andReturn(1);
     $this->organisation = createOrganisation();
-    $this->warehouse    = createWarehouse();
-    $this->fulfilment   = createFulfilment($this->organisation);
-    $this->website      = createWebsite($this->fulfilment->shop);
+    $this->warehouse = createWarehouse();
+    $this->fulfilment = createFulfilment($this->organisation);
+    $this->website = createWebsite($this->fulfilment->shop);
     if ($this->website->state != WebsiteStateEnum::LIVE) {
         LaunchWebsite::make()->action($this->website);
     }
@@ -67,12 +67,11 @@ beforeEach(function () {
     $this->customer->update(['status' => CustomerStatusEnum::APPROVED]);
 
     $rentalAgreement = RentalAgreement::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->first();
-    if (!$rentalAgreement) {
+    if (! $rentalAgreement) {
         data_set($storeData, 'billing_cycle', RentalAgreementBillingCycleEnum::MONTHLY);
         data_set($storeData, 'state', RentalAgreementStateEnum::ACTIVE);
         data_set($storeData, 'username', 'test');
         data_set($storeData, 'email', 'test@aiku.io');
-
 
         $rentalAgreement = StoreRentalAgreement::make()->action(
             $this->customer->fulfilmentCustomer,
@@ -82,7 +81,7 @@ beforeEach(function () {
     $this->rentalAgreement = $rentalAgreement;
 
     $palletDelivery = PalletDelivery::first();
-    if (!$palletDelivery) {
+    if (! $palletDelivery) {
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
         data_set($storeData, 'state', PalletDeliveryStateEnum::IN_PROCESS);
 
@@ -95,7 +94,7 @@ beforeEach(function () {
     $this->palletDelivery = $palletDelivery;
 
     $pallet = Pallet::first();
-    if (!$pallet) {
+    if (! $pallet) {
         data_set($storeData, 'type', PalletTypeEnum::PALLET);
         data_set($storeData, 'customer_reference', 'ref');
         data_set($storeData, 'notes', 'ref notes');
@@ -113,7 +112,7 @@ beforeEach(function () {
     $this->pallet->refresh();
 
     $palletReturn = PalletReturn::first();
-    if (!$palletReturn) {
+    if (! $palletReturn) {
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
         data_set($storeData, 'state', PalletReturnStateEnum::IN_PROCESS);
 
@@ -126,7 +125,7 @@ beforeEach(function () {
     $this->palletReturn = $palletReturn;
 
     $storedItem = StoredItem::first();
-    if (!$storedItem) {
+    if (! $storedItem) {
         data_set($storeData, 'reference', 'stored-item-ref');
 
         $storedItem = StoreStoredItem::make()->action(
@@ -138,7 +137,7 @@ beforeEach(function () {
     $this->storedItem = $storedItem;
 
     $storedItemAudit = StoredItemAudit::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->first();
-    if (!$storedItemAudit) {
+    if (! $storedItemAudit) {
         $storedItemAudit = StoreStoredItemAudit::make()->action(
             $this->customer->fulfilmentCustomer,
             [
@@ -149,12 +148,11 @@ beforeEach(function () {
     $this->storedItemAudit = $storedItemAudit;
 
     $rentalAgreement = RentalAgreement::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->first();
-    if (!$rentalAgreement) {
+    if (! $rentalAgreement) {
         data_set($storeData, 'billing_cycle', RentalAgreementBillingCycleEnum::MONTHLY);
         data_set($storeData, 'state', RentalAgreementStateEnum::ACTIVE);
         data_set($storeData, 'username', 'test');
         data_set($storeData, 'email', 'test@aiku.io');
-
 
         $rentalAgreement = StoreRentalAgreement::make()->action(
             $this->customer->fulfilmentCustomer,
@@ -164,7 +162,7 @@ beforeEach(function () {
     $this->rentalAgreement = $rentalAgreement;
 
     $recurringBill = RecurringBill::first();
-    if (!$recurringBill) {
+    if (! $recurringBill) {
         data_set($storeData, 'start_date', now());
 
         $recurringBill = StoreRecurringBill::make()->action(
@@ -176,15 +174,15 @@ beforeEach(function () {
     $this->recurringBill = $recurringBill;
 
     $rental = Rental::first();
-    if (!$rental) {
+    if (! $rental) {
         $rental = StoreRental::make()->action(
             $this->fulfilment->shop,
             [
-                'code'  => 'rent-code',
-                'name'  => 'rent name',
+                'code' => 'rent-code',
+                'name' => 'rent name',
                 'price' => 10,
-                'unit'  => RentalUnitEnum::DAY->value,
-                'type'  => RentalTypeEnum::SPACE
+                'unit' => RentalUnitEnum::DAY->value,
+                'type' => RentalTypeEnum::SPACE,
             ]
         );
     }
@@ -192,14 +190,14 @@ beforeEach(function () {
     $this->rental = $rental;
 
     $space = Space::first();
-    if (!$space) {
+    if (! $space) {
         $space = StoreSpace::make()->action(
             $this->customer->fulfilmentCustomer,
             [
-                'reference'       => 'space-ref',
+                'reference' => 'space-ref',
                 'exclude_weekend' => true,
-                'start_at'        => now(),
-                'rental_id'       => $this->rental->id
+                'start_at' => now(),
+                'rental_id' => $this->rental->id,
             ]
         );
     }
@@ -266,9 +264,9 @@ test('create rental agreement for 4th customer', function () {
         $this->webUser->customer->fulfilmentCustomer,
         [
             'billing_cycle' => RentalAgreementBillingCycleEnum::MONTHLY,
-            'state'         => RentalAgreementStateEnum::ACTIVE,
-            'username'      => 'test',
-            'email'         => 'hello@aiku.io',
+            'state' => RentalAgreementStateEnum::ACTIVE,
+            'username' => 'test',
+            'email' => 'hello@aiku.io',
         ]
     );
 
@@ -391,7 +389,7 @@ test('index pallet deliveries (tabs upload)', function () {
     actingAs($this->webUser, 'retina');
     $this->withoutExceptionHandling();
     $response = $this->get(route('retina.fulfilment.storage.pallet_deliveries.index', [
-        'tab' => PalletDeliveriesTabsEnum::UPLOADS->value
+        'tab' => PalletDeliveriesTabsEnum::UPLOADS->value,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -426,7 +424,7 @@ test('show pallet delivery (attachments tab)', function () {
 
     $response = $this->get(route('retina.fulfilment.storage.pallet_deliveries.show', [
         $this->palletDelivery->slug,
-        'tab' => PalletDeliveryTabsEnum::ATTACHMENTS->value
+        'tab' => PalletDeliveryTabsEnum::ATTACHMENTS->value,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -726,7 +724,7 @@ test('show stored item audit', function () {
     $this->withoutExceptionHandling();
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.fulfilment.itemised_storage.stored_items_audits.show', [
-        $this->storedItemAudit->slug
+        $this->storedItemAudit->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -736,7 +734,7 @@ test('show stored item audit', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', "SKUs audit")
+                    ->where('title', 'SKUs audit')
                     ->etc()
             )
             ->has('pallets')
@@ -908,12 +906,11 @@ test('show next bill', function () {
     });
 });
 
-
 test('show pallet return with stored item', function () {
     $this->withoutExceptionHandling();
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.fulfilment.storage.pallet_returns.with-stored-items.show', [
-        $this->palletReturn->slug
+        $this->palletReturn->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -934,7 +931,7 @@ test('show pallet return with stored item', function () {
 test('show stored item', function () {
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.fulfilment.itemised_storage.stored_items.show', [
-        $this->storedItem->slug
+        $this->storedItem->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -955,7 +952,7 @@ test('show stored item (tab pallets)', function () {
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.fulfilment.itemised_storage.stored_items.show', [
         $this->storedItem->slug,
-        'tab' => StoredItemTabsEnum::PALLETS->value
+        'tab' => StoredItemTabsEnum::PALLETS->value,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -976,7 +973,7 @@ test('show stored item (tab audits)', function () {
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.fulfilment.itemised_storage.stored_items.show', [
         $this->storedItem->slug,
-        'tab' => StoredItemTabsEnum::AUDITS->value
+        'tab' => StoredItemTabsEnum::AUDITS->value,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -997,7 +994,7 @@ test('show stored item (tab movements)', function () {
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.fulfilment.itemised_storage.stored_items.show', [
         $this->storedItem->slug,
-        'tab' => StoredItemTabsEnum::MOVEMENTS->value
+        'tab' => StoredItemTabsEnum::MOVEMENTS->value,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1018,7 +1015,7 @@ test('show stored item (tab history)', function () {
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.fulfilment.itemised_storage.stored_items.show', [
         $this->storedItem->slug,
-        'tab' => StoredItemTabsEnum::HISTORY->value
+        'tab' => StoredItemTabsEnum::HISTORY->value,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1038,7 +1035,7 @@ test('show stored item (tab history)', function () {
 test('show web user', function () {
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.sysadmin.web-users.show', [
-        $this->webUser->slug
+        $this->webUser->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1057,7 +1054,7 @@ test('show web user', function () {
 test('edit web user', function () {
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.sysadmin.web-users.edit', [
-        $this->webUser->slug
+        $this->webUser->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page

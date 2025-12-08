@@ -89,9 +89,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_invoice_categories_state_closed
  * @property int $number_invoice_categories_state_cooldown
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static Builder<static>|OrganisationAccountingStats newModelQuery()
  * @method static Builder<static>|OrganisationAccountingStats newQuery()
  * @method static Builder<static>|OrganisationAccountingStats query()
+ *
  * @mixin Eloquent
  */
 class OrganisationAccountingStats extends Model

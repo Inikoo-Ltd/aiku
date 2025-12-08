@@ -10,12 +10,13 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         if (Schema::hasTable('offers')) {
             Schema::table('offers', function (Blueprint $table) {
-                if (!Schema::hasColumn('offers', 'duration')) {
+                if (! Schema::hasColumn('offers', 'duration')) {
                     $table->string('duration')->default('interval')->nullable()->index();
                 }
             });
@@ -23,7 +24,7 @@ return new class () extends Migration {
 
         if (Schema::hasTable('offer_allowances')) {
             Schema::table('offer_allowances', function (Blueprint $table) {
-                if (!Schema::hasColumn('offer_allowances', 'duration')) {
+                if (! Schema::hasColumn('offer_allowances', 'duration')) {
                     $table->string('duration')->default('interval')->nullable()->index();
                 }
             });

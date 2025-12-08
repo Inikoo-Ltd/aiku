@@ -23,15 +23,12 @@ class OrganisationHydrateWarehouseAreas implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
 
-
         $stats = [
-            'number_warehouse_areas'             => $organisation->warehouseAreas()->count(),
+            'number_warehouse_areas' => $organisation->warehouseAreas()->count(),
         ];
-
 
         $organisation->inventoryStats()->update($stats);
     }

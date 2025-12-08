@@ -86,6 +86,4 @@ class FetchAuroraBarcodes extends FetchAuroraAction
     {
         return DB::connection('aurora')->table('Barcode Dimension')->count();
     }
-
-
 }

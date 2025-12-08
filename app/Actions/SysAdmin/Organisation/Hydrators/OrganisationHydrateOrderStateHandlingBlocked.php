@@ -19,7 +19,6 @@ class OrganisationHydrateOrderStateHandlingBlocked implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $organisationID): string
@@ -30,20 +29,17 @@ class OrganisationHydrateOrderStateHandlingBlocked implements ShouldBeUnique
     public function handle(int $organisationID): void
     {
         $organisation = Organisation::find($organisationID);
-        if (!$organisation) {
+        if (! $organisation) {
             return;
         }
         $stats = [
 
-            'number_orders_state_handling_blocked'              => $organisation->orders()->where('state', OrderStateEnum::HANDLING_BLOCKED)->count(),
+            'number_orders_state_handling_blocked' => $organisation->orders()->where('state', OrderStateEnum::HANDLING_BLOCKED)->count(),
             'orders_state_handling_blocked_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::HANDLING_BLOCKED)->sum('org_net_amount'),
             'orders_state_handling_blocked_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::HANDLING_BLOCKED)->sum('grp_net_amount'),
-
 
         ];
 
         $organisation->orderHandlingStats()->update($stats);
     }
-
-
 }

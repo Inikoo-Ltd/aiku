@@ -40,24 +40,24 @@ class UpdateRetinaPalletDelivery extends RetinaAction
     {
         $rules = [];
 
-        if (!request()->user() instanceof WebUser) {
+        if (! request()->user() instanceof WebUser) {
             $rules = [
-                'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
+                'public_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
                 'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             ];
         }
 
         return [
-            'customer_reference'        => ['sometimes', 'nullable', 'string', Rule::unique('pallet_deliveries', 'customer_reference')
+            'customer_reference' => ['sometimes', 'nullable', 'string', Rule::unique('pallet_deliveries', 'customer_reference')
                 ->ignore($this->palletDelivery->id)],
-            'customer_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'estimated_delivery_date'   => ['sometimes', 'date'],
+            'customer_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'estimated_delivery_date' => ['sometimes', 'date'],
             'current_recurring_bill_id' => [
                 'sometimes',
                 'nullable',
-                Rule::exists('recurring_bills', 'id')->where('fulfilment_id', $this->fulfilment->id)
+                Rule::exists('recurring_bills', 'id')->where('fulfilment_id', $this->fulfilment->id),
             ],
-            ...$rules
+            ...$rules,
         ];
     }
 
@@ -66,9 +66,9 @@ class UpdateRetinaPalletDelivery extends RetinaAction
 
         $this->palletDelivery = $palletDelivery;
         $this->initialisation($request);
+
         return $this->handle($palletDelivery, $this->validatedData);
     }
-
 
     public function action(PalletDelivery $palletDelivery, $modelData): PalletDelivery
     {
@@ -83,5 +83,4 @@ class UpdateRetinaPalletDelivery extends RetinaAction
     {
         return back();
     }
-
 }

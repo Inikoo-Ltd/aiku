@@ -54,18 +54,18 @@ class StoredItemMovementsResource extends JsonResource
                     $route = [
                         'name' => 'retina.fulfilment.storage.stored-items-audits.show',
                         'parameters' => [
-                            'storedItemAudit' => $storedItem->slug
-                        ]
+                            'storedItemAudit' => $storedItem->slug,
+                        ],
                     ];
                 } else {
                     $route = [
                         'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.show',
                         'parameters' => [
                             'organisation' => $storedItem->organisation->slug,
-                                'fulfilment' => $storedItem->fulfilment->slug,
-                                'fulfilmentCustomer' => $storedItem->fulfilmentCustomer->slug,
-                                'storedItemAudit' => $storedItem->slug
-                        ]
+                            'fulfilment' => $storedItem->fulfilment->slug,
+                            'fulfilmentCustomer' => $storedItem->fulfilmentCustomer->slug,
+                            'storedItemAudit' => $storedItem->slug,
+                        ],
                     ];
                 }
 
@@ -80,18 +80,18 @@ class StoredItemMovementsResource extends JsonResource
                     $route = [
                         'name' => 'retina.fulfilment.storage.pallet_deliveries.show',
                         'parameters' => [
-                            'palletDelivery' => $palletDelivery->slug
-                        ]
+                            'palletDelivery' => $palletDelivery->slug,
+                        ],
                     ];
                 } else {
                     $route = [
                         'name' => 'grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show',
                         'parameters' => [
                             'organisation' => $palletDelivery->organisation->slug,
-                                'fulfilment' => $palletDelivery->fulfilment->slug,
-                                'fulfilmentCustomer' => $palletDelivery->fulfilmentCustomer->slug,
-                                'palletDelivery' => $palletDelivery->slug
-                        ]
+                            'fulfilment' => $palletDelivery->fulfilment->slug,
+                            'fulfilmentCustomer' => $palletDelivery->fulfilmentCustomer->slug,
+                            'palletDelivery' => $palletDelivery->slug,
+                        ],
                     ];
                 }
                 $icon = 'fal fa-truck-couch';
@@ -107,15 +107,15 @@ class StoredItemMovementsResource extends JsonResource
                         $route = [
                             'name' => '	retina.fulfilment.storage.pallet_returns.show',
                             'parameters' => [
-                                'palletReturn' => $palletReturn->slug
-                            ]
+                                'palletReturn' => $palletReturn->slug,
+                            ],
                         ];
                     } else {
                         $route = [
                             'name' => 'retina.fulfilment.storage.pallet_returns.with-stored-items.show',
                             'parameters' => [
-                                'palletReturn' => $palletReturn->slug
-                            ]
+                                'palletReturn' => $palletReturn->slug,
+                            ],
                         ];
                     }
                 } else {
@@ -126,8 +126,8 @@ class StoredItemMovementsResource extends JsonResource
                                 'organisation' => $palletReturn->organisation->slug,
                                 'fulfilment' => $palletReturn->fulfilment->slug,
                                 'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                                'palletReturn' => $palletReturn->slug
-                            ]
+                                'palletReturn' => $palletReturn->slug,
+                            ],
                         ];
                     } else {
                         $route = [
@@ -136,8 +136,8 @@ class StoredItemMovementsResource extends JsonResource
                                 'organisation' => $palletReturn->organisation->slug,
                                 'fulfilment' => $palletReturn->fulfilment->slug,
                                 'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                                'palletReturn' => $palletReturn->slug
-                            ]
+                                'palletReturn' => $palletReturn->slug,
+                            ],
                         ];
                     }
                 }
@@ -165,8 +165,8 @@ class StoredItemMovementsResource extends JsonResource
                 'title' => $desc_title,
                 'route' => $route,
                 'after_title' => $desc_after_title,
-                'icon' => $icon
-            ]
+                'icon' => $icon,
+            ],
         ];
     }
 }

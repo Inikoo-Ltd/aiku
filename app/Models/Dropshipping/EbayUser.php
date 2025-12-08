@@ -49,33 +49,35 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class EbayUser extends Model
 {
-    use InCustomer;
     use HasSlug;
-    use WithEbayApiRequest;
+    use InCustomer;
     use SoftDeletes;
+    use WithEbayApiRequest;
 
     protected $guarded = [];
 
     protected $casts = [
-        'data'      => 'array',
-        'settings'  => 'array',
-        'state'     => WebUserTypeEnum::class,
-        'step'      => EbayUserStepEnum::class,
+        'data' => 'array',
+        'settings' => 'array',
+        'state' => WebUserTypeEnum::class,
+        'step' => EbayUserStepEnum::class,
         'auth_type' => WebUserAuthTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 

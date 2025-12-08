@@ -21,7 +21,6 @@ trait HasIrisUserData
      *
      * Note: Consuming classes are expected to provide $this->webUser, $this->customer and $this->shop.
      *
-     * @return array
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      */
@@ -29,22 +28,21 @@ trait HasIrisUserData
     {
         $webUser = $this->webUser;
 
-        $cartCount                    = 0;
-        $cartAmount                   = 0;
+        $cartCount = 0;
+        $cartAmount = 0;
         $cardItemsAmountAfterDiscount = 0;
-        $customerSalesChannels        = [];
-        $offerMeters                  = null;
+        $customerSalesChannels = [];
+        $offerMeters = null;
 
         if ($this->shop->type == ShopTypeEnum::B2B) {
             $orderInBasket = $this->customer->orderInBasket;
             if ($orderInBasket) {
-                $cartCount                    = $orderInBasket->number_item_transactions;
-                $cartAmount                   = $orderInBasket->total_amount;
+                $cartCount = $orderInBasket->number_item_transactions;
+                $cartAmount = $orderInBasket->total_amount;
                 $cardItemsAmountAfterDiscount = $orderInBasket->goods_amount;
-                $offerMeters                  = $orderInBasket->offer_meters;
+                $offerMeters = $orderInBasket->offer_meters;
             }
         }
-
 
         if ($webUser && request()->get('shop_type') == ShopTypeEnum::DROPSHIPPING->value) {
             $channels = DB::table('customer_sales_channels')
@@ -57,36 +55,36 @@ trait HasIrisUserData
 
             foreach ($channels as $channel) {
                 $customerSalesChannels[$channel->id] = [
-                    'customer_sales_channel_id'   => $channel->id,
+                    'customer_sales_channel_id' => $channel->id,
                     'customer_sales_channel_name' => $channel->customer_sales_channel_name,
-                    'platform_id'                 => $channel->platform_id,
-                    'platform_slug'               => $channel->slug,
-                    'platform_code'               => $channel->code,
-                    'platform_name'               => $channel->name,
+                    'platform_id' => $channel->platform_id,
+                    'platform_slug' => $channel->slug,
+                    'platform_code' => $channel->code,
+                    'platform_name' => $channel->name,
                 ];
             }
         }
 
         return [
             'is_logged_in' => true,
-            'auth'         => [
-                'user'                  => LoggedWebUserResource::make($webUser)->getArray(),
-                'customerSalesChannels' => $customerSalesChannels
+            'auth' => [
+                'user' => LoggedWebUserResource::make($webUser)->getArray(),
+                'customerSalesChannels' => $customerSalesChannels,
             ],
-            'customer'     => $this->customer,
-            'variables'    => [
-                'reference'            => $this->customer->reference,
-                'name'                 => $this->webUser->contact_name,
-                'username'             => $this->webUser->username,
-                'email'                => $this->webUser->email,
-                'favourites_count'     => $this->customer->stats->number_favourites,
-                'back_in_stock_count'  => $this->customer->backInStockReminder->count(),
-                'cart_count'           => $cartCount, // products in the basket count
-                'cart_amount'          => $cartAmount, // order total amount (including shipping, tax, etc.)
+            'customer' => $this->customer,
+            'variables' => [
+                'reference' => $this->customer->reference,
+                'name' => $this->webUser->contact_name,
+                'username' => $this->webUser->username,
+                'email' => $this->webUser->email,
+                'favourites_count' => $this->customer->stats->number_favourites,
+                'back_in_stock_count' => $this->customer->backInStockReminder->count(),
+                'cart_count' => $cartCount, // products in the basket count
+                'cart_amount' => $cartAmount, // order total amount (including shipping, tax, etc.)
                 'cart_products_amount' => $cardItemsAmountAfterDiscount,  // order total items amount after discount
             ],
             // 'traffic_source_cookies' => CaptureTrafficSource::run(),
-            'offer_meters' => $offerMeters
+            'offer_meters' => $offerMeters,
 
         ];
     }

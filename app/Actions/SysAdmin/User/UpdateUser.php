@@ -25,7 +25,6 @@ class UpdateUser extends OrgAction
 {
     use WithActionUpdate;
 
-
     private User $user;
 
     public function handle(User $user, array $modelData): User
@@ -38,7 +37,7 @@ class UpdateUser extends OrgAction
 
         if ($user->wasChanged('status')) {
             GroupHydrateUsers::dispatch($user->group)->delay($this->hydratorsDelay);
-            if (!$user->status) {
+            if (! $user->status) {
                 $user->tokens()->each(function ($token) {
                     DeleteUserAccessToken::run($token);
                 });
@@ -61,27 +60,27 @@ class UpdateUser extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'username'       => [
+            'username' => [
                 'sometimes',
                 'required',
                 'lowercase',
 
-                $this->strict ? new AlphaDashDot() : 'string',
+                $this->strict ? new AlphaDashDot : 'string',
 
                 Rule::notIn(['export', 'create']),
                 new IUnique(
                     table: 'users',
                     extraConditions: [
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->user->id
+                            'value' => $this->user->id,
                         ],
                     ]
                 ),
             ],
-            'password'       => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)],
-            'email'          => [
+            'password' => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') || ! $this->strict ? Password::min(3) : Password::min(8)],
+            'email' => [
                 'sometimes',
                 'nullable',
                 'email',
@@ -89,26 +88,26 @@ class UpdateUser extends OrgAction
                     table: 'employees',
                     extraConditions: [
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->user->id
+                            'value' => $this->user->id,
                         ],
                     ]
                 ),
             ],
-            'contact_name'   => ['sometimes', 'string', 'max:255'],
-            'settings'       => ['sometimes'],
+            'contact_name' => ['sometimes', 'string', 'max:255'],
+            'settings' => ['sometimes'],
             'reset_password' => ['sometimes', 'boolean'],
-            'auth_type'      => ['sometimes', Rule::enum(UserAuthTypeEnum::class)],
-            'status'         => ['sometimes', 'boolean'],
-            'language_id'    => ['sometimes', 'required', 'exists:languages,id'],
+            'auth_type' => ['sometimes', Rule::enum(UserAuthTypeEnum::class)],
+            'status' => ['sometimes', 'boolean'],
+            'language_id' => ['sometimes', 'required', 'exists:languages,id'],
         ];
 
-        if (!$this->strict) {
-            $rules['deleted_at']      = ['sometimes', 'date'];
-            $rules['created_at']      = ['sometimes', 'date'];
+        if (! $this->strict) {
+            $rules['deleted_at'] = ['sometimes', 'date'];
+            $rules['created_at'] = ['sometimes', 'date'];
             $rules['last_fetched_at'] = ['sometimes', 'date'];
-            $rules['source_id']       = ['sometimes', 'string', 'max:255'];
+            $rules['source_id'] = ['sometimes', 'string', 'max:255'];
             $rules['legacy_password'] = ['sometimes', 'string'];
         }
 
@@ -126,12 +125,12 @@ class UpdateUser extends OrgAction
     public function action(User $user, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): User
     {
         $this->strict = $strict;
-        if (!$audit) {
+        if (! $audit) {
             User::disableAuditing();
         }
 
-        $this->user           = $user;
-        $this->asAction       = true;
+        $this->user = $user;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromGroup($user->group, $modelData);
 
@@ -142,6 +141,4 @@ class UpdateUser extends OrgAction
     {
         return new UsersResource($user);
     }
-
-
 }

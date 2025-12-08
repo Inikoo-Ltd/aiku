@@ -17,14 +17,12 @@ class MarkNotificationAsRead
 
     private bool $asAction = false;
 
-
     public function handle(Notification $notification): Notification
     {
         return $this->update($notification, [
-            'read_at' => now()
+            'read_at' => now(),
         ]);
     }
-
 
     public function asController(Notification $notification): Notification
     {

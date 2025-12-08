@@ -21,58 +21,57 @@ enum PackingStateEnum: string
     public static function labels(): array
     {
         return [
-            'queued'          => __('Queued'),
-            'packing'         => __('Packing'),
+            'queued' => __('Queued'),
+            'packing' => __('Packing'),
             'packing-blocked' => __('Packing Blocked'),
-            'done'            => __('Done'),
+            'done' => __('Done'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'queued'           => [
+            'queued' => [
                 'tooltip' => __('Queued'),
-                'icon'    => 'fal fa-pause-circle',
-                'class'   => 'text-gray-500',  // Color for normal icon (Aiku)
-                'color'   => 'gray',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-pause-circle',
+                'class' => 'text-gray-500',  // Color for normal icon (Aiku)
+                'color' => 'gray',  // Color for box (Retina)
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'packing'         => [
+            'packing' => [
                 'tooltip' => __('Packing'),
-                'icon'    => 'fal fa-hand-paper',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-hand-paper',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'packing-blocked' => [
                 'tooltip' => __('Packing Blocked'),
-                'icon'    => 'fal fa-hand-paper',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-hand-paper',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
 
             'done' => [
                 'tooltip' => __('Done'),
-                'icon'    => 'fal fa-box-check',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-box-check',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
         ];
     }
-
 }

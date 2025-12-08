@@ -26,25 +26,21 @@ class WebBlockDepartmentsResource extends JsonResource
     public function toArray($request): array
     {
 
-
         $imageSources = null;
-        $media        = Media::find($this->image_id);
+        $media = Media::find($this->image_id);
         if ($media) {
-            $width  = 0;
+            $width = 0;
             $height = 0;
 
-
-            $image        = $media->getImage()->resize($width, $height);
+            $image = $media->getImage()->resize($width, $height);
             $imageSources = GetPictureSources::run($image);
         }
 
-
         return [
-            'slug'  => $this->slug,
-            'code'  => $this->code,
-            'name'  => $this->name,
-            'image' => $imageSources
-
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'image' => $imageSources,
 
         ];
     }

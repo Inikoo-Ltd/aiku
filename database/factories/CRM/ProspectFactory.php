@@ -16,11 +16,11 @@ class ProspectFactory extends Factory
     public function definition(): array
     {
         return [
-            'contact_name'    => fake()->name,
-            'company_name'    => fake()->company,
-            'email'           => fake()->email,
+            'contact_name' => fake()->name,
+            'company_name' => fake()->company,
+            'email' => fake()->email,
             'contact_website' => fake()->domainName,
-            'address'         => Address::factory()->definition()
+            'address' => Address::factory()->definition(),
         ];
     }
 }

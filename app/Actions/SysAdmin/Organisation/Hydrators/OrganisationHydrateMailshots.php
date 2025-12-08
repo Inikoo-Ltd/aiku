@@ -62,5 +62,4 @@ class OrganisationHydrateMailshots implements ShouldBeUnique
 
         $organisation->commsStats->update($stats);
     }
-
 }

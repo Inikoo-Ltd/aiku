@@ -53,43 +53,45 @@ trait WithRetinaRegistration
         }
 
         $pollIds = Arr::pluck($pollReplies, 'id');
-        $polls   = Poll::whereIn('id', $pollIds)
+        $polls = Poll::whereIn('id', $pollIds)
             ->where('shop_id', $this->shop->id)
             ->get()
             ->keyBy('id');
 
         foreach ($pollReplies as $key => $value) {
-            $pollId     = Arr::get($value, 'id');
-            $pollType   = Arr::get($value, 'type');
+            $pollId = Arr::get($value, 'id');
+            $pollType = Arr::get($value, 'type');
             $pollAnswer = Arr::get($value, 'answer');
 
-            if (!$pollId || !$pollType) {
+            if (! $pollId || ! $pollType) {
                 $validator->errors()->add(
                     'poll_replies.'.$key,
-                    "Poll reply not valid"
+                    'Poll reply not valid'
                 );
+
                 continue;
             }
-
 
             /** @var Poll $poll */
             $poll = $polls->get($pollId);
 
-            if (!$pollAnswer && $poll->in_registration_required) {
+            if (! $pollAnswer && $poll->in_registration_required) {
                 $validator->errors()->add(
                     'poll_replies.'.$key,
-                    "The answer is required for this poll!"
+                    'The answer is required for this poll!'
                 );
+
                 continue;
             } else {
                 $pollAnswer = $pollAnswer ?? '';
             }
 
-            if (!$poll) {
+            if (! $poll) {
                 $validator->errors()->add(
                     'poll_replies.'.$key,
-                    "The poll does not exist!"
+                    'The poll does not exist!'
                 );
+
                 continue;
             }
 
@@ -99,16 +101,16 @@ trait WithRetinaRegistration
                     ->pluck('id')
                     ->toArray();
 
-                if (!in_array((int)$pollAnswer, $pollOptions, true)) {
+                if (! in_array((int) $pollAnswer, $pollOptions, true)) {
                     $validator->errors()->add(
                         'poll_replies.'.$key,
-                        "The answer option does not exist!"
+                        'The answer option does not exist!'
                     );
                 }
-            } elseif ($pollType === PollTypeEnum::OPEN_QUESTION->value && !is_string($pollAnswer)) {
+            } elseif ($pollType === PollTypeEnum::OPEN_QUESTION->value && ! is_string($pollAnswer)) {
                 $validator->errors()->add(
                     'poll_replies.'.$key,
-                    "The answer must be a string!"
+                    'The answer must be a string!'
                 );
             }
         }
@@ -119,12 +121,12 @@ trait WithRetinaRegistration
         $this->set('traffic_sources', $request->cookie('aiku_tsd'));
 
         if ($request->has('tax_number')) {
-            $taxNumberValue = (string)Arr::get($request->get('tax_number'), 'value');
+            $taxNumberValue = (string) Arr::get($request->get('tax_number'), 'value');
             if ($taxNumberValue) {
-                $countryCode   = Arr::get($request->get('tax_number'), 'country.isoCode.short');
-                $country       = Country::where('code', $countryCode)->first();
+                $countryCode = Arr::get($request->get('tax_number'), 'country.isoCode.short');
+                $country = Country::where('code', $countryCode)->first();
                 $taxNumberData = [
-                    'number'     => (string)Arr::get($request->get('tax_number'), 'value'),
+                    'number' => (string) Arr::get($request->get('tax_number'), 'value'),
                     'country_id' => $country?->id,
                 ];
             } else {
@@ -135,22 +137,21 @@ trait WithRetinaRegistration
         }
     }
 
-
     public function rules(): array
     {
         $fulfilmentRules = [
-            'product'            => ['required', 'string'],
+            'product' => ['required', 'string'],
             'shipments_per_week' => ['required', 'string'],
-            'size_and_weight'    => ['required', 'string'],
-            'interest'           => ['required', 'required'],
+            'size_and_weight' => ['required', 'string'],
+            'interest' => ['required', 'required'],
         ];
 
         $rules = [
             'traffic_sources' => ['sometimes'],
-            'contact_name'    => ['required', 'string', 'max:255'],
-            'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_name' => ['required', 'string', 'max:255'],
+            'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'           => [
+            'email' => [
                 'required',
                 'string',
                 'max:255',
@@ -163,17 +164,16 @@ trait WithRetinaRegistration
                     ]
                 ),
             ],
-            'phone'           => ['required', 'max:255'],
-            'contact_address' => ['required', new ValidAddress()],
-            'is_opt_in'       => ['required', 'boolean'],
-            'poll_replies'    => ['sometimes', 'array'],
-            'tax_number'               => ['sometimes', 'nullable', 'array'],
-            'password'        =>
-                [
-                    'required',
-                    'required',
-                    app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
-                ],
+            'phone' => ['required', 'max:255'],
+            'contact_address' => ['required', new ValidAddress],
+            'is_opt_in' => ['required', 'boolean'],
+            'poll_replies' => ['sometimes', 'array'],
+            'tax_number' => ['sometimes', 'nullable', 'array'],
+            'password' => [
+                'required',
+                'required',
+                app()->isLocal() || app()->environment('testing') ? null : Password::min(8),
+            ],
         ];
 
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {

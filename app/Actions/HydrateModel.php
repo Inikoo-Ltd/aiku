@@ -28,13 +28,13 @@ class HydrateModel
 
     protected function getAllModels(): Collection
     {
-        return new Collection();
+        return new Collection;
     }
 
     public function asCommand(Command $command): int
     {
         $exitCode = 0;
-        if (!$command->option('slugs')) {
+        if (! $command->option('slugs')) {
             if ($command->argument('organisations')) {
                 $this->organisation = $this->getOrganisations($command)->first();
             }
@@ -46,7 +46,7 @@ class HydrateModel
                 $this->handle($model);
                 $command->line(class_basename($model)." $model->name hydrated 💦");
             } else {
-                $command->error("Model not found");
+                $command->error('Model not found');
                 $exitCode = 1;
             }
         }
@@ -61,6 +61,6 @@ class HydrateModel
                 $this->handle($model);
             }
         });
-        $command->info("");
+        $command->info('');
     }
 }

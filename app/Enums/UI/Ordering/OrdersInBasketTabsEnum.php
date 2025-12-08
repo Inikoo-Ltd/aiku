@@ -16,7 +16,7 @@ enum OrdersInBasketTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case ORDERS    = 'orders';
+    case ORDERS = 'orders';
 
     public function blueprint(): array
     {
@@ -24,7 +24,7 @@ enum OrdersInBasketTabsEnum: string
 
             OrdersInBasketTabsEnum::ORDERS => [
                 'title' => __('Orders'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
         };
     }

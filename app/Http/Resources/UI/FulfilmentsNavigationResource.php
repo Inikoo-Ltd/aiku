@@ -20,19 +20,19 @@ class FulfilmentsNavigationResource extends JsonResource
         $fulfilment = $this;
 
         return [
-            'id'        => $fulfilment->id,
-            'slug'      => $fulfilment->slug,
-            'code'      => $fulfilment->shop->code,
-            'label'     => $fulfilment->shop->name,
-            'state'     => $fulfilment->shop->state,
-            'type'      => $fulfilment->shop->type,
+            'id' => $fulfilment->id,
+            'slug' => $fulfilment->slug,
+            'code' => $fulfilment->shop->code,
+            'label' => $fulfilment->shop->name,
+            'state' => $fulfilment->shop->state,
+            'type' => $fulfilment->shop->type,
             'warehouse' => WarehouseResource::collection($fulfilment->warehouses),
-            'route'     => [
-                'name'       => 'grp.org.fulfilments.show.operations.dashboard',
+            'route' => [
+                'name' => 'grp.org.fulfilments.show.operations.dashboard',
                 'parameters' => [
                     $fulfilment->organisation->slug,
-                    $fulfilment->slug
-                ]
+                    $fulfilment->slug,
+                ],
             ],
 
         ];

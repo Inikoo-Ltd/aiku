@@ -27,18 +27,18 @@ trait WithIrisInertia
         $locale = app()->getLocale();
 
         $cacheKey = "irisData:website:$website->id:locale:".$locale;
-        $ttl      = (int)(config('iris.cache.iris_website_data_ttl') ?? 900);
+        $ttl = (int) (config('iris.cache.iris_website_data_ttl') ?? 900);
 
         $compute = function () use ($website, $locale) {
             $shop = $website->shop;
 
-            $headerLayout    = Arr::get($website->published_layout, 'header');
-            $isHeaderActive  = Arr::get($headerLayout, 'status');
-            $footerLayout    = Arr::get($website->published_layout, 'footer');
-            $isFooterActive  = Arr::get($footerLayout, 'status');
-            $menuLayout      = Arr::get($website->published_layout, 'menu');
-            $isMenuActive    = Arr::get($menuLayout, 'status');
-            $sidebarLayout   = Arr::get($website->published_layout, 'menu');
+            $headerLayout = Arr::get($website->published_layout, 'header');
+            $isHeaderActive = Arr::get($headerLayout, 'status');
+            $footerLayout = Arr::get($website->published_layout, 'footer');
+            $isFooterActive = Arr::get($footerLayout, 'status');
+            $menuLayout = Arr::get($website->published_layout, 'menu');
+            $isMenuActive = Arr::get($menuLayout, 'status');
+            $sidebarLayout = Arr::get($website->published_layout, 'menu');
             $isSidebarActive = Arr::get($sidebarLayout, 'status');
 
             $migrationRedirect = null;
@@ -49,58 +49,56 @@ trait WithIrisInertia
                         'http://'.$website->domain,
                         'https://www.'.$website->domain.'/',
                     ],
-                    'to_url'           => 'https://v2.'.$website->domain
+                    'to_url' => 'https://v2.'.$website->domain,
                 ];
             }
 
-
             $currentLanguage = Language::where('code', $locale)->first();
-
 
             $irisProductCategoryNavigation = GetIrisProductCategoryNavigation::run($website);
 
             return [
-                'header'               => array_merge(
+                'header' => array_merge(
                     $isHeaderActive == 'active' ? Arr::get($website->published_layout, 'header') : [],
                 ),
-                'footer'               => array_merge(
+                'footer' => array_merge(
                     $isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : [],
                 ),
-                'menu'                 => array_merge(
+                'menu' => array_merge(
                     $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
                     ['product_categories' => $irisProductCategoryNavigation]
                 ),
-                'sidebar'              => array_merge(
+                'sidebar' => array_merge(
                     $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
                     ['product_categories' => $irisProductCategoryNavigation]
                 ),
-                'shop'                 => [
-                    'type'                  => $shop->type->value,
-                    'id'                    => $shop->id,
-                    'slug'                  => $shop->slug,
-                    'name'                  => $shop->name,
-                    'number_brands'         => $shop->stats->number_brands,
+                'shop' => [
+                    'type' => $shop->type->value,
+                    'id' => $shop->id,
+                    'slug' => $shop->slug,
+                    'name' => $shop->name,
+                    'number_brands' => $shop->stats->number_brands,
                     'number_current_brands' => $shop->stats->number_current_brands,
-                    'number_tags'           => $shop->stats->number_brands,
-                    'number_current_tags'   => $shop->stats->number_current_tags
+                    'number_tags' => $shop->stats->number_brands,
+                    'number_current_tags' => $shop->stats->number_current_tags,
                 ],
-                "website"              => WebsiteIrisResource::make($website)->getArray(),
-                'theme'                => Arr::get($website->published_layout, 'theme'),
+                'website' => WebsiteIrisResource::make($website)->getArray(),
+                'theme' => Arr::get($website->published_layout, 'theme'),
                 'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
-                'is_have_gtm'          => (bool)Arr::get($website->settings, 'google_tag_id'),
-                'currency'             => [
-                    'code'   => $shop->currency->code,
+                'is_have_gtm' => (bool) Arr::get($website->settings, 'google_tag_id'),
+                'currency' => [
+                    'code' => $shop->currency->code,
                     'symbol' => $shop->currency->symbol,
-                    'name'   => $shop->currency->name,
+                    'name' => $shop->currency->name,
                 ],
-               /*  'announcements'        => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get())->toArray(request()), */
-                'locale'               => $locale,
-                'website_i18n'         => [
+                /*  'announcements'        => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get())->toArray(request()), */
+                'locale' => $locale,
+                'website_i18n' => [
                     'current_language' => LanguageResource::make($currentLanguage)->getArray(),
-                    'shop_language'    => LanguageResource::make($shop->language)->getArray(),
+                    'shop_language' => LanguageResource::make($shop->language)->getArray(),
                     'language_options' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->extra_languages),
                 ],
-                'migration_redirect'   => $migrationRedirect
+                'migration_redirect' => $migrationRedirect,
             ];
         };
 
@@ -112,5 +110,4 @@ trait WithIrisInertia
 
         return $irisData;
     }
-
 }

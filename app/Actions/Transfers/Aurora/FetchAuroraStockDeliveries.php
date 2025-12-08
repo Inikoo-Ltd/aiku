@@ -29,7 +29,7 @@ class FetchAuroraStockDeliveries extends FetchAuroraAction
     {
         if ($stockDeliveryData = $organisationSource->fetchStockDelivery($organisationSourceId)) {
             if (empty($stockDeliveryData['org_parent'])) {
-                print "Warning Supplier Delivery $organisationSourceId do not have parent, skipping\n";
+                echo "Warning Supplier Delivery $organisationSourceId do not have parent, skipping\n";
 
                 return null;
             }
@@ -78,13 +78,11 @@ class FetchAuroraStockDeliveries extends FetchAuroraAction
                 }
             }
 
-
             $this->processFetchAttachments($stockDelivery, 'Supplier Delivery', $stockDeliveryData['stockDelivery']['source_id']);
 
             if (in_array('transactions', $this->with) or in_array('full', $this->with)) {
                 $this->fetchTransactions($organisationSource, $stockDelivery);
             }
-
 
             return $stockDelivery;
         }
@@ -92,13 +90,11 @@ class FetchAuroraStockDeliveries extends FetchAuroraAction
         return null;
     }
 
-
     private function fetchTransactions($organisationSource, StockDelivery $stockDelivery): void
     {
         $transactionsToDelete = $stockDelivery->items()->pluck('source_id', 'id')->all();
 
         $sourceData = explode(':', $stockDelivery->source_id);
-
 
         foreach (
             DB::connection('aurora')
@@ -109,14 +105,13 @@ class FetchAuroraStockDeliveries extends FetchAuroraAction
                 ->get() as $auroraData
         ) {
             $transactionsToDelete = array_diff($transactionsToDelete, [
-                $stockDelivery->organisation_id.':'.$auroraData->{'Purchase Order Transaction Fact Key'}
+                $stockDelivery->organisation_id.':'.$auroraData->{'Purchase Order Transaction Fact Key'},
             ]);
 
             FetchAuroraStockDeliveryItems::run($organisationSource, $auroraData->{'Purchase Order Transaction Fact Key'}, $stockDelivery);
         }
         $stockDelivery->items()->whereIn('id', array_keys($transactionsToDelete))->delete();
     }
-
 
     public function getModelsQuery(): Builder
     {

@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('order_payment_api_points', function (Blueprint $table) {
@@ -18,7 +19,6 @@ return new class () extends Migration {
             $table->dateTimeTz('processed_at')->nullable();
         });
     }
-
 
     public function down(): void
     {

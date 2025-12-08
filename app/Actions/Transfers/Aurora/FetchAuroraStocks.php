@@ -28,57 +28,52 @@ use Throwable;
 
 class FetchAuroraStocks extends FetchAuroraAction
 {
-    use WithAuroraAttachments;
     use HasStockLocationsFetch;
+    use WithAuroraAttachments;
     use WithFetchStock;
-
 
     public string $commandSignature = 'fetch:stocks {organisations?*} {--s|source_id=} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): array
     {
-        $orgStock    = null;
+        $orgStock = null;
         $isPrincipal = false;
-        $stockData   = $organisationSource->fetchStock($organisationSourceId);
+        $stockData = $organisationSource->fetchStock($organisationSourceId);
 
-        if (!$stockData) {
+        if (! $stockData) {
             return [
-                'stock'    => null,
-                'orgStock' => null
+                'stock' => null,
+                'orgStock' => null,
             ];
         }
-
 
         if ($stockData['abnormal']) {
             $tradeUnit = $stockData['trade_unit'];
 
             $orgStock = $this->processAbnormalOrgStock($organisationSource, $stockData);
 
-            if (!$orgStock) {
+            if (! $orgStock) {
                 return [
-                    'stock'    => null,
-                    'orgStock' => null
+                    'stock' => null,
+                    'orgStock' => null,
                 ];
             }
 
-
             SyncOrgStockTradeUnits::run($orgStock, [
                 $tradeUnit->id => [
-                    'quantity' => $stockData['stock']['units_per_pack']
-                ]
+                    'quantity' => $stockData['stock']['units_per_pack'],
+                ],
             ]);
 
-
             return [
-                'stock'    => null,
-                'orgStock' => $orgStock
+                'stock' => null,
+                'orgStock' => $orgStock,
             ];
         }
 
-
         if ($stock = Stock::withTrashed()->where('source_id', $stockData['stock']['source_id'])->first()) {
             try {
-                $stock       = UpdateStock::make()->action(
+                $stock = UpdateStock::make()->action(
                     stock: $stock,
                     modelData: $stockData['stock'],
                     hydratorsDelay: $this->hydratorsDelay,
@@ -91,29 +86,28 @@ class FetchAuroraStocks extends FetchAuroraAction
                 $this->recordError($organisationSource, $e, $stockData['stock'], 'Stock', 'update');
 
                 return [
-                    'stock'    => null,
-                    'orgStock' => null
+                    'stock' => null,
+                    'orgStock' => null,
                 ];
             }
         }
 
-
-        if (!$stock) {
+        if (! $stock) {
             $stock = Stock::withTrashed()->whereJsonContains('sources->parts', $stockData['stock']['source_id'])->first();
         }
 
-        if (!$stock) {
+        if (! $stock) {
             $stock = Stock::withTrashed()->where('source_slug', $stockData['stock']['source_slug'])->first();
         }
 
-        if (!$stock) {
+        if (! $stock) {
             if ($stockData['stock_family']) {
                 $parent = $stockData['stock_family'];
             } else {
                 $parent = $organisationSource->getOrganisation()->group;
             }
             try {
-                $stock       = StoreStock::make()->action(
+                $stock = StoreStock::make()->action(
                     parent: $parent,
                     modelData: $stockData['stock'],
                     hydratorsDelay: $this->hydratorsDelay,
@@ -139,12 +133,11 @@ class FetchAuroraStocks extends FetchAuroraAction
                 $this->recordError($organisationSource, $e, $stockData['stock'], 'Stock', 'store');
 
                 return [
-                    'stock'    => null,
-                    'orgStock' => null
+                    'stock' => null,
+                    'orgStock' => null,
                 ];
             }
         }
-
 
         if ($stock) {
             if ($isPrincipal) {
@@ -152,17 +145,16 @@ class FetchAuroraStocks extends FetchAuroraAction
 
                 SyncStockTradeUnits::run($stock, [
                     $tradeUnit->id => [
-                        'quantity' => $stockData['stock']['units_per_pack']
-                    ]
+                        'quantity' => $stockData['stock']['units_per_pack'],
+                    ],
                 ]);
             }
-
 
             if ($stock->state == StockStateEnum::IN_PROCESS and $stockData['org_stock']['state'] != StockStateEnum::IN_PROCESS) {
                 $stock = UpdateStock::make()->action(
                     stock: $stock,
                     modelData: [
-                        'state' => StockStateEnum::ACTIVE
+                        'state' => StockStateEnum::ACTIVE,
                     ],
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
@@ -170,30 +162,28 @@ class FetchAuroraStocks extends FetchAuroraAction
                 );
             }
 
-
             if ($stock->state != StockStateEnum::IN_PROCESS) {
                 $orgStock = $this->processOrgStock($organisationSource, $stock, $stockData);
 
                 if ($orgStock) {
                     $locationsData = $this->getStockLocationData($organisationSource, $stockData['stock']['source_id']);
                     SyncOrgStockLocations::make()->action($orgStock, [
-                        'locationsData' => $locationsData
+                        'locationsData' => $locationsData,
                     ], 60, false);
                 }
             }
-            //$tradeUnit = $stock->tradeUnits()->first();
-            //$this->processFetchAttachments($tradeUnit, 'Part', $stockData['stock']['source_id']);
-
+            // $tradeUnit = $stock->tradeUnits()->first();
+            // $this->processFetchAttachments($tradeUnit, 'Part', $stockData['stock']['source_id']);
 
             if ($isPrincipal) {
                 $stock->supplierProducts()->syncWithoutDetaching($stockData['supplier_products']);
             } else {
                 foreach ($stockData['supplier_products'] as $supplierProductId => $supplierProductData) {
-                    if (!$stock->supplierProducts()->where('supplier_product_id', $supplierProductId)->exists()) {
+                    if (! $stock->supplierProducts()->where('supplier_product_id', $supplierProductId)->exists()) {
                         $stock->supplierProducts()->attach(
                             $supplierProductId,
                             [
-                                'available' => $supplierProductData['available']
+                                'available' => $supplierProductData['available'],
                             ]
                         );
                     }
@@ -204,7 +194,7 @@ class FetchAuroraStocks extends FetchAuroraAction
                 foreach ($stockData['org_supplier_products'] as $orgSupplierProductId => $orgSupplierProductData) {
                     $orgStockHasOrgSupplierProduct = $orgStock->orgSupplierProducts()->where('org_supplier_product_id', $orgSupplierProductId)->first();
 
-                    if (!$orgStockHasOrgSupplierProduct) {
+                    if (! $orgStockHasOrgSupplierProduct) {
                         $stockHasSupplierProduct = StockHasSupplierProduct::where('stock_id', $stock->id)->where('supplier_product_id', $orgSupplierProductData['supplier_product_id'])->first();
 
                         /** @var OrgSupplierProduct $orgSupplierProduct */
@@ -222,25 +212,22 @@ class FetchAuroraStocks extends FetchAuroraAction
                 }
             }
 
-
             $sourceData = explode(':', $stockData['stock']['source_id']);
             DB::connection('aurora')->table('Part Dimension')
                 ->where('Part SKU', $sourceData[1])
                 ->update(['aiku_id' => $stock->id]);
 
             return [
-                'stock'    => $stock,
-                'orgStock' => $orgStock
+                'stock' => $stock,
+                'orgStock' => $orgStock,
             ];
         }
 
-
         return [
-            'stock'    => null,
-            'orgStock' => null
+            'stock' => null,
+            'orgStock' => null,
         ];
     }
-
 
     public function getModelsQuery(): Builder
     {

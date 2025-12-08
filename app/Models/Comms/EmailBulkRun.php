@@ -48,9 +48,11 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Comms\EmailBulkRunStats|null $stats
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRun newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRun newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRun query()
+ *
  * @mixin \Eloquent
  */
 class EmailBulkRun extends Model
@@ -58,18 +60,18 @@ class EmailBulkRun extends Model
     use InShop;
 
     protected $casts = [
-        'data'              => 'array',
-        'state'             => EmailBulkRunStateEnum::class,
-        'date'              => 'datetime',
-        'scheduled_at'      => 'datetime',
-        'start_sending_at'  => 'datetime',
-        'sent_at'           => 'datetime',
-        'cancelled_at'      => 'datetime',
-        'stopped_at'        => 'datetime',
+        'data' => 'array',
+        'state' => EmailBulkRunStateEnum::class,
+        'date' => 'datetime',
+        'scheduled_at' => 'datetime',
+        'start_sending_at' => 'datetime',
+        'sent_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'stopped_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'              => '{}',
+        'data' => '{}',
     ];
 
     protected $guarded = [];
@@ -77,7 +79,7 @@ class EmailBulkRun extends Model
     public function generateTags(): array
     {
         return [
-            'comms'
+            'comms',
         ];
     }
 
@@ -85,7 +87,6 @@ class EmailBulkRun extends Model
         'subject',
         'schedule_at',
     ];
-
 
     public function email(): MorphOne
     {
@@ -116,6 +117,4 @@ class EmailBulkRun extends Model
     {
         return $this->morphMany(EmailDeliveryChannel::class, 'model');
     }
-
-
 }

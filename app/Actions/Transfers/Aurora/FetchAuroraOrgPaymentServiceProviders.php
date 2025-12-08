@@ -55,14 +55,11 @@ class FetchAuroraOrgPaymentServiceProviders extends FetchAuroraAction
 
             }
 
-
-
             return $orgPaymentServiceProvider;
         }
 
         return null;
     }
-
 
     public function getModelsQuery(): Builder
     {

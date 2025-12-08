@@ -31,20 +31,22 @@ class ShowStockDelivery extends OrgAction
             return true;
         }
         $this->canEdit = true;
-        //TODO: Need to think of this
+
+        // TODO: Need to think of this
         return true;
     }
 
     public function asController(Organisation $organisation, StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
     {
         $this->initialisation($organisation, $request)->withTab(StockDeliveryTabsEnum::values());
-        $this->stockDelivery    = $stockDelivery;
+        $this->stockDelivery = $stockDelivery;
+
         return $this->handle($stockDelivery);
     }
 
     public function maya(Organisation $organisation, StockDelivery $stockDelivery, ActionRequest $request): void
     {
-        $this->maya   = true;
+        $this->maya = true;
         $this->initialisation($organisation, $request)->withTab(StockDeliveryTabsEnum::values());
         $this->stockDelivery = $stockDelivery;
     }
@@ -58,24 +60,23 @@ class ShowStockDelivery extends OrgAction
     {
         $this->validateAttributes();
 
-
         return Inertia::render(
             'Procurement/StockDelivery',
             [
-                'title'                                 => __('supplier delivery'),
-                'breadcrumbs'                           => $this->getBreadcrumbs($this->stockDelivery, $request->route()->originalParameters()),
+                'title' => __('supplier delivery'),
+                'breadcrumbs' => $this->getBreadcrumbs($this->stockDelivery, $request->route()->originalParameters()),
                 // 'navigation'                            => [
                 //     'previous' => $this->getPrevious($this->stockDelivery, $request),
                 //     'next'     => $this->getNext($this->stockDelivery, $request),
                 // ],
-                'pageHead'    => [
-                    'icon'  => ['fal', 'people-arrows'],
+                'pageHead' => [
+                    'icon' => ['fal', 'people-arrows'],
                     'title' => $this->stockDelivery->reference,
-                    'edit'  => $this->canEdit ? [
+                    'edit' => $this->canEdit ? [
                         'route' => [
-                            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                            'parameters' => array_values($request->route()->originalParameters())
-                        ]
+                            'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                            'parameters' => array_values($request->route()->originalParameters()),
+                        ],
                     ] : false,
                 ],
                 'attachmentRoutes' => [
@@ -83,19 +84,19 @@ class ShowStockDelivery extends OrgAction
                         'name' => 'grp.models.stock-delivery.attachment.attach',
                         'parameters' => [
                             'stockDelivery' => $this->stockDelivery->id,
-                        ]
+                        ],
                     ],
                     'detachRoute' => [
                         'name' => 'grp.models.stock-delivery.attachment.detach',
                         'parameters' => [
                             'stockDelivery' => $this->stockDelivery->id,
                         ],
-                        'method' => 'delete'
-                    ]
+                        'method' => 'delete',
+                    ],
                 ],
                 'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => StockDeliveryTabsEnum::navigation()
+                    'current' => $this->tab,
+                    'navigation' => StockDeliveryTabsEnum::navigation(),
                 ],
                 StockDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == StockDeliveryTabsEnum::ATTACHMENTS->value ?
                 fn () => AttachmentsResource::collection(IndexAttachments::run($this->stockDelivery))
@@ -106,7 +107,6 @@ class ShowStockDelivery extends OrgAction
         ));
     }
 
-
     public function jsonResponse(): StockDeliveryResource
     {
         return new StockDeliveryResource($this->stockDelivery);
@@ -115,22 +115,22 @@ class ShowStockDelivery extends OrgAction
     public function getBreadcrumbs(StockDelivery $stockDelivery, array $routeParameters, string $suffix = ''): array
     {
         return array_merge(
-            (new ShowProcurementDashboard())->getBreadcrumbs($routeParameters),
+            (new ShowProcurementDashboard)->getBreadcrumbs($routeParameters),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
                                 'name' => 'grp.org.procurement.stock_deliveries.index',
                                 'parameters' => $routeParameters,
                             ],
-                            'label' => __('Supplier delivery')
+                            'label' => __('Supplier delivery'),
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.stock_deliveries.show',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.stock_deliveries.show',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $stockDelivery->reference,
                         ],

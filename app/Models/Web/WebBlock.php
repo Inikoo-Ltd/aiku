@@ -40,9 +40,11 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
  * @property-read \App\Models\Web\WebBlockType $webBlockType
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\Webpage> $webpages
+ *
  * @method static Builder<static>|WebBlock newModelQuery()
  * @method static Builder<static>|WebBlock newQuery()
  * @method static Builder<static>|WebBlock query()
+ *
  * @mixin \Eloquent
  */
 class WebBlock extends Model implements HasMedia
@@ -52,16 +54,15 @@ class WebBlock extends Model implements HasMedia
 
     protected $casts = [
         'layout' => 'object',
-        'data'  => 'object',
+        'data' => 'object',
     ];
 
     protected $attributes = [
         'layout' => '{}',
-        'data'   => '{}',
+        'data' => '{}',
     ];
 
     protected $guarded = [];
-
 
     public function webBlockType(): BelongsTo
     {
@@ -91,8 +92,8 @@ class WebBlock extends Model implements HasMedia
     public function externalLinks()
     {
         return $this->belongsToMany(ExternalLink::class, 'web_block_has_external_link')
-                    ->withPivot('group_id', 'organisation_id', 'webpage_id', 'website_id', 'webpage_id', 'show')
-                    ->withTimestamps();
+            ->withPivot('group_id', 'organisation_id', 'webpage_id', 'website_id', 'webpage_id', 'show')
+            ->withTimestamps();
     }
 
     public function webpages(): MorphToMany
@@ -107,5 +108,4 @@ class WebBlock extends Model implements HasMedia
     {
         return $this->hasMany(WebBlockHistory::class);
     }
-
 }

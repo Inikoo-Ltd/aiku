@@ -27,7 +27,6 @@ class GroupHydrateAdjustments implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
 
@@ -50,7 +49,5 @@ class GroupHydrateAdjustments implements ShouldBeUnique
 
         $group->catalogueStats()->update($stats);
 
-
     }
-
 }

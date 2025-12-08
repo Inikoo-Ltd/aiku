@@ -8,7 +8,6 @@
  *
 */
 
-
 use App\Actions\Retina\Billing\RetinaPdfInvoice;
 use App\Actions\Retina\Billing\UI\IndexRetinaEcomInvoices;
 use App\Actions\Retina\Billing\UI\ShowRetinaEcomInvoice;

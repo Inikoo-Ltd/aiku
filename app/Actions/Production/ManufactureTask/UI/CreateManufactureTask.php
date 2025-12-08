@@ -29,112 +29,112 @@ class CreateManufactureTask extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New manufacture task'),
-                'pageHead'    => [
-                    'title'        => __('New manufacture task'),
-                    'icon'         => [
+                'title' => __('New manufacture task'),
+                'pageHead' => [
+                    'title' => __('New manufacture task'),
+                    'icon' => [
                         'title' => __('Create manufacture task'),
-                        'icon'  => 'fal fa-industry'
+                        'icon' => 'fal fa-industry',
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
-                                'parameters' => $request->route()->originalParameters()
+                                'name' => 'grp.org.productions.show.crafts.manufacture_tasks.index',
+                                'parameters' => $request->route()->originalParameters(),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Create raw material'),
+                            'title' => __('Create raw material'),
                             'fields' => [
                                 'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('code'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'name' => [
-                                    'type'     => 'input',
-                                    'label'    => __('name'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('name'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'task_materials_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task materials cost'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task materials cost'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'task_energy_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task energy cost'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task energy cost'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'task_other_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task other cost'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task other cost'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'task_work_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task work cost'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task work cost'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'status' => [
-                                    'type'     => 'toggle',
-                                    'label'    => __('status'),
-                                    'value'    => true,
-                                    'required' => true
+                                    'type' => 'toggle',
+                                    'label' => __('status'),
+                                    'value' => true,
+                                    'required' => true,
                                 ],
                                 'task_lower_target' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task lower target'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task lower target'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'task_upper_target' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task upper target'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task upper target'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'operative_reward_terms' => [
-                                    'type'      => 'select',
-                                    'options'   => ManufactureTaskOperativeRewardTermsEnum::values(),
-                                    'label'     => __('operative reward terms'),
-                                    'value'     => '',
-                                    'required'  => true
+                                    'type' => 'select',
+                                    'options' => ManufactureTaskOperativeRewardTermsEnum::values(),
+                                    'label' => __('operative reward terms'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'operative_reward_allowance_type' => [
-                                    'type'      => 'select',
-                                    'options'   => ManufactureTaskOperativeRewardAllowanceTypeEnum::values(),
-                                    'label'     => __('operative reward allowance type'),
-                                    'value'     => '',
-                                    'required'  => true
+                                    'type' => 'select',
+                                    'options' => ManufactureTaskOperativeRewardAllowanceTypeEnum::values(),
+                                    'label' => __('operative reward allowance type'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'operative_reward_amount' => [
-                                    'type'     => 'input',
-                                    'label'    => __('operative reward amount'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('operative reward amount'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
 
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    'route'      => [
-                        'name'       => 'grp.models.production.manufacture_tasks.store',
-                        'parameters' => [$this->parent->id]
-                    ]
+                    'route' => [
+                        'name' => 'grp.models.production.manufacture_tasks.store',
+                        'parameters' => [$this->parent->id],
+                    ],
                 ],
 
             ]
@@ -149,7 +149,7 @@ class CreateManufactureTask extends OrgAction
             return $request->user()->authTo(
                 [
                     'productions-view.'.$this->organisation->id,
-                    'org-supervisor.'.$this->organisation->id
+                    'org-supervisor.'.$this->organisation->id,
                 ]
             );
         }
@@ -158,7 +158,6 @@ class CreateManufactureTask extends OrgAction
 
         return $request->user()->authTo("productions_rd.{$this->production->id}.view");
     }
-
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): Response
     {
@@ -182,11 +181,11 @@ class CreateManufactureTask extends OrgAction
             IndexManufactureTasks::make()->getBreadcrumbs(request()->route()->getName(), $routeParameters),
             [
                 [
-                    'type'         => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating task'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

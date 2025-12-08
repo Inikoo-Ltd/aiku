@@ -22,18 +22,18 @@ class ProductsForPortfolioSelectResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'            => $this->id,
-            'slug'          => $this->slug,
-            'code'          => $this->code,
-            'image'         => Arr::get($this->web_images, 'main.gallery'),
-            'price'         => $this->price,
-            'name'          => $this->name,
-            'gross_weight'  => $this->gross_weight,
-            'available_quantity'  => $this->available_quantity,
-            'rrp'  => $this->rrp,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'image' => Arr::get($this->web_images, 'main.gallery'),
+            'price' => $this->price,
+            'name' => $this->name,
+            'gross_weight' => $this->gross_weight,
+            'available_quantity' => $this->available_quantity,
+            'rrp' => $this->rrp,
             'currency_code' => $this->currency_code,
-            'currency_id'   => $this->currency_id,
-            'stock'         => $this->stock
+            'currency_id' => $this->currency_id,
+            'stock' => $this->stock,
         ];
     }
 }

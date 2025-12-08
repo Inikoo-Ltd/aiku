@@ -19,14 +19,14 @@ class InvoicesResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'reference'         => $this->reference,
-            'customer_name'     => $this->customer_name,
-            'date'              => $this->date,
-            'pay_status'        => $this->pay_status->typeIcon()[$this->pay_status->value],
-            'net_amount'        => $this->net_amount,
-            'total_amount'      => $this->total_amount,
-            'currency_code'     => $this->currency_code,
-            'currency_symbol'   => $this->currency_symbol,
+            'reference' => $this->reference,
+            'customer_name' => $this->customer_name,
+            'date' => $this->date,
+            'pay_status' => $this->pay_status->typeIcon()[$this->pay_status->value],
+            'net_amount' => $this->net_amount,
+            'total_amount' => $this->total_amount,
+            'currency_code' => $this->currency_code,
+            'currency_symbol' => $this->currency_symbol,
         ];
     }
 }

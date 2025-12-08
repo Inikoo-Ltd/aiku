@@ -136,9 +136,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Catalogue\ProductCategory $productCategory
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategorySalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategorySalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategorySalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class ProductCategorySalesIntervals extends Model

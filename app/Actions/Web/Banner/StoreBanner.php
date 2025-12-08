@@ -28,36 +28,35 @@ class StoreBanner extends OrgAction
 
     private Website $website;
 
-
     /**
      * @throws \Throwable
      */
     public function handle(Website $website, array $modelData): Banner
     {
         $layout = [
-            "delay"      => 5000,
-            "navigation" => [
-                "bottomNav" => [
-                    "value" => true,
-                    "type"  => "bullet"
+            'delay' => 5000,
+            'navigation' => [
+                'bottomNav' => [
+                    'value' => true,
+                    'type' => 'bullet',
                 ],
-                "sideNav"   => [
-                    "value" => true,
-                    "type"  => "arrow"
-                ]
+                'sideNav' => [
+                    'value' => true,
+                    'type' => 'arrow',
+                ],
             ],
-            "common"     => [
-                "spaceBetween" => 0,
-                "centralStage" => [
-                    "title"    => null,
-                    "subtitle" => null,
-                    "text"     => null
-                ]
+            'common' => [
+                'spaceBetween' => 0,
+                'centralStage' => [
+                    'title' => null,
+                    'subtitle' => null,
+                    'text' => null,
+                ],
             ],
-            "components" => [
-            ]
+            'components' => [
+            ],
         ];
-        list($layout, $slides) = ParseBannerLayout::run($layout);
+        [$layout, $slides] = ParseBannerLayout::run($layout);
 
         data_set($modelData, 'group_id', $website->group_id);
         data_set($modelData, 'organisation_id', $website->organisation_id);
@@ -67,7 +66,7 @@ class StoreBanner extends OrgAction
         data_set($modelData, 'date', now());
 
         /** @var Banner $banner */
-        $banner   = Banner::create($modelData);
+        $banner = Banner::create($modelData);
         $snapshot = StoreBannerSnapshot::make()->action(
             $banner,
             [
@@ -79,7 +78,7 @@ class StoreBanner extends OrgAction
         $banner->update(
             [
                 'unpublished_snapshot_id' => $snapshot->id,
-                'compiled_layout'         => $snapshot->compiledLayout()
+                'compiled_layout' => $snapshot->compiledLayout(),
             ]
         );
 
@@ -89,7 +88,6 @@ class StoreBanner extends OrgAction
 
         return $banner;
     }
-
 
     public function rules(): array
     {
@@ -110,7 +108,6 @@ class StoreBanner extends OrgAction
         return $this->handle($website, $this->validatedData);
     }
 
-
     /**
      * @throws \Throwable
      */
@@ -122,7 +119,6 @@ class StoreBanner extends OrgAction
         return $this->handle($website, $this->validatedData);
     }
 
-
     public function htmlResponse(Banner $banner): RedirectResponse
     {
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
@@ -130,9 +126,9 @@ class StoreBanner extends OrgAction
                 'grp.org.fulfilments.show.web.banners.workshop',
                 [
                     'organisation' => $this->website->organisation->slug,
-                    'fulfilment'   => $this->shop->fulfilment->slug,
-                    'website'      => $this->website->slug,
-                    'banner'       => $banner->slug
+                    'fulfilment' => $this->shop->fulfilment->slug,
+                    'website' => $this->website->slug,
+                    'banner' => $banner->slug,
                 ]
             );
         } else {
@@ -140,9 +136,9 @@ class StoreBanner extends OrgAction
                 'grp.org.shops.show.web.banners.workshop',
                 [
                     'organisation' => $this->website->organisation->slug,
-                    'shop'         => $this->website->shop->slug,
-                    'website'      => $this->website->slug,
-                    'banner'       => $banner->slug
+                    'shop' => $this->website->shop->slug,
+                    'website' => $this->website->slug,
+                    'banner' => $banner->slug,
                 ]
             );
         }

@@ -48,11 +48,8 @@ class PayOrderAsync extends RetinaAction
     {
         $order = Order::find(1186846);
 
-
         $this->handle($order);
-
 
         return 1;
     }
-
 }

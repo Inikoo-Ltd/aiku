@@ -39,8 +39,8 @@ trait WithCatalogueAuthorisation
                 [
                     "products.{$this->shop->id}.view",
                     "web.$this->shop->id.view",
-                    "group-webmaster.view",
-                    "accounting.{$this->shop->organisation_id}.view"
+                    'group-webmaster.view',
+                    "accounting.{$this->shop->organisation_id}.view",
 
                 ]
             );

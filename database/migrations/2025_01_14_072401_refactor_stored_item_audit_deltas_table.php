@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('stored_item_audit_deltas', function (Blueprint $table) {
@@ -21,7 +22,6 @@ return new class () extends Migration {
             $table->boolean('is_stored_item_new_in_pallet')->default(false)->comment('Existing Stored item was associated to the pallet');
 
         });
-
 
     }
 

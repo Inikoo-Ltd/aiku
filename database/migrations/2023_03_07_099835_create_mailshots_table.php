@@ -13,9 +13,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
     use HasSoftDeletes;
+
     public function up(): void
     {
         Schema::create('mailshots', function (Blueprint $table) {
@@ -45,8 +47,6 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('publisher_id')->nullable();
             $table->foreign('publisher_id')->references('id')->on('users');
 
-
-
             $table->jsonb('data');
             $table->timestampsTz();
             $table->datetimeTz('fetched_at')->nullable();
@@ -56,10 +56,8 @@ return new class () extends Migration {
             $table->string('source_alt_id')->nullable()->unique();
             $table->string('source_alt2_id')->nullable()->unique();
 
-
         });
     }
-
 
     public function down(): void
     {

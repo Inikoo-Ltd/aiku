@@ -16,15 +16,14 @@ class AskBotResource extends JsonResource
 {
     public function toArray($request)
     {
-        if (isset($this["error"])) {
+        if (isset($this['error'])) {
             return [
-                'error' => $this["error"],
+                'error' => $this['error'],
             ];
         }
 
         return [
-            'response' => $this["response"],
+            'response' => $this['response'],
         ];
     }
-
 }

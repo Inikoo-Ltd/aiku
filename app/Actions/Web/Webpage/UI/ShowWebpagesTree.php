@@ -16,14 +16,13 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Inertia\Response;
 use Inertia\Inertia;
+use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowWebpagesTree extends OrgAction
 {
     use WithWebAuthorisation;
-
 
     public function htmlResponse(LengthAwarePaginator|Website $dataTree, ActionRequest $request): Response
     {
@@ -31,20 +30,19 @@ class ShowWebpagesTree extends OrgAction
             'Org/Web/Structure',
             [
 
-                'title'    => __('dummy'),
+                'title' => __('dummy'),
                 'pageHead' => [
-                    'title' => $request->route()->getName()
+                    'title' => $request->route()->getName(),
                 ],
-                'data'     => $dataTree instanceof Website ? null : $dataTree->items(),
+                'data' => $dataTree instanceof Website ? null : $dataTree->items(),
             ]
         );
     }
 
-
     public function handle(Website $website, ActionRequest $request): LengthAwarePaginator|Website
     {
         $dataTree = $website;
-        if (!app()->environment('production')) {
+        if (! app()->environment('production')) {
             $dataTree = $this->getDataTree($website, $request);
         }
 
@@ -68,7 +66,7 @@ class ShowWebpagesTree extends OrgAction
             $dataTree[] = [
                 'id' => $webpage->id,
                 'name' => $webpage->url ?: 'home',
-                'children' => $this->getChildren($webpage)
+                'children' => $this->getChildren($webpage),
             ];
         }
 
@@ -91,7 +89,7 @@ class ShowWebpagesTree extends OrgAction
             $children[] = [
                 'id' => $webpage->id,
                 'name' => $webpage->url,
-                'children' => $this->getChildren($webpage)
+                'children' => $this->getChildren($webpage),
             ];
         }
 
@@ -100,7 +98,7 @@ class ShowWebpagesTree extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator|Website
     {
-        $this->scope  = $shop;
+        $this->scope = $shop;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($website, $request);
@@ -108,11 +106,9 @@ class ShowWebpagesTree extends OrgAction
 
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator|Website
     {
-        $this->scope  = $fulfilment;
+        $this->scope = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($website, $request);
     }
-
-
 }

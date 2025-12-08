@@ -32,17 +32,17 @@ class ShowDeletedBanner extends InertiaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canRestore   = $request->get('customerUser')->hasPermissionTo('portfolio.banners.edit');
+        $this->canRestore = $request->get('customerUser')->hasPermissionTo('portfolio.banners.edit');
 
         return
-            (
-                $request->get('customerUser')->hasPermissionTo('portfolio.banners.view')
-            );
+
+                $request->get('customerUser')->hasPermissionTo('portfolio.banners.view');
     }
 
     public function asController(Banner $banner, ActionRequest $request): Banner
     {
         $this->initialisation($request)->withTab(BannerTabsEnum::values());
+
         return $this->handle($request->get('customer'), $banner);
     }
 
@@ -62,7 +62,6 @@ class ShowDeletedBanner extends InertiaAction
     }
     */
 
-
     public function htmlResponse(Banner $banner, ActionRequest $request): Response
     {
         $customer = $request->get('customer');
@@ -70,33 +69,33 @@ class ShowDeletedBanner extends InertiaAction
         return Inertia::render(
             'Banners/Banner',
             [
-                'breadcrumbs'                    => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                          => $banner->name,
-                'pageHead'                       => [
-                    'title'   => $banner->name,
-                    'icon'    => [
+                'title' => $banner->name,
+                'pageHead' => [
+                    'title' => $banner->name,
+                    'icon' => [
                         'title' => __('Banner'),
-                        'icon'  => 'fal fa-sign'
+                        'icon' => 'fal fa-sign',
                     ],
                     'actions' => [
                         $this->canRestore ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'label' => __('restore'),
-                            'icon'  => ["fal", "fa-trash-restore-alt"],
+                            'icon' => ['fal', 'fa-trash-restore-alt'],
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'workshop', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => preg_replace('/show$/', 'workshop', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
                     ],
                 ],
-                'tabs'                           => [
-                    'current'    => $this->tab,
-                    'navigation' => BannerTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => BannerTabsEnum::navigation(),
                 ],
                 BannerTabsEnum::SHOWCASE->value => $this->tab == BannerTabsEnum::SHOWCASE->value
                     ?
@@ -110,14 +109,14 @@ class ShowDeletedBanner extends InertiaAction
                         IndexCustomerHistory::run(
                             customer: $customer,
                             model: $banner,
-                            prefix:  BannerTabsEnum::CHANGELOG->value
+                            prefix: BannerTabsEnum::CHANGELOG->value
                         )
                     )
                     : Inertia::lazy(fn () => CustomerHistoryResource::collection(
                         IndexCustomerHistory::run(
                             customer: $customer,
                             model: $banner,
-                            prefix:  BannerTabsEnum::CHANGELOG->value
+                            prefix: BannerTabsEnum::CHANGELOG->value
                         )
                     )),
 
@@ -129,7 +128,7 @@ class ShowDeletedBanner extends InertiaAction
         );
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         return [];
     }

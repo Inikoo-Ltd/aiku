@@ -13,6 +13,7 @@ use App\Models\Web\Webpage;
 trait WithGetWebpageWebBlocks
 {
     use WithFillIrisWebBlocks;
+
     public function getWebBlocks(Webpage $webpage, array $webBlocks): array
     {
         $parsedWebBlocks = [];
@@ -25,5 +26,4 @@ trait WithGetWebpageWebBlocks
 
         return $parsedWebBlocks;
     }
-
 }

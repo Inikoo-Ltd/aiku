@@ -17,6 +17,7 @@ use App\Actions\Dropshipping\Ebay\CheckEbayUserCreating;
 use App\Actions\Dropshipping\Ebay\IndexEbayUserPolicies;
 use App\Actions\Dropshipping\Ebay\ShowCallbackSuccessRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\StoreMagentoUser;
+use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
@@ -51,7 +52,6 @@ use App\Actions\Retina\Dropshipping\Orders\UpdateCustomerOrderVatStatus;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
-use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
 use App\Actions\Retina\Ebay\StoreRetinaEbayUser;
 use App\Actions\Retina\Ebay\UpdateRetinaEbayUser;
@@ -61,7 +61,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('select-products-for-empty-basket', IndexRetinaDropshippingProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
 Route::get('select-products-for-basket/{order:id}', IndexRetinaDropshippingProductsForBasket::class)->name('select_products_for_basket');
-
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
     Route::get('/', IndexRetinaDropshippingCustomerSalesChannels::class)->name('index');
@@ -94,13 +93,10 @@ Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('magento/authorize', StoreMagentoUser::class)->name('magento.store');
 });
 
-
-
 Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')->group(function () {
     Route::get('/', ShowRetinaCustomerSalesChannelDashboard::class)->name('show');
     Route::get('/edit', EditRetinaCustomerSalesChannel::class)->name('edit');
     Route::get('filtered-products', IndexRetinaFilteredProducts::class)->name('filtered_products.index');
-
 
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');
@@ -141,7 +137,6 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 });
 
 Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order_upload_templates');
-
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');

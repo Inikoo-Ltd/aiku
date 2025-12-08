@@ -31,13 +31,13 @@ class IndexReports extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo('org-reports.' . $this->organisation->id);
+        return $request->user()->authTo('org-reports.'.$this->organisation->id);
     }
-
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
         $this->initialisation($organisation, $request);
+
         return $this->handle($organisation);
     }
 
@@ -46,18 +46,16 @@ class IndexReports extends OrgAction
         return $this->handle($shop);
     }
 
-
     public function htmlResponse(Organisation|Shop $scope, ActionRequest $request): Response
     {
         $container = null;
         if (class_basename($scope) == 'Shop') {
             $container = [
-                'icon'    => ['fal', 'fa-store-alt'],
-                'tooltip' => Str::possessive($scope->name) . ' ' . __('Reports'),
-                'label'   => $scope->code
+                'icon' => ['fal', 'fa-store-alt'],
+                'tooltip' => Str::possessive($scope->name).' '.__('Reports'),
+                'label' => $scope->code,
             ];
         }
-
 
         return Inertia::render(
             'Org/Reports/Reports',
@@ -66,42 +64,38 @@ class IndexReports extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => 'BI',
+                'title' => 'BI',
                 'pageHead' => [
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-chart-line'],
-                        'title' => __('Reports')
+                    'icon' => [
+                        'icon' => ['fal', 'fa-chart-line'],
+                        'title' => __('Reports'),
                     ],
-                    'title'     => __('reports'),
-                    'container' => $container
+                    'title' => __('reports'),
+                    'container' => $container,
                 ],
-
 
             ]
         );
     }
 
-
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return match ($routeName) {
-            default =>
-            array_merge(
+            default => array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.reports.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.reports.index',
+                                'parameters' => $routeParameters,
                             ],
-                            'label' => __('Reports')
-                        ]
-                    ]
+                            'label' => __('Reports'),
+                        ],
+                    ],
                 ]
             )
         };
     }
-
 }

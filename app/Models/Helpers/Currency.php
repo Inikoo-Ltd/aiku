@@ -24,16 +24,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\CurrencyExchange> $exchanges
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Currency newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Currency newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Currency query()
+ *
  * @mixin \Eloquent
  */
 class Currency extends Model
 {
     protected $casts = [
-        'data'               => 'array',
-        'historic_data_since' => 'datetime'
+        'data' => 'array',
+        'historic_data_since' => 'datetime',
     ];
 
     protected $attributes = [

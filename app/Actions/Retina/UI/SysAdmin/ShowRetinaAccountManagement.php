@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\UI\SysAdmin;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -17,7 +18,6 @@ use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaAccountManagement extends RetinaAction
@@ -27,14 +27,12 @@ class ShowRetinaAccountManagement extends RetinaAction
         return $request->user()->is_root;
     }
 
-
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
 
         return $this->handle($request);
     }
-
 
     public function handle(ActionRequest $request): Response
     {
@@ -51,87 +49,86 @@ class ShowRetinaAccountManagement extends RetinaAction
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Account management'),
-                'pageHead'    => [
+                'title' => __('Account management'),
+                'pageHead' => [
                     'title' => __('Account management'),
                 ],
-                "formData" => [
-                    "blueprint" =>
-                    [
+                'formData' => [
+                    'blueprint' => [
                         [
-                            'title'  => __('Contact Information'),
-                            'label'  => __('Contact'),
-                            'icon'    => 'fa-light fa-address-book',
+                            'title' => __('Contact Information'),
+                            'label' => __('Contact'),
+                            'icon' => 'fa-light fa-address-book',
                             'fields' => [
-                                    'contact_name' => [
-                                        'type'  => 'input',
-                                        'label' => __('Contact Name'),
-                                        'value' => $customer->contact_name
+                                'contact_name' => [
+                                    'type' => 'input',
+                                    'label' => __('Contact Name'),
+                                    'value' => $customer->contact_name,
+                                ],
+                                'company_name' => [
+                                    'type' => 'input',
+                                    'label' => __('Company'),
+                                    'value' => $customer->company_name,
+                                ],
+                                'email' => [
+                                    'type' => 'input',
+                                    'label' => __('Email'),
+                                    'value' => $customer->email,
+                                ],
+                                'phone' => [
+                                    'type' => 'phone',
+                                    'label' => __('Phone'),
+                                    'value' => $customer->phone,
+                                ],
+                                'contact_address' => [
+                                    'type' => 'address',
+                                    'label' => __('Billing Address'),
+                                    'value' => AddressFormFieldsResource::make($customer->address)->getArray(),
+                                    'options' => [
+                                        'countriesAddressData' => GetAddressData::run(),
                                     ],
-                                    'company_name' => [
-                                        'type'  => 'input',
-                                        'label' => __('Company'),
-                                        'value' => $customer->company_name
-                                    ],
-                                    'email' => [
-                                        'type'  => 'input',
-                                        'label' => __('Email'),
-                                        'value' => $customer->email
-                                    ],
-                                    'phone'        => [
-                                        'type'  => 'phone',
-                                        'label' => __('Phone'),
-                                        'value' => $customer->phone
-                                    ],
-                                    'contact_address' => [
-                                        'type'    => 'address',
-                                        'label'   => __('Billing Address'),
-                                        'value'   => AddressFormFieldsResource::make($customer->address)->getArray(),
-                                        'options' => [
-                                            'countriesAddressData' => GetAddressData::run()
-                                        ]
-                                    ],
-                                    'delivery_address'         => [
-                                        'hidden' => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
-                                        'type'    => 'delivery_address',
-                                        'label'   => __('Delivery Address'),
-                                        'noSaveButton'  => true,
-                                        'options' => [
-                                            'same_as_contact' => [
-                                                'label'         => __('Same as contact address'),
-                                                'key_payload'   => 'delivery_address_id',
-                                                'payload'       => $customer->address_id
-                                            ],
-                                            'countriesAddressData'    => GetAddressData::run()
+                                ],
+                                'delivery_address' => [
+                                    'hidden' => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
+                                    'type' => 'delivery_address',
+                                    'label' => __('Delivery Address'),
+                                    'noSaveButton' => true,
+                                    'options' => [
+                                        'same_as_contact' => [
+                                            'label' => __('Same as contact address'),
+                                            'key_payload' => 'delivery_address_id',
+                                            'payload' => $customer->address_id,
                                         ],
-                                        'value'   => [
-                                            'is_same_as_contact'    => $customer->delivery_address_id == $customer->address_id,
-                                            'address'               => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
-                                        ],
+                                        'countriesAddressData' => GetAddressData::run(),
                                     ],
-                                    'tax_number'      => [
-                                        'type'    => 'tax_number',
-                                        'label'   => __('Tax number'),
-                                        'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
-                                        'country' => $customer->address->country_code,
-                                        'europeanUnion' => $isEu ? implode(', ', IsEuropeanUnion::getEUCountryCodes()) : '',
+                                    'value' => [
+                                        'is_same_as_contact' => $customer->delivery_address_id == $customer->address_id,
+                                        'address' => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray(),
                                     ],
-                                    'is_re'           => [
-                                        'type'   => 'toggle',
-                                        'hidden' => $this->organisation->country_id != $spain->id || $customer->address->country_id != $spain->id,
-                                        'label'  => 'Recargo de equivalencia',
-                                        'value'  => $customer->is_re,
+                                ],
+                                'tax_number' => [
+                                    'type' => 'tax_number',
+                                    'label' => __('Tax number'),
+                                    'value' => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
+                                    'country' => $customer->address->country_code,
+                                    'europeanUnion' => $isEu ? implode(', ', IsEuropeanUnion::getEUCountryCodes()) : '',
+                                ],
+                                'is_re' => [
+                                    'type' => 'toggle',
+                                    'hidden' => $this->organisation->country_id != $spain->id || $customer->address->country_id != $spain->id,
+                                    'label' => 'Recargo de equivalencia',
+                                    'value' => $customer->is_re,
 
-                                    ]
-                                ]
+                                ],
+                            ],
                         ],
                         [
-                            'title'  => __('Interest'),
-                            'label'  => __('Interest'),
-                            'icon'    => 'fal fa-tags',
+                            'title' => __('Interest'),
+                            'label' => __('Interest'),
+                            'icon' => 'fal fa-tags',
                             'fields' => [
                                 'tags' => [
-                                    'type'  => 'retina-tags-customer',
+                                    'type' => 'retina-tags-customer',
                                     'label' => __('Interest'),
                                     'value' => $customer
                                         ->tags()
@@ -140,42 +137,40 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         ->toArray(),
                                     'tag_routes' => [
                                         'index_tag' => [
-                                            'name'       => 'retina.json.customer.tags.index',
+                                            'name' => 'retina.json.customer.tags.index',
                                             'parameters' => [
                                                 'customer' => $customer->id,
-                                            ]
+                                            ],
                                         ],
                                         'attach_tag' => [
-                                            'name'       => 'retina.models.customer.tags.attach',
+                                            'name' => 'retina.models.customer.tags.attach',
                                             'parameters' => [
                                                 'customer' => $customer->id,
                                             ],
-                                            'method'    => 'post'
+                                            'method' => 'post',
                                         ],
                                         'detach_tag' => [
-                                            'name'       => 'retina.models.customer.tags.detach',
+                                            'name' => 'retina.models.customer.tags.detach',
                                             'parameters' => [
                                                 'customer' => $customer->id,
                                             ],
-                                            'method'    => 'delete'
+                                            'method' => 'delete',
                                         ],
                                     ],
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    "args"      => [
-                        "updateRoute" => [
-                            "name"       => "retina.models.customer.update",
-                            'parameters' => [$customer->id]
+                    'args' => [
+                        'updateRoute' => [
+                            'name' => 'retina.models.customer.update',
+                            'parameters' => [$customer->id],
                         ],
                     ],
                 ],
             ]
         );
     }
-
-
 
     public function getBreadcrumbs(): array
     {
@@ -184,14 +179,14 @@ class ShowRetinaAccountManagement extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.sysadmin.settings.edit'
+                                'name' => 'retina.sysadmin.settings.edit',
                             ],
-                            'label'  => __('Account management'),
-                        ]
-                    ]
+                            'label' => __('Account management'),
+                        ],
+                    ],
                 ]
             );
     }

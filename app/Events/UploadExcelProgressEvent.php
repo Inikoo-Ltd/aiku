@@ -23,21 +23,20 @@ class UploadExcelProgressEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
-
     public Upload $data;
+
     public ?User $user;
 
     public function __construct(Upload $upload, ?User $user)
     {
-        $this->user         = $user;
-        $this->data         = $upload;
+        $this->user = $user;
+        $this->data = $upload;
     }
-
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('grp.personal.' . $this->user->id)
+            new PrivateChannel('grp.personal.'.$this->user->id),
         ];
     }
 

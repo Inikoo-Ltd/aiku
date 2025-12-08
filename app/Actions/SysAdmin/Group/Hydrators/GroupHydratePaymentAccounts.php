@@ -27,11 +27,10 @@ class GroupHydratePaymentAccounts implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
         $stats = [
-            'number_payment_accounts'          => $group->paymentAccounts()->count(),
+            'number_payment_accounts' => $group->paymentAccounts()->count(),
         ];
 
         $stats = array_merge(

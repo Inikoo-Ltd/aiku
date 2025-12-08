@@ -24,51 +24,51 @@ class OrgSupplierRecordSearch
 
         $supplier = $orgSupplier->supplier;
 
-        if (!$supplier) {
+        if (! $supplier) {
             return;
         }
 
         $modelData = [
-            'group_id'          => $orgSupplier->group_id,
-            'organisation_id'   => $orgSupplier->organisation_id,
+            'group_id' => $orgSupplier->group_id,
+            'organisation_id' => $orgSupplier->organisation_id,
             'organisation_slug' => $orgSupplier->organisation->slug,
-            'sections'          => ['procurement'],
-            'haystack_tier_1'   => trim($supplier->code.' '.$supplier->name),
-            'result'            => [
-                'route'     => [
-                    'name'          => 'grp.org.procurement.org_suppliers.show',
-                    'parameters'    => [
+            'sections' => ['procurement'],
+            'haystack_tier_1' => trim($supplier->code.' '.$supplier->name),
+            'result' => [
+                'route' => [
+                    'name' => 'grp.org.procurement.org_suppliers.show',
+                    'parameters' => [
                         $orgSupplier->organisation->slug,
-                        $orgSupplier->slug
-                    ]
+                        $orgSupplier->slug,
+                    ],
                 ],
-                'description'     => [
-                    'label'   => $supplier->name
+                'description' => [
+                    'label' => $supplier->name,
                 ],
-                'code'         => [
+                'code' => [
                     'label' => $supplier->code,
                 ],
-                'icon'          => [
-                    'icon' => 'fal fa-person-dolly'
+                'icon' => [
+                    'icon' => 'fal fa-person-dolly',
                 ],
-                'meta'          => [
+                'meta' => [
                     [
                         'type' => 'location',
-                        'location'  => $supplier->location,
-                        'tooltip'   => __('Location'),
+                        'location' => $supplier->location,
+                        'tooltip' => __('Location'),
                     ],
                     [
                         'type' => 'number',
-                        'number'     => $orgSupplier->stats->number_org_supplier_products,
-                        'label' => __('Suppliers') . ": "
+                        'number' => $orgSupplier->stats->number_org_supplier_products,
+                        'label' => __('Suppliers').': ',
                     ],
                     [
                         'type' => 'number',
-                        'number'     => $orgSupplier->stats->number_purchase_orders,
-                        'label' => __('Purchase orders') . ": "
+                        'number' => $orgSupplier->stats->number_purchase_orders,
+                        'label' => __('Purchase orders').': ',
                     ],
                 ],
-            ]
+            ],
         ];
 
         $orgSupplier->universalSearch()->updateOrCreate(
@@ -76,8 +76,5 @@ class OrgSupplierRecordSearch
             $modelData
         );
 
-
     }
-
-
 }

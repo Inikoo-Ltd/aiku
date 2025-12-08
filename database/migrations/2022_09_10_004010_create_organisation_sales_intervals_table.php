@@ -11,8 +11,9 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use  HasDateIntervalsStats;
+return new class extends Migration
+{
+    use HasDateIntervalsStats;
 
     public function up(): void
     {
@@ -22,12 +23,11 @@ return new class () extends Migration {
             $table->foreign('organisation_id')->references('id')->on('organisations')->onUpdate('cascade')->onDelete('cascade');
             $table = $this->decimalDateIntervals($table, [
                 'sales_org_currency',
-                'sales_grp_currency'
+                'sales_grp_currency',
             ]);
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

@@ -26,12 +26,11 @@ class GroupHydrateMasterAssets implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
         $stats = [
-            'number_master_assets'         => DB::table('master_assets')->where('group_id', $group->id)->count(),
-            'number_current_master_assets' => DB::table('master_assets')->where('group_id', $group->id)->where('status', true)->count()
+            'number_master_assets' => DB::table('master_assets')->where('group_id', $group->id)->count(),
+            'number_current_master_assets' => DB::table('master_assets')->where('group_id', $group->id)->where('status', true)->count(),
         ];
 
         $stats = array_merge(
@@ -48,7 +47,7 @@ class GroupHydrateMasterAssets implements ShouldBeUnique
         );
 
         foreach (MasterAssetTypeEnum::cases() as $type) {
-            $stats['number_current_master_assets_type_' . $type->value] = DB::table('master_assets')
+            $stats['number_current_master_assets_type_'.$type->value] = DB::table('master_assets')
                 ->where('group_id', $group->id)
                 ->where('status', true)
                 ->where('type', $type->value)

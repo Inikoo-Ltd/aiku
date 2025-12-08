@@ -79,7 +79,7 @@ class IndexRedirects extends OrgAction
     ): Closure {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix . 'Page');
+                $table->name($prefix)->pageName($prefix.'Page');
             }
 
             $table
@@ -88,7 +88,7 @@ class IndexRedirects extends OrgAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Website', 'Webpage' => [
-                            'title'       => __("No redirects found"),
+                            'title' => __('No redirects found'),
                         ],
                         default => null
                     }

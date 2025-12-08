@@ -39,45 +39,46 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Ingredient newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Ingredient newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Ingredient query()
+ *
  * @mixin \Eloquent
  */
 class Ingredient extends Model implements Auditable
 {
-    use HasSlug;
     use HasHistory;
+    use HasSlug;
     use InGroup;
 
     protected $guarded = [];
 
-
     protected $casts = [
-        'data'                     => 'array',
-        'sources'                  => 'array',
-        'source_data'              => 'array',
+        'data' => 'array',
+        'sources' => 'array',
+        'source_data' => 'array',
         'source_extra_ingredients' => 'array',
-        'fetched_at'               => 'datetime',
-        'last_fetched_at'          => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'sources'                  => '{}',
-        'source_data'              => '{}',
+        'sources' => '{}',
+        'source_data' => '{}',
         'source_extra_ingredients' => '{}',
-        'data'                     => '{}',
+        'data' => '{}',
     ];
 
     public function generateTags(): array
     {
         return [
-            'goods'
+            'goods',
         ];
     }
 
     protected array $auditInclude = [
-        'name'
+        'name',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -87,7 +88,6 @@ class Ingredient extends Model implements Auditable
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate();
     }
-
 
     public function tradeUnits(): BelongsToMany
     {

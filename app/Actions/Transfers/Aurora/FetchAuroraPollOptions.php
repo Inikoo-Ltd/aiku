@@ -38,6 +38,7 @@ class FetchAuroraPollOptions extends FetchAuroraAction
                     $this->recordChange($organisationSource, $pollOption->wasChanged());
                 } catch (Exception $e) {
                     $this->recordError($organisationSource, $e, $pollOptionData['poll_option'], 'PollOption', 'update');
+
                     return null;
                 }
             } else {
@@ -70,7 +71,6 @@ class FetchAuroraPollOptions extends FetchAuroraAction
                 }
             }
 
-
             return $pollOption;
         }
 
@@ -84,7 +84,6 @@ class FetchAuroraPollOptions extends FetchAuroraAction
             ->select('Customer Poll Query Option Key as source_id')
             ->orderBy('source_id');
     }
-
 
     public function count(): ?int
     {

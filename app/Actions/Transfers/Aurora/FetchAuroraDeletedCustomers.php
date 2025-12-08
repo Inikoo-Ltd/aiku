@@ -22,7 +22,6 @@ class FetchAuroraDeletedCustomers extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:deleted_customers {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new} {--r|reset}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Customer
     {
         if ($customerData = $organisationSource->fetchDeletedCustomer($organisationSourceId)) {
@@ -78,7 +77,6 @@ class FetchAuroraDeletedCustomers extends FetchAuroraAction
                     }
                 }
 
-
                 return $customer;
             }
         }
@@ -93,11 +91,9 @@ class FetchAuroraDeletedCustomers extends FetchAuroraAction
             ->select('Customer Key as source_id')
             ->orderBy('source_id');
 
-
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');
         }
-
 
         return $query;
     }

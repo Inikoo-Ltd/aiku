@@ -26,7 +26,6 @@ class StoreModelHasWebBlock extends OrgAction
 {
     use WithWebEditAuthorisation;
 
-
     private Webpage $webpage;
 
     public function handle(Webpage $webpage, array $modelData): ModelHasWebBlocks
@@ -34,7 +33,7 @@ class StoreModelHasWebBlock extends OrgAction
         $position = Arr::pull($modelData, 'position', $webpage->modelHasWebBlocks()->max('position') + 1);
         $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
 
-        if (!$webBlocks->isEmpty() && $position < $webpage->modelHasWebBlocks()->max('position')) {
+        if (! $webBlocks->isEmpty() && $position < $webpage->modelHasWebBlocks()->max('position')) {
             $positions = [];
 
             /** @var ModelHasWebBlocks $block */
@@ -60,15 +59,15 @@ class StoreModelHasWebBlock extends OrgAction
         /** @var ModelHasWebBlocks $modelHasWebBlock */
         $modelHasWebBlock = $webpage->modelHasWebBlocks()->create(
             [
-                'group_id'        => $webpage->group_id,
+                'group_id' => $webpage->group_id,
                 'organisation_id' => $webpage->organisation_id,
-                'shop_id'         => $webpage->shop_id,
-                'website_id'      => $webpage->website_id,
-                'webpage_id'      => $webpage->id,
-                'position'        => $position,
-                'model_id'        => $webpage->id,
-                'model_type'      => class_basename(Webpage::class),
-                'web_block_id'    => $webBlock->id,
+                'shop_id' => $webpage->shop_id,
+                'website_id' => $webpage->website_id,
+                'webpage_id' => $webpage->id,
+                'position' => $position,
+                'model_id' => $webpage->id,
+                'model_type' => class_basename(Webpage::class),
+                'web_block_id' => $webBlock->id,
             ]
         );
         StoreWebBlockHistory::make()->action($modelHasWebBlock, [
@@ -85,14 +84,14 @@ class StoreModelHasWebBlock extends OrgAction
         return [
             'web_block_type_id' => [
                 'required',
-                Rule::Exists('web_block_types', 'id')->where('group_id', $this->organisation->group_id)
+                Rule::Exists('web_block_types', 'id')->where('group_id', $this->organisation->group_id),
             ],
             'position' => [
-                'sometimes'
+                'sometimes',
             ],
             'layout' => [
-                'sometimes'
-            ]
+                'sometimes',
+            ],
         ];
     }
 
@@ -115,7 +114,7 @@ class StoreModelHasWebBlock extends OrgAction
     public function jsonResponse(ModelHasWebBlocks $modelHasWebBlock): WebpageResource
     {
         $this->webpage->refresh();
+
         return new WebpageResource($this->webpage);
     }
-
 }

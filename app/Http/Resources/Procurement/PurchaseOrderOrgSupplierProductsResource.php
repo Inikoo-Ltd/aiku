@@ -31,31 +31,31 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
 
         /** @var Stock $stock */
         return [
-            'id'              => $this->id,
-            'historic_id'     => $this->historic_id,
-            'org_stock_id'    => $this->org_stock_id,
-            'code'            => $this->code,
-            'name'            => $this->name,
-            'supplier_name'   => $this->supplier_name,
+            'id' => $this->id,
+            'historic_id' => $this->historic_id,
+            'org_stock_id' => $this->org_stock_id,
+            'code' => $this->code,
+            'name' => $this->name,
+            'supplier_name' => $this->supplier_name,
             // 'image_thumbnail' => $stock->imageSources(40, 40),
             'image_thumbnail' => $imageThumbnail,
             'quantity_ordered' => $this->quantity_ordered ?? 0,
             'purchase_order_transaction_id' => $this->purchase_order_transaction_id,
-            'purchase_order_id'  => $this->purchase_order_id,
-            'updateRoute'       => [
+            'purchase_order_id' => $this->purchase_order_id,
+            'updateRoute' => [
                 'name' => 'grp.models.purchase-order.transaction.update',
                 'parameters' => [
                     'purchaseOrder' => $this->purchase_order_id,
-                    'purchaseOrderTransaction' => $this->purchase_order_transaction_id
-                ]
+                    'purchaseOrderTransaction' => $this->purchase_order_transaction_id,
+                ],
             ],
-            'deleteRoute'       => [
+            'deleteRoute' => [
                 'name' => 'grp.models.purchase-order.transaction.delete',
                 'parameters' => [
                     'purchaseOrder' => $this->purchase_order_id,
-                    'purchaseOrderTransaction' => $this->purchase_order_transaction_id
-                ]
-            ]
+                    'purchaseOrderTransaction' => $this->purchase_order_transaction_id,
+                ],
+            ],
 
         ];
     }

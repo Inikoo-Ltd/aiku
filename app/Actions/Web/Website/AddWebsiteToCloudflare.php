@@ -18,7 +18,8 @@ class AddWebsiteToCloudflare
 {
     use AsAction;
 
-    public string $commandSignature   = 'website:add-cloudflare {website}';
+    public string $commandSignature = 'website:add-cloudflare {website}';
+
     public string $commandDescription = 'Register website to Cloudflare';
 
     public function handle(Website $website): string
@@ -26,7 +27,7 @@ class AddWebsiteToCloudflare
         $response = RegisterDomainCloudFlare::run($website->domain);
 
         $website->update([
-            'cloudflare_id'     => $response['result']['id'],
+            'cloudflare_id' => $response['result']['id'],
             'cloudflare_status' => $response['result']['status'],
         ]);
 
@@ -44,6 +45,7 @@ class AddWebsiteToCloudflare
         }
 
         $this->handle($website);
+
         return 0;
     }
 }

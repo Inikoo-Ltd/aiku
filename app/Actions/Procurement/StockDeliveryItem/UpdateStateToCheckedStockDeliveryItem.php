@@ -17,16 +17,16 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateStateToCheckedStockDeliveryItem
 {
-    use WithActionUpdate;
     use AsAction;
     use HasStockDeliveryHydrators;
+    use WithActionUpdate;
 
     public function handle(StockDeliveryItem $stockDeliveryItem, $modelData): StockDeliveryItem
     {
         $data = [
             'state' => StockDeliveryItemStateEnum::CHECKED,
         ];
-        $data['checked_at']            = now();
+        $data['checked_at'] = now();
         $data['unit_quantity_checked'] = $modelData['unit_quantity_checked'];
 
         $stockDeliveryItem = $this->update($stockDeliveryItem, $data);
@@ -39,7 +39,7 @@ class UpdateStateToCheckedStockDeliveryItem
     public function rules(): array
     {
         return [
-            'unit_quantity_checked' => ['required', 'numeric']
+            'unit_quantity_checked' => ['required', 'numeric'],
         ];
     }
 

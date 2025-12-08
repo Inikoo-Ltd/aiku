@@ -29,7 +29,7 @@ class OrganisationHydrateCustomers implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_customers' => $organisation->customers()->count()
+            'number_customers' => $organisation->customers()->count(),
         ];
 
         $stats = array_merge(

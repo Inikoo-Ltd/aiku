@@ -25,14 +25,14 @@ class OrganisationHydrateSalesMetrics implements ShouldBeUnique
 
     public function getJobUniqueId(Organisation $organisation, Carbon $date): string
     {
-        return $organisation->id . '-' . $date->format('YmdHis');
+        return $organisation->id.'-'.$date->format('YmdHis');
     }
 
     public function asCommand(Command $command): void
     {
         $organisation = Organisation::where('slug', $command->argument('organisation'))->first();
 
-        if (!$organisation) {
+        if (! $organisation) {
             return;
         }
 
@@ -44,13 +44,13 @@ class OrganisationHydrateSalesMetrics implements ShouldBeUnique
     public function handle(Organisation $organisation, Carbon $date): void
     {
         $dayStart = $date->copy()->startOfDay();
-        $dayEnd   = $date->copy()->endOfDay();
+        $dayEnd = $date->copy()->endOfDay();
 
         $metrics = $this->getSalesMetrics([
             'context' => ['organisation_id' => $organisation->id],
-            'start'   => $dayStart,
-            'end'     => $dayEnd,
-            'fields'  => [
+            'start' => $dayStart,
+            'end' => $dayEnd,
+            'fields' => [
                 'invoices',
                 'refunds',
                 'orders',
@@ -62,15 +62,15 @@ class OrganisationHydrateSalesMetrics implements ShouldBeUnique
                 'revenue_grp_currency',
                 'revenue_org_currency',
                 'lost_revenue_grp_currency',
-                'lost_revenue_org_currency'
-            ]
+                'lost_revenue_org_currency',
+            ],
         ]);
 
         OrganisationSalesMetrics::updateOrCreate(
             [
-                'group_id'        => $organisation->group_id,
+                'group_id' => $organisation->group_id,
                 'organisation_id' => $organisation->id,
-                'date'            => $dayStart
+                'date' => $dayStart,
             ],
             $metrics
         );

@@ -25,12 +25,12 @@ class CheckDomainStatusCloudflare
 
         foreach ($domains as $domain) {
             $response = Http::withHeaders([
-                'Content-Type'  => 'application/json',
-                'Authorization' => 'Bearer ' . config('app.cloudflare_api_token'),
-            ])->get(config('app.cloudflare_api_url') . "/zones/$domain->cloudflare_id")->json();
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer '.config('app.cloudflare_api_token'),
+            ])->get(config('app.cloudflare_api_url')."/zones/$domain->cloudflare_id")->json();
 
             Website::where('cloudflare_id', $response['result']['id'])->update([
-                'cloudflare_status' => $response['result']['status']
+                'cloudflare_status' => $response['result']['status'],
             ]);
         }
     }

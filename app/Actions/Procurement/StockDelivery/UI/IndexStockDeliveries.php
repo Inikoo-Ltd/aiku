@@ -38,6 +38,7 @@ class IndexStockDeliveries extends OrgAction
     use WithOrgAgentSubNavigation;
     use WithOrgPartnerSubNavigation;
     use WithOrgSupplierSubNavigation;
+
     private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier $parent;
 
     public function handle($prefix = null): LengthAwarePaginator
@@ -71,7 +72,7 @@ class IndexStockDeliveries extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
@@ -134,7 +135,6 @@ class IndexStockDeliveries extends OrgAction
         return $this->handle();
     }
 
-
     public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->maya = true;
@@ -148,15 +148,14 @@ class IndexStockDeliveries extends OrgAction
         return StockDeliveryResource::collection($suppliers);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         $subNavigation = null;
         $title = __('Stock Deliveries');
         $model = '';
-        $icon  = [
-            'icon'  => ['fal', 'fa-truck-container'],
-            'title' => __('Stock Deliveries')
+        $icon = [
+            'icon' => ['fal', 'fa-truck-container'],
+            'title' => __('Stock Deliveries'),
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -165,72 +164,72 @@ class IndexStockDeliveries extends OrgAction
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
             $title = $this->parent->agent->organisation->name;
             $model = '';
-            $icon  = [
-                'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Stock Deliveries')
+            $icon = [
+                'icon' => ['fal', 'fa-people-arrows'],
+                'title' => __('Stock Deliveries'),
             ];
-            $iconRight    = [
+            $iconRight = [
                 'icon' => 'fal fa-truck-container',
             ];
             $afterTitle = [
 
-                'label'     => __('Stock Deliveries')
+                'label' => __('Stock Deliveries'),
             ];
         } elseif ($this->parent instanceof OrgPartner) {
             $subNavigation = $this->getOrgPartnerNavigation($this->parent);
             $title = $this->parent->partner->name;
             $model = '';
-            $icon  = [
-                'icon'  => ['fal', 'fa-users-class'],
-                'title' => __('Stock Deliveries')
+            $icon = [
+                'icon' => ['fal', 'fa-users-class'],
+                'title' => __('Stock Deliveries'),
             ];
-            $iconRight    = [
+            $iconRight = [
                 'icon' => 'fal fa-truck-container',
             ];
             $afterTitle = [
 
-                'label'     => __('Stock Deliveries')
+                'label' => __('Stock Deliveries'),
             ];
         } elseif ($this->parent instanceof OrgSupplier) {
             $subNavigation = $this->getOrgSupplierNavigation($this->parent);
             $title = $this->parent->supplier->name;
             $model = '';
-            $icon  = [
-                'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('Stock Deliveries')
+            $icon = [
+                'icon' => ['fal', 'fa-person-dolly'],
+                'title' => __('Stock Deliveries'),
             ];
-            $iconRight    = [
+            $iconRight = [
                 'icon' => 'fal fa-truck-container',
             ];
             $afterTitle = [
 
-                'label'     => __('Stock Deliveries')
+                'label' => __('Stock Deliveries'),
             ];
         } elseif ($this->parent instanceof Warehouse) {
             $model = __('Goods in');
         }
+
         return Inertia::render(
             'Procurement/StockDeliveries',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('Stock Deliveries'),
-                'pageHead'    => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => __('Stock Deliveries'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                     'create' => $this->canEdit && $request->route()->getName() == 'grp.org.procurement.stock_deliveries.index' ? [
                         'route' => [
-                            'name'       => 'grp.org.procurement.stock_deliveries.create',
-                            'parameters' => array_values($request->route()->originalParameters())
+                            'name' => 'grp.org.procurement.stock_deliveries.create',
+                            'parameters' => array_values($request->route()->originalParameters()),
                         ],
-                        'label' => __('Stock Deliveries')
+                        'label' => __('Stock Deliveries'),
                     ] : false,
                     'subNavigation' => $subNavigation,
                 ],
-                'data'        => StockDeliveryResource::collection($suppliers),
-
+                'data' => StockDeliveryResource::collection($suppliers),
 
             ]
         )->table($this->tableStructure());
@@ -243,80 +242,80 @@ class IndexStockDeliveries extends OrgAction
                 ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
                                 'name' => 'grp.org.procurement.stock_deliveries.index',
-                                'parameters' => $routeParameters
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Stock deliveries'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
             'grp.org.warehouses.show.incoming.stock_deliveries.index' => array_merge(
                 ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
                                 'name' => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
-                                'parameters' => $routeParameters
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Stock deliveries'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
             'grp.org.procurement.org_agents.show.stock-deliveries.index' => array_merge(
                 ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.show.stock-deliveries.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.org_agents.show.stock-deliveries.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Stock deliveries'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
             'grp.org.procurement.org_suppliers.show.stock_deliveries.index' => array_merge(
                 ShowOrgSupplier::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_suppliers.show.stock_deliveries.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.org_suppliers.show.stock_deliveries.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Stock deliveries'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
             'grp.org.procurement.org_partners.show.stock-deliveries.index' => array_merge(
                 ShowOrgPartner::make()->getBreadcrumbs($this->parent, $routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_partners.show.stock-deliveries.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.org_partners.show.stock-deliveries.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Stock deliveries'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             )
         };

@@ -16,23 +16,21 @@ enum RawMaterialTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE            = 'showcase';
-    case HISTORY             = 'history';
-
-
+    case SHOWCASE = 'showcase';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
-            RawMaterialTabsEnum::HISTORY     => [
+            RawMaterialTabsEnum::HISTORY => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('Changelog'),
-                'icon'  => 'fal fa-clock',
+                'icon' => 'fal fa-clock',
             ],
             RawMaterialTabsEnum::SHOWCASE => [
                 'title' => __('Details'),
-                'icon'  => 'fal fa-chart-network',
+                'icon' => 'fal fa-chart-network',
             ],
         };
     }

@@ -17,24 +17,23 @@ trait WithDashboardDataDisplayTypeSettings
         $id = 'data_display_type';
 
         return [
-            'id'      => $id,
+            'id' => $id,
             'display' => true,
-            'align'   => $align,
-            'type'    => 'toggle',
-            'value'   => Arr::get($settings, $id, 'full'),
+            'align' => $align,
+            'type' => 'toggle',
+            'value' => Arr::get($settings, $id, 'full'),
             'options' => [
                 [
                     'value' => 'minified',
                     'label' => __('Minified'),
-                    'tooltip'   => __('Show only the most important information')
+                    'tooltip' => __('Show only the most important information'),
                 ],
                 [
                     'value' => 'full',
                     'label' => __('Full'),
-                    'tooltip'   => __('Show all available information')
-                ]
-            ]
+                    'tooltip' => __('Show all available information'),
+                ],
+            ],
         ];
     }
-
 }

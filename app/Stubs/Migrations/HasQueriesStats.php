@@ -17,6 +17,7 @@ trait HasQueriesStats
         $table->unsignedSmallInteger('number_queries')->default(0);
         $table->unsignedSmallInteger('number_static_queries')->default(0)->comment('is_static=true');
         $table->unsignedSmallInteger('number_dynamic_queries')->default(0)->comment('is_static=false');
+
         return $table;
     }
 }

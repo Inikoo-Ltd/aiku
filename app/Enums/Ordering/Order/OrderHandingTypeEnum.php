@@ -14,6 +14,6 @@ enum OrderHandingTypeEnum: string
 {
     use EnumHelperTrait;
     case COLLECTION = 'collection';
-    case SHIPPING   = 'shipping';
+    case SHIPPING = 'shipping';
 
 }

@@ -18,29 +18,28 @@ enum ApiTokenRetinaTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE  = 'showcase';
-    case API_TOKENS   = 'api_tokens';
-    case HISTORY      = 'history';
-
+    case SHOWCASE = 'showcase';
+    case API_TOKENS = 'api_tokens';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
             ApiTokenRetinaTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
 
             ApiTokenRetinaTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             ApiTokenRetinaTabsEnum::API_TOKENS => [
                 'title' => __('Api tokens'),
-                'icon'  => 'fal fa-key',
-                'type'  => 'icon',
+                'icon' => 'fal fa-key',
+                'type' => 'icon',
             ],
 
         };

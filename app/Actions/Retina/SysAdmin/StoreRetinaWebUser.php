@@ -21,16 +21,17 @@ use App\Rules\IUnique;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Validator;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Validation\Validator;
 
 class StoreRetinaWebUser extends RetinaAction
 {
     use WithNoStrictRules;
 
     protected Customer|FulfilmentCustomer $parent;
+
     private bool $action = false;
 
     /**
@@ -45,7 +46,6 @@ class StoreRetinaWebUser extends RetinaAction
         data_set($modelData, 'shop_id', $customer->shop_id);
         data_set($modelData, 'is_root', false);
         data_set($modelData, 'website_id', $customer->shop->website->id);
-
 
         $modelData['password'] = Hash::make($modelData['password']);
 
@@ -84,32 +84,31 @@ class StoreRetinaWebUser extends RetinaAction
     {
         return [
             'contact_name' => ['sometimes', 'nullable', 'max:255'],
-            'username'     => [
+            'username' => [
                 'required',
-                new AlphaDashDot(),
+                new AlphaDashDot,
                 'min:4',
                 'max:255',
                 new IUnique(
                     table: 'web_users',
                     extraConditions: [
-                        ['column' => 'website_id', 'value' => $this->webUser->website->id]
+                        ['column' => 'website_id', 'value' => $this->webUser->website->id],
                     ]
                 ),
             ],
-            'password'     =>
-                [
-                    'required',
-                    app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8)
-                ],
+            'password' => [
+                'required',
+                app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8),
+            ],
 
-            'email'        => [
+            'email' => [
                 'required',
                 'email',
                 'max:255',
                 new IUnique(
                     table: 'web_users',
                     extraConditions: [
-                        ['column' => 'website_id', 'value' => $this->webUser->website->id]
+                        ['column' => 'website_id', 'value' => $this->webUser->website->id],
                     ]
                 ),
             ],
@@ -118,13 +117,12 @@ class StoreRetinaWebUser extends RetinaAction
 
     }
 
-
     /**
      * @throws \Throwable
      */
     public function asController(ActionRequest $request): Webuser
     {
-        $customer       = $request->user()->customer;
+        $customer = $request->user()->customer;
         $this->customer = $customer;
         $this->initialisation($request);
 
@@ -135,14 +133,14 @@ class StoreRetinaWebUser extends RetinaAction
     {
         $this->action = true;
         $this->initialisationFulfilmentActions($customer->fulfilmentCustomer, $modelData);
+
         return $this->handle($customer, $this->validatedData);
     }
 
     public function htmlResponse(WebUser $webUser): Response
     {
         return Inertia::location(route('retina.sysadmin.web-users.show', [
-            'webUser' => $webUser->slug
+            'webUser' => $webUser->slug,
         ]));
     }
-
 }

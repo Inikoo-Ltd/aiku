@@ -21,12 +21,12 @@ class GoogleDriveCustomAdapter extends GoogleDriveAdapter
         try {
             /** @var RequestInterface $response */
             if (($response = $this->service->files->get(/** @scrutinizer ignore-type */ $fileId, $this->applyDefaultParams(['alt' => 'media'], 'files.get')))) {
-                return (string)$response->getBody();
+                return (string) $response->getBody();
             }
         } catch (\Exception $e) {
             /** @var RequestInterface $response */
             if (($response = $this->service->files->export(/** @scrutinizer ignore-type */ $fileId, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $this->applyDefaultParams(['alt' => 'media'], 'files.get')))) {
-                return (string)$response->getBody();
+                return (string) $response->getBody();
             }
         }
         throw UnableToReadFile::fromLocation($path, 'Unable To Read File');

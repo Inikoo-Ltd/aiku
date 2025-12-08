@@ -35,9 +35,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Group $group
  * @property-read \App\Models\Accounting\InvoiceCategory $invoiceCategory
  * @property-read Organisation $organisation
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesMetrics newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesMetrics newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategorySalesMetrics query()
+ *
  * @mixin \Eloquent
  */
 class InvoiceCategorySalesMetrics extends Model
@@ -45,7 +47,7 @@ class InvoiceCategorySalesMetrics extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'date' => 'datetime'
+        'date' => 'datetime',
     ];
 
     public function group(): BelongsTo

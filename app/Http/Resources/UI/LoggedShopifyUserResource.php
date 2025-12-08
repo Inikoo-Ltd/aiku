@@ -22,9 +22,9 @@ class LoggedShopifyUserResource extends JsonResource
         $shopifyUser = $this;
 
         return [
-            'id'               => $shopifyUser->id,
-            'name'             => $shopifyUser->name,
-            'customer_id'      => $shopifyUser->customer_id
+            'id' => $shopifyUser->id,
+            'name' => $shopifyUser->name,
+            'customer_id' => $shopifyUser->customer_id,
         ];
     }
 }

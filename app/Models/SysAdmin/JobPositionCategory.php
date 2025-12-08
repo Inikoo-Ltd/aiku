@@ -27,9 +27,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionCategory query()
+ *
  * @mixin \Eloquent
  */
 class JobPositionCategory extends Model
@@ -37,8 +39,8 @@ class JobPositionCategory extends Model
     use HasSlug;
 
     protected $casts = [
-        'data'  => 'array',
-        'scope' => JobPositionScopeEnum::class
+        'data' => 'array',
+        'scope' => JobPositionScopeEnum::class,
     ];
 
     protected $attributes = [
@@ -65,5 +67,4 @@ class JobPositionCategory extends Model
     {
         return $this->belongsTo(Group::class);
     }
-
 }

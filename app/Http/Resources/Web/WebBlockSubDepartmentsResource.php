@@ -32,14 +32,13 @@ class WebBlockSubDepartmentsResource extends JsonResource
         }
         $url = '/'.$url.$this->url;
 
-
         $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
 
         return [
-            'slug'       => $this->slug,
-            'code'       => $this->code,
-            'name'       => $this->name,
-            'url'        => $url,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'url' => $url,
             'web_images' => $webImages,
         ];
     }

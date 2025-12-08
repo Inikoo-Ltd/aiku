@@ -8,7 +8,6 @@ enum ChatEventActorTypeEnum: string
 {
     use EnumHelperTrait;
 
-
     case USER = 'user';
     case AGENT = 'agent';
     case SYSTEM = 'system';
@@ -18,11 +17,11 @@ enum ChatEventActorTypeEnum: string
     public static function labels(): array
     {
         return [
-            'user'   => __('User'),
-            'agent'  => __('Agent'),
+            'user' => __('User'),
+            'agent' => __('Agent'),
             'system' => __('System'),
-            'guest'  => __('Guest'),
-            'ai'     => __('AI'),
+            'guest' => __('Guest'),
+            'ai' => __('AI'),
         ];
     }
 }

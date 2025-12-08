@@ -13,9 +13,6 @@ use App\Actions\Traits\Dashboards\Settings\WithDashboardModelStateTypeSettings;
 
 trait WithDashboardSettings
 {
-    use WithDashboardModelStateTypeSettings;
     use WithDashboardDataDisplayTypeSettings;
-
-
-
+    use WithDashboardModelStateTypeSettings;
 }

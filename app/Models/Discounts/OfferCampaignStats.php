@@ -32,9 +32,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Discounts\OfferCampaign|null $asset
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaignStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaignStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaignStats query()
+ *
  * @mixin \Eloquent
  */
 class OfferCampaignStats extends Model

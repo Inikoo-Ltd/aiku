@@ -45,14 +45,10 @@ class GroupHydrateStockFamilies implements ShouldBeUnique
             )
         );
 
-
         $stats['number_current_stock_families'] =
             Arr::get($stats, 'number_stock_families_state_active', 0) +
             Arr::get($stats, 'number_stock_families_state_discontinuing', 0);
 
-
         $group->goodsStats()->update($stats);
     }
-
-
 }

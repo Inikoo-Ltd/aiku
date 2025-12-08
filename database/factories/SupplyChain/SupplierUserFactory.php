@@ -16,9 +16,9 @@ class SupplierUserFactory extends Factory
     {
 
         return [
-            'username'             => fake()->userName,
-            'password'             => fake()->password,
-            'email'                => fake()->email,
+            'username' => fake()->userName,
+            'password' => fake()->password,
+            'email' => fake()->email,
         ];
     }
 }

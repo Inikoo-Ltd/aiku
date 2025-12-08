@@ -9,7 +9,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // Postgres supports IF NOT EXISTS on CREATE INDEX
@@ -19,7 +20,6 @@ return new class () extends Migration {
         DB::statement('CREATE INDEX IF NOT EXISTS products_sub_department_id_index ON products (sub_department_id)');
         DB::statement('CREATE INDEX IF NOT EXISTS products_department_id_index ON products (department_id)');
     }
-
 
     public function down(): void
     {

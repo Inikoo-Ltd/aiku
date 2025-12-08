@@ -93,6 +93,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read Model|\Eloquent $parent
  * @property-read Collection<int, \App\Models\Procurement\PurchaseOrder> $purchaseOrders
+ *
  * @method static \Database\Factories\Procurement\StockDeliveryFactory factory($count = null, $state = [])
  * @method static Builder<static>|StockDelivery newModelQuery()
  * @method static Builder<static>|StockDelivery newQuery()
@@ -100,37 +101,37 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|StockDelivery query()
  * @method static Builder<static>|StockDelivery withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|StockDelivery withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class StockDelivery extends Model implements HasMedia, Auditable
+class StockDelivery extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
     use HasAddress;
     use HasAddresses;
-    use HasSlug;
-    use HasFactory;
-    use InOrganisation;
     use HasAttachments;
+    use HasFactory;
     use HasHistory;
-
+    use HasSlug;
+    use InOrganisation;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'            => 'array',
-        'cost_data'       => 'array',
-        'state'           => StockDeliveryStateEnum::class,
-        'date'            => 'datetime',
-        'dispatched_at'   => 'datetime',
-        'received_at'     => 'datetime',
-        'checked_at'      => 'datetime',
-        'placed_at'       => 'datetime',
-        'cancelled_at'    => 'datetime',
+        'data' => 'array',
+        'cost_data' => 'array',
+        'state' => StockDeliveryStateEnum::class,
+        'date' => 'datetime',
+        'dispatched_at' => 'datetime',
+        'received_at' => 'datetime',
+        'checked_at' => 'datetime',
+        'placed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
         'not_received_at' => 'datetime',
-        'fetched_at'      => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'      => '{}',
+        'data' => '{}',
         'cost_data' => '{}',
     ];
 
@@ -152,14 +153,13 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'procurement'
+            'procurement',
         ];
     }
 
     protected array $auditInclude = [
         'reference',
     ];
-
 
     public function purchaseOrders(): BelongsToMany
     {

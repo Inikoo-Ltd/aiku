@@ -35,17 +35,18 @@ class UpdateModelHasContent extends OrgAction
         if (Arr::exists($imageData, 'image')) {
             $this->processCatalogueImage($imageData, $modelHasContent);
         }
+
         return $modelHasContent;
     }
 
     public function rules(): array
     {
         return [
-            'type'         => ['sometimes', Rule::enum(ModelHasContentTypeEnum::class)],
-            'title'        => ['sometimes', 'string'],
-            'text'         => ['sometimes', 'string'],
-            'image'        => ['sometimes', 'nullable', 'image', 'mimes:jpg,png,jpeg', 'max:10240'],
-            'position'     => ['sometimes']
+            'type' => ['sometimes', Rule::enum(ModelHasContentTypeEnum::class)],
+            'title' => ['sometimes', 'string'],
+            'text' => ['sometimes', 'string'],
+            'image' => ['sometimes', 'nullable', 'image', 'mimes:jpg,png,jpeg', 'max:10240'],
+            'position' => ['sometimes'],
         ];
     }
 

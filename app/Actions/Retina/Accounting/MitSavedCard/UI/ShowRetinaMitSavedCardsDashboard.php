@@ -31,27 +31,26 @@ class ShowRetinaMitSavedCardsDashboard extends RetinaAction
     {
         $title = __('Credit Card Dashboard');
 
-
         return Inertia::render('Dropshipping/DashboardRetinaMitCreditCards', [
-            'title'       => $title,
+            'title' => $title,
             'breadcrumbs' => $this->getBreadcrumbs(),
-            'pageHead'    => [
+            'pageHead' => [
 
-                'title'   => $title,
-                'icon'    => [
-                    'icon'  => ['fal', 'fa-tachometer-alt'],
-                    'title' => $title
+                'title' => $title,
+                'icon' => [
+                    'icon' => ['fal', 'fa-tachometer-alt'],
+                    'title' => $title,
                 ],
                 'actions' => [
                     [
-                        'type'  => 'button',
+                        'type' => 'button',
                         'style' => 'create',
                         'label' => __('Save Credit Card'),
                         'route' => [
                             'name' => 'retina.dropshipping.mit_saved_cards.create',
                         ],
-                    ]
-                ]
+                    ],
+                ],
 
             ],
 
@@ -63,12 +62,11 @@ class ShowRetinaMitSavedCardsDashboard extends RetinaAction
             'head_subtitle' => __('You can add, edit or delete your saved cards. This is a to manage your payment methods.'),
 
             'delete_route' => [
-                'name'   => 'retina.models.mit_saved_card.delete',
+                'name' => 'retina.models.mit_saved_card.delete',
                 'method' => 'delete',
-            ]
+            ],
         ]);
     }
-
 
     public function getBreadcrumbs(): array
     {
@@ -77,14 +75,14 @@ class ShowRetinaMitSavedCardsDashboard extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
+                                'name' => 'retina.dropshipping.mit_saved_cards.dashboard',
                             ],
                             'label' => __('Credit Card Dashboard'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

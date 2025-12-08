@@ -58,7 +58,7 @@ trait HasDangerousGoodsFields
             'pictogram_environment',
             'pictogram_health',
             'pictogram_oxidising',
-            'pictogram_danger'
+            'pictogram_danger',
         ];
     }
 }

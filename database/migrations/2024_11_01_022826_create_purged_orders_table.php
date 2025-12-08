@@ -12,8 +12,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
+
     public function up(): void
     {
         Schema::create('purged_orders', function (Blueprint $table) {
@@ -30,7 +32,7 @@ return new class () extends Migration {
             $table->dateTimeTz('purged_at')->nullable();
             $table->dateTimeTz('order_created_at')->nullable();
             $table->dateTimeTz('order_last_updated_at')->nullable();
-            $table->smallInteger('number_transaction', )->nullable();
+            $table->smallInteger('number_transaction')->nullable();
             $table->decimal('net_amount', 18, 2)->nullable()->comment('Net amount of the deleted order');
             $table->decimal('org_net_amount', 18, 2)->nullable();
             $table->decimal('grp_net_amount', 18, 2)->nullable();
@@ -42,7 +44,6 @@ return new class () extends Migration {
 
         });
     }
-
 
     public function down(): void
     {

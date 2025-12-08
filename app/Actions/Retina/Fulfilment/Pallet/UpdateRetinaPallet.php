@@ -56,42 +56,41 @@ class UpdateRetinaPallet extends RetinaAction
                     extraConditions: [
                         ['column' => 'fulfilment_customer_id', 'value' => $this->pallet->fulfilmentCustomer->id],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->pallet->id
+                            'value' => $this->pallet->id,
                         ],
                     ]
                 ),
 
+            ],
+            'state' => [
+                'sometimes',
+                Rule::enum(PalletStateEnum::class),
+            ],
+            'status' => [
+                'sometimes',
+                Rule::enum(PalletStatusEnum::class),
+            ],
+            'type' => [
+                'sometimes',
+                Rule::enum(PalletTypeEnum::class),
+            ],
+            'rental_id' => [
+                'nullable',
+                Rule::Exists('rentals', 'id')->where('fulfilment_id', $this->fulfilment->id),
+            ],
+            'pallet_return_id' => [
+                'sometimes',
+                'nullable',
+                Rule::Exists('pallet_returns', 'id')->where('fulfilment_id', $this->fulfilment->id),
 
             ],
-            'state'              => [
-                'sometimes',
-                Rule::enum(PalletStateEnum::class)
-            ],
-            'status'             => [
-                'sometimes',
-                Rule::enum(PalletStatusEnum::class)
-            ],
-            'type'               => [
-                'sometimes',
-                Rule::enum(PalletTypeEnum::class)
-            ],
-            'rental_id'          => [
-                'nullable',
-                Rule::Exists('rentals', 'id')->where('fulfilment_id', $this->fulfilment->id)
-            ],
-            'pallet_return_id'   => [
-                'sometimes',
-                'nullable',
-                Rule::Exists('pallet_returns', 'id')->where('fulfilment_id', $this->fulfilment->id)
-
-            ],
-            'notes'              => ['sometimes', 'nullable', 'string', 'max:1024'],
-            'received_at'        => ['sometimes', 'nullable', 'date'],
-            'booked_in_at'       => ['sometimes', 'nullable', 'date'],
-            'storing_at'         => ['sometimes', 'nullable', 'date'],
-            'reference'          => [
+            'notes' => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'received_at' => ['sometimes', 'nullable', 'date'],
+            'booked_in_at' => ['sometimes', 'nullable', 'date'],
+            'storing_at' => ['sometimes', 'nullable', 'date'],
+            'reference' => [
                 'sometimes',
                 'nullable',
                 'max:64',
@@ -102,9 +101,9 @@ class UpdateRetinaPallet extends RetinaAction
                     extraConditions: [
                         ['column' => 'fulfilment_customer_id', 'value' => $this->pallet->fulfilmentCustomer->id],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->pallet->id
+                            'value' => $this->pallet->id,
                         ],
                     ]
                 ),
@@ -123,7 +122,7 @@ class UpdateRetinaPallet extends RetinaAction
 
     public function action(Pallet $pallet, array $modelData): Pallet
     {
-        $this->pallet   = $pallet;
+        $this->pallet = $pallet;
         $this->asAction = true;
         $this->initialisationFulfilmentActions($pallet->fulfilmentCustomer, $modelData);
 

@@ -9,23 +9,22 @@
 namespace App\Http\Middleware;
 
 use App\Actions\Retina\UI\GetRetinaFirstLoadProps;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
-use App\Http\Resources\Helpers\CurrencyResource;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Arr;
 use Tighten\Ziggy\Ziggy;
-use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 
 class HandleRetinaInertiaRequests extends Middleware
 {
     use WithIrisInertia;
 
     protected $rootView = 'app-retina';
-
 
     public function share(Request $request): array
     {
@@ -35,11 +34,11 @@ class HandleRetinaInertiaRequests extends Middleware
         }
 
         /** @var WebUser $webUser */
-        $webUser            = $request->user();
+        $webUser = $request->user();
         $firstLoadOnlyProps = [];
 
-        if (!$request->inertia() || Session::get('reloadLayout')) {
-            $firstLoadOnlyProps          = GetRetinaFirstLoadProps::run($request, $webUser);
+        if (! $request->inertia() || Session::get('reloadLayout')) {
+            $firstLoadOnlyProps = GetRetinaFirstLoadProps::run($request, $webUser);
             $firstLoadOnlyProps['ziggy'] = function () use ($request) {
                 return array_merge((new Ziggy('retina'))->toArray(), [
                     'location' => $request->url(),
@@ -47,7 +46,7 @@ class HandleRetinaInertiaRequests extends Middleware
             };
         }
 
-        $website                           = $request->get('website');
+        $website = $request->get('website');
         $firstLoadOnlyProps['environment'] = app()->environment();
 
         $customerSalesChannels = [];
@@ -63,45 +62,46 @@ class HandleRetinaInertiaRequests extends Middleware
                 $customerSalesChannels[$channel->id] = [
                     'customer_sales_channel_id' => $channel->id,
                     'customer_sales_channel_name' => $channel->customer_sales_channel_name,
-                    'platform_id'               => $channel->platform_id,
-                    'platform_slug'             => $channel->slug,
-                    'platform_code'             => $channel->code,
-                    'platform_name'             => $channel->name,
+                    'platform_id' => $channel->platform_id,
+                    'platform_slug' => $channel->slug,
+                    'platform_code' => $channel->code,
+                    'platform_name' => $channel->name,
                 ];
             }
         }
+
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'auth'     => [
-                    'user'          => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
-                    'customerSalesChannels' => $customerSalesChannels
+                'auth' => [
+                    'user' => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
+                    'customerSalesChannels' => $customerSalesChannels,
                 ],
                 'currency' => [
-                    'code'   => $website->shop->currency->code,
+                    'code' => $website->shop->currency->code,
                     'symbol' => $website->shop->currency->symbol,
-                    'name'   => $website->shop->currency->name,
+                    'name' => $website->shop->currency->name,
                 ],
-                'flash'    => [
-                    'notification'  => fn () => $request->session()->get('notification'),
-                    'modal'         => fn () => $request->session()->get('modal'),
-                    'gtm'           => fn () => $request->session()->get('gtm'),
-                    'confetti'      => fn () => $request->session()->get('confetti')
+                'flash' => [
+                    'notification' => fn () => $request->session()->get('notification'),
+                    'modal' => fn () => $request->session()->get('modal'),
+                    'gtm' => fn () => $request->session()->get('gtm'),
+                    'confetti' => fn () => $request->session()->get('confetti'),
                 ],
-                'ziggy'    => [
+                'ziggy' => [
                     'location' => $request->url(),
                 ],
-                "retina"   => [
-                    "type"     => $website->shop->type->value,
-                    "currency" => CurrencyResource::make($website->shop->currency)->toArray(request()),
+                'retina' => [
+                    'type' => $website->shop->type->value,
+                    'currency' => CurrencyResource::make($website->shop->currency)->toArray(request()),
                     'portal_link' => Arr::get($website->shop->settings, 'portal.link', ''),
-                    "balance"  => $webUser?->customer?->balance,
-                    'show_cards_modal' => !$webUser?->customer->mitSavedCard()->exists() && $webUser?->customer
-                            ->customerSalesChannels()
-                            ->whereNot('platform_id', 4)
-                            ->exists(),
+                    'balance' => $webUser?->customer?->balance,
+                    'show_cards_modal' => ! $webUser?->customer->mitSavedCard()->exists() && $webUser?->customer
+                        ->customerSalesChannels()
+                        ->whereNot('platform_id', 4)
+                        ->exists(),
                 ],
-                'iris'     => $this->getIrisData($website, $webUser)
+                'iris' => $this->getIrisData($website, $webUser),
             ],
             parent::share($request),
         );

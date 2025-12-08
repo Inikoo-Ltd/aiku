@@ -15,7 +15,7 @@ class PalletFactory extends Factory
     public function definition(): array
     {
         return [
-            'customer_reference'         => fake()->lexify,
+            'customer_reference' => fake()->lexify,
         ];
     }
 }

@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -27,10 +28,9 @@ return new class () extends Migration {
             $table->boolean('status')->default(true)->index();
             $table->unsignedSmallInteger('local_priority')->default(0)->index();
             $table->timestampsTz();
-            $table->unique([ 'org_stock_id', 'org_supplier_product_id']);
+            $table->unique(['org_stock_id', 'org_supplier_product_id']);
         });
     }
-
 
     public function down(): void
     {

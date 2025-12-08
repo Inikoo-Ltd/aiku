@@ -18,8 +18,8 @@ trait WithMastersAuthorisation
             return true;
         }
 
-        $this->canEdit = $request->user()->authTo("masters.edit");
+        $this->canEdit = $request->user()->authTo('masters.edit');
 
-        return $request->user()->authTo("masters.view");
+        return $request->user()->authTo('masters.view');
     }
 }

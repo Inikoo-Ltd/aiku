@@ -13,11 +13,11 @@ namespace App\Actions\Web\Website\Hydrators;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Web\Website;
 use Exception;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Arr;
 use Google\Client;
 use Google\Service\Webmasters;
 use GuzzleHttp\Exception\ConnectException;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Arr;
 
 class WebsiteHydrateGoogleCloudSearch implements ShouldBeUnique
 {
@@ -40,17 +40,17 @@ class WebsiteHydrateGoogleCloudSearch implements ShouldBeUnique
         }
 
         $groupSettings = $website->group->settings;
-        $apiToken      = Arr::get($groupSettings, 'gcp.oauthClientSecret');
-        if (!$apiToken) {
+        $apiToken = Arr::get($groupSettings, 'gcp.oauthClientSecret');
+        if (! $apiToken) {
             $apiToken = config('app.analytics.google.client_oauth_secret');
-            if (!$apiToken) {
+            if (! $apiToken) {
                 return;
             }
             data_set($groupSettings, 'gcp.oauthClientSecret', $apiToken);
             $website->group->update(['settings' => $groupSettings]);
         }
 
-        $client                      = new Client();
+        $client = new Client;
         $gcpOauthClientSecretDecoded = base64_decode($apiToken);
         $client->setAuthConfig(json_decode($gcpOauthClientSecretDecoded, true));
         $client->addScope(Webmasters::WEBMASTERS_READONLY);
@@ -65,12 +65,12 @@ class WebsiteHydrateGoogleCloudSearch implements ShouldBeUnique
             return '';
         }
         $websiteData = $website->data;
-        $siteUrl     = Arr::get($websiteData, 'gcp.siteUrl');
-        if (!$siteUrl) {
+        $siteUrl = Arr::get($websiteData, 'gcp.siteUrl');
+        if (! $siteUrl) {
             try {
                 $siteEntry = $service->sites->listSites()->getSiteEntry();
-                $listSite  = Arr::pluck($siteEntry, "siteUrl");
-                $siteUrl   = Arr::where($listSite, function (string $value) use ($website) {
+                $listSite = Arr::pluck($siteEntry, 'siteUrl');
+                $siteUrl = Arr::where($listSite, function (string $value) use ($website) {
                     return str_contains($value, $website->domain);
                 });
                 if (empty($siteUrl)) {
@@ -88,6 +88,4 @@ class WebsiteHydrateGoogleCloudSearch implements ShouldBeUnique
 
         return null;
     }
-
-
 }

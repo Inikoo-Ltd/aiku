@@ -20,13 +20,13 @@ class DeleteInvoiceFromAurora
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Invoice
     {
         if ($invoice = Invoice::withTrashed()->where('source_id', $organisationSourceId)->first()) {
-            if (!$invoice->trashed()) {
+            if (! $invoice->trashed()) {
                 $deletedInvoiceData = $organisationSource->fetchDeletedInvoice($organisationSourceId);
 
                 DeleteInvoice::run($invoice, [
                     'data' => [
-                        'deleted' => ['note' => $deletedInvoiceData['note']]
-                    ]
+                        'deleted' => ['note' => $deletedInvoiceData['note']],
+                    ],
                 ]);
             }
         } else {

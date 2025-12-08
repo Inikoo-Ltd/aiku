@@ -19,7 +19,6 @@ class GroupHydrateOrdersDispatchedToday implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $groupID): string
@@ -30,19 +29,16 @@ class GroupHydrateOrdersDispatchedToday implements ShouldBeUnique
     public function handle(int $groupID): void
     {
         $group = Group::find($groupID);
-        if (!$group) {
+        if (! $group) {
             return;
         }
         $stats = [
 
-
-            'number_orders_dispatched_today'              => $group->orders()->whereDate('dispatched_at', Carbon::today())->count(),
+            'number_orders_dispatched_today' => $group->orders()->whereDate('dispatched_at', Carbon::today())->count(),
             'orders_dispatched_today_amount_grp_currency' => $group->orders()->whereDate('dispatched_at', Carbon::today())->sum('grp_net_amount'),
 
         ];
 
         $group->orderHandlingStats()->update($stats);
     }
-
-
 }

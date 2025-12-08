@@ -19,14 +19,14 @@ trait WithBase64FileConverter
     {
         $fileData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64File));
 
-        $tmpFilePath = sys_get_temp_dir() . '/' . Str::uuid()->toString();
+        $tmpFilePath = sys_get_temp_dir().'/'.Str::uuid()->toString();
         file_put_contents($tmpFilePath, $fileData);
 
         $tmpFile = new File($tmpFilePath);
 
         return new UploadedFile(
             $tmpFile->getPathname(),
-            $model->slug . '-' . now()->format('Y-m-d-H-i-s') . '.' . $tmpFile->getExtension(),
+            $model->slug.'-'.now()->format('Y-m-d-H-i-s').'.'.$tmpFile->getExtension(),
             $tmpFile->getMimeType(),
             0,
             false

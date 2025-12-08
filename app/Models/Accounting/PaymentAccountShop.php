@@ -42,9 +42,11 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\Accounting\PaymentAccount $paymentAccount
  * @property-read Shop $shop
  * @property-read \App\Models\Accounting\PaymentAccountShopStats|null $stats
+ *
  * @method static Builder<static>|PaymentAccountShop newModelQuery()
  * @method static Builder<static>|PaymentAccountShop newQuery()
  * @method static Builder<static>|PaymentAccountShop query()
+ *
  * @mixin Eloquent
  */
 class PaymentAccountShop extends Model implements Auditable
@@ -54,13 +56,12 @@ class PaymentAccountShop extends Model implements Auditable
     protected $table = 'payment_account_shop';
 
     protected $casts = [
-        'data'              => 'array',
-        'state'             => PaymentAccountShopStateEnum::class,
-        'type'              => PaymentAccountTypeEnum::class,
-        'activated_at'      => 'datetime',
+        'data' => 'array',
+        'state' => PaymentAccountShopStateEnum::class,
+        'type' => PaymentAccountTypeEnum::class,
+        'activated_at' => 'datetime',
         'last_activated_at' => 'datetime',
-        'inactive_at'       => 'datetime',
-
+        'inactive_at' => 'datetime',
 
     ];
 
@@ -74,7 +75,7 @@ class PaymentAccountShop extends Model implements Auditable
     {
         return [
             'state',
-            'type'
+            'type',
         ];
     }
 
@@ -132,6 +133,4 @@ class PaymentAccountShop extends Model implements Auditable
             return config('app.sandbox.checkout_com.payment_channel');
         }
     }
-
-
 }

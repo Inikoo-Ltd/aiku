@@ -26,7 +26,9 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
 
     public string $jobQueue = 'urgent';
+
     public string $commandSignature = 'hydrate:organisation-sales-intervals {organisation}';
+
     private ?int $organisationID;
 
     public function __construct(Organisation $organisation)
@@ -61,7 +63,7 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
         $stats = [];
 
         $queryBase = Invoice::where('in_process', false)->where('organisation_id', $organisation->id)->selectRaw('sum(grp_net_amount) as  sum_aggregate ');
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'sales_grp_currency_',
@@ -70,7 +72,7 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
         );
 
         $queryBase = Invoice::where('in_process', false)->where('organisation_id', $organisation->id)->selectRaw(' sum(org_net_amount) as  sum_aggregate  ');
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'sales_org_currency_',
@@ -81,7 +83,7 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
         // basket
         $queryBase = Order::where('organisation_id', $organisation->id)->where('state', OrderStateEnum::CREATING)->selectRaw('sum(grp_net_amount) as  sum_aggregate');
 
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'baskets_created_grp_currency_',
@@ -90,7 +92,7 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'baskets_updated_grp_currency_',
@@ -101,7 +103,7 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
 
         $queryBase = Order::where('organisation_id', $organisation->id)->where('state', OrderStateEnum::CREATING)->selectRaw('sum(org_net_amount) as  sum_aggregate');
 
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'baskets_created_org_currency_',
@@ -110,7 +112,7 @@ class OrganisationHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'baskets_updated_org_currency_',

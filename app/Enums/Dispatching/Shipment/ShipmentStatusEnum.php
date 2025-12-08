@@ -19,14 +19,13 @@ enum ShipmentStatusEnum: string
     case FIXED = 'fixed';
     case ERROR = 'error';
 
-
     public static function labels(): array
     {
         return [
             'in_process' => __('In process'),
-            'success'    => __('Success'),
-            'fixed'      => __('Fixed'),
-            'error'      => __('Error'),
+            'success' => __('Success'),
+            'fixed' => __('Fixed'),
+            'error' => __('Error'),
         ];
     }
 
@@ -36,29 +35,28 @@ enum ShipmentStatusEnum: string
             'in_process' => [
 
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-indigo-500'
-
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-indigo-500',
 
             ],
-            'success'    => [
+            'success' => [
 
                 'tooltip' => __('Success'),
-                'icon'    => 'fal fa-spell-check',
-                'class'   => 'text-green-500'
+                'icon' => 'fal fa-spell-check',
+                'class' => 'text-green-500',
             ],
-            'fixed'      => [
+            'fixed' => [
 
                 'tooltip' => __('Fixed'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-green-500'
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-green-500',
             ],
-            'error'      => [
+            'error' => [
 
                 'tooltip' => __('Error'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-red-500'
-            ]
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-red-500',
+            ],
         ];
     }
 }

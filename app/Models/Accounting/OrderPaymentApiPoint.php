@@ -29,9 +29,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Order $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Accounting\PaymentAccountShop|null $paymentAccountShop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPaymentApiPoint newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPaymentApiPoint newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPaymentApiPoint query()
+ *
  * @mixin \Eloquent
  */
 class OrderPaymentApiPoint extends Model
@@ -39,9 +41,9 @@ class OrderPaymentApiPoint extends Model
     use InOrganisation;
 
     protected $casts = [
-        'data'         => 'array',
+        'data' => 'array',
         'processed_at' => 'datetime',
-        'state'        => OrderPaymentApiPointStateEnum::class,
+        'state' => OrderPaymentApiPointStateEnum::class,
     ];
 
     protected $attributes = [
@@ -59,5 +61,4 @@ class OrderPaymentApiPoint extends Model
     {
         return $this->belongsTo(PaymentAccountShop::class);
     }
-
 }

@@ -20,15 +20,15 @@ class SlideResource extends JsonResource
         $slide = $this;
 
         return [
-            'id'         => $slide->id,
-            'ulid'       => $slide->ulid,
-            'layout'     => $slide->layout,
+            'id' => $slide->id,
+            'ulid' => $slide->ulid,
+            'layout' => $slide->layout,
             'visibility' => $slide->visibility,
-            'image'      => [
+            'image' => [
                 'desktop' => $slide->image_id ? ImageResource::make($slide->image)->getArray() : null,
-                'mobile'  => $slide->mobile_image_id ? ImageResource::make($slide->imageMobile)->getArray() : null,
-                'tablet'  => $slide->tablet_image_id ? ImageResource::make($slide->imageTablet)->getArray() : null
-            ]
+                'mobile' => $slide->mobile_image_id ? ImageResource::make($slide->imageMobile)->getArray() : null,
+                'tablet' => $slide->tablet_image_id ? ImageResource::make($slide->imageTablet)->getArray() : null,
+            ],
         ];
     }
 }

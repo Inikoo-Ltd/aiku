@@ -15,6 +15,6 @@ enum UploadRecordStatusEnum: string
     use EnumHelperTrait;
 
     case PROCESSING = 'processing';
-    case COMPLETE   = 'complete';
-    case FAILED     = 'failed';
+    case COMPLETE = 'complete';
+    case FAILED = 'failed';
 }

@@ -14,8 +14,8 @@ use App\Http\Resources\Fulfilment\FulfilmentResource;
 use App\Http\Resources\SysAdmin\Group\GroupResource;
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetRetinaLayout
 {
@@ -25,10 +25,10 @@ class GetRetinaLayout
     {
         /** @var Website $website */
         $website = $request->get('website');
-        if (!$webUser) {
+        if (! $webUser) {
             return [
                 'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
-                'website'   => GroupResource::make($request->get('website'))->getArray(),
+                'website' => GroupResource::make($request->get('website'))->getArray(),
             ];
         }
 
@@ -43,14 +43,14 @@ class GetRetinaLayout
         $additionalData = [];
         if ($fulfilment = $website->shop?->fulfilment) {
             $additionalData = [
-                'fulfilment' => FulfilmentResource::make($fulfilment)
+                'fulfilment' => FulfilmentResource::make($fulfilment),
             ];
         }
 
         return [
             ...$additionalData,
-            'website'   => GroupResource::make($request->get('website'))->getArray(),
-            'customer'  => CustomersResource::make($webUser->customer)->getArray(),
+            'website' => GroupResource::make($request->get('website'))->getArray(),
+            'customer' => CustomersResource::make($webUser->customer)->getArray(),
             'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
 
             'navigation' => $isPreRegistration ? null : match ($request->get('website')->type->value) {

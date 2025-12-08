@@ -25,15 +25,11 @@ class StoreRetinaFulfilmentCustomerClientWithOrder extends RetinaAction
     use WithModelAddressActions;
     use WithNoStrictRules;
 
-    /**
-     * @var \App\Models\Dropshipping\CustomerSalesChannel
-     */
     private CustomerSalesChannel $scope;
-
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): PalletReturn
     {
-        $customerClient =  StoreCustomerClient::make()->action($customerSalesChannel, $modelData);
+        $customerClient = StoreCustomerClient::make()->action($customerSalesChannel, $modelData);
 
         $palletReturn = StoreRetinaPlatformPalletReturn::make()->action($customerClient, $modelData);
 
@@ -57,9 +53,9 @@ class StoreRetinaFulfilmentCustomerClientWithOrder extends RetinaAction
 
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): RedirectResponse
     {
-        return  Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.basket.show', [
+        return Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.basket.show', [
             'customerSalesChannel' => $palletReturn->customerSaleChannel->slug,
-            'palletReturn' => $palletReturn->slug
+            'palletReturn' => $palletReturn->slug,
         ]);
     }
 
@@ -73,6 +69,4 @@ class StoreRetinaFulfilmentCustomerClientWithOrder extends RetinaAction
 
         return $this->handle($customerSalesChannel, $this->validatedData);
     }
-
-
 }

@@ -231,9 +231,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $sales_grp_currency_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformSalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformSalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class PlatformSalesIntervals extends Model

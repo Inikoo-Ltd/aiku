@@ -39,34 +39,34 @@ class ShowRetinaCatalogueProduct extends RetinaAction
         $title = $product->code;
 
         $actions[] = [
-            'type'  => 'button',
+            'type' => 'button',
             'style' => 'create',
             'label' => __('Portfolio'),
-            'key'   => 'portofolio',
+            'key' => 'portofolio',
             'route' => [
-                'method'     => 'post',
-                'name'       => 'grp.models.refund.finalise',
-                'parameters' => []
-            ]
+                'method' => 'post',
+                'name' => 'grp.models.refund.finalise',
+                'parameters' => [],
+            ],
         ];
 
         return Inertia::render(
             'Dropshipping/Product/Product',
             [
-                'title'       => __('product'),
+                'title' => __('product'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($product, $request),
-                    'next'     => $this->getNext($product, $request),
+                    'next' => $this->getNext($product, $request),
                 ],
-                'pageHead'    => [
+                'pageHead' => [
                     'title' => $title,
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-cube'],
-                        'title' => $title
+                    'icon' => [
+                        'icon' => ['fal', 'fa-cube'],
+                        'title' => $title,
                     ],
                     'model' => __('Product'),
                     /* 'actions'       => $actions, */
@@ -75,39 +75,38 @@ class ShowRetinaCatalogueProduct extends RetinaAction
                             'routes' => [
                                 [
                                     'label' => 'images',
-                                    'key'   => 'images',
+                                    'key' => 'images',
                                     'icon' => ['fal', 'fa-images'],
                                     'inside_popover' => true,
                                     'route' => [
                                         'name' => 'retina.catalogue.feeds.product.download',
                                         'parameters' => [
                                             'product' => $product->slug,
-                                            'type'       => 'products_images'
-                                        ]
+                                            'type' => 'products_images',
+                                        ],
                                     ],
                                 ],
                                 [
                                     'label' => 'CSV',
-                                    'key'   => 'csv',
+                                    'key' => 'csv',
                                     'icon' => ['fal', 'fa-file-csv'],
                                     'popover' => false,
                                     'route' => [
                                         'name' => 'retina.catalogue.feeds.product.download',
                                         'parameters' => [
                                             'product' => $product->slug,
-                                            'type'       => 'products_csv'
-                                        ]
+                                            'type' => 'products_csv',
+                                        ],
                                     ],
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => RetinaProductTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => RetinaProductTabsEnum::navigation(),
                 ],
-
 
                 RetinaProductTabsEnum::SHOWCASE->value => $this->tab == RetinaProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
@@ -128,18 +127,18 @@ class ShowRetinaCatalogueProduct extends RetinaAction
             return [
 
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Products')
+                            'label' => __('Products'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
                             'label' => $product->code,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
 
@@ -150,20 +149,19 @@ class ShowRetinaCatalogueProduct extends RetinaAction
 
         return match ($routeName) {
 
-            'retina.catalogue.products.show' =>
-            array_merge(
+            'retina.catalogue.products.show' => array_merge(
                 ShowRetinaCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $product,
                     [
                         'index' => [
-                            'name'       => 'retina.catalogue.products.index',
-                            'parameters' => $routeParameters
+                            'name' => 'retina.catalogue.products.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'retina.catalogue.products.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'retina.catalogue.products.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -191,18 +189,19 @@ class ShowRetinaCatalogueProduct extends RetinaAction
 
     private function getNavigation(?Product $product, string $routeName): ?array
     {
-        if (!$product) {
+        if (! $product) {
             return null;
         }
+
         return match ($routeName) {
             'retina.catalogue.products.show' => [
                 'label' => $product->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'product'   => $product->slug
-                    ]
-                ]
+                        'product' => $product->slug,
+                    ],
+                ],
             ],
         };
     }

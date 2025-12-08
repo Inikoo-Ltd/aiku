@@ -29,7 +29,6 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
         return $webpage->id;
     }
 
-
     public string $commandSignature = 'luigis:reindex_webpage {webpage?}';
 
     /**
@@ -44,7 +43,6 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
             return;
         }
 
-
         if ($webpage->type != WebpageTypeEnum::CATALOGUE && $webpage->type != WebpageTypeEnum::BLOG) {
             return;
         }
@@ -52,14 +50,13 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
         $objects[] = $this->getObjectFromWebpage($webpage);
 
         $body = [
-            'objects' => $objects
+            'objects' => $objects,
         ];
         try {
             $this->request($webpage, '/v1/content', $body);
         } catch (Exception) {
         }
     }
-
 
     /**
      * @throws \Laravel\Octane\Exceptions\DdException

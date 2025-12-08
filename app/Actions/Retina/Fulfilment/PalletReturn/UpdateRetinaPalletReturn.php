@@ -40,12 +40,12 @@ class UpdateRetinaPalletReturn extends RetinaAction
     public function rules(): array
     {
         return [
-            'customer_reference'        => ['sometimes', 'nullable', 'string', Rule::unique('pallet_returns', 'customer_reference')
+            'customer_reference' => ['sometimes', 'nullable', 'string', Rule::unique('pallet_returns', 'customer_reference')
                 ->ignore($this->palletReturn->id)],
-            'reference'      => ['sometimes', 'string', 'max:255'],
-            'estimated_delivery_date'   => ['sometimes', 'date'],
-            'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'customer_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'reference' => ['sometimes', 'string', 'max:255'],
+            'estimated_delivery_date' => ['sometimes', 'date'],
+            'public_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'customer_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'collection_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
         ];
@@ -64,6 +64,7 @@ class UpdateRetinaPalletReturn extends RetinaAction
         $this->asAction = true;
         $this->palletReturn = $palletReturn;
         $this->initialisationFulfilmentActions($palletReturn->fulfilmentCustomer, $modelData);
+
         return $this->handle($palletReturn, $modelData);
     }
 

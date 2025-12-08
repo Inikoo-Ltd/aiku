@@ -17,18 +17,18 @@ enum TimesheetsTabsEnum: string
     use HasTabs;
 
     case ALL_EMPLOYEES = 'employees';
-    case PER_EMPLOYEE  = 'employee';
+    case PER_EMPLOYEE = 'employee';
 
     public function blueprint(): array
     {
         return match ($this) {
             TimesheetsTabsEnum::ALL_EMPLOYEES => [
                 'title' => __('All employees'),
-                'icon'  => 'fal fa-users',
+                'icon' => 'fal fa-users',
             ],
             TimesheetsTabsEnum::PER_EMPLOYEE => [
                 'title' => __('Per employee'),
-                'icon'  => 'fal fa-user',
+                'icon' => 'fal fa-user',
             ]
         };
     }

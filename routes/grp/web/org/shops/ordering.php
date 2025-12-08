@@ -26,13 +26,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowOrderingDashboard::class)->name('dashboard');
 
-
 Route::get('/backlog', ShowOrdersBacklog::class)->name('backlog');
 
 Route::get('/orders/', IndexOrders::class)->name('orders.index');
-
-
-
 
 Route::get('/orders/delivery_notes', IndexDeliveryNotesInOrdering::class)->name('delivery-notes.index');
 Route::get('/orders/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderingInShop'])->name('delivery-notes.show');

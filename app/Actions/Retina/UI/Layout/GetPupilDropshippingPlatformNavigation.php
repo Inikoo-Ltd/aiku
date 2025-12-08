@@ -24,7 +24,7 @@ class GetPupilDropshippingPlatformNavigation
         if ($shopifyUser->customer->shopifyUser) {
             $tabs = [];
 
-            if (!$shopifyUser->customer->fulfilmentCustomer or $platform->type !== PlatformTypeEnum::SHOPIFY) {
+            if (! $shopifyUser->customer->fulfilmentCustomer or $platform->type !== PlatformTypeEnum::SHOPIFY) {
                 $tabs = [
                     [
                         'label' => __('All Products'),
@@ -32,9 +32,9 @@ class GetPupilDropshippingPlatformNavigation
                         'root' => 'pupil.dropshipping.platforms.portfolios.products.index',
                         'route' => [
                             'name' => 'pupil.dropshipping.platforms.portfolios.products.index',
-                            'parameters' => [$platform->slug]
+                            'parameters' => [$platform->slug],
                         ],
-                    ]
+                    ],
                 ];
             }
 
@@ -44,7 +44,7 @@ class GetPupilDropshippingPlatformNavigation
                 'root' => 'pupil.dropshipping.platforms.portfolios.',
                 'route' => [
                     'name' => 'pupil.dropshipping.platforms.portfolios.index',
-                    'parameters' => [$platform->slug]
+                    'parameters' => [$platform->slug],
                 ],
                 'topMenu' => [
                     'subSections' => [
@@ -54,12 +54,12 @@ class GetPupilDropshippingPlatformNavigation
                             'root' => 'pupil.dropshipping.platforms.portfolios.index',
                             'route' => [
                                 'name' => 'pupil.dropshipping.platforms.portfolios.index',
-                                'parameters' => [$platform->slug]
+                                'parameters' => [$platform->slug],
                             ],
                         ],
-                        ...$tabs
-                    ]
-                ]
+                        ...$tabs,
+                    ],
+                ],
             ];
         }
 
@@ -69,7 +69,7 @@ class GetPupilDropshippingPlatformNavigation
             'root' => 'pupil.dropshipping.platforms.client.',
             'route' => [
                 'name' => 'pupil.dropshipping.platforms.client.index',
-                'parameters' => [$platform->slug]
+                'parameters' => [$platform->slug],
             ],
         ];
 
@@ -79,7 +79,7 @@ class GetPupilDropshippingPlatformNavigation
             'root' => 'pupil.dropshipping.platforms.orders.',
             'route' => [
                 'name' => 'pupil.dropshipping.platforms.orders.index',
-                'parameters' => [$platform->slug]
+                'parameters' => [$platform->slug],
             ],
         ];
 

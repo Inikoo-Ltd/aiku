@@ -14,7 +14,6 @@ enum DeliveryNoteStateEnum: string
 {
     use EnumHelperTrait;
 
-
     case UNASSIGNED = 'unassigned';
     case QUEUED = 'queued'; // picker assigned
     case HANDLING = 'handling'; // picking and packing
@@ -24,18 +23,17 @@ enum DeliveryNoteStateEnum: string
     case DISPATCHED = 'dispatched';
     case CANCELLED = 'cancelled';
 
-
     public static function labels(): array
     {
         return [
             'unassigned' => __('Unassigned'),
-            'queued'     => __('In Queue'),
-            'handling'   => __('Handling'),
+            'queued' => __('In Queue'),
+            'handling' => __('Handling'),
             'handling_blocked' => __('Handling Blocked'),
-            'packed'     => __('Packed'),
-            'finalised'  => __('Finalised'),
+            'packed' => __('Packed'),
+            'finalised' => __('Finalised'),
             'dispatched' => __('Dispatched'),
-            'cancelled'  => __('Cancelled')
+            'cancelled' => __('Cancelled'),
         ];
     }
 
@@ -44,85 +42,85 @@ enum DeliveryNoteStateEnum: string
         return [
             'unassigned' => [
                 'tooltip' => __('Unassigned'),
-                'icon'    => 'fal fa-chair',
-                'class'   => 'text-gray-500',  // Color for normal icon (Aiku)
-                'color'   => 'gray',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-chair',
+                'class' => 'text-gray-500',  // Color for normal icon (Aiku)
+                'color' => 'gray',  // Color for box (Retina)
+                'app' => [
                     'name' => 'chair',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'queued'     => [
+            'queued' => [
                 'tooltip' => __('In Queue'),
-                'icon'    => 'fal fa-hourglass-start',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-hourglass-start',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'chair',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'handling'   => [
+            'handling' => [
                 'tooltip' => __('Handling'),
-                'icon'    => 'fal fa-hand-paper',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-hand-paper',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'handling_blocked' => [
                 'tooltip' => __('Handling Blocked'),
-                'icon'    => 'fal fa-allergies',
-                'class'   => 'text-red-300',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-allergies',
+                'class' => 'text-red-300',
+                'color' => 'red',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'packed'     => [
+            'packed' => [
                 'tooltip' => __('Packed'),
-                'icon'    => 'fal fa-box-check',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-box-check',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'finalised'  => [
+            'finalised' => [
                 'tooltip' => __('Finalised'),
-                'icon'    => 'fal fa-box-check',
-                'class'   => 'text-indigo-500',
-                'color'   => 'indigo',
-                'app'     => [
+                'icon' => 'fal fa-box-check',
+                'class' => 'text-indigo-500',
+                'color' => 'indigo',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
 
             'dispatched' => [
                 'tooltip' => __('Dispatched'),
-                'icon'    => 'fal fa-check-double',
-                'class'   => 'text-green-500',
-                'color'   => 'green',
-                'app'     => [
+                'icon' => 'fal fa-check-double',
+                'class' => 'text-green-500',
+                'color' => 'green',
+                'app' => [
                     'name' => 'check-double',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'cancelled'  => [
+            'cancelled' => [
                 'tooltip' => __('Cancelled'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
+                'app' => [
                     'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
-            ]
+                    'type' => 'font-awesome-5',
+                ],
+            ],
 
         ];
     }

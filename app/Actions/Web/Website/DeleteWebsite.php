@@ -39,17 +39,11 @@ class DeleteWebsite extends OrgAction
         return $this->handle($website);
     }
 
-
     public function action(Website $website): Website
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisationFromShop($website->shop, []);
-
 
         return $this->handle($website);
     }
-
-
-
-
 }

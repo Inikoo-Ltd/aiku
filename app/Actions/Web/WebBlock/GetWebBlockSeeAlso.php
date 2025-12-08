@@ -25,9 +25,7 @@ class GetWebBlockSeeAlso
     /**
      * Handle building "See Also" web block data.
      *
-     * @param  Webpage  $webpage
      * @param  array<string,mixed>  $webBlock
-     *
      * @return array<string,mixed>
      */
     public function handle(Webpage $webpage, array $webBlock): array
@@ -39,26 +37,25 @@ class GetWebBlockSeeAlso
 
         // Ensure the type exists but don’t overwrite if already set
         $luigiTrackerId = data_get($webpage->website, 'settings.luigisbox.tracker_id');
-        if (!Arr::has($webBlock, "$settingsPath.type")) {
+        if (! Arr::has($webBlock, "$settingsPath.type")) {
             if ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
-                data_set($webBlock, "$settingsPath.type", "current-family");
+                data_set($webBlock, "$settingsPath.type", 'current-family');
             } elseif ($luigiTrackerId) {
-                data_set($webBlock, "$settingsPath.type", "luigi-trends");
+                data_set($webBlock, "$settingsPath.type", 'luigi-trends');
             }
         }
 
-
         // Section: Another Family
         $dataOtherFamilyToWorkshop = null;
-        $idOtherFamily             = (int)Arr::get($webBlock, "$settingsPath.other_family.id");
+        $idOtherFamily = (int) Arr::get($webBlock, "$settingsPath.other_family.id");
         /** ProductCategory $modelOtherFamily */
         if ($idOtherFamily > 0 && ($modelOtherFamily = ProductCategory::find($idOtherFamily))) {
             $dataOtherFamilyToWorkshop = [
-                'id'     => $idOtherFamily,
-                'slug'   => $modelOtherFamily->slug,
-                'name'   => $modelOtherFamily->name,
-                'code'   => $modelOtherFamily->code,
-                'title'  => $modelOtherFamily->webpage?->title,
+                'id' => $idOtherFamily,
+                'slug' => $modelOtherFamily->slug,
+                'name' => $modelOtherFamily->name,
+                'code' => $modelOtherFamily->code,
+                'title' => $modelOtherFamily->webpage?->title,
                 'option' => ProductsWebpageResource::collection(
                     $modelOtherFamily->getProducts()
                         // ->where('stock', '>', 0)
@@ -72,12 +69,12 @@ class GetWebBlockSeeAlso
         $ids = collect($products)
             ->pluck('id')
             ->filter(fn ($id) => is_numeric($id))
-            ->map(fn ($id) => (int)$id)
+            ->map(fn ($id) => (int) $id)
             ->values()
             ->all();
 
         $productsModel = Product::with(['images']) // eager-load to prevent N+1
-        ->whereIn('id', $ids)
+            ->whereIn('id', $ids)
             ->get();
 
         $productOverwrite = collect(
@@ -90,8 +87,7 @@ class GetWebBlockSeeAlso
                 : $product;
         });
 
-
-        $family                  = null;
+        $family = null;
         $productsInCurrentFamily = null;
 
         if ($webpage->sub_type == WebpageSubTypeEnum::FAMILY) {
@@ -103,9 +99,9 @@ class GetWebBlockSeeAlso
             $family = $product->family;
             if ($family) {
                 $productsInCurrentFamily = [
-                    'id'     => $family->id,
-                    'slug'   => $family->slug,
-                    'name'   => $family->name,
+                    'id' => $family->id,
+                    'slug' => $family->slug,
+                    'name' => $family->name,
                     'option' => ProductsWebpageResource::collection(
                         $family->getProducts()->sortByDesc('id')->take(6)
                     )->resolve(),

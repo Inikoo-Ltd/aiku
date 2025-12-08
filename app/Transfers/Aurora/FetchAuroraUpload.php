@@ -41,32 +41,29 @@ class FetchAuroraUpload extends FetchAurora
             default => null
         };
 
-
         $user = $this->parseUser($this->organisation->id.':'.$this->auroraModelData->{'Upload User Key'});
-        if (!$user) {
+        if (! $user) {
             dd($this->auroraModelData);
         }
 
-
         $this->parsedData['upload'] = [
-            'model'             => $model,
+            'model' => $model,
             'original_filename' => $this->auroraModelData->{'Upload File Name'},
-            'filename'          => $this->auroraModelData->{'Upload File Name'},
-            'filesize'          => $this->auroraModelData->{'Upload File Size'},
-            'source_id'         => $this->organisation->id.':'.$this->auroraModelData->{'Upload Key'},
-            'created_at'        => $this->parseDatetime($this->auroraModelData->{'Upload Created'}),
-            'updated_at'        => $this->parseDatetime($this->auroraModelData->{'Upload Created'}),
-            'number_rows'       => $this->auroraModelData->{'Upload Records'},
-            'number_success'    => $this->auroraModelData->{'Upload OK'},
-            'number_fails'      => $this->auroraModelData->{'Upload Errors'},
-            'fetched_at'        => now(),
-            'last_fetched_at'   => now(),
-            'user_id'           => $user->id,
+            'filename' => $this->auroraModelData->{'Upload File Name'},
+            'filesize' => $this->auroraModelData->{'Upload File Size'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Upload Key'},
+            'created_at' => $this->parseDatetime($this->auroraModelData->{'Upload Created'}),
+            'updated_at' => $this->parseDatetime($this->auroraModelData->{'Upload Created'}),
+            'number_rows' => $this->auroraModelData->{'Upload Records'},
+            'number_success' => $this->auroraModelData->{'Upload OK'},
+            'number_fails' => $this->auroraModelData->{'Upload Errors'},
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'user_id' => $user->id,
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Upload Dimension')

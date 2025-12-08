@@ -54,7 +54,7 @@ class StoreProduction extends OrgAction
             );
             foreach ($orgAdmins as $orgAdmin) {
                 UserAddRoles::run($orgAdmin, [
-                    Role::where('name', RolesEnum::getRoleName(RolesEnum::MANUFACTURING_ADMIN->value, $production))->first()
+                    Role::where('name', RolesEnum::getRoleName(RolesEnum::MANUFACTURING_ADMIN->value, $production))->first(),
                 ]);
             }
             SeedJobPositions::run($organisation);
@@ -67,7 +67,6 @@ class StoreProduction extends OrgAction
         OrganisationHydrateProductions::dispatch($organisation)->delay($this->hydratorsDelay);
         ProductionRecordSearch::dispatch($production);
 
-
         return $production;
     }
 
@@ -77,7 +76,7 @@ class StoreProduction extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("inventory.productions.edit");
+        return $request->user()->authTo('inventory.productions.edit');
     }
 
     public function rules(): array
@@ -97,12 +96,12 @@ class StoreProduction extends OrgAction
             'name' => ['required', 'max:250', 'string'],
 
         ];
-        if (!$this->strict) {
-            $rules['sources']   = ['sometimes', 'nullable', 'array'];
+        if (! $this->strict) {
+            $rules['sources'] = ['sometimes', 'nullable', 'array'];
             $rules['opened_at'] = ['sometimes', 'nullable', 'date'];
             $rules['closed_at'] = ['sometimes', 'nullable', 'date'];
-            $rules['state']     = ['sometimes', Rule::enum(ProductionStateEnum::class)];
-            $rules              = $this->noStrictStoreRules($rules);
+            $rules['state'] = ['sometimes', Rule::enum(ProductionStateEnum::class)];
+            $rules = $this->noStrictStoreRules($rules);
         }
 
         return $rules;
@@ -113,17 +112,16 @@ class StoreProduction extends OrgAction
      */
     public function action(Organisation $organisation, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Production
     {
-        if (!$audit) {
+        if (! $audit) {
             Production::disableAuditing();
         }
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($organisation, $modelData);
 
         return $this->handle($organisation, $this->validatedData);
     }
-
 
     /**
      * @throws \Throwable
@@ -134,7 +132,6 @@ class StoreProduction extends OrgAction
 
         return $this->handle($organisation, $this->validatedData);
     }
-
 
     public function htmlResponse(Production $production): RedirectResponse
     {
@@ -158,7 +155,6 @@ class StoreProduction extends OrgAction
         $this->organisation = $organisation;
         setPermissionsTeamId($organisation->group->id);
 
-
         $modelData = [
             'code' => $command->argument('code'),
             'name' => $command->argument('name'),
@@ -167,33 +163,32 @@ class StoreProduction extends OrgAction
 
         if ($command->option('state')) {
             $modelData['state'] = $command->option('state');
-            $this->strict       = false;
+            $this->strict = false;
         }
 
         if ($command->option('source')) {
-            $this->strict         = false;
+            $this->strict = false;
             $modelData['sources'] = [
-                'suppliers' => $command->option('source')
+                'suppliers' => $command->option('source'),
             ];
         }
 
         if ($command->option('created_at')) {
-            $this->strict            = false;
+            $this->strict = false;
             $modelData['created_at'] = $command->option('created_at');
         }
         if ($command->option('opened_at')) {
-            $this->strict           = false;
+            $this->strict = false;
             $modelData['opened_at'] = $command->option('opened_at');
         }
         if ($command->option('closed_at')) {
-            $this->strict           = false;
+            $this->strict = false;
             $modelData['closed_at'] = $command->option('closed_at');
         }
-        if (!$this->strict) {
+        if (! $this->strict) {
             Production::disableAuditing();
             $this->hydratorsDelay = 60;
         }
-
 
         try {
             $this->initialisation($organisation, $modelData);
@@ -204,10 +199,8 @@ class StoreProduction extends OrgAction
             return 1;
         }
 
-
         $command->info("Production $production->code created successfully 🎉");
 
         return 0;
     }
-
 }

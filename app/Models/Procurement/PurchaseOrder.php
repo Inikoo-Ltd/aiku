@@ -8,8 +8,8 @@
 
 namespace App\Models\Procurement;
 
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
@@ -122,6 +122,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Model|\Eloquent $parent
  * @property-read Collection<int, \App\Models\Procurement\PurchaseOrderTransaction> $purchaseOrderTransactions
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Procurement\PurchaseOrderFactory factory($count = null, $state = [])
  * @method static Builder<static>|PurchaseOrder newModelQuery()
  * @method static Builder<static>|PurchaseOrder newQuery()
@@ -129,42 +130,41 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|PurchaseOrder query()
  * @method static Builder<static>|PurchaseOrder withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|PurchaseOrder withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class PurchaseOrder extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
     use HasAddress;
     use HasAddresses;
-    use HasSlug;
+    use HasAttachments;
     use HasFactory;
     use HasHistory;
-    use InOrganisation;
-    use HasAttachments;
+    use HasSlug;
     use HasUniversalSearch;
-
+    use InOrganisation;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'            => 'array',
-        'cost_data'       => 'array',
-        'state'           => PurchaseOrderStateEnum::class,
+        'data' => 'array',
+        'cost_data' => 'array',
+        'state' => PurchaseOrderStateEnum::class,
         'delivery_state' => PurchaseOrderDeliveryStateEnum::class,
-        'date'            => 'datetime',
-        'submitted_at'    => 'datetime',
-        'confirmed_at'    => 'datetime',
+        'date' => 'datetime',
+        'submitted_at' => 'datetime',
+        'confirmed_at' => 'datetime',
         'manufactured_at' => 'datetime',
-        'dispatched_at'   => 'datetime',
-        'received_at'     => 'datetime',
-        'checked_at'      => 'datetime',
-        'settled_at'      => 'datetime',
-        'cancelled_at'    => 'datetime',
-        'fetched_at'      => 'datetime',
+        'dispatched_at' => 'datetime',
+        'received_at' => 'datetime',
+        'checked_at' => 'datetime',
+        'settled_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
-
     protected $attributes = [
-        'data'      => '{}',
+        'data' => '{}',
         'cost_data' => '{}',
 
     ];
@@ -187,7 +187,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     public function generateTags(): array
     {
         return [
-            'procurement'
+            'procurement',
         ];
     }
 

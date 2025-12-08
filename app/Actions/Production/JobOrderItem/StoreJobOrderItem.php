@@ -28,11 +28,11 @@ class StoreJobOrderItem extends OrgAction
         }
 
         if (Arr::exists($modelData, 'state') and Arr::get($modelData, 'state') != JobOrderItemStateEnum::IN_PROCESS) {
-            if (!Arr::get($modelData, 'reference')) {
+            if (! Arr::get($modelData, 'reference')) {
                 data_set(
                     $modelData,
                     'reference',
-                    Str::random(10) //TODO: make a reference generator for Job Order Item
+                    Str::random(10) // TODO: make a reference generator for Job Order Item
                 );
             }
         }
@@ -48,7 +48,6 @@ class StoreJobOrderItem extends OrgAction
             $jobOrderItem->save();
         }
         $jobOrderItem->refresh();
-
 
         // if ($this->parent instanceof PalletDelivery) {
         // }
@@ -73,26 +72,24 @@ class StoreJobOrderItem extends OrgAction
         return $request->user()->authTo("productions-view.{$this->organisation->id}");
     }
 
-
     public function rules(): array
     {
         return [
-            'artefact_id'        => ['required', 'integer', 'exists:artefacts,id'],
-            'status'             => [
+            'artefact_id' => ['required', 'integer', 'exists:artefacts,id'],
+            'status' => [
                 'sometimes',
-                Rule::enum(JobOrderItemStatusEnum::class)
+                Rule::enum(JobOrderItemStatusEnum::class),
             ],
-            'state'              => [
+            'state' => [
                 'sometimes',
-                Rule::enum(JobOrderItemStateEnum::class)
+                Rule::enum(JobOrderItemStateEnum::class),
             ],
-            'notes'              => ['sometimes', 'nullable', 'string', 'max:1024'],
-            'quantity'           => ['required', 'integer', 'min:1'],
-            'created_at'         => ['sometimes', 'date'],
-            'received_at'        => ['sometimes', 'nullable', 'date'],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'quantity' => ['required', 'integer', 'min:1'],
+            'created_at' => ['sometimes', 'date'],
+            'received_at' => ['sometimes', 'nullable', 'date'],
         ];
     }
-
 
     public function asController(Organisation $organisation, JobOrder $jobOrder, ActionRequest $request): JobOrderItem
     {
@@ -101,7 +98,6 @@ class StoreJobOrderItem extends OrgAction
         return $this->handle($jobOrder, $this->validatedData);
     }
 
-
     public function action(JobOrder $jobOrder, array $modelData): JobOrderItem
     {
         $this->asAction = true;
@@ -109,8 +105,6 @@ class StoreJobOrderItem extends OrgAction
 
         return $this->handle($jobOrder, $this->validatedData);
     }
-
-
 
     // public function htmlResponse(Pallet $pallet, ActionRequest $request): RedirectResponse
     // {

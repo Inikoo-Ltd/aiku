@@ -49,26 +49,28 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Accounting\InvoiceCategorySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Accounting\InvoiceCategoryStats|null $stats
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategory query()
+ *
  * @mixin \Eloquent
  */
 class InvoiceCategory extends Model implements Auditable
 {
-    use HasSlug;
     use HasHistory;
+    use HasSlug;
     use InOrganisation;
 
     protected $casts = [
-        'state'    => InvoiceCategoryStateEnum::class,
-        'type'     => InvoiceCategoryTypeEnum::class,
-        'data'     => 'array',
+        'state' => InvoiceCategoryStateEnum::class,
+        'type' => InvoiceCategoryTypeEnum::class,
+        'data' => 'array',
         'settings' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 
@@ -83,7 +85,7 @@ class InvoiceCategory extends Model implements Auditable
         'name',
         'state',
         'type',
-        'settings'
+        'settings',
     ];
 
     public function getRouteKeyName(): string

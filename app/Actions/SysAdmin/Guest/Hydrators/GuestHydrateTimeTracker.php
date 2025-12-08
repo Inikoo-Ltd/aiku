@@ -31,7 +31,6 @@ class GuestHydrateTimeTracker implements ShouldBeUnique
             'number_time_trackers' => $guest->timeTrackers()->count(),
         ];
 
-
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
@@ -45,9 +44,6 @@ class GuestHydrateTimeTracker implements ShouldBeUnique
             )
         );
 
-
         $guest->stats()->update($stats);
     }
-
-
 }

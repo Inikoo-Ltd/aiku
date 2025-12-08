@@ -30,12 +30,10 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
         return $customerClient;
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->is_root;
     }
-
 
     public function asController(
         CustomerSalesChannel $customerSalesChannel,
@@ -47,45 +45,44 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
         return $this->handle($customerClient);
     }
 
-
     public function htmlResponse(CustomerClient $customerClient, ActionRequest $request): Response
     {
 
         return Inertia::render(
             'Dropshipping/Client/CustomerClient',
             [
-                'title'       => __('customer client'),
+                'title' => __('customer client'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $customerClient,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'pageHead' => [
-                    'title'     => $customerClient->name,
-                    'model'     => __($customerClient->customer->name),
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-folder'],
-                        'title' => __('Customer client')
+                    'title' => $customerClient->name,
+                    'model' => __($customerClient->customer->name),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-folder'],
+                        'title' => __('Customer client'),
                     ],
-                    'actions'    => [
+                    'actions' => [
                         $this->getEditActionIcon($request, ''),
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'create',
                             'label' => __('Create Order'),
                             'route' => [
-                                'name'       => 'retina.models.customer-client.fulfilment_order.store',
+                                'name' => 'retina.models.customer-client.fulfilment_order.store',
                                 'parameters' => [
                                     'customerClient' => $customerClient->id,
                                 ],
-                                'method'     => 'post'
-                            ]
-                        ]
-                    ]
+                                'method' => 'post',
+                            ],
+                        ],
+                    ],
                 ],
-                'tabs'          => [
-                    'current'    => $this->tab,
-                    'navigation' => CustomerClientTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => CustomerClientTabsEnum::navigation(),
 
                 ],
 
@@ -93,13 +90,10 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
                     fn () => GetCustomerClientShowcase::run($customerClient)
                     : Inertia::lazy(fn () => GetCustomerClientShowcase::run($customerClient)),
 
-
-
             ]
         );
 
     }
-
 
     public function jsonResponse(CustomerClient $customerClient): CustomerClientResource
     {
@@ -111,22 +105,20 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
         return array_merge(
             IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel::make()->getBreadcrumbs($routeName, $routeParameters),
             [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.client.show',
-                                'parameters' => [
-                                    'customerSalesChannel' => $routeParameters['customerSalesChannel'],
-                                    'customerClient' => $customerClient->ulid
-                                ]
+                [
+                    'type' => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.client.show',
+                            'parameters' => [
+                                'customerSalesChannel' => $routeParameters['customerSalesChannel'],
+                                'customerClient' => $customerClient->ulid,
                             ],
-                            'label' => $customerClient->name,
-                        ]
-                    ]
-                ]
+                        ],
+                        'label' => $customerClient->name,
+                    ],
+                ],
+            ]
         );
     }
-
-
 }

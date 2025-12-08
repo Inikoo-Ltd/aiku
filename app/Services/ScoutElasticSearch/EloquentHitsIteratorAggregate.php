@@ -16,35 +16,31 @@ use Traversable;
 class EloquentHitsIteratorAggregate implements IteratorAggregate
 {
     private array $results;
+
     /**
      * @var callable|null
      */
     private $callback;
 
-    /**
-     * @param  array  $results
-     * @param  callable|null  $callback
-     */
-    public function __construct(array $results, callable $callback = null)
+    public function __construct(array $results, ?callable $callback = null)
     {
-        $this->results  = $results;
+        $this->results = $results;
         $this->callback = $callback;
     }
-
 
     public function getIterator(): Traversable
     {
 
         $hits = collect();
         if ($this->results['hits']['total']) {
-            $hits   = $this->results['hits']['hits'];
+            $hits = $this->results['hits']['hits'];
             $models = collect($hits)->groupBy('_source.__class_name')
                 ->map(function ($results, $class) {
                     /** @var UniversalSearch $model */
-                    $model = new $class();
+                    $model = new $class;
                     $model->setKeyType('string');
                     $builder = new Builder($model, '');
-                    if (!empty($this->callback)) {
+                    if (! empty($this->callback)) {
                         $builder->query($this->callback);
                     }
 

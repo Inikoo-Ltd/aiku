@@ -26,12 +26,12 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\Dropshipping\CustomerSalesChannel;
 
 class ShowRetinaDropshippingOrder extends RetinaAction
 {
@@ -59,11 +59,9 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         return $this->handle($order);
     }
 
-
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
         $finalTimeline = ShowOrder::make()->getOrderTimeline($order);
-
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
@@ -74,44 +72,43 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         return Inertia::render(
             'Dropshipping/RetinaDropshippingOrder',
             [
-                'title'       => __('order'),
+                'title' => __('order'),
                 'breadcrumbs' => $this->getBreadcrumbs($order),
-                'pageHead'    => [
-                    'title'   => $order->reference,
-                    'model'   => __('Order'),
-                    'icon'    => [
-                        'icon'  => 'fal fa-shopping-cart',
-                        'title' => __('Customer client')
+                'pageHead' => [
+                    'title' => $order->reference,
+                    'model' => __('Order'),
+                    'icon' => [
+                        'icon' => 'fal fa-shopping-cart',
+                        'title' => __('Customer client'),
                     ],
                     'actions' => $action,
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => RetinaOrderTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => RetinaOrderTabsEnum::navigation(),
                 ],
 
                 'routes' => [
-                    'update_route'        => [
-                        'name'       => 'retina.models.order.update',
+                    'update_route' => [
+                        'name' => 'retina.models.order.update',
                         'parameters' => [
-                            'order' => $order->id
+                            'order' => $order->id,
                         ],
-                        'method'     => 'patch'
+                        'method' => 'patch',
                     ],
-                    'submit_route'        => [
-                        'name'       => 'retina.models.order.submit',
+                    'submit_route' => [
+                        'name' => 'retina.models.order.submit',
                         'parameters' => [
-                            'order' => $order->id
+                            'order' => $order->id,
                         ],
-                        'method'     => 'patch'
+                        'method' => 'patch',
                     ],
                     'route_to_pay_unpaid' => [
-                        'name'       => 'retina.json.get_checkout_com_token_to_pay_order',
+                        'name' => 'retina.json.get_checkout_com_token_to_pay_order',
                         'parameters' => [
                             'order' => $order->id,
                         ],
                     ],
-
 
                 ],
 
@@ -120,14 +117,13 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
 
                 'box_stats' => $this->getOrderBoxStats($order),
-                'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
-                'order'      => OrderResource::make($order),
+                'currency' => CurrencyResource::make($order->currency)->toArray(request()),
+                'order' => OrderResource::make($order),
                 'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state
 
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
-
 
             ]
         )
@@ -151,25 +147,25 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             IndexRetinaDropshippingOrders::make()->getBreadcrumbs($order->customerSalesChannel),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'retina.dropshipping.customer_sales_channels.orders.show',
+                            'name' => 'retina.dropshipping.customer_sales_channels.orders.show',
                             'parameters' => [
                                 'customerSalesChannel' => $order->customerSalesChannel->slug,
-                                'order'                => $order->slug
-                            ]
+                                'order' => $order->slug,
+                            ],
                         ],
                         'label' => $order->reference,
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }
 
     public function getOrderBoxStats(Order $order): array
     {
-        $payAmount   = $order->total_amount - $order->payment_amount;
+        $payAmount = $order->total_amount - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
 
         $estWeight = ($order->estimated_weight ?? 0) / 1000;
@@ -177,12 +173,12 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         $customerChannel = null;
         if ($order->customer_sales_channel_id) {
             $customerChannel = [
-                'slug'     => $order->customerSalesChannel->slug,
-                'status'   => $order->customer_sales_channel_id,
+                'slug' => $order->customerSalesChannel->slug,
+                'status' => $order->customer_sales_channel_id,
                 'platform' => [
-                    'name'  => $order->platform?->name,
-                    'image' => $this->getPlatformLogo($order->customerSalesChannel->platform->code)
-                ]
+                    'name' => $order->platform?->name,
+                    'image' => $this->getPlatformLogo($order->customerSalesChannel->platform->code),
+                ],
             ];
         }
 
@@ -190,14 +186,14 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         foreach ($order->invoices as $invoice) {
             $routeShow = [
-                'name'       => 'retina.dropshipping.invoices.show',
+                'name' => 'retina.dropshipping.invoices.show',
                 'parameters' => [
                     'invoice' => $invoice->slug,
                 ],
             ];
 
             $routeDownload = [
-                'name'       => 'retina.dropshipping.invoices.pdf',
+                'name' => 'retina.dropshipping.invoices.pdf',
                 'parameters' => [
                     'invoice' => $invoice->slug,
                 ],
@@ -205,8 +201,8 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
             $invoicesData[] = [
                 'reference' => $invoice->reference,
-                'routes'    => [
-                    'show'     => $routeShow,
+                'routes' => [
+                    'show' => $routeShow,
                     'download' => $routeDownload,
                 ],
             ];
@@ -219,80 +215,79 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 CustomerClientResource::make($order->customerClient)->getArray(),
                 [
                     'route' => [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
+                        'name' => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
                         'parameters' => [
-                            'organisation'         => $order->organisation->slug,
-                            'shop'                 => $order->shop->slug,
-                            'customer'             => $order->customer->slug,
+                            'organisation' => $order->organisation->slug,
+                            'shop' => $order->shop->slug,
+                            'customer' => $order->customer->slug,
                             'customerSalesChannel' => $order->customerSalesChannel->slug,
-                            'customerClient'       => $order->customerClient->ulid
-                        ]
-                    ]
+                            'customerClient' => $order->customerClient->ulid,
+                        ],
+                    ],
                 ]
             );
         }
 
-        $deliveryNotes     = $order->deliveryNotes;
+        $deliveryNotes = $order->deliveryNotes;
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
             foreach ($deliveryNotes as $deliveryNote) {
                 $deliveryNotesData[] = [
-                    'id'        => $deliveryNote->id,
+                    'id' => $deliveryNote->id,
                     'reference' => $deliveryNote->reference,
-                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
+                    'state' => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
                 ];
             }
         }
 
-
         return [
-            'customer_client'  => $customerClientData,
-            'customer'         => array_merge(
+            'customer_client' => $customerClientData,
+            'customer' => array_merge(
                 CustomerResource::make($order->customer)->getArray(),
                 [
                     'addresses' => [
-                        'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
-                        'billing'  => AddressResource::make($order->billingAddress ?? new Address())
+                        'delivery' => AddressResource::make($order->deliveryAddress ?? new Address),
+                        'billing' => AddressResource::make($order->billingAddress ?? new Address),
                     ],
-                    'route'     => [
-                        'name'       => 'grp.org.shops.show.crm.customers.show',
+                    'route' => [
+                        'name' => 'grp.org.shops.show.crm.customers.show',
                         'parameters' => [
                             'organisation' => $order->organisation->slug,
-                            'shop'         => $order->shop->slug,
-                            'customer'     => $order->customer->slug,
-                        ]
-                    ]
+                            'shop' => $order->shop->slug,
+                            'customer' => $order->customer->slug,
+                        ],
+                    ],
                 ]
             ),
             'customer_channel' => $customerChannel,
-            'invoices'         => $invoicesData,
+            'invoices' => $invoicesData,
             'order_properties' => [
-                'weight'    => NaturalLanguage::make()->weight($order->estimated_weight),
+                'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],
-            'delivery_notes'   => $deliveryNotesData,
-            'products'         => [
-                'payment'          => [
-                    'routes'       => [
+            'delivery_notes' => $deliveryNotesData,
+            'products' => [
+                'payment' => [
+                    'routes' => [
                         'fetch_payment_accounts' => [
-                            'name'       => 'grp.json.shop.payment-accounts',
+                            'name' => 'grp.json.shop.payment-accounts',
                             'parameters' => [
-                                'shop' => $order->shop->slug
-                            ]
+                                'shop' => $order->shop->slug,
+                            ],
                         ],
-                        'submit_payment'         => [
-                            'name'       => 'grp.models.order.payment.store',
+                        'submit_payment' => [
+                            'name' => 'grp.models.order.payment.store',
                             'parameters' => [
-                                'order' => $order->id
-                            ]
-                        ]
+                                'order' => $order->id,
+                            ],
+                        ],
 
                     ],
-                    'total_amount' => (float)$order->total_amount,
-                    'paid_amount'  => (float)$order->payment_amount,
-                    'pay_amount'   => $roundedDiff,
-                    'pay_status'   => $order->pay_status,
+                    'total_amount' => (float) $order->total_amount,
+                    'paid_amount' => (float) $order->payment_amount,
+                    'pay_amount' => $roundedDiff,
+                    'pay_status' => $order->pay_status,
                 ],
                 'estimated_weight' => $estWeight,
             ],
@@ -302,40 +297,40 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             'order_summary' => [
                 [
                     [
-                        'label'       => __('Items'),
-                        'quantity'    => $order->stats->number_item_transactions,
-                        'price_base'  => 'Multiple',
-                        'price_total' => $order->goods_amount
+                        'label' => __('Items'),
+                        'quantity' => $order->stats->number_item_transactions,
+                        'price_base' => 'Multiple',
+                        'price_total' => $order->goods_amount,
                     ],
                 ],
                 [
                     [
-                        'label'       => __('Charges'),
+                        'label' => __('Charges'),
                         'information' => '',
-                        'price_total' => $order->charges_amount
+                        'price_total' => $order->charges_amount,
                     ],
                     [
-                        'label'       => __('Shipping'),
+                        'label' => __('Shipping'),
                         'information' => '',
-                        'price_total' => $order->shipping_amount
-                    ]
+                        'price_total' => $order->shipping_amount,
+                    ],
                 ],
                 [
                     [
-                        'label'       => __('Net'),
+                        'label' => __('Net'),
                         'information' => '',
-                        'price_total' => $order->net_amount
+                        'price_total' => $order->net_amount,
                     ],
                     [
-                        'label'       => __('Tax').' '.$order->taxCategory->name,
+                        'label' => __('Tax').' '.$order->taxCategory->name,
                         'information' => '',
-                        'price_total' => $order->tax_amount
-                    ]
+                        'price_total' => $order->tax_amount,
+                    ],
                 ],
                 [
                     [
-                        'label'       => __('Total'),
-                        'price_total' => $order->total_amount
+                        'label' => __('Total'),
+                        'price_total' => $order->total_amount,
                     ],
                 ],
 
@@ -343,5 +338,4 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             ],
         ];
     }
-
 }

@@ -13,6 +13,7 @@ namespace App\Http\Controllers\Api\Models;
  *     schema="Error",
  *     title="Error Response",
  *     description="Standard error response",
+ *
  *     @OA\Property(
  *         property="message",
  *         type="string",
@@ -29,6 +30,7 @@ namespace App\Http\Controllers\Api\Models;
  *     schema="Order",
  *     title="Order",
  *     description="Order model",
+ *
  *     @OA\Property(
  *         property="id",
  *         type="integer",
@@ -63,6 +65,7 @@ namespace App\Http\Controllers\Api\Models;
  *     schema="Transaction",
  *     title="Transaction",
  *     description="Transaction model",
+ *
  *     @OA\Property(
  *         property="id",
  *         type="integer",
@@ -105,6 +108,7 @@ namespace App\Http\Controllers\Api\Models;
  *     schema="Portfolio",
  *     title="Portfolio",
  *     description="Portfolio model",
+ *
  *     @OA\Property(
  *         property="id",
  *         type="integer",
@@ -134,6 +138,7 @@ namespace App\Http\Controllers\Api\Models;
  *     schema="Client",
  *     title="Client",
  *     description="Client model",
+ *
  *     @OA\Property(
  *         property="id",
  *         type="integer",

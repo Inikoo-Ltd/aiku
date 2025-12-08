@@ -35,6 +35,4 @@ trait InFulfilmentCustomer
     {
         return $this->belongsTo(FulfilmentCustomer::class);
     }
-
-
 }

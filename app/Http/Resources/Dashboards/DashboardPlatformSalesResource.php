@@ -18,15 +18,15 @@ class DashboardPlatformSalesResource extends JsonResource
         $columns = [
             'label' => [
                 'formatted_value' => $this->resource->name,
-                'align'           => 'left',
-                'icon'            => $this->resource->slug
+                'align' => 'left',
+                'icon' => $this->resource->slug,
             ],
             'label_minified' => [
                 'formatted_value' => $this->resource->name,
-                'align'           => 'left',
-                'icon'            => $this->resource->slug
+                'align' => 'left',
+                'icon' => $this->resource->slug,
             ],
-            'sales_percentage' => $this->getSalesPercentageIntervals()
+            'sales_percentage' => $this->getSalesPercentageIntervals(),
         ];
 
         $columns = array_merge(
@@ -45,11 +45,11 @@ class DashboardPlatformSalesResource extends JsonResource
                         'name' => 'grp.org.shops.show.crm.platforms.show',
                         'parameters' => [
                             'organisation' => $this->resource->organisation_slug,
-                            'shop'         => $this->resource->shop_slug,
-                            'platform'     => $this->resource->slug,
-                            'tab'          => PlatformTabsEnum::SHOWCASE->value
+                            'shop' => $this->resource->shop_slug,
+                            'platform' => $this->resource->slug,
+                            'tab' => PlatformTabsEnum::SHOWCASE->value,
                         ],
-                        'key_date_filter' => 'between[date]'
+                        'key_date_filter' => 'between[date]',
                     ],
                 ],
                 'new_channels' => [
@@ -57,11 +57,11 @@ class DashboardPlatformSalesResource extends JsonResource
                         'name' => 'grp.org.shops.show.crm.platforms.show',
                         'parameters' => [
                             'organisation' => $this->resource->organisation_slug,
-                            'shop'         => $this->resource->shop_slug,
-                            'platform'     => $this->resource->slug,
-                            'tab'          => PlatformTabsEnum::CHANNELS->value
+                            'shop' => $this->resource->shop_slug,
+                            'platform' => $this->resource->slug,
+                            'tab' => PlatformTabsEnum::CHANNELS->value,
                         ],
-                        'key_date_filter' => 'between[created_at]'
+                        'key_date_filter' => 'between[created_at]',
                     ],
                 ],
                 'new_customers' => [
@@ -69,11 +69,11 @@ class DashboardPlatformSalesResource extends JsonResource
                         'name' => 'grp.org.shops.show.crm.platforms.show',
                         'parameters' => [
                             'organisation' => $this->resource->organisation_slug,
-                            'shop'         => $this->resource->shop_slug,
-                            'platform'     => $this->resource->slug,
-                            'tab'          => PlatformTabsEnum::CUSTOMERS->value
+                            'shop' => $this->resource->shop_slug,
+                            'platform' => $this->resource->slug,
+                            'tab' => PlatformTabsEnum::CUSTOMERS->value,
                         ],
-                        'key_date_filter' => 'between[registered_at]'
+                        'key_date_filter' => 'between[registered_at]',
                     ],
                 ],
                 'new_portfolios' => [
@@ -81,11 +81,11 @@ class DashboardPlatformSalesResource extends JsonResource
                         'name' => 'grp.org.shops.show.crm.platforms.show',
                         'parameters' => [
                             'organisation' => $this->resource->organisation_slug,
-                            'shop'         => $this->resource->shop_slug,
-                            'platform'     => $this->resource->slug,
-                            'tab'          => PlatformTabsEnum::PRODUCTS->value
+                            'shop' => $this->resource->shop_slug,
+                            'platform' => $this->resource->slug,
+                            'tab' => PlatformTabsEnum::PRODUCTS->value,
                         ],
-                        'key_date_filter' => 'between[created_at]'
+                        'key_date_filter' => 'between[created_at]',
                     ],
                 ],
             ];
@@ -124,9 +124,9 @@ class DashboardPlatformSalesResource extends JsonResource
         }
 
         return [
-            'slug'    => $this->resource->slug,
-            'state'   => 'active',
-            'columns' => $columns
+            'slug' => $this->resource->slug,
+            'state' => 'active',
+            'columns' => $columns,
         ];
     }
 
@@ -148,17 +148,17 @@ class DashboardPlatformSalesResource extends JsonResource
 
         foreach (DateIntervalEnum::cases() as $interval) {
             $key = $isShopContext
-                ? 'sales_' . $interval->value
-                : 'sales_grp_currency_' . $interval->value;
+                ? 'sales_'.$interval->value
+                : 'sales_grp_currency_'.$interval->value;
 
             $total = $totalPerInterval[$key] ?? 0;
             $value = $currentPlatformSales[$key] ?? 0;
             $percentage = $total > 0 ? ($value / $total) * 100 : 0;
 
             $result[$interval->value] = [
-                'raw_value'       => $percentage,
-                'formatted_value' => number_format($percentage, 2) . '%',
-                'align'           => 'right',
+                'raw_value' => $percentage,
+                'formatted_value' => number_format($percentage, 2).'%',
+                'align' => 'right',
             ];
         }
 
@@ -167,6 +167,6 @@ class DashboardPlatformSalesResource extends JsonResource
 
     private function isShopContext(): bool
     {
-        return !empty($this->resource->shop_id);
+        return ! empty($this->resource->shop_id);
     }
 }

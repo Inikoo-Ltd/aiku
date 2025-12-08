@@ -34,16 +34,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \App\Models\Fulfilment\Pallet $pallet
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\PalletReturnItem> $palletReturnItems
  * @property-read \App\Models\Fulfilment\StoredItem $storedItem
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletStoredItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletStoredItem newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletStoredItem query()
+ *
  * @mixin \Eloquent
  */
 class PalletStoredItem extends Model
 {
     protected $guarded = [];
+
     protected $casts = [
-        'state'                   => PalletStoredItemStateEnum::class,
+        'state' => PalletStoredItemStateEnum::class,
     ];
 
     public function pallet(): BelongsTo

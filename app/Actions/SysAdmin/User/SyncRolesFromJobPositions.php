@@ -46,7 +46,7 @@ class SyncRolesFromJobPositions
                 UserAddRoles::run(
                     $user,
                     [
-                        Role::where('name', RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $organisation))->first()
+                        Role::where('name', RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $organisation))->first(),
                     ],
                     setUserAuthorisedModels: false
                 );
@@ -56,14 +56,14 @@ class SyncRolesFromJobPositions
                     UserAddRoles::run(
                         $user,
                         [
-                            Role::where('name', RolesEnum::getRoleName(RolesEnum::FULFILMENT_WAREHOUSE_SUPERVISOR->value, $shop->fulfilment))->first()
+                            Role::where('name', RolesEnum::getRoleName(RolesEnum::FULFILMENT_WAREHOUSE_SUPERVISOR->value, $shop->fulfilment))->first(),
                         ],
                         setUserAuthorisedModels: false
                     );
                     UserAddRoles::run(
                         $user,
                         [
-                            Role::where('name', RolesEnum::getRoleName(RolesEnum::FULFILMENT_SHOP_SUPERVISOR->value, $shop->fulfilment))->first()
+                            Role::where('name', RolesEnum::getRoleName(RolesEnum::FULFILMENT_SHOP_SUPERVISOR->value, $shop->fulfilment))->first(),
                         ],
                         setUserAuthorisedModels: false
                     );
@@ -71,7 +71,7 @@ class SyncRolesFromJobPositions
                     UserAddRoles::run(
                         $user,
                         [
-                            Role::where('name', RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $shop))->first()
+                            Role::where('name', RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $shop))->first(),
                         ],
                         setUserAuthorisedModels: false
                     );
@@ -81,7 +81,7 @@ class SyncRolesFromJobPositions
                 UserAddRoles::run(
                     $user,
                     [
-                        Role::where('name', RolesEnum::getRoleName(RolesEnum::WAREHOUSE_ADMIN->value, $warehouse))->first()
+                        Role::where('name', RolesEnum::getRoleName(RolesEnum::WAREHOUSE_ADMIN->value, $warehouse))->first(),
                     ],
                     setUserAuthorisedModels: false
                 );
@@ -90,21 +90,18 @@ class SyncRolesFromJobPositions
                 UserAddRoles::run(
                     $user,
                     [
-                        Role::where('name', RolesEnum::getRoleName(RolesEnum::MANUFACTURING_ADMIN->value, $production))->first()
+                        Role::where('name', RolesEnum::getRoleName(RolesEnum::MANUFACTURING_ADMIN->value, $production))->first(),
                     ],
                     setUserAuthorisedModels: false
                 );
             }
         }
 
-
         SetUserAuthorisedModels::run($user);
         CleanUserCaches::make()->clearPermissionsCache($user);
 
-
         $user->refresh();
     }
-
 
     private function getRoles($roles, JobPosition $jobPosition): array
     {
@@ -152,6 +149,4 @@ class SyncRolesFromJobPositions
 
         return 0;
     }
-
-
 }

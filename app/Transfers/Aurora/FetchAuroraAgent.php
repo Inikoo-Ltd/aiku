@@ -26,8 +26,8 @@ class FetchAuroraAgent extends FetchAurora
         }
 
         $currency_id = $this->parseCurrencyID($this->auroraModelData->{'Agent Default Currency Code'});
-        $country_id  = $this->parseCountryID($this->auroraModelData->{'Agent Products Origin Country Code'});
-        $country     = Country::find($country_id);
+        $country_id = $this->parseCountryID($this->auroraModelData->{'Agent Products Origin Country Code'});
+        $country = Country::find($country_id);
 
         $timezone_id = $country->timezones()->first()->id;
         $language_id = Language::where('code', 'en-gb')->first()->id;
@@ -41,28 +41,28 @@ class FetchAuroraAgent extends FetchAurora
             $agent = Agent::where('code', 'india')->firstOrFail();
 
             $this->parsedData['agent']['source_id'] = $this->organisation->id.':'.$this->auroraModelData->{'Agent Key'};
-            $this->parsedData['foundAgent']         = $agent;
+            $this->parsedData['foundAgent'] = $agent;
 
             return;
         }
 
         $this->parsedData['agent'] =
             [
-                'code'            => $code,
-                'name'            => $this->auroraModelData->{'Agent Name'},
-                'contact_name'    => $this->auroraModelData->{'Agent Main Contact Name'},
-                'country_id'      => $country_id,
-                'timezone_id'     => $timezone_id,
-                'language_id'     => $language_id,
-                'currency_id'     => $currency_id,
-                'email'           => $this->auroraModelData->{'Agent Main Plain Email'},
-                'phone'           => $phone,
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Agent Key'},
-                'source_slug'     => Str::kebab(strtolower($this->auroraModelData->{'Agent Code'})),
-                'created_at'      => $this->auroraModelData->{'Agent Valid From'},
-                'address'         => $this->parseAddress(prefix: 'Agent Contact', auAddressData: $this->auroraModelData),
-                'fetched_at'      => now(),
-                'last_fetched_at' => now()
+                'code' => $code,
+                'name' => $this->auroraModelData->{'Agent Name'},
+                'contact_name' => $this->auroraModelData->{'Agent Main Contact Name'},
+                'country_id' => $country_id,
+                'timezone_id' => $timezone_id,
+                'language_id' => $language_id,
+                'currency_id' => $currency_id,
+                'email' => $this->auroraModelData->{'Agent Main Plain Email'},
+                'phone' => $phone,
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Agent Key'},
+                'source_slug' => Str::kebab(strtolower($this->auroraModelData->{'Agent Code'})),
+                'created_at' => $this->auroraModelData->{'Agent Valid From'},
+                'address' => $this->parseAddress(prefix: 'Agent Contact', auAddressData: $this->auroraModelData),
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
 
             ];
         $this->parsePhoto();
@@ -70,7 +70,7 @@ class FetchAuroraAgent extends FetchAurora
 
     private function parsePhoto(): void
     {
-        $profile_images            = $this->getModelImagesCollection(
+        $profile_images = $this->getModelImagesCollection(
             'Agent',
             $this->auroraModelData->{'Agent Key'}
         )->map(function ($auroraImage) {
@@ -79,8 +79,7 @@ class FetchAuroraAgent extends FetchAurora
         $this->parsedData['photo'] = $profile_images->toArray();
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Agent Dimension')

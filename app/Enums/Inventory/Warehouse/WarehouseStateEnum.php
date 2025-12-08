@@ -16,18 +16,18 @@ enum WarehouseStateEnum: string
 {
     use EnumHelperTrait;
 
-    case IN_PROCESS   = 'in_process';
-    case OPEN         = 'open';
+    case IN_PROCESS = 'in_process';
+    case OPEN = 'open';
     case CLOSING_DOWN = 'closing_down';
-    case CLOSED       = 'closed';
+    case CLOSED = 'closed';
 
     public static function labels(): array
     {
         return [
-            'in_process'      => __('In Process'),
-            'open'            => __('Open'),
-            'closing_down'    => __('Closing Down'),
-            'closed'          => __('Closed')
+            'in_process' => __('In Process'),
+            'open' => __('Open'),
+            'closing_down' => __('Closing Down'),
+            'closed' => __('Closed'),
         ];
     }
 
@@ -36,36 +36,36 @@ enum WarehouseStateEnum: string
         $stats = $parent->inventoryStats;
 
         return [
-            'in_process'      => $stats->number_warehouses_state_in_process,
-            'open'            => $stats->number_warehouses_state_open,
-            'closing_down'    => $stats->number_warehouses_state_closing_down,
-            'closed'          => $stats->number_warehouses_state_closed
+            'in_process' => $stats->number_warehouses_state_in_process,
+            'open' => $stats->number_warehouses_state_open,
+            'closing_down' => $stats->number_warehouses_state_closing_down,
+            'closed' => $stats->number_warehouses_state_closed,
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'in_process'   => [
+            'in_process' => [
                 'tooltip' => __('In Process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-green-500 animate-pulse'
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-green-500 animate-pulse',
             ],
             'open' => [
                 'tooltip' => __('Open'),
-                'icon'    => 'fal fa-check',
-                'class'   => ''
+                'icon' => 'fal fa-check',
+                'class' => '',
             ],
             'closing_down' => [
                 'tooltip' => __('Closing Down'),
-                'icon'    => 'fal fa-do-not-enter',
-                'class'   => ''
+                'icon' => 'fal fa-do-not-enter',
+                'class' => '',
             ],
-            'closed'    => [
+            'closed' => [
                 'tooltip' => __('Closed'),
-                'icon'    => 'fal fa-times-hexagon',
-                'class'   => 'text-red-500'
-            ]
+                'icon' => 'fal fa-times-hexagon',
+                'class' => 'text-red-500',
+            ],
         ];
     }
 }

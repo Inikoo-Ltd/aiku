@@ -14,11 +14,11 @@ enum JobPositionScopeEnum: string
 {
     use EnumHelperTrait;
 
-    case SHOPS                  = 'shops';
-    case WAREHOUSES             = 'warehouses';
-    case FULFILMENTS            = 'fulfilments';
+    case SHOPS = 'shops';
+    case WAREHOUSES = 'warehouses';
+    case FULFILMENTS = 'fulfilments';
     case FULFILMENTS_WAREHOUSES = 'fulfilments_warehouses';
-    case PRODUCTIONS            = 'productions';
-    case ORGANISATION           = 'organisation';
-    case GROUP                  = 'group';
+    case PRODUCTIONS = 'productions';
+    case ORGANISATION = 'organisation';
+    case GROUP = 'group';
 }

@@ -67,26 +67,26 @@ class IndexRetinaTopUp extends RetinaAction
             'Dropshipping/TopUp/TopUps',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Top ups'),
-                'pageHead'    => [
+                'title' => __('Top ups'),
+                'pageHead' => [
                     'title' => __('Top ups'),
-                    'icon'  => 'fal fa-shopping-basket',
-                    'actions'      => [
+                    'icon' => 'fal fa-shopping-basket',
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'primary',
                             'label' => __('Download All Receipt'),
-                            'icon'  => 'fal fa-file-pdf',
+                            'icon' => 'fal fa-file-pdf',
                             'target' => '_blank',
                             'route' => [
-                                'name'       => 'retina.top_up.top_up_pdf.export',
-                                'parameters' => []
+                                'name' => 'retina.top_up.top_up_pdf.export',
+                                'parameters' => [],
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
 
-                'data' => RetinaTopUpResources::collection($topups)
+                'data' => RetinaTopUpResources::collection($topups),
             ]
         )->table($this->tableStructure());
     }
@@ -102,14 +102,13 @@ class IndexRetinaTopUp extends RetinaAction
 
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
-                'title' => __("No top up exist"),
-                'count' => 0
+                'title' => __('No top up exist'),
+                'count' => 0,
             ];
 
             $table->withGlobalSearch()
                 ->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
-
 
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
             $table->column(key: 'amount', label: __('amount'), canBeHidden: false, searchable: true, align: 'right');
@@ -125,14 +124,14 @@ class IndexRetinaTopUp extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.top_up.index'
+                                'name' => 'retina.top_up.index',
                             ],
-                            'label'  => __('Top up'),
-                        ]
-                    ]
+                            'label' => __('Top up'),
+                        ],
+                    ],
                 ]
             );
     }

@@ -41,21 +41,21 @@ class PublishWebsiteProductTemplate extends OrgAction
         foreach ($website->snapshots()->where('scope', SnapshotScopeEnum::PRODUCT_TEMPLATE)->where('state', SnapshotStateEnum::LIVE)->get() as $liveSnapshot) {
             $firstCommit = false;
             UpdateSnapshot::run($liveSnapshot, [
-                'state'           => SnapshotStateEnum::HISTORIC,
-                'published_until' => now()
+                'state' => SnapshotStateEnum::HISTORIC,
+                'published_until' => now(),
             ]);
         }
 
         $snapshot = StoreWebsiteSnapshot::run(
             $website,
             [
-                'state'          => SnapshotStateEnum::LIVE,
-                'published_at'   => now(),
-                'layout'         => $website->layout,
-                'scope'          => SnapshotScopeEnum::PRODUCT_TEMPLATE,
-                'first_commit'   => $firstCommit,
-                'comment'        => Arr::get($modelData, 'comment'),
-                'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                'state' => SnapshotStateEnum::LIVE,
+                'published_at' => now(),
+                'layout' => $website->layout,
+                'scope' => SnapshotScopeEnum::PRODUCT_TEMPLATE,
+                'first_commit' => $firstCommit,
+                'comment' => Arr::get($modelData, 'comment'),
+                'publisher_id' => Arr::get($modelData, 'publisher_id'),
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
             ]
         );
@@ -63,9 +63,9 @@ class PublishWebsiteProductTemplate extends OrgAction
         StoreDeployment::run(
             $website,
             [
-                'scope'          => SnapshotScopeEnum::PRODUCT_TEMPLATE,
-                'snapshot_id'    => $snapshot->id,
-                'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                'scope' => SnapshotScopeEnum::PRODUCT_TEMPLATE,
+                'snapshot_id' => $snapshot->id,
+                'publisher_id' => Arr::get($modelData, 'publisher_id'),
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
             ]
         );
@@ -80,19 +80,18 @@ class PublishWebsiteProductTemplate extends OrgAction
     {
         return [
             'comment' => ['sometimes', 'required', 'string', 'max:1024'],
-            'data'    => ['required']
+            'data' => ['required'],
         ];
     }
 
-
     public function jsonResponse(Website $website): string
     {
-        return "🚀";
+        return '🚀';
     }
 
     public function action(Website $website, array $modelData, bool $strict = true): Website
     {
-        $this->strict   = $strict;
+        $this->strict = $strict;
         $this->asAction = true;
         $this->setRawAttributes($modelData);
         $validatedData = $this->validateAttributes();
@@ -111,21 +110,20 @@ class PublishWebsiteProductTemplate extends OrgAction
 
     public function asCommand($command): int
     {
-        if ($command->argument("website")) {
+        if ($command->argument('website')) {
             try {
-                $website = Website::where("slug", $command->argument("website"))->firstOrFail();
+                $website = Website::where('slug', $command->argument('website'))->firstOrFail();
             } catch (Exception) {
-                $command->error("Website not found");
+                $command->error('Website not found');
 
                 return 1;
             }
             $this->action($website, [
-                'comment' => "test",
-                'data'    => 'template'
+                'comment' => 'test',
+                'data' => 'template',
             ]);
         }
 
         return 0;
     }
-
 }

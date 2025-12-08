@@ -16,8 +16,8 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Validation\Rules\Password;
-use Lorisleiva\Actions\ActionRequest;
 use Inertia\Inertia;
+use Lorisleiva\Actions\ActionRequest;
 
 class RegisterRetinaFulfilmentCustomer extends RetinaAction
 {
@@ -42,9 +42,9 @@ class RegisterRetinaFulfilmentCustomer extends RetinaAction
     public function rules(): array
     {
         return [
-            'contact_name'             => ['required', 'string', 'max:255'],
-            'company_name'             => ['required', 'string', 'max:255'],
-            'email'                    => [
+            'contact_name' => ['required', 'string', 'max:255'],
+            'company_name' => ['required', 'string', 'max:255'],
+            'email' => [
                 'required',
                 'string',
                 'max:255',
@@ -57,19 +57,18 @@ class RegisterRetinaFulfilmentCustomer extends RetinaAction
                     ]
                 ),
             ],
-            'phone'                    => ['required', 'max:255'],
-            'contact_address'          => ['required', new ValidAddress()],
+            'phone' => ['required', 'max:255'],
+            'contact_address' => ['required', new ValidAddress],
 
-            'password'                 =>
-                [
-                    'sometimes',
-                    'required',
-                    app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
-                ],
-            'product'                           => ['required', 'string'],
-            'shipments_per_week'                 => ['required', 'string'],
-            'size_and_weight'                   => ['required', 'string'],
-            'interest'                 => ['required', 'required'],
+            'password' => [
+                'sometimes',
+                'required',
+                app()->isLocal() || app()->environment('testing') ? null : Password::min(8),
+            ],
+            'product' => ['required', 'string'],
+            'shipments_per_week' => ['required', 'string'],
+            'size_and_weight' => ['required', 'string'],
+            'interest' => ['required', 'required'],
 
         ];
     }
@@ -80,6 +79,7 @@ class RegisterRetinaFulfilmentCustomer extends RetinaAction
     public function asController(Fulfilment $fulfilment, ActionRequest $request): FulfilmentCustomer
     {
         $this->registerFulfilmentInitialisation($fulfilment, $request);
+
         return $this->handle($fulfilment, $this->validatedData);
     }
 }

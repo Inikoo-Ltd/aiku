@@ -25,11 +25,11 @@ class ClockingMachinesResource extends JsonResource
     public function toArray($request): array|Arrayable|JsonSerializable
     {
         return [
-            'workplace_name'         => $this->workplace_name,
-            'workplace_slug'         => $this->workplace_slug,
-            'slug'                   => $this->slug,
-            'name'                   => $this->name,
-            'type'                   => $this->type,
+            'workplace_name' => $this->workplace_name,
+            'workplace_slug' => $this->workplace_slug,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'type' => $this->type,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
         ];

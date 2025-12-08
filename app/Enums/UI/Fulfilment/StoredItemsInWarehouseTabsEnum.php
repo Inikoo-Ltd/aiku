@@ -16,30 +16,29 @@ enum StoredItemsInWarehouseTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case STORED_ITEMS    = 'stored_items';
+    case STORED_ITEMS = 'stored_items';
 
-    case PALLET_STORED_ITEMS        = 'pallet_stored_items';
+    case PALLET_STORED_ITEMS = 'pallet_stored_items';
 
-    case STORED_ITEM_AUDITS        = 'stored_item_audits';
-
+    case STORED_ITEM_AUDITS = 'stored_item_audits';
 
     public function blueprint(): array
     {
         return match ($this) {
             StoredItemsInWarehouseTabsEnum::STORED_ITEMS => [
                 'title' => __("Customer'S SKUs"),
-                'icon'  => 'fal fa-narwhal',
+                'icon' => 'fal fa-narwhal',
             ],
 
             StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS => [
 
                 'title' => __("Pallet/Customer's SKUs"),
-                'icon'  => 'fal fa-pallet',
+                'icon' => 'fal fa-pallet',
             ],
             StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS => [
 
                 'title' => __("Customer's SKUs Audits"),
-                'icon'  => 'fal fa-ballot-check',
+                'icon' => 'fal fa-ballot-check',
             ],
 
         };

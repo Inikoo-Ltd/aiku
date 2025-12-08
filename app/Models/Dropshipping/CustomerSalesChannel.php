@@ -17,6 +17,8 @@ use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
+use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,8 +28,6 @@ use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 
 /**
  * @property int $id
@@ -87,41 +87,43 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read Model|\Eloquent|null $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withoutTrashed()
+ *
  * @mixin \Eloquent
  */
-class CustomerSalesChannel extends Model implements Authenticatable, Auditable
+class CustomerSalesChannel extends Model implements Auditable, Authenticatable
 {
-    use InShop;
-    use HasSlug;
-    use HasApiTokens;
-    use SoftDeletes;
-    use HasHistory;
     use AuthenticatableTrait;
+    use HasApiTokens;
+    use HasHistory;
+    use HasSlug;
+    use InShop;
+    use SoftDeletes;
 
     protected $table = 'customer_sales_channels';
 
     protected $guarded = [];
 
     protected $casts = [
-        'data'                  => 'array',
-        'settings'              => 'array',
-        'audited_at'            => 'datetime',
-        'status'                => CustomerSalesChannelStatusEnum::class,
-        'state'                 => CustomerSalesChannelStateEnum::class,
-        'connection_status'     => CustomerSalesChannelConnectionStatusEnum::class,
-        'closed_at'             => 'datetime',
+        'data' => 'array',
+        'settings' => 'array',
+        'audited_at' => 'datetime',
+        'status' => CustomerSalesChannelStatusEnum::class,
+        'state' => CustomerSalesChannelStateEnum::class,
+        'connection_status' => CustomerSalesChannelConnectionStatusEnum::class,
+        'closed_at' => 'datetime',
         'ban_stock_update_util' => 'datetime',
     ];
 
     protected $attributes = [
         // 'data'      => '{}',
-        'settings'  => '{}'
+        'settings' => '{}',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -139,7 +141,6 @@ class CustomerSalesChannel extends Model implements Authenticatable, Auditable
     {
         return 'slug';
     }
-
 
     public function customer(): BelongsTo
     {

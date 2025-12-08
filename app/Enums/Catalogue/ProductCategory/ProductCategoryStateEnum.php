@@ -28,65 +28,65 @@ enum ProductCategoryStateEnum: string
     public static function labels(): array
     {
         return [
-            'in_process'    => __('In Process'),
-            'active'        => __('Active'),
-            'inactive'      => __('Inactive'),
+            'in_process' => __('In Process'),
+            'active' => __('Active'),
+            'inactive' => __('Inactive'),
             'discontinuing' => __('Discontinuing'),
-            'discontinued'  => __('Discontinued'),
+            'discontinued' => __('Discontinued'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'in_process'    => [
+            'in_process' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',
-                'color'   => 'lime',
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',
+                'color' => 'lime',
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'active'        => [
+            'active' => [
                 'tooltip' => __('Active'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-emerald-500',
-                'color'   => 'emerald',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-emerald-500',
+                'color' => 'emerald',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'inactive'      => [
+            'inactive' => [
                 'tooltip' => __('Inactive'),
-                'icon'    => 'fal fa-ban',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-ban',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'ban',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'discontinuing' => [
                 'tooltip' => __('Discontinuing'),
-                'icon'    => 'fal fa-exclamation-triangle',
-                'class'   => 'text-orange-500',
-                'color'   => 'orange',
-                'app'     => [
+                'icon' => 'fal fa-exclamation-triangle',
+                'class' => 'text-orange-500',
+                'color' => 'orange',
+                'app' => [
                     'name' => 'exclamation-triangle',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'discontinued'  => [
+            'discontinued' => [
                 'tooltip' => __('Discontinued'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
+                'app' => [
                     'name' => 'times',
-                ]
+                ],
             ],
         ];
     }
@@ -100,11 +100,11 @@ enum ProductCategoryStateEnum: string
         }
 
         return [
-            'in_process'    => $stats->number_departments_state_in_process,
-            'active'        => $stats->number_departments_state_active,
-            'inactive'      => $stats->number_departments_state_inactive,
+            'in_process' => $stats->number_departments_state_in_process,
+            'active' => $stats->number_departments_state_active,
+            'inactive' => $stats->number_departments_state_inactive,
             'discontinuing' => $stats->number_departments_state_discontinuing,
-            'discontinued'  => $stats->number_departments_state_discontinued,
+            'discontinued' => $stats->number_departments_state_discontinued,
         ];
     }
 
@@ -117,11 +117,11 @@ enum ProductCategoryStateEnum: string
         }
 
         return [
-            'in_process'    => $stats->number_families_state_in_process,
-            'active'        => $stats->number_families_state_active,
-            'inactive'      => $stats->number_families_state_inactive,
+            'in_process' => $stats->number_families_state_in_process,
+            'active' => $stats->number_families_state_active,
+            'inactive' => $stats->number_families_state_inactive,
             'discontinuing' => $stats->number_families_state_discontinuing,
-            'discontinued'  => $stats->number_families_state_discontinued,
+            'discontinued' => $stats->number_families_state_discontinued,
         ];
     }
 
@@ -130,11 +130,11 @@ enum ProductCategoryStateEnum: string
         $stats = $parent->stats;
 
         return [
-            'in_process'    => $stats->number_sub_departments_state_in_process,
-            'active'        => $stats->number_sub_departments_state_active,
-            'inactive'      => $stats->number_sub_departments_state_inactive,
+            'in_process' => $stats->number_sub_departments_state_in_process,
+            'active' => $stats->number_sub_departments_state_active,
+            'inactive' => $stats->number_sub_departments_state_inactive,
             'discontinuing' => $stats->number_sub_departments_state_discontinuing,
-            'discontinued'  => $stats->number_sub_departments_state_discontinued,
+            'discontinued' => $stats->number_sub_departments_state_discontinued,
         ];
     }
 }

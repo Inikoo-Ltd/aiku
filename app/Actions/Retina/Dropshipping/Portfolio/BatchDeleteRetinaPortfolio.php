@@ -21,7 +21,6 @@ class BatchDeleteRetinaPortfolio extends RetinaAction
 {
     use WithActionUpdate;
 
-
     private CustomerSalesChannel $customerSalesChannel;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void

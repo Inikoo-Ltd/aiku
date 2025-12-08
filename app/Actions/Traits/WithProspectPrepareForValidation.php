@@ -12,10 +12,9 @@ trait WithProspectPrepareForValidation
 {
     public function prepareForValidation(): void
     {
-        if ($this->has('address') and !array_filter($this->get('address'))) {
+        if ($this->has('address') and ! array_filter($this->get('address'))) {
             $this->set('address', null);
         }
-
 
         if ($this->has('contact_name') and $this->get('contact_name', '') == '') {
             $this->fill(['contact_name' => null]);
@@ -25,11 +24,10 @@ trait WithProspectPrepareForValidation
             $this->fill(['company_name' => null]);
         }
 
-
         if ($this->has('phone') and $this->get('phone', '') == '') {
             $this->fill(
                 [
-                    'phone' => null
+                    'phone' => null,
                 ]
             );
         }
@@ -46,10 +44,9 @@ trait WithProspectPrepareForValidation
             }
             $this->fill(
                 [
-                    'contact_website' => $contactWebsite
+                    'contact_website' => $contactWebsite,
                 ]
             );
         }
     }
-
 }

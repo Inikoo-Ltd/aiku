@@ -22,9 +22,9 @@ trait WithHydratePortfolios
         $wooCommercePlatform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
 
         return [
-            'number_portfolios'                      => $model->portfolios()->count(),
-            'number_current_portfolios'              => $model->portfolios()->where('status', true)->count(),
-            'number_portfolios_platform_shopify'     => $model->portfolios()->where('platform_id', $shopifyPlatform->id)->count(),
+            'number_portfolios' => $model->portfolios()->count(),
+            'number_current_portfolios' => $model->portfolios()->where('status', true)->count(),
+            'number_portfolios_platform_shopify' => $model->portfolios()->where('platform_id', $shopifyPlatform->id)->count(),
             'number_portfolios_platform_woocommerce' => $model->portfolios()->where('platform_id', $wooCommercePlatform->id)->count(),
         ];
     }

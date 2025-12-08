@@ -41,17 +41,18 @@ class OrderProductsForModifyResource extends JsonResource
     public function toArray($request): array
     {
         $product = Product::find($this->id)->first();
+
         return [
-            'id'                        => $this->id,
-            'slug'                      => $this->slug,
-            'asset_id'                  => $this->asset_id,
-            'historic_id'               => $this->current_historic_asset_id,
-            'code'                      => $this->code,
-            'name'                      => $this->name,
-            'image_thumbnail'           => $product->imageSources(64, 64),
-            'state'                     => $this->state,
-            'available_quantity'        => $this->available_quantity,
-            'price'                     => $this->price,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'asset_id' => $this->asset_id,
+            'historic_id' => $this->current_historic_asset_id,
+            'code' => $this->code,
+            'name' => $this->name,
+            'image_thumbnail' => $product->imageSources(64, 64),
+            'state' => $this->state,
+            'available_quantity' => $this->available_quantity,
+            'price' => $this->price,
         ];
     }
 }

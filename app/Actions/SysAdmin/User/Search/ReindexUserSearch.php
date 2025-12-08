@@ -17,12 +17,10 @@ class ReindexUserSearch extends HydrateModel
 {
     public string $commandSignature = 'search:users {organisations?*} {--s|slugs=}';
 
-
     public function handle(User $user): void
     {
         UserRecordSearch::run($user);
     }
-
 
     protected function getModel(string $slug): User
     {
@@ -36,7 +34,7 @@ class ReindexUserSearch extends HydrateModel
 
     protected function loopAll(Command $command): void
     {
-        $command->info("Reindex Users");
+        $command->info('Reindex Users');
         $count = User::withTrashed()->count();
 
         $bar = $command->getOutput()->createProgressBar($count);
@@ -51,6 +49,6 @@ class ReindexUserSearch extends HydrateModel
         });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
     }
 }

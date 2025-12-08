@@ -18,7 +18,6 @@ class MarkAllNotificationAsRead
 
     private bool $asAction = false;
 
-
     public function handle(User $user): void
     {
         $user->notifications->markAsRead();

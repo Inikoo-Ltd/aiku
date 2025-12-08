@@ -36,11 +36,9 @@ class ShowIncomingHub extends OrgAction
         return $this->handle($warehouse);
     }
 
-
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
         $palletDeliveries = $warehouse->stats->number_pallet_deliveries_state_confirmed + $warehouse->stats->number_pallet_deliveries_state_received + $warehouse->stats->number_pallet_deliveries_state_booking_in;
-
 
         return Inertia::render(
             'Org/Incoming/IncomingHub',
@@ -48,41 +46,40 @@ class ShowIncomingHub extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => 'incoming',
-                'pageHead'    => [
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-arrow-to-bottom'],
-                        'title' => __('Incoming')
+                'title' => 'incoming',
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-arrow-to-bottom'],
+                        'title' => __('Incoming'),
                     ],
                     'title' => __('Incoming Hub'),
                 ],
-                'box_stats'   => [
+                'box_stats' => [
                     [
-                        'name'  => __('Stock Deliveries'),
+                        'name' => __('Stock Deliveries'),
                         'value' => $warehouse->organisation->procurementStats->number_stock_deliveries,
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
-                            'parameters' => $request->route()->originalParameters()
+                            'name' => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
+                            'parameters' => $request->route()->originalParameters(),
                         ],
-                        'icon'  => [
-                            'icon'    => 'fal fa-truck-container',
-                            'tooltip' => __('Stock Deliveries')
-                        ]
+                        'icon' => [
+                            'icon' => 'fal fa-truck-container',
+                            'tooltip' => __('Stock Deliveries'),
+                        ],
                     ],
                     [
-                        'name'  => __('Fulfilment Deliveries'),
+                        'name' => __('Fulfilment Deliveries'),
                         'value' => $palletDeliveries,
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.pallet_deliveries.index',
-                            'parameters' => $request->route()->originalParameters()
+                            'name' => 'grp.org.warehouses.show.incoming.pallet_deliveries.index',
+                            'parameters' => $request->route()->originalParameters(),
                         ],
-                        'icon'  => [
-                            'icon'    => 'fal fa-truck-couch',
-                            'tooltip' => __('Fulfilment Deliveries')
-                        ]
+                        'icon' => [
+                            'icon' => 'fal fa-truck-couch',
+                            'tooltip' => __('Fulfilment Deliveries'),
+                        ],
                     ],
                 ],
-
 
             ]
         );
@@ -94,17 +91,16 @@ class ShowIncomingHub extends OrgAction
             ShowGroupDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.backlog',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.warehouses.show.incoming.backlog',
+                            'parameters' => $routeParameters,
                         ],
                         'label' => __('Goods in'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }
-
 }

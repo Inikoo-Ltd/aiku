@@ -21,7 +21,6 @@ enum OrdersBacklogTabsEnum: string
     case SUBMITTED_PAID = 'submitted_paid';
     case SUBMITTED_UNPAID = 'submitted_unpaid';
 
-
     case IN_WAREHOUSE = 'in_warehouse'; // Waiting to be picked
     case HANDLING = 'handling';  // Being picked
     case HANDLING_BLOCKED = 'handling_blocked';  // Being picked
@@ -29,10 +28,6 @@ enum OrdersBacklogTabsEnum: string
     case PACKED = 'packed';
     case FINALISED = 'finalised';  // Invoiced and ready to be dispatched
 
-
     case DISPATCHED_TODAY = 'dispatched_today';
-
-
-
 
 }

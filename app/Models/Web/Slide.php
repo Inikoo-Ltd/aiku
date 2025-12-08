@@ -33,22 +33,23 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Media|null $imageTablet
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read Snapshot|null $snapshot
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Slide newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Slide newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Slide query()
+ *
  * @mixin \Eloquent
  */
 class Slide extends Model implements HasMedia
 {
     use InteractsWithMedia;
 
-
     protected $casts = [
-        'layout'   => 'array',
+        'layout' => 'array',
     ];
 
     protected $attributes = [
-        'layout'   => '{}',
+        'layout' => '{}',
     ];
 
     protected $guarded = [];
@@ -72,5 +73,4 @@ class Slide extends Model implements HasMedia
     {
         return $this->belongsTo(Media::class, 'tablet_image_id');
     }
-
 }

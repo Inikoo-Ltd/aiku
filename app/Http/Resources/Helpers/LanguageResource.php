@@ -12,13 +12,11 @@ use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- *
  * @property string $code
  * @property string $name
  * @property int $id
  * @property string $native_name
  * @property mixed $flag
- *
  */
 class LanguageResource extends JsonResource
 {
@@ -27,13 +25,12 @@ class LanguageResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'          => $this->id,
-            'code'        => $this->code,
-            'name'        => $this->name,
+            'id' => $this->id,
+            'code' => $this->code,
+            'name' => $this->name,
             'native_name' => $this->native_name,
-            'flag'        => $this->flag
+            'flag' => $this->flag,
 
         ];
     }
-
 }

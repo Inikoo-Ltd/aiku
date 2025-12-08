@@ -18,7 +18,7 @@ trait WithModelAddressActions
     {
         $model->updateQuietly(
             [
-                'location' => $address->getLocation()
+                'location' => $address->getLocation(),
             ]
         );
 
@@ -29,17 +29,16 @@ trait WithModelAddressActions
     {
         $model->updateQuietly(
             [
-                $field => $address->id
+                $field => $address->id,
             ]
         );
 
         return $model;
     }
 
-
     protected function updateModelAddress($model, array $addressData, $updateLocation = true, $updateAddressField = 'address_id')
     {
-        if (!$addressData) {
+        if (! $addressData) {
             return $model;
         }
         if ($model->address) {
@@ -50,16 +49,15 @@ trait WithModelAddressActions
                 $this->updateLocation($model, $address);
             }
 
-
             return $model;
         } else {
             return $this->addAddressToModelFromArray(model: $model, addressData: $addressData, updateLocation: $updateLocation, updateAddressField: $updateAddressField);
         }
     }
 
-    protected function addAddressToModelFromArray($model, array $addressData, $scope = 'default', $updateLocation = true, $updateAddressField = 'address_id', bool $canShip = null)
+    protected function addAddressToModelFromArray($model, array $addressData, $scope = 'default', $updateLocation = true, $updateAddressField = 'address_id', ?bool $canShip = null)
     {
-        if (!$addressData) {
+        if (! $addressData) {
             return $model;
         }
 
@@ -73,14 +71,13 @@ trait WithModelAddressActions
 
         unset($addressData['label']);
 
-
         data_forget($addressData, 'id');
 
         $address = Address::create($addressData);
 
         $pivotData = [
-            'scope'    => $scope,
-            'group_id' => $groupId
+            'scope' => $scope,
+            'group_id' => $groupId,
         ];
 
         if ($canShip === null and $scope == 'delivery') {
@@ -90,7 +87,6 @@ trait WithModelAddressActions
         if ($canShip !== null) {
             $pivotData['can_ship'] = $canShip;
         }
-
 
         $pivotData['label'] = $label;
 
@@ -127,7 +123,7 @@ trait WithModelAddressActions
         $model->updateQuietly(
             [
                 'address_id' => $address->id,
-                'location'   => $address->getLocation()
+                'location' => $address->getLocation(),
             ]
         );
 
@@ -136,13 +132,12 @@ trait WithModelAddressActions
 
     protected function addLinkedAddress($model, $scope = 'default', $updateLocation = true, $updateAddressField = 'address_id')
     {
-        $addressLink  = explode(':', $model->settings['address_link']);
-        $address      = null;
+        $addressLink = explode(':', $model->settings['address_link']);
+        $address = null;
         $addressModel = null;
         if ($addressLink[0] == 'Organisation') {
             $addressModel = $model->organisation;
         }
-
 
         if ($addressModel) {
             $address = $addressModel->addresses()->where('scope', $addressLink[1])->first();
@@ -157,8 +152,8 @@ trait WithModelAddressActions
             $model->addresses()->attach(
                 $address->id,
                 [
-                    'scope'    => $scope,
-                    'group_id' => $groupId
+                    'scope' => $scope,
+                    'group_id' => $groupId,
                 ]
             );
             AddressHydrateUsage::dispatch($address);
@@ -170,12 +165,10 @@ trait WithModelAddressActions
             }
         }
 
-
         return $model;
     }
 
-
-    protected function attachAddressToModel($model, Address $address, $scope = 'default', $updateLocation = true, $updateAddressField = 'address_id', bool $canShip = null)
+    protected function attachAddressToModel($model, Address $address, $scope = 'default', $updateLocation = true, $updateAddressField = 'address_id', ?bool $canShip = null)
     {
         $groupId = $model->group_id;
         if ($model instanceof Group) {
@@ -183,8 +176,8 @@ trait WithModelAddressActions
         }
 
         $pivotData = [
-            'scope'    => $scope,
-            'group_id' => $groupId
+            'scope' => $scope,
+            'group_id' => $groupId,
         ];
 
         if ($canShip === null && $scope == 'delivery') {
@@ -194,7 +187,6 @@ trait WithModelAddressActions
         if ($canShip !== null) {
             $pivotData['can_ship'] = $canShip;
         }
-
 
         $model->addresses()->attach(
             $address->id,
@@ -212,8 +204,4 @@ trait WithModelAddressActions
 
         return $model;
     }
-
-
-
-
 }

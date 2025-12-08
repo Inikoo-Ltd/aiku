@@ -10,13 +10,12 @@ class SearchInput implements Arrayable
         public string $key,
         public string $label,
         public ?string $value = null,
-    ) {
-    }
+    ) {}
 
     public function toArray(): array
     {
         return [
-            'key'   => $this->key,
+            'key' => $this->key,
             'label' => $this->label,
             'value' => $this->value,
         ];

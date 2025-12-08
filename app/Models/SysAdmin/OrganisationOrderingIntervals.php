@@ -474,9 +474,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $registrations_without_orders_pq4
  * @property int $registrations_without_orders_pq5
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingIntervals query()
+ *
  * @mixin \Eloquent
  */
 class OrganisationOrderingIntervals extends Model

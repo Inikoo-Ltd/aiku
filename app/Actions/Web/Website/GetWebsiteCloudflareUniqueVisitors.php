@@ -26,6 +26,7 @@ class GetWebsiteCloudflareUniqueVisitors extends OrgAction
     use WithNoStrictRules;
 
     private Website $website;
+
     /**
      * @throws \Throwable
      */
@@ -43,10 +44,10 @@ class GetWebsiteCloudflareUniqueVisitors extends OrgAction
         $groupSettings = $website->group->settings;
         $dataWebsite = $website->data;
         $apiToken = Arr::get($groupSettings, 'cloudflare.apiToken');
-        $zoneTag = Arr::get($dataWebsite, "cloudflare.zoneTag");
+        $zoneTag = Arr::get($dataWebsite, 'cloudflare.zoneTag');
 
-        data_set($modelData, "apiToken", $apiToken);
-        data_set($modelData, "zoneTag", $zoneTag);
+        data_set($modelData, 'apiToken', $apiToken);
+        data_set($modelData, 'zoneTag', $zoneTag);
 
         $data = $this->getUniqueVisitor($modelData);
 
@@ -69,29 +70,31 @@ class GetWebsiteCloudflareUniqueVisitors extends OrgAction
 
     private function getZoneTag(Website $website, array $modelData, $try = 3): string
     {
-        $apiToken = Arr::get($modelData, "apiToken");
-        $urlCloudflareRest = "https://api.cloudflare.com/client/v4"; // -> api to get zone id, account id & site tag
+        $apiToken = Arr::get($modelData, 'apiToken');
+        $urlCloudflareRest = 'https://api.cloudflare.com/client/v4'; // -> api to get zone id, account id & site tag
         if ($try == 0) {
-            return "error";
+            return 'error';
         }
         try {
             $resultZone = Http::timeout(10)->withHeaders([
                 'Authorization' => "Bearer $apiToken",
                 'Content-Type' => 'application/json',
-            ])->get($urlCloudflareRest . "/zones", [
+            ])->get($urlCloudflareRest.'/zones', [
                 'name' => $website->domain,
             ])->json();
         } catch (ConnectionException $e) {
             return $this->getZoneTag($website, $modelData, $try--);
         }
 
-        if (!empty($resultZone['errors'])) {
+        if (! empty($resultZone['errors'])) {
             print_r($resultZone);
-            return "error";
+
+            return 'error';
         }
-        if (!Arr::get($resultZone, 'result')) {
-            print $website->domain . " zone tag not found" . "\n";
-            return "error";
+        if (! Arr::get($resultZone, 'result')) {
+            echo $website->domain.' zone tag not found'."\n";
+
+            return 'error';
         }
 
         return $resultZone['result'][0]['id'];
@@ -99,10 +102,10 @@ class GetWebsiteCloudflareUniqueVisitors extends OrgAction
 
     private function getUniqueVisitor(array $modelData, $try = 3): array
     {
-        $zoneTag = Arr::get($modelData, "zoneTag");
-        $apiToken = Arr::get($modelData, "apiToken");
+        $zoneTag = Arr::get($modelData, 'zoneTag');
+        $apiToken = Arr::get($modelData, 'apiToken');
 
-        $urlCloudflareGraphql = "https://api.cloudflare.com/client/v4/graphql";
+        $urlCloudflareGraphql = 'https://api.cloudflare.com/client/v4/graphql';
         if ($try == 0) {
             return [];
         }
@@ -117,7 +120,6 @@ class GetWebsiteCloudflareUniqueVisitors extends OrgAction
         } catch (ConnectionException $e) {
             return $this->getUniqueVisitor($modelData, $try--);
         }
-
 
         return $response->json();
     }
@@ -178,9 +180,7 @@ class GetWebsiteCloudflareUniqueVisitors extends OrgAction
     //     $res = $this->handle($websites);
     //     dd($res);
 
-
     //     return 0;
     // }
-
 
 }

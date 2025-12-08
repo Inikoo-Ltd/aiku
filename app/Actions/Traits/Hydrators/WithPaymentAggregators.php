@@ -23,11 +23,11 @@ trait WithPaymentAggregators
             ->where('payments.type', 'payment')
             ->where('status', 'success')
             ->sum($currencyField);
-        $refundedAmount         = $model->payments()
+        $refundedAmount = $model->payments()
             ->where('payments.type', 'refund')
             ->where('status', 'success')
             ->sum($currencyField);
-        $balanceAmount          = $successfullyPaidAmount + $refundedAmount;
+        $balanceAmount = $successfullyPaidAmount + $refundedAmount;
 
         $prefix = '';
         if ($currencyField == 'grp_amount') {
@@ -39,9 +39,8 @@ trait WithPaymentAggregators
         return [
 
             $prefix.'amount_successfully_paid' => $successfullyPaidAmount,
-            $prefix.'amount_refunded'          => $refundedAmount,
-            $prefix.'amount_paid_balance'      => $balanceAmount
+            $prefix.'amount_refunded' => $refundedAmount,
+            $prefix.'amount_paid_balance' => $balanceAmount,
         ];
     }
-
 }

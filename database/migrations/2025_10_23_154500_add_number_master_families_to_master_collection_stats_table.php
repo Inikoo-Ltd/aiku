@@ -10,11 +10,12 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('master_collection_stats', function (Blueprint $table) {
-            if (!Schema::hasColumn('master_collection_stats', 'number_master_families')) {
+            if (! Schema::hasColumn('master_collection_stats', 'number_master_families')) {
                 $table->unsignedSmallInteger('number_master_families')->default(0);
                 $table->unsignedSmallInteger('number_current_master_families')->default(0);
                 $table->unsignedSmallInteger('number_master_products')->default(0);

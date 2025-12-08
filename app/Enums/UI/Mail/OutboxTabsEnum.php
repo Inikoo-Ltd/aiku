@@ -25,15 +25,15 @@ enum OutboxTabsEnum: string
         return match ($this) {
             OutboxTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             OutboxTabsEnum::MAILSHOTS => [
                 'title' => __('Mailshots'),
-                'icon'  => 'fal fa-mail-bulk',
+                'icon' => 'fal fa-mail-bulk',
             ],
             OutboxTabsEnum::DISPATCHED_EMAILS => [
                 'title' => __('Dispatched emails'),
-                'icon'  => 'far fa-paper-plane',
+                'icon' => 'far fa-paper-plane',
             ],
         };
     }

@@ -20,17 +20,14 @@ enum MasterAssetStocksStatusEnum: string
     case DISCONTINUED = 'discontinued';
     case ORPHAN = 'orphan';
 
-
     public static function labels(): array
     {
         return [
-            'na'            => __('No applicable'),
-            'active'        => __('Stocking'),
+            'na' => __('No applicable'),
+            'active' => __('Stocking'),
             'discontinuing' => __('Discontinuing'),
-            'discontinued'  => __('Discontinued'),
-            'orphan'        => __('Orphan'),
+            'discontinued' => __('Discontinued'),
+            'orphan' => __('Orphan'),
         ];
     }
-
-
 }

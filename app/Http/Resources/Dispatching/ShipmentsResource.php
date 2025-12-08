@@ -24,7 +24,7 @@ class ShipmentsResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Shipment $shipment */
-        $shipment    = $this->resource;
+        $shipment = $this->resource;
         $isPrintable = (bool) $shipment->shipper->api_shipper;
 
         $formattedTrackingURls = [];
@@ -32,25 +32,25 @@ class ShipmentsResource extends JsonResource
             $url = Arr::get($shipment->tracking_urls, $key);
             if ($url) {
                 $formattedTrackingURls[] = [
-                    'url'      => Arr::get($shipment->tracking_urls, $key),
-                    'tracking' => $tracking
+                    'url' => Arr::get($shipment->tracking_urls, $key),
+                    'tracking' => $tracking,
                 ];
             }
         }
 
         return [
-            'id'                      => $shipment->id,
-            'name'                    => $shipment->shipper->name,
-            'reference'               => $shipment->reference,
-            'tracking'                => $shipment->tracking,
-            'trackings'               => $shipment->trackings,
-            'tracking_urls'           => $shipment->tracking_urls,
+            'id' => $shipment->id,
+            'name' => $shipment->shipper->name,
+            'reference' => $shipment->reference,
+            'tracking' => $shipment->tracking,
+            'trackings' => $shipment->trackings,
+            'tracking_urls' => $shipment->tracking_urls,
             'formatted_tracking_urls' => $formattedTrackingURls,
-            'tracking_url'            => $shipment->shipper->tracking_url,
-            'combined_label_url'      => $shipment->combined_label_url,
-            'label'                   => $shipment->label,
-            'label_type'              => $shipment->label_type,
-            'is_printable'            => $isPrintable,
+            'tracking_url' => $shipment->shipper->tracking_url,
+            'combined_label_url' => $shipment->combined_label_url,
+            'label' => $shipment->label,
+            'label_type' => $shipment->label_type,
+            'is_printable' => $isPrintable,
         ];
     }
 }

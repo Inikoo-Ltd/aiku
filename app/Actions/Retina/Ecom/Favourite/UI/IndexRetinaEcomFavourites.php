@@ -36,12 +36,12 @@ class IndexRetinaEcomFavourites extends RetinaAction
 
     private function getBasketTransactions(Customer $customer): array
     {
-        if (!$customer->current_order_in_basket_id) {
+        if (! $customer->current_order_in_basket_id) {
             return [];
         }
 
         $order = Order::find($customer->current_order_in_basket_id);
-        if (!$order) {
+        if (! $order) {
             return [];
         }
 
@@ -69,14 +69,12 @@ class IndexRetinaEcomFavourites extends RetinaAction
         return $basketTransactions;
     }
 
-
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
+
         return $this->handle($this->customer);
     }
-
-
 
     public function htmlResponse(LengthAwarePaginator $productFavorites, ActionRequest $request): Response
     {
@@ -86,12 +84,12 @@ class IndexRetinaEcomFavourites extends RetinaAction
             'Ecom/Favourites',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Favourites'),
+                'title' => __('Favourites'),
                 'pageHead' => [
-                    'title'         => __('Favourites'),
-                    'icon'          => 'fal fa-heart',
+                    'title' => __('Favourites'),
+                    'icon' => 'fal fa-heart',
                 ],
-                'data'     => CustomerFavouritesResource::collection($productFavorites),
+                'data' => CustomerFavouritesResource::collection($productFavorites),
                 'basketTransactions' => $basketTransactions,
 
             ]
@@ -116,8 +114,4 @@ class IndexRetinaEcomFavourites extends RetinaAction
                 ]
             );
     }
-
-
-
-
 }

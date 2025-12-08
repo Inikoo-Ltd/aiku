@@ -21,6 +21,7 @@ trait WithStoreModelAddress
 
         /** @var Address $address */
         $address = Address::create($addressData);
+
         return $address;
     }
 }

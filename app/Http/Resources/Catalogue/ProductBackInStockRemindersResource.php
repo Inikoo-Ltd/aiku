@@ -30,13 +30,13 @@ class ProductBackInStockRemindersResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'name'                   => $this->name,
-            'contact_name'           => $this->contact_name,
-            'reference'              => $this->reference,
-            'email'                  => $this->email,
-            'phone'                  => $this->phone,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'contact_name' => $this->contact_name,
+            'reference' => $this->reference,
+            'email' => $this->email,
+            'phone' => $this->phone,
         ];
     }
 }

@@ -36,19 +36,21 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Location> $locations
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Inventory\Warehouse $warehouse
+ *
  * @method static Builder<static>|PickingRoute newModelQuery()
  * @method static Builder<static>|PickingRoute newQuery()
  * @method static Builder<static>|PickingRoute onlyTrashed()
  * @method static Builder<static>|PickingRoute query()
  * @method static Builder<static>|PickingRoute withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|PickingRoute withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class PickingRoute extends Model
 {
     use HasSlug;
-    use SoftDeletes;
     use InWarehouse;
+    use SoftDeletes;
 
     protected $guarded = [];
 
@@ -69,5 +71,4 @@ class PickingRoute extends Model
     {
         return $this->belongsToMany(Location::class, 'picking_route_has_locations');
     }
-
 }

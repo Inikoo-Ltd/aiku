@@ -22,8 +22,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class DeleteRetinaTransaction extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     private Order $order;
 

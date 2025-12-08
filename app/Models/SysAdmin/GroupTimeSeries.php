@@ -23,9 +23,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\GroupTimeSeriesRecord> $records
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupTimeSeries query()
+ *
  * @mixin \Eloquent
  */
 class GroupTimeSeries extends Model
@@ -35,7 +37,7 @@ class GroupTimeSeries extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'data'      => 'array',
+        'data' => 'array',
         'frequency' => TimeSeriesFrequencyEnum::class,
 
     ];
@@ -48,5 +50,4 @@ class GroupTimeSeries extends Model
     {
         return $this->hasMany(GroupTimeSeriesRecord::class);
     }
-
 }

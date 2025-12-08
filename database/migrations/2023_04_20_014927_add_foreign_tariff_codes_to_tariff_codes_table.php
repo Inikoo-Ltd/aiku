@@ -10,14 +10,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('tariff_codes', function (Blueprint $table) {
             $table->foreign('parent_id')->references('id')->on('tariff_codes');
         });
     }
-
 
     public function down(): void
     {

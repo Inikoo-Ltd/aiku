@@ -34,23 +34,22 @@ class ItemizedInvoiceTransactionsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'asset_id'        => $this->asset_id,
-            'code'            => $this->code,
-            'description'     => $this->description,
-            'quantity'        => $this->quantity,
-            'net_amount'      => $this->net_amount,
-            'currency_code'   => $this->currency_code,
-            'in_process'      => $this->in_process,
+            'asset_id' => $this->asset_id,
+            'code' => $this->code,
+            'description' => $this->description,
+            'quantity' => $this->quantity,
+            'net_amount' => $this->net_amount,
+            'currency_code' => $this->currency_code,
+            'in_process' => $this->in_process,
             'fulfilment_info' => [
                 'servicePalletInfo' => $this->model_type == 'Service' ? $this->getServicePalletInfo($this->data, Arr::get($this->additional, 'isRetina', false)) : null,
-                'rentedScopeInfo'   => $this->getRentedScopeInfo(
+                'rentedScopeInfo' => $this->getRentedScopeInfo(
                     $this->recurring_bill_transaction_id,
                     $this->model_type,
                     $this->model_id,
                     Arr::get($this->additional, 'isRetina', false)
-                )
-            ]
-
+                ),
+            ],
 
         ];
     }

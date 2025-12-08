@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('master_shops', function (Blueprint $table) {
@@ -18,7 +19,6 @@ return new class () extends Migration {
             $table->decimal('price_rrp_ratio', 16, 3)->default(4);
         });
     }
-
 
     public function down(): void
     {

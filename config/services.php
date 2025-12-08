@@ -15,10 +15,10 @@ return [
     */
 
     'mailgun' => [
-        'domain'   => env('MAILGUN_DOMAIN'),
-        'secret'   => env('MAILGUN_SECRET'),
+        'domain' => env('MAILGUN_DOMAIN'),
+        'secret' => env('MAILGUN_SECRET'),
         'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
-        'scheme'   => 'https',
+        'scheme' => 'https',
     ],
 
     'postmark' => [
@@ -26,19 +26,19 @@ return [
     ],
 
     'ses' => [
-        'key'    => env('AWS_ACCESS_KEY_ID'),
+        'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
     'tiktok' => [
-        'url'    => env('TIKTOK_BUSINESS_URL'),
-        'base_url'    => env('TIKTOK_BASE_URL'),
-        'auth_url'    => env('TIKTOK_AUTH_URL'),
+        'url' => env('TIKTOK_BUSINESS_URL'),
+        'base_url' => env('TIKTOK_BASE_URL'),
+        'auth_url' => env('TIKTOK_AUTH_URL'),
         'redirect_uri' => env('TIKTOK_REDIRECT_URI'),
         'client_id' => env('TIKTOK_CLIENT_ID'),
         'client_secret' => env('TIKTOK_CLIENT_SECRET'),
-        'scopes' => env('TIKTOK_SCOPES')
+        'scopes' => env('TIKTOK_SCOPES'),
     ],
     'ebay' => [
         'client_id' => env('EBAY_CLIENT_ID'),
@@ -52,7 +52,7 @@ return [
         'app_id' => env('AMAZON_APP_ID'),
         'client_secret' => env('AMAZON_CLIENT_SECRET'),
         'region' => env('AMAZON_REGION', 'na'),
-        'sandbox' => env('AMAZON_SANDBOX', true)
+        'sandbox' => env('AMAZON_SANDBOX', true),
     ],
     'apple_pay' => [
         'verification_string' => env('APPLE_PAY_VERIFICATION_STRING'),

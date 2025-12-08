@@ -37,13 +37,13 @@ class StoreRetinaTopUp extends RetinaAction
             $payment = StorePayment::make()->action($customer, $paymentAccount, [
                 'amount' => Arr::get($modelData, 'amount'),
                 'currency_code' => $customer->shop->currency->code,
-                'type'   => PaymentTypeEnum::PAYMENT,
+                'type' => PaymentTypeEnum::PAYMENT,
             ]);
 
             $topup = StoreTopUp::make()->action($payment, [
                 'amount' => Arr::get($modelData, 'amount'),
                 // This only for testing, we need to remove later
-                'reference' => Str::random()
+                'reference' => Str::random(),
             ]);
 
             return $topup;
@@ -75,7 +75,7 @@ class StoreRetinaTopUp extends RetinaAction
         $paymentAccount = PaymentAccount::where('code', PaymentAccountTypeEnum::PAYPAL->value)->first();
 
         $this->handle($customer, $paymentAccount, [
-            'amount' => $command->argument('amount')
+            'amount' => $command->argument('amount'),
         ]);
     }
 }

@@ -16,43 +16,38 @@ trait WithPreparePositionsForValidation
     public function prepareJobPositionsForValidation(): void
     {
 
-
         if ($this->get('permissions')) {
             $newData = [];
 
             foreach ($this->get('permissions') as $jobPositionCode => $position) {
 
-
-
-
                 if ($jobPositionCode == 'shop-admin') {
                     $newData[] = [
-                        'code'   => $jobPositionCode,
+                        'code' => $jobPositionCode,
                         'scopes' => array_map(function ($scope) {
                             return [
-                                'slug' => $scope
+                                'slug' => $scope,
                             ];
-                        }, $position)
+                        }, $position),
                     ];
                 } else {
                     $newData[] = match (Arr::get(explode('-', $jobPositionCode), 0)) {
-                        'wah', 'dist', 'ful', 'web', 'mrk', 'cus', 'shk',  => [
-                            'code'   => $jobPositionCode,
+                        'wah', 'dist', 'ful', 'web', 'mrk', 'cus', 'shk', => [
+                            'code' => $jobPositionCode,
                             'scopes' => array_map(function ($scope) {
                                 return [
-                                    'slug' => $scope
+                                    'slug' => $scope,
                                 ];
-                            }, $position)
+                            }, $position),
                         ],
 
                         default => [
-                            'code'   => $jobPositionCode,
-                            'scopes' => []
+                            'code' => $jobPositionCode,
+                            'scopes' => [],
                         ]
                     };
                 }
             }
-
 
             foreach ($newData as $key => $data) {
                 if (in_array($data['code'], [
@@ -71,13 +66,11 @@ trait WithPreparePositionsForValidation
 
             }
 
-
             $jobPositions = [
-                'job_positions' => $newData
+                'job_positions' => $newData,
             ];
 
             $this->fill($jobPositions);
         }
     }
-
 }

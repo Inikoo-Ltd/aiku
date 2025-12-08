@@ -19,7 +19,6 @@ class GetApiToken extends RetinaAction
 {
     use AsAction;
 
-
     public function handle(CustomerSalesChannel $customerSalesChannel): array
     {
         $existingToken = $customerSalesChannel->tokens()->where('name', 'api-token')->first();

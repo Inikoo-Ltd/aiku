@@ -15,7 +15,7 @@ class OrderTransactionTemplateExport implements FromArray
     public function array(): array
     {
         return [
-            ['code', 'quantity']
+            ['code', 'quantity'],
         ];
     }
 }

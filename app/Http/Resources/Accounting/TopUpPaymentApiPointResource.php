@@ -21,10 +21,9 @@ class TopUpPaymentApiPointResource extends JsonResource
         /** @var TopUpPaymentApiPoint $topUpPaymentApiPoint */
         $topUpPaymentApiPoint = $this;
 
-
         return [
-            'id'               => $topUpPaymentApiPoint->id,
-            'data'             => $topUpPaymentApiPoint->data,
+            'id' => $topUpPaymentApiPoint->id,
+            'data' => $topUpPaymentApiPoint->data,
 
         ];
     }

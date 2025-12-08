@@ -29,6 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexOrgSuppliers extends OrgAction
 {
     use WithOrgAgentSubNavigation;
+
     private Organisation|OrgAgent $parent;
 
     protected function getSupplierElementGroups(Organisation|OrgAgent $parent): array
@@ -42,16 +43,16 @@ class IndexOrgSuppliers extends OrgAction
         return
             [
                 'status' => [
-                    'label'    => __('status'),
+                    'label' => __('status'),
                     'elements' => [
-                        'active'   => [
+                        'active' => [
                             __('active'),
                             $stats->number_active_org_suppliers,
                             null,
                             [
                                 'icon' => 'fal fa-check',
-                                'class' => 'text-green-500'
-                            ]
+                                'class' => 'text-green-500',
+                            ],
                         ],
                         'archived' => [
                             __('archived'),
@@ -59,16 +60,16 @@ class IndexOrgSuppliers extends OrgAction
                             null,
                             [
                                 'icon' => 'fal fa-check',
-                                'class' => 'text-red-500'
-                            ]
-                        ]
+                                'class' => 'text-red-500',
+                            ],
+                        ],
                     ],
                     'engine' => function ($query, $elements) {
 
                         if (count($elements) == 1) {
                             $query->where('org_suppliers.status', reset($elements) == 'active');
                         }
-                    }
+                    },
 
                 ],
 
@@ -88,9 +89,7 @@ class IndexOrgSuppliers extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-
         $queryBuilder = QueryBuilder::for(OrgSupplier::class);
-
 
         if (class_basename($parent) == 'OrgAgent') {
 
@@ -109,7 +108,6 @@ class IndexOrgSuppliers extends OrgAction
             );
         }
 
-
         return $queryBuilder
             ->defaultSort('suppliers.code')
             ->select([
@@ -121,7 +119,7 @@ class IndexOrgSuppliers extends OrgAction
                 'number_purchase_orders_delivery_state_in_process',
                 'number_purchase_orders',
                 'org_suppliers.status as status',
-                'org_suppliers.slug as org_supplier_slug'
+                'org_suppliers.slug as org_supplier_slug',
             ])
             ->leftJoin('suppliers', 'org_suppliers.supplier_id', 'suppliers.id')
 
@@ -133,9 +131,9 @@ class IndexOrgSuppliers extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|OrgAgent $parent, array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Organisation|OrgAgent $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $canEdit) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($parent instanceof OrgAgent) {
                 $organisation = $parent->organisation;
             } else {
@@ -145,7 +143,7 @@ class IndexOrgSuppliers extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
             foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
                 $table->elementGroup(
@@ -185,7 +183,7 @@ class IndexOrgSuppliers extends OrgAction
 
     public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
-        $this->maya   = true;
+        $this->maya = true;
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
@@ -215,15 +213,14 @@ class IndexOrgSuppliers extends OrgAction
         return OrgSuppliersResource::collection($suppliers);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         $subNavigation = null;
         $title = __('Suppliers');
         $model = '';
-        $icon  = [
-            'icon'  => ['fal', 'fa-person-dolly'],
-            'title' => __('Suppliers')
+        $icon = [
+            'icon' => ['fal', 'fa-person-dolly'],
+            'title' => __('Suppliers'),
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -232,18 +229,19 @@ class IndexOrgSuppliers extends OrgAction
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
             $title = $this->parent->agent->organisation->name;
             $model = '';
-            $icon  = [
-                'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Suppliers')
+            $icon = [
+                'icon' => ['fal', 'fa-people-arrows'],
+                'title' => __('Suppliers'),
             ];
-            $iconRight    = [
+            $iconRight = [
                 'icon' => 'fal fa-person-dolly',
             ];
             $afterTitle = [
 
-                'label'     => __('Suppliers')
+                'label' => __('Suppliers'),
             ];
         }
+
         return Inertia::render(
             'Procurement/OrgSuppliers',
             [
@@ -251,17 +249,16 @@ class IndexOrgSuppliers extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Suppliers'),
-                'pageHead'    => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => __('Suppliers'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                     'subNavigation' => $subNavigation,
                 ],
-                'data'        => OrgSuppliersResource::collection($suppliers),
-
+                'data' => OrgSuppliersResource::collection($suppliers),
 
             ]
         )->table($this->tableStructure($this->parent));
@@ -274,32 +271,32 @@ class IndexOrgSuppliers extends OrgAction
                 ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_suppliers.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.org_suppliers.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Suppliers'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
             'grp.org.procurement.org_agents.show.suppliers.index' => array_merge(
                 ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.show.suppliers.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.org_agents.show.suppliers.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Suppliers'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             )
         };

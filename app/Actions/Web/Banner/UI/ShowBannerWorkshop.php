@@ -54,73 +54,71 @@ class ShowBannerWorkshop extends OrgAction
         return Inertia::render(
             'Org/Web/Banners/BannerWorkshop',
             [
-                'title'             => __("Banner's workshop"),
-                'breadcrumbs'       => $this->getBreadcrumbs(
+                'title' => __("Banner's workshop"),
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'        => [
+                'navigation' => [
                     'previous' => $this->getPrevious($banner, $request),
-                    'next'     => $this->getNext($banner, $request),
+                    'next' => $this->getNext($banner, $request),
                 ],
-                'pageHead'          => [
+                'pageHead' => [
 
-                    'title'     => __('Workshop'),
+                    'title' => __('Workshop'),
                     'container' => [
-                        'icon'    => ['fal', 'fa-sign'],
+                        'icon' => ['fal', 'fa-sign'],
                         'tooltip' => __('Banner'),
-                        'label'   => Str::possessive($banner->name)
+                        'label' => Str::possessive($banner->name),
                     ],
-                    'iconRight' =>
-                        [
-                            'icon'  => ['fal', 'drafting-compass'],
-                            'title' => __("Banner's workshop")
-                        ],
+                    'iconRight' => [
+                        'icon' => ['fal', 'drafting-compass'],
+                        'title' => __("Banner's workshop"),
+                    ],
 
                     'actionActualMethod' => 'patch',
-                    'actions'            => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exit',
                             'label' => __('Exit workshop'),
                             'route' => [
-                                'name'       => preg_replace('/workshop$/', 'show', $request->route()->getName()),
+                                'name' => preg_replace('/workshop$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
-                            ]
+                            ],
                         ],
                     ],
                 ],
-                'banner'            => BannerResource::make($banner)->getArray(),
-                'autoSaveRoute'     => [
-                    'name'       => 'grp.models.banner.layout.update',
+                'banner' => BannerResource::make($banner)->getArray(),
+                'autoSaveRoute' => [
+                    'name' => 'grp.models.banner.layout.update',
                     'parameters' => [
-                        'banner'  => $banner->id
-                    ]
+                        'banner' => $banner->id,
+                    ],
                 ],
-                'publishRoute'      => [
-                    'name'       => 'grp.models.banner.publish',
+                'publishRoute' => [
+                    'name' => 'grp.models.banner.publish',
                     'parameters' => [
-                        'banner' => $banner->id
-                    ]
+                        'banner' => $banner->id,
+                    ],
                 ],
                 'imagesUploadRoute' => [
-                    'name'       => 'grp.models.banner.images.store',
+                    'name' => 'grp.models.banner.images.store',
                     'parameters' => [
-                        'banner' => $banner->id
-                    ]
+                        'banner' => $banner->id,
+                    ],
                 ],
-                'galleryRoute'      => [
-                    'stock_images'    => [
-                        'name' => "grp.gallery.stock-images.banner.$banner->type.index"
+                'galleryRoute' => [
+                    'stock_images' => [
+                        'name' => "grp.gallery.stock-images.banner.$banner->type.index",
                     ],
                     'uploaded_images' => [
-                        'name' => 'grp.gallery.uploaded-images.banner.index'
-                    ]
+                        'name' => 'grp.gallery.uploaded-images.banner.index',
+                    ],
                 ],
             ]
         );
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
@@ -147,7 +145,7 @@ class ShowBannerWorkshop extends OrgAction
 
     private function getNavigation(?Banner $banner, string $routeName, array $routeParameters): ?array
     {
-        if (!$banner) {
+        if (! $banner) {
             return null;
         }
 
@@ -155,11 +153,10 @@ class ShowBannerWorkshop extends OrgAction
             'grp.org.shops.show.web.banners.workshop', 'grp.org.fulfilments.show.web.banners.workshop' => [
                 'label' => $banner->name,
                 'route' => [
-                    'name'       => $routeName,
-                    'parameters' => $routeParameters
-                ]
+                    'name' => $routeName,
+                    'parameters' => $routeParameters,
+                ],
             ],
         };
     }
-
 }

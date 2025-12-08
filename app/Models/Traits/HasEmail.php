@@ -17,7 +17,7 @@ trait HasEmail
 
     public function routeNotificationForMail(Notification $notification): array|string
     {
-        if (!app()->isProduction()) {
+        if (! app()->isProduction()) {
             return config('mail.testing_mail_to');
         }
 

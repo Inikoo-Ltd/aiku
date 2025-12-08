@@ -10,14 +10,14 @@
 namespace App\Actions\Retina\Dropshipping\Product;
 
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
+use App\Actions\Retina\Dropshipping\Portfolio\RemoveFilesFromCatalogueIrisR2;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Actions\Retina\Dropshipping\Portfolio\RemoveFilesFromCatalogueIrisR2;
-use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\ActionRequest;
 use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaProductManual extends RetinaAction
 {
@@ -34,19 +34,19 @@ class StoreRetinaProductManual extends RetinaAction
             $file_paths = $downloadPortfolioCustomerSalesChannels->pluck('file_path')->filter()->values()->toArray();
             $ids = $downloadPortfolioCustomerSalesChannels->pluck('id')->toArray();
 
-            if (!empty($file_paths)) {
+            if (! empty($file_paths)) {
                 try {
                     RemoveFilesFromCatalogueIrisR2::run($file_paths);
                 } catch (\Exception $e) {
-                    Log::error('Failed to remove files from R2: ' . $e->getMessage());
+                    Log::error('Failed to remove files from R2: '.$e->getMessage());
                 }
             }
 
-            if (!empty($ids)) {
+            if (! empty($ids)) {
                 try {
                     DownloadPortfolioCustomerSalesChannel::whereIn('id', $ids)->delete();
                 } catch (\Exception $e) {
-                    Log::error('Failed to delete download records: ' . $e->getMessage());
+                    Log::error('Failed to delete download records: '.$e->getMessage());
                 }
             }
         }
@@ -59,7 +59,7 @@ class StoreRetinaProductManual extends RetinaAction
     public function rules(): array
     {
         return [
-            'items' => ['required', 'array']
+            'items' => ['required', 'array'],
         ];
     }
 

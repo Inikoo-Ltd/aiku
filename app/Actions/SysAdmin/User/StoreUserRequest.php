@@ -39,21 +39,21 @@ class StoreUserRequest extends GrpAction
     public function rules(): array
     {
         return [
-            'date'                   => ['required', 'date'],
-            'os'                     => ['required', 'string'],
-            'route_name'             => ['required', 'string'],
-            'route_params'           => ['required'],
+            'date' => ['required', 'date'],
+            'os' => ['required', 'string'],
+            'route_name' => ['required', 'string'],
+            'route_params' => ['required'],
             'aiku_scoped_section_id' => ['nullable', 'integer'],
-            'device'                 => ['required', 'string'],
-            'browser'                => ['required', 'string'],
-            'ip_address'             => ['required', 'string'],
-            'location'               => ['required']
+            'device' => ['required', 'string'],
+            'browser' => ['required', 'string'],
+            'ip_address' => ['required', 'string'],
+            'location' => ['required'],
         ];
     }
 
     public function action(User $user, array $modelData, int $hydratorsDelay = 0): UserRequest
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisation($user->group, $modelData);

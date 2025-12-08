@@ -22,7 +22,6 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
 {
     use WithActionUpdate;
 
-
     public function handle(Webpage $webpage, array $modelData): array
     {
         $webBlocks = Arr::get($modelData, 'layout.web_blocks');
@@ -58,6 +57,7 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
                 $ids[] = $modelHasWebBlockId;
             }
         }
+
         return $ids;
     }
 
@@ -83,7 +83,7 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
         $existingModelHasWebBlock = ModelHasWebBlocks::where('id', $modelHasWebBlockId)->first();
 
         // Create new block if neither exists
-        if (!$existingWebBlock && !$existingModelHasWebBlock) {
+        if (! $existingWebBlock && ! $existingModelHasWebBlock) {
             return $this->createNewWebBlock($webpage, $webBlockData, $index);
         }
 
@@ -95,14 +95,14 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
     {
         $webBlockType = WebBlockType::where('code', $webBlockData['type'])->first();
 
-        if (!$webBlockType) {
+        if (! $webBlockType) {
             return false;
         }
 
         StoreModelHasWebBlock::make()->action($webpage, [
             'web_block_type_id' => $webBlockType->id,
             'layout' => Arr::get($webBlockData, 'web_block.layout', []),
-            'position' => $index
+            'position' => $index,
         ]);
 
         return true;
@@ -110,7 +110,7 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
 
     private function updateWebBlockLayout(?WebBlock $existingWebBlock, array $webBlockData): bool
     {
-        if (!$existingWebBlock) {
+        if (! $existingWebBlock) {
             return false;
         }
 
@@ -118,12 +118,12 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
 
         if ($existingWebBlock->layout !== $newLayout) {
             $existingWebBlock->update(['layout' => $newLayout]);
+
             return true;
         }
 
         return false;
     }
-
 
     public function rules()
     {
@@ -143,5 +143,4 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
 
         return $this->handle($webpage, $this->validatedData);
     }
-
 }

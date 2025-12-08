@@ -22,7 +22,6 @@ class DestroyTransaction extends OrgAction
 {
     use WithActionUpdate;
 
-
     public function handle(Transaction $transaction): Transaction
     {
         $transaction->forceDelete();
@@ -36,7 +35,6 @@ class DestroyTransaction extends OrgAction
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
         AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-
 
         OrderRecordSearch::dispatch($order);
 

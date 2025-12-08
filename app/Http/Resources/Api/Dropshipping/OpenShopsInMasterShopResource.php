@@ -24,24 +24,24 @@ class OpenShopsInMasterShopResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'              => $this->id,
-            'slug'            => $this->slug,
-            'code'            => $this->code,
-            'name'            => $this->name,
-            'type'            => $this->type->labels()[$this->type->value],
-            'currency'        => $this->currency_code,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'type' => $this->type->labels()[$this->type->value],
+            'currency' => $this->currency_code,
             'organisation_id' => $this->organisation_id,
             'product' => [
-                'id'              => $this->id,
+                'id' => $this->id,
                 'stock' => 0,
                 'cost_price' => 0,
                 'margin' => 0,
                 'org_cost' => 0,
                 'grp_cost' => 0,
                 'has_org_stocks' => false,
-                'price'           => null,
-                'rrp'            => null
-            ]
+                'price' => null,
+                'rrp' => null,
+            ],
         ];
     }
 }

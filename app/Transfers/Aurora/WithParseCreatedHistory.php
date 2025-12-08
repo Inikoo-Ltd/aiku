@@ -30,11 +30,10 @@ trait WithParseCreatedHistory
         };
     }
 
-
     protected function parseCustomerHistoryCreatedNewValues(): array
     {
         $newValues = [];
-        $abstract  = $this->auroraModelData->{'History Abstract'};
+        $abstract = $this->auroraModelData->{'History Abstract'};
 
         if ($abstract == 'Customer Created') {
             $abstract = trim($this->auroraModelData->{'History Details'});
@@ -55,7 +54,6 @@ trait WithParseCreatedHistory
         ) {
             $newValues['name'] = '';
         }
-
 
         if (preg_match('/(.+) customer record created$/', $abstract, $matches)) {
             $newValues['name'] = trim($matches[1]);
@@ -80,7 +78,7 @@ trait WithParseCreatedHistory
         }
 
         if (count($newValues) == 0) {
-            print ">> exit A\n";
+            echo ">> exit A\n";
             print_r($this->auroraModelData);
         }
 
@@ -90,12 +88,11 @@ trait WithParseCreatedHistory
     protected function parseLocationHistoryCreatedNewValues(): array
     {
         $newValues = [];
-        $abstract  = $this->auroraModelData->{'History Abstract'};
+        $abstract = $this->auroraModelData->{'History Abstract'};
 
         if ($abstract == 'Location Created') {
             $abstract = trim($this->auroraModelData->{'History Details'});
         }
-
 
         if (preg_match('/Location (.+) create/', $abstract, $matches)) {
             $newValues['code'] = trim($matches[1]);
@@ -114,7 +111,7 @@ trait WithParseCreatedHistory
         }
 
         if (count($newValues) == 0) {
-            print ">> exit B\n";
+            echo ">> exit B\n";
             print_r($this->auroraModelData);
         }
 
@@ -124,7 +121,7 @@ trait WithParseCreatedHistory
     protected function parseProductHistoryCreatedNewValues(): array
     {
         $newValues = [];
-        $abstract  = trim($this->auroraModelData->{'History Abstract'});
+        $abstract = trim($this->auroraModelData->{'History Abstract'});
 
         if ($abstract == 'Product Created' || $abstract == 'product created' || $abstract == 'Produkt bol vytvorený') {
             $abstract = trim($this->auroraModelData->{'History Details'});
@@ -146,7 +143,6 @@ trait WithParseCreatedHistory
             $value = trim($matches[1]);
         }
 
-
         if ($value) {
             $field = 'code';
             if (str_word_count($value) > 1) {
@@ -156,40 +152,37 @@ trait WithParseCreatedHistory
         }
 
         if (count($newValues) == 0) {
-            print ">> exit C\n";
+            echo ">> exit C\n";
             print_r($this->auroraModelData);
         }
-
 
         return $newValues;
     }
 
     protected function parseProductHistoryCreatedData(): array
     {
-        $data     = [];
+        $data = [];
         $haystack = trim($this->auroraModelData->{'History Abstract'});
         if (preg_match('/change_view\(\'upload\/(\d+)/', $haystack, $matches)) {
-            $uploadSourceId    = $matches[1];
-            $upload            = $this->parseUpload($this->organisation->id.':'.$uploadSourceId);
+            $uploadSourceId = $matches[1];
+            $upload = $this->parseUpload($this->organisation->id.':'.$uploadSourceId);
             $data['upload_id'] = $upload->id;
         }
-
 
         return $data;
     }
 
-
     protected function parseWarehouseAreaHistoryCreatedNewValues(): array
     {
         $newValues = [];
-        $abstract  = $this->auroraModelData->{'History Abstract'};
+        $abstract = $this->auroraModelData->{'History Abstract'};
 
         if (preg_match('/Warehouse area <span class="italic">([a-zA-Z0-9_\s]+)/', $abstract, $matches)) {
             $newValues['code'] = trim($matches[1]);
         }
 
         if (count($newValues) == 0) {
-            print ">> exit D\n";
+            echo ">> exit D\n";
             print_r($this->auroraModelData);
         }
 
@@ -199,14 +192,13 @@ trait WithParseCreatedHistory
     protected function parseProspectHistoryCreatedNewValues(): array
     {
         $newValues = [];
-        $abstract  = $this->auroraModelData->{'History Abstract'};
+        $abstract = $this->auroraModelData->{'History Abstract'};
 
         if (preg_match('/^ prospect record created/', $abstract) ||
             $abstract == 'Byl vytvořenrospektový záznam' || $abstract == 'Bol vytvorený záznam o perspektíve'
         ) {
             return $newValues;
         }
-
 
         if (preg_match('/(.+) prospect record created/', $abstract, $matches)) {
             $newValues['name'] = trim($matches[1]);
@@ -217,11 +209,10 @@ trait WithParseCreatedHistory
         }
 
         if (count($newValues) == 0) {
-            print ">> exit E\n";
+            echo ">> exit E\n";
             print_r($this->auroraModelData);
         }
 
         return $newValues;
     }
-
 }

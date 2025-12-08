@@ -12,12 +12,12 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Rawilk\Printing\Api\PrintNode\Enums\ContentType;
 use Rawilk\Printing\Api\PrintNode\PendingPrintJob;
 use Rawilk\Printing\Api\PrintNode\PrintNode;
 use Rawilk\Printing\Api\PrintNode\Resources\Printer;
 use Rawilk\Printing\Api\PrintNode\Resources\PrintJob;
-use Illuminate\Validation\ValidationException;
 use Spatie\Browsershot\Browsershot;
 
 trait WithPrintNode
@@ -28,14 +28,13 @@ trait WithPrintNode
     {
         $isProduction = app()->isProduction();
 
-        if (!$this->clientInitialized) {
-            if (!$isProduction) {
+        if (! $this->clientInitialized) {
+            if (! $isProduction) {
                 $driver = config('printing.driver');
-                $apiKey = config('printing.drivers.' . $driver . '.key');
-
+                $apiKey = config('printing.drivers.'.$driver.'.key');
 
             } else {
-                $group  = group();
+                $group = group();
                 $apiKey = Arr::get($group->settings, 'printnode.apikey');
             }
             if (empty($apiKey)) {
@@ -56,7 +55,7 @@ trait WithPrintNode
 
             return true;
         } catch (Exception $e) {
-            Log::error('Error checking printer existence: ' . $e->getMessage());
+            Log::error('Error checking printer existence: '.$e->getMessage());
 
             return false;
         }
@@ -65,7 +64,7 @@ trait WithPrintNode
     public function printPdf(string $title, int $printId, string $pdfBase64): PrintJob
     {
         $this->ensureClientInitialized();
-        $content    = Str::fromBase64($pdfBase64);
+        $content = Str::fromBase64($pdfBase64);
         $pendingJob = PendingPrintJob::make()
             ->setContent($content)
             ->setContentType(ContentType::PdfBase64)
@@ -87,7 +86,7 @@ trait WithPrintNode
                 ->margins(10, 10, 10, 10)
                 ->pdf();
         } else {
-            $pdfContent = 'data:application/pdf;base64,' . $rawBase64;
+            $pdfContent = 'data:application/pdf;base64,'.$rawBase64;
         }
 
         $this->ensureClientInitialized();

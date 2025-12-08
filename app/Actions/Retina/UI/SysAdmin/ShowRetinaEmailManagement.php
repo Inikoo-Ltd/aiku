@@ -22,7 +22,6 @@ class ShowRetinaEmailManagement extends RetinaAction
         return $request->user()->is_root;
     }
 
-
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
@@ -30,56 +29,50 @@ class ShowRetinaEmailManagement extends RetinaAction
         return $this->handle($request);
     }
 
-
     public function handle(ActionRequest $request): Response
     {
 
         $customer = $request->user()->customer;
         $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
 
-
-
         return Inertia::render(
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Email management'),
-                'pageHead'    => [
+                'title' => __('Email management'),
+                'pageHead' => [
                     'title' => __('Email management'),
                 ],
-                "formData" => [
-                    "blueprint" =>
-                    [
+                'formData' => [
+                    'blueprint' => [
                         [
-                            'title'  => __('Marketing information'),
-                            'label'  => __('marketing'),
-                            'icon'    => 'fa-light fa-envelope',
+                            'title' => __('Marketing information'),
+                            'label' => __('marketing'),
+                            'icon' => 'fa-light fa-envelope',
                             'fields' => [
-                                    'email_subscriptions' => [
-                                        'type'  => 'email_subscriptions',
-                                        'full' => true,
-                                        'noSaveButton' => true,
-                                        "updateRoute" => [
-                                            "name"       => "retina.models.customer.comms.update",
-                                            'parameters' => [$customer->comms->id]
-                                        ],
-                                        'customer' => CustomerResource::make($customer)->getArray(),
+                                'email_subscriptions' => [
+                                    'type' => 'email_subscriptions',
+                                    'full' => true,
+                                    'noSaveButton' => true,
+                                    'updateRoute' => [
+                                        'name' => 'retina.models.customer.comms.update',
+                                        'parameters' => [$customer->comms->id],
                                     ],
-                                ]
-                        ]
+                                    'customer' => CustomerResource::make($customer)->getArray(),
+                                ],
+                            ],
+                        ],
                     ],
-                    "args"      => [
-                        "updateRoute" => [
-                            "name"       => "retina.models.customer.comms.update",
-                            'parameters' => [$customer->comms->id]
+                    'args' => [
+                        'updateRoute' => [
+                            'name' => 'retina.models.customer.comms.update',
+                            'parameters' => [$customer->comms->id],
                         ],
                     ],
                 ],
             ]
         );
     }
-
-
 
     public function getBreadcrumbs(): array
     {
@@ -88,14 +81,14 @@ class ShowRetinaEmailManagement extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.sysadmin.settings.edit'
+                                'name' => 'retina.sysadmin.settings.edit',
                             ],
-                            'label'  => __('Account management'),
-                        ]
-                    ]
+                            'label' => __('Account management'),
+                        ],
+                    ],
                 ]
             );
     }

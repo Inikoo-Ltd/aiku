@@ -11,8 +11,8 @@
 namespace App\Http\Resources\CRM;
 
 use App\Enums\CRM\Poll\PollTypeEnum;
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\CRM\Poll;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class PollResource extends JsonResource
 {
@@ -20,20 +20,21 @@ class PollResource extends JsonResource
     {
         /** @var Poll $poll */
         $poll = $this;
+
         return [
-            'created_at'               => $poll->created_at,
-            'id'                       => $poll->id,
-            'slug'                     => $poll->slug,
-            'name'                     => $poll->name,
-            'label'                    => $poll->label,
-            'position'                 => $poll->position,
-            'type'                     => $poll->type->label(),
-            'type_value'               => $poll->type->value,
-            'in_registration'          => $poll->in_registration,
+            'created_at' => $poll->created_at,
+            'id' => $poll->id,
+            'slug' => $poll->slug,
+            'name' => $poll->name,
+            'label' => $poll->label,
+            'position' => $poll->position,
+            'type' => $poll->type->label(),
+            'type_value' => $poll->type->value,
+            'in_registration' => $poll->in_registration,
             'in_registration_required' => $poll->in_registration_required,
-            'in_iris'                  => $poll->in_iris,
-            'in_iris_required'         => $poll->in_iris_required,
-            'options'                  => $poll->type == PollTypeEnum::OPTION ? PollOptionsResource::collection($poll->pollOptions)->toArray(request()) : [],
+            'in_iris' => $poll->in_iris,
+            'in_iris_required' => $poll->in_iris_required,
+            'options' => $poll->type == PollTypeEnum::OPTION ? PollOptionsResource::collection($poll->pollOptions)->toArray(request()) : [],
             // 'stats'                    => PollStatResource($poll->stats),
         ];
     }

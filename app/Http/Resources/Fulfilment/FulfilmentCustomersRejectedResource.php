@@ -22,24 +22,22 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $rejected_at
  * @property mixed $rejected_reason
  * @property mixed $rejected_notes
- *
- *
  */
 class FulfilmentCustomersRejectedResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'              => $this->id,
-            'slug'            => $this->slug,
-            'reference'       => $this->reference,
-            'name'            => $this->name,
-            'email'           => $this->email,
-            'phone'           => $this->phone,
-            'location'        => $this->location,
-            'rejected_at'     => $this->rejected_at,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'name' => $this->name,
+            'email' => $this->email,
+            'phone' => $this->phone,
+            'location' => $this->location,
+            'rejected_at' => $this->rejected_at,
             'rejected_reason' => $this->rejected_reason,
-            'rejected_notes'  => $this->rejected_notes,
+            'rejected_notes' => $this->rejected_notes,
 
         ];
     }

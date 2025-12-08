@@ -29,8 +29,8 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraInvoice;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraLocation;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraMailshot;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOffer;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraOfferCampaign;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOfferAllowance;
+use App\Actions\Transfers\Aurora\Api\ProcessAuroraOfferCampaign;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOrder;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOrgStockMovement;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPayment;
@@ -60,28 +60,25 @@ class ProcessFetchStack
     use AsAction;
     use WithOrganisationSource;
 
-
     /**
      * @throws \Throwable
      */
     public function handle(FetchStack $fetchStack, $bg = false): void
     {
         $organisation = $fetchStack->organisation;
-        $modelData    = [
+        $modelData = [
             'fetch_stack_id' => $fetchStack->id,
-            'id'             => $fetchStack->operation_id,
-            'bg'             => $bg
+            'id' => $fetchStack->operation_id,
+            'bg' => $bg,
         ];
-
 
         if ($fetchStack->operation == 'DeleteFavourite') {
             $modelData['unfavourited_at'] = $fetchStack->submitted_at;
         }
 
         $fetchStack->update([
-            'start_fetch_at' => now()
+            'start_fetch_at' => now(),
         ]);
-
 
         $res = match ($fetchStack->operation) {
             'Agent' => ProcessAuroraAgent::make()->action($organisation, $modelData),
@@ -131,28 +128,25 @@ class ProcessFetchStack
             default => null,
         };
 
-
         if ($res !== null) {
             $fetchStack->update([
-                'state'  => $bg ? FetchStackStateEnum::PROCESSING : FetchStackStateEnum::SUCCESS,
+                'state' => $bg ? FetchStackStateEnum::PROCESSING : FetchStackStateEnum::SUCCESS,
                 'result' => $res,
             ]);
 
-            if (!$bg) {
+            if (! $bg) {
                 $fetchStack->update(
                     [
-                        'finish_fetch_at' => now()
+                        'finish_fetch_at' => now(),
                     ]
                 );
             }
         } else {
             $fetchStack->update([
                 'send_to_queue_at' => null,
-                'start_fetch_at'   => null,
-                'state'            => FetchStackStateEnum::IN_PROCESS,
+                'start_fetch_at' => null,
+                'state' => FetchStackStateEnum::IN_PROCESS,
             ]);
         }
     }
-
-
 }

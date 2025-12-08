@@ -26,14 +26,14 @@ class MayaOrganisationResource extends JsonResource
         $organisation = $this;
 
         return [
-            'id'    => $organisation->id,
-            'slug'  => $organisation->slug,
-            'name'  => $organisation->name,
+            'id' => $organisation->id,
+            'slug' => $organisation->slug,
+            'name' => $organisation->name,
             'email' => $organisation->email,
-            'logo'  => $organisation->imageSources(48, 48),
+            'logo' => $organisation->imageSources(48, 48),
             'shops' => ShopResource::collection($organisation->shops)->resolve(),
             'fulfilments' => FulfilmentResource::collection($organisation->fulfilments)->resolve(),
-            'warehouses' => WarehouseResource::collection($organisation->warehouses)->resolve()
+            'warehouses' => WarehouseResource::collection($organisation->warehouses)->resolve(),
         ];
     }
 }

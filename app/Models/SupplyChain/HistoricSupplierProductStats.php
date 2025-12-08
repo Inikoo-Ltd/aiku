@@ -81,9 +81,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_stock_delivery_items_state_not_received
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static Builder<static>|HistoricSupplierProductStats newModelQuery()
  * @method static Builder<static>|HistoricSupplierProductStats newQuery()
  * @method static Builder<static>|HistoricSupplierProductStats query()
+ *
  * @mixin Eloquent
  */
 class HistoricSupplierProductStats extends Model

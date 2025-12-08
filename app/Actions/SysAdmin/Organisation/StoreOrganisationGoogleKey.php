@@ -25,17 +25,16 @@ class StoreOrganisationGoogleKey
             [
                 'settings' => [
                     'google' => [
-                        'id'     => $modelData['google_cloud_client_id'],
+                        'id' => $modelData['google_cloud_client_id'],
                         'secret' => $modelData['google_cloud_client_secret'],
-                        'drive'  => [
-                            'folder' => $modelData['google_drive_folder_key']
-                        ]
+                        'drive' => [
+                            'folder' => $modelData['google_drive_folder_key'],
+                        ],
 
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
-
 
         return $organisation;
     }
@@ -55,14 +54,12 @@ class StoreOrganisationGoogleKey
         $this->handle(
             $organisation,
             [
-                'google_cloud_client_id'     => $command->argument('google_cloud_client_id'),
+                'google_cloud_client_id' => $command->argument('google_cloud_client_id'),
                 'google_cloud_client_secret' => $command->argument('google_cloud_client_secret'),
-                'google_drive_folder_key'    => $command->argument('google_drive_folder_key')
+                'google_drive_folder_key' => $command->argument('google_drive_folder_key'),
             ]
         );
 
         return 0;
     }
-
-
 }

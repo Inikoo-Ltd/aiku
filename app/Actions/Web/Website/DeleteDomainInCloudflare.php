@@ -17,7 +17,8 @@ class DeleteDomainInCloudflare
 {
     use AsAction;
 
-    public string $commandSignature   = 'website:delete {website}';
+    public string $commandSignature = 'website:delete {website}';
+
     public string $commandDescription = 'Remove website from Cloudflare';
 
     public function handle(Website $website): string
@@ -25,7 +26,7 @@ class DeleteDomainInCloudflare
         DestroyDomainCloudflare::run($website->cloudflare_id);
 
         $website->update([
-            'cloudflare_id'     => null,
+            'cloudflare_id' => null,
             'cloudflare_status' => null,
         ]);
 

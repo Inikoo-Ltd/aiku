@@ -25,15 +25,12 @@ class GroupHydrateWarehouseAreas implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
 
-
         $stats = [
-            'number_warehouse_areas'             => $group->warehouseAreas()->count(),
+            'number_warehouse_areas' => $group->warehouseAreas()->count(),
         ];
-
 
         $group->inventoryStats()->update($stats);
     }

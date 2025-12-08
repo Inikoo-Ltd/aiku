@@ -32,9 +32,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Accounting\PaymentAccountShop|null $paymentAccountShop
  * @property-read \App\Models\Accounting\TopUp|null $topUp
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUpPaymentApiPoint newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUpPaymentApiPoint newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUpPaymentApiPoint query()
+ *
  * @mixin \Eloquent
  */
 class TopUpPaymentApiPoint extends Model
@@ -42,10 +44,10 @@ class TopUpPaymentApiPoint extends Model
     use InOrganisation;
 
     protected $casts = [
-        'data'         => 'array',
+        'data' => 'array',
         'processed_at' => 'datetime',
-        'state'        => TopUpPaymentApiPointStateEnum::class,
-        'amount'       => 'decimal:2',
+        'state' => TopUpPaymentApiPointStateEnum::class,
+        'amount' => 'decimal:2',
     ];
 
     protected $attributes = [

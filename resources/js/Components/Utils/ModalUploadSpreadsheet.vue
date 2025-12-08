@@ -163,7 +163,7 @@ const closeModal = () => {
 
 				<!-- Section: Upload box -->
 				<div class="grid gap-x-3 px-1">
-					
+
 					<div
 						@drop="(e: any) => (e.preventDefault(), onUploadFile(e.dataTransfer.files[0]))"
 						@dragover.prevent
@@ -201,7 +201,7 @@ const closeModal = () => {
 									type="file"
 									name="file"
 									id="fileInput"
-							
+
 									class="sr-only"
 									@change="(e: any) => onUploadFile(e.target.files[0])"
 									ref="fileInput" />
@@ -238,7 +238,7 @@ const closeModal = () => {
 									label="Submit"
 									size="l"
 									full
-									
+
 									:loading="isLoadingUpload" />
 							</div>
 						<!-- </div> -->

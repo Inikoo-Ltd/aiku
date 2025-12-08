@@ -27,7 +27,7 @@ class StoreRetinaClientFromPlatformUser extends RetinaAction
     public function handle(ShopifyUser|TiktokUser|WooCommerceUser $parent, array $attributes, array $customer, ?CustomerClient $existsClient): CustomerClient
     {
         data_set($attributes, 'customer_sales_channel_id', $parent->customerSalesChannel->id);
-        if (!$existsClient) {
+        if (! $existsClient) {
             $customerClient = StoreCustomerClient::make()->action($parent->customerSalesChannel, $attributes);
 
         } else {

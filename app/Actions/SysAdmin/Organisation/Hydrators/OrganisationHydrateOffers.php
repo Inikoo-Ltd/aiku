@@ -28,7 +28,7 @@ class OrganisationHydrateOffers implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_offers'         => $organisation->offers()->count(),
+            'number_offers' => $organisation->offers()->count(),
             'number_current_offers' => $organisation->offers()->where('status', true)->count(),
         ];
 
@@ -45,9 +45,6 @@ class OrganisationHydrateOffers implements ShouldBeUnique
             )
         );
 
-
         $organisation->discountsStats()->update($stats);
     }
-
-
 }

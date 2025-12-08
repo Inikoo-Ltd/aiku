@@ -16,10 +16,9 @@ enum DeliveryNotesTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case DELIVERY_NOTES    = 'notes';
-    case STATS             = 'stats';
-    case HISTORY           = 'history';
-
+    case DELIVERY_NOTES = 'notes';
+    case STATS = 'stats';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
@@ -27,18 +26,18 @@ enum DeliveryNotesTabsEnum: string
 
             DeliveryNotesTabsEnum::DELIVERY_NOTES => [
                 'title' => __('Delivery notes'),
-                'icon'  => 'fal fa-shopping-cart',
+                'icon' => 'fal fa-shopping-cart',
             ],
             DeliveryNotesTabsEnum::STATS => [
                 'title' => __('Stats'),
-                'icon'  => 'fal fa-chart-pie',
+                'icon' => 'fal fa-chart-pie',
             ],
 
             DeliveryNotesTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
-                'align' => 'right'
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ]
         };
     }

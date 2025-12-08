@@ -28,5 +28,4 @@ enum OfferAllowanceTargetTypeEnum: string
             OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY => 'category',
         };
     }
-
 }

@@ -19,9 +19,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $historic_asset_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static Builder<static>|HistoricAssetStats newModelQuery()
  * @method static Builder<static>|HistoricAssetStats newQuery()
  * @method static Builder<static>|HistoricAssetStats query()
+ *
  * @mixin Eloquent
  */
 class HistoricAssetStats extends Model

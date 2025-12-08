@@ -68,38 +68,37 @@ class StoreSalesChannel extends OrgAction
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
                     ]
-                )
+                ),
             ],
             'type' => [
                 'required',
-                Rule::enum(SalesChannelTypeEnum::class)
+                Rule::enum(SalesChannelTypeEnum::class),
             ],
 
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules['is_seeded'] = [
                 'required',
-                'boolean'
+                'boolean',
             ];
-            $rules              = $this->noStrictStoreRules($rules);
+            $rules = $this->noStrictStoreRules($rules);
         }
 
         return $rules;
     }
-
 
     /**
      * @throws \Throwable
      */
     public function action(Group $group, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): SalesChannel
     {
-        if (!$audit) {
+        if (! $audit) {
             SalesChannel::disableAuditing();
         }
 
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisationFromGroup($group, $modelData);

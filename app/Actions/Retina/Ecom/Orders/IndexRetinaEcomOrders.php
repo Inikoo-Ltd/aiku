@@ -18,12 +18,12 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
+use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use Closure;
 
 class IndexRetinaEcomOrders extends RetinaAction
 {
@@ -68,8 +68,6 @@ class IndexRetinaEcomOrders extends RetinaAction
             ->withQueryString();
     }
 
-
-
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
@@ -89,7 +87,7 @@ class IndexRetinaEcomOrders extends RetinaAction
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
                 'title' => __("You don't have any orders yet"),
-                'count' => 0
+                'count' => 0,
             ];
             $table->withLabelRecord([__('order'), __('orders')]);
             $table->withGlobalSearch()
@@ -99,30 +97,29 @@ class IndexRetinaEcomOrders extends RetinaAction
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
             $table->column(key: 'number_item_transactions', label: __('Items'), canBeHidden: false, sortable: true);
-            $table->column(key: 'total_amount', label: __('Total'), canBeHidden: false, sortable: true, align: "right");
+            $table->column(key: 'total_amount', label: __('Total'), canBeHidden: false, sortable: true, align: 'right');
         };
     }
-
 
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
         $actions = [];
+
         return Inertia::render(
             'Ecom/RetinaEcomOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Orders'),
-                'pageHead'    => [
-                    'icon'       => 'fal fa-shopping-cart',
-                    'title'      => __('Orders'),
-                    'actions'    => $actions
+                'title' => __('Orders'),
+                'pageHead' => [
+                    'icon' => 'fal fa-shopping-cart',
+                    'title' => __('Orders'),
+                    'actions' => $actions,
                 ],
-                'currency'              => CurrencyResource::make($this->shop->currency)->getArray(),
-                'data'                  => RetinaEcomOrdersTransactionsResources::collection($orders),
+                'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
+                'data' => RetinaEcomOrdersTransactionsResources::collection($orders),
             ]
         )->table($this->tableStructure());
     }
-
 
     public function getBreadcrumbs(): array
     {
@@ -131,14 +128,14 @@ class IndexRetinaEcomOrders extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.ecom.orders.index'
+                                'name' => 'retina.ecom.orders.index',
                             ],
                             'label' => __('Orders'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

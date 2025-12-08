@@ -27,10 +27,10 @@ class OrganisationHydrateFulfilmentCustomers implements ShouldBeUnique
     {
         $stats = [
             'number_customers_interest_pallets_storage' => $organisation->fulfilmentCustomers()->where('pallets_storage', true)->count(),
-            'number_customers_interest_items_storage'   => $organisation->fulfilmentCustomers()->where('items_storage', true)->count(),
-            'number_customers_interest_dropshipping'    => $organisation->fulfilmentCustomers()->where('dropshipping', true)->count(),
+            'number_customers_interest_items_storage' => $organisation->fulfilmentCustomers()->where('items_storage', true)->count(),
+            'number_customers_interest_dropshipping' => $organisation->fulfilmentCustomers()->where('dropshipping', true)->count(),
             'number_customers_with_stored_items' => $organisation->fulfilmentCustomers()->where('number_stored_items', '>', 0)->count(),
-            'number_customers_with_pallets'      => $organisation->fulfilmentCustomers()->where('number_pallets', '>', 0)->count(),
+            'number_customers_with_pallets' => $organisation->fulfilmentCustomers()->where('number_pallets', '>', 0)->count(),
         ];
 
         $organisation->fulfilmentStats()->update($stats);

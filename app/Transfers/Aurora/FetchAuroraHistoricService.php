@@ -16,29 +16,26 @@ class FetchAuroraHistoricService extends FetchAurora
     {
         $this->parsedData['service'] = $this->parseService($this->organisation->id.':'.$this->auroraModelData->{'Product ID'});
 
-
         $deleted_at = $this->parseDatetime($this->auroraModelData->{'Product History Valid To'});
 
         $status = 0;
         if (DB::connection('aurora')->table('Product Dimension')->where('Product Current Key', '=', $this->auroraModelData->{'Product Key'})->exists()) {
-            $status     = 1;
+            $status = 1;
             $deleted_at = null;
         }
 
-
         $this->parsedData['historic_service'] = [
-            'code'       => $this->auroraModelData->{'Product History Code'},
-            'name'       => $this->auroraModelData->{'Product History Name'},
-            'price'      => $this->auroraModelData->{'Product History Price'},
-            'status'     => $status,
+            'code' => $this->auroraModelData->{'Product History Code'},
+            'name' => $this->auroraModelData->{'Product History Name'},
+            'price' => $this->auroraModelData->{'Product History Price'},
+            'status' => $status,
             'created_at' => $this->parseDatetime($this->auroraModelData->{'Product History Valid From'}),
             'deleted_at' => $deleted_at,
-            'source_id'  => $this->organisation->id.':'.$this->auroraModelData->{'Product Key'}
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Product Key'},
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Product History Dimension')

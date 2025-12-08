@@ -63,6 +63,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Goods\Stock> $stocks
  * @property-read Collection<int, \App\Models\Goods\StockFamilyTimeSeries> $timeSeries
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Goods\StockFamilyFactory factory($count = null, $state = [])
  * @method static Builder<static>|StockFamily newModelQuery()
  * @method static Builder<static>|StockFamily newQuery()
@@ -70,23 +71,24 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|StockFamily query()
  * @method static Builder<static>|StockFamily withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|StockFamily withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class StockFamily extends Model implements HasMedia, Auditable
+class StockFamily extends Model implements Auditable, HasMedia
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasImage;
-    use InGroup;
-    use HasHistory;
-    use HasUniversalSearch;
     use HasFactory;
+    use HasHistory;
+    use HasImage;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InGroup;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'                        => 'array',
-        'state'                       => StockFamilyStateEnum::class,
-        'fetched_at'                  => 'datetime',
-        'last_fetched_at'             => 'datetime',
+        'data' => 'array',
+        'state' => StockFamilyStateEnum::class,
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -98,14 +100,14 @@ class StockFamily extends Model implements HasMedia, Auditable
     public function generateTags(): array
     {
         return [
-            'goods'
+            'goods',
         ];
     }
 
     protected array $auditInclude = [
         'code',
         'name',
-        'description'
+        'description',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -151,5 +153,4 @@ class StockFamily extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(StockFamilyTimeSeries::class);
     }
-
 }

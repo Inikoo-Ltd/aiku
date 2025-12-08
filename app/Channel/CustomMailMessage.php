@@ -24,7 +24,7 @@ class CustomMailMessage extends MailMessage
     public function data(): array
     {
         return array_merge($this->toArray(), array_merge($this->viewData, [
-            'shop'     => $this->notifiable->shop->name,
+            'shop' => $this->notifiable->shop->name,
             'shop_url' => $this->notifiable->shop->website->domain.'/app/login',
         ]));
     }

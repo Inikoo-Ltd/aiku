@@ -22,5 +22,4 @@ class ProcessAuroraMailshot extends OrgAction
     {
         $this->fetcher = FetchAuroraMailshots::class;
     }
-
 }

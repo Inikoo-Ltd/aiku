@@ -29,30 +29,29 @@ class UpdateOrganisation extends OrgAction
     public function handle(Organisation $organisation, array $modelData): Organisation
     {
         if (Arr::has($modelData, 'ui_name')) {
-            data_set($modelData, "settings.ui.name", Arr::pull($modelData, 'ui_name'));
+            data_set($modelData, 'settings.ui.name', Arr::pull($modelData, 'ui_name'));
         }
         if (Arr::has($modelData, 'google_client_id')) {
-            data_set($modelData, "settings.google.id", Arr::pull($modelData, 'google_client_id'));
+            data_set($modelData, 'settings.google.id', Arr::pull($modelData, 'google_client_id'));
         }
         if (Arr::has($modelData, 'google_client_secret')) {
-            data_set($modelData, "settings.google.secret", Arr::pull($modelData, 'google_client_secret'));
+            data_set($modelData, 'settings.google.secret', Arr::pull($modelData, 'google_client_secret'));
         }
         if (Arr::has($modelData, 'google_drive_folder_key')) {
-            data_set($modelData, "settings.google.drive.folder", Arr::pull($modelData, 'google_drive_folder_key'));
+            data_set($modelData, 'settings.google.drive.folder', Arr::pull($modelData, 'google_drive_folder_key'));
         }
 
         if (Arr::has($modelData, 'show_omega')) {
-            data_set($modelData, "settings.invoice_export.show_omega", Arr::pull($modelData, 'show_omega'));
+            data_set($modelData, 'settings.invoice_export.show_omega', Arr::pull($modelData, 'show_omega'));
         }
 
         if (Arr::has($modelData, 'attach_isdoc_to_pdf')) {
-            data_set($modelData, "settings.invoice_export.attach_isdoc_to_pdf", Arr::pull($modelData, 'attach_isdoc_to_pdf'));
+            data_set($modelData, 'settings.invoice_export.attach_isdoc_to_pdf', Arr::pull($modelData, 'attach_isdoc_to_pdf'));
         }
 
         if (Arr::has($modelData, 'show_tax_liability_date')) {
-            data_set($modelData, "settings.invoicing.show_tax_liability_date", Arr::pull($modelData, 'show_tax_liability_date'));
+            data_set($modelData, 'settings.invoicing.show_tax_liability_date', Arr::pull($modelData, 'show_tax_liability_date'));
         }
-
 
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
@@ -60,7 +59,7 @@ class UpdateOrganisation extends OrgAction
             UpdateAddress::run($organisation->address, $addressData);
             $organisation->updateQuietly(
                 [
-                    'location' => $organisation->address->getLocation()
+                    'location' => $organisation->address->getLocation(),
                 ]
             );
         }
@@ -69,10 +68,10 @@ class UpdateOrganisation extends OrgAction
             /** @var UploadedFile $image */
             $image = Arr::get($modelData, 'logo');
             data_forget($modelData, 'logo');
-            $imageData    = [
-                'path'         => $image->getPathName(),
+            $imageData = [
+                'path' => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
-                'extension'    => $image->getClientOriginalExtension(),
+                'extension' => $image->getClientOriginalExtension(),
             ];
             $organisation = SaveModelImage::run(
                 model: $organisation,
@@ -81,15 +80,12 @@ class UpdateOrganisation extends OrgAction
             );
         }
 
-
         $organisation = $this->update($organisation, $modelData, ['data', 'settings']);
 
         $organisation->refresh();
 
-
         return $organisation;
     }
-
 
     public function authorize(ActionRequest $request): bool
     {
@@ -99,7 +95,7 @@ class UpdateOrganisation extends OrgAction
 
         return $request->user()->authTo(
             [
-                'org-admin.'.$this->organisation->id
+                'org-admin.'.$this->organisation->id,
             ]
         );
     }
@@ -107,39 +103,38 @@ class UpdateOrganisation extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'name'                         => ['sometimes', 'required', 'string', 'max:255'],
-            'ui_name'                      => ['sometimes', 'required', 'string', 'max:32'],
-            'contact_name'                 => ['sometimes', 'string', 'max:255'],
-            'google_client_id'             => ['sometimes', 'string'],
-            'google_client_secret'         => ['sometimes', 'string'],
-            'show_omega'                   => ['sometimes', 'boolean'],
-            'attach_isdoc_to_pdf'          => ['sometimes', 'boolean'],
-            'show_tax_liability_date'      => ['sometimes', 'boolean'],
-            'google_drive_folder_key'      => ['sometimes', 'string'],
-            'address'                      => ['sometimes', 'required', new ValidAddress()],
-            'language_id'                  => ['sometimes', 'exists:languages,id'],
-            'timezone_id'                  => ['sometimes', 'exists:timezones,id'],
-            'currency_id'                  => ['sometimes', 'exists:currencies,id'],
-            'email'                        => ['sometimes', 'nullable', 'email'],
-            'phone'                        => ['sometimes', 'nullable', new Phone()],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'ui_name' => ['sometimes', 'required', 'string', 'max:32'],
+            'contact_name' => ['sometimes', 'string', 'max:255'],
+            'google_client_id' => ['sometimes', 'string'],
+            'google_client_secret' => ['sometimes', 'string'],
+            'show_omega' => ['sometimes', 'boolean'],
+            'attach_isdoc_to_pdf' => ['sometimes', 'boolean'],
+            'show_tax_liability_date' => ['sometimes', 'boolean'],
+            'google_drive_folder_key' => ['sometimes', 'string'],
+            'address' => ['sometimes', 'required', new ValidAddress],
+            'language_id' => ['sometimes', 'exists:languages,id'],
+            'timezone_id' => ['sometimes', 'exists:timezones,id'],
+            'currency_id' => ['sometimes', 'exists:currencies,id'],
+            'email' => ['sometimes', 'nullable', 'email'],
+            'phone' => ['sometimes', 'nullable', new Phone],
             'forbidden_dispatch_countries' => ['sometimes', 'array', 'nullable'],
-            'logo'                         => [
+            'logo' => [
                 'sometimes',
                 'nullable',
                 File::image()
-                    ->max(12 * 1024)
+                    ->max(12 * 1024),
             ],
-            'colour'                       => ['sometimes', 'string'],
+            'colour' => ['sometimes', 'string'],
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules['source'] = ['sometimes', 'array'];
-            $rules           = $this->noStrictUpdateRules($rules);
+            $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
     }
-
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
@@ -154,10 +149,10 @@ class UpdateOrganisation extends OrgAction
     public function action(Organisation $organisation, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Organisation
     {
         $this->strict = $strict;
-        if (!$audit) {
+        if (! $audit) {
             Organisation::disableAuditing();
         }
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($organisation, $modelData);
 

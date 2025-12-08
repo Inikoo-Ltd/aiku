@@ -17,13 +17,14 @@ class JobOrderResource extends JsonResource
     {
         /** @var JobOrder $jobOrder */
         $jobOrder = $this;
+
         return [
             'reference' => $jobOrder->reference,
-            'state'     => $jobOrder->state,
-            'date'      => $jobOrder->date,
-            'notes'     => [
+            'state' => $jobOrder->state,
+            'date' => $jobOrder->date,
+            'notes' => [
                 'customer' => $jobOrder->customer_notes,
-                'public'   => $jobOrder->public_notes,
+                'public' => $jobOrder->public_notes,
                 'internal' => $jobOrder->internal_notes,
             ],
         ];

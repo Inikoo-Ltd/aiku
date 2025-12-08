@@ -19,23 +19,22 @@ trait WithDashboardCurrencyTypeSettings
     public function dashboardCurrencyTypeSettings(Group|Organisation $scope, array $settings, string $align = 'right'): array
     {
         if ($scope instanceof Organisation) {
-            $id    = 'scope_org_currency_type';
+            $id = 'scope_org_currency_type';
             $value = Arr::get($settings, $id, 'org');
         } else {
-            $id    = 'scope_group_currency_type';
+            $id = 'scope_group_currency_type';
             $value = Arr::get($settings, $id, 'grp');
         }
 
         $options = $this->getOptions($scope, $settings);
 
-
         return [
             'display' => count($options) > 1,
-            'id'      => $id,
-            'align'   => $align,
-            'type'    => 'radio',
-            'value'   => $value,
-            'options' => $options
+            'id' => $id,
+            'align' => $align,
+            'type' => 'radio',
+            'value' => $value,
+            'options' => $options,
         ];
     }
 
@@ -54,35 +53,34 @@ trait WithDashboardCurrencyTypeSettings
         if ($shopState == 'open') {
             $currencyIds = $organisation->shops()->whereIn('state', [
                 ShopStateEnum::OPEN,
-                ShopStateEnum::CLOSING_DOWN
+                ShopStateEnum::CLOSING_DOWN,
             ])->pluck('currency_id')->unique()->toArray();
         } else {
             $currencyIds = $organisation->shops()->pluck('currency_id')->unique()->toArray();
         }
-        $currencies      = [];
+        $currencies = [];
         $currencySymbols = [];
         foreach ($currencyIds as $currencyId) {
-            $currency          = Currency::find($currencyId);
-            $currencies[]      = $currency;
+            $currency = Currency::find($currencyId);
+            $currencies[] = $currency;
             $currencySymbols[] = $currency->symbol;
         }
 
         $options = [
             [
-                'value'   => 'org',
-                'label'   => $organisation->currency->symbol,
+                'value' => 'org',
+                'label' => $organisation->currency->symbol,
                 'tooltip' => __('Organisation currency'),
-            ]
+            ],
         ];
 
         if (count($currencies) == 1 && $currencies[0]->id == $organisation->currency_id) {
             return $options;
         }
 
-
         $options[] = [
-            'value'   => 'shop',
-            'label'   => implode(', ', $currencySymbols),
+            'value' => 'shop',
+            'label' => implode(', ', $currencySymbols),
             'tooltip' => __('Shop currencies'),
         ];
 
@@ -93,16 +91,15 @@ trait WithDashboardCurrencyTypeSettings
     {
         return [
             [
-                'value'   => 'org',
-                'label'   => '',
+                'value' => 'org',
+                'label' => '',
                 'tooltip' => __('Organisations currency'),
             ],
             [
-                'value'   => 'grp',
-                'label'   => $group->currency->symbol,
+                'value' => 'grp',
+                'label' => $group->currency->symbol,
                 'tooltip' => __('Group currency'),
-            ]
+            ],
         ];
     }
-
 }

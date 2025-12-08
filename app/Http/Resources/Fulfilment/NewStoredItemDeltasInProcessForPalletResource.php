@@ -38,21 +38,21 @@ class NewStoredItemDeltasInProcessForPalletResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'stored_item_audit_id'  => $this->stored_item_audit_id,
-            'id'                    => $this->id,
-            'slug'                  => $this->slug,
-            'reference'             => $this->reference,
-            'name'                  => (string)$this->name,
-            'audit_notes'   => $this->audit_notes,
-            'audited_quantity'  => $this->audited_quantity,
-            'delta_state'   => $this->delta_state,
-            'audit_type'    => $this->audit_type,
+            'stored_item_audit_id' => $this->stored_item_audit_id,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
+            'name' => (string) $this->name,
+            'audit_notes' => $this->audit_notes,
+            'audited_quantity' => $this->audited_quantity,
+            'delta_state' => $this->delta_state,
+            'audit_type' => $this->audit_type,
             'stored_item_audit_delta_id' => $this->stored_item_audit_delta_id,
-            'update_routes'              => [
-                'name'       => 'grp.models.stored_item_audit_delta.update',
+            'update_routes' => [
+                'name' => 'grp.models.stored_item_audit_delta.update',
                 'parameters' => [
-                    $this->stored_item_audit_delta_id
-                ]
+                    $this->stored_item_audit_delta_id,
+                ],
             ],
         ];
     }

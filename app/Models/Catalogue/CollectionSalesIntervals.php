@@ -132,9 +132,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $sales_grp_currency_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionSalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionSalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class CollectionSalesIntervals extends Model

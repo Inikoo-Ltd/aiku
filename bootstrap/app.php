@@ -1,6 +1,5 @@
 <?php
 
-
 $app = new Illuminate\Foundation\Application(dirname(__DIR__));
 
 $app->singleton(
@@ -17,6 +16,5 @@ $app->singleton(
     Illuminate\Contracts\Debug\ExceptionHandler::class,
     App\Exceptions\Handler::class
 );
-
 
 return $app;

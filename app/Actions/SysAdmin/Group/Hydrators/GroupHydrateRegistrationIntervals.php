@@ -24,6 +24,7 @@ class GroupHydrateRegistrationIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
 
     public string $jobQueue = 'urgent';
+
     public string $commandSignature = 'hydrate:group-registration-intervals {group}';
 
     public function getJobUniqueId(int $groupId, ?array $intervals = null, ?array $doPreviousPeriods = null): string
@@ -43,14 +44,14 @@ class GroupHydrateRegistrationIntervals implements ShouldBeUnique
     public function handle(int $groupId, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
         $group = Group::find($groupId);
-        if (!$group) {
+        if (! $group) {
             return;
         }
 
         $stats = [];
 
         $queryBase = Customer::where('group_id', $group->id)->selectRaw('count(*) as  sum_aggregate');
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'registrations_',
@@ -87,5 +88,4 @@ class GroupHydrateRegistrationIntervals implements ShouldBeUnique
 
         $group->orderingIntervals()->update($stats);
     }
-
 }

@@ -19,8 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 class PlaceOrderPayByBank extends RetinaAction
 {
     use WithBasketStateWarning;
-    use WithRetinaOrderPlacedRedirection;
     use WithPlaceOrderByPaymentMethod;
+    use WithRetinaOrderPlacedRedirection;
 
     /**
      * @throws \Throwable
@@ -39,5 +39,4 @@ class PlaceOrderPayByBank extends RetinaAction
 
         return $this->handle($this->customer);
     }
-
 }

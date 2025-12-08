@@ -18,7 +18,6 @@ class UpdateAgentUniversalSearch
 
     public string $commandSignature = 'agents:search';
 
-
     public function handle(Agent $agent): void
     {
         AgentRecordSearch::run($agent);
@@ -29,6 +28,7 @@ class UpdateAgentUniversalSearch
         foreach (Agent::all() as $agent) {
             $this->handle($agent);
         }
+
         return 0;
     }
 }

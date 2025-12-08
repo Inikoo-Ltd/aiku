@@ -20,9 +20,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\CRM\TrafficSource $trafficSource
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCampaign newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCampaign newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCampaign query()
+ *
  * @mixin \Eloquent
  */
 class TrafficSourceCampaign extends Model

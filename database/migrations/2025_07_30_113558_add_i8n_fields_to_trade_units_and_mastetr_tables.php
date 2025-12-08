@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
 
@@ -36,7 +37,6 @@ return new class () extends Migration {
         });
     }
 
-
     public function down(): void
     {
         Schema::table('trade_units', function (Blueprint $table) {
@@ -44,7 +44,7 @@ return new class () extends Migration {
                 'name_i8n',
                 'description_i8n',
                 'description_title_i8n',
-                'description_extra_i8n'
+                'description_extra_i8n',
             ]);
         });
 
@@ -53,7 +53,7 @@ return new class () extends Migration {
                 'name_i8n',
                 'description_i8n',
                 'description_title_i8n',
-                'description_extra_i8n'
+                'description_extra_i8n',
             ]);
         });
 
@@ -62,7 +62,7 @@ return new class () extends Migration {
                 'name_i8n',
                 'description_i8n',
                 'description_title_i8n',
-                'description_extra_i8n'
+                'description_extra_i8n',
             ]);
         });
     }

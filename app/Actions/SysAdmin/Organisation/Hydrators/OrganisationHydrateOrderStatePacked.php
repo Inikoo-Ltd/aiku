@@ -20,7 +20,6 @@ class OrganisationHydrateOrderStatePacked implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $organisationID): string
@@ -31,25 +30,21 @@ class OrganisationHydrateOrderStatePacked implements ShouldBeUnique
     public function handle(int $organisationID): void
     {
         $organisation = Organisation::find($organisationID);
-        if (!$organisation) {
+        if (! $organisation) {
             return;
         }
         $stats = [
 
-
-            'number_orders_state_packed'              => $organisation->orders()->where('state', OrderStateEnum::PACKED)->count(),
+            'number_orders_state_packed' => $organisation->orders()->where('state', OrderStateEnum::PACKED)->count(),
             'orders_state_packed_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::PACKED)->sum('org_net_amount'),
             'orders_state_packed_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::PACKED)->sum('grp_net_amount'),
 
-            'number_orders_packed_today'              => $organisation->orders()->whereDate('packed_at', Carbon::today())->count(),
+            'number_orders_packed_today' => $organisation->orders()->whereDate('packed_at', Carbon::today())->count(),
             'orders_packed_today_amount_org_currency' => $organisation->orders()->whereDate('packed_at', Carbon::today())->sum('org_net_amount'),
             'orders_packed_today_amount_grp_currency' => $organisation->orders()->whereDate('packed_at', Carbon::today())->sum('grp_net_amount'),
-
 
         ];
 
         $organisation->orderHandlingStats()->update($stats);
     }
-
-
 }

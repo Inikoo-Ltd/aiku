@@ -43,15 +43,17 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Procurement\OrgSupplierProductStats|null $stats
  * @property-read SupplierProduct $supplierProduct
+ *
  * @method static Builder<static>|OrgSupplierProduct newModelQuery()
  * @method static Builder<static>|OrgSupplierProduct newQuery()
  * @method static Builder<static>|OrgSupplierProduct query()
+ *
  * @mixin Eloquent
  */
 class OrgSupplierProduct extends Model
 {
-    use InOrganisation;
     use HasSlug;
+    use InOrganisation;
 
     protected $table = 'org_supplier_products';
 
@@ -97,6 +99,4 @@ class OrgSupplierProduct extends Model
     {
         return $this->belongsTo(OrgStock::class);
     }
-
-
 }

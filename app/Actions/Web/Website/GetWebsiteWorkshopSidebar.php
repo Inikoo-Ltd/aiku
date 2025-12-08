@@ -20,40 +20,40 @@ class GetWebsiteWorkshopSidebar
     public function handle(Website $website): array
     {
         $sidebarDummy = [
-            'data'  => [
+            'data' => [
                 'fieldValue' => [
                     'navigation' => array_values([]),
                     'navigation_bottom' => array_values([]),
-                ]
+                ],
             ],
-            'status' => true
+            'status' => true,
         ];
 
         $productCategories = [
-            'product_categories' => GetIrisProductCategoryNavigation::run($website)
+            'product_categories' => GetIrisProductCategoryNavigation::run($website),
         ];
 
-        if (!Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar')) {
+        if (! Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar')) {
 
-            $sidebar            = Arr::get($website->published_layout, 'sidebar', $sidebarDummy);
+            $sidebar = Arr::get($website->published_layout, 'sidebar', $sidebarDummy);
             $sidebar['data']['fieldValue'] = array_merge(
                 $sidebar['data']['fieldValue'],
                 $productCategories
             );
 
             return [
-                'sidebar'    => $sidebar
+                'sidebar' => $sidebar,
             ];
         }
 
-        $sidebar                        = Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar', $sidebarDummy);
-        $sidebar['data']['fieldValue']  = array_merge(
+        $sidebar = Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar', $sidebarDummy);
+        $sidebar['data']['fieldValue'] = array_merge(
             $sidebar['data']['fieldValue'],
             $productCategories
         );
 
         return [
-            'sidebar'    => $sidebar
+            'sidebar' => $sidebar,
         ];
     }
 }

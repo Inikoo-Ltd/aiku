@@ -19,51 +19,51 @@ trait StoreCustomerFields
     {
         return [
             [
-                'title'  => __('contact'),
+                'title' => __('contact'),
                 'fields' => [
                     'company_name' => [
-                        'type'  => 'input',
+                        'type' => 'input',
                         'label' => __('company'),
-                        'value' => ''
+                        'value' => '',
                     ],
                     'contact_name' => [
-                        'type'  => 'input',
+                        'type' => 'input',
                         'label' => __('contact name'),
-                        'value' => ''
+                        'value' => '',
                     ],
                     'email' => [
-                        'type'  => 'input',
+                        'type' => 'input',
                         'label' => __('email'),
-                        'value' => ''
+                        'value' => '',
                     ],
                     'phone' => [
-                        'type'  => 'input',
+                        'type' => 'input',
                         'label' => __('phone'),
-                        'value' => ''
+                        'value' => '',
                     ],
                     'interest' => [
-                        'type'    => 'interest',
+                        'type' => 'interest',
                         'options' => [
                             [
                                 'value' => 'pallets_storage',
-                                'label' => __('Pallets Storage')
+                                'label' => __('Pallets Storage'),
                             ],
                             [
                                 'value' => 'items_storage',
-                                'label' => __('Items Storage')
+                                'label' => __('Items Storage'),
                             ],
                             [
                                 'value' => 'dropshipping',
-                                'label' => __('Dropshipping')
+                                'label' => __('Dropshipping'),
                             ],
                         ],
                         'label' => __('User interest'),
-                        'value' => ['pallets_storage']
+                        'value' => ['pallets_storage'],
                     ],
-                    'contact_address'      => [
-                        'type'    => 'address',
-                        'label'   => __('Address'),
-                        'value'   => AddressFormFieldsResource::make(
+                    'contact_address' => [
+                        'type' => 'address',
+                        'label' => __('Address'),
+                        'value' => AddressFormFieldsResource::make(
                             new Address(
                                 [
                                     'country_id' => $shop->country_id,
@@ -72,13 +72,12 @@ trait StoreCustomerFields
                             )
                         )->getArray(),
                         'options' => [
-                            'countriesAddressData' => GetAddressData::run()
+                            'countriesAddressData' => GetAddressData::run(),
 
-                        ]
-                    ]
-                ]
-            ]
+                        ],
+                    ],
+                ],
+            ],
         ];
     }
-
 }

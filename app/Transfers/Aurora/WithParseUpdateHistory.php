@@ -27,7 +27,6 @@ trait WithParseUpdateHistory
             $haystack = trim(preg_replace('/\s+/', ' ', $haystack));
         }
 
-
         if (preg_match('/<div class="field tr"><div>Old value:<\/div><div>(.*)<\/div><\/div>/', $haystack, $matches)) {
             $oldValues = $this->extractFromTable($matches, $oldValues, $field, $auditable);
         } elseif (preg_match('/<div class="field tr"><div>Alter Wert:<\/div><div>(.*)<\/div><\/div>/', $haystack, $matches)) {
@@ -64,10 +63,8 @@ trait WithParseUpdateHistory
             $oldValues[$field] = $matches[1];
         }
 
-
         return $oldValues;
     }
-
 
     protected function parseHistoryUpdatedNewValues($auditable): array
     {
@@ -78,7 +75,6 @@ trait WithParseUpdateHistory
         $haystack = $this->auroraModelData->{'History Details'};
 
         $haystack = trim(preg_replace('/\s+/', ' ', $haystack));
-
 
         if (preg_match('/<div class="field tr"><div>New value:<\/div><div>(.*)<\/div><\/div>/', $haystack, $matches)) {
             $newValues = $this->extractFromTable($matches, $newValues, $field, $auditable);
@@ -108,7 +104,6 @@ trait WithParseUpdateHistory
             $newValues[$field] = $matches[1];
         }
 
-
         if (count($newValues) == 0) {
             $haystack2 = $this->auroraModelData->{'History Abstract'};
 
@@ -118,7 +113,6 @@ trait WithParseUpdateHistory
                 $newValues[$field] = $matches[1];
             }
         }
-
 
         return $newValues;
     }
@@ -132,16 +126,14 @@ trait WithParseUpdateHistory
         };
     }
 
-
     protected function postProcessPrice(string $value): array
     {
         $extraValues = [];
 
         if (preg_match('/([\d.]+).+margin\s+([\d.]+)%/', $value, $matches)) {
-            $value                 = $matches[1];
+            $value = $matches[1];
             $extraValues['margin'] = $matches[2];
         }
-
 
         return [$value, $extraValues];
     }
@@ -149,7 +141,7 @@ trait WithParseUpdateHistory
     protected function postProcessState(string $value, $auditable): array
     {
         $extraValues = [];
-        $value       = trim($value);
+        $value = trim($value);
 
         $debug = $value;
 
@@ -163,12 +155,10 @@ trait WithParseUpdateHistory
             };
         }
 
-
-        if (!$value) {
+        if (! $value) {
             print_r($this->auroraModelData);
             dd($debug);
         }
-
 
         return [$value, $extraValues];
     }
@@ -176,11 +166,10 @@ trait WithParseUpdateHistory
     protected function extractFromTable($matches, $values, $field, $auditable): array
     {
         $matches[1] = preg_replace('/<\/div.*$/', '', $matches[1]);
-        $value      = trim($matches[1]);
-        list($value, $extraValues) = $this->postProcessValues($field, $value, $auditable);
+        $value = trim($matches[1]);
+        [$value, $extraValues] = $this->postProcessValues($field, $value, $auditable);
         $values[$field] = $value;
 
         return array_merge($values, $extraValues);
     }
-
 }

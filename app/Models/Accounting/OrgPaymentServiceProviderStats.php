@@ -59,9 +59,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Accounting\OrgPaymentServiceProvider $orgPaymentServiceProvider
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPaymentServiceProviderStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPaymentServiceProviderStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPaymentServiceProviderStats query()
+ *
  * @mixin \Eloquent
  */
 class OrgPaymentServiceProviderStats extends Model

@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('model_has_trade_units', function (Blueprint $table) {
@@ -22,8 +23,8 @@ return new class () extends Migration {
             $table->decimal('quantity', 12, 3)->default(1);
             $table->string('notes')->nullable();
             $table->timestampsTz();
-            $table->index(['model_type','model_id']);
-            $table->unique(['model_type','model_id','trade_unit_id']);
+            $table->index(['model_type', 'model_id']);
+            $table->unique(['model_type', 'model_id', 'trade_unit_id']);
         });
     }
 

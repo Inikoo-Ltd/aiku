@@ -21,5 +21,4 @@ enum FetchStackStateEnum: string
     case ERROR = 'error';
     case DUPLICATED = 'duplicated';
 
-
 }

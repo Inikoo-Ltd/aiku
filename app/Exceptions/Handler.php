@@ -53,8 +53,6 @@ class Handler extends ExceptionHandler
 
     /**
      * Register the exception handling callbacks for the application.
-     *
-     * @return void
      */
     public function register(): void
     {
@@ -79,28 +77,24 @@ class Handler extends ExceptionHandler
     {
         $response = parent::render($request, $e);
 
-
-        if (!app()->environment(['local', 'testing'])
+        if (! app()->environment(['local', 'testing'])
             && in_array($response->getStatusCode(), [500, 503, 404, 403, 422])
-            && !(!$request->inertia() && $request->expectsJson())
+            && ! (! $request->inertia() && $request->expectsJson())
         ) {
             $app = $this->getApp();
-
 
             if ($app == 'aiku-public' || $app == 'iris') {
                 return $this->renderErrorForLogOutWebpages($app, $request, $e, $response);
             }
-
 
             return $this->loadErrorMiddleware($request, function ($request) use ($e, $response, $app) {
                 if (Auth::check()) {
                     $route = $request->route();
                     if ($route && (str_starts_with($route->getName(), 'grp.models') || str_starts_with($route->getName(), 'retina.models'))) {
                         return back()->withErrors([
-                            'error_in_models' => $response->getStatusCode().': '.$e->getMessage()
+                            'error_in_models' => $response->getStatusCode().': '.$e->getMessage(),
                         ]);
                     }
-
 
                     if ($e instanceof ModelNotFoundException) {
                         if (Str::startsWith($request->route()->getName(), 'grp.org')) {
@@ -111,23 +105,21 @@ class Handler extends ExceptionHandler
                             return redirect()->route(
                                 'grp.org.fallback',
                                 [
-                                    'organisation'        => $request->route()->originalParameters()['organisation'],
-                                    'fallbackPlaceholder' => $fallbackPlaceholder
+                                    'organisation' => $request->route()->originalParameters()['organisation'],
+                                    'fallbackPlaceholder' => $fallbackPlaceholder,
                                 ]
                             );
                         }
 
-
                         return redirect()->route(
                             'grp.fallback',
                             [
-                                'fallbackPlaceholder' => Request::path()
+                                'fallbackPlaceholder' => Request::path(),
                             ]
                         );
                     }
 
                     Inertia::setRootView('app-'.$app);
-
 
                     return Inertia::render(
                         $this->getInertiaPage($e, $app),
@@ -179,8 +171,7 @@ class Handler extends ExceptionHandler
     {
         $firstLoadOnlyProps = [];
 
-
-        if (!$request->inertia()) {
+        if (! $request->inertia()) {
             $firstLoadOnlyProps = match ($app) {
                 'grp' => GetFirstLoadProps::run($user),
                 'retina' => GetRetinaFirstLoadProps::run($request, $user),
@@ -188,7 +179,7 @@ class Handler extends ExceptionHandler
             };
 
             $firstLoadOnlyProps['ziggy'] = function () use ($request) {
-                return array_merge((new Ziggy())->toArray(), [
+                return array_merge((new Ziggy)->toArray(), [
                     'location' => $request->url(),
                 ]);
             };
@@ -199,17 +190,16 @@ class Handler extends ExceptionHandler
             $routeName = $request->route()->getName();
         }
 
-
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'error'     => $this->getBaseErrorData($response, $e),
-                'datetime'  => now()->tz('UTC')->toDateTimeString(),
+                'error' => $this->getBaseErrorData($response, $e),
+                'datetime' => now()->tz('UTC')->toDateTimeString(),
                 'routeName' => $routeName,
-                'auth'      => [
+                'auth' => [
                     'user' => $request->user() ? LoggedUserResource::make($request->user())->getArray() : null,
                 ],
-                'ziggy'     => [
+                'ziggy' => [
                     'location' => $request->url(),
                 ],
 
@@ -221,24 +211,24 @@ class Handler extends ExceptionHandler
     {
         return match ($response->getStatusCode()) {
             403 => [
-                'status'      => $response->getStatusCode(),
-                'title'       => __('Forbidden'),
-                'description' => __('Sorry, you are forbidden from accessing this page.')
+                'status' => $response->getStatusCode(),
+                'title' => __('Forbidden'),
+                'description' => __('Sorry, you are forbidden from accessing this page.'),
             ],
             404 => [
-                'status'      => $response->getStatusCode(),
-                'title'       => __('Page Not Found'),
-                'description' => __('Sorry, the page you are looking for could not be found.')
+                'status' => $response->getStatusCode(),
+                'title' => __('Page Not Found'),
+                'description' => __('Sorry, the page you are looking for could not be found.'),
             ],
             422 => [
-                'status'      => $response->getStatusCode(),
-                'title'       => __('Unprocessable request'),
-                'description' => __('Sorry, is impossible to process this page.')
+                'status' => $response->getStatusCode(),
+                'title' => __('Unprocessable request'),
+                'description' => __('Sorry, is impossible to process this page.'),
             ],
             503 => [
-                'status'      => $response->getStatusCode(),
-                'title'       => __('Service Unavailable'),
-                'description' => __('Sorry, we are doing some maintenance. Please check back soon.')
+                'status' => $response->getStatusCode(),
+                'title' => __('Service Unavailable'),
+                'description' => __('Sorry, we are doing some maintenance. Please check back soon.'),
             ],
             default => $this->getExceptionInfo($e)
         };
@@ -248,16 +238,16 @@ class Handler extends ExceptionHandler
     {
         if (get_class($e) == 'App\Exceptions\IrisWebsiteNotFound') {
             return [
-                'status'      => 404,
-                'title'       => __('Domain Not Found'),
-                'description' => __('This domain was not been configured yet.')
+                'status' => 404,
+                'title' => __('Domain Not Found'),
+                'description' => __('This domain was not been configured yet.'),
             ];
         }
 
         return [
-            'status'      => 500,
-            'title'       => __('Server Error'),
-            'description' => __('Whoops, is us not you.')
+            'status' => 500,
+            'title' => __('Server Error'),
+            'description' => __('Whoops, is us not you.'),
         ];
     }
 
@@ -275,13 +265,12 @@ class Handler extends ExceptionHandler
         Inertia::setRootView('app-'.$app);
 
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             $user = null;
         }
 
-        $props     = $this->getInertiaProps($user, $app, $request, $response, $e);
+        $props = $this->getInertiaProps($user, $app, $request, $response, $e);
         $errorData = $this->getBaseErrorData($response, $e);
-
 
         return Inertia::render(
             $this->getInertiaPage($e, $app),
@@ -290,6 +279,4 @@ class Handler extends ExceptionHandler
             ->toResponse($request)
             ->setStatusCode($response->getStatusCode());
     }
-
-
 }

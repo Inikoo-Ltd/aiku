@@ -18,9 +18,9 @@ class WebBlockHistoriesResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'          => $this->id,
-            'layout'      => $this->layout,
-            'created_at'  => $this->created_at,
+            'id' => $this->id,
+            'layout' => $this->layout,
+            'created_at' => $this->created_at,
         ];
     }
 }

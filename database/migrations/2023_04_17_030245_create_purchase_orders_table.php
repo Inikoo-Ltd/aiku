@@ -6,17 +6,19 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Stubs\Migrations\HasProcurementStats;
 use App\Stubs\Migrations\IsProcurementOrder;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use IsProcurementOrder;
+return new class extends Migration
+{
     use HasProcurementStats;
+    use IsProcurementOrder;
+
     public function up(): void
     {
         Schema::create('purchase_orders', function (Blueprint $table) {
@@ -39,10 +41,10 @@ return new class () extends Migration {
 
             $table = $this->costingProcurementOrder($table);
             $table = $this->stockDeliveriesStats($table);
+
             return $this->footerProcurementOrder($table);
         });
     }
-
 
     public function down(): void
     {

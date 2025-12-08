@@ -74,7 +74,7 @@ class IndexProductWebpages extends OrgAction
     {
         return [
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     WebpageStateEnum::labels(),
                     WebpageStateEnum::count($parent)
@@ -82,14 +82,14 @@ class IndexProductWebpages extends OrgAction
 
                 'engine' => function ($query, $elements) {
                     $query->whereIn('webpages.state', $elements);
-                }
+                },
 
             ],
 
         ];
     }
 
-    public function handle(Website $parent, Webpage|null $scope = null, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Website $parent, ?Webpage $scope = null, $prefix = null, $bucket = null): LengthAwarePaginator
     {
 
         if ($bucket) {
@@ -136,6 +136,7 @@ class IndexProductWebpages extends OrgAction
                 $queryBuilder->where('products.family_id', $scope->model_id);
             }
         }
+
         return $queryBuilder
             ->defaultSort('webpages.level')
             ->select([
@@ -153,7 +154,7 @@ class IndexProductWebpages extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'websites.domain as website_url',
-                'websites.slug as website_slug'
+                'websites.slug as website_slug',
             ])
             ->allowedSorts(['code', 'type', 'level', 'url', 'title'])
             ->allowedFilters([$globalSearch])
@@ -170,7 +171,7 @@ class IndexProductWebpages extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            if (!($parent instanceof Group)) {
+            if (! ($parent instanceof Group)) {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
@@ -180,15 +181,14 @@ class IndexProductWebpages extends OrgAction
                 }
             }
 
-
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                            'title' => __("No webpages found"),
-                            'count' => $parent->webStats->number_webpages,
-                        ]
+                        'title' => __('No webpages found'),
+                        'count' => $parent->webStats->number_webpages,
+                    ]
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
@@ -208,7 +208,6 @@ class IndexProductWebpages extends OrgAction
     {
         $subNavigation = [];
 
-
         $subNavigation = $this->getWebpageNavigation($this->website);
 
         return Inertia::render(
@@ -218,64 +217,64 @@ class IndexProductWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpages'),
-                'pageHead'    => [
-                    'title'         => __('product webpages'),
-                    'icon'          => [
-                        'icon'  => ['fal', 'fa-browser'],
-                        'title' => __('Webpage')
+                'title' => __('Webpages'),
+                'pageHead' => [
+                    'title' => __('product webpages'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-browser'],
+                        'title' => __('Webpage'),
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
+                    'actions' => [
                         [
-                            'key'   => 'product_webpage_create',
-                            'type'  => 'button',
+                            'key' => 'product_webpage_create',
+                            'type' => 'button',
                             // 'style' => 'create',
                             // 'label' => __('Product Webpage'),
                             // 'route' => [
                             //     'name'       => $routeCreate,
                             //     'parameters' => array_values($request->route()->originalParameters())
                             // ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'routes_list' => [
                     'fetch_products_without_webpage' => [
-                        'name'       => 'grp.json.shop.products.no-webpage',
+                        'name' => 'grp.json.shop.products.no-webpage',
                         'parameters' => [
                             'shop' => $this->shop->id,
-                        ]
+                        ],
                     ],
                     'submit_product_webpage' => [
-                        'name'       => 'grp.models.webpages.product.store',
-                    ]
+                        'name' => 'grp.models.webpages.product.store',
+                    ],
                 ],
-                'data'        => WebpagesResource::collection($webpages),
+                'data' => WebpagesResource::collection($webpages),
 
             ]
         )->table($this->tableStructure(parent: $this->website));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Product Webpages'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
         /** @var Website $website */
         $website = request()->route()->parameter('website');
+
         return match ($routeName) {
-            'grp.org.shops.show.web.webpages.index.sub_type.product' =>
-            array_merge(
+            'grp.org.shops.show.web.webpages.index.sub_type.product' => array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
                     $website,
                     'grp.org.shops.show.web.websites.show',
@@ -283,8 +282,8 @@ class IndexProductWebpages extends OrgAction
                 ),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.product',
-                        'parameters' => $routeParameters
+                        'name' => 'grp.org.shops.show.web.webpages.index.sub_type.product',
+                        'parameters' => $routeParameters,
                     ],
                     $suffix
                 )

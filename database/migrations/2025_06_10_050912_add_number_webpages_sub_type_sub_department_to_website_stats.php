@@ -10,16 +10,16 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('website_stats', function (Blueprint $table) {
-            if (!Schema::hasColumn('website_stats', 'number_webpages_sub_type_sub_department')) {
+            if (! Schema::hasColumn('website_stats', 'number_webpages_sub_type_sub_department')) {
                 $table->unsignedSmallInteger('number_webpages_sub_type_sub_department')->default(0);
             }
         });
     }
-
 
     public function down(): void
     {

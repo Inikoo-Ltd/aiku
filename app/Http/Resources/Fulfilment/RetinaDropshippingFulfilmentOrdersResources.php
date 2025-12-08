@@ -40,8 +40,8 @@ class RetinaDropshippingFulfilmentOrdersResources extends JsonResource
             'reason_notes' => $this->no_fulfilment_reason_notes,
             'type' => $this->model->type,
             'slug' => $this->model->slug,
-            'state_label'           => $this->state->labels()[$this->state->value],
-            'state_icon'            => $this->state->stateIcon()[$this->state->value],
+            'state_label' => $this->state->labels()[$this->state->value],
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
 
         ];
     }

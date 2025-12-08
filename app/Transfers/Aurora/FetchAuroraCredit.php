@@ -22,58 +22,53 @@ class FetchAuroraCredit extends FetchAurora
 
         $payment = null;
         if ($this->auroraModelData->{'Credit Transaction Payment Key'}) {
-            $payment  = $this->parsePayment($this->organisation->id.':'.$this->auroraModelData->{'Credit Transaction Payment Key'});
+            $payment = $this->parsePayment($this->organisation->id.':'.$this->auroraModelData->{'Credit Transaction Payment Key'});
         }
-
 
         if ($payment and $payment->customer_id != $customer->id) {
             $payment = null;
-            print "\nError Payment Customer does not match Customer   ".$this->auroraModelData->{'Credit Transaction Date'}."   >>".$this->auroraModelData->{'Credit Transaction Key'}."<<  \n";
+            echo "\nError Payment Customer does not match Customer   ".$this->auroraModelData->{'Credit Transaction Date'}.'   >>'.$this->auroraModelData->{'Credit Transaction Key'}."<<  \n";
         }
-
 
         $date = $this->parseDatetime($this->auroraModelData->{'Credit Transaction Date'});
 
-
         $type = match ($this->auroraModelData->{'Credit Transaction Type'}) {
-            'TopUp'            => CreditTransactionTypeEnum::TOP_UP,
-            'Payment'          => CreditTransactionTypeEnum::PAYMENT,
-            'Adjust'           => CreditTransactionTypeEnum::ADJUST,
-            'Cancel'           => CreditTransactionTypeEnum::CANCEL,
-            'Return'           => CreditTransactionTypeEnum::RETURN,
-            'PayReturn'        => CreditTransactionTypeEnum::PAY_RETURN,
-            'AddFundsOther'    => CreditTransactionTypeEnum::ADD_FUNDS_OTHER,
-            'Compensation'     => CreditTransactionTypeEnum::COMPENSATION,
-            'TransferIn'       => CreditTransactionTypeEnum::TRANSFER_IN,
-            'MoneyBack'        => CreditTransactionTypeEnum::MONEY_BACK,
-            'TransferOut'      => CreditTransactionTypeEnum::TRANSFER_OUT,
+            'TopUp' => CreditTransactionTypeEnum::TOP_UP,
+            'Payment' => CreditTransactionTypeEnum::PAYMENT,
+            'Adjust' => CreditTransactionTypeEnum::ADJUST,
+            'Cancel' => CreditTransactionTypeEnum::CANCEL,
+            'Return' => CreditTransactionTypeEnum::RETURN,
+            'PayReturn' => CreditTransactionTypeEnum::PAY_RETURN,
+            'AddFundsOther' => CreditTransactionTypeEnum::ADD_FUNDS_OTHER,
+            'Compensation' => CreditTransactionTypeEnum::COMPENSATION,
+            'TransferIn' => CreditTransactionTypeEnum::TRANSFER_IN,
+            'MoneyBack' => CreditTransactionTypeEnum::MONEY_BACK,
+            'TransferOut' => CreditTransactionTypeEnum::TRANSFER_OUT,
             'RemoveFundsOther' => CreditTransactionTypeEnum::REMOVE_FUNDS_OTHER,
-            default            => null
+            default => null
         };
 
         $this->parsedData['customer'] = $customer;
 
         $this->parsedData['credit'] =
             [
-                'date'            => $date,
-                'type'            => $type,
-                'amount'          => $this->auroraModelData->{'Credit Transaction Amount'},
-                'org_exchange'    => GetHistoricCurrencyExchange::run($this->parsedData['customer']->shop->currency, $this->parsedData['customer']->organisation->currency, $date),
-                'grp_exchange'    => GetHistoricCurrencyExchange::run($this->parsedData['customer']->shop->currency, $this->parsedData['customer']->group->currency, $date),
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Credit Transaction Key'},
-                'fetched_at'      => now(),
-                'last_fetched_at' => now()
+                'date' => $date,
+                'type' => $type,
+                'amount' => $this->auroraModelData->{'Credit Transaction Amount'},
+                'org_exchange' => GetHistoricCurrencyExchange::run($this->parsedData['customer']->shop->currency, $this->parsedData['customer']->organisation->currency, $date),
+                'grp_exchange' => GetHistoricCurrencyExchange::run($this->parsedData['customer']->shop->currency, $this->parsedData['customer']->group->currency, $date),
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Credit Transaction Key'},
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
             ];
 
         if ($payment) {
             $this->parsedData['credit']['payment_id'] = $payment->id;
         }
 
-
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Credit Transaction Fact')

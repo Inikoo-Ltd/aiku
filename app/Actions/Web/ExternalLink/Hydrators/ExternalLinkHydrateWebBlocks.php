@@ -26,7 +26,7 @@ class ExternalLinkHydrateWebBlocks implements ShouldBeUnique
     public function handle(ExternalLink $externalLink): void
     {
         $data = [
-            'number_web_blocks_shown'  => $externalLink->webBlocks()->wherePivot('show', true)->count(),
+            'number_web_blocks_shown' => $externalLink->webBlocks()->wherePivot('show', true)->count(),
             'number_web_blocks_hidden' => $externalLink->webBlocks()->wherePivot('show', false)->count(),
         ];
 

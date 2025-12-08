@@ -16,15 +16,16 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use HasGroupOrganisationRelationship;
-    use HasSoftDeletes;
+return new class extends Migration
+{
     use HasFulfilmentDelivery;
+    use HasGroupOrganisationRelationship;
     use HasOrderAmountTotals;
+    use HasSoftDeletes;
 
     public function up(): void
     {
-        if (!Schema::hasTable('pallet_returns')) {
+        if (! Schema::hasTable('pallet_returns')) {
             Schema::create('pallet_returns', function (Blueprint $table) {
                 $table->increments('id');
                 $table = $this->getPalletIOFields($table);
@@ -53,7 +54,6 @@ return new class () extends Migration {
             });
         }
     }
-
 
     public function down(): void
     {

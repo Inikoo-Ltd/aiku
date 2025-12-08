@@ -27,67 +27,66 @@ class CreateSupplierProduct extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New supplier'),
-                'pageHead'    => [
-                    'title'        => __('New supplier'),
-                    'actions'      => [
+                'title' => __('New supplier'),
+                'pageHead' => [
+                    'title' => __('New supplier'),
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => preg_replace('/create/', 'index', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => preg_replace('/create/', 'index', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'formData' => [
                     'fullLayout' => true,
-                    'blueprint'  =>
+                    'blueprint' => [
                         [
-                            [
-                                'title'  => __('Create Supplier Product'),
-                                'fields' => [
-                                    'code' => [
-                                        'type'       => 'input',
-                                        'label'      => __('code'),
-                                        'required'   => true
-                                    ],
-                                    'name' => [
-                                        'type'       => 'input',
-                                        'label'      => __('name'),
-                                        'required'   => true
-                                    ],
-                                    'cost' => [
-                                        'type'       => 'input',
-                                        'label'      => __('cost'),
-                                        'required'   => true
-                                    ],
-                                    'units_per_pack' => [
-                                        'type'       => 'input',
-                                        'label'      => __('units per pack'),
-                                        'required'   => true
-                                    ],
-                                    'units_per_carton' => [
-                                        'type'       => 'input',
-                                        'label'      => __('units per carton'),
-                                        'required'   => true
-                                    ],
-                                    'cbm' => [
-                                        'type'       => 'input',
-                                        'label'      => __('cbm'),
-                                        'required'   => true
-                                    ]
-                                ]
-                            ]
+                            'title' => __('Create Supplier Product'),
+                            'fields' => [
+                                'code' => [
+                                    'type' => 'input',
+                                    'label' => __('code'),
+                                    'required' => true,
+                                ],
+                                'name' => [
+                                    'type' => 'input',
+                                    'label' => __('name'),
+                                    'required' => true,
+                                ],
+                                'cost' => [
+                                    'type' => 'input',
+                                    'label' => __('cost'),
+                                    'required' => true,
+                                ],
+                                'units_per_pack' => [
+                                    'type' => 'input',
+                                    'label' => __('units per pack'),
+                                    'required' => true,
+                                ],
+                                'units_per_carton' => [
+                                    'type' => 'input',
+                                    'label' => __('units per carton'),
+                                    'required' => true,
+                                ],
+                                'cbm' => [
+                                    'type' => 'input',
+                                    'label' => __('cbm'),
+                                    'required' => true,
+                                ],
+                            ],
                         ],
+                    ],
                     'route' => [
-                        'name'       => 'grp.models.supplier.supplier-product.store',
+                        'name' => 'grp.models.supplier.supplier-product.store',
                         'parameters' => [
-                            'supplier' => $supplier->id
-                        ]
-                    ]
+                            'supplier' => $supplier->id,
+                        ],
+                    ],
                 ],
             ]
         );
@@ -116,11 +115,11 @@ class CreateSupplierProduct extends GrpAction
             ),
             [
                 [
-                    'type'         => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating Invoice Category'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

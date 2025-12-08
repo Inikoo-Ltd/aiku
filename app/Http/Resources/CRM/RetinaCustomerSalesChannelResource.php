@@ -42,8 +42,8 @@ class RetinaCustomerSalesChannelResource extends JsonResource
         $customerSalesChannels = $this;
 
         $reconnectRoute = null;
-        $testRoute      = null;
-        $siteUrl      = null;
+        $testRoute = null;
+        $siteUrl = null;
 
         if (in_array($customerSalesChannels->platform->type, [
             PlatformTypeEnum::SHOPIFY,
@@ -53,21 +53,21 @@ class RetinaCustomerSalesChannelResource extends JsonResource
 
         ])) {
             $reconnectRoute = [
-                'name'       => 'retina.dropshipping.customer_sales_channels.reconnect',
+                'name' => 'retina.dropshipping.customer_sales_channels.reconnect',
                 'parameters' => [
-                    'customerSalesChannel' => $this->slug
+                    'customerSalesChannel' => $this->slug,
                 ],
-                'method'     => 'get',
+                'method' => 'get',
             ];
         }
 
         if ($customerSalesChannels->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
             $testRoute = [
-                'name'       => 'retina.dropshipping.platform.wc.test_connection',
+                'name' => 'retina.dropshipping.platform.wc.test_connection',
                 'parameters' => [
-                    'customerSalesChannel' => $this->slug
+                    'customerSalesChannel' => $this->slug,
                 ],
-                'method'     => 'post',
+                'method' => 'post',
             ];
 
             /** @var \App\Models\Dropshipping\WooCommerceUser $wooUser */
@@ -84,33 +84,33 @@ class RetinaCustomerSalesChannelResource extends JsonResource
         }
 
         return [
-            'slug'                    => $this->slug,
-            'id'                      => $this->id,
-            'reference'               => $this->reference,
-            'name'                    => $this->name ?? $this->reference,
-            'number_portfolios'       => $this->number_portfolios,
+            'slug' => $this->slug,
+            'id' => $this->id,
+            'reference' => $this->reference,
+            'name' => $this->name ?? $this->reference,
+            'number_portfolios' => $this->number_portfolios,
             'number_customer_clients' => $this->number_customer_clients,
-            'number_orders'           => $this->number_orders,
-            'type'                    => $customerSalesChannels->platform->type,
-            'status'                  => $this->status,
-            'amount'                  => $this->total_amount,
-            'platform_code'           => $this->platform_code,
-            'platform_name'           => $this->platform_name,
-            'user_data'               => $this->user?->data,
-            'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
+            'number_orders' => $this->number_orders,
+            'type' => $customerSalesChannels->platform->type,
+            'status' => $this->status,
+            'amount' => $this->total_amount,
+            'platform_code' => $this->platform_code,
+            'platform_name' => $this->platform_name,
+            'user_data' => $this->user?->data,
+            'platform_image' => $this->getPlatformLogo($customerSalesChannels->platform->code),
 
             'ban_stock_update_until' => $this->ban_stock_update_util,
-            'include_vat'            => Arr::get($this->settings, 'tax_category.checked'),
-            'vat_rate'               => $taxCategory?->rate,
+            'include_vat' => Arr::get($this->settings, 'tax_category.checked'),
+            'vat_rate' => $taxCategory?->rate,
             'store_url' => $siteUrl,
             'reconnect_route' => $reconnectRoute,
-            'test_route'      => $testRoute,
-            'delete_route'    => [
-                'method'     => 'delete',
-                'name'       => 'retina.models.customer_sales_channel.delete',
+            'test_route' => $testRoute,
+            'delete_route' => [
+                'method' => 'delete',
+                'name' => 'retina.models.customer_sales_channel.delete',
                 'parameters' => [
-                    'customerSalesChannel' => $this->id
-                ]
+                    'customerSalesChannel' => $this->id,
+                ],
             ],
 
         ];

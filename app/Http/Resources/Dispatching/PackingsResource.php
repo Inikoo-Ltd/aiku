@@ -16,10 +16,10 @@ class PackingsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                  => $this->id,
-            'quantity'            => $this->quantity,
-            'engine'              => $this->engine,
-            'packer'              => $this->packer->contact_name
+            'id' => $this->id,
+            'quantity' => $this->quantity,
+            'engine' => $this->engine,
+            'packer' => $this->packer->contact_name,
         ];
     }
 }

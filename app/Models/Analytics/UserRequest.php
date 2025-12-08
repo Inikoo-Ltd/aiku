@@ -27,9 +27,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $location
  * @property-read \App\Models\Analytics\AikuScopedSection|null $aikuScopedSection
  * @property-read User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserRequest newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserRequest newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserRequest query()
+ *
  * @mixin \Eloquent
  */
 class UserRequest extends Model
@@ -48,5 +50,4 @@ class UserRequest extends Model
     {
         return $this->belongsTo(AikuScopedSection::class);
     }
-
 }

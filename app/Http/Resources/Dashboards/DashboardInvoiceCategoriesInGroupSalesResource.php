@@ -28,12 +28,10 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
-
     protected string $organisationCurrencyCode;
 
     public function toArray($request): array
     {
-
 
         $currencyOrganisationId = $this->organisation_currency_id;
         $organisationCurrencyCode = Cache::remember('currency_code_'.$currencyOrganisationId, 3600 * 24 * 30, function () use ($currencyOrganisationId) {
@@ -78,14 +76,14 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
                 'label' => [
                     'formatted_value' => $this->organisation_code.': '.$this->name,
                     ...$routeTargets['invoiceCategories'],
-                ]
+                ],
             ],
             [
                 'label_minified' => [
                     'formatted_value' => Abbreviate::run($this->name),
-                    'tooltip'         => $this->name,
+                    'tooltip' => $this->name,
                     ...$routeTargets['invoiceCategories'],
-                ]
+                ],
             ],
             $this->getDashboardTableColumn($this, 'refunds', $routeTargets['refunds']),
             $this->getDashboardTableColumn($this, 'refunds_minified', $routeTargets['refunds']),
@@ -101,12 +99,11 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
             $this->getDashboardTableColumn($this, 'sales_grp_currency_delta'),
         );
 
-
         return [
-            'slug'    => $this->slug,
-            'state'   => $this->state == InvoiceCategoryStateEnum::ACTIVE ? 'active' : 'inactive',
+            'slug' => $this->slug,
+            'state' => $this->state == InvoiceCategoryStateEnum::ACTIVE ? 'active' : 'inactive',
             'columns' => $columns,
-            'colour'  => $this?->colour,
+            'colour' => $this?->colour,
 
         ];
     }

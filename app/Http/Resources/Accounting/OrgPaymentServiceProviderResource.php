@@ -17,10 +17,11 @@ class OrgPaymentServiceProviderResource extends JsonResource
     {
         /** @var OrgPaymentServiceProvider $paymentServiceProvider */
         $paymentServiceProvider = $this->resource;
+
         return [
-            'slug'                    => $paymentServiceProvider->slug,
-            'code'                    => $paymentServiceProvider->code,
-            'created_at'              => $paymentServiceProvider->created_at,
+            'slug' => $paymentServiceProvider->slug,
+            'code' => $paymentServiceProvider->code,
+            'created_at' => $paymentServiceProvider->created_at,
         ];
     }
 }

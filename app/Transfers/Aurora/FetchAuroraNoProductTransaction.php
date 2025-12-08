@@ -18,17 +18,16 @@ class FetchAuroraNoProductTransaction extends FetchAurora
     public function parseNoProductTransaction(Order $order): void
     {
         $shippingZone = null;
-        $model        = null;
+        $model = null;
 
         if (in_array($this->auroraModelData->{'Transaction Type'}, ['Adjust', 'Credit'])) {
             $adjust = $this->parseAdjustment($this->organisation->id.':'.$this->auroraModelData->{'Order No Product Transaction Fact Key'});
 
-
-            $model                          = $adjust;
+            $model = $adjust;
             $this->parsedData['adjustment'] = $adjust;
 
-            $net                      = $this->auroraModelData->{'Transaction Invoice Net Amount'};
-            $gross                    = $net;
+            $net = $this->auroraModelData->{'Transaction Invoice Net Amount'};
+            $gross = $net;
             $this->parsedData['type'] = 'Adjustment';
         } elseif ($this->auroraModelData->{'Transaction Type'} == 'Shipping') {
             if ($this->auroraModelData->{'Transaction Type Key'}) {
@@ -42,42 +41,37 @@ class FetchAuroraNoProductTransaction extends FetchAurora
                 $model = $shippingZone;
             }
 
-
-            $gross                    = $this->auroraModelData->{'Transaction Gross Amount'};
-            $net                      = $this->auroraModelData->{'Transaction Net Amount'};
+            $gross = $this->auroraModelData->{'Transaction Gross Amount'};
+            $net = $this->auroraModelData->{'Transaction Net Amount'};
             $this->parsedData['type'] = $this->auroraModelData->{'Transaction Type'};
         } elseif ($this->auroraModelData->{'Transaction Type'} == 'Charges') {
             if ($this->auroraModelData->{'Transaction Type Key'}) {
                 $charge = $this->parseCharge($this->organisation->id.':'.$this->auroraModelData->{'Transaction Type Key'});
-                $model  = $charge;
+                $model = $charge;
             }
 
-            $gross                    = $this->auroraModelData->{'Transaction Gross Amount'};
-            $net                      = $this->auroraModelData->{'Transaction Net Amount'};
+            $gross = $this->auroraModelData->{'Transaction Gross Amount'};
+            $net = $this->auroraModelData->{'Transaction Net Amount'};
             $this->parsedData['type'] = $this->auroraModelData->{'Transaction Type'};
         } elseif ($this->auroraModelData->{'Transaction Type'} == 'Insurance') {
 
-
             $charge = $order->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->first();
             if ($charge) {
-                $model  = $charge;
+                $model = $charge;
             }
 
-
-            $gross                    = $this->auroraModelData->{'Transaction Gross Amount'};
-            $net                      = $this->auroraModelData->{'Transaction Net Amount'};
+            $gross = $this->auroraModelData->{'Transaction Gross Amount'};
+            $net = $this->auroraModelData->{'Transaction Net Amount'};
             $this->parsedData['type'] = 'Charges';
         } elseif ($this->auroraModelData->{'Transaction Type'} == 'Premium') {
 
-
             $charge = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->first();
             if ($charge) {
-                $model  = $charge;
+                $model = $charge;
             }
 
-
-            $gross                    = $this->auroraModelData->{'Transaction Gross Amount'};
-            $net                      = $this->auroraModelData->{'Transaction Net Amount'};
+            $gross = $this->auroraModelData->{'Transaction Gross Amount'};
+            $net = $this->auroraModelData->{'Transaction Net Amount'};
             $this->parsedData['type'] = 'Charges';
         } elseif ($this->auroraModelData->{'Transaction Type'} == 'Refund') {
             return;
@@ -87,17 +81,15 @@ class FetchAuroraNoProductTransaction extends FetchAurora
 
         $this->parsedData['model'] = $model;
 
-
         $date = $this->parseDatetime($this->auroraModelData->{'Order Date'});
         $date = new Carbon($date);
 
-
         $taxCategoryID = $this->auroraModelData->{'Order No Product Transaction Tax Category Key'};
 
-        if (!$taxCategoryID) {
+        if (! $taxCategoryID) {
             $taxCategoryID = $order->tax_category_id;
         } else {
-            $taxCategory   = $this->parseTaxCategory($taxCategoryID);
+            $taxCategory = $this->parseTaxCategory($taxCategoryID);
             $taxCategoryID = $taxCategory->id;
         }
 
@@ -107,16 +99,16 @@ class FetchAuroraNoProductTransaction extends FetchAurora
         }
 
         $this->parsedData['transaction'] = [
-            'date'                => $date,
-            'created_at'          => $date,
-            'tax_category_id'     => $taxCategoryID,
-            'quantity_ordered'    => 1,
+            'date' => $date,
+            'created_at' => $date,
+            'tax_category_id' => $taxCategoryID,
+            'quantity_ordered' => 1,
             'quantity_dispatched' => $quantityDispatched,
-            'gross_amount'        => $gross,
-            'net_amount'          => $net,
-            'source_alt_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Order No Product Transaction Fact Key'},
-            'fetched_at'          => now(),
-            'last_fetched_at'     => now(),
+            'gross_amount' => $gross,
+            'net_amount' => $net,
+            'source_alt_id' => $this->organisation->id.':'.$this->auroraModelData->{'Order No Product Transaction Fact Key'},
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
     }
 
@@ -131,7 +123,7 @@ class FetchAuroraNoProductTransaction extends FetchAurora
         return $this->parsedData;
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Order No Product Transaction Fact')

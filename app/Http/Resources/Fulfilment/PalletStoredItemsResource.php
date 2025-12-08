@@ -21,10 +21,10 @@ class PalletStoredItemsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'stored_item_slug'      => $this->reference,
+            'stored_item_slug' => $this->reference,
             'stored_item_reference' => $this->stored_item_reference,
-            'stored_item_name'      => $this->stored_item_name,
-            'quantity'              => $this->quantity,
+            'stored_item_name' => $this->stored_item_name,
+            'quantity' => $this->quantity,
 
         ];
     }

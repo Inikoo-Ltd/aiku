@@ -31,6 +31,4 @@ class WebpageHydrateDeployments implements ShouldBeUnique
 
         $webpage->stats()->update($stats);
     }
-
-
 }

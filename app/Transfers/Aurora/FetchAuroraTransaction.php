@@ -22,32 +22,28 @@ class FetchAuroraTransaction extends FetchAurora
             return;
         }
 
-
         if ($this->auroraModelData->{'Product Key'}) {
-            //enum('In Process by Customer','Submitted by Customer','In Process','Ready to Pick','Picking','Ready to Pack','Ready to Ship','Dispatched','Unknown','Packing','Packed','Packed Done','Cancelled','No Picked Due Out of Stock','No Picked Due No Authorised','No Picked Due Not Found','No Picked Due Other','Suspended','Cancelled by Customer','Out of Stock in Basket')
+            // enum('In Process by Customer','Submitted by Customer','In Process','Ready to Pick','Picking','Ready to Pack','Ready to Ship','Dispatched','Unknown','Packing','Packed','Packed Done','Cancelled','No Picked Due Out of Stock','No Picked Due No Authorised','No Picked Due Not Found','No Picked Due Other','Suspended','Cancelled by Customer','Out of Stock in Basket')
             if (in_array($this->auroraModelData->{'Current Dispatching State'}, ['Out of Stock in Basket', 'In Process by Customer'])) {
                 return;
             }
-
 
             $historicAsset = $this->parseHistoricAsset(
                 $this->organisation,
                 $this->auroraModelData->{'Product Key'}
             );
 
-            //enum('In Process by Customer','Submitted by Customer','In Process','Ready to Pick','Picking','Ready to Pack','Ready to Ship','Dispatched','Unknown','Packing','Packed','Packed Done','Cancelled','No Picked Due Out of Stock','No Picked Due No Authorised','No Picked Due Not Found','No Picked Due Other','Suspended','Cancelled by Customer','Out of Stock in Basket')
-
+            // enum('In Process by Customer','Submitted by Customer','In Process','Ready to Pick','Picking','Ready to Pack','Ready to Ship','Dispatched','Unknown','Packing','Packed','Packed Done','Cancelled','No Picked Due Out of Stock','No Picked Due No Authorised','No Picked Due Not Found','No Picked Due Other','Suspended','Cancelled by Customer','Out of Stock in Basket')
 
             $state = match ($this->auroraModelData->{'Current Dispatching State'}) {
                 'In Process by Customer' => TransactionStateEnum::CREATING,
                 'In Process', 'Submitted by Customer' => TransactionStateEnum::SUBMITTED,
                 'Ready to Pick', 'Picking', 'Ready to Pack', 'Packing', 'Packed', 'Packed Done' => TransactionStateEnum::HANDLING,
                 'Ready to Ship' => TransactionStateEnum::FINALISED,
-                'Dispatched'    => TransactionStateEnum::DISPATCHED,
+                'Dispatched' => TransactionStateEnum::DISPATCHED,
                 'No Picked Due Out of Stock', 'No Picked Due No Authorised', 'No Picked Due Not Found', 'No Picked Due Other', 'Cancelled', 'Suspended', 'Cancelled by Customer' => TransactionStateEnum::CANCELLED,
                 'Unknown' => null
             };
-
 
             $status = match ($this->auroraModelData->{'Current Dispatching State'}) {
                 'In Process by Customer', 'Out of Stock in Basket', 'In Process' => TransactionStatusEnum::CREATING,
@@ -55,15 +51,13 @@ class FetchAuroraTransaction extends FetchAurora
                 'Suspended', 'Dispatched', 'Unknown', 'Cancelled', 'No Picked Due No Authorised', 'No Picked Due Not Found', 'No Picked Due Other', 'No Picked Due Out of Stock' => TransactionStatusEnum::SETTLED,
             };
 
-
             $failStatus = match ($this->auroraModelData->{'Current Dispatching State'}) {
-                'No Picked Due Out of Stock'  => TransactionFailStatusEnum::OUT_OF_STOCK,
+                'No Picked Due Out of Stock' => TransactionFailStatusEnum::OUT_OF_STOCK,
                 'No Picked Due No Authorised' => TransactionFailStatusEnum::NO_AUTHORISED,
-                'No Picked Due Not Found'     => TransactionFailStatusEnum::NOT_FOUND,
-                'No Picked Due Other'         => TransactionFailStatusEnum::OTHER,
-                default                       => null,
+                'No Picked Due Not Found' => TransactionFailStatusEnum::NOT_FOUND,
+                'No Picked Due Other' => TransactionFailStatusEnum::OTHER,
+                default => null,
             };
-
 
             $date = $this->parseDatetime($this->auroraModelData->{'Order Date'});
             $date = new Carbon($date);
@@ -82,41 +76,37 @@ class FetchAuroraTransaction extends FetchAurora
 
             $taxCategory = $this->parseTaxCategory($this->auroraModelData->{'Order Transaction Tax Category Key'});
 
-
             $dispatchedQuantity = $this->auroraModelData->{'Delivery Note Quantity'};
             if ($this->auroraModelData->{'Order Transaction Product Type'} == 'Service') {
                 $dispatchedQuantity = $this->auroraModelData->{'Order Quantity'};
             }
             $this->parsedData['transaction'] = [
-                'date'                => $date,
-                'created_at'          => $date,
-                'tax_category_id'     => $taxCategory->id,
-                'state'               => $state,
-                'status'              => $status,
-                'quantity_ordered'    => $this->auroraModelData->{'Order Quantity'},
-                'quantity_bonus'      => $quantityBonus,
+                'date' => $date,
+                'created_at' => $date,
+                'tax_category_id' => $taxCategory->id,
+                'state' => $state,
+                'status' => $status,
+                'quantity_ordered' => $this->auroraModelData->{'Order Quantity'},
+                'quantity_bonus' => $quantityBonus,
                 'quantity_dispatched' => $dispatchedQuantity,
-                'quantity_fail'       => $quantityFail,
-                'gross_amount'        => $this->auroraModelData->{'Order Transaction Gross Amount'},
-                'net_amount'          => $this->auroraModelData->{'Order Transaction Amount'},
-                'source_id'           => $this->organisation->id.':'.$this->auroraModelData->{'Order Transaction Fact Key'},
-                'fail_status'         => $failStatus,
-                'fetched_at'          => now(),
-                'last_fetched_at'     => now(),
+                'quantity_fail' => $quantityFail,
+                'gross_amount' => $this->auroraModelData->{'Order Transaction Gross Amount'},
+                'net_amount' => $this->auroraModelData->{'Order Transaction Amount'},
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Order Transaction Fact Key'},
+                'fail_status' => $failStatus,
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
 
             ];
         } else {
-            print "Warning Asset Key missing in transaction >".$this->auroraModelData->{'Order Transaction Fact Key'}."\n";
+            echo 'Warning Asset Key missing in transaction >'.$this->auroraModelData->{'Order Transaction Fact Key'}."\n";
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Order Transaction Fact')
             ->where('Order Transaction Fact Key', $id)->first();
     }
-
-
 }

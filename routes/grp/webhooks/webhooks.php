@@ -25,7 +25,6 @@ Route::name('webhooks.')->group(function () {
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
 });
 
-
 Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::any('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
     Route::get('fetch_stock.json', CallbackFetchStock::class)->name('fetch_stock');
@@ -34,8 +33,6 @@ Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(func
     Route::any('products-updated', CallbackProductChanged::class)->name('products_updated');
 
 });
-
-
 
 Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
     Route::post('wc-user-callback', CallbackRetinaWooCommerceUser::class)->name('callback');

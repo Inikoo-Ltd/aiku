@@ -34,8 +34,8 @@ class FetchAuroraServices extends FetchAuroraAction
                 if ($service = Service::where('source_id', $serviceData['service']['source_id'])
                     ->first()) {
                     $service = UpdateService::make()->action(
-                        service:      $service,
-                        modelData:    $serviceData['service'],
+                        service: $service,
+                        modelData: $serviceData['service'],
                         hydratorsDelay: $this->hydratorsDelay,
                     );
                 } else {
@@ -43,8 +43,8 @@ class FetchAuroraServices extends FetchAuroraAction
                     try {
 
                         $service = StoreService::make()->action(
-                            shop:         $serviceData['shop'],
-                            modelData:    $serviceData['service'],
+                            shop: $serviceData['shop'],
+                            modelData: $serviceData['service'],
                             hydratorsDelay: $this->hydratorsDelay,
                         );
                     } catch (Exception $e) {
@@ -58,6 +58,7 @@ class FetchAuroraServices extends FetchAuroraAction
                 DB::connection('aurora')->table('Product Dimension')
                     ->where('Product ID', $sourceData[1])
                     ->update(['aiku_id' => $service->asset->id]);
+
                 return $service;
 
             } else {
@@ -65,38 +66,35 @@ class FetchAuroraServices extends FetchAuroraAction
                 if ($rental = Rental::where('source_id', $serviceData['service']['source_id'])
                     ->first()) {
                     $rental = UpdateRental::make()->action(
-                        rental:      $rental,
-                        modelData:    $serviceData['service'],
+                        rental: $rental,
+                        modelData: $serviceData['service'],
                         hydratorsDelay: $this->hydratorsDelay,
                     );
                 } else {
                     try {
 
                         $rental = StoreRental::make()->action(
-                            shop:         $serviceData['shop'],
-                            modelData:    $serviceData['service'],
+                            shop: $serviceData['shop'],
+                            modelData: $serviceData['service'],
                             hydratorsDelay: $this->hydratorsDelay,
                         );
                     } catch (Exception $e) {
                         $this->recordError($organisationSource, $e, $serviceData['service'], 'Asset', 'store');
+
                         return null;
                     }
                 }
                 $sourceData = explode(':', $rental->source_id);
 
-
                 DB::connection('aurora')->table('Product Dimension')
                     ->where('Product ID', $sourceData[1])
                     ->update(['aiku_id' => $rental->asset_id]);
+
                 return $rental;
 
             }
 
-
-
-
         }
-
 
         return null;
     }

@@ -16,10 +16,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 trait WithSupplierCommand
 {
     use AsAction;
+
     public function asCommand(Command $command): int
     {
         $count = Supplier::count();
-        $bar   = $command->getOutput()->createProgressBar($count);
+        $bar = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');
         $bar->start();
         Supplier::chunk(1000, function (Collection $models) use ($bar) {

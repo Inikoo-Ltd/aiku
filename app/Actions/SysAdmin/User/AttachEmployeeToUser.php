@@ -21,8 +21,7 @@ class AttachEmployeeToUser extends OrgAction
         data_set($modelData, 'organisation_id', $employee->organisation_id);
 
         $user->employees()->syncWithoutDetaching([
-            $employee->id =>
-                $modelData
+            $employee->id => $modelData,
         ]);
         SetUserAuthorisedModels::run($user);
         UserHydrateModels::dispatch($user);
@@ -34,7 +33,7 @@ class AttachEmployeeToUser extends OrgAction
     {
         return [
             'source_id' => ['sometimes', 'nullable', 'string'],
-            'status'    => ['required', 'bool']
+            'status' => ['required', 'bool'],
         ];
     }
 
@@ -44,5 +43,4 @@ class AttachEmployeeToUser extends OrgAction
 
         return $this->handle($user, $employee, $modelData);
     }
-
 }

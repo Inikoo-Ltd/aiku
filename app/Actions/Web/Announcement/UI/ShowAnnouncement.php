@@ -52,112 +52,112 @@ class ShowAnnouncement extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => $announcement->name,
-                'pageHead'    => [
-                    'title'     => $announcement->name,
-                    'icon'      => [
+                'title' => $announcement->name,
+                'pageHead' => [
+                    'title' => $announcement->name,
+                    'icon' => [
                         'tooltip' => __('announcement'),
-                        'icon'    => 'fal fa-megaphone'
+                        'icon' => 'fal fa-megaphone',
                     ],
-                    "model" => __('Announcement'),
+                    'model' => __('Announcement'),
                     'iconRight' => $announcement->status->statusIcon()[$announcement->status->value],
-                    'actions'   => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'route' => [
-                                'name'       => 'grp.org.shops.show.web.announcements.edit',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => 'grp.org.shops.show.web.announcements.edit',
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ],
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'primary',
                             'label' => __('Workshop'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
+                            'icon' => ['fal', 'fa-drafting-compass'],
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'workshop', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => preg_replace('/show$/', 'workshop', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
                     ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => AnnouncementTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => AnnouncementTabsEnum::navigation(),
                 ],
 
                 'routes_list' => [
                     'publish_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.publish',
+                        'name' => 'grp.models.shop.website.announcement.publish',
                         'parameters' => [
                             'shop' => $announcement->website->shop->slug,
                             'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
+                            'announcement' => $announcement->ulid,
                         ],
-                        'method'    => 'patch'
+                        'method' => 'patch',
                     ],
                     'update_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.update',
+                        'name' => 'grp.models.shop.website.announcement.update',
                         'parameters' => [
                             'shop' => $announcement->website->shop->slug,
                             'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
+                            'announcement' => $announcement->ulid,
                         ],
-                        'method'    => 'patch'
+                        'method' => 'patch',
                     ],
                     'reset_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.reset',
+                        'name' => 'grp.models.shop.website.announcement.reset',
                         'parameters' => [
                             'shop' => $announcement->website->shop->slug,
                             'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
+                            'announcement' => $announcement->ulid,
                         ],
-                        'method'    => 'delete'
+                        'method' => 'delete',
                     ],
                     'close_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.close',
+                        'name' => 'grp.models.shop.website.announcement.close',
                         'parameters' => [
                             'shop' => $announcement->website->shop->slug,
                             'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
+                            'announcement' => $announcement->ulid,
                         ],
-                        'method'    => 'patch'
+                        'method' => 'patch',
                     ],
                     'start_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.start',
+                        'name' => 'grp.models.shop.website.announcement.start',
                         'parameters' => [
                             'shop' => $announcement->website->shop->slug,
                             'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
+                            'announcement' => $announcement->ulid,
                         ],
-                        'method'    => 'patch'
+                        'method' => 'patch',
                     ],
-                    'activated_route'     => [
-                        'name'          => 'grp.models.shop.website.announcement.toggle',
-                        'parameters'    => [
+                    'activated_route' => [
+                        'name' => 'grp.models.shop.website.announcement.toggle',
+                        'parameters' => [
                             'shop' => $announcement->website->shop->slug,
                             'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
+                            'announcement' => $announcement->ulid,
                         ],
-                        'method'    => 'patch'
+                        'method' => 'patch',
                     ],
-                    'upload_image_route'     => [
-                        'name'          => 'grp.models.shop.website.announcement.upload-images.store',
-                        'parameters'    => [
+                    'upload_image_route' => [
+                        'name' => 'grp.models.shop.website.announcement.upload-images.store',
+                        'parameters' => [
                             'shop' => $announcement->website->shop->slug,
-                            'website' => $announcement->portfolio_website_id
+                            'website' => $announcement->portfolio_website_id,
                         ],
-                        'method'    => 'post'
+                        'method' => 'post',
                     ],
-                    'delete_announcement_route'     => [
-                        'name'          => 'grp.models.shop.website.announcement.delete',
-                        'parameters'    => [
+                    'delete_announcement_route' => [
+                        'name' => 'grp.models.shop.website.announcement.delete',
+                        'parameters' => [
                             'shop' => $announcement->website->shop->slug,
-                            'website' => $announcement->portfolio_website_id
+                            'website' => $announcement->portfolio_website_id,
                         ],
-                        'method'    => 'delete'
-                    ]
+                        'method' => 'delete',
+                    ],
                 ],
 
                 AnnouncementTabsEnum::SHOWCASE->value => $this->tab == AnnouncementTabsEnum::SHOWCASE->value
@@ -190,34 +190,32 @@ class ShowAnnouncement extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
-        $headCrumb = function (string $type, Announcement $announcement, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (string $type, Announcement $announcement, array $routeParameters, ?string $suffix = null) {
             return [
                 [
-                    'type'           => $type,
-                    'simple'         => [
+                    'type' => $type,
+                    'simple' => [
                         'route' => $routeParameters['model'],
-                        'label' => $announcement->name
+                        'label' => $announcement->name,
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.web.announcements.show',
-            =>
-            array_merge(
+            'grp.org.shops.show.web.announcements.show', => array_merge(
                 IndexAnnouncements::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
                     'simple',
                     Announcement::firstWhere('ulid', $routeParameters['announcement']),
                     [
                         'model' => [
-                            'name'       => 'grp.org.shops.show.web.announcements.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.shops.show.web.announcements.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 ),

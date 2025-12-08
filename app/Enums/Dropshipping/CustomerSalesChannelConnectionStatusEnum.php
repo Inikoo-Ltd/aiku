@@ -23,10 +23,10 @@ enum CustomerSalesChannelConnectionStatusEnum: string
     public static function labels(): array
     {
         return [
-            'connected'     => __('Connected'),
-            'disconnected'  => __('Disconnected'),
-            'error'         => __('Error'),
-            'pending'       => __('Pending'),
+            'connected' => __('Connected'),
+            'disconnected' => __('Disconnected'),
+            'error' => __('Error'),
+            'pending' => __('Pending'),
             'no_applicable' => __('N/A'),
         ];
     }

@@ -27,7 +27,7 @@ trait WithDashboardIntervalValues
 
             $data = [
                 'raw_value' => $rawValue,
-                'tooltip'   => '',
+                'tooltip' => '',
             ];
 
             switch ($dataType) {
@@ -47,9 +47,9 @@ trait WithDashboardIntervalValues
                     $data['formatted_value'] = Number::percentage($rawValue, Arr::get($options, 'percentage'));
                     break;
                 case DashboardDataType::DELTA_LAST_YEAR:
-                    $lyValue                 = ($interval->value != 'all' ? $intervalsModel->{$field.'_'.$interval->value.'_ly'} : $intervalsModel->{$field.'_'.$interval->value}) ?? 0;
+                    $lyValue = ($interval->value != 'all' ? $intervalsModel->{$field.'_'.$interval->value.'_ly'} : $intervalsModel->{$field.'_'.$interval->value}) ?? 0;
                     $data['formatted_value'] = Number::delta($rawValue, $lyValue);
-                    $data['raw_value']       = Number::rawDelta($rawValue, $lyValue);
+                    $data['raw_value'] = Number::rawDelta($rawValue, $lyValue);
                     if ($interval->value != 'all') {
                         if (Arr::get($options, 'currency')) {
                             $data['tooltip'] = Number::currency($lyValue, Arr::get($options, 'currency'));
@@ -68,7 +68,6 @@ trait WithDashboardIntervalValues
                     break;
             }
 
-
             $routeTargetData = Arr::get($routeTarget, 'route_target');
             if ($routeTargetData) {
                 $data['route_target'] = $routeTargetData;
@@ -78,7 +77,6 @@ trait WithDashboardIntervalValues
         })->toArray();
     }
 
-
     public function getDashboardTableColumn($intervalsModel, string $columnFingerprint, array $routeTarget = []): array
     {
         $originalColumnFingerprint = $columnFingerprint;
@@ -87,10 +85,10 @@ trait WithDashboardIntervalValues
 
         if (str_ends_with($columnFingerprint, '_minified')) {
             $columnFingerprint = substr($columnFingerprint, 0, -strlen('_minified'));
-            $dataType          = DashboardDataType::NUMBER_MINIFIED;
+            $dataType = DashboardDataType::NUMBER_MINIFIED;
         } elseif (str_ends_with($columnFingerprint, '_delta')) {
             $columnFingerprint = substr($columnFingerprint, 0, -strlen('_delta'));
-            $dataType          = DashboardDataType::DELTA_LAST_YEAR;
+            $dataType = DashboardDataType::DELTA_LAST_YEAR;
         } elseif (str_ends_with($columnFingerprint, '_currency')) {
             $dataType = $dataType == DashboardDataType::NUMBER_MINIFIED ? DashboardDataType::CURRENCY_MINIFIED : DashboardDataType::CURRENCY;
         }
@@ -99,20 +97,20 @@ trait WithDashboardIntervalValues
 
         if (str_ends_with($columnFingerprint, '_shop_currency')) {
             $shopCurrencyCode = $intervalsModel->shopCurrencyCode;
-            if (!$shopCurrencyCode && $intervalsModel->shop) {
+            if (! $shopCurrencyCode && $intervalsModel->shop) {
                 $shopCurrencyCode = $intervalsModel->shop->currency->code;
             }
 
             $options['currency'] = $shopCurrencyCode ?? 'GBP';
-            $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_shop_currency'));
+            $columnFingerprint = substr($columnFingerprint, 0, -strlen('_shop_currency'));
         } elseif (str_ends_with($columnFingerprint, '_invoice_category_currency')) {
             $invoiceCategoryCurrencyCode = $intervalsModel->group_currency_code;
-            if (!$invoiceCategoryCurrencyCode && $intervalsModel->invoiceCategory) {
+            if (! $invoiceCategoryCurrencyCode && $intervalsModel->invoiceCategory) {
                 $invoiceCategoryCurrencyCode = $intervalsModel->invoiceCategory->currency->code;
             }
 
             $options['currency'] = $invoiceCategoryCurrencyCode ?? 'GBP';
-            $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_invoice_category_currency'));
+            $columnFingerprint = substr($columnFingerprint, 0, -strlen('_invoice_category_currency'));
         } elseif (str_ends_with($columnFingerprint, '_org_currency')) {
             $organisationCurrencyCode = data_get($intervalsModel, 'organisationCurrencyCode')
                 ?? data_get($intervalsModel, 'organisation_currency_code')
@@ -128,7 +126,7 @@ trait WithDashboardIntervalValues
             $options['currency'] = $groupCurrencyCode;
         } elseif (str_ends_with($columnFingerprint, '_inverse')) {
             $options['inverse_delta'] = true;
-            $columnFingerprint        = substr($columnFingerprint, 0, -strlen('_inverse'));
+            $columnFingerprint = substr($columnFingerprint, 0, -strlen('_inverse'));
         }
 
         if (in_array($columnFingerprint, ['sales'])) {
@@ -143,7 +141,7 @@ trait WithDashboardIntervalValues
                 $dataType,
                 $options,
                 $routeTarget
-            )
+            ),
         ];
     }
 

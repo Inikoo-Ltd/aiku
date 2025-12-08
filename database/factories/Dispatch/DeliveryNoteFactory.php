@@ -17,9 +17,9 @@ class DeliveryNoteFactory extends Factory
     {
         return [
             'reference' => fake()->numberBetween(100, 999),
-            'state'     => DeliveryNoteStateEnum::HANDLING,
-            'email'     => fake()->email,
-            'date'      => fake()->date
+            'state' => DeliveryNoteStateEnum::HANDLING,
+            'email' => fake()->email,
+            'date' => fake()->date,
         ];
     }
 }

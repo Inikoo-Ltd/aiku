@@ -40,27 +40,25 @@ class StoreCustomerToken extends RetinaAction
 
         $tokenName = $tokenParts[0].'|'.$tokenPrefix.'...-'.$customerSalesChannel->slug;
 
-        if (!empty($tokenPrefix)) {
+        if (! empty($tokenPrefix)) {
             DB::table('personal_access_tokens')->where('id', $tokenParts[0])->update([
-                'name' => $tokenName
+                'name' => $tokenName,
             ]);
         }
 
-        $customerSalesChannel->customer->auditEvent     = 'create';
-        $customerSalesChannel->customer->isCustomEvent  = true;
+        $customerSalesChannel->customer->auditEvent = 'create';
+        $customerSalesChannel->customer->isCustomEvent = true;
         $customerSalesChannel->customer->auditCustomOld = [
-            'api_token' => ''
+            'api_token' => '',
         ];
         $customerSalesChannel->customer->auditCustomNew = [
-            'api_token' => __('Api token created').' ('.$tokenName.')'
+            'api_token' => __('Api token created').' ('.$tokenName.')',
         ];
 
         Event::dispatch(new AuditCustom($customerSalesChannel->customer));
 
         return $plainTextToken;
     }
-
-
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): string
     {
@@ -72,7 +70,7 @@ class StoreCustomerToken extends RetinaAction
     public function jsonResponse(string $token): array
     {
         return [
-            'token' => $token
+            'token' => $token,
         ];
     }
 }

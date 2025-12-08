@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeHasJobPositions newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeHasJobPositions newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeHasJobPositions query()
+ *
  * @mixin \Eloquent
  */
 class EmployeeHasJobPositions extends Pivot
@@ -25,8 +26,6 @@ class EmployeeHasJobPositions extends Pivot
     ];
 
     protected $attributes = [
-        'scopes'                => '{}',
+        'scopes' => '{}',
     ];
-
-
 }

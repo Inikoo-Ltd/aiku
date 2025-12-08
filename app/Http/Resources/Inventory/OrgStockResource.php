@@ -15,7 +15,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class OrgStockResource extends JsonResource
 {
     use HasSelfCall;
+
     public static $wrap = null;
+
     public function toArray($request): array
     {
         // /** @var OrgStock $orgStock */
@@ -25,17 +27,17 @@ class OrgStockResource extends JsonResource
 
         // Akses properti secara langsung karena mereka ada di objek hasil join
         return [
-            'id'                  => $this->id,
-            'code'                => $this->code,
-            'name'                => $this->name,
-            'slug'                => $this->slug,
-            'unit_value'          => $this->unit_value,
-            'type'                => $this->type,
-            'picking_priority'    => $this->picking_priority,
-            'value'               => $this->value,
-            'dropshipping_pipe'   => $this->dropshipping_pipe,
-            'quantity'            => (int) $this->quantity,
-            'notes'               => $this->notes,
+            'id' => $this->id,
+            'code' => $this->code,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'unit_value' => $this->unit_value,
+            'type' => $this->type,
+            'picking_priority' => $this->picking_priority,
+            'value' => $this->value,
+            'dropshipping_pipe' => $this->dropshipping_pipe,
+            'quantity' => (int) $this->quantity,
+            'notes' => $this->notes,
         ];
     }
 }

@@ -19,7 +19,6 @@ class ReindexOrgAgentSearch extends HydrateModel
 {
     public string $commandSignature = 'search:org_agents {organisations?*} {--s|slugs=} ';
 
-
     public function handle(OrgAgent $orgAgent): void
     {
         OrgAgentRecordSearch::run($orgAgent);
@@ -37,7 +36,7 @@ class ReindexOrgAgentSearch extends HydrateModel
 
     protected function loopAll(Command $command): void
     {
-        $command->info("Reindex Org Agents");
+        $command->info('Reindex Org Agents');
         $count = OrgAgent::count();
 
         $bar = $command->getOutput()->createProgressBar($count);
@@ -52,6 +51,6 @@ class ReindexOrgAgentSearch extends HydrateModel
         });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
     }
 }

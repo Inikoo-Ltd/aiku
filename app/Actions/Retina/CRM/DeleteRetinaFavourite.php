@@ -10,11 +10,11 @@ namespace App\Actions\Retina\CRM;
 
 use App\Actions\CRM\Favourite\UnFavourite;
 use App\Actions\RetinaAction;
-use App\Models\CRM\Favourite;
-use App\Models\CRM\Customer;
-use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
+use App\Models\CRM\Favourite;
+use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRetinaFavourite extends RetinaAction
 {
@@ -35,5 +35,4 @@ class DeleteRetinaFavourite extends RetinaAction
 
         $this->handle($this->customer, $product);
     }
-
 }

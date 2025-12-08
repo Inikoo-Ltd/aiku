@@ -26,12 +26,12 @@ class SetGroupLogo
         $this->attachMediaToModel($group, $media, 'logo');
         $group->updateQuietly(
             [
-                'image_id' => $media->id
+                'image_id' => $media->id,
             ]
         );
+
         return $group;
     }
-
 
     public string $commandSignature = 'group:logo {group : Group slug}';
 
@@ -42,14 +42,17 @@ class SetGroupLogo
             $group = Group::where('slug', $command->argument('group'))->firstOrFail();
         } catch (Exception) {
             $command->error('Group not found');
+
             return 1;
         }
 
         try {
             $this->handle($group);
+
             return 0;
         } catch (Exception $exception) {
             $command->error('Error setting logo, '.$exception->getMessage());
+
             return 1;
         }
     }

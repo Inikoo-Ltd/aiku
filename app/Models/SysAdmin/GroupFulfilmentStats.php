@@ -118,9 +118,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customers_status_pending_approval
  * @property int $number_customers_status_pre_registration
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupFulfilmentStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupFulfilmentStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupFulfilmentStats query()
+ *
  * @mixin \Eloquent
  */
 class GroupFulfilmentStats extends Model

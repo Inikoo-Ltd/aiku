@@ -24,8 +24,8 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class StoreRetinaOrder extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     /**
      * @throws \Throwable
@@ -51,6 +51,7 @@ class StoreRetinaOrder extends RetinaAction
         if ($customerClient->customer_id == $this->customer->id) {
             return true;
         }
+
         return false;
     }
 
@@ -58,7 +59,7 @@ class StoreRetinaOrder extends RetinaAction
     {
         return Redirect::route('retina.dropshipping.customer_sales_channels.basket.show', [
             $order->customerSalesChannel->slug,
-            $order->slug
+            $order->slug,
         ]);
     }
 
@@ -71,6 +72,4 @@ class StoreRetinaOrder extends RetinaAction
 
         return $this->handle($customerClient);
     }
-
-
 }

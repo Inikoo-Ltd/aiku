@@ -46,25 +46,27 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Asset> $product
  * @property-read Collection<int, Stock> $stock
  * @property-read Collection<int, TradeUnit> $tradeUnit
+ *
  * @method static Builder<static>|Barcode newModelQuery()
  * @method static Builder<static>|Barcode newQuery()
  * @method static Builder<static>|Barcode onlyTrashed()
  * @method static Builder<static>|Barcode query()
  * @method static Builder<static>|Barcode withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Barcode withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Barcode extends Model implements Auditable
 {
-    use SoftDeletes;
+    use HasHistory;
     use HasSlug;
     use InGroup;
-    use HasHistory;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'                        => 'array',
-        'fetched_at'                  => 'datetime',
-        'last_fetched_at'             => 'datetime',
+        'data' => 'array',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [

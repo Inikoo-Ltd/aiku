@@ -17,10 +17,11 @@ class ArtefactResource extends JsonResource
     {
         /** @var Artefact $artefact */
         $artefact = $this;
+
         return [
-            'id'      => $artefact->id,
-            'slug'    => $artefact->slug,
-            'name'    => $artefact->name
+            'id' => $artefact->id,
+            'slug' => $artefact->slug,
+            'name' => $artefact->name,
         ];
     }
 }

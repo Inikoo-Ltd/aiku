@@ -23,9 +23,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\StockTimeSeriesRecord> $records
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTimeSeries query()
+ *
  * @mixin \Eloquent
  */
 class StockTimeSeries extends Model
@@ -35,7 +37,7 @@ class StockTimeSeries extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'data'      => 'array',
+        'data' => 'array',
         'frequency' => TimeSeriesFrequencyEnum::class,
 
     ];

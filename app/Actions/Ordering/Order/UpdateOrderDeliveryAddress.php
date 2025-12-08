@@ -25,17 +25,17 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderDeliveryAddress extends OrgAction
 {
+    use HasOrderHydrators;
     use WithActionUpdate;
     use WithFixedAddressActions;
     use WithModelAddressActions;
-    use HasOrderHydrators;
 
     private Order $order;
 
     public function handle(Order $order, array $modelData): Order
     {
         $addressFields = Arr::get($modelData, 'address');
-        $address       = new Address($addressFields);
+        $address = new Address($addressFields);
 
         data_set($modelData, 'address', $address);
         data_set($modelData, 'type', 'delivery');
@@ -56,7 +56,7 @@ class UpdateOrderDeliveryAddress extends OrgAction
                     'administrative_area',
                     'country_code',
                     'country_id',
-                    'checksum'
+                    'checksum',
                 ]
             );
 
@@ -64,26 +64,24 @@ class UpdateOrderDeliveryAddress extends OrgAction
                 UpdateCustomerClient::make()->action(
                     $order->customerClient,
                     [
-                        'address' => $addressData
+                        'address' => $addressData,
                     ]
                 );
             } else {
                 UpdateCustomer::make()->action(
                     $order->customer,
                     [
-                        'delivery_address' => $addressData
+                        'delivery_address' => $addressData,
                     ]
                 );
             }
         }
-
 
         foreach ($order->deliveryNotes as $deliveryNote) {
             if ($this->canModifyDeliveryNoteAddress($deliveryNote)) {
                 UpdateDeliveryNoteFixedAddress::make()->action($deliveryNote, $modelData);
             }
         }
-
 
         return $order;
     }
@@ -103,15 +101,13 @@ class UpdateOrderDeliveryAddress extends OrgAction
             return false;
         }
 
-
         return true;
     }
-
 
     public function rules(): array
     {
         return [
-            'address' => ['required', new ValidAddress()],
+            'address' => ['required', new ValidAddress],
             'update_parent' => ['sometimes', 'boolean'],
         ];
     }
@@ -119,7 +115,7 @@ class UpdateOrderDeliveryAddress extends OrgAction
     public function action(Order $order, array $modelData): Order
     {
         $this->asAction = true;
-        $this->order    = $order;
+        $this->order = $order;
 
         $this->initialisationFromShop($order->shop, $modelData);
 

@@ -56,36 +56,38 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Billables\ChargeStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Charge newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Charge newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Charge onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Charge query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Charge withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Charge withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Charge extends Model implements Auditable
 {
-    use SoftDeletes;
+    use HasFactory;
+    use HasHistory;
+    use HasSlug;
     use HasUniversalSearch;
     use InAssetModel;
-    use HasHistory;
-    use HasFactory;
-    use HasSlug;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     protected $casts = [
-        'state'    => ChargeStateEnum::class,
-        'trigger'  => ChargeTriggerEnum::class,
-        'status'   => 'boolean',
-        'data'     => 'array',
+        'state' => ChargeStateEnum::class,
+        'trigger' => ChargeTriggerEnum::class,
+        'status' => 'boolean',
+        'data' => 'array',
         'settings' => 'array',
 
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 
@@ -126,5 +128,4 @@ class Charge extends Model implements Auditable
     {
         return $this->hasOne(ChargeStats::class);
     }
-
 }

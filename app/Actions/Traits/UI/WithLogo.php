@@ -21,16 +21,17 @@ trait WithLogo
             /** @var UploadedFile $image */
             $image = Arr::pull($modelData, 'image');
             $imageData = [
-                'path'         => $image->getPathName(),
+                'path' => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
-                'extension'    => $image->getClientOriginalExtension(),
+                'extension' => $image->getClientOriginalExtension(),
             ];
-            $model     = SaveModelLogo::run(
+            $model = SaveModelLogo::run(
                 model: $model,
                 imageData: $imageData,
                 scope: 'logo'
             );
         }
+
         return $model;
     }
 }

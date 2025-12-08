@@ -32,9 +32,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Accounting\PaymentAccountShop $paymentAccountShop
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MitSavedCard newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MitSavedCard newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MitSavedCard query()
+ *
  * @mixin \Eloquent
  */
 class MitSavedCard extends Model
@@ -48,7 +50,7 @@ class MitSavedCard extends Model
     ];
 
     protected $attributes = [
-        'data'         => '{}',
+        'data' => '{}',
     ];
 
     protected $guarded = [];
@@ -57,5 +59,4 @@ class MitSavedCard extends Model
     {
         return $this->belongsTo(PaymentAccountShop::class);
     }
-
 }

@@ -30,7 +30,6 @@ class BroadcastProspectsDashboard implements ShouldBroadcast
     {
         $stats = [];
 
-
         if (Arr::has($changes, 'number_prospects')) {
             data_set($stats, 'counts.prospects', $changes['number_prospects']);
         }
@@ -46,7 +45,6 @@ class BroadcastProspectsDashboard implements ShouldBroadcast
         if (Arr::has($changes, 'number_prospects_state_success')) {
             data_set($stats, 'counts.success', $changes['number_prospects_state_success']);
         }
-
 
         foreach (ProspectContactedStateEnum::cases() as $case) {
             if ($case == ProspectContactedStateEnum::NA) {
@@ -75,15 +73,13 @@ class BroadcastProspectsDashboard implements ShouldBroadcast
             }
         }
 
-
         $this->data = $stats;
     }
-
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('org.general')
+            new PrivateChannel('org.general'),
         ];
     }
 

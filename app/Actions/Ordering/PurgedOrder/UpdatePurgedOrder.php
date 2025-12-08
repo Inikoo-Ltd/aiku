@@ -31,16 +31,14 @@ class UpdatePurgedOrder extends OrgAction
         return $purgedOrder;
     }
 
-
-
     public function rules(): array
     {
-        $rules =  [
-            'status'              => ['sometimes', Rule::enum(PurgedOrderStatusEnum::class)],
-            'error_message'       => ['sometimes', 'string']
+        $rules = [
+            'status' => ['sometimes', Rule::enum(PurgedOrderStatusEnum::class)],
+            'error_message' => ['sometimes', 'string'],
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictStoreRules($rules);
         }
 
@@ -50,11 +48,10 @@ class UpdatePurgedOrder extends OrgAction
     public function action(PurgedOrder $purgedOrder, array $modelData, int $hydratorsDelay = 0, bool $strict = true): PurgedOrder
     {
         $this->asAction = true;
-        $this->strict         = $strict;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($purgedOrder->purge->shop, $modelData);
+
         return $this->handle($purgedOrder, $modelData);
     }
-
-
 }

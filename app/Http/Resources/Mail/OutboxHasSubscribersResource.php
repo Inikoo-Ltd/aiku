@@ -25,7 +25,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $opened_emails_lw
  * @property int $unsubscribed_lw
  * @property int $runs
- *
  */
 class OutboxHasSubscribersResource extends JsonResource
 {
@@ -38,6 +37,7 @@ class OutboxHasSubscribersResource extends JsonResource
         ] : [
             'external_email' => $this->external_email,
         ];
+
         return $res;
     }
 }

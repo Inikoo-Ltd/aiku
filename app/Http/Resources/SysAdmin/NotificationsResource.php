@@ -12,24 +12,25 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
 /**
-* @property string $id
-* @property array $data
-* @property string $href
-* @property \Carbon\Carbon $created_at
-* @property \Carbon\Carbon $read_at
+ * @property string $id
+ * @property array $data
+ * @property string $href
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $read_at
  */
 class NotificationsResource extends JsonResource
 {
     public static $wrap = null;
+
     public function toArray($request): array
     {
         return [
-            'id'         => $this->id,
-            'title'      => Arr::get($this->data, 'title'),
-            'body'       => Arr::get($this->data, 'body'),
-            'route'       => Arr::get($this->data, 'route'),
+            'id' => $this->id,
+            'title' => Arr::get($this->data, 'title'),
+            'body' => Arr::get($this->data, 'body'),
+            'route' => Arr::get($this->data, 'route'),
             'created_at' => $this->created_at,
-            'read'       => (bool) $this->read_at
+            'read' => (bool) $this->read_at,
         ];
     }
 }

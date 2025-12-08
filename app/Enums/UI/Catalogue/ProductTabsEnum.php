@@ -21,7 +21,6 @@ enum ProductTabsEnum: string
     case IMAGES = 'images';
     case SALES = 'sales';
 
-
     case HISTORY = 'history';
     case STOCKS = 'stocks';
     case TRADE_UNITS = 'trade_units';
@@ -30,69 +29,67 @@ enum ProductTabsEnum: string
     case REMINDERS = 'reminders';
     case ATTACHMENTS = 'attachments';
 
-
-
     public function blueprint(): array
     {
         return match ($this) {
             ProductTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             ProductTabsEnum::SALES => [
                 'title' => __('Sales'),
-                'icon'  => 'fal fa-money-bill-wave',
+                'icon' => 'fal fa-money-bill-wave',
             ],
             ProductTabsEnum::ORDERS => [
                 'title' => __('Orders'),
-                'icon'  => 'fal fa-shopping-cart',
-                'type'  => 'icon',
+                'icon' => 'fal fa-shopping-cart',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             ProductTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
 
             ProductTabsEnum::STOCKS => [
                 'title' => __('SKUs'),
-                'icon'  => 'fal fa-box',
-                'type'  => 'icon',
+                'icon' => 'fal fa-box',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             ProductTabsEnum::TRADE_UNITS => [
                 'title' => __('Trade units'),
-                'icon'  => 'fal fa-atom',
-                'type'  => 'icon',
+                'icon' => 'fal fa-atom',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             ProductTabsEnum::IMAGES => [
                 'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
+                'icon' => 'fal fa-camera-retro',
             ],
             ProductTabsEnum::CONTENT => [
                 'title' => __('Content'),
-                'icon'  => 'fal fa-quote-left',
+                'icon' => 'fal fa-quote-left',
             ],
             ProductTabsEnum::REMINDERS => [
                 'title' => __('Reminders'),
-                'icon'  => 'fal fa-bell',
+                'icon' => 'fal fa-bell',
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
             ],
             ProductTabsEnum::FAVOURITES => [
                 'title' => __('Favourites'),
-                'icon'  => 'fal fa-heart',
+                'icon' => 'fal fa-heart',
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
             ],
             ProductTabsEnum::ATTACHMENTS => [
-                'type'  => 'icon',
+                'type' => 'icon',
                 'align' => 'right',
                 'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
+                'icon' => 'fal fa-paperclip',
             ],
 
         };

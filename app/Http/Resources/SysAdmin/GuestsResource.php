@@ -25,12 +25,12 @@ class GuestsResource extends JsonResource
     public function toArray($request): array|Arrayable|JsonSerializable
     {
         return [
-            'id'           => $this->id,
-            'slug'         => $this->slug,
-            'code'         => $this->code,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
             'contact_name' => $this->contact_name,
-            'email'        => $this->email,
-            'username'     => $this->username,
+            'email' => $this->email,
+            'username' => $this->username,
 
         ];
     }

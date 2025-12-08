@@ -18,40 +18,40 @@ trait WithAgentSubNavigation
     {
         return [
             [
-                "isAnchor" => true,
-                "label"    => __($parent->slug),
+                'isAnchor' => true,
+                'label' => __($parent->slug),
 
-                "route"     => [
-                    "name"       => "grp.supply-chain.agents.show",
-                    "parameters" => [$parent->slug],
+                'route' => [
+                    'name' => 'grp.supply-chain.agents.show',
+                    'parameters' => [$parent->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-people-arrows"],
-                    "tooltip" => __("Agent"),
-                ],
-            ],
-            [
-                "number"   => $parent->stats->number_suppliers,
-                "label"    => __("Suppliers"),
-                "route"     => [
-                    "name"       => "grp.supply-chain.agents.show.suppliers.index",
-                    "parameters" => [$parent->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-person-dolly"],
-                    "tooltip" => __("Suppliers"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-people-arrows'],
+                    'tooltip' => __('Agent'),
                 ],
             ],
             [
-                "number"   => $parent->stats->number_supplier_products,
-                "label"    => __("Products"),
-                "route"     => [
-                    "name"       => "grp.supply-chain.agents.show.supplier_products.index",
-                    "parameters" => [$parent],
+                'number' => $parent->stats->number_suppliers,
+                'label' => __('Suppliers'),
+                'route' => [
+                    'name' => 'grp.supply-chain.agents.show.suppliers.index',
+                    'parameters' => [$parent->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-box-usd"],
-                    "tooltip" => __("Products"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-person-dolly'],
+                    'tooltip' => __('Suppliers'),
+                ],
+            ],
+            [
+                'number' => $parent->stats->number_supplier_products,
+                'label' => __('Products'),
+                'route' => [
+                    'name' => 'grp.supply-chain.agents.show.supplier_products.index',
+                    'parameters' => [$parent],
+                ],
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-box-usd'],
+                    'tooltip' => __('Products'),
                 ],
             ],
 

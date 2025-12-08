@@ -21,7 +21,7 @@ trait HasTabsWithQuantity
     public static function navigation(PalletReturn|PalletDelivery|Collection|Pallet|FulfilmentCustomer|User|ProductCategory $parent): array
     {
         return collect(self::cases())->mapWithKeys(function ($case) use ($parent) {
-            return  [$case->value => $case->blueprint($parent)];
+            return [$case->value => $case->blueprint($parent)];
         })->all();
     }
 }

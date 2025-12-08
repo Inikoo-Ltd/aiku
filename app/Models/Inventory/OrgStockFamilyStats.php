@@ -34,9 +34,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
  * @property-read \App\Models\Inventory\OrgStockFamily $orgStockFamily
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyStats query()
+ *
  * @mixin \Eloquent
  */
 class OrgStockFamilyStats extends Model
@@ -45,10 +47,8 @@ class OrgStockFamilyStats extends Model
 
     protected $guarded = [];
 
-
     public function orgStockFamily(): BelongsTo
     {
         return $this->belongsTo(OrgStockFamily::class);
     }
-
 }

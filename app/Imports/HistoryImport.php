@@ -14,9 +14,6 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 
 class HistoryImport implements ToCollection
 {
-    /**
-    * @param Collection $collection
-    */
     public function collection(Collection $collection): void
     {
         $i = 0;

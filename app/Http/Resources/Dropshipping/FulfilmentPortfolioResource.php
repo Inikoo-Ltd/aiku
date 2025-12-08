@@ -30,14 +30,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $family_code
  * @property mixed $family_name
  * @property StoredItem|Product $item
- *
  */
 class FulfilmentPortfolioResource extends JsonResource
 {
     public function toArray($request): array
     {
         $quantity = 0;
-        $itemId   = null;
+        $itemId = null;
         $category = null;
         if ($this->item instanceof StoredItem) {
             $quantity = $this->item->total_quantity;
@@ -47,17 +46,15 @@ class FulfilmentPortfolioResource extends JsonResource
             $image = null;
         } elseif ($this->item instanceof Product) {
             if ($department = $this->item->department) {
-                $department =  $department->name . ', ';
+                $department = $department->name.', ';
             }
             $quantity = $this->item->available_quantity;
             $itemId = $this->item->current_historic_asset_id;
             $weight = $this->item->gross_weight;
             $price = $this->item->price;
             $image = $this->item->imageSources(64, 64);
-            $category = $department . $this->item->family?->name;
+            $category = $department.$this->item->family?->name;
         }
-
-
 
         $shopifyUploadRoute = [];
         $wooUploadRoute = [];
@@ -66,11 +63,11 @@ class FulfilmentPortfolioResource extends JsonResource
             $shopifyUploadRoute = [
                 'platform_upload_portfolio' => [
                     'method' => 'post',
-                    'name'       => 'retina.models.dropshipping.shopify.single_upload',
+                    'name' => 'retina.models.dropshipping.shopify.single_upload',
                     'parameters' => [
                         'shopifyUser' => $this->customerSalesChannel->user->id,
-                        'portfolio' => $this->id
-                    ]
+                        'portfolio' => $this->id,
+                    ],
                 ],
             ];
         }
@@ -79,11 +76,11 @@ class FulfilmentPortfolioResource extends JsonResource
             $wooUploadRoute = [
                 'platform_upload_portfolio' => [
                     'method' => 'post',
-                    'name'       => 'retina.models.dropshipping.woo.single_upload',
+                    'name' => 'retina.models.dropshipping.woo.single_upload',
                     'parameters' => [
                         'wooCommerceUser' => $this->customerSalesChannel->user->id,
-                        'portfolio' => $this->id
-                    ]
+                        'portfolio' => $this->id,
+                    ],
                 ],
             ];
         }
@@ -92,42 +89,42 @@ class FulfilmentPortfolioResource extends JsonResource
             $ebayUploadRoute = [
                 'platform_upload_portfolio' => [
                     'method' => 'post',
-                    'name'       => 'retina.models.dropshipping.ebay.single_upload',
+                    'name' => 'retina.models.dropshipping.ebay.single_upload',
                     'parameters' => [
                         'ebayUser' => $this->customerSalesChannel->user->id,
-                        'portfolio' => $this->id
-                    ]
+                        'portfolio' => $this->id,
+                    ],
                 ],
             ];
         }
 
         return [
-            'id'                        => $this->id,
-            'item_id'                   => $itemId,
-            'slug'                      => $this->item?->slug,
-            'code'                      => $this->item?->code ?? $this->item_code,
-            'currency_code'             => $this->item?->currency?->code,
-            'handle'                    => $this->platform_handle,
-            'name'                      => $this->customer_product_name ?? $this->item?->name ?? $this->item_name ?? $this->item?->code,
-            'description'               => $this->customer_description ?? $this->item?->description ?? $this->item_description,
-            'quantity_left'             => $quantity,
-            'weight'                    => $weight,
-            'price'                     => $price,
-            'selling_price'             => $this->selling_price,
-            'customer_price'             => $this->customer_price,
-            'image'                     => $image,
-            'type'                      => $this->item_type,
-            'created_at'                => $this->created_at,
-            'updated_at'                => $this->updated_at,
+            'id' => $this->id,
+            'item_id' => $itemId,
+            'slug' => $this->item?->slug,
+            'code' => $this->item?->code ?? $this->item_code,
+            'currency_code' => $this->item?->currency?->code,
+            'handle' => $this->platform_handle,
+            'name' => $this->customer_product_name ?? $this->item?->name ?? $this->item_name ?? $this->item?->code,
+            'description' => $this->customer_description ?? $this->item?->description ?? $this->item_description,
+            'quantity_left' => $quantity,
+            'weight' => $weight,
+            'price' => $price,
+            'selling_price' => $this->selling_price,
+            'customer_price' => $this->customer_price,
+            'image' => $image,
+            'type' => $this->item_type,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
             'platform_product_id' => $this->platform_product_id,
             'category' => $category,
             'platform' => $this->platform->type,
             'delete_portfolio' => [
                 'method' => 'delete',
-                'name'       => 'retina.models.portfolio.delete',
+                'name' => 'retina.models.portfolio.delete',
                 'parameters' => [
-                    'portfolio' => $this->id
-                ]
+                    'portfolio' => $this->id,
+                ],
             ],
             ...$shopifyUploadRoute,
             ...$wooUploadRoute,

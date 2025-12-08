@@ -25,36 +25,38 @@ trait WithWebAuthorisation
         $orgSupervisorRoutes = [
             'grp.org.websites.',
             'grp.models.org.product.',
-            'grp.models.webpage.'
+            'grp.models.webpage.',
         ];
 
         foreach ($orgSupervisorRoutes as $prefix) {
             if (str_starts_with($routeName, $prefix)) {
                 $this->canEdit = $user->authTo("org-supervisor.{$this->organisation->id}");
                 $this->isSupervisor = $this->canEdit;
+
                 return $user->authTo([
                     "websites-view.{$this->organisation->id}",
-                    "group-webmaster.view"
+                    'group-webmaster.view',
                 ]);
             }
         }
 
         if (str_starts_with($routeName, 'grp.overview.')) {
-            return $user->authTo("group-overview");
+            return $user->authTo('group-overview');
         }
 
         if (str_starts_with($routeName, 'grp.org.shops.show.web.')) {
             $this->canEdit = $user->authTo([
                 "web.{$this->shop->id}.edit",
-                "group-webmaster.edit"
+                'group-webmaster.edit',
             ]);
             $this->isSupervisor = $user->authTo([
                 "supervisor-web.{$this->shop->id}",
-                "group-webmaster.edit"
+                'group-webmaster.edit',
             ]);
+
             return $user->authTo([
                 "web.{$this->shop->id}.view",
-                "group-webmaster.view"
+                'group-webmaster.view',
             ]);
         }
 
@@ -62,30 +64,32 @@ trait WithWebAuthorisation
         if (str_starts_with($routeName, 'grp.models.product.')) {
             $this->canEdit = $user->authTo([
                 "web.{$this->shop->id}.edit",
-                "group-webmaster.edit"
+                'group-webmaster.edit',
             ]);
             $this->isSupervisor = $user->authTo([
                 "supervisor-web.{$this->shop->id}",
-                "group-webmaster.edit"
+                'group-webmaster.edit',
             ]);
+
             return $user->authTo([
                 "web.{$this->shop->id}.view",
-                "group-webmaster.view"
+                'group-webmaster.view',
             ]);
         }
 
         if (str_starts_with($routeName, 'grp.org.fulfilments.show.web.')) {
             $this->canEdit = $user->authTo([
                 "fulfilment-shop.{$this->fulfilment->id}.edit",
-                "group-webmaster.edit"
+                'group-webmaster.edit',
             ]);
             $this->isSupervisor = $user->authTo([
                 "supervisor-fulfilment-shop.{$this->fulfilment->id}",
-                "group-webmaster.edit"
+                'group-webmaster.edit',
             ]);
+
             return $user->authTo([
                 "fulfilment-shop.{$this->fulfilment->id}.view",
-                "group-webmaster.view"
+                'group-webmaster.view',
             ]);
         }
 

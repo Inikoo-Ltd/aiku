@@ -16,7 +16,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PalletDeliveryPalletExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMapping
+class PalletDeliveryPalletExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     use Exportable;
 
@@ -32,6 +32,7 @@ class PalletDeliveryPalletExport implements FromQuery, WithHeadings, ShouldAutoS
         return Pallet::query()
             ->where('pallet_delivery_id', $this->palletDelivery->id);
     }
+
     public function map($row): array
     {
         /** @var Pallet $row */
@@ -49,7 +50,7 @@ class PalletDeliveryPalletExport implements FromQuery, WithHeadings, ShouldAutoS
             $pallet->customer_reference,
             $pallet->rental->code,
             $pallet->location->code,
-            $storedItems
+            $storedItems,
         ];
     }
 
@@ -60,7 +61,7 @@ class PalletDeliveryPalletExport implements FromQuery, WithHeadings, ShouldAutoS
             'Customer Reference',
             'Rental',
             'Location',
-            'Stored Items'
+            'Stored Items',
         ];
     }
 }

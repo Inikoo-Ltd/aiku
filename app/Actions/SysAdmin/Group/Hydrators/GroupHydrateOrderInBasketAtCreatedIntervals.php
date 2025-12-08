@@ -18,9 +18,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GroupHydrateOrderInBasketAtCreatedIntervals implements ShouldBeUnique
 {
     use AsAction;
+    use WithHydrateBasket;
     use WithIntervalsAggregators;
     use WithIntervalUniqueJob;
-    use WithHydrateBasket;
 
     public string $jobQueue = 'sales';
 
@@ -35,10 +35,8 @@ class GroupHydrateOrderInBasketAtCreatedIntervals implements ShouldBeUnique
             $this->getBasketCountStats('created_at', $group, $intervals, $doPreviousPeriods),
         );
 
-
         $group->salesIntervals()->update(
             $this->getBasketNetAmountStats('created_at', 'grp', $group, $intervals, $doPreviousPeriods),
         );
     }
-
 }

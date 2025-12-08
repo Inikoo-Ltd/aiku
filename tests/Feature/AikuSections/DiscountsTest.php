@@ -15,13 +15,13 @@ use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\HydrateOffers;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
 use App\Actions\Discounts\Offer\StoreOffer;
-use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateOffer;
+use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
+use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
+use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignSearch;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
-use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
-use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
@@ -31,8 +31,8 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
-use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferAllowance;
+use App\Models\Discounts\OfferCampaign;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -42,16 +42,15 @@ beforeAll(function () {
     loadDB();
 });
 
-
 beforeEach(function () {
     $this->organisation = createOrganisation();
-    $this->group        = $this->organisation->group;
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
+    $this->group = $this->organisation->group;
+    $this->adminGuest = createAdminGuest($this->organisation->group);
 
     $shop = Shop::first();
-    if (!$shop) {
+    if (! $shop) {
         $storeData = Shop::factory()->definition();
-        $shop      = StoreShop::make()->action(
+        $shop = StoreShop::make()->action(
             $this->organisation,
             $storeData
         );
@@ -63,7 +62,6 @@ beforeEach(function () {
     );
     actingAs($this->adminGuest->getUser());
 });
-
 
 test('seed offer campaigns', function () {
     $shop = $this->shop;
@@ -85,7 +83,7 @@ test('seed offer campaigns', function () {
 });
 
 test('update offer campaign', function () {
-    $shop          = $this->shop;
+    $shop = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
     $offerCampaign = UpdateOfferCampaign::make()->action($offerCampaign, [
         'name' => 'New Name',
@@ -94,9 +92,9 @@ test('update offer campaign', function () {
 });
 
 test('create offer', function () {
-    $shop          = $this->shop;
+    $shop = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
-    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+    $offer = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
     $offerCampaign->refresh();
     $this->group->refresh();
     $this->organisation->refresh();
@@ -160,7 +158,7 @@ test('UI Index offer campaigns', function () {
 
 test('UI show offer campaigns', function () {
     $offerCampaign = $this->shop->offerCampaigns()->first();
-    $response      = get(route('grp.org.shops.show.discounts.campaigns.show', [$this->organisation->slug, $this->shop->slug, $offerCampaign->slug]));
+    $response = get(route('grp.org.shops.show.discounts.campaigns.show', [$this->organisation->slug, $this->shop->slug, $offerCampaign->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($offerCampaign) {
         $page
@@ -194,7 +192,7 @@ test('UI Index offers', function () {
 test('UI get section route offer dashboard', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.discounts.offers.index', [
         'organisation' => $this->organisation->slug,
-        'shop'         => $this->shop->slug
+        'shop' => $this->shop->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -232,9 +230,9 @@ test('Discounts hydrator', function () {
 });
 
 test('delete offer', function () {
-    $shop          = $this->shop;
+    $shop = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
-    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+    $offer = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
 
     $allowanceData = OfferAllowance::factory()->definition();
     data_set($allowanceData, 'trigger_type', 'Shop');
@@ -249,9 +247,9 @@ test('delete offer', function () {
 });
 
 test('force delete offer', function () {
-    $shop          = $this->shop;
+    $shop = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
-    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+    $offer = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
 
     $allowanceData = OfferAllowance::factory()->definition();
     data_set($allowanceData, 'trigger_type', 'Shop');
@@ -268,14 +266,14 @@ test('force delete offer', function () {
 
 test('create first order bonus', function () {
     $shop = $this->shop;
-    if (!$shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
+    if (! $shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
         SeedShopOfferCampaigns::run($shop);
     }
 
     $this->artisan('offer:create_first_order_bonus', [
-        'shop'     => $shop->slug,
-        'amount'   => 100,
-        'discount' => 10
+        'shop' => $shop->slug,
+        'amount' => 100,
+        'discount' => 10,
     ])->assertExitCode(0);
 
     $offer = \App\Models\Discounts\Offer::where('shop_id', $shop->id)
@@ -289,9 +287,9 @@ test('create first order bonus', function () {
 });
 
 test('update offer allowance signature', function () {
-    $shop          = $this->shop;
+    $shop = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
-    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+    $offer = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
 
     $allowanceData = OfferAllowance::factory()->definition();
     data_set($allowanceData, 'type', OfferAllowanceType::PERCENTAGE_OFF);
@@ -354,9 +352,9 @@ test('update offer allowance signature', function () {
 });
 
 test('force delete offer with soft deleted allowances', function () {
-    $shop          = $this->shop;
+    $shop = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
-    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+    $offer = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
 
     $allowanceData = OfferAllowance::factory()->definition();
     data_set($allowanceData, 'trigger_type', 'Shop');
@@ -382,23 +380,23 @@ test('force delete offer with soft deleted allowances', function () {
 
 test('create volume discount', function () {
     $shop = $this->shop;
-    if (!$shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::VOLUME_DISCOUNT)->exists()) {
+    if (! $shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::VOLUME_DISCOUNT)->exists()) {
         SeedShopOfferCampaigns::run($shop);
     }
 
     /** @var ProductCategory $category */
     $category = ProductCategory::factory()->create([
-        'shop_id'         => $shop->id,
+        'shop_id' => $shop->id,
         'organisation_id' => $shop->organisation_id,
-        'group_id'        => $shop->group_id,
-        'code'            => 'TEST-CAT',
-        'type'            => ProductCategoryTypeEnum::FAMILY->value
+        'group_id' => $shop->group_id,
+        'code' => 'TEST-CAT',
+        'type' => ProductCategoryTypeEnum::FAMILY->value,
     ]);
 
     $this->artisan('offer:create_volume_discount', [
-        'family'        => $category->slug,
+        'family' => $category->slug,
         'item_quantity' => 5,
-        'discount'      => .20
+        'discount' => .20,
     ])->assertExitCode(0);
 
     $offer = Offer::where('shop_id', $shop->id)

@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Fulfilment\Pallet\UI\ShowPallet;
 use App\Actions\Inventory\Location\ExportLocations;
 use App\Actions\Inventory\Location\UI\CreateLocation;
@@ -27,7 +26,6 @@ Route::scopeBindings()->prefix('areas')->name('warehouse_areas.')->group(functio
     Route::get('', IndexWarehouseAreas::class)->name('index');
     Route::get('create', CreateWarehouseArea::class)->name('create');
 
-
     Route::scopeBindings()->prefix('{warehouseArea}')->group(function () {
         Route::get('', ShowWarehouseArea::class)->name('show');
         Route::get('edit', EditWarehouseArea::class)->name('edit');
@@ -43,7 +41,6 @@ Route::scopeBindings()->prefix('areas')->name('warehouse_areas.')->group(functio
         });
     });
 });
-
 
 Route::scopeBindings()->prefix('locations')->name('locations.')->group(function () {
     Route::get('export', [ExportLocations::class, 'inWarehouse'])->name('export');

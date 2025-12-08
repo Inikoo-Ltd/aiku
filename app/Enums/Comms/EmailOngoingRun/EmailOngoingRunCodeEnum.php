@@ -14,7 +14,6 @@ enum EmailOngoingRunCodeEnum: string
 {
     use EnumHelperTrait;
 
-
     case NEW_CUSTOMER = 'new_customer';
     case DELIVERY_NOTE_DISPATCHED = 'delivery_note_dispatched';
     case DELIVERY_NOTE_UNDISPATCHED = 'delivery_note_undispatched';

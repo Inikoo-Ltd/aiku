@@ -35,20 +35,19 @@ use Throwable;
 
 class FetchAuroraTradeUnits extends FetchAuroraAction
 {
-    use WithAuroraParsers;
-    use WithAuroraImages;
     use WithAuroraAttachments;
+    use WithAuroraImages;
+    use WithAuroraParsers;
 
     public string $commandSignature = 'fetch:trade_units {organisations?*} {--s|source_id=} {--d|db_suffix=}';
-    private Organisation $organisation;
 
+    private Organisation $organisation;
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?TradeUnit
     {
         $this->organisationSource = $organisationSource;
 
-
-        $organisation       = $organisationSource->getOrganisation();
+        $organisation = $organisationSource->getOrganisation();
         $this->organisation = $organisation;
 
         $tradeUnitData = $organisationSource->fetchTradeUnit($organisationSourceId);
@@ -74,23 +73,21 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                     }
                 }
 
-
                 if ($organisation->id == 2) {
                     $dataToUpdate = Arr::only(
                         $tradeUnitData['trade_unit'],
                         ['gross_weight', 'marketing_weight', 'marketing_dimensions']
                     );
 
-                    if (!Arr::get($tradeUnitData, 'trade_unit.gross_weight')) {
+                    if (! Arr::get($tradeUnitData, 'trade_unit.gross_weight')) {
                         data_forget($tradeUnitData, 'trade_unit.gross_weight');
                     }
-                    if (!Arr::get($tradeUnitData, 'trade_unit.marketing_weight')) {
+                    if (! Arr::get($tradeUnitData, 'trade_unit.marketing_weight')) {
                         data_forget($tradeUnitData, 'trade_unit.marketing_weight');
                     }
-                    if (!Arr::get($tradeUnitData, 'trade_unit.marketing_dimensions')) {
+                    if (! Arr::get($tradeUnitData, 'trade_unit.marketing_dimensions')) {
                         data_forget($tradeUnitData, 'trade_unit.marketing_dimensions');
                     }
-
 
                     $tradeUnit = UpdateTradeUnit::make()->action(
                         tradeUnit: $metaTradeUnit,
@@ -100,9 +97,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                         audit: false
                     );
 
-
                     $skSource = null;
-
 
                     foreach ($tradeUnit->sources['parts'] as $source) {
                         $dataSource = explode(':', $source);
@@ -113,7 +108,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
                     if ($skSource) {
                         $ingredientsToDelete = $tradeUnit->ingredients()->pluck('trade_unit_has_ingredients.ingredient_id')->toArray();
-
 
                         $ingredients = [];
 
@@ -132,16 +126,14 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
                                 $ingredientSourceID = $organisation->id.':'.$auroraIngredients->{'Material Key'};
 
-
                                 $arguments = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
                                 $position++;
-                                $arguments['position']        = $position;
+                                $arguments['position'] = $position;
                                 $ingredients[$ingredient->id] = $arguments;
                             }
 
                             $tradeUnit->ingredients()->syncWithoutDetaching($ingredients);
                         }
-
 
                         $tradeUnit->ingredients()->whereIn('ingredient_id', array_keys($ingredientsToDelete))->forceDelete();
                         TradeUnitsHydrateMarketingIngredients::run($tradeUnit);
@@ -173,8 +165,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                 }
             }
 
-
-            if (!$tradeUnit) {
+            if (! $tradeUnit) {
                 $tradeUnit = TradeUnit::withTrashed()->where('source_slug', $tradeUnitData['trade_unit']['source_slug'])->first();
             }
 
@@ -186,7 +177,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                         $tradeUnitData['barcodes']
                     );
 
-                    $barcodeId     = null;
+                    $barcodeId = null;
                     $barcodeNumber = null;
 
                     foreach ($tradeUnitData['barcodes'] as $barcodeKey => $barcodeData) {
@@ -194,7 +185,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                             /** @var Barcode $barcode */
                             $barcode = Barcode::find($barcodeKey);
 
-                            $barcodeId     = $barcode->id;
+                            $barcodeId = $barcode->id;
                             $barcodeNumber = $barcode->number;
                             break;
                         }
@@ -202,7 +193,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
                     $tradeUnit->updateQuietly([
                         'barcode_id' => $barcodeId,
-                        'barcode'    => $barcodeNumber,
+                        'barcode' => $barcodeNumber,
                     ]);
                 }
 
@@ -210,7 +201,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                 if ($organisation->id == 2) {
                     $ingredientsToDelete = $tradeUnit->ingredients()->pluck('trade_unit_has_ingredients.ingredient_id')->toArray();
 
-                    $dataSource  = explode(':', $tradeUnit->source_id);
+                    $dataSource = explode(':', $tradeUnit->source_id);
                     $ingredients = [];
                     $position = 0;
                     foreach (
@@ -226,16 +217,14 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
                             $ingredientSourceID = $organisation->id.':'.$auroraIngredients->{'Material Key'};
 
-                            $arguments                    = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
+                            $arguments = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
                             $position++;
-                            $arguments['position']        = $position;
+                            $arguments['position'] = $position;
                             $ingredients[$ingredient->id] = $arguments;
                         }
 
-
                         $tradeUnit->ingredients()->syncWithoutDetaching($ingredients);
                     }
-
 
                     $tradeUnit->ingredients()->whereIn('ingredient_id', array_keys($ingredientsToDelete))->forceDelete();
 
@@ -245,32 +234,28 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                     }
                 }
 
-
                 $this->fetchTradeUnitProductPropertiesInfo(
                     $tradeUnit,
                 );
                 $this->processFetchAttachments($tradeUnit, 'Part', $tradeUnitData['trade_unit']['source_id']);
             }
 
-
             return $tradeUnit;
         }
-
 
         return null;
     }
 
-
     public function updateTradeUnitSources(TradeUnit $tradeUnit, string $source): void
     {
-        $sources   = Arr::get($tradeUnit->sources, 'parts', []);
+        $sources = Arr::get($tradeUnit->sources, 'parts', []);
         $sources[] = $source;
-        $sources   = array_unique($sources);
+        $sources = array_unique($sources);
 
         $tradeUnit->updateQuietly([
             'sources' => [
                 'parts' => $sources,
-            ]
+            ],
         ]);
     }
 
@@ -293,7 +278,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                 );
             } else {
                 $filteredDangerousGoodsInfo = array_filter($dangerousGoodsInfo, function ($value) {
-                    return !is_null($value);
+                    return ! is_null($value);
                 });
 
                 // Filter dangerous goods info to only update fields that are currently null
@@ -304,7 +289,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                     }
                 }
 
-                if (!empty($fieldsToUpdate)) {
+                if (! empty($fieldsToUpdate)) {
                     UpdateTradeUnit::make()->action(
                         tradeUnit: $tradeUnit,
                         modelData: $fieldsToUpdate,
@@ -320,7 +305,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
     public function fetchAuroraProductPropertiesInfo(Product $product): array
     {
         $sourceData = $product->source_id;
-        if (!$sourceData) {
+        if (! $sourceData) {
             return [];
         }
         $sourceData = explode(':', $sourceData);
@@ -329,7 +314,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             ->where('Product Id', $sourceData[1])
             ->first();
 
-        if (!$productPropertiesInfo) {
+        if (! $productPropertiesInfo) {
             return [];
         }
 
@@ -342,32 +327,31 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             $dutyRate = preg_replace('/[^\x20-\x7E]/', '', $dutyRate);
         }
 
-
         $data = [
-            'un_number'                    => $productPropertiesInfo->{'Product UN Number'} ?? null,
-            'un_class'                     => $productPropertiesInfo->{'Product UN Class'} ?? null,
-            'packing_group'                => $productPropertiesInfo->{'Product Packing Group'} ?? null,
-            'proper_shipping_name'         => $productPropertiesInfo->{'Product Proper Shipping Name'} ?? null,
+            'un_number' => $productPropertiesInfo->{'Product UN Number'} ?? null,
+            'un_class' => $productPropertiesInfo->{'Product UN Class'} ?? null,
+            'packing_group' => $productPropertiesInfo->{'Product Packing Group'} ?? null,
+            'proper_shipping_name' => $productPropertiesInfo->{'Product Proper Shipping Name'} ?? null,
             'hazard_identification_number' => $productPropertiesInfo->{'Product Hazard Identification Number'} ?? null,
-            'gpsr_manufacturer'            => $productPropertiesInfo->{'Product GPSR Manufacturer'} ?? null,
-            'gpsr_eu_responsible'          => $productPropertiesInfo->{'Product GPSR EU Responsible'} ?? null,
-            'gpsr_warnings'                => $productPropertiesInfo->{'Product GPSR Warnings'} ?? null,
-            'gpsr_manual'                  => $productPropertiesInfo->{'Product GPSR Manual'} ?? null,
-            'gpsr_class_category_danger'   => $productPropertiesInfo->{'Product GPSR Class Category Danger'} ?? null,
-            'gpsr_class_languages'         => $productPropertiesInfo->{'Product GPSR Class Languages'} ?? null,
-            'pictogram_toxic'              => $productPropertiesInfo->{'Product Pictogram Toxic'} == 'Yes',
-            'pictogram_corrosive'          => $productPropertiesInfo->{'Product Pictogram Corrosive'} == 'Yes',
-            'pictogram_explosive'          => $productPropertiesInfo->{'Product Pictogram Explosive'} == 'Yes',
-            'pictogram_flammable'          => $productPropertiesInfo->{'Product Pictogram Flammable'} == 'Yes',
-            'pictogram_gas'                => $productPropertiesInfo->{'Product Pictogram Gas'} == 'Yes',
-            'pictogram_environment'        => $productPropertiesInfo->{'Product Pictogram Environment'} == 'Yes',
-            'pictogram_health'             => $productPropertiesInfo->{'Product Pictogram Health'} == 'Yes',
-            'pictogram_oxidising'          => $productPropertiesInfo->{'Product Pictogram Oxidising'} == 'Yes',
-            'pictogram_danger'             => $productPropertiesInfo->{'Product Pictogram Danger'} == 'Yes',
-            'cpnp_number'                  => $productPropertiesInfo->{'Product CPNP Number'} ?? null,
-            'tariff_code'                  => $productPropertiesInfo->{'Product Tariff Code'} ?? null,
-            'duty_rate'                    => $dutyRate,
-            'hts_us'                       => $productPropertiesInfo->{'Product HTSUS Code'} ?? null,
+            'gpsr_manufacturer' => $productPropertiesInfo->{'Product GPSR Manufacturer'} ?? null,
+            'gpsr_eu_responsible' => $productPropertiesInfo->{'Product GPSR EU Responsible'} ?? null,
+            'gpsr_warnings' => $productPropertiesInfo->{'Product GPSR Warnings'} ?? null,
+            'gpsr_manual' => $productPropertiesInfo->{'Product GPSR Manual'} ?? null,
+            'gpsr_class_category_danger' => $productPropertiesInfo->{'Product GPSR Class Category Danger'} ?? null,
+            'gpsr_class_languages' => $productPropertiesInfo->{'Product GPSR Class Languages'} ?? null,
+            'pictogram_toxic' => $productPropertiesInfo->{'Product Pictogram Toxic'} == 'Yes',
+            'pictogram_corrosive' => $productPropertiesInfo->{'Product Pictogram Corrosive'} == 'Yes',
+            'pictogram_explosive' => $productPropertiesInfo->{'Product Pictogram Explosive'} == 'Yes',
+            'pictogram_flammable' => $productPropertiesInfo->{'Product Pictogram Flammable'} == 'Yes',
+            'pictogram_gas' => $productPropertiesInfo->{'Product Pictogram Gas'} == 'Yes',
+            'pictogram_environment' => $productPropertiesInfo->{'Product Pictogram Environment'} == 'Yes',
+            'pictogram_health' => $productPropertiesInfo->{'Product Pictogram Health'} == 'Yes',
+            'pictogram_oxidising' => $productPropertiesInfo->{'Product Pictogram Oxidising'} == 'Yes',
+            'pictogram_danger' => $productPropertiesInfo->{'Product Pictogram Danger'} == 'Yes',
+            'cpnp_number' => $productPropertiesInfo->{'Product CPNP Number'} ?? null,
+            'tariff_code' => $productPropertiesInfo->{'Product Tariff Code'} ?? null,
+            'duty_rate' => $dutyRate,
+            'hts_us' => $productPropertiesInfo->{'Product HTSUS Code'} ?? null,
         ];
 
         if ($productPropertiesInfo->{'Product Origin Country Code'} != '') {
@@ -377,10 +361,9 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         return $data;
     }
 
-
     public function parseCountryOrigin(?string $countryOrigin): ?int
     {
-        if (!$countryOrigin || is_numeric($countryOrigin)) {
+        if (! $countryOrigin || is_numeric($countryOrigin)) {
             return null;
         }
 
@@ -430,7 +413,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
     protected function processFetchAttachments(TradeUnit $tradeUnit, string $modelType, string $modelSourceID): void
     {
-        if (!$tradeUnit) {
+        if (! $tradeUnit) {
             return;
         }
         $attachmentModelType = 'TradeUnit';
@@ -440,7 +423,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             return;
         }
 
-
         foreach ($this->parseAttachments($modelSourceID, $modelType) as $attachmentData) {
             if ($attachmentData === null) {
                 continue;
@@ -448,7 +430,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
             $scope = $this->parseTradeUnitAttachmentScope($attachmentData['modelData']);
 
-            if (!$attachmentData['is_public']) {
+            if (! $attachmentData['is_public']) {
                 $scope = match ($scope) {
                     TradeAttachmentScopeEnum::IFRA_PRIVATE => TradeAttachmentScopeEnum::IFRA,
                     TradeAttachmentScopeEnum::SDS_PRIVATE => TradeAttachmentScopeEnum::SDS,
@@ -473,24 +455,22 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
             $modelAttachment = $tradeUnit->attachments()->where('media_id', $media->id)->first();
 
-
             $sources = json_decode($modelAttachment->pivot->sources, true);
 
-            $bridgeSources     = Arr::get($sources, 'bridge', []);
-            $bridgeSources[]   = $attachmentData['modelData']['source_id'];
-            $bridgeSources     = array_unique($bridgeSources);
+            $bridgeSources = Arr::get($sources, 'bridge', []);
+            $bridgeSources[] = $attachmentData['modelData']['source_id'];
+            $bridgeSources = array_unique($bridgeSources);
             $sources['bridge'] = $bridgeSources;
 
-            $modelSources                  = Arr::get($sources, $attachmentModelType, []);
-            $modelSources[]                = $tradeUnit->source_id;
-            $modelSources                  = array_unique($modelSources);
+            $modelSources = Arr::get($sources, $attachmentModelType, []);
+            $modelSources[] = $tradeUnit->source_id;
+            $modelSources = array_unique($modelSources);
             $sources[$attachmentModelType] = $modelSources;
 
             $tradeUnit->attachments()->updateExistingPivot(
                 $media->id,
                 [
-                    "sources" =>
-                        json_encode($sources)
+                    'sources' => json_encode($sources),
 
                 ]
             );
@@ -520,7 +500,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         } elseif (Str::contains($caption, 'allergen')) {
             return TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS;
         }
-
 
         if (Arr::get($attachmentData, 'scope') == 'MSDS') {
             return TradeAttachmentScopeEnum::MSDS;

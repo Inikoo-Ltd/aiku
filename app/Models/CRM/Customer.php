@@ -13,6 +13,7 @@ use App\Enums\CRM\Customer\CustomerRejectReasonEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\MitSavedCard;
@@ -71,7 +72,6 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 
 /**
  * App\Models\CRM\Customer
@@ -186,6 +186,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Collection<int, \App\Models\CRM\WebUser> $webUsers
  * @property-read WooCommerceUser|null $wooCommerceUser
+ *
  * @method static \Database\Factories\CRM\CustomerFactory factory($count = null, $state = [])
  * @method static Builder<static>|Customer newModelQuery()
  * @method static Builder<static>|Customer newQuery()
@@ -193,50 +194,50 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
  * @method static Builder<static>|Customer query()
  * @method static Builder<static>|Customer withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Customer withoutTrashed()
+ *
  * @mixin \Eloquent
  */
-class Customer extends Model implements HasMedia, Auditable
+class Customer extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
     use HasAddress;
     use HasAddresses;
-    use HasSlug;
-    use HasUniversalSearch;
-    use HasImage;
-    use HasFactory;
-    use HasHistory;
-    use InShop;
+    use HasApiTokens;
     use HasAttachments;
     use HasEmail;
-    use HasApiTokens;
+    use HasFactory;
+    use HasHistory;
+    use HasImage;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InShop;
     use Notifiable;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'                        => 'array',
-        'contact_name_components'     => 'array',
-        'settings'                    => 'array',
-        'location'                    => 'array',
-        'migration_data'              => 'array',
-        'state'                       => CustomerStateEnum::class,
-        'status'                      => CustomerStatusEnum::class,
-        'trade_state'                 => CustomerTradeStateEnum::class,
-        'rejected_reason'             => CustomerRejectReasonEnum::class,
-        'last_submitted_order_at'     => 'datetime',
+        'data' => 'array',
+        'contact_name_components' => 'array',
+        'settings' => 'array',
+        'location' => 'array',
+        'migration_data' => 'array',
+        'state' => CustomerStateEnum::class,
+        'status' => CustomerStatusEnum::class,
+        'trade_state' => CustomerTradeStateEnum::class,
+        'rejected_reason' => CustomerRejectReasonEnum::class,
+        'last_submitted_order_at' => 'datetime',
         'last_dispatched_delivery_at' => 'datetime',
-        'last_invoiced_at'            => 'datetime',
-        'fetched_at'                  => 'datetime',
-        'rejected_at'                 => 'datetime',
-        'last_fetched_at'             => 'datetime',
-        'amount_in_basket'            => 'decimal:2'
+        'last_invoiced_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'rejected_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
+        'amount_in_basket' => 'decimal:2',
     ];
 
-
     protected $attributes = [
-        'data'                    => '{}',
-        'settings'                => '{}',
-        'location'                => '{}',
-        'migration_data'          => '{}',
-        'contact_name_components' => '{}'
+        'data' => '{}',
+        'settings' => '{}',
+        'location' => '{}',
+        'migration_data' => '{}',
+        'contact_name_components' => '{}',
     ];
 
     protected $guarded = [];
@@ -266,7 +267,7 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->reference . '-' . $this->shop->slug;
+                return $this->reference.'-'.$this->shop->slug;
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128)
@@ -291,7 +292,7 @@ class Customer extends Model implements HasMedia, Auditable
                 $name = trim($name);
                 if ($name == '') {
                     $emailData = explode('@', $customer->email);
-                    $name      = $emailData[0] ?? $customer->email;
+                    $name = $emailData[0] ?? $customer->email;
                 }
                 $customer->name = $name;
             }
@@ -306,12 +307,12 @@ class Customer extends Model implements HasMedia, Auditable
                 $name = trim($name);
                 if ($name == '') {
                     $emailData = explode('@', $customer->email);
-                    $name      = $emailData[0] ?? $customer->email;
+                    $name = $emailData[0] ?? $customer->email;
                 }
 
                 $customer->updateQuietly(
                     [
-                        'name' => $name
+                        'name' => $name,
                     ]
                 );
             }
@@ -342,7 +343,6 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(WebUser::class);
     }
-
 
     public function products(): MorphMany
     {
@@ -379,7 +379,6 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasOne(FulfilmentCustomer::class);
     }
 
-
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
@@ -387,7 +386,7 @@ class Customer extends Model implements HasMedia, Auditable
 
     public function hasUsers(): bool
     {
-        return (bool)$this->webUsers->count();
+        return (bool) $this->webUsers->count();
     }
 
     public function deliveryAddress(): BelongsTo
@@ -404,7 +403,6 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(CustomerSalesChannel::class);
     }
-
 
     public function transactions(): HasMany
     {

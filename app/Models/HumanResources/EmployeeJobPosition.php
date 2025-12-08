@@ -18,9 +18,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  *
  * @property-read \App\Models\HumanResources\Employee|null $employee
  * @property-read \App\Models\HumanResources\JobPosition|null $jobPosition
+ *
  * @method static Builder<static>|EmployeeJobPosition newModelQuery()
  * @method static Builder<static>|EmployeeJobPosition newQuery()
  * @method static Builder<static>|EmployeeJobPosition query()
+ *
  * @mixin Eloquent
  */
 class EmployeeJobPosition extends Pivot
@@ -28,7 +30,6 @@ class EmployeeJobPosition extends Pivot
     public $incrementing = true;
 
     protected $guarded = [];
-
 
     public function employee(): BelongsTo
     {

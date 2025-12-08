@@ -16,7 +16,7 @@ class OrgStockFactory extends Factory
     public function definition(): array
     {
         return [
-            'state'     => OrgStockStateEnum::ACTIVE
+            'state' => OrgStockStateEnum::ACTIVE,
         ];
     }
 }

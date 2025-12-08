@@ -13,23 +13,22 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class RentalClausesResource extends JsonResource
 {
-    //TODO revamp this
+    // TODO revamp this
     public function toArray($request): array
     {
 
-
         return [
-            'id'                                      => $this->id,
-            'rental_id'                               => $this->asset->rental->id,
-            'asset_id'                                => $this->asset_id,
-            'slug'                                    => $this->asset->slug,
-            'name'                                    => $this->asset->name,
-            'code'                                    => $this->asset->code,
-            'price'                                   => $this->asset->rental->price,
-            'agreed_price'                            => $this->agreed_price ??  $this->asset->rental->price,
-            'percentage_off'                          => 0,
-            'unit'                                    => $this->asset->rental->unit,
-            'currency'                                => CurrencyResource::make($this->asset->currency)
+            'id' => $this->id,
+            'rental_id' => $this->asset->rental->id,
+            'asset_id' => $this->asset_id,
+            'slug' => $this->asset->slug,
+            'name' => $this->asset->name,
+            'code' => $this->asset->code,
+            'price' => $this->asset->rental->price,
+            'agreed_price' => $this->agreed_price ?? $this->asset->rental->price,
+            'percentage_off' => 0,
+            'unit' => $this->asset->rental->unit,
+            'currency' => CurrencyResource::make($this->asset->currency),
         ];
     }
 }

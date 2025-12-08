@@ -21,10 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdatePurchaseOrder extends OrgAction
 {
     use WithActionUpdate;
-    use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
-
-
+    use WithNoStrictRules;
 
     private PurchaseOrder $purchaseOrder;
 
@@ -32,6 +30,7 @@ class UpdatePurchaseOrder extends OrgAction
     {
         $purchaseOrder = $this->update($purchaseOrder, $modelData, ['data']);
         PurchaseOrderRecordSearch::dispatch($purchaseOrder);
+
         return $purchaseOrder;
     }
 
@@ -47,12 +46,12 @@ class UpdatePurchaseOrder extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'       => [
+            'reference' => [
                 'sometimes',
                 'required',
                 $this->strict ? 'alpha_dash' : 'string',
             ],
-            'notes' => ['sometimes', 'string']
+            'notes' => ['sometimes', 'string'],
         ];
 
         if ($this->strict) {
@@ -61,20 +60,18 @@ class UpdatePurchaseOrder extends OrgAction
                 extraConditions: [
                     [
                         'column' => 'organisation_id',
-                        'value'  => $this->organisation->id,
+                        'value' => $this->organisation->id,
                     ],
                     [
-                        'column'   => 'id',
+                        'column' => 'id',
                         'operator' => '!=',
-                        'value'    => $this->purchaseOrder->id
-                    ]
+                        'value' => $this->purchaseOrder->id,
+                    ],
                 ]
             );
         }
 
-
-
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictPurchaseOrderDatesRules($rules);
@@ -86,11 +83,11 @@ class UpdatePurchaseOrder extends OrgAction
 
     public function action(PurchaseOrder $purchaseOrder, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): PurchaseOrder
     {
-        if (!$audit) {
+        if (! $audit) {
             PurchaseOrder::disableAuditing();
         }
-        $this->asAction      = true;
-        $this->strict        = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->purchaseOrder = $purchaseOrder;
         $this->hydratorsDelay = $hydratorsDelay;
 

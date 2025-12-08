@@ -30,11 +30,11 @@ class GroupHydratePalletReturns implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_pallet_returns' => PalletReturn::where('group_id', $group->id)->count()
+            'number_pallet_returns' => PalletReturn::where('group_id', $group->id)->count(),
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'pallet_returns',
+            model: 'pallet_returns',
             field: 'state',
             enum: PalletReturnStateEnum::class,
             models: PalletReturn::class,

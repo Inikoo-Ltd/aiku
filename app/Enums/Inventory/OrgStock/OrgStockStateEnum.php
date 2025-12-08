@@ -24,46 +24,45 @@ enum OrgStockStateEnum: string
     case SUSPENDED = 'suspended';
     case ABNORMALITY = 'abnormality';
 
-
     public static function labels(): array
     {
         return [
-            'active'        => __('Active'),
+            'active' => __('Active'),
             'discontinuing' => __('Discontinuing'),
-            'discontinued'  => __('Discontinued'),
-            'suspended'     => __('Suspended'),
-            'abnormality'   => __('Abnormality')
+            'discontinued' => __('Discontinued'),
+            'suspended' => __('Suspended'),
+            'abnormality' => __('Abnormality'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'active'        => [
+            'active' => [
                 'tooltip' => __('active'),
-                'icon'    => 'fas fa-check-circle',
-                'class'   => 'text-green-500'
+                'icon' => 'fas fa-check-circle',
+                'class' => 'text-green-500',
             ],
             'discontinuing' => [
                 'tooltip' => __('discontinuing'),
-                'icon'    => 'fas fa-times-circle',
-                'class'   => 'text-amber-500'
+                'icon' => 'fas fa-times-circle',
+                'class' => 'text-amber-500',
             ],
-            'discontinued'  => [
+            'discontinued' => [
                 'tooltip' => __('discontinued'),
-                'icon'    => 'fas fa-times-circle',
-                'class'   => 'text-red-500'
+                'icon' => 'fas fa-times-circle',
+                'class' => 'text-red-500',
             ],
-            'suspended'     => [
+            'suspended' => [
                 'tooltip' => __('suspended'),
-                'icon'    => 'fas fa-pause-circle',
-                'class'   => 'text-slate-300'
+                'icon' => 'fas fa-pause-circle',
+                'class' => 'text-slate-300',
             ],
-            'abnormality'   => [
+            'abnormality' => [
                 'tooltip' => __('abnormality'),
-                'icon'    => 'fas fa-exclamation-circle',
-                'class'   => 'text-red-500'
-            ]
+                'icon' => 'fas fa-exclamation-circle',
+                'class' => 'text-red-500',
+            ],
         ];
     }
 
@@ -80,11 +79,11 @@ enum OrgStockStateEnum: string
         }
 
         return [
-            'active'        => $stats->number_org_stocks_state_active,
+            'active' => $stats->number_org_stocks_state_active,
             'discontinuing' => $stats->number_org_stocks_state_discontinuing,
-            'discontinued'  => $stats->number_org_stocks_state_discontinued,
-            'suspended'     => $stats->number_org_stocks_state_suspended,
-            'abnormality'   => $stats->number_org_stocks_state_abnormality
+            'discontinued' => $stats->number_org_stocks_state_discontinued,
+            'suspended' => $stats->number_org_stocks_state_suspended,
+            'abnormality' => $stats->number_org_stocks_state_abnormality,
         ];
     }
 }

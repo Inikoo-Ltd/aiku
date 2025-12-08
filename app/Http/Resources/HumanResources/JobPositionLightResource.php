@@ -21,8 +21,8 @@ class JobPositionLightResource extends JsonResource
         $jobPosition = $this;
 
         return [
-            'slug'     => $jobPosition->slug,
-            'name'     => $jobPosition->name,
+            'slug' => $jobPosition->slug,
+            'name' => $jobPosition->name,
         ];
     }
 }

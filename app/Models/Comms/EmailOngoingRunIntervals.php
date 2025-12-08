@@ -249,9 +249,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $unsubscribed_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailOngoingRunIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailOngoingRunIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailOngoingRunIntervals query()
+ *
  * @mixin \Eloquent
  */
 class EmailOngoingRunIntervals extends Model
@@ -259,6 +261,4 @@ class EmailOngoingRunIntervals extends Model
     protected $table = 'email_ongoing_run_intervals';
 
     protected $guarded = [];
-
-
 }

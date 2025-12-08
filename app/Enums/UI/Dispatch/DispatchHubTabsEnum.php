@@ -20,13 +20,12 @@ enum DispatchHubTabsEnum: string
 
     case DASHBOARD = 'dashboard';
 
-
     public function blueprint(): array
     {
         return match ($this) {
             DispatchHubTabsEnum::DASHBOARD => [
                 'title' => __('Dashboard'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

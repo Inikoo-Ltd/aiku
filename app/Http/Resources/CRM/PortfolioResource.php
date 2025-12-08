@@ -24,22 +24,22 @@ class PortfolioResource extends JsonResource
         $portfolio = $this;
 
         return [
-            'item_id'                => $portfolio->item_id,
-            'reference'              => $portfolio->reference,
-            'product_name'           => $portfolio->item->name,
-            'product_code'           => $portfolio->item->code,
-            'slug'                   => $portfolio->item->slug,
-            'type'                   => $portfolio->type,
-            'created_at'             => $portfolio->created_at,
-            'routes'                 => [
+            'item_id' => $portfolio->item_id,
+            'reference' => $portfolio->reference,
+            'product_name' => $portfolio->item->name,
+            'product_code' => $portfolio->item->code,
+            'slug' => $portfolio->item->slug,
+            'type' => $portfolio->type,
+            'created_at' => $portfolio->created_at,
+            'routes' => [
                 'delete_route' => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.portfolio.delete',
+                    'method' => 'delete',
+                    'name' => 'grp.models.portfolio.delete',
                     'parameters' => [
-                        'portfolio'    => $portfolio->id
-                    ]
-                ]
-            ]
+                        'portfolio' => $portfolio->id,
+                    ],
+                ],
+            ],
 
         ];
     }

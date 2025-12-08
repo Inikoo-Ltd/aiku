@@ -32,12 +32,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read Model|\Eloquent $subject
  * @property-read \App\Models\HumanResources\Timesheet|null $timesheet
+ *
  * @method static Builder<static>|TimeTracker newModelQuery()
  * @method static Builder<static>|TimeTracker newQuery()
  * @method static Builder<static>|TimeTracker onlyTrashed()
  * @method static Builder<static>|TimeTracker query()
  * @method static Builder<static>|TimeTracker withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|TimeTracker withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class TimeTracker extends Model
@@ -45,12 +47,11 @@ class TimeTracker extends Model
     use SoftDeletes;
 
     protected $casts = [
-        'status'    => TimeTrackerStatusEnum::class,
+        'status' => TimeTrackerStatusEnum::class,
         'starts_at' => 'datetime:Y-m-d H:i:s',
-        'ends_at'   => 'datetime:Y-m-d H:i:s'
+        'ends_at' => 'datetime:Y-m-d H:i:s',
 
     ];
-
 
     protected $guarded = [];
 
@@ -63,5 +64,4 @@ class TimeTracker extends Model
     {
         return $this->belongsTo(Timesheet::class);
     }
-
 }

@@ -42,26 +42,24 @@ class PublishBanner extends OrgAction
         }
         foreach ($banner->snapshots()->where('state', SnapshotStateEnum::LIVE)->get() as $liveSnapshot) {
             UpdateSnapshot::run($liveSnapshot, [
-                'state'           => SnapshotStateEnum::HISTORIC,
-                'published_until' => now()
+                'state' => SnapshotStateEnum::HISTORIC,
+                'published_until' => now(),
             ]);
         }
 
         $layout = Arr::pull($modelData, 'layout');
-        list($layout, $slides) = ParseBannerLayout::run($layout);
+        [$layout, $slides] = ParseBannerLayout::run($layout);
 
         $snapshot = StoreBannerSnapshot::make()->action(
             $banner,
             [
-                'state'          => SnapshotStateEnum::LIVE,
-                'published_at'   => now(),
-                'layout'         => $layout,
-                'first_commit'   => $firstCommit,
-                'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                'state' => SnapshotStateEnum::LIVE,
+                'published_at' => now(),
+                'layout' => $layout,
+                'first_commit' => $firstCommit,
+                'publisher_id' => Arr::get($modelData, 'publisher_id'),
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
-                'comment'        => Arr::get($modelData, 'comment'),
-
-
+                'comment' => Arr::get($modelData, 'comment'),
 
             ],
             $slides
@@ -70,44 +68,40 @@ class PublishBanner extends OrgAction
         StoreDeployment::run(
             $banner,
             [
-                'snapshot_id'    => $snapshot->id,
-                'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                'snapshot_id' => $snapshot->id,
+                'publisher_id' => Arr::get($modelData, 'publisher_id'),
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
             ]
         );
 
         $compiledLayout = $snapshot->compiledLayout();
 
-
         $updateData = [
             'live_snapshot_id' => $snapshot->id,
-            'compiled_layout'  => $compiledLayout,
-            'state'            => BannerStateEnum::LIVE,
+            'compiled_layout' => $compiledLayout,
+            'state' => BannerStateEnum::LIVE,
         ];
 
         if ($banner->state == BannerStateEnum::UNPUBLISHED) {
             $updateData['live_at'] = now();
-            $updateData['date']    = now();
+            $updateData['date'] = now();
         }
 
         $banner->update($updateData);
         BannerRecordSearch::dispatch($banner);
         UpdateBannerImage::run($banner);
 
-
         Cache::put('banner_compiled_layout_'.$banner->slug, $banner->compiled_layout, 86400);
-
 
         return $banner;
     }
 
-
     public function rules(): array
     {
         return [
-            'layout'         => ['required', 'array:type,delay,common,components,navigation,published_hash'],
-            'comment'        => ['sometimes', 'required', 'string', 'max:1024'],
-            'publisher_id'   => ['sometimes'],
+            'layout' => ['required', 'array:type,delay,common,components,navigation,published_hash'],
+            'comment' => ['sometimes', 'required', 'string', 'max:1024'],
+            'publisher_id' => ['sometimes'],
             'publisher_type' => ['sometimes', 'string'],
         ];
     }
@@ -145,5 +139,4 @@ class PublishBanner extends OrgAction
     {
         return new BannerResource($banner);
     }
-
 }

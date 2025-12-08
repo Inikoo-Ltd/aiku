@@ -13,6 +13,6 @@ use App\Enums\EnumHelperTrait;
 enum PaymentClassEnum: string
 {
     use EnumHelperTrait;
-    case ORDER  = 'order';
-    case TOPUP   = 'topup';
+    case ORDER = 'order';
+    case TOPUP = 'topup';
 }

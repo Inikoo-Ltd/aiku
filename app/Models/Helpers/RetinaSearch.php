@@ -33,9 +33,11 @@ use Laravel\Scout\Searchable;
  * @property array<array-key, mixed> $result
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RetinaSearch newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RetinaSearch newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RetinaSearch query()
+ *
  * @mixin \Eloquent
  */
 class RetinaSearch extends Model
@@ -43,17 +45,17 @@ class RetinaSearch extends Model
     use Searchable;
 
     protected $casts = [
-        'sections'    => 'array',
+        'sections' => 'array',
         'permissions' => 'array',
-        'result'      => 'array',
-        'web_users'   => 'array',
+        'result' => 'array',
+        'web_users' => 'array',
     ];
 
     protected $attributes = [
-        'sections'    => '{}',
+        'sections' => '{}',
         'permissions' => '{}',
-        'result'      => '{}',
-        'web_users'   => '{}',
+        'result' => '{}',
+        'web_users' => '{}',
     ];
 
     protected $guarded = [];
@@ -80,5 +82,4 @@ class RetinaSearch extends Model
             'model_type',
         ]);
     }
-
 }

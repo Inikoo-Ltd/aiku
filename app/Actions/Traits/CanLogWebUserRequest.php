@@ -21,7 +21,7 @@ trait CanLogWebUserRequest
 {
     public function canLogWebUserRequest(): bool
     {
-        if (!config('app.log_user_requests')) {
+        if (! config('app.log_user_requests')) {
             return false;
         }
 
@@ -29,13 +29,13 @@ trait CanLogWebUserRequest
         $webUser = request()->user();
 
         // If there is an authenticated user from another guard that's not a WebUser, skip logging
-        if ($webUser !== null && !($webUser instanceof WebUser)) {
+        if ($webUser !== null && ! ($webUser instanceof WebUser)) {
             return false;
         }
 
         $routeName = request()->route()->getName();
 
-        if (!str_starts_with($routeName, 'retina.') && !str_starts_with($routeName, 'iris.')) {
+        if (! str_starts_with($routeName, 'retina.') && ! str_starts_with($routeName, 'iris.')) {
             return false;
         }
 

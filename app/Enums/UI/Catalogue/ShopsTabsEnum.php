@@ -16,29 +16,29 @@ enum ShopsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOPS                       = 'shops';
-    case DEPARTMENTS                 = 'departments';
-    case FAMILIES                    = 'families';
-    case PRODUCTS                    = 'products';
+    case SHOPS = 'shops';
+    case DEPARTMENTS = 'departments';
+    case FAMILIES = 'families';
+    case PRODUCTS = 'products';
 
     public function blueprint(): array
     {
         return match ($this) {
             ShopsTabsEnum::SHOPS => [
                 'title' => __('Shops'),
-                'icon'  => 'fal fa-store-alt',
+                'icon' => 'fal fa-store-alt',
             ],
             ShopsTabsEnum::DEPARTMENTS => [
                 'title' => __('Departments'),
-                'icon'  => 'fal fa-folder-tree',
+                'icon' => 'fal fa-folder-tree',
             ],
             ShopsTabsEnum::FAMILIES => [
                 'title' => __('Families'),
-                'icon'  => 'fal fa-folder',
+                'icon' => 'fal fa-folder',
             ],
             ShopsTabsEnum::PRODUCTS => [
                 'title' => __('Products'),
-                'icon'  => 'fal fa-cube',
+                'icon' => 'fal fa-cube',
             ],
 
         };

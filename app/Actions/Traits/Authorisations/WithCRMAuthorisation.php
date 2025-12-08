@@ -17,7 +17,7 @@ trait WithCRMAuthorisation
         $routeName = $request->route()->getName();
 
         if (str_starts_with($routeName, 'grp.overview.')) {
-            return $request->user()->authTo("group-overview");
+            return $request->user()->authTo('group-overview');
         } elseif (str_starts_with($routeName, 'grp.org.shops.show.crm.prospects')) {
             $this->canEdit = $request->user()->authTo("crm.{$this->shop->id}.prospects.edit");
 
@@ -27,7 +27,7 @@ trait WithCRMAuthorisation
 
             return $request->user()->authTo(
                 [
-                    "crm.{$this->shop->id}.prospects.view"
+                    "crm.{$this->shop->id}.prospects.view",
                 ]
             );
         } elseif (str_starts_with($routeName, 'grp.org.shops.show.crm.')) {
@@ -39,7 +39,7 @@ trait WithCRMAuthorisation
             return $request->user()->authTo(
                 [
                     "crm.{$this->shop->id}.view",
-                    "accounting.{$this->shop->organisation_id}.view"
+                    "accounting.{$this->shop->organisation_id}.view",
                 ]
             );
         } elseif (str_starts_with($routeName, 'grp.org.fulfilments.show.crm.')) {
@@ -51,7 +51,7 @@ trait WithCRMAuthorisation
             return $request->user()->authTo(
                 [
                     "fulfilment-shop.{$this->shop->fulfilment->id}.view",
-                    "accounting.{$this->shop->organisation_id}.view"
+                    "accounting.{$this->shop->organisation_id}.view",
                 ]
             );
         }

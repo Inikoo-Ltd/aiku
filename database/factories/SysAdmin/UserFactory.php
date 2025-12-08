@@ -15,11 +15,11 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'username'   => 'hello',
-            'password'   => 'password',
-            'email'      => fake()->email,
+            'username' => 'hello',
+            'password' => 'password',
+            'email' => fake()->email,
             'language_id' => 1,
-            'timezone_id' => 1
+            'timezone_id' => 1,
         ];
     }
 }

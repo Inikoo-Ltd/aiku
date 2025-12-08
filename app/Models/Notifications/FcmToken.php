@@ -20,9 +20,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model|\Eloquent $fcmable
  * @property-read string $token
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FcmToken newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FcmToken newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FcmToken query()
+ *
  * @mixin Eloquent
  */
 class FcmToken extends Model
@@ -34,7 +36,7 @@ class FcmToken extends Model
         parent::boot();
 
         self::creating(function ($model) {
-            $parsedUserAgent = (new Browser())->parse(request()->server('HTTP_USER_AGENT'));
+            $parsedUserAgent = (new Browser)->parse(request()->server('HTTP_USER_AGENT'));
 
             $model->platform = $parsedUserAgent->userAgent();
         });

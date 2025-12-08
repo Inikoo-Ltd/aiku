@@ -16,23 +16,24 @@ use Illuminate\Support\Arr;
 
 trait WithProfile
 {
-    public function processProfileAvatar(array $modelData, User|WebUser  $model): User|WebUser
+    public function processProfileAvatar(array $modelData, User|WebUser $model): User|WebUser
     {
         if (Arr::has($modelData, 'image')) {
             /** @var UploadedFile $image */
             $image = Arr::get($modelData, 'image');
             data_forget($modelData, 'image');
             $imageData = [
-                'path'         => $image->getPathName(),
+                'path' => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
-                'extension'    => $image->getClientOriginalExtension(),
+                'extension' => $image->getClientOriginalExtension(),
             ];
-            $model     = SaveModelImage::run(
+            $model = SaveModelImage::run(
                 model: $model,
                 imageData: $imageData,
                 scope: 'avatar'
             );
         }
+
         return $model;
     }
 }

@@ -11,29 +11,28 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', 'storage/dashboard');
 
-Route::prefix("storage")
-    ->name("storage.")
-    ->group(__DIR__."/storage.php");
+Route::prefix('storage')
+    ->name('storage.')
+    ->group(__DIR__.'/storage.php');
 
-Route::prefix("dropshipping")
-    ->name("dropshipping.")
-    ->group(__DIR__."/fulfilment_dropshipping.php");
+Route::prefix('dropshipping')
+    ->name('dropshipping.')
+    ->group(__DIR__.'/fulfilment_dropshipping.php');
 
-Route::prefix("itemised-storage")
-    ->name("itemised_storage.")
-    ->group(__DIR__."/stored_items.php");
+Route::prefix('itemised-storage')
+    ->name('itemised_storage.')
+    ->group(__DIR__.'/stored_items.php');
 
-Route::prefix("billing")
-    ->name("billing.")
-    ->group(__DIR__."/billing.php");
+Route::prefix('billing')
+    ->name('billing.')
+    ->group(__DIR__.'/billing.php');
 
-Route::prefix("spaces")
-    ->name("spaces.")
-    ->group(__DIR__."/spaces.php");
-
+Route::prefix('spaces')
+    ->name('spaces.')
+    ->group(__DIR__.'/spaces.php');
 
 Route::get('/notifications', IndexRetinaFulfilmentCustomerNotification::class)->name('notifications');
 
-Route::prefix("pricing")
-    ->name("pricing")
-    ->group(__DIR__."/pricing.php");
+Route::prefix('pricing')
+    ->name('pricing')
+    ->group(__DIR__.'/pricing.php');

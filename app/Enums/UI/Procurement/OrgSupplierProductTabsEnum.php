@@ -26,55 +26,54 @@ enum OrgSupplierProductTabsEnum: string
     case ATTACHMENTS = 'attachments';
     case IMAGES = 'images';
 
-
     public function blueprint(): array
     {
         return match ($this) {
             OrgSupplierProductTabsEnum::SHOWCASE => [
                 'title' => __('Supplier product'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
             OrgSupplierProductTabsEnum::PURCHASE_SALES => [
                 'title' => __('Purchases/sales'),
-                'icon'  => 'fal fa-money-bill',
+                'icon' => 'fal fa-money-bill',
             ],
             OrgSupplierProductTabsEnum::SUPPLIER_PRODUCTS => [
                 'title' => __('Products'),
-                'icon'  => 'fal fa-box-usd',
+                'icon' => 'fal fa-box-usd',
             ],
 
             OrgSupplierProductTabsEnum::PURCHASE_ORDERS => [
                 'title' => __('Purchase orders'),
-                'icon'  => 'fal fa-clipboard',
+                'icon' => 'fal fa-clipboard',
             ],
             OrgSupplierProductTabsEnum::DELIVERIES => [
                 'title' => __('Deliveries'),
-                'icon'  => 'fal fa-truck',
+                'icon' => 'fal fa-truck',
             ],
 
             OrgSupplierProductTabsEnum::FEEDBACKS => [
                 'title' => __('Issues'),
-                'icon'  => 'fal fa-poop',
-                'type'  => 'icon',
+                'icon' => 'fal fa-poop',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             OrgSupplierProductTabsEnum::IMAGES => [
                 'title' => __('Images'),
-                'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
+                'icon' => 'fal fa-camera-retro',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             OrgSupplierProductTabsEnum::ATTACHMENTS => [
                 'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
-                'type'  => 'icon',
+                'icon' => 'fal fa-paperclip',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             OrgSupplierProductTabsEnum::HISTORY => [
                 'title' => __('Changelog'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
-                'align' => 'right'
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ],
         };
     }

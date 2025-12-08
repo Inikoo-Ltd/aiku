@@ -13,7 +13,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasHelpersStats;
     use HasQueriesStats;
     use HasSysAdminStats;
@@ -36,13 +37,9 @@ return new class () extends Migration {
             $table = $this->getQueriesStats($table);
             $table = $this->auditFields($table);
 
-
-
-
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

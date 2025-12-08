@@ -33,7 +33,7 @@ class StoreAgent extends GrpAction
             return true;
         }
 
-        return $request->user()->authTo("procurement.".$this->group->id.".edit");
+        return $request->user()->authTo('procurement.'.$this->group->id.'.edit');
     }
 
     /**
@@ -65,7 +65,6 @@ class StoreAgent extends GrpAction
             data_forget($modelData, 'phone');
             data_forget($modelData, 'address');
 
-
             /** @var Agent $agent */
             $agent = $organisation->agent()->create($modelData);
             $agent->stats()->create();
@@ -79,14 +78,14 @@ class StoreAgent extends GrpAction
 
         GroupHydrateAgents::dispatch($group)->delay($this->hydratorsDelay);
         AgentRecordSearch::dispatch($agent)->delay($this->hydratorsDelay);
+
         return $agent;
     }
-
 
     public function rules(): array
     {
         $rules = [
-            'code'         => [
+            'code' => [
                 'required',
                 'max:12',
                 'alpha_dash',
@@ -97,25 +96,25 @@ class StoreAgent extends GrpAction
                     ]
                 ),
             ],
-            'name'         => ['nullable', 'string', 'max:255'],
+            'name' => ['nullable', 'string', 'max:255'],
             'contact_name' => ['sometimes', 'string', 'max:255'],
-            'email'        => ['nullable', 'email'],
-            'phone'        => ['nullable', new Phone()],
-            'address'      => ['required', new ValidAddress()],
+            'email' => ['nullable', 'email'],
+            'phone' => ['nullable', new Phone],
+            'address' => ['required', new ValidAddress],
 
             'currency_id' => ['sometimes', 'exists:currencies,id'],
-            'country_id'  => ['sometimes', 'exists:countries,id'],
+            'country_id' => ['sometimes', 'exists:countries,id'],
             'timezone_id' => ['sometimes', 'exists:timezones,id'],
             'language_id' => ['sometimes', 'exists:languages,id'],
 
         ];
 
-        if (!$this->strict) {
-            $rules['source_id']   = ['sometimes', 'nullable', 'string', 'max:64'];
+        if (! $this->strict) {
+            $rules['source_id'] = ['sometimes', 'nullable', 'string', 'max:64'];
             $rules['source_slug'] = ['sometimes', 'nullable', 'string', 'max:64'];
-            $rules['fetched_at']  = ['sometimes', 'date'];
-            $rules['created_at']  = ['sometimes', 'date'];
-            $rules['deleted_at']  = ['sometimes', 'date'];
+            $rules['fetched_at'] = ['sometimes', 'date'];
+            $rules['created_at'] = ['sometimes', 'date'];
+            $rules['deleted_at'] = ['sometimes', 'date'];
         }
 
         return $rules;
@@ -126,14 +125,13 @@ class StoreAgent extends GrpAction
      */
     public function action(Group $group, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Agent
     {
-        if (!$audit) {
+        if (! $audit) {
             Agent::disableAuditing();
         }
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->strict         = $strict;
-        $this->asAction       = true;
+        $this->strict = $strict;
+        $this->asAction = true;
         $this->initialisation($group, $modelData);
-
 
         return $this->handle(
             group: $group,
@@ -141,14 +139,12 @@ class StoreAgent extends GrpAction
         );
     }
 
-
     /**
      * @throws \Throwable
      */
     public function asController(ActionRequest $request): Agent
     {
         $this->initialisation(group(), $request);
-
 
         return $this->handle(
             group: group(),

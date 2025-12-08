@@ -24,15 +24,15 @@ class SupplierProductsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            "id"    => $this->id,
-            'code'          => $this->code,
-            'name'          => $this->name,
-            'slug'          => $this->slug,
-            'agent_slug'    => $this->whenHas('agent_slug'),
+            'id' => $this->id,
+            'code' => $this->code,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'agent_slug' => $this->whenHas('agent_slug'),
             'supplier_slug' => $this->whenHas('supplier_slug'),
-            'description'   => $this->description,
-            'created_at'    => $this->created_at,
-            'updated_at'    => $this->updated_at,
+            'description' => $this->description,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
 
         ];
     }

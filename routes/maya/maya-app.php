@@ -15,28 +15,24 @@ Route::name('maya.')->group(function () {
     Route::middleware(['auth:sanctum', 'bind_group'])->group(function () {
         Route::post('logout', LogoutMayaApp::class)->name('logout');
 
-        Route::prefix("profile")
-            ->name("profile.")
-            ->group(__DIR__."/profile.php");
+        Route::prefix('profile')
+            ->name('profile.')
+            ->group(__DIR__.'/profile.php');
 
+        Route::prefix('org/{organisation:id}')
+            ->name('org.')
+            ->group(__DIR__.'/org/org.php');
 
-        Route::prefix("org/{organisation:id}")
-            ->name("org.")
-            ->group(__DIR__."/org/org.php");
-
-        Route::prefix("action")
-            ->name("action.")
-            ->group(__DIR__."/action.php");
-        Route::prefix("json")
-            ->name("json.")
-            ->group(__DIR__."/json.php");
-
+        Route::prefix('action')
+            ->name('action.')
+            ->group(__DIR__.'/action.php');
+        Route::prefix('json')
+            ->name('json.')
+            ->group(__DIR__.'/json.php');
 
     });
 
     Route::post('connect/qr-code', ConnectMayaWithQRCode::class)->name('connect.qr_code');
     Route::post('connect/credentials', ConnectMayaWithCredentials::class)->name('connect.credentials');
-
-
 
 });

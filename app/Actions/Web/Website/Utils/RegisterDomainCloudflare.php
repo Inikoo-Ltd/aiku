@@ -20,13 +20,13 @@ class RegisterDomainCloudflare
     public function handle(string $domain): PromiseInterface|Response|array
     {
         $response = Http::withHeaders([
-            'Content-Type'  => 'application/json',
-            'Authorization' => 'Bearer ' . config('app.cloudflare_api_token'),
-        ])->post(config('app.cloudflare_api_url') . "/zones", [
-            "name"    => $domain,
-            "account" => [
-                "id" => config("app.cloudflare_account_id")
-            ]
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer '.config('app.cloudflare_api_token'),
+        ])->post(config('app.cloudflare_api_url').'/zones', [
+            'name' => $domain,
+            'account' => [
+                'id' => config('app.cloudflare_account_id'),
+            ],
         ]);
 
         return $response->json();

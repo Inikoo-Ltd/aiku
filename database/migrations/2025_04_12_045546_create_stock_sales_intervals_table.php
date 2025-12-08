@@ -11,8 +11,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasDateIntervalsStats;
+
     public function up(): void
     {
         Schema::create('stock_sales_intervals', function (Blueprint $table) {
@@ -21,22 +23,20 @@ return new class () extends Migration {
             $table->foreign('stock_id')->references('id')->on('stocks');
 
             $table = $this->decimalDateIntervals($table, [
-                "revenue_grp_currency",
-                "profit_grp_currency",
+                'revenue_grp_currency',
+                'profit_grp_currency',
             ]);
             $this->jsonDateIntervals($table, [
-                "revenue_data",
+                'revenue_data',
             ]);
 
             $this->unsignedIntegerDateIntervals($table, [
-                "number_invoices",
-                "number_customers",
+                'number_invoices',
+                'number_customers',
             ]);
 
-
-
             $salesTypes = [
-                'b2b','dropshipping','marketplace','partner','employee','vip'
+                'b2b', 'dropshipping', 'marketplace', 'partner', 'employee', 'vip',
             ];
 
             foreach ($salesTypes as $salesType) {
@@ -48,18 +48,14 @@ return new class () extends Migration {
                     "revenue_{$salesType}_data",
                 ]);
                 $table = $this->unsignedIntegerDateIntervals($table, [
-                    $salesType."_number_invoices",
-                    $salesType."_number_customers",
+                    $salesType.'_number_invoices',
+                    $salesType.'_number_customers',
                 ]);
             }
-
-
-
 
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

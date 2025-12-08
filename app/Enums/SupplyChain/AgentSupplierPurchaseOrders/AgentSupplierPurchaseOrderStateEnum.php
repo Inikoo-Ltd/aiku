@@ -25,11 +25,11 @@ enum AgentSupplierPurchaseOrderStateEnum: string
     {
         return [
             'in_process' => __('In process'),
-            'submitted'  => __('Submitted'),
-            'confirmed'  => __('Confirmed'),
-            'settled'    => __('Settled'),
-            'cancelled'  => __('Cancelled'),
-            'not_received' => __('Not Received')
+            'submitted' => __('Submitted'),
+            'confirmed' => __('Confirmed'),
+            'settled' => __('Settled'),
+            'cancelled' => __('Cancelled'),
+            'not_received' => __('Not Received'),
         ];
     }
 
@@ -38,66 +38,65 @@ enum AgentSupplierPurchaseOrderStateEnum: string
         return [
             'in_process' => [
                 'tooltip' => __('Creating'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
-                'color'   => 'lime',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',  // Color for normal icon (Aiku)
+                'color' => 'lime',  // Color for box (Retina)
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'submitted'  => [
+            'submitted' => [
                 'tooltip' => __('Submitted'),
-                'icon'    => 'fal fa-paper-plane',
-                'class'   => 'text-indigo-400',
-                'color'   => 'indigo',
-                'app'     => [
+                'icon' => 'fal fa-paper-plane',
+                'class' => 'text-indigo-400',
+                'color' => 'indigo',
+                'app' => [
                     'name' => 'share',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'confirmed'  => [
+            'confirmed' => [
                 'tooltip' => __('Confirmed'),
-                'icon'    => 'fal fa-check-circle',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
+                'icon' => 'fal fa-check-circle',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
+                'app' => [
                     'name' => 'spell-check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'settled'    => [
+            'settled' => [
                 'tooltip' => __('Settled'),
-                'icon'    => 'fal fa-check-double',
-                'class'   => 'text-success-500',
-                'color'   => 'success',
-                'app'     => [
+                'icon' => 'fal fa-check-double',
+                'class' => 'text-success-500',
+                'color' => 'success',
+                'app' => [
                     'name' => 'check-double',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
-            'cancelled'  => [
+            'cancelled' => [
                 'tooltip' => __('Cancelled'),
-                'icon'    => 'fal fa-times-circle',
-                'class'   => 'text-danger-500',
-                'color'   => 'danger',
-                'app'     => [
+                'icon' => 'fal fa-times-circle',
+                'class' => 'text-danger-500',
+                'color' => 'danger',
+                'app' => [
                     'name' => 'times-circle',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
 
             ],
             'not_received' => [
                 'tooltip' => __('Not Received'),
-                'icon'    => 'fal fa-exclamation-circle',
-                'class'   => 'text-warning-500',
-                'color'   => 'warning',
-                'app'     => [
+                'icon' => 'fal fa-exclamation-circle',
+                'class' => 'text-warning-500',
+                'color' => 'warning',
+                'app' => [
                     'name' => 'exclamation-circle',
-                    'type' => 'font-awesome-5'
-                ]
-            ]
+                    'type' => 'font-awesome-5',
+                ],
+            ],
         ];
     }
-
 }

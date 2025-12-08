@@ -21,7 +21,6 @@ class FetchAuroraBackInStockReminders extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:back_in_stock_reminder {organisations?*} {--S|shop= : Shop slug} {--s|source_id=}  {--N|only_new : Fetch only new} {--d|db_suffix=}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?BackInStockReminder
     {
         if ($backInStockReminderData = $organisationSource->fetchBackInStockReminder($organisationSourceId)) {
@@ -66,7 +65,6 @@ class FetchAuroraBackInStockReminders extends FetchAuroraAction
                 }
             }
 
-
             return $backInStockReminder;
         }
 
@@ -106,6 +104,4 @@ class FetchAuroraBackInStockReminders extends FetchAuroraAction
 
         return $query->count();
     }
-
-
 }

@@ -23,22 +23,22 @@ class ClockingMachineResource extends JsonResource
         $clockingMachine = $this;
 
         return [
-            'id'                => $clockingMachine->id,
-            'organisation_id'   => $clockingMachine->organisation_id,
+            'id' => $clockingMachine->id,
+            'organisation_id' => $clockingMachine->organisation_id,
             'organisation_slug' => $clockingMachine->organisation->slug,
-            'workplace_id'      => $clockingMachine->workplace_id,
-            'workplace_slug'    => $clockingMachine->workplace->slug,
-            'workplace_name'    => $clockingMachine->workplace->name,
-            'slug'              => $clockingMachine->slug,
-            'qr_code'           => $clockingMachine->qr_code,
-            'status'            => $clockingMachine->status,
-            'name'              => $clockingMachine->name,
-            'type'              => $clockingMachine->type,
-            'device_name'       => $clockingMachine->device_name,
-            'device_uuid'       => $clockingMachine->device_uuid,
-            'created_at'        => $clockingMachine->created_at,
-            'updated_at'        => $clockingMachine->updated_at,
-            'nfc_tag'           => Arr::get($clockingMachine->data, 'nfc_tag'),
+            'workplace_id' => $clockingMachine->workplace_id,
+            'workplace_slug' => $clockingMachine->workplace->slug,
+            'workplace_name' => $clockingMachine->workplace->name,
+            'slug' => $clockingMachine->slug,
+            'qr_code' => $clockingMachine->qr_code,
+            'status' => $clockingMachine->status,
+            'name' => $clockingMachine->name,
+            'type' => $clockingMachine->type,
+            'device_name' => $clockingMachine->device_name,
+            'device_uuid' => $clockingMachine->device_uuid,
+            'created_at' => $clockingMachine->created_at,
+            'updated_at' => $clockingMachine->updated_at,
+            'nfc_tag' => Arr::get($clockingMachine->data, 'nfc_tag'),
         ];
     }
 }

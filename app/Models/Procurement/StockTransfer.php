@@ -20,11 +20,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
  * @property string|null $source_id
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTransfer newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTransfer newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTransfer query()
+ *
  * @mixin \Eloquent
  */
-class StockTransfer extends Model
-{
-}
+class StockTransfer extends Model {}

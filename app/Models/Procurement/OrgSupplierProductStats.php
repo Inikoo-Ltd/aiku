@@ -81,9 +81,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Procurement\OrgSupplierProduct $orgSupplierProduct
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgSupplierProductStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgSupplierProductStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgSupplierProductStats query()
+ *
  * @mixin \Eloquent
  */
 class OrgSupplierProductStats extends Model
@@ -96,5 +98,4 @@ class OrgSupplierProductStats extends Model
     {
         return $this->belongsTo(OrgSupplierProduct::class);
     }
-
 }

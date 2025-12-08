@@ -11,8 +11,8 @@ namespace App\Enums\Helpers\Avatars;
 enum DiceBearStylesEnum: string
 {
     case IDENTICON = 'identicon';
-    case SHAPES    = 'shapes';
-    case INITIALS  = 'initials';
-    case BOTS      = 'bottts-neutral';
-    case RINGS     = 'rings';
+    case SHAPES = 'shapes';
+    case INITIALS = 'initials';
+    case BOTS = 'bottts-neutral';
+    case RINGS = 'rings';
 }

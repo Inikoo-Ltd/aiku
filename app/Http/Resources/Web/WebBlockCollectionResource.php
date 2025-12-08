@@ -29,11 +29,11 @@ class WebBlockCollectionResource extends JsonResource
         $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
 
         return [
-            'code'       => $this->code,
-            'name'       => $this->name,
-            'title'      => $this->title ?? $this->name ?? $this->code,
-            'url'        => $this->canonical_url,
-            'web_images' => $webImages
+            'code' => $this->code,
+            'name' => $this->name,
+            'title' => $this->title ?? $this->name ?? $this->code,
+            'url' => $this->canonical_url,
+            'web_images' => $webImages,
         ];
     }
 }

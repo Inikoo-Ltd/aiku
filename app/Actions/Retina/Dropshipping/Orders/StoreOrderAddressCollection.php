@@ -18,15 +18,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreOrderAddressCollection extends RetinaAction
 {
-    /**
-     * @var \App\Models\Ordering\Order
-     */
     private Order $order;
 
     public function handle(Order $order, array $modelData): Order
     {
         return UpdateOrder::make()->action($order, [
-            'collection_address_id' => Arr::get($modelData, 'collection_address_id')
+            'collection_address_id' => Arr::get($modelData, 'collection_address_id'),
         ]);
     }
 

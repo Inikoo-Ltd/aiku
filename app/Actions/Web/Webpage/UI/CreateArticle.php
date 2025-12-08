@@ -23,14 +23,12 @@ class CreateArticle extends InertiaAction
         return $request->user()->authTo('websites.edit');
     }
 
-
     public function asController(Website $website, ActionRequest $request): Webpage
     {
         $this->initialisation($request);
 
         return $website->webpages->where('type', WebpageTypeEnum::BLOG)->firstOrFail();
     }
-
 
     public function htmlResponse(Webpage $blog, ActionRequest $request): Response
     {
@@ -41,81 +39,75 @@ class CreateArticle extends InertiaAction
                     $blog->slug,
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New article'),
-                'pageHead'    => [
-                    'title'   => __('New article'),
+                'title' => __('New article'),
+                'pageHead' => [
+                    'title' => __('New article'),
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'route' => [
-                                'name'       => 'org.websites.show.webpages.show',
+                                'name' => 'org.websites.show.webpages.show',
                                 'parameters' => [
                                     $blog->website->slug,
-                                    $blog->slug
-                                ]
-                            ]
+                                    $blog->slug,
+                                ],
+                            ],
 
-                        ]
-                    ]
-
+                        ],
+                    ],
 
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Id'),
-                            'icon'   => ['fal', 'fa-fingerprint'],
+                            'title' => __('Id'),
+                            'icon' => ['fal', 'fa-fingerprint'],
                             'fields' => [
-
 
                                 'url' => [
-                                    'type'      => 'inputWithAddOn',
-                                    'label'     => __('url'),
+                                    'type' => 'inputWithAddOn',
+                                    'label' => __('url'),
                                     'leftAddOn' => [
-                                        'label' => 'https://'.$blog->website->domain.'/blog/'
+                                        'label' => 'https://'.$blog->website->domain.'/blog/',
                                     ],
-                                    'value'     => '',
-                                    'required'  => true,
+                                    'value' => '',
+                                    'required' => true,
                                 ],
-                            ]
+                            ],
                         ],
                         [
-                            'title'  => __('Header'),
-                            'icon'   => ['fal', 'fa-indent'],
+                            'title' => __('Header'),
+                            'icon' => ['fal', 'fa-indent'],
                             'fields' => [
 
-
                                 'title' => [
-                                    'type'     => 'input',
-                                    'label'    => __('title'),
-                                    'value'    => '',
+                                    'type' => 'input',
+                                    'label' => __('title'),
+                                    'value' => '',
                                     'required' => true,
                                 ],
 
                                 'subtitle' => [
-                                    'type'     => 'input',
-                                    'label'    => __('subtitle'),
-                                    'value'    => '',
+                                    'type' => 'input',
+                                    'label' => __('subtitle'),
+                                    'value' => '',
                                     'required' => true,
                                 ],
-                            ]
-                        ]
-
+                            ],
+                        ],
 
                     ],
-                    'route'     => [
-                        'name'       => 'org.models.article.store',
-                        'parameters' => [$blog->id]
+                    'route' => [
+                        'name' => 'org.models.article.store',
+                        'parameters' => [$blog->id],
                     ],
-
 
                 ],
 
             ]
         );
     }
-
 
     public function getBreadcrumbs(string $webpageSlug, $routeParameters): array
     {
@@ -127,14 +119,12 @@ class CreateArticle extends InertiaAction
             ),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __("article"),
-                    ]
-                ]
+                        'label' => __('article'),
+                    ],
+                ],
             ]
         );
     }
-
-
 }

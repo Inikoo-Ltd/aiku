@@ -29,20 +29,19 @@ class IndexOrganisations extends OrgAction
     {
         return [
             'status' => [
-                'label'    => __('Type'),
+                'label' => __('Type'),
                 'elements' => ['active' => __('Active'), 'suspended' => __('Suspended')],
-                'engine'   => function ($query, $elements) {
+                'engine' => function ($query, $elements) {
                     $query->where('users.status', array_pop($elements) === 'active');
-                }
+                },
 
-            ]
+            ],
         ];
     }
 
-
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
-        $this->group  = $group;
+        $this->group = $group;
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('name', $value)->orWhereStartWith('code', $value);
@@ -89,19 +88,19 @@ class IndexOrganisations extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title'       => __('no organisation'),
+                        'title' => __('no organisation'),
                         'description' => $this->canEdit ? __('Get started by creating a new organisation.') : null,
-                        'count'       => $group->number_organisations,
-                        'action'      => $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
+                        'count' => $group->number_organisations,
+                        'action' => $this->canEdit ? [
+                            'type' => 'button',
+                            'style' => 'create',
                             'tooltip' => __('New organisation'),
-                            'label'   => __('Organisation'),
-                            'route'   => [
-                                'name'       => 'grp.organisations.create',
-                                'parameters' => array_values(request()->route()->originalParameters())
-                            ]
-                        ] : null
+                            'label' => __('Organisation'),
+                            'route' => [
+                                'name' => 'grp.organisations.create',
+                                'parameters' => array_values(request()->route()->originalParameters()),
+                            ],
+                        ] : null,
                     ]
                 )
                 ->column(key: 'type', label: '', canBeHidden: false, sortable: false, searchable: false, type: 'icon')
@@ -121,37 +120,35 @@ class IndexOrganisations extends OrgAction
         return $request->user()->authTo('sysadmin.view');
     }
 
-
     public function htmlResponse(LengthAwarePaginator $organisations): Response
     {
         return Inertia::render(
             'Organisations/Organisations',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Organisations'),
-                'pageHead'    => [
-                    'icon'    => [
-                        'icon'  => ['fal', 'fa-building'],
-                        'title' => __('Organisations')
+                'title' => __('Organisations'),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-building'],
+                        'title' => __('Organisations'),
                     ],
-                    'title'   => __('Organisations'),
+                    'title' => __('Organisations'),
                     'actions' => [
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'create',
                             'label' => __('Organisation'),
                             'route' => [
-                                'name'       => 'grp.organisations.create',
-                                'parameters' => []
-                            ]
-                        ] : false
-                    ]
+                                'name' => 'grp.organisations.create',
+                                'parameters' => [],
+                            ],
+                        ] : false,
+                    ],
                 ],
-                'data'        => OrganisationsResource::collection($organisations),
+                'data' => OrganisationsResource::collection($organisations),
             ]
         )->table($this->tableStructure($this->group));
     }
-
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
@@ -167,17 +164,15 @@ class IndexOrganisations extends OrgAction
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.organisations.index'
+                                'name' => 'grp.organisations.index',
                             ],
                             'label' => __('Organisations'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }
-
-
 }

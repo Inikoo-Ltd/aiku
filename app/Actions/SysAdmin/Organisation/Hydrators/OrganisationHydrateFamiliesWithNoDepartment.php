@@ -32,6 +32,4 @@ class OrganisationHydrateFamiliesWithNoDepartment implements ShouldBeUnique
 
         $organisation->catalogueStats()->update($stats);
     }
-
-
 }

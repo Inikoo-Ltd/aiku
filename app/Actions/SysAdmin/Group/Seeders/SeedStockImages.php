@@ -20,7 +20,6 @@ class SeedStockImages
     use AsAction;
     use WithAttachMediaToModel;
 
-
     public function handle(Group $group): void
     {
         foreach (glob(resource_path('art/stock_images/*/*/*/*')) as $filename) {
@@ -28,27 +27,26 @@ class SeedStockImages
 
             if (preg_match('/\/(.*)\/(.*)\/(.*)\/(.*)/', $_filename, $fileData)) {
 
-
                 $checksum = md5_file($filename);
                 if ($group->images()->where('collection_name', 'stock-image')->where('checksum', $checksum)->exists()) {
                     continue;
                 }
 
-                $scope     = $fileData[1];
-                $subScope  = $fileData[2].'-'.$fileData[3];
+                $scope = $fileData[1];
+                $subScope = $fileData[2].'-'.$fileData[3];
                 $imageName = $fileData[3];
 
-                $data      = [
+                $data = [
                     'stock_image' => [
-                        'category'     => $fileData[1],
+                        'category' => $fileData[1],
                         'sub_category' => $fileData[2],
-                        'tag'          => $fileData[3],
-                    ]
+                        'tag' => $fileData[3],
+                    ],
                 ];
                 $imageData = [
-                    'path'         => $filename,
+                    'path' => $filename,
                     'originalName' => $imageName,
-                    'checksum'     => $checksum
+                    'checksum' => $checksum,
                 ];
 
                 $media = StoreMediaFromFile::run($group, $imageData, 'stock-image');
@@ -58,7 +56,6 @@ class SeedStockImages
             }
         }
     }
-
 
     public string $commandSignature = 'group:seed-stock-images';
 
@@ -71,6 +68,4 @@ class SeedStockImages
 
         return 0;
     }
-
-
 }

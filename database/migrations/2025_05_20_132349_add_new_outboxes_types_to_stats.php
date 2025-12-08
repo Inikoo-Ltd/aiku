@@ -4,10 +4,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
-        if (!Schema::hasColumn('org_post_room_stats', 'number_outboxes_type_new_pallet_return_from_customer')) {
+        if (! Schema::hasColumn('org_post_room_stats', 'number_outboxes_type_new_pallet_return_from_customer')) {
             Schema::table('org_post_room_stats', function (Blueprint $table) {
                 $table->smallInteger('number_outboxes_type_new_pallet_return_from_customer')->default(0);
                 $table->smallInteger('number_outboxes_type_new_pallet_delivery_from_customer')->default(0);
@@ -18,7 +19,7 @@ return new class () extends Migration {
             });
         }
 
-        if (!Schema::hasColumn('group_comms_stats', 'number_outboxes_type_new_pallet_return_from_customer')) {
+        if (! Schema::hasColumn('group_comms_stats', 'number_outboxes_type_new_pallet_return_from_customer')) {
             Schema::table('group_comms_stats', function (Blueprint $table) {
                 $table->smallInteger('number_outboxes_type_new_pallet_return_from_customer')->default(0);
                 $table->smallInteger('number_outboxes_type_new_pallet_delivery_from_customer')->default(0);
@@ -28,7 +29,7 @@ return new class () extends Migration {
             });
         }
 
-        if (!Schema::hasColumn('organisation_comms_stats', 'number_outboxes_type_new_pallet_return_from_customer')) {
+        if (! Schema::hasColumn('organisation_comms_stats', 'number_outboxes_type_new_pallet_return_from_customer')) {
             Schema::table('organisation_comms_stats', function (Blueprint $table) {
                 $table->smallInteger('number_outboxes_type_new_pallet_return_from_customer')->default(0);
                 $table->smallInteger('number_outboxes_type_new_pallet_delivery_from_customer')->default(0);
@@ -38,7 +39,7 @@ return new class () extends Migration {
             });
         }
 
-        if (!Schema::hasColumn('shop_comms_stats', 'number_outboxes_type_new_pallet_return_from_customer')) {
+        if (! Schema::hasColumn('shop_comms_stats', 'number_outboxes_type_new_pallet_return_from_customer')) {
             Schema::table('shop_comms_stats', function (Blueprint $table) {
                 $table->smallInteger('number_outboxes_type_new_pallet_return_from_customer')->default(0);
                 $table->smallInteger('number_outboxes_type_new_pallet_delivery_from_customer')->default(0);
@@ -48,7 +49,7 @@ return new class () extends Migration {
             });
         }
 
-        if (!Schema::hasColumn('post_room_stats', 'number_outboxes_type_new_pallet_return_from_customer')) {
+        if (! Schema::hasColumn('post_room_stats', 'number_outboxes_type_new_pallet_return_from_customer')) {
             Schema::table('post_room_stats', function (Blueprint $table) {
                 $table->smallInteger('number_outboxes_type_new_pallet_return_from_customer')->default(0);
                 $table->smallInteger('number_outboxes_type_new_pallet_delivery_from_customer')->default(0);

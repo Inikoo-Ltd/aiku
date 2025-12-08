@@ -68,7 +68,7 @@ return [
     */
 
     'chunk' => [
-        'searchable'   => 500,
+        'searchable' => 500,
         'unsearchable' => 500,
     ],
 
@@ -112,7 +112,7 @@ return [
     */
 
     'algolia' => [
-        'id'     => env('ALGOLIA_APP_ID', ''),
+        'id' => env('ALGOLIA_APP_ID', ''),
         'secret' => env('ALGOLIA_SECRET', ''),
     ],
 
@@ -130,8 +130,8 @@ return [
     */
 
     'meilisearch' => [
-        'host'           => env('MEILISEARCH_HOST', 'http://localhost:7700'),
-        'key'            => env('MEILISEARCH_KEY', null),
+        'host' => env('MEILISEARCH_HOST', 'http://localhost:7700'),
+        'key' => env('MEILISEARCH_KEY', null),
         'index-settings' => [
             // 'users' => [
             //     'filterableAttributes'=> ['id', 'name', 'email'],

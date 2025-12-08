@@ -50,7 +50,4 @@ class GroupHydrateEmailsBulkRuns implements ShouldBeUnique
 
         $group->commsStats()->update($stats);
     }
-
-
-
 }

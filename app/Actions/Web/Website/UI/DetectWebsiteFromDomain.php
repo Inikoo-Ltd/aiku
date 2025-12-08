@@ -25,7 +25,7 @@ class DetectWebsiteFromDomain
 
         /** @var Website $website */
         $website = Website::where('domain', $domain)->where('status', true)->first();
-        if (!$website) {
+        if (! $website) {
             throw IrisWebsiteNotFound::make();
         }
 
@@ -58,5 +58,4 @@ class DetectWebsiteFromDomain
 
         return $domain;
     }
-
 }

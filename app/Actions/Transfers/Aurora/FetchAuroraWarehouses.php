@@ -71,7 +71,6 @@ class FetchAuroraWarehouses extends FetchAuroraAction
                 }
             }
 
-
             return $warehouse;
         }
 

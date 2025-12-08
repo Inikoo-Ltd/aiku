@@ -22,8 +22,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ShowProfileIndexVisitLogs extends OrgAction
 {
     use AsAction;
-    use WithInertia;
     use WithActionButtons;
+    use WithInertia;
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {

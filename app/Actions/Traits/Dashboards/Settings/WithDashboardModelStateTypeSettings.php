@@ -17,24 +17,23 @@ trait WithDashboardModelStateTypeSettings
         $id = 'model_state';
 
         return [
-            'id'      => $id,
+            'id' => $id,
             'display' => true,
-            'align'   => $align,
-            'type'    => 'toggle',
-            'value'   => Arr::get($settings, $id, 'open'),
+            'align' => $align,
+            'type' => 'toggle',
+            'value' => Arr::get($settings, $id, 'open'),
             'options' => [
                 [
-                    'value'   => 'open',
-                    'label'   => __('Active only'),
-                    'tooltip' => __('Only show active')
+                    'value' => 'open',
+                    'label' => __('Active only'),
+                    'tooltip' => __('Only show active'),
                 ],
                 [
-                    'value'   => 'closed',
-                    'label'   => __('Show all'),
-                    'tooltip' => __('Show all shops including inactive ones')
-                ]
-            ]
+                    'value' => 'closed',
+                    'label' => __('Show all'),
+                    'tooltip' => __('Show all shops including inactive ones'),
+                ],
+            ],
         ];
     }
-
 }

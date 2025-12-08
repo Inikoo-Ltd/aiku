@@ -29,9 +29,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
  * @property-read \App\Models\Goods\StockFamily $stockFamily
+ *
  * @method static Builder<static>|StockFamilyStats newModelQuery()
  * @method static Builder<static>|StockFamilyStats newQuery()
  * @method static Builder<static>|StockFamilyStats query()
+ *
  * @mixin Eloquent
  */
 class StockFamilyStats extends Model
@@ -39,7 +41,6 @@ class StockFamilyStats extends Model
     protected $table = 'stock_family_stats';
 
     protected $guarded = [];
-
 
     public function stockFamily(): BelongsTo
     {

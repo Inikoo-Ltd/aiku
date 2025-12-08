@@ -24,15 +24,13 @@ class IndexChangesWebpages extends OrgAction
     use WithWebAuthorisation;
     use WithWebpageSubNavigation;
 
-
     private mixed $bucket;
-
 
     protected function getElementGroups(Webpage $parent): array
     {
         return [
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     WebpageStateEnum::labels(),
                     WebpageStateEnum::count($parent)
@@ -40,13 +38,12 @@ class IndexChangesWebpages extends OrgAction
 
                 'engine' => function ($query, $elements) {
                     $query->whereIn('webpages.state', $elements);
-                }
+                },
 
             ],
 
         ];
     }
-
 
     public function handle(Webpage $webpage, $prefix = null, $bucket = null): LengthAwarePaginator
     {
@@ -67,16 +64,17 @@ class IndexChangesWebpages extends OrgAction
 
         $listChangesWebpages = [];
         $query = Webpage::where('website_id', $webpage->website_id)
-            ->with("unpublishedSnapshot");
+            ->with('unpublishedSnapshot');
 
         $query->chunk(100, function ($webpages) use (&$listChangesWebpages) {
             foreach ($webpages as $webpage) {
-                if (!$webpage->published_layout && !$webpage?->unpublishedSnapshot?->layout) {
+                if (! $webpage->published_layout && ! $webpage?->unpublishedSnapshot?->layout) {
                     continue;
                 }
 
-                if (!$webpage?->published_layout && $webpage?->unpublishedSnapshot?->layout) {
+                if (! $webpage?->published_layout && $webpage?->unpublishedSnapshot?->layout) {
                     $listChangesWebpages[] = $webpage->id;
+
                     continue;
                 }
 
@@ -87,7 +85,7 @@ class IndexChangesWebpages extends OrgAction
         });
 
         $queryBuilder = QueryBuilder::for(Webpage::class)
-        ->whereIn('webpages.id', $listChangesWebpages);
+            ->whereIn('webpages.id', $listChangesWebpages);
 
         if ($bucket == 'catalogue') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CATALOGUE);
@@ -118,12 +116,11 @@ class IndexChangesWebpages extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'websites.domain as website_url',
-                'websites.slug as website_slug'
+                'websites.slug as website_slug',
             ])
             ->allowedSorts(['code', 'type', 'level', 'url'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
-
 }

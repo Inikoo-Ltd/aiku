@@ -26,12 +26,11 @@ class OrganisationHydrateOrgStocks implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
 
         $stats = [
-            'number_org_stocks'                  => $organisation->orgStocks()->count(),
+            'number_org_stocks' => $organisation->orgStocks()->count(),
         ];
 
         $stats = array_merge(

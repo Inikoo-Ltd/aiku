@@ -32,5 +32,4 @@ class HydrateUser
         UserHydrateModels::run($user);
         UserHydrateApiTokens::run($user);
     }
-
 }

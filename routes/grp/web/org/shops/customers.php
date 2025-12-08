@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
@@ -75,7 +74,6 @@ Route::prefix('{customer}')->as('show')->group(function () {
                     Route::get('{order}/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInCustomerClientInCustomerInShop'])->name('.show.delivery-note.show');
 
                 });
-
 
                 Route::prefix('{customerClient}/invoices')->as('.show.invoices')->group(function () {
                     Route::get('{invoice}', [ShowInvoice::class, 'inCustomerClient'])->name('.show');

@@ -23,35 +23,34 @@ enum MasterDepartmentTabsEnum: string
     case HISTORY = 'history';
     case IMAGES = 'images';
 
-
     public function blueprint(): array
     {
         return match ($this) {
 
             MasterDepartmentTabsEnum::SALES => [
                 'title' => __('Sales'),
-                'icon'  => 'fal fa-money-bill-wave',
+                'icon' => 'fal fa-money-bill-wave',
             ],
             MasterDepartmentTabsEnum::DEPARTMENTS => [
                 'title' => __('Departments in shop'),
-                'icon'  => 'fal fa-store',
+                'icon' => 'fal fa-store',
             ],
 
             MasterDepartmentTabsEnum::IMAGES => [
                 'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
+                'icon' => 'fal fa-camera-retro',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             MasterDepartmentTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             MasterDepartmentTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             /*   MasterDepartmentTabsEnum::CONTENT => [
                   'title' => __('Content'),

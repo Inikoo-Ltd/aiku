@@ -35,7 +35,6 @@ class GetRetinaPaymentMethods
         foreach ($paymentAccountShops as $paymentAccountShop) {
             $paymentAccountShopData = GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop, $orderPaymentApiPoint);
 
-
             if ($paymentAccountShopData) {
                 if ($paymentAccountShop->type == PaymentAccountTypeEnum::CHECKOUT) {
                     $paymentMethodsData[$paymentAccountShop->type->value] = $paymentAccountShop->id;
@@ -44,11 +43,10 @@ class GetRetinaPaymentMethods
             }
         }
 
-
         $orderPaymentApiPoint->update([
             'data' => [
                 'payment_methods' => $paymentMethodsData,
-            ]
+            ],
         ]);
 
         return $paymentMethods;

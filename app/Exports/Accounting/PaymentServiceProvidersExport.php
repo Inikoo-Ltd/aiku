@@ -10,21 +10,21 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PaymentServiceProvidersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class PaymentServiceProvidersExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|PaymentServiceProvider|Builder
     {
         return PaymentServiceProvider::query();
     }
 
-    /** @var PaymentServiceProvider $row */
+    /** @var PaymentServiceProvider */
     public function map($row): array
     {
         return [
             $row->id,
             $row->slug,
             $row->type,
-            $row->last_used_at
+            $row->last_used_at,
         ];
     }
 
@@ -34,7 +34,7 @@ class PaymentServiceProvidersExport implements FromQuery, WithMapping, ShouldAut
             '#',
             'Slug',
             'Type',
-            'Last Used At'
+            'Last Used At',
         ];
     }
 }

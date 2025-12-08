@@ -35,9 +35,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SupplyChain\HistoricSupplierProductStats|null $stats
  * @property-read \App\Models\SupplyChain\SupplierProduct|null $supplierProduct
+ *
  * @method static Builder<static>|HistoricSupplierProduct newModelQuery()
  * @method static Builder<static>|HistoricSupplierProduct newQuery()
  * @method static Builder<static>|HistoricSupplierProduct query()
+ *
  * @mixin Eloquent
  */
 class HistoricSupplierProduct extends Model
@@ -45,9 +47,9 @@ class HistoricSupplierProduct extends Model
     use InGroup;
 
     protected $casts = [
-        'status'          => 'boolean',
-        'sources'         => 'array',
-        'fetched_at'      => 'datetime',
+        'status' => 'boolean',
+        'sources' => 'array',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
@@ -55,14 +57,12 @@ class HistoricSupplierProduct extends Model
         'sources' => '{}',
     ];
 
-
     protected $guarded = [];
 
     public function supplierProduct(): BelongsTo
     {
         return $this->belongsTo(SupplierProduct::class);
     }
-
 
     public function stats(): HasOne
     {

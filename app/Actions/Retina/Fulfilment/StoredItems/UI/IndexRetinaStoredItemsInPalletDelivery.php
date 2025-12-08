@@ -46,7 +46,7 @@ class IndexRetinaStoredItemsInPalletDelivery extends RetinaAction
 
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($parent, $prefix) {
 
             if ($prefix) {
                 $table
@@ -57,9 +57,9 @@ class IndexRetinaStoredItemsInPalletDelivery extends RetinaAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title'         => __("No stored items found"),
-                        'count'         => $parent->count(),
-                        'description'   => __("No items stored in any pallets")
+                        'title' => __('No stored items found'),
+                        'count' => $parent->count(),
+                        'description' => __('No items stored in any pallets'),
                     ]
                 )
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
@@ -77,12 +77,10 @@ class IndexRetinaStoredItemsInPalletDelivery extends RetinaAction
         return true;
     }
 
-
     public function jsonResponse(LengthAwarePaginator $storedItems): AnonymousResourceCollection
     {
         return StoredItemResource::collection($storedItems);
     }
-
 
     public function htmlResponse(LengthAwarePaginator $storedItems, ActionRequest $request): Response
     {
@@ -90,17 +88,17 @@ class IndexRetinaStoredItemsInPalletDelivery extends RetinaAction
             'Fulfilment/StoredItems',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __("Customer's SKUs"),
-                'pageHead'    => [
-                    'title'   => __("Customer's SKUs"),
+                'title' => __("Customer's SKUs"),
+                'pageHead' => [
+                    'title' => __("Customer's SKUs"),
                     'actions' => [
                         'buttons' => [
                             'route' => [
-                                'name'       => 'grp.org.hr.employees.create',
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => 'grp.org.hr.employees.create',
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                            'label' => __("Customer's SKUs")
-                        ]
+                            'label' => __("Customer's SKUs"),
+                        ],
                     ],
                 ],
                 'data' => StoredItemResource::collection($storedItems),
@@ -123,16 +121,16 @@ class IndexRetinaStoredItemsInPalletDelivery extends RetinaAction
             ShowRetinaStorageDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => 'grp.fulfilment.stored-items.index'
+                            'name' => 'grp.fulfilment.stored-items.index',
                         ],
                         'label' => __("Customer's SKUs"),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
                     ],
 
-                ]
+                ],
             ]
         );
     }

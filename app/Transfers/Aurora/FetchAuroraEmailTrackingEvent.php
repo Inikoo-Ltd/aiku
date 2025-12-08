@@ -15,12 +15,12 @@ class FetchAuroraEmailTrackingEvent extends FetchAurora
 {
     protected function parseModel(): void
     {
-        if (!$this->auroraModelData->{'Email Tracking Event Type'}) {
+        if (! $this->auroraModelData->{'Email Tracking Event Type'}) {
             return;
         }
         $dispatchedEmail = $this->parseDispatchedEmail($this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Event Tracking Key'});
 
-        if (!$dispatchedEmail) {
+        if (! $dispatchedEmail) {
             return;
         }
 
@@ -39,15 +39,15 @@ class FetchAuroraEmailTrackingEvent extends FetchAurora
 
         if ($type == null) {
             print_r($this->auroraModelData);
+
             return;
         }
         $this->parsedData['dispatchedEmail'] = $dispatchedEmail;
 
         $data = [];
 
-
         if ($this->auroraModelData->{'Email Tracking Event Data'} and
-            !(
+            ! (
                 $this->auroraModelData->{'Email Tracking Event Data'} != '""' or
                 $this->auroraModelData->{'Email Tracking Event Data'} != '{}'
             )
@@ -58,25 +58,22 @@ class FetchAuroraEmailTrackingEvent extends FetchAurora
             $data['source_original_note'] = $this->auroraModelData->{'Email Tracking Event Note'};
         }
 
-
         if ($this->auroraModelData->{'Email Tracking Event Status Code'} != '') {
             $data['status_code'] = $this->auroraModelData->{'Email Tracking Event Status Code'};
         }
 
-
         $this->parsedData['emailTrackingEvent'] = [
-            'type'               => $type,
-           // 'provider_reference' => $this->auroraModelData->{'Email Tracking Event Message ID'},
-            'source_id'          => $this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Event Key'},
-            'created_at'         => $this->parseDatetime($this->auroraModelData->{'Email Tracking Event Date'}),
-            'data'               => $data,
-            'fetched_at'         => now(),
-            'last_fetched_at'    => now(),
+            'type' => $type,
+            // 'provider_reference' => $this->auroraModelData->{'Email Tracking Event Message ID'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Event Key'},
+            'created_at' => $this->parseDatetime($this->auroraModelData->{'Email Tracking Event Date'}),
+            'data' => $data,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Email Tracking Event Dimension')

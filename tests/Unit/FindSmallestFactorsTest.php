@@ -33,7 +33,6 @@ test('findSmallestFactors works for numbers less than 1', function () {
 
 test('findSmallestFactors works for numbers greater than 1', function () {
 
-
     $result = findSmallestFactors(5.0);
     expect($result)->toBe([5.0, 1]);
 
@@ -91,7 +90,6 @@ test('findSmallestFactors works with custom epsilon', function () {
     // Test with a larger epsilon for less precision
     $result = findSmallestFactors(0.333, 0.001);
     expect($result)->toBe([1, 3]);
-
 
     $result = findSmallestFactors(0.333, 0.0001);
     expect($result)->toBe([1, 3]);

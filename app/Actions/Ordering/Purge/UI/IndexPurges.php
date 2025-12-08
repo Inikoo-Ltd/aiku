@@ -31,6 +31,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexPurges extends OrgAction
 {
     use WithOrdersSubNavigation;
+
     private Shop|Organisation|Group $parent;
 
     public function handle(Shop|Organisation|Group $parent, $prefix = null): LengthAwarePaginator
@@ -46,7 +47,6 @@ class IndexPurges extends OrgAction
         }
 
         $query = QueryBuilder::for(Purge::class);
-
 
         if ($parent instanceof Shop) {
             $query->where('shop_id', $parent->id);
@@ -84,7 +84,6 @@ class IndexPurges extends OrgAction
             ->withQueryString();
     }
 
-
     public function tableStructure($parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix) {
@@ -94,8 +93,7 @@ class IndexPurges extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-
-            $noResults = __("No purges found");
+            $noResults = __('No purges found');
 
             $table
                 ->withGlobalSearch()
@@ -104,7 +102,6 @@ class IndexPurges extends OrgAction
                         'title' => $noResults,
                     ]
                 );
-
 
             $table->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'scheduled_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true);
@@ -122,41 +119,39 @@ class IndexPurges extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
+            return $request->user()->authTo('group-overview');
         }
 
         return $request->user()->authTo("orders.{$this->shop->id}.view");
     }
-
 
     public function jsonResponse(LengthAwarePaginator $purges): AnonymousResourceCollection
     {
         return PurgesResource::collection($purges);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $purges, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title      = __('Purges');
-        $model      = '';
-        $icon       = [
-            'icon'  => ['fal', 'fa-trash-alt'],
-            'title' => __('Purges')
+        $title = __('Purges');
+        $model = '';
+        $icon = [
+            'icon' => ['fal', 'fa-trash-alt'],
+            'title' => __('Purges'),
         ];
         $afterTitle = null;
-        $iconRight  = null;
-        $actions    = [
+        $iconRight = null;
+        $actions = [
             [
-                'type'    =>    'button',
-                                'style'   => 'create',
-                                'tooltip' => __('New purge'),
-                                'label'   => __('purge'),
-                                'route'   => [
-                                    'name'       => 'grp.org.shops.show.ordering.purges.create',
-                                    'parameters' => $request->route()->originalParameters()
-                                ]
-            ]
+                'type' => 'button',
+                'style' => 'create',
+                'tooltip' => __('New purge'),
+                'label' => __('purge'),
+                'route' => [
+                    'name' => 'grp.org.shops.show.ordering.purges.create',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+            ],
         ];
 
         if ($this->parent instanceof Shop) {
@@ -166,25 +161,24 @@ class IndexPurges extends OrgAction
         return Inertia::render(
             'Org/Ordering/Purges',
             [
-                'breadcrumbs'                                => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'                                      => __('Purges'),
-                'pageHead'                                   => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => __('Purges'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $actions
+                    'actions' => $actions,
                 ],
-                'data'              => PurgesResource::collection($purges),
+                'data' => PurgesResource::collection($purges),
             ]
         )->table($this->tableStructure(parent: $this->parent));
     }
-
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
@@ -207,34 +201,32 @@ class IndexPurges extends OrgAction
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Purges'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.ordering.purges.index' =>
-            array_merge(
+            'grp.org.shops.show.ordering.purges.index' => array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.ordering.purges.index',
-                        'parameters' => $routeParameters
+                        'name' => 'grp.org.shops.show.ordering.purges.index',
+                        'parameters' => $routeParameters,
                     ]
                 )
             ),
-            'grp.overview.ordering.purges.index' =>
-            array_merge(
+            'grp.overview.ordering.purges.index' => array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ]
                 )
             ),

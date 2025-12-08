@@ -41,7 +41,6 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
                         strict: false
                     );
 
-
                     $this->recordNew($organisationSource);
                 } catch (Exception $e) {
                     $this->recordError($organisationSource, $e, $orgStockMovementData['orgStockMovement'], 'orgStockMovement', 'store');
@@ -61,7 +60,6 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
         return null;
     }
 
-
     public function getModelsQuery(): Builder
     {
         $query = DB::connection('aurora')
@@ -75,7 +73,6 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
 
         return $query;
     }
-
 
     public function count(): ?int
     {

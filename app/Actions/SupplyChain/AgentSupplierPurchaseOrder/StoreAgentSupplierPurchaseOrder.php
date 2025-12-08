@@ -12,8 +12,8 @@ namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Actions\GrpAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\Supplier;
@@ -24,25 +24,24 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreAgentSupplierPurchaseOrder extends GrpAction
 {
-    use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
-
+    use WithNoStrictRules;
 
     private Supplier $supplier;
 
     public function handle(PurchaseOrder $purchaseOrder, Supplier $supplier, array $modelData): AgentSupplierPurchaseOrder
     {
-        if (!Arr::get($modelData, 'reference')) {
+        if (! Arr::get($modelData, 'reference')) {
             data_set(
                 $modelData,
                 'reference',
                 $supplier->code.'-'.$purchaseOrder->reference
             );
         }
-        if (!Arr::get($modelData, 'date')) {
+        if (! Arr::get($modelData, 'date')) {
             data_set($modelData, 'date', now());
         }
-        if (!Arr::get($modelData, 'currency_id')) {
+        if (! Arr::get($modelData, 'currency_id')) {
             data_set($modelData, 'currency_id', $supplier->currency_id);
         }
         // dd($parent);
@@ -64,20 +63,19 @@ class StoreAgentSupplierPurchaseOrder extends GrpAction
     public function rules(): array
     {
         $rules = [
-            'reference'      => [
+            'reference' => [
                 'sometimes',
                 'required',
-                $this->strict ? 'alpha_dash' : 'string'
+                $this->strict ? 'alpha_dash' : 'string',
             ],
-            'state'          => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
+            'state' => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
             'delivery_state' => ['sometimes', 'required', Rule::enum(PurchaseOrderDeliveryStateEnum::class)],
-            'cost_items'     => ['sometimes', 'required', 'numeric', 'min:0'],
-            'cost_shipping'  => ['sometimes', 'required', 'numeric', 'min:0'],
-            'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
-            'date'           => ['sometimes', 'required'],
-            'currency_id'    => ['sometimes', 'required'],
+            'cost_items' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'cost_shipping' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'cost_total' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'date' => ['sometimes', 'required'],
+            'currency_id' => ['sometimes', 'required'],
         ];
-
 
         if ($this->strict) {
             $rules['reference'][] = new IUnique(
@@ -88,7 +86,7 @@ class StoreAgentSupplierPurchaseOrder extends GrpAction
             );
         }
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictStoreRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictPurchaseOrderDatesRules($rules);
@@ -99,15 +97,14 @@ class StoreAgentSupplierPurchaseOrder extends GrpAction
 
     public function action(PurchaseOrder $purchaseOrder, Supplier $supplier, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): AgentSupplierPurchaseOrder
     {
-        if (!$audit) {
+        if (! $audit) {
             AgentSupplierPurchaseOrder::disableAuditing();
         }
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->supplier       = $supplier;
+        $this->supplier = $supplier;
         $this->initialisation($supplier->group, $modelData);
-
 
         return $this->handle($purchaseOrder, $supplier, $this->validatedData);
     }

@@ -30,10 +30,11 @@ class GroupHydrateVariants implements ShouldBeUnique
     {
         return $group->id;
     }
+
     public function handle(Group $group): void
     {
 
-        $stats         = [
+        $stats = [
             'number_current_product_variants' => DB::table('products')
                 ->where('products.is_main', true)
                 ->where('products.group_id', $group->id)
@@ -61,64 +62,63 @@ class GroupHydrateVariants implements ShouldBeUnique
         ];
 
         foreach (ProductStateEnum::cases() as $case) {
-            $stats["number_product_variants_state_" . $case->snake()] = DB::table('products')
-            ->where('products.is_main', true)
-            ->where('products.group_id', $group->id)
-            ->whereNull('products.deleted_at')
-            ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
-            ->where('product_variants.state', $case->value)
-            ->count();
+            $stats['number_product_variants_state_'.$case->snake()] = DB::table('products')
+                ->where('products.is_main', true)
+                ->where('products.group_id', $group->id)
+                ->whereNull('products.deleted_at')
+                ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
+                ->where('product_variants.state', $case->value)
+                ->count();
 
-            $stats["number_products_with_variants_state_" . $case->snake()] = DB::table('products')
-            ->where('products.is_main', true)
-            ->where('products.group_id', $group->id)
-            ->whereNull('products.deleted_at')
-            ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
-            ->where('product_variants.state', $case->value)
-            ->distinct('products.id')
-            ->count();
+            $stats['number_products_with_variants_state_'.$case->snake()] = DB::table('products')
+                ->where('products.is_main', true)
+                ->where('products.group_id', $group->id)
+                ->whereNull('products.deleted_at')
+                ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
+                ->where('product_variants.state', $case->value)
+                ->distinct('products.id')
+                ->count();
         }
 
         foreach (ProductStatusEnum::cases() as $case) {
-            $stats["number_product_variants_status_" . $case->snake()] = DB::table('products')
-            ->where('products.is_main', true)
-            ->where('products.group_id', $group->id)
-            ->whereNull('products.deleted_at')
-            ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
-            ->where('product_variants.status', $case->value)
-            ->count();
+            $stats['number_product_variants_status_'.$case->snake()] = DB::table('products')
+                ->where('products.is_main', true)
+                ->where('products.group_id', $group->id)
+                ->whereNull('products.deleted_at')
+                ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
+                ->where('product_variants.status', $case->value)
+                ->count();
 
-            $stats["number_products_with_variants_status_" . $case->snake()] = DB::table('products')
-            ->where('products.is_main', true)
-            ->where('products.group_id', $group->id)
-            ->whereNull('products.deleted_at')
-            ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
-            ->where('product_variants.status', $case->value)
-            ->distinct('products.id')
-            ->count();
+            $stats['number_products_with_variants_status_'.$case->snake()] = DB::table('products')
+                ->where('products.is_main', true)
+                ->where('products.group_id', $group->id)
+                ->whereNull('products.deleted_at')
+                ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
+                ->where('product_variants.status', $case->value)
+                ->distinct('products.id')
+                ->count();
         }
 
         foreach (ProductTradeConfigEnum::cases() as $case) {
-            $stats["number_product_variants_trade_config_" . $case->snake()] = DB::table('products')
-            ->where('products.is_main', true)
-            ->where('products.group_id', $group->id)
-            ->whereNull('products.deleted_at')
-            ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
-            ->where('product_variants.trade_config', $case->value)
-            ->count();
+            $stats['number_product_variants_trade_config_'.$case->snake()] = DB::table('products')
+                ->where('products.is_main', true)
+                ->where('products.group_id', $group->id)
+                ->whereNull('products.deleted_at')
+                ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
+                ->where('product_variants.trade_config', $case->value)
+                ->count();
 
-            $stats["number_products_with_variants_trade_config_" . $case->snake()] = DB::table('products')
-            ->where('products.is_main', true)
-            ->where('products.group_id', $group->id)
-            ->whereNull('products.deleted_at')
-            ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
-            ->where('product_variants.trade_config', $case->value)
-            ->distinct('products.id')
-            ->count();
+            $stats['number_products_with_variants_trade_config_'.$case->snake()] = DB::table('products')
+                ->where('products.is_main', true)
+                ->where('products.group_id', $group->id)
+                ->whereNull('products.deleted_at')
+                ->join('products as product_variants', 'products.id', '=', 'product_variants.main_product_id')
+                ->where('product_variants.trade_config', $case->value)
+                ->distinct('products.id')
+                ->count();
         }
 
         $group->catalogueStats()->update($stats);
 
     }
-
 }

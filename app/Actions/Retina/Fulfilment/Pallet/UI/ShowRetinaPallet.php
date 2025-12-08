@@ -58,12 +58,11 @@ class ShowRetinaPallet extends RetinaAction
         return $pallet;
     }
 
-
     public function htmlResponse(Pallet $pallet, ActionRequest $request): Response
     {
         $icon = [
-            'icon'    => ['fal', 'fa-pallet'],
-            'tooltip' => __('Pallet')
+            'icon' => ['fal', 'fa-pallet'],
+            'tooltip' => __('Pallet'),
         ];
         $model = __('Goods');
         $title = $this->pallet->reference;
@@ -71,67 +70,66 @@ class ShowRetinaPallet extends RetinaAction
         $afterTitle = [];
         $actions = [
             [
-                'type'    => 'button',
-                'style'   => 'edit',
+                'type' => 'button',
+                'style' => 'edit',
                 'tooltip' => __('Edit pallet'),
-                'label'   => __('Edit'),
-                'route'   => [
-                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                    'parameters' => array_values(request()->route()->originalParameters())
-                ]
+                'label' => __('Edit'),
+                'route' => [
+                    'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    'parameters' => array_values(request()->route()->originalParameters()),
+                ],
             ],
         ];
 
         if ($pallet->status == PalletStatusEnum::STORING) {
             $actions[] =
                 [
-                    'type'  => 'button',
+                    'type' => 'button',
                     'style' => 'create',
                     'label' => __('Return Goods'),
-                    'route'   => [
-                        'method'     => 'post',
-                        'name'       => 'retina.models.pallet-return.store',
-                        'parameters' => []
-                    ]
+                    'route' => [
+                        'method' => 'post',
+                        'name' => 'retina.models.pallet-return.store',
+                        'parameters' => [],
+                    ],
                 ];
         }
 
         if ($this->pallet->customer_reference) {
             $afterTitle = [
-                'label'     => '(' . $this->pallet->customer_reference . ')'
+                'label' => '('.$this->pallet->customer_reference.')',
             ];
         }
 
         $navigation = PalletTabsEnum::navigation($pallet);
 
-        if (!$pallet->fulfilmentCustomer->items_storage) {
+        if (! $pallet->fulfilmentCustomer->items_storage) {
             unset($navigation[PalletTabsEnum::STORED_ITEMS->value]);
         }
-
 
         return Inertia::render(
             'Storage/RetinaPallet',
             [
-                'title'                         => __('Goods'),
-                'breadcrumbs'                   => $this->getBreadcrumbs(
+                'title' => __('Goods'),
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $pallet,
                     request()->route()->getName(),
                 ),
-                'navigation'                            => [
+                'navigation' => [
                     'previous' => $this->getPrevious($pallet, $request),
-                    'next'     => $this->getNext($pallet, $request),
+                    'next' => $this->getNext($pallet, $request),
                 ],
-                'pageHead'                      => [
-                    'icon'          => $icon,
-                    'title'         => $title,
-                    'model'         => $model,
-                    'iconRight'     => $iconRight,
-                    'noCapitalise'  => true,
-                    'afterTitle'    => $afterTitle,
-                    'actions'       => $actions,
+                'pageHead' => [
+                    'icon' => $icon,
+                    'title' => $title,
+                    'model' => $model,
+                    'iconRight' => $iconRight,
+                    'noCapitalise' => true,
+                    'afterTitle' => $afterTitle,
+                    'actions' => $actions,
                 ],
-                'tabs'                          => [
-                    'current'    => $this->tab,
+                'tabs' => [
+                    'current' => $this->tab,
                     'navigation' => $navigation,
                 ],
                 PalletTabsEnum::SHOWCASE->value => $this->tab == PalletTabsEnum::SHOWCASE->value ?
@@ -147,7 +145,7 @@ class ShowRetinaPallet extends RetinaAction
 
                 PalletTabsEnum::HISTORY->value => $this->tab == PalletTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($this->pallet))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->pallet)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->pallet))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: PalletTabsEnum::HISTORY->value))
@@ -155,12 +153,10 @@ class ShowRetinaPallet extends RetinaAction
             ->table(IndexRetinaStoredItems::make()->tableStructure($pallet, prefix: PalletTabsEnum::STORED_ITEMS->value));
     }
 
-
     public function jsonResponse(Pallet $pallet): RetinaPalletResource
     {
         return new RetinaPalletResource($pallet);
     }
-
 
     public function getBreadcrumbs(Pallet $pallet, string $routeName, $suffix = null): array
     {
@@ -168,26 +164,26 @@ class ShowRetinaPallet extends RetinaAction
             ShowRetinaStorageDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'retina.fulfilment.storage.pallets.index',
-                                'parameters' => array_values(request()->route()->originalParameters())
+                                'name' => 'retina.fulfilment.storage.pallets.index',
+                                'parameters' => array_values(request()->route()->originalParameters()),
                             ],
-                            'label' => __('Goods')
+                            'label' => __('Goods'),
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'retina.fulfilment.storage.pallets.show',
+                                'name' => 'retina.fulfilment.storage.pallets.show',
                                 'parameters' => [
-                                    'pallet' => $pallet->slug
-                                ]
+                                    'pallet' => $pallet->slug,
+                                ],
                             ],
                             'label' => $pallet->reference,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
                 ],
             ]
         );
@@ -198,6 +194,7 @@ class ShowRetinaPallet extends RetinaAction
         $previous = Pallet::where('id', '<', $pallet->id)
             ->where('fulfilment_customer_id', $request->user()->customer->fulfilmentCustomer->id)
             ->whereNotNull('slug')->orderBy('id', 'desc')->first();
+
         return $this->getNavigation($previous, $request->route()->getName());
 
     }
@@ -207,12 +204,13 @@ class ShowRetinaPallet extends RetinaAction
         $next = Pallet::where('id', '>', $pallet->id)
             ->where('fulfilment_customer_id', $request->user()->customer->fulfilmentCustomer->id)
             ->whereNotNull('slug')->orderBy('id')->first();
+
         return $this->getNavigation($next, $request->route()->getName());
     }
 
     private function getNavigation(?Pallet $pallet, string $routeName): ?array
     {
-        if (!$pallet) {
+        if (! $pallet) {
             return null;
         }
 
@@ -220,11 +218,11 @@ class ShowRetinaPallet extends RetinaAction
             'retina.fulfilment.storage.pallets.show' => [
                 'label' => $pallet->slug,
                 'route' => [
-                    'name'      => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'pallet'             => $pallet->slug
-                    ]
-                ]
+                        'pallet' => $pallet->slug,
+                    ],
+                ],
             ],
 
             default => null,

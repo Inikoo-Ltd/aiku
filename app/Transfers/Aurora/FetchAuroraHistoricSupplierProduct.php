@@ -16,7 +16,7 @@ class FetchAuroraHistoricSupplierProduct extends FetchAurora
     {
         $supplierProduct = $this->parseSupplierProduct($this->organisation->id.':'.$this->auroraModelData->{'Supplier Part Historic Supplier Part Key'});
 
-        if (!$supplierProduct) {
+        if (! $supplierProduct) {
             return;
         }
         $this->parsedData['supplier_product'] = $supplierProduct;
@@ -26,14 +26,13 @@ class FetchAuroraHistoricSupplierProduct extends FetchAurora
             $status = 1;
         }
 
-
         $units = $this->auroraModelData->{'Supplier Part Historic Units Per Package'};
         if ($units == 0) {
             $units = 1;
         }
 
         $packagesPerCarton = $this->auroraModelData->{'Supplier Part Historic Packages Per Carton'};
-        if (!$packagesPerCarton) {
+        if (! $packagesPerCarton) {
             $packagesPerCarton = 1;
         }
         $units_per_carton = $units * $packagesPerCarton;
@@ -43,15 +42,14 @@ class FetchAuroraHistoricSupplierProduct extends FetchAurora
         $supplierProductCode = $this->auroraModelData->{'Supplier Part Historic Reference'} ?? 'missing-code-'.$this->auroraModelData->{'Supplier Part Historic Supplier Part Key'};
 
         $this->parsedData['historic_supplier_product'] = [
-            'code'             => $supplierProductCode,
-            'units_per_pack'   => $units,
+            'code' => $supplierProductCode,
+            'units_per_pack' => $units,
             'units_per_carton' => $units_per_carton,
-            'status'           => $status,
-            'source_id'        => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Part Historic Key'},
-            'fetched_at'       => now(),
-            'last_fetched_at'  => now(),
+            'status' => $status,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Part Historic Key'},
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
-
 
         if ($this->auroraModelData->{'Supplier Part Historic Carton CBM'}) {
             $this->parsedData['historic_supplier_product']['cbm'] = $this->auroraModelData->{'Supplier Part Historic Carton CBM'};
@@ -59,8 +57,7 @@ class FetchAuroraHistoricSupplierProduct extends FetchAurora
 
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Supplier Part Historic Dimension')

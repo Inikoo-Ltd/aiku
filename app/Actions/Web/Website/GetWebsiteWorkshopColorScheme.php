@@ -13,7 +13,6 @@ class GetWebsiteWorkshopColorScheme
     {
         return [
 
-
         ];
     }
 }

@@ -49,20 +49,19 @@ class ShowOrgPartner extends OrgAction
         return Inertia::render(
             'Org/Procurement/Partner',
             [
-                'title'                                              => __('partner'),
-                'breadcrumbs'                                        => $this->getBreadcrumbs($orgPartner, $request->route()->originalParameters()),
-                'pageHead'                                           => [
-                    'icon'  =>
-                        [
-                            'icon'  => ['fal', 'fa-users-class'],
-                            'title' => __('Partner')
-                        ],
+                'title' => __('partner'),
+                'breadcrumbs' => $this->getBreadcrumbs($orgPartner, $request->route()->originalParameters()),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-users-class'],
+                        'title' => __('Partner'),
+                    ],
                     'title' => $orgPartner->partner->name,
                     'subNavigation' => $this->getOrgPartnerNavigation($orgPartner),
                 ],
-                'tabs'                                               => [
-                    'current'    => $this->tab,
-                    'navigation' => OrgPartnerTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => OrgPartnerTabsEnum::navigation(),
                 ],
 
                 OrgPartnerTabsEnum::SHOWCASE->value => $this->tab == OrgPartnerTabsEnum::SHOWCASE->value ?
@@ -73,7 +72,6 @@ class ShowOrgPartner extends OrgAction
         );
     }
 
-
     public function jsonResponse(Supplier $supplier): SupplierResource
     {
         return new SupplierResource($supplier);
@@ -82,28 +80,28 @@ class ShowOrgPartner extends OrgAction
     public function getBreadcrumbs(OrgPartner $orgPartner, array $routeParameters, $suffix = null): array
     {
         return array_merge(
-            (new ShowProcurementDashboard())->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
+            (new ShowProcurementDashboard)->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'      => 'grp.org.procurement.org_partners.index',
-                                'parameters' => Arr::only($routeParameters, 'organisation')
+                                'name' => 'grp.org.procurement.org_partners.index',
+                                'parameters' => Arr::only($routeParameters, 'organisation'),
 
                             ],
-                            'label' => __('Partners')
+                            'label' => __('Partners'),
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_partners.show',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.org_partners.show',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $orgPartner->partner->code,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
             ]

@@ -19,7 +19,7 @@ trait WithWarehouseManagementAuthorisation
         }
 
         if (str_starts_with($request->route()->getName(), 'grp.overview')) {
-            return $request->user()->authTo("group-overview");
+            return $request->user()->authTo('group-overview');
         }
 
         $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
@@ -27,9 +27,8 @@ trait WithWarehouseManagementAuthorisation
         return $request->user()->authTo(
             [
                 'org-supervisor.'.$this->organisation->id,
-                'warehouses-view.'.$this->organisation->id
+                'warehouses-view.'.$this->organisation->id,
             ]
         );
     }
-
 }

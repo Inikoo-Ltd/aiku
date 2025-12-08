@@ -82,9 +82,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_pallets_state_request_return_submitted
  * @property int $number_pallets_state_request_return_confirmed
  * @property-read \App\Models\Inventory\Location $location
+ *
  * @method static Builder<static>|LocationStats newModelQuery()
  * @method static Builder<static>|LocationStats newQuery()
  * @method static Builder<static>|LocationStats query()
+ *
  * @mixin Eloquent
  */
 class LocationStats extends Model
@@ -92,7 +94,6 @@ class LocationStats extends Model
     protected $table = 'location_stats';
 
     protected $guarded = [];
-
 
     public function location(): BelongsTo
     {

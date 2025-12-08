@@ -16,16 +16,16 @@ enum ProspectSuccessStatusEnum: string
 {
     use EnumHelperTrait;
 
-    case NA         = 'no_applicable';
+    case NA = 'no_applicable';
     case REGISTERED = 'registered';
-    case INVOICED   = 'invoiced';
+    case INVOICED = 'invoiced';
 
     public static function labels(): array
     {
         return [
             'no_applicable' => __('N/A'),
-            'registered'    => __('Registered'),
-            'invoiced'      => __('Invoiced'),
+            'registered' => __('Registered'),
+            'invoiced' => __('Invoiced'),
         ];
     }
 
@@ -35,18 +35,18 @@ enum ProspectSuccessStatusEnum: string
             'no_applicable' => [
 
                 'tooltip' => __('N/A'),
-                'icon'    => 'fal fa-location-slash',
+                'icon' => 'fal fa-location-slash',
             ],
-            'registered'    => [
+            'registered' => [
 
                 'tooltip' => __('registered'),
-                'icon'    => 'fal fa-sign-in'
+                'icon' => 'fal fa-sign-in',
 
             ],
-            'invoiced'      => [
+            'invoiced' => [
 
                 'tooltip' => __('invoiced'),
-                'icon'    => 'fal fa-file-invoice'
+                'icon' => 'fal fa-file-invoice',
 
             ],
         ];
@@ -58,9 +58,8 @@ enum ProspectSuccessStatusEnum: string
 
         return [
             'no_applicable' => $stats->number_prospects_success_status_no_applicable,
-            'registered'    => $stats->number_prospects_success_status_registered,
-            'invoiced'      => $stats->number_prospects_success_status_invoiced,
+            'registered' => $stats->number_prospects_success_status_registered,
+            'invoiced' => $stats->number_prospects_success_status_invoiced,
         ];
     }
-
 }

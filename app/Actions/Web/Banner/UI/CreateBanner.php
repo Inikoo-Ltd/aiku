@@ -36,33 +36,31 @@ class CreateBanner extends OrgAction
         return $this->handle($website, $request);
     }
 
-
     public function handle(Website $website, ActionRequest $request): Response
     {
-
 
         $fields = [];
 
         $fields[] = [
-            'title'  => '',
+            'title' => '',
             'fields' => [
                 'type' => [
-                    'type'     => 'radio',
-                    'label'    => __('orientation'),
+                    'type' => 'radio',
+                    'label' => __('orientation'),
                     'required' => true,
-                    'value'    => BannerTypeEnum::LANDSCAPE,
-                    'options'  => Options::forEnum(BannerTypeEnum::class)
+                    'value' => BannerTypeEnum::LANDSCAPE,
+                    'options' => Options::forEnum(BannerTypeEnum::class),
 
                 ],
 
                 'name' => [
-                    'type'        => 'input',
-                    'label'       => __('name'),
+                    'type' => 'input',
+                    'label' => __('name'),
                     'placeholder' => __('Name for new banner'),
-                    'required'    => true,
-                    'value'       => '',
+                    'required' => true,
+                    'value' => '',
                 ],
-            ]
+            ],
         ];
 
         return Inertia::render(
@@ -72,27 +70,27 @@ class CreateBanner extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New banner'),
-                'pageHead'    => [
-                    'title'   => __('Banner'),
+                'title' => __('New banner'),
+                'pageHead' => [
+                    'title' => __('Banner'),
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'route' => [
-                                'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
-                    ]
+                                'name' => preg_replace('/create$/', 'index', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
+                    ],
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => $fields,
-                    'route'     => [
-                        'name'       => 'grp.models.website.banner.store',
+                    'route' => [
+                        'name' => 'grp.models.website.banner.store',
                         'parameters' => [
-                            'website' => $website->id
-                        ]
+                            'website' => $website->id,
+                        ],
                     ],
                 ],
             ]
@@ -109,11 +107,11 @@ class CreateBanner extends OrgAction
                 ),
                 [
                     [
-                        'type'          => 'creatingModel',
+                        'type' => 'creatingModel',
                         'creatingModel' => [
-                            'label' => __("creating banner"),
-                        ]
-                    ]
+                            'label' => __('creating banner'),
+                        ],
+                    ],
                 ]
             ),
             'grp.org.fulfilments.show.web.banners.create' => array_merge(
@@ -123,11 +121,11 @@ class CreateBanner extends OrgAction
                 ),
                 [
                     [
-                        'type'          => 'creatingModel',
+                        'type' => 'creatingModel',
                         'creatingModel' => [
-                            'label' => __("creating banner"),
-                        ]
-                    ]
+                            'label' => __('creating banner'),
+                        ],
+                    ],
                 ]
             )
         };

@@ -29,14 +29,12 @@ class ShowOrgSupplier extends OrgAction
 
     private OrgAgent|Organisation $parent;
 
-    //todo: authorisation
+    // todo: authorisation
 
     public function handle(OrgSupplier $orgSupplier): OrgSupplier
     {
         return $orgSupplier;
     }
-
-
 
     public function asController(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {
@@ -48,10 +46,12 @@ class ShowOrgSupplier extends OrgAction
 
     public function maya(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {
-        $this->maya   = true;
+        $this->maya = true;
         $this->initialisation($organisation, $request)->withTab(SupplierTabsEnum::values());
+
         return $this->handle($orgSupplier);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {
@@ -66,46 +66,46 @@ class ShowOrgSupplier extends OrgAction
         return Inertia::render(
             'Procurement/OrgSupplier',
             [
-                'title'       => __('supplier'),
+                'title' => __('supplier'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($orgSupplier, $request),
-                    'next'     => $this->getNext($orgSupplier, $request),
+                    'next' => $this->getNext($orgSupplier, $request),
                 ],
-                'pageHead'    => [
-                    'icon'    => [
-                        'icon'  => 'fal fa-person-dolly',
-                        'title' => __('Supplier')
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => 'fal fa-person-dolly',
+                        'title' => __('Supplier'),
                     ],
-                    'title'   => $orgSupplier->supplier->name,
-                    'model'     => __('Supplier'),
+                    'title' => $orgSupplier->supplier->name,
+                    'model' => __('Supplier'),
                     'subNavigation' => $this->getOrgSupplierNavigation($orgSupplier),
                     'actions' => [
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
                         $this->canDelete ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'delete',
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_suppliers.remove',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => 'grp.org.procurement.org_suppliers.remove',
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
                     ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => SupplierTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => SupplierTabsEnum::navigation(),
                 ],
 
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
@@ -114,7 +114,7 @@ class ShowOrgSupplier extends OrgAction
 
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgSupplier))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgSupplier)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgSupplier))),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
     }
@@ -125,18 +125,18 @@ class ShowOrgSupplier extends OrgAction
             return [
 
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Suppliers')
+                            'label' => __('Suppliers'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
                             'label' => $orgSupplier->supplier->code,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
 
@@ -149,38 +149,36 @@ class ShowOrgSupplier extends OrgAction
             'grp.org.procurement.org_suppliers.show',
             'grp.org.procurement.org_suppliers.show.supplier_products.index',
             'grp.org.procurement.org_suppliers.show.purchase_orders.index',
-            'grp.org.procurement.org_suppliers.show.stock_deliveries.index' =>
-            array_merge(
+            'grp.org.procurement.org_suppliers.show.stock_deliveries.index' => array_merge(
                 ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $orgSupplier,
                     [
                         'index' => [
-                            'name'       => 'grp.org.procurement.org_suppliers.index',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.procurement.org_suppliers.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.procurement.org_suppliers.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.procurement.org_suppliers.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
             ),
-            'grp.org.procurement.org_agents.show.suppliers.show' =>
-            array_merge(
+            'grp.org.procurement.org_agents.show.suppliers.show' => array_merge(
                 ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $orgSupplier,
                     [
                         'index' => [
-                            'name'       => 'grp.org.procurement.org_agents.show.suppliers.index',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.procurement.org_agents.show.suppliers.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.procurement.org_agents.show.suppliers.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.procurement.org_agents.show.suppliers.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -210,7 +208,7 @@ class ShowOrgSupplier extends OrgAction
 
     private function getNavigation(?OrgSupplier $orgSupplier, string $routeName): ?array
     {
-        if (!$orgSupplier) {
+        if (! $orgSupplier) {
             return null;
         }
 
@@ -218,25 +216,25 @@ class ShowOrgSupplier extends OrgAction
             'grp.org.procurement.org_suppliers.show' => [
                 'label' => $orgSupplier->supplier->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'    => $orgSupplier->organisation->slug,
-                        'orgSupplier'     => $orgSupplier->slug
-                    ]
+                        'organisation' => $orgSupplier->organisation->slug,
+                        'orgSupplier' => $orgSupplier->slug,
+                    ],
 
-                ]
+                ],
             ],
             'grp.org.procurement.org_agents.show.suppliers.show' => [
                 'label' => $orgSupplier->supplier->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'    => $orgSupplier->organisation->slug,
-                        'orgAgent'        => $this->parent->slug,
-                        'orgSupplier'     => $orgSupplier->slug
-                    ]
+                        'organisation' => $orgSupplier->organisation->slug,
+                        'orgAgent' => $this->parent->slug,
+                        'orgSupplier' => $orgSupplier->slug,
+                    ],
 
-                ]
+                ],
             ],
         };
     }

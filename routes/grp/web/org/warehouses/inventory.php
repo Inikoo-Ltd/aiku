@@ -22,9 +22,9 @@ use App\Actions\Goods\StockFamily\ExportStockFamilies;
 use App\Actions\Goods\StockFamily\UI\CreateStockFamily;
 use App\Actions\Goods\StockFamily\UI\EditStockFamily;
 use App\Actions\Inventory\OrgStock\ExportOrgStocks;
+use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
-use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
@@ -32,7 +32,6 @@ use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowInventoryDashboard::class)->name('dashboard');
-
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
 
@@ -123,7 +122,6 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
         });
     });
 });
-
 
 Route::prefix('pallets')->as('pallets.')->group(function () {
     Route::prefix('current')->as('current.')->group(function () {

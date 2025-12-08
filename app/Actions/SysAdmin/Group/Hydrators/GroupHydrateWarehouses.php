@@ -25,13 +25,11 @@ class GroupHydrateWarehouses implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
 
-
         $stats = [
-            'number_warehouses'                  => $group->warehouses()->count(),
+            'number_warehouses' => $group->warehouses()->count(),
         ];
 
         $stats = array_merge(

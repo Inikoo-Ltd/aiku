@@ -35,7 +35,7 @@ class IndexArtefacts extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
+            return $request->user()->authTo('group-overview');
         }
         if ($this->parent instanceof Organisation) {
             $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
@@ -43,7 +43,7 @@ class IndexArtefacts extends OrgAction
             return $request->user()->authTo(
                 [
                     'productions-view.'.$this->organisation->id,
-                    'org-supervisor.'.$this->organisation->id
+                    'org-supervisor.'.$this->organisation->id,
                 ]
             );
         }
@@ -91,7 +91,7 @@ class IndexArtefacts extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Artefact::class)
-                        ->leftJoin('organisations', 'artefacts.organisation_id', '=', 'organisations.id');
+            ->leftJoin('organisations', 'artefacts.organisation_id', '=', 'organisations.id');
         if ($parent instanceof Group) {
             $queryBuilder->where('artefacts.group_id', $parent->id);
         } elseif ($parent instanceof Organisation) {
@@ -99,7 +99,6 @@ class IndexArtefacts extends OrgAction
         } else {
             $queryBuilder->where('artefacts.production_id', $parent->id);
         }
-
 
         return $queryBuilder
             ->defaultSort('artefacts.code')
@@ -136,28 +135,28 @@ class IndexArtefacts extends OrgAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Organisation' => [
-                            'title'  => __("No artefacts found"),
-                            'count'  => $parent->manufactureStats->number_artefacts,
-                            'action' => null
+                            'title' => __('No artefacts found'),
+                            'count' => $parent->manufactureStats->number_artefacts,
+                            'action' => null,
                         ],
                         'Production' => [
-                            'title'       => __("No artefacts found"),
+                            'title' => __('No artefacts found'),
                             'description' => $this->canEdit ? __('Get started by creating your first artefact. ✨')
                                 : null,
-                            'count'       => $parent->stats->number_artefacts,
-                            'action'      => $canEdit ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
+                            'count' => $parent->stats->number_artefacts,
+                            'action' => $canEdit ? [
+                                'type' => 'button',
+                                'style' => 'create',
                                 'tooltip' => __('New artefact'),
-                                'label'   => __('artefact'),
-                                'route'   => [
-                                    'name'       => 'grp.org.productions.show.crafts.artefacts.create',
+                                'label' => __('artefact'),
+                                'route' => [
+                                    'name' => 'grp.org.productions.show.crafts.artefacts.create',
                                     'parameters' => [
                                         $parent->organisation->slug,
-                                        $parent->slug
-                                    ]
-                                ]
-                            ] : null
+                                        $parent->slug,
+                                    ],
+                                ],
+                            ] : null,
                         ],
                         default => null
                     }
@@ -185,22 +184,22 @@ class IndexArtefacts extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('artefacts'),
-                'pageHead'    => [
-                    'title'     => __('artefacts'),
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-hamsa'],
+                'title' => __('artefacts'),
+                'pageHead' => [
+                    'title' => __('artefacts'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-hamsa'],
                         'title' => __('Artefacts'),
                     ],
-                    'actions'   => [
+                    'actions' => [
                         $this->canEdit && $this->parent instanceof Production ? [
-                            'type'   => 'buttonGroup',
-                            'key'    => 'upload-add',
+                            'type' => 'buttonGroup',
+                            'key' => 'upload-add',
                             'button' => [
                                 [
-                                    'type'  => 'button',
+                                    'type' => 'button',
                                     'style' => 'primary',
-                                    'icon'  => ['fal', 'fa-upload'],
+                                    'icon' => ['fal', 'fa-upload'],
                                     'label' => 'upload',
                                     // 'route' => [
                                     //     'name'       => 'grp.models.production.artefacts.upload',
@@ -211,21 +210,21 @@ class IndexArtefacts extends OrgAction
                                 ],
                                 [
 
-                                    'type'  => 'button',
+                                    'type' => 'button',
                                     'style' => 'create',
                                     'label' => __('artefact'),
                                     'route' => [
-                                        'name'       => 'grp.org.productions.show.crafts.artefacts.create',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ]
+                                        'name' => 'grp.org.productions.show.crafts.artefacts.create',
+                                        'parameters' => $request->route()->originalParameters(),
+                                    ],
 
-                                ]
-                            ]
+                                ],
+                            ],
                         ] : null,
-                    ]
+                    ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
+                'tabs' => [
+                    'current' => $this->tab,
                     'navigation' => $this->parent instanceof Group ? Arr::except(ArtefactsTabsEnum::navigation(), [ArtefactsTabsEnum::ARTEFACTS_HISTORIES->value]) : ArtefactsTabsEnum::navigation(),
                 ],
 
@@ -246,46 +245,44 @@ class IndexArtefacts extends OrgAction
     {
 
         return match ($routeName) {
-            'grp.overview.production.artefacts.index' =>
-            array_merge(
+            'grp.overview.production.artefacts.index' => array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(
                     $routeParameters
                 ),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => $routeName,
-                                'parameters' => $routeParameters
+                                'name' => $routeName,
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Artefacts'),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
-                        'suffix' => $suffix
+                        'suffix' => $suffix,
 
-                    ]
+                    ],
                 ]
             ),
             default => array_merge(
                 ShowCraftsDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.artefacts.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.show.crafts.artefacts.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Artefacts'),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
-                        'suffix' => $suffix
+                        'suffix' => $suffix,
 
-                    ]
+                    ],
                 ]
             )
         };
     }
-
 }

@@ -20,7 +20,7 @@ trait WithAccountingEditAuthorisation
 
         return $request->user()->authTo(
             [
-                "accounting.{$this->organisation->id}.edit"
+                "accounting.{$this->organisation->id}.edit",
             ]
         );
     }

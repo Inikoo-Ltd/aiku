@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetTimeSeriesRecord query()
+ *
  * @mixin \Eloquent
  */
 class MasterAssetTimeSeriesRecord extends Model

@@ -19,7 +19,6 @@ class ReindexPurchaseOrderSearch extends HydrateModel
 {
     public string $commandSignature = 'search:purchase_orders {organisations?*} {--s|slugs=} ';
 
-
     public function handle(PurchaseOrder $purchaseOrder): void
     {
         PurchaseOrderRecordSearch::run($purchaseOrder);
@@ -37,7 +36,7 @@ class ReindexPurchaseOrderSearch extends HydrateModel
 
     protected function loopAll(Command $command): void
     {
-        $command->info("Reindex Org Suppliers");
+        $command->info('Reindex Org Suppliers');
         $count = PurchaseOrder::count();
 
         $bar = $command->getOutput()->createProgressBar($count);
@@ -52,6 +51,6 @@ class ReindexPurchaseOrderSearch extends HydrateModel
         });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
     }
 }

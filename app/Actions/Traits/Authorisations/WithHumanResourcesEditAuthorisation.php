@@ -19,7 +19,7 @@ trait WithHumanResourcesEditAuthorisation
             return true;
         }
 
-        return $request->user()->authTo(["human-resources.{$this->organisation->id}.edit","org-supervisor.{$this->organisation->id}.human-resources"]);
+        return $request->user()->authTo(["human-resources.{$this->organisation->id}.edit", "org-supervisor.{$this->organisation->id}.human-resources"]);
 
     }
 }

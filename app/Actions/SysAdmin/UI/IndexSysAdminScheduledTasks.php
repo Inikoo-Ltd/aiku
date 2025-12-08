@@ -29,9 +29,9 @@ class IndexSysAdminScheduledTasks
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('task_name', 'like', '%' . $value . '%')
-                    ->orWhere('task_type', 'like', '%' . $value . '%')
-                    ->orWhere('status', 'like', '%' . $value . '%');
+                $query->where('task_name', 'like', '%'.$value.'%')
+                    ->orWhere('task_type', 'like', '%'.$value.'%')
+                    ->orWhere('status', 'like', '%'.$value.'%');
             });
         });
 
@@ -54,9 +54,9 @@ class IndexSysAdminScheduledTasks
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title' => __('Scheduled Tasks'),
-                'pageHead'    => [
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-clock'],
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-clock'],
                         'title' => __('Scheduled Tasks'),
                     ],
                     'title' => __('Scheduled Tasks'),
@@ -72,19 +72,19 @@ class IndexSysAdminScheduledTasks
             ShowGroupDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
                             'name' => 'grp.sysadmin.scheduled-tasks.index',
                         ],
                         'label' => __('Scheduled Tasks'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }
 
-    public function tableStructure(array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {

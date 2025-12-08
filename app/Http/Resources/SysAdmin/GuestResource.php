@@ -22,14 +22,14 @@ class GuestResource extends JsonResource
         $guest = $this;
 
         return [
-            'id'           => $guest->id,
-            'slug'         => $guest->slug,
-            'code'         => $guest->code,
+            'id' => $guest->id,
+            'slug' => $guest->slug,
+            'code' => $guest->code,
             'contact_name' => $guest->contact_name,
-            'email'        => $guest->email,
-            'user'         => GuestResource::collection($this->whenLoaded('users')),
-            'created_at'   => $guest->created_at,
-            'updated_at'   => $guest->updated_at,
+            'email' => $guest->email,
+            'user' => GuestResource::collection($this->whenLoaded('users')),
+            'created_at' => $guest->created_at,
+            'updated_at' => $guest->updated_at,
         ];
     }
 }

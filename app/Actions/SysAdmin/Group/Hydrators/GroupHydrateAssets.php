@@ -27,10 +27,11 @@ class GroupHydrateAssets implements ShouldBeUnique
     {
         return $group->id;
     }
+
     public function handle(Group $group): void
     {
 
-        $stats         = [
+        $stats = [
             'number_assets' => $group->assets()->where('is_main', true)->count(),
         ];
 
@@ -60,8 +61,6 @@ class GroupHydrateAssets implements ShouldBeUnique
             )
         );
 
-
         $group->catalogueStats()->update($stats);
     }
-
 }

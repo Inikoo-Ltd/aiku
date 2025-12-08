@@ -16,36 +16,36 @@ enum JobPositionTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE  = 'showcase';
+    case SHOWCASE = 'showcase';
     case EMPLOYEES = 'employees';
-    case GUESTS    = 'guests';
-    case ROLES     = 'roles';
-    case HISTORY   = 'history';
+    case GUESTS = 'guests';
+    case ROLES = 'roles';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
             JobPositionTabsEnum::ROLES => [
                 'title' => __('System roles'),
-                'icon'  => 'fal fa-terminal',
+                'icon' => 'fal fa-terminal',
             ],
             JobPositionTabsEnum::EMPLOYEES => [
                 'title' => __('Employees'),
-                'icon'  => 'fal fa-user-hard-hat',
+                'icon' => 'fal fa-user-hard-hat',
             ],
             JobPositionTabsEnum::GUESTS => [
                 'title' => __('Guests'),
-                'icon'  => 'fal fa-user-alien',
+                'icon' => 'fal fa-user-alien',
             ],
             JobPositionTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             JobPositionTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

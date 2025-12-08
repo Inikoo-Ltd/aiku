@@ -218,7 +218,6 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-
         // No need for now because it similar like PingActiveWooChannel
         /*$this->logSchedule(
             $schedule->command('woo:revive_in_active_channel')->daily()->withoutOverlapping()->sentryMonitor(

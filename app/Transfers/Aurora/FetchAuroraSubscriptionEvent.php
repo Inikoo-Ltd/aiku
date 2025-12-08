@@ -30,32 +30,29 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
             $model = $this->parseProspect($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'});
         }
 
-        if (!$model) {
+        if (! $model) {
             return;
         }
 
-
         $origin = $this->getOrigin($model);
-
 
         $type = $this->getSubscriptionEventType($model);
 
         $outbox = $this->getOutbox($model);
 
-        if (!$outbox) {
+        if (! $outbox) {
             return;
         }
 
-
-        $this->parsedData['model']              = $model;
+        $this->parsedData['model'] = $model;
         $this->parsedData['subscription_event'] = [
-            'outbox_id'       => $outbox->id,
-            'type'            => $type,
-            'origin_type'     => $origin['type'],
-            'origin_id'       => $origin['id'],
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'History Key'},
-            'created_at'      => $this->parseDatetime($this->auroraModelData->{'History Date'}),
-            'fetched_at'      => now(),
+            'outbox_id' => $outbox->id,
+            'type' => $type,
+            'origin_type' => $origin['type'],
+            'origin_id' => $origin['id'],
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'History Key'},
+            'created_at' => $this->parseDatetime($this->auroraModelData->{'History Date'}),
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
     }
@@ -65,7 +62,6 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
         if ($model instanceof Prospect) {
             return $model->shop->outboxes()->where('code', OutboxCodeEnum::INVITE)->first();
         }
-
 
         return match ($this->auroraModelData->{'Indirect Object'}) {
             'Customer Send Newsletter' => $model->shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->first(),
@@ -79,21 +75,21 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
     {
         $origin = [
             'type' => null,
-            'id'   => null
+            'id' => null,
         ];
 
         if ($this->auroraModelData->{'User Key'} == 1 and $this->auroraModelData->{'Subject'} == 'Administrator') {
             $origin['type'] = 'User';
-            $origin['id']   = null;
+            $origin['id'] = null;
+
             return $origin;
         }
-
 
         if ($this->auroraModelData->{'User Key'} > 0 and $this->auroraModelData->{'Subject'} == 'Staff') {
             $user = $this->parseUser($this->organisation->id.':'.$this->auroraModelData->{'User Key'});
             if ($user) {
                 $origin['type'] = 'User';
-                $origin['id']   = $user->id;
+                $origin['id'] = $user->id;
 
                 return $origin;
             }
@@ -106,11 +102,10 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
             if (Carbon::parse($this->auroraModelData->{'History Date'})->lessThan('2011-04-04 07:57:36')) {
                 return [
                     'type' => 'User',
-                    'id'   => null
+                    'id' => null,
                 ];
             }
         }
-
 
         if (in_array(
             $this->auroraModelData->{'History Abstract'},
@@ -123,14 +118,14 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
             if ($dispatchedEmail) {
                 return [
                     'type' => class_basename($dispatchedEmail),
-                    'id'   => $dispatchedEmail->id
+                    'id' => $dispatchedEmail->id,
                 ];
             }
             $dispatchedEmail = $this->getDispatchedEmail($recipient, 60);
             if ($dispatchedEmail) {
                 return [
                     'type' => class_basename($dispatchedEmail),
-                    'id'   => $dispatchedEmail->id
+                    'id' => $dispatchedEmail->id,
                 ];
             }
 
@@ -138,20 +133,20 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
             if ($dispatchedEmail) {
                 return [
                     'type' => class_basename($dispatchedEmail),
-                    'id'   => $dispatchedEmail->id
+                    'id' => $dispatchedEmail->id,
                 ];
             }
             $dispatchedEmail = $this->getDispatchedEmail($recipient, 86400);
             if ($dispatchedEmail) {
                 return [
                     'type' => class_basename($dispatchedEmail),
-                    'id'   => $dispatchedEmail->id
+                    'id' => $dispatchedEmail->id,
                 ];
             }
 
             return [
                 'type' => 'DispatchedEmail',
-                'id'   => null
+                'id' => null,
             ];
         }
 
@@ -160,7 +155,7 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
         ) {
             return [
                 'type' => class_basename($recipient),
-                'id'   => $recipient->id
+                'id' => $recipient->id,
             ];
         }
 
@@ -168,7 +163,7 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
             $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Subject Key'});
             if ($customer) {
                 $origin['type'] = 'Customer';
-                $origin['id']   = $customer->id;
+                $origin['id'] = $customer->id;
 
                 return $origin;
             }
@@ -179,17 +174,17 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
             $this->auroraModelData->{'Subject Key'} == 0) {
             return [
                 'type' => 'User',
-                'id'   => null
+                'id' => null,
             ];
 
         }
-
 
         if ($this->auroraModelData->{'Subject'} == 'Customer') {
             $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Subject Key'});
             if ($customer) {
                 $origin['type'] = 'Customer';
-                $origin['id']   = $customer->id;
+                $origin['id'] = $customer->id;
+
                 return $origin;
             }
         }
@@ -200,8 +195,7 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
     private function getDispatchedEmail($recipient, int $offset = 0): ?DispatchedEmail
     {
         $dispatchedEmail = null;
-        $sourceData      = explode(':', $recipient->source_id);
-
+        $sourceData = explode(':', $recipient->source_id);
 
         $query = DB::connection('aurora')
             ->table('Email Tracking Event Dimension')
@@ -215,7 +209,6 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
             $date = Carbon::parse($this->auroraModelData->{'History Date'})->subSeconds($offset)->format('Y-m-d H:i:s');
             $query->where('Email Tracking Event Date', '>', $date);
         }
-
 
         if ($auroraTrackingData = $query->first()) {
             $dispatchedEmail = $this->parseDispatchedEmail($this->organisation->id.':'.$auroraTrackingData->{'Email Tracking Key'});
@@ -235,7 +228,7 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
                     'Not interested',
                     'No interesado',
                     'Nemám zájem',
-                    'Nezaujíma'
+                    'Nezaujíma',
                 ]
             )) {
                 return SubscriptionEventTypeEnum::UNSUBSCRIBE;
@@ -260,7 +253,6 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
             return SubscriptionEventTypeEnum::SUBSCRIBE;
         }
 
-
         if (str_ends_with($this->auroraModelData->{'History Details'}, ' "Yes" à "No"')) {
             return SubscriptionEventTypeEnum::UNSUBSCRIBE;
         }
@@ -279,9 +271,8 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
             return SubscriptionEventTypeEnum::UNSUBSCRIBE;
         }
 
-
         $newValue = $this->parseHistoryUpdatedNewValues($auditable);
-        $value    = Arr::get($newValue, 'type');
+        $value = Arr::get($newValue, 'type');
         if (in_array($value, ['No', 'Nie'])) {
             $type = SubscriptionEventTypeEnum::UNSUBSCRIBE;
         } elseif (in_array($value, ['Yes', 'Áno'])) {
@@ -291,17 +282,15 @@ class FetchAuroraSubscriptionEvent extends FetchAurora
             dd($this->auroraModelData);
         }
 
-
         return $type;
     }
-
 
     private function getField(): string
     {
         return 'type';
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('History Dimension')

@@ -8,8 +8,8 @@
 
 namespace App\Models\Traits;
 
-use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +35,4 @@ trait InCustomer
     {
         return $this->belongsTo(Customer::class);
     }
-
-
 }

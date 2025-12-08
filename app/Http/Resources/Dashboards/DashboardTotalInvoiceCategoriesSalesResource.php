@@ -21,6 +21,7 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
     public function setCustomRangeData(array $customRangeData): self
     {
         $this->customRangeData = $customRangeData;
+
         return $this;
     }
 
@@ -33,7 +34,7 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
         $orderingIntervals = $organisation->orderingIntervals;
 
         // Handle custom range data
-        if (!empty($this->customRangeData['invoice_categories'])) {
+        if (! empty($this->customRangeData['invoice_categories'])) {
             $aggregatedData = $this->aggregateInvoiceCategoriesData($this->customRangeData['invoice_categories']);
 
             $salesIntervals = $this->createCustomRangeIntervalsObject($salesIntervals, $aggregatedData, 'sales', $organisation);
@@ -44,16 +45,16 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
         $sales_org_currency_delta = $this->getDashboardTableColumn($salesIntervals, 'sales_org_currency_delta');
 
         $sales_invoice_category_currency = [
-            'sales_invoice_category_currency' => $sales_org_currency['sales_org_currency']
+            'sales_invoice_category_currency' => $sales_org_currency['sales_org_currency'],
         ];
 
         $sales_invoice_category_currency_delta = [
-            'sales_invoice_category_currency_delta' => $sales_org_currency_delta['sales_org_currency_delta']
+            'sales_invoice_category_currency_delta' => $sales_org_currency_delta['sales_org_currency_delta'],
         ];
 
         $sales_org_currency_minified = $this->getDashboardTableColumn($salesIntervals, 'sales_org_currency_minified');
         $sales_invoice_category_currency_minified = [
-            'sales_invoice_category_currency_minified' => $sales_org_currency_minified['sales_org_currency_minified']
+            'sales_invoice_category_currency_minified' => $sales_org_currency_minified['sales_org_currency_minified'],
         ];
 
         $routeTargets = [
@@ -89,17 +90,17 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
             [
                 'label' => [
                     'formatted_value' => $organisation->name,
-                    'align'           => 'left',
-                    ...$routeTargets['organisation']
-                ]
+                    'align' => 'left',
+                    ...$routeTargets['organisation'],
+                ],
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $organisation->code,
-                    'tooltip'         => $organisation->name,
-                    'align'           => 'left',
-                    ...$routeTargets['organisation']
-                ]
+                    'tooltip' => $organisation->name,
+                    'align' => 'left',
+                    ...$routeTargets['organisation'],
+                ],
             ],
             $this->getDashboardTableColumn($orderingIntervals, 'refunds', $routeTargets['refunds']),
             $this->getDashboardTableColumn($orderingIntervals, 'refunds_minified', $routeTargets['refunds']),
@@ -117,8 +118,8 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
         );
 
         return [
-            'slug'    => $organisation->slug,
-            'columns' => $columns
+            'slug' => $organisation->slug,
+            'columns' => $columns,
         ];
     }
 

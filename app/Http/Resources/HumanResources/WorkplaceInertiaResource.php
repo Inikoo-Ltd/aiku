@@ -21,14 +21,13 @@ class WorkplaceInertiaResource extends JsonResource
         /** @var Workplace $workplace */
         $workplace = $this;
 
-
         return [
-            'id'            => $workplace->id,
-            'slug'          => $workplace->slug,
-            'name'          => $workplace->name,
-            'type'          => $workplace->type,
+            'id' => $workplace->id,
+            'slug' => $workplace->slug,
+            'name' => $workplace->name,
+            'type' => $workplace->type,
             'organisation_name' => $workplace->organisation_name,
-            'organisation_slug' => $workplace->organisation_slug
+            'organisation_slug' => $workplace->organisation_slug,
         ];
     }
 }

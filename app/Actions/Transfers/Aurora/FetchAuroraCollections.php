@@ -75,7 +75,6 @@ class FetchAuroraCollections extends FetchAuroraAction
                 //                }
             }
 
-
             $productsDelete = $collection->products()->where('type', 'direct')->pluck('model_id')->all();
             $familiesDelete = $collection->families()->pluck('model_id')->all();
 
@@ -83,16 +82,14 @@ class FetchAuroraCollections extends FetchAuroraAction
                 $collectionData['models'] as $model
             ) {
                 if ($model instanceof Product) {
-                    if (!DB::table('collection_has_models')->where('collection_id', $collection->id)->where('model_type', 'Product')->where('model_id', $model->id)->exists()) {
-
-
+                    if (! DB::table('collection_has_models')->where('collection_id', $collection->id)->where('model_type', 'Product')->where('model_id', $model->id)->exists()) {
 
                         AttachModelToCollection::make()->action(
                             collection: $collection,
                             model: $model,
                         );
                     }
-                } elseif (!DB::table('collection_has_models')->where('collection_id', $collection->id)->where('model_type', 'ProductCategory')->where('model_id', $model->id)->exists()) {
+                } elseif (! DB::table('collection_has_models')->where('collection_id', $collection->id)->where('model_type', 'ProductCategory')->where('model_id', $model->id)->exists()) {
                     AttachModelToCollection::make()->action(
                         collection: $collection,
                         model: $model,
@@ -100,14 +97,12 @@ class FetchAuroraCollections extends FetchAuroraAction
 
                 }
 
-
                 if ($model instanceof Product) {
                     $productsDelete = array_diff($productsDelete, [$model->id]);
                 } else {
                     $familiesDelete = array_diff($productsDelete, [$model->id]);
                 }
             }
-
 
             foreach ($productsDelete as $productDelete) {
                 $product = Product::find($productDelete);
@@ -119,14 +114,11 @@ class FetchAuroraCollections extends FetchAuroraAction
                 DetachModelFromCollection::make()->action($collection, $family);
             }
 
-
             return $collection;
         }
 
-
         return null;
     }
-
 
     public function getModelsQuery(): Builder
     {
@@ -147,7 +139,6 @@ class FetchAuroraCollections extends FetchAuroraAction
             $query->whereNull('aiku_id');
         }
 
-
         return $query->orderBy('source_id');
     }
 
@@ -160,7 +151,6 @@ class FetchAuroraCollections extends FetchAuroraAction
             ->where('Category Code', 'like', 'Web.%')
             ->get()->pluck('Category Key')->toArray();
 
-
         $query = DB::connection('aurora')
             ->table('Category Dimension')
             ->where('Category Branch Type', 'Head')
@@ -172,6 +162,4 @@ class FetchAuroraCollections extends FetchAuroraAction
 
         return $query->count();
     }
-
-
 }

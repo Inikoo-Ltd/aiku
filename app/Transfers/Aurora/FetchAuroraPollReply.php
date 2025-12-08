@@ -17,25 +17,25 @@ class FetchAuroraPollReply extends FetchAurora
         $pollOption = null;
         if ($this->auroraModelData->{'Customer Poll Query Option Key'}) {
             $pollOption = $this->parsePollOption($this->organisation->id.':'.$this->auroraModelData->{'Customer Poll Query Option Key'});
-            if (!$pollOption) {
-                //print "WTF option not found (".$this->auroraModelData->{'Customer Poll Query Option Key'}.") \n";
+            if (! $pollOption) {
+                // print "WTF option not found (".$this->auroraModelData->{'Customer Poll Query Option Key'}.") \n";
                 return;
             }
         }
 
         $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Customer Poll Customer Key'});
-        if (!$customer) {
-            //print "WTF customer not found (".$this->auroraModelData->{'Customer Poll Customer Key'}.") \n";
+        if (! $customer) {
+            // print "WTF customer not found (".$this->auroraModelData->{'Customer Poll Customer Key'}.") \n";
             return;
         }
 
-        $this->parsedData['poll']              = $this->parsePoll($this->organisation->id.':'.$this->auroraModelData->{'Customer Poll Query Key'});
+        $this->parsedData['poll'] = $this->parsePoll($this->organisation->id.':'.$this->auroraModelData->{'Customer Poll Query Key'});
         $this->parsedData['poll_reply'] = [
-            'value'           => $this->auroraModelData->{'Customer Poll Reply'},
-            'created_at'      => $this->parseDatetime($this->auroraModelData->{'Customer Poll Date'}),
-            'customer_id'     => $customer->id,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Customer Poll Key'},
-            'fetched_at'      => now(),
+            'value' => $this->auroraModelData->{'Customer Poll Reply'},
+            'created_at' => $this->parseDatetime($this->auroraModelData->{'Customer Poll Date'}),
+            'customer_id' => $customer->id,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Customer Poll Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
 
@@ -44,8 +44,7 @@ class FetchAuroraPollReply extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Customer Poll Fact')

@@ -21,6 +21,7 @@ class DashboardTotalShopsSalesResource extends JsonResource
     public function setCustomRangeData(array $customRangeData): self
     {
         $this->customRangeData = $customRangeData;
+
         return $this;
     }
 
@@ -33,7 +34,7 @@ class DashboardTotalShopsSalesResource extends JsonResource
         $orderingIntervals = $organisation->orderingIntervals;
 
         // Handle custom range data
-        if (!empty($this->customRangeData['shops'])) {
+        if (! empty($this->customRangeData['shops'])) {
             $aggregatedData = $this->aggregateShopsData($this->customRangeData['shops']);
 
             $salesIntervals = $this->createCustomRangeIntervalsObject($salesIntervals, $aggregatedData, 'sales', $organisation);
@@ -82,50 +83,50 @@ class DashboardTotalShopsSalesResource extends JsonResource
         $baskets_created_org_currency_delta = $this->getDashboardTableColumn($salesIntervals, 'baskets_created_org_currency_delta');
 
         $baskets_created_shop_currency = [
-            'baskets_created_shop_currency' => $baskets_created_org_currency['baskets_created_org_currency']
+            'baskets_created_shop_currency' => $baskets_created_org_currency['baskets_created_org_currency'],
         ];
         $baskets_created_shop_currency_delta = [
-            'baskets_created_shop_currency_delta' => $baskets_created_org_currency_delta['baskets_created_org_currency_delta']
+            'baskets_created_shop_currency_delta' => $baskets_created_org_currency_delta['baskets_created_org_currency_delta'],
         ];
 
         $baskets_created_org_currency_minified = $this->getDashboardTableColumn($salesIntervals, 'baskets_created_org_currency_minified', $routeTargets['inBasket']);
         $baskets_created_shop_currency_minified = [
-            'baskets_created_shop_currency_minified' => $baskets_created_org_currency_minified['baskets_created_org_currency_minified']
+            'baskets_created_shop_currency_minified' => $baskets_created_org_currency_minified['baskets_created_org_currency_minified'],
         ];
 
         $sales_org_currency = $this->getDashboardTableColumn($salesIntervals, 'sales_org_currency');
         $sales_org_currency_delta = $this->getDashboardTableColumn($salesIntervals, 'sales_org_currency_delta');
 
         $sales_shop_currency = [
-            'sales_shop_currency' => $sales_org_currency['sales_org_currency']
+            'sales_shop_currency' => $sales_org_currency['sales_org_currency'],
         ];
 
         $sales_shop_currency_delta = [
-            'sales_shop_currency_delta' => $sales_org_currency_delta['sales_org_currency_delta']
+            'sales_shop_currency_delta' => $sales_org_currency_delta['sales_org_currency_delta'],
         ];
 
         $sales_org_currency_minified = $this->getDashboardTableColumn($salesIntervals, 'sales_org_currency_minified');
         $sales_shop_currency_minified = [
-            'sales_shop_currency_minified' => $sales_org_currency_minified['sales_org_currency_minified']
+            'sales_shop_currency_minified' => $sales_org_currency_minified['sales_org_currency_minified'],
         ];
 
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value'   => $organisation->name,
-                    'align'             => 'left',
+                    'formatted_value' => $organisation->name,
+                    'align' => 'left',
                     'data_display_type' => 'full',
                     ...$routeTargets['organisation'],
-                ]
+                ],
             ],
             [
                 'label_minified' => [
-                    'formatted_value'   => $organisation->code,
-                    'tooltip'           => $organisation->name,
-                    'align'             => 'left',
+                    'formatted_value' => $organisation->code,
+                    'tooltip' => $organisation->name,
+                    'align' => 'left',
                     'data_display_type' => 'minified',
                     ...$routeTargets['organisation'],
-                ]
+                ],
             ],
             $baskets_created_shop_currency,
             $baskets_created_shop_currency_minified,
@@ -152,8 +153,8 @@ class DashboardTotalShopsSalesResource extends JsonResource
         );
 
         return [
-            'slug'    => $organisation->slug,
-            'columns' => $columns
+            'slug' => $organisation->slug,
+            'columns' => $columns,
         ];
     }
 

@@ -18,32 +18,31 @@ enum RefundTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case ITEMS                  = 'items';
-    case HISTORY                = 'history';
-    case PAYMENTS               = 'payments';
-
+    case ITEMS = 'items';
+    case HISTORY = 'history';
+    case PAYMENTS = 'payments';
 
     public function blueprint(): array
     {
         return match ($this) {
 
-            RefundTabsEnum::PAYMENTS     => [
+            RefundTabsEnum::PAYMENTS => [
                 'title' => __('Payments'),
-                'type'  => 'icon',
+                'type' => 'icon',
                 'align' => 'right',
-                'icon'  => 'fal fa-credit-card',
+                'icon' => 'fal fa-credit-card',
             ],
 
-            RefundTabsEnum::HISTORY     => [
+            RefundTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
 
-            RefundTabsEnum::ITEMS       => [
+            RefundTabsEnum::ITEMS => [
                 'title' => __('Items'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
 
         };

@@ -26,8 +26,8 @@ class ExternalLinkHydrateWebsites implements ShouldBeUnique
     public function handle(ExternalLink $externalLink): void
     {
         $data = [
-            'number_websites_shown'    => $externalLink->websites()->wherePivot('show', true)->count(),
-            'number_websites_hidden'   => $externalLink->websites()->wherePivot('show', false)->count(),
+            'number_websites_shown' => $externalLink->websites()->wherePivot('show', true)->count(),
+            'number_websites_hidden' => $externalLink->websites()->wherePivot('show', false)->count(),
         ];
 
         $externalLink->update($data);

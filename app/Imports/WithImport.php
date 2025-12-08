@@ -21,6 +21,7 @@ use Maatwebsite\Excel\Validators\Failure;
 trait WithImport
 {
     public Upload $upload;
+
     public int $totalRows = 0;
 
     public function __construct(Upload $upload)
@@ -33,11 +34,11 @@ trait WithImport
         foreach ($failures as $failure) {
             $this->upload->records()->create(
                 [
-                    'values'      => $this->cleanRow(collect($failure->values()))->all(),
-                    'errors'      => $failure->errors(),
+                    'values' => $this->cleanRow(collect($failure->values()))->all(),
+                    'errors' => $failure->errors(),
                     'fail_column' => $failure->attribute(),
-                    'row_number'  => $failure->row(),
-                    'status'      => UploadRecordStatusEnum::FAILED
+                    'row_number' => $failure->row(),
+                    'status' => UploadRecordStatusEnum::FAILED,
                 ]
             );
             $this->updateStats();
@@ -51,17 +52,17 @@ trait WithImport
                 $totalRows = $event->getReader()->getActiveSheet()->getHighestRow();
                 $this->upload->update(
                     [
-                        'number_rows' => $totalRows - 1
+                        'number_rows' => $totalRows - 1,
                     ]
                 );
-            }
+            },
         ];
     }
 
     public function collection(Collection $collection): void
     {
         foreach ($collection as $row) {
-            $row          = $this->cleanRow($row);
+            $row = $this->cleanRow($row);
             $uploadRecord = $this->createUploadRecord($row);
             $this->storeModel($row, $uploadRecord);
         }
@@ -70,7 +71,7 @@ trait WithImport
     public function cleanRow(Collection $row): Collection
     {
         return $row->filter(function ($value, $key) {
-            return !($value === null and is_numeric($key));
+            return ! ($value === null and is_numeric($key));
         });
     }
 
@@ -80,7 +81,7 @@ trait WithImport
         $record = $this->upload->records()->create(
             [
                 'values' => $row,
-                'status' => UploadRecordStatusEnum::PROCESSING
+                'status' => UploadRecordStatusEnum::PROCESSING,
             ]
         );
         $this->updateStats();
@@ -92,7 +93,7 @@ trait WithImport
     {
         $record->update(
             [
-                'status' => UploadRecordStatusEnum::COMPLETE
+                'status' => UploadRecordStatusEnum::COMPLETE,
             ]
         );
         $this->updateStats();
@@ -103,7 +104,7 @@ trait WithImport
         $record->update(
             [
                 'status' => UploadRecordStatusEnum::FAILED,
-                'errors' => $errors
+                'errors' => $errors,
             ]
         );
         $this->updateStats();
@@ -114,7 +115,7 @@ trait WithImport
         $this->upload->update(
             [
                 'number_success' => $this->upload->records()->where('status', UploadRecordStatusEnum::COMPLETE)->count(),
-                'number_fails'   => $this->upload->records()->where('status', UploadRecordStatusEnum::FAILED)->count(),
+                'number_fails' => $this->upload->records()->where('status', UploadRecordStatusEnum::FAILED)->count(),
             ]
         );
         $this->upload->refresh();
@@ -136,5 +137,4 @@ trait WithImport
             $add
         );
     }
-
 }

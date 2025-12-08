@@ -23,9 +23,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\HumanResources\ClockingMachine|null $clockingMachine
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClockingMachineStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClockingMachineStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClockingMachineStats query()
+ *
  * @mixin \Eloquent
  */
 class ClockingMachineStats extends Model
@@ -38,5 +40,4 @@ class ClockingMachineStats extends Model
     {
         return $this->belongsTo(ClockingMachine::class);
     }
-
 }

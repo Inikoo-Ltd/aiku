@@ -39,7 +39,7 @@ class GetWebBlockDepartments
             ],
         ];
 
-        $permissions =  [];
+        $permissions = [];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['department']['data']['fieldValue'] ?? []);
@@ -48,5 +48,4 @@ class GetWebBlockDepartments
 
         return $webBlock;
     }
-
 }

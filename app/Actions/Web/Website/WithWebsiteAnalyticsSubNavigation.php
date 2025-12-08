@@ -20,32 +20,31 @@ trait WithWebsiteAnalyticsSubNavigation
             return $this->getFulfilmentWebpageNavigation($website);
         }
 
-
         return [
 
             [
-                "isAnchor" => true,
-                "label"    => __("Dashboard"),
+                'isAnchor' => true,
+                'label' => __('Dashboard'),
 
-                "route"    => [
-                    "name"       => "grp.org.shops.show.web.analytics.dashboard",
-                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                'route' => [
+                    'name' => 'grp.org.shops.show.web.analytics.dashboard',
+                    'parameters' => [$shop->organisation->slug, $shop->slug, $website->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-analytics"],
-                    "tooltip" => __("Website analytics dashboard"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-analytics'],
+                    'tooltip' => __('Website analytics dashboard'),
                 ],
             ],
             [
-                "number"   => $website->webStats->number_web_user_requests,
-                "label"    => __("Website User Visits"),
-                "route"    => [
-                    "name"       => "grp.org.shops.show.web.analytics.web_user_requests.index",
-                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                'number' => $website->webStats->number_web_user_requests,
+                'label' => __('Website User Visits'),
+                'route' => [
+                    'name' => 'grp.org.shops.show.web.analytics.web_user_requests.index',
+                    'parameters' => [$shop->organisation->slug, $shop->slug, $website->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-project-diagram"],
-                    "tooltip" => __("Website User Requests"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-project-diagram'],
+                    'tooltip' => __('Website User Requests'),
                 ],
             ],
 
@@ -54,42 +53,37 @@ trait WithWebsiteAnalyticsSubNavigation
 
     protected function getFulfilmentWebpageNavigation(Website $website): array
     {
-        $shop       = $website->shop;
+        $shop = $website->shop;
         $fulfilment = $shop->fulfilment;
-
 
         return [
             [
-                "isAnchor" => true,
-                "label"    => __("Dashboard"),
+                'isAnchor' => true,
+                'label' => __('Dashboard'),
 
-                "route"    => [
-                    "name"       => "grp.org.fulfilments.show.web.analytics.dashboard",
-                    "parameters" => [$shop->organisation->slug, $fulfilment->slug, $website->slug],
+                'route' => [
+                    'name' => 'grp.org.fulfilments.show.web.analytics.dashboard',
+                    'parameters' => [$shop->organisation->slug, $fulfilment->slug, $website->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-analytics"],
-                    "tooltip" => __("Website analytics dashboard"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-analytics'],
+                    'tooltip' => __('Website analytics dashboard'),
                 ],
 
             ],
             [
-                "number"   => $website->webStats->number_web_user_requests,
-                "label"    => __("Website User Visits"),
-                "route"    => [
-                    "name"       => "grp.org.fulfilments.show.web.analytics.web_user_requests.index",
-                    "parameters" => [$shop->organisation->slug, $fulfilment->slug, $website->slug],
+                'number' => $website->webStats->number_web_user_requests,
+                'label' => __('Website User Visits'),
+                'route' => [
+                    'name' => 'grp.org.fulfilments.show.web.analytics.web_user_requests.index',
+                    'parameters' => [$shop->organisation->slug, $fulfilment->slug, $website->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-project-diagram"],
-                    "tooltip" => __("Website User Requests"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-project-diagram'],
+                    'tooltip' => __('Website User Requests'),
                 ],
             ],
 
-
-
-
         ];
     }
-
 }

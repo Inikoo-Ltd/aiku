@@ -19,17 +19,16 @@ class UnlinkRetinaPortfolio extends RetinaAction
 {
     use WithActionUpdate;
 
-
     private Portfolio $portfolio;
 
     public function handle(Portfolio $portfolio): void
     {
         UpdatePortfolio::run($portfolio, [
-            'platform_status'               => false,
-            'platform_product_variant_id'   => null,
-            'exist_in_platform'             => false,
+            'platform_status' => false,
+            'platform_product_variant_id' => null,
+            'exist_in_platform' => false,
             'has_valid_platform_product_id' => false,
-            'platform_product_id'           => null
+            'platform_product_id' => null,
         ]);
     }
 

@@ -26,14 +26,17 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model|\Eloquent $model
  * @property-read \App\Models\Helpers\Snapshot|null $snapshot
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Deployment newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Deployment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Deployment query()
+ *
  * @mixin \Eloquent
  */
 class Deployment extends Model
 {
-    protected $dateFormat  = 'Y-m-d H:i:s P';
+    protected $dateFormat = 'Y-m-d H:i:s P';
+
     protected array $dates = ['published_at'];
 
     protected $guarded = [];
@@ -47,5 +50,4 @@ class Deployment extends Model
     {
         return $this->belongsTo(Snapshot::class);
     }
-
 }

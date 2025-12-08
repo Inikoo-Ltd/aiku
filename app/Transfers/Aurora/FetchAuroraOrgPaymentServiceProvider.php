@@ -32,11 +32,10 @@ class FetchAuroraOrgPaymentServiceProvider extends FetchAurora
 
         $this->parsedData['paymentServiceProvider'] = $paymentServiceProvider;
 
-
         $this->parsedData['orgPaymentServiceProvider'] = [
-            'code'            => $paymentServiceProvider->code.'-'.$this->organisation->code,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Payment Service Provider Key'},
-            'fetched_at'      => now(),
+            'code' => $paymentServiceProvider->code.'-'.$this->organisation->code,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Payment Service Provider Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
 
@@ -60,8 +59,7 @@ class FetchAuroraOrgPaymentServiceProvider extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Payment Service Provider Dimension')

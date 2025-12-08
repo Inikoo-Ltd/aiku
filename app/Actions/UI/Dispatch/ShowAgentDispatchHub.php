@@ -36,13 +36,11 @@ class ShowAgentDispatchHub extends OrgAction
         return $this->handle($warehouse);
     }
 
-
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
         /** @var Agent $agent */
         $agent = $warehouse->organisation->agent;
         $stats = $this->agentOrganisationStats($agent, $request);
-
 
         return Inertia::render(
             'Org/Dispatching/DispatchHub',
@@ -50,15 +48,15 @@ class ShowAgentDispatchHub extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => 'dispatch',
-                'pageHead'    => [
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-conveyor-belt-alt'],
-                        'title' => __('Locations')
+                'title' => 'dispatch',
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-conveyor-belt-alt'],
+                        'title' => __('Locations'),
                     ],
                     'title' => __('Dispatching backlog'),
                 ],
-                'box_stats'   => $stats
+                'box_stats' => $stats,
 
             ]
         );
@@ -68,22 +66,20 @@ class ShowAgentDispatchHub extends OrgAction
     {
         return [
             [
-                'name'  => __('Deliveries'),
+                'name' => __('Deliveries'),
                 // toto do this properly
                 'value' => $agent->stats->number_current_stock_deliveries,
                 'route' => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes',
-                    'parameters' => $request->route()->originalParameters()
+                    'name' => 'grp.org.warehouses.show.dispatching.delivery-notes',
+                    'parameters' => $request->route()->originalParameters(),
                 ],
-                'icon'  => [
-                    'icon'    => 'fal fa-truck',
-                    'tooltip' => __('Deliveries')
-                ]
+                'icon' => [
+                    'icon' => 'fal fa-truck',
+                    'tooltip' => __('Deliveries'),
+                ],
             ],
         ];
     }
-
-
 
     public function getBreadcrumbs(array $routeParameters): array
     {
@@ -91,17 +87,16 @@ class ShowAgentDispatchHub extends OrgAction
             ShowGroupDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.backlog',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.warehouses.show.dispatching.backlog',
+                            'parameters' => $routeParameters,
                         ],
                         'label' => __('Dispatching'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }
-
 }

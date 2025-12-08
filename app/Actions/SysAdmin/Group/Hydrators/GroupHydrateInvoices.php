@@ -22,7 +22,6 @@ class GroupHydrateInvoices implements ShouldBeUnique
     use WithEnumStats;
     use WithHydrateInvoices;
 
-
     public string $jobQueue = 'sales';
 
     public function getJobUniqueId(Group $group): string
@@ -49,6 +48,4 @@ class GroupHydrateInvoices implements ShouldBeUnique
 
         $group->orderingStats()->update($stats);
     }
-
-
 }

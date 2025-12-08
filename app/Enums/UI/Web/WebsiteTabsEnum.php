@@ -26,22 +26,22 @@ enum WebsiteTabsEnum: string
         return match ($this) {
             WebsiteTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             WebsiteTabsEnum::EXTERNAL_LINKS => [
                 'title' => __('External links'),
-                'icon'  => 'fal fa-external-link',
+                'icon' => 'fal fa-external-link',
             ],
 
             WebsiteTabsEnum::REDIRECTS => [
                 'title' => __('Redirects'),
-                'icon'  => 'fal fa-terminal',
+                'icon' => 'fal fa-terminal',
             ],
 
             WebsiteTabsEnum::CHANGELOG => [
                 'title' => __('Changelog'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
         };

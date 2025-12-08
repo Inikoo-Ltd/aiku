@@ -16,7 +16,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PalletReturnPalletStoredItemExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMapping
+class PalletReturnPalletStoredItemExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     use Exportable;
 
@@ -30,18 +30,19 @@ class PalletReturnPalletStoredItemExport implements FromQuery, WithHeadings, Sho
     public function query()
     {
         return PalletStoredItem::query()
-        ->whereHas('storedItem', function ($query) {
-            $query->where('fulfilment_customer_id', $this->fulfilmentCustomer->id);
-        });
+            ->whereHas('storedItem', function ($query) {
+                $query->where('fulfilment_customer_id', $this->fulfilmentCustomer->id);
+            });
     }
 
     public function map($row): array
     {
         /** @var PalletStoredItem $row */
         $palletStoredItem = $row;
+
         return [
             $palletStoredItem->storedItem->reference,
-            $palletStoredItem->quantity
+            $palletStoredItem->quantity,
         ];
     }
 

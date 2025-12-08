@@ -20,15 +20,14 @@ beforeAll(function () {
     loadDB();
 });
 beforeEach(function () {
-    list(
+    [
         $this->organisation,
         $this->user,
         $this->shop
-    )                        = createShop();
-    $this->warehouse         = createWarehouse();
-    $this->fulfilment        = createFulfilment($this->organisation);
+    ] = createShop();
+    $this->warehouse = createWarehouse();
+    $this->fulfilment = createFulfilment($this->organisation);
     $this->fulfilmentWebsite = createWebsite($this->fulfilment->shop);
-
 
     Config::set(
         'inertia.testing.page_paths',
@@ -37,15 +36,12 @@ beforeEach(function () {
     actingAs($this->user);
 });
 
-
-
 test('test iris fulfilment website not launched', function () {
 
     $website = $this->fulfilmentWebsite;
 
     Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Iris')]);
     DetectWebsiteFromDomain::shouldRun()->with('localhost')->andReturn($website);
-
 
     $response = get(
         route(
@@ -57,7 +53,6 @@ test('test iris fulfilment website not launched', function () {
 
     $redirect = $this->followRedirects($response);
     $redirect->assertStatus(200);
-
 
     $redirect->assertInertia(function (AssertableInertia $page) {
         $page->component('Disclosure/UnderConstruction');

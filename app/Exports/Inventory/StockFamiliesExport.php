@@ -16,14 +16,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class StockFamiliesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class StockFamiliesExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|StockFamily|Builder
     {
         return StockFamily::query();
     }
 
-    /** @var StockFamily $row */
+    /** @var StockFamily */
     public function map($row): array
     {
         return [
@@ -31,7 +31,7 @@ class StockFamiliesExport implements FromQuery, WithMapping, ShouldAutoSize, Wit
             $row->slug,
             $row->state->value,
             $row->name,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -42,7 +42,7 @@ class StockFamiliesExport implements FromQuery, WithMapping, ShouldAutoSize, Wit
             'Slug',
             'Value',
             'Name',
-            'Created At'
+            'Created At',
         ];
     }
 }

@@ -23,16 +23,18 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model|\Eloquent $model
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailDeliveryChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailDeliveryChannel newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailDeliveryChannel query()
+ *
  * @mixin \Eloquent
  */
 class EmailDeliveryChannel extends Model
 {
     protected $casts = [
 
-        'state' => EmailDeliveryChannelStateEnum::class
+        'state' => EmailDeliveryChannelStateEnum::class,
 
     ];
 
@@ -42,5 +44,4 @@ class EmailDeliveryChannel extends Model
     {
         return $this->morphTo();
     }
-
 }

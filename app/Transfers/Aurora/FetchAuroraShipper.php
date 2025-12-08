@@ -26,7 +26,6 @@ class FetchAuroraShipper extends FetchAurora
             }
         }
 
-
         if ($this->organisation->slug == 'es') {
             if (in_array($code, ['gls', 'tnt', 'dhl', 'ups'])) {
                 $code = 'es-'.$code;
@@ -39,24 +38,22 @@ class FetchAuroraShipper extends FetchAurora
             }
         }
 
-
         $this->parsedData['shipper'] = [
-            'code'            => $code,
-            'name'            => $this->auroraModelData->{'Shipper Name'},
-            'website'         => $this->auroraModelData->{'Shipper Website'},
-            'company_name'    => $this->auroraModelData->{'Shipper Fiscal Name'},
-            'contact_name'    => $this->auroraModelData->{'Shipper Name'},
-            'phone'           => $this->auroraModelData->{'Shipper Telephone'},
-            'status'          => $this->auroraModelData->{'Shipper Active'} === 'Yes',
-            'tracking_url'    => $this->auroraModelData->{'Shipper Tracking URL'},
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Shipper Key'},
-            'fetched_at'      => now(),
+            'code' => $code,
+            'name' => $this->auroraModelData->{'Shipper Name'},
+            'website' => $this->auroraModelData->{'Shipper Website'},
+            'company_name' => $this->auroraModelData->{'Shipper Fiscal Name'},
+            'contact_name' => $this->auroraModelData->{'Shipper Name'},
+            'phone' => $this->auroraModelData->{'Shipper Telephone'},
+            'status' => $this->auroraModelData->{'Shipper Active'} === 'Yes',
+            'tracking_url' => $this->auroraModelData->{'Shipper Tracking URL'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Shipper Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Shipper Dimension')

@@ -30,7 +30,6 @@ class SetLocale
         return $next($request);
     }
 
-
     public function getLocale(): string
     {
 
@@ -47,16 +46,15 @@ class SetLocale
         if ($user = auth()->user()) {
             /** @var Language $language */
             $language = Language::find($user->language_id);
-            $locale   = $language->code;
+            $locale = $language->code;
         } else {
             $locale = substr(locale_accept_from_http(Arr::get($_SERVER, 'HTTP_ACCEPT_LANGUAGE', 'en')), 0, 2);
         }
 
-        if (!$locale) {
+        if (! $locale) {
             $locale = 'en';
         }
 
         return $locale;
     }
-
 }

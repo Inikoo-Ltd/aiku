@@ -30,15 +30,14 @@ class FetchAuroraCustomer extends FetchAurora
             return;
         }
 
-
         $this->parsedData['shop'] = $shop;
 
         $status = CustomerStatusEnum::APPROVED->value;
-        $state  = CustomerStateEnum::ACTIVE->value;
+        $state = CustomerStateEnum::ACTIVE->value;
         if ($this->auroraModelData->{'Customer Type by Activity'} == 'Rejected') {
             $status = CustomerStatusEnum::REJECTED->value;
         } elseif ($this->auroraModelData->{'Customer Type by Activity'} == 'ToApprove') {
-            $state  = CustomerStateEnum::REGISTERED->value;
+            $state = CustomerStateEnum::REGISTERED->value;
             $status = CustomerStatusEnum::PENDING_APPROVAL->value;
         } elseif ($this->auroraModelData->{'Customer Type by Activity'} == 'Losing') {
             $state = CustomerStateEnum::LOSING->value;
@@ -46,12 +45,11 @@ class FetchAuroraCustomer extends FetchAurora
             $state = CustomerStateEnum::LOST->value;
         }
 
-        if (!$shop->registration_needs_approval && $status == CustomerStatusEnum::PENDING_APPROVAL->value) {
+        if (! $shop->registration_needs_approval && $status == CustomerStatusEnum::PENDING_APPROVAL->value) {
             $status = CustomerStatusEnum::APPROVED->value;
         }
 
-
-        $billingAddress  = $this->parseAddress(prefix: 'Customer Invoice', auAddressData: $this->auroraModelData);
+        $billingAddress = $this->parseAddress(prefix: 'Customer Invoice', auAddressData: $this->auroraModelData);
         $deliveryAddress = $this->parseAddress(prefix: 'Customer Delivery', auAddressData: $this->auroraModelData);
 
         if (Arr::get($billingAddress, 'country_id') == null) {
@@ -63,31 +61,28 @@ class FetchAuroraCustomer extends FetchAurora
 
         $taxNumberFromAurora = $this->auroraModelData->{'Customer Tax Number'};
         if ($taxNumberFromAurora) {
-            $taxNumberFromAurora = preg_replace("/[^a-zA-Z0-9\-]/", "", $this->sanitiseText($taxNumberFromAurora));
+            $taxNumberFromAurora = preg_replace("/[^a-zA-Z0-9\-]/", '', $this->sanitiseText($taxNumberFromAurora));
         }
 
         $taxNumber = $this->parseTaxNumber(
             number: $taxNumberFromAurora,
             countryID: $billingAddress['country_id'],
-            rawData: (array)$this->auroraModelData
+            rawData: (array) $this->auroraModelData
         );
 
-
         $contactName = $this->auroraModelData->{'Customer Main Contact Name'};
-        $company     = $this->auroraModelData->{'Customer Company Name'};
-
+        $company = $this->auroraModelData->{'Customer Company Name'};
 
         $contactName = $this->cleanName($contactName);
 
         $company = $this->cleanName($company);
         $company = $this->cleanCompanyName($company);
 
-
-        if (!$company && !$contactName) {
+        if (! $company && ! $contactName) {
             $contactName = $this->auroraModelData->{'Customer Name'};
             $contactName = $this->cleanName($contactName);
             $contactName = $this->cleanCompanyName($contactName);
-            if (!$contactName) {
+            if (! $contactName) {
                 $contactName = '***';
             }
         }
@@ -99,34 +94,32 @@ class FetchAuroraCustomer extends FetchAurora
 
         if (is_numeric($contactName)) {
             $tmp = preg_replace('/[^0-9]/i', '', $contactName);
-            $tmp = (string)preg_replace('/^0/', '', $tmp);
+            $tmp = (string) preg_replace('/^0/', '', $tmp);
 
             if (strlen($contactName) > 6 and preg_match("/$tmp/", $phone)) {
                 $contactName = '';
             }
             if ($contactName != '' and $company == '') {
-                $company     = $contactName;
+                $company = $contactName;
                 $contactName = '';
             }
         }
 
-        $internalNotes          = $this->auroraModelData->{'Customer Sticky Note'};
+        $internalNotes = $this->auroraModelData->{'Customer Sticky Note'};
         $warehouseInternalNotes = $this->auroraModelData->{'Customer Order Sticky Note'};
-        $warehousePublicNotes   = $this->auroraModelData->{'Customer Delivery Sticky Note'};
+        $warehousePublicNotes = $this->auroraModelData->{'Customer Delivery Sticky Note'};
 
-
-        $internalNotes          = $this->clearTextWithHtml($internalNotes);
+        $internalNotes = $this->clearTextWithHtml($internalNotes);
         $warehouseInternalNotes = $this->clearTextWithHtml($warehouseInternalNotes);
-        $warehousePublicNotes   = $this->clearTextWithHtml($warehousePublicNotes);
+        $warehousePublicNotes = $this->clearTextWithHtml($warehousePublicNotes);
 
         $emailSubscriptions = [
-            'is_subscribed_to_newsletter'        => $this->auroraModelData->{'Customer Send Newsletter'} == 'Yes',
-            'is_subscribed_to_marketing'         => $this->auroraModelData->{'Customer Send Email Marketing'} == 'Yes',
-            'is_subscribed_to_abandoned_cart'    => true,
-            'is_subscribed_to_reorder_reminder'  => true,
-            'is_subscribed_to_basket_low_stock'  => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
+            'is_subscribed_to_newsletter' => $this->auroraModelData->{'Customer Send Newsletter'} == 'Yes',
+            'is_subscribed_to_marketing' => $this->auroraModelData->{'Customer Send Email Marketing'} == 'Yes',
+            'is_subscribed_to_abandoned_cart' => true,
+            'is_subscribed_to_reorder_reminder' => true,
+            'is_subscribed_to_basket_low_stock' => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
             'is_subscribed_to_basket_reminder' => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
-
 
         ];
 
@@ -149,7 +142,7 @@ class FetchAuroraCustomer extends FetchAurora
             if (in_array($this->auroraModelData->{'Customer Key'}, [
                 10362,
                 17032,
-                392469
+                392469,
             ])) {
                 $isVip = true;
             }
@@ -157,28 +150,26 @@ class FetchAuroraCustomer extends FetchAurora
 
         $asEmployeeID = null;
 
-
         $isRe = $this->auroraModelData->{'Customer Recargo Equivalencia'} == 'Yes';
 
         $this->parsedData['customer'] =
             [
-                'reference'           => sprintf('%05d', $this->auroraModelData->{'Customer Key'}),
-                'state'               => $state,
-                'status'              => $status,
-                'source_id'           => $this->organisation->id.':'.$this->auroraModelData->{'Customer Key'},
-                'created_at'          => $this->auroraModelData->{'Customer First Contacted Date'},
-                'registered_at'       => $this->auroraModelData->{'Customer First Contacted Date'},
-                'contact_address'     => $billingAddress,
-                'tax_number'          => $taxNumber,
+                'reference' => sprintf('%05d', $this->auroraModelData->{'Customer Key'}),
+                'state' => $state,
+                'status' => $status,
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Customer Key'},
+                'created_at' => $this->auroraModelData->{'Customer First Contacted Date'},
+                'registered_at' => $this->auroraModelData->{'Customer First Contacted Date'},
+                'contact_address' => $billingAddress,
+                'tax_number' => $taxNumber,
                 'email_subscriptions' => $emailSubscriptions,
-                'fetched_at'          => now(),
-                'last_fetched_at'     => now(),
-                'is_vip'              => $isVip,
-                'as_organisation_id'  => $AsOrganisation?->id,
-                'as_employee_id'      => $asEmployeeID,
-                'is_re'               => $isRe,
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
+                'is_vip' => $isVip,
+                'as_organisation_id' => $AsOrganisation?->id,
+                'as_employee_id' => $asEmployeeID,
+                'is_re' => $isRe,
             ];
-
 
         if ($internalNotes != '') {
             $this->parsedData['customer']['internal_notes'] = $internalNotes;
@@ -191,7 +182,6 @@ class FetchAuroraCustomer extends FetchAurora
         if ($warehousePublicNotes != '') {
             $this->parsedData['customer']['warehouse_public_notes'] = $warehousePublicNotes;
         }
-
 
         if ($contactName != '') {
             $this->parsedData['customer']['contact_name'] = $contactName;
@@ -223,7 +213,6 @@ class FetchAuroraCustomer extends FetchAurora
             }
         }
 
-
         if ($billingAddress != $deliveryAddress) {
 
             $this->parsedData['customer']['delivery_address'] = $deliveryAddress;
@@ -233,14 +222,12 @@ class FetchAuroraCustomer extends FetchAurora
 
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Customer Dimension')
             ->where('Customer Key', $id)->first();
     }
-
 
     protected function cleanCompanyName($name): string
     {
@@ -273,14 +260,12 @@ class FetchAuroraCustomer extends FetchAurora
         return $name;
     }
 
-
     protected function cleanCompanyNumber($string): string
     {
         $string = $this->cleanName($string);
         $string = $this->cleanCompanyName($string);
 
         $string = preg_replace('/^([:;])\s*/', '', $string);
-
 
         if (preg_match('/(No tengo|Don.?t have|Dont have|I don.t have|not Applicable|Not available|Not yet|Sheffield|independente em nome próprio|Sole Trader|carmen|carlos|En proceso|entrepreneur|unknown|test|to follow|Under construction)/i', $string)) {
             $string = '';
@@ -353,7 +338,7 @@ class FetchAuroraCustomer extends FetchAurora
             'Slovenská republika',
             'En cours pas recu encore',
             'Slowakei',
-            'Slovakia'
+            'Slovakia',
         ])) {
             $string = '';
         }
@@ -365,7 +350,6 @@ class FetchAuroraCustomer extends FetchAurora
         return $string;
     }
 
-
     protected function cleanUrl($url): string
     {
         $url = $this->cleanName($url);
@@ -375,7 +359,6 @@ class FetchAuroraCustomer extends FetchAurora
 
         return $url;
     }
-
 
     protected function cleanPhone($phone): string
     {
@@ -393,7 +376,7 @@ class FetchAuroraCustomer extends FetchAurora
             'Y',
             '\\',
             'Xxxxxx.',
-            'Om'
+            'Om',
 
         ])) {
             $phone = '';
@@ -406,5 +389,4 @@ class FetchAuroraCustomer extends FetchAurora
 
         return $phone;
     }
-
 }

@@ -20,14 +20,13 @@ class IndexRetinaDropshippingProductsForEmptyBasket extends RetinaAction
 {
     public function handle($prefix = null): LengthAwarePaginator
     {
-        $globalSearch         = AllowedFilter::callback('global', function ($query, $value) {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('products.name', $value)
                     ->orWhereStartWith('products.code', $value);
                 //    ->orWhereStartWith('portfolios.reference', $value);
             });
         });
-
 
         $unUploadedFilter = AllowedFilter::callback('un_upload', function ($query) {
             $query->whereNull('platform_product_id');
@@ -53,7 +52,6 @@ class IndexRetinaDropshippingProductsForEmptyBasket extends RetinaAction
             $query->where('products.is_for_sale', true);
         }
 
-
         $query->select([
             'products.id',
             'products.code',
@@ -64,13 +62,11 @@ class IndexRetinaDropshippingProductsForEmptyBasket extends RetinaAction
             'products.image_id',
         ]);
 
-
         return $query->defaultSort('products.code')
             ->allowedFilters([$unUploadedFilter, $globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
-
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
@@ -83,6 +79,4 @@ class IndexRetinaDropshippingProductsForEmptyBasket extends RetinaAction
     {
         return SelectProductsForBasketResource::collection($productsForBasket);
     }
-
-
 }

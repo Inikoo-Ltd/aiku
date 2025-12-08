@@ -12,23 +12,22 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Website\GetWebsiteWorkshopSidebar;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
+use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Web\WebBlockTypesResource;
-use Illuminate\Support\Arr;
 
 class ShowSidebarWorkshop extends OrgAction
 {
     use WithMenuSubNavigation;
     use WithWebEditAuthorisation;
     use WithWebsiteWorkshop;
-
 
     private Webpage|Website $parent;
 
@@ -39,8 +38,9 @@ class ShowSidebarWorkshop extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-        $sidebarLayout   = Arr::get($website->published_layout, 'sidebar');
+        $sidebarLayout = Arr::get($website->published_layout, 'sidebar');
         $isMenuActive = Arr::get($sidebarLayout, 'status');
+
         return Inertia::render(
             'Org/Web/Workshop/Sidebar/MenuWorkshopForSidebar',
             [
@@ -48,51 +48,50 @@ class ShowSidebarWorkshop extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("Website Sidebar's Workshop"),
-                'pageHead'    => [
+                'title' => __("Website Sidebar's Workshop"),
+                'pageHead' => [
                     'subNavigation' => $this->getMenuSubNavigation($website),
-                    'title'         => __("Sidebar's Workshop"),
-                    'model'         => $website->name,
-                    'icon'          => [
+                    'title' => __("Sidebar's Workshop"),
+                    'model' => $website->name,
+                    'icon' => [
                         'tooltip' => __('Header'),
-                        'icon'    => 'fal fa-browser'
+                        'icon' => 'fal fa-browser',
                     ],
-                    'meta'          => [
+                    'meta' => [
                         [
-                            'key'      => 'website',
-                            'label'    => $website->domain,
+                            'key' => 'website',
+                            'label' => $website->domain,
                             'leftIcon' => [
-                                'icon' => 'fal fa-globe'
-                            ]
-                        ]
+                                'icon' => 'fal fa-globe',
+                            ],
+                        ],
                     ],
-                    'actions'       => $this->getActions($website, 'grp.models.website.publish.sidebar')
+                    'actions' => $this->getActions($website, 'grp.models.website.publish.sidebar'),
 
                 ],
 
                 'upload_image_route' => [
-                    'name'       => 'grp.models.website.sidebar.images.store',
+                    'name' => 'grp.models.website.sidebar.images.store',
                     'parameters' => [
-                        'website' => $website->id
-                    ]
+                        'website' => $website->id,
+                    ],
                 ],
 
                 'autosaveRoute' => [
-                    'name'       => 'grp.models.website.autosave.sidebar',
+                    'name' => 'grp.models.website.autosave.sidebar',
                     'parameters' => [
-                        'website' => $website->id
-                    ]
+                        'website' => $website->id,
+                    ],
                 ],
-                'status'        => $isMenuActive ?? true,
-                'domain'        => $website->domain,
-                'data'          => GetWebsiteWorkshopSidebar::run($website),
+                'status' => $isMenuActive ?? true,
+                'domain' => $website->domain,
+                'data' => GetWebsiteWorkshopSidebar::run($website),
                 'webBlockTypes' => WebBlockTypesResource::collection(
                     $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'website')->where('data->component', 'sidebar')->get()
-                )
+                ),
             ]
         );
     }
-
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
@@ -116,11 +115,11 @@ class ShowSidebarWorkshop extends OrgAction
         $headCrumb = function (array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Workshop')
+                            'label' => __('Workshop'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -128,11 +127,10 @@ class ShowSidebarWorkshop extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
-
 
         return match ($routeName) {
             'grp.org.shops.show.web.websites.workshop.sidebar' => array_merge(
@@ -143,13 +141,13 @@ class ShowSidebarWorkshop extends OrgAction
                 $headCrumb(
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.web.websites.workshop',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.shops.show.web.websites.workshop',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.web.websites.workshop.sidebar',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.shops.show.web.websites.workshop.sidebar',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -157,5 +155,4 @@ class ShowSidebarWorkshop extends OrgAction
             default => []
         };
     }
-
 }

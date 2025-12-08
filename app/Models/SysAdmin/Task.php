@@ -37,18 +37,20 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\User> $users
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Task extends Model
 {
-    use InOrganisation;
     use HasSlug;
+    use InOrganisation;
     use SoftDeletes;
 
     protected $guarded = [];

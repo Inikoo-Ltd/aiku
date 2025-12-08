@@ -29,14 +29,14 @@ use App\Actions\Helpers\Brand\Json\GetIrisBrands;
 use App\Actions\Helpers\Brand\Json\GetIrisShopBrands;
 use App\Actions\Helpers\Tag\Json\GetIrisShopTags;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
-use App\Actions\Iris\IrisLogWebUserRequest;
 use App\Actions\Iris\Basket\FetchIrisEcomBasket;
+use App\Actions\Iris\IrisLogWebUserRequest;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(["retina-auth:retina"])->group(function () {
+Route::middleware(['retina-auth:retina'])->group(function () {
     Route::get('product-category/{productCategory:id}/portfolio-data', GetIrisPortfoliosInProductCategory::class)->name('product_category.portfolio_data');
     Route::get('product-category/{productCategory:id}/transaction-data', GetIrisBasketTransactionsInProductCategory::class)->name('product_category.transaction_data');
     Route::get('product/{product:id}/transaction-data', GetIrisBasketTransactionsInProduct::class)->name('product.transaction_data')->withoutScopedBindings();
@@ -44,10 +44,8 @@ Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('collection/{collection:id}/transaction-data', GetIrisBasketTransactionsInCollection::class)->name('collection.transaction_data');
 });
 
-
-Route::middleware(["iris-relax-auth:retina"])->group(function () {
+Route::middleware(['iris-relax-auth:retina'])->group(function () {
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
-
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
@@ -58,7 +56,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('brands', GetIrisBrands::class)->name('brands.index');
 
     Route::get('/fetch-basket', FetchIrisEcomBasket::class)->name('fetch_basket');
-
 
     Route::get('shop-tags', GetIrisShopTags::class)->name('shops.tags.index');
     Route::get('shop-brands', GetIrisShopBrands::class)->name('shops.brands.index');

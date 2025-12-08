@@ -65,9 +65,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SupplyChain\Agent $agent
+ *
  * @method static Builder<static>|AgentStats newModelQuery()
  * @method static Builder<static>|AgentStats newQuery()
  * @method static Builder<static>|AgentStats query()
+ *
  * @mixin Eloquent
  */
 class AgentStats extends Model

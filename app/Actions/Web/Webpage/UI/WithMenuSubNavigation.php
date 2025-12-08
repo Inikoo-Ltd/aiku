@@ -17,29 +17,28 @@ trait WithMenuSubNavigation
     {
         return [
             [
-                'isAnchor'   => true,
-                'label'    => __('Menu'),
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.web.websites.workshop.menu',
-                    'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug]
+                'isAnchor' => true,
+                'label' => __('Menu'),
+                'route' => [
+                    'name' => 'grp.org.shops.show.web.websites.workshop.menu',
+                    'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug],
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-stream'],
-                    'tooltip' => __('Menu')
-                ]
+                    'icon' => ['fal', 'fa-stream'],
+                    'tooltip' => __('Menu'),
+                ],
             ],
             [
-                'label'    => __('Snapshots'),
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.web.websites.workshop.snapshots.menu',
-                    'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug]
+                'label' => __('Snapshots'),
+                'route' => [
+                    'name' => 'grp.org.shops.show.web.websites.workshop.snapshots.menu',
+                    'parameters' => [$website->organisation->slug, $website->shop->slug, $website->slug],
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-folder'],
-                    'tooltip' => __('snapshots')
-                ]
+                    'icon' => ['fal', 'fa-folder'],
+                    'tooltip' => __('snapshots'),
+                ],
             ],
         ];
     }
-
 }

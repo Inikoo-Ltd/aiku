@@ -38,6 +38,7 @@ class FetchAuroraFeedbacks extends FetchAuroraAction
                     $this->recordChange($organisationSource, $feedback->wasChanged());
                 } catch (Exception $e) {
                     $this->recordError($organisationSource, $e, $feedbackData['feedback'], 'Feedback', 'update');
+
                     return null;
                 }
             } else {
@@ -65,10 +66,10 @@ class FetchAuroraFeedbacks extends FetchAuroraAction
                         ->update(['aiku_id' => $feedback->id]);
                 } catch (Exception|Throwable $e) {
                     $this->recordError($organisationSource, $e, $feedbackData['feedback'], 'Feedback', 'store');
+
                     return null;
                 }
             }
-
 
             return $feedback;
         }
@@ -83,9 +84,7 @@ class FetchAuroraFeedbacks extends FetchAuroraAction
             ->select('Feedback Key as source_id')
             ->orderBy('Feedback Date');
 
-
     }
-
 
     public function count(): ?int
     {

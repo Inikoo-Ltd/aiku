@@ -27,11 +27,11 @@ class GetPupilFulfilmentNavigation
                 'icon' => ['fal', 'fa-tachometer-alt'],
                 'root' => 'pupil.home',
                 'route' => [
-                    'name' => 'pupil.home'
+                    'name' => 'pupil.home',
                 ],
                 'topMenu' => [
 
-                ]
+                ],
             ];
         } elseif ($shopifyUser?->customer_id) {
             $groupNavigation['dashboard'] = [
@@ -39,11 +39,11 @@ class GetPupilFulfilmentNavigation
                 'icon' => ['fal', 'fa-tachometer-alt'],
                 'root' => 'pupil.home',
                 'route' => [
-                    'name' => 'pupil.home'
+                    'name' => 'pupil.home',
                 ],
                 'topMenu' => [
 
-                ]
+                ],
             ];
 
             if ($shopifyUser->customer->is_fulfilment) {

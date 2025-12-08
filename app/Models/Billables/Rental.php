@@ -63,43 +63,45 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Rental extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasUniversalSearch;
-    use InAssetModel;
     use HasHistory;
     use HasSlug;
+    use HasUniversalSearch;
+    use InAssetModel;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     protected $casts = [
-        'price'    => 'decimal:2',
-        'state'    => RentalStateEnum::class,
-        'type'     => RentalTypeEnum::class,
-        'unit'     => RentalUnitEnum::class,
-        'status'   => 'boolean',
-        'data'     => 'array',
+        'price' => 'decimal:2',
+        'state' => RentalStateEnum::class,
+        'type' => RentalTypeEnum::class,
+        'unit' => RentalUnitEnum::class,
+        'status' => 'boolean',
+        'data' => 'array',
         'settings' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 
     public function generateTags(): array
     {
         return [
-            'catalogue','fulfilment'
+            'catalogue', 'fulfilment',
         ];
     }
 
@@ -118,7 +120,6 @@ class Rental extends Model implements Auditable
         'auto_assign_asset_type',
     ];
 
-
     public function getRouteKeyName(): string
     {
         return 'slug';
@@ -135,11 +136,8 @@ class Rental extends Model implements Auditable
             ->slugsShouldBeNoLongerThan(128);
     }
 
-
     public function fulfilment(): BelongsTo
     {
         return $this->belongsTo(Fulfilment::class);
     }
-
-
 }

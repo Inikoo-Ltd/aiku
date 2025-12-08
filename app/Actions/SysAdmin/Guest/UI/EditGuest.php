@@ -9,8 +9,8 @@
 namespace App\Actions\SysAdmin\Guest\UI;
 
 use App\Actions\GrpAction;
-use App\Actions\SysAdmin\User\GetUserOrganisationScopeJobPositionsData;
 use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
+use App\Actions\SysAdmin\User\GetUserOrganisationScopeJobPositionsData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Api\Dropshipping\ShopResource;
 use App\Http\Resources\HumanResources\JobPositionResource;
@@ -32,7 +32,8 @@ class EditGuest extends GrpAction
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('sysadmin.edit');
-        return $request->user()->authTo("sysadmin.view");
+
+        return $request->user()->authTo('sysadmin.view');
     }
 
     public function asController(Guest $guest, ActionRequest $request): Guest
@@ -43,38 +44,34 @@ class EditGuest extends GrpAction
         return $this->handle($guest);
     }
 
-
-
     public function htmlResponse(Guest $guest, ActionRequest $request): Response
     {
         $user = $guest->getUser();
 
         $jobPositionsOrganisationsData = [];
         foreach ($this->group->organisations as $organisation) {
-            $jobPositionsOrganisationData                       = GetUserOrganisationScopeJobPositionsData::run($user, $organisation);
+            $jobPositionsOrganisationData = GetUserOrganisationScopeJobPositionsData::run($user, $organisation);
             $jobPositionsOrganisationsData[$organisation->slug] = $jobPositionsOrganisationData;
         }
-
-
 
         $permissionsGroupData = GetUserGroupScopeJobPositionsData::run($user);
         $organisations = $user->group->organisations;
         $orgIds = $user->getOrganisations()->pluck('id')->toArray();
 
-        $reviewData    = $organisations->mapWithKeys(function ($organisation) use ($user, $orgIds) {
+        $reviewData = $organisations->mapWithKeys(function ($organisation) use ($orgIds) {
             return [
                 $organisation->slug => [
                     'is_employee' => in_array($organisation->id, $orgIds),
                     'number_job_positions' => $organisation->humanResourcesStats->number_job_positions,
-                    'job_positions'        => $organisation->jobPositions->mapWithKeys(function ($jobPosition) {
+                    'job_positions' => $organisation->jobPositions->mapWithKeys(function ($jobPosition) {
                         return [
                             $jobPosition->slug => [
                                 'job_position' => $jobPosition->name,
-                                'number_roles' => $jobPosition->stats->number_roles
-                            ]
+                                'number_roles' => $jobPosition->stats->number_roles,
+                            ],
                         ];
-                    })
-                ]
+                    }),
+                ],
             ];
         })->toArray();
 
@@ -83,130 +80,129 @@ class EditGuest extends GrpAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('guest'),
+                'title' => __('guest'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'pageHead'    => [
-                    'title'     => $guest->contact_name,
-                    'actions'   => [
+                'pageHead' => [
+                    'title' => $guest->contact_name,
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
                     ],
                 ],
 
                 'formData' => [
                     'blueprint' => [
                         [
-                            "label"   => __("Personal Information"),
-                            'icon'   => 'fal fa-id-card',
-                            'title'  => __('personal information'),
+                            'label' => __('Personal Information'),
+                            'icon' => 'fal fa-id-card',
+                            'title' => __('personal information'),
                             'fields' => [
 
                                 'contact_name' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('name'),
-                                    'value' => $guest->contact_name
+                                    'value' => $guest->contact_name,
                                 ],
                                 'email' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('email'),
-                                    'value' => $guest->email
+                                    'value' => $guest->email,
                                 ],
                                 'phone' => [
-                                    'type'  => 'phone',
+                                    'type' => 'phone',
                                     'label' => __('phone'),
-                                    'value' => $guest->phone
+                                    'value' => $guest->phone,
                                 ],
 
-                            ]
+                            ],
                         ],
                         [
-                            "label"   => __("Access"),
-                            'title'  => __('access'),
-                            'icon'   => 'fal fa-chess-clock',
+                            'label' => __('Access'),
+                            'title' => __('access'),
+                            'icon' => 'fal fa-chess-clock',
                             'fields' => [
 
                                 'status' => [
-                                        'type'     => 'toggle',
-                                        'label'    => __('status'),
-                                        'value'    => $guest->status,
-                                        'required' => true,
-                                    ],
-                            ]
+                                    'type' => 'toggle',
+                                    'label' => __('status'),
+                                    'value' => $guest->status,
+                                    'required' => true,
+                                ],
+                            ],
                         ],
                         [
-                            "label"   => __("Credentials"),
-                            'title'  => __('credentials'),
-                            'icon'   => 'fal fa-key',
+                            'label' => __('Credentials'),
+                            'title' => __('credentials'),
+                            'icon' => 'fal fa-key',
                             'fields' => [
                                 'username' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('username'),
-                                    'value' => $user ? $user->username : ''
+                                    'value' => $user ? $user->username : '',
 
                                 ],
                                 'password' => [
-                                    'type'  => 'password',
-                                    "placeholder" => "********",
+                                    'type' => 'password',
+                                    'placeholder' => '********',
                                     'label' => __('password'),
 
                                 ],
-                            ]
+                            ],
                         ],
-                        "permissions" => [
-                            "label"   => __("Permissions"),
-                            "title"   => __("Permissions"),
-                            "icon"    => "fa-light fa-user-lock",
-                            "current" => false,
-                            "fields"  => [
-                                "permissions" => [
-                                    "full"              => true,
-                                    "noSaveButton"      => true,
-                                    "type"              => "permissions",
-                                    "review"            => $reviewData,
+                        'permissions' => [
+                            'label' => __('Permissions'),
+                            'title' => __('Permissions'),
+                            'icon' => 'fa-light fa-user-lock',
+                            'current' => false,
+                            'fields' => [
+                                'permissions' => [
+                                    'full' => true,
+                                    'noSaveButton' => true,
+                                    'type' => 'permissions',
+                                    'review' => $reviewData,
                                     'organisation_list' => $organisationList,
-                                    "current_organisation"  => $user->getOrganisation(),
-                                    'updatePseudoJobPositionsRoute'       => [
-                                        'method'     => 'patch',
-                                        "name"       => "grp.models.user.group_permissions.update",
-                                        'parameters' => [
-                                            'user' => $user->id
-                                        ]
-                                    ],
-                                    'updateJobPositionsRoute'       => [
-                                        'method'     => 'patch',
-                                        "name"       => "grp.models.user.organisation_pseudo_job_positions.update",
+                                    'current_organisation' => $user->getOrganisation(),
+                                    'updatePseudoJobPositionsRoute' => [
+                                        'method' => 'patch',
+                                        'name' => 'grp.models.user.group_permissions.update',
                                         'parameters' => [
                                             'user' => $user->id,
-                                            'organisation' => null // fill in the organisation id in the frontend
-                                        ]
+                                        ],
+                                    ],
+                                    'updateJobPositionsRoute' => [
+                                        'method' => 'patch',
+                                        'name' => 'grp.models.user.organisation_pseudo_job_positions.update',
+                                        'parameters' => [
+                                            'user' => $user->id,
+                                            'organisation' => null, // fill in the organisation id in the frontend
+                                        ],
                                     ],
 
-
-                                    'options'           => Organisation::get()->flatMap(function (Organisation $organisation) {
+                                    'options' => Organisation::get()->flatMap(function (Organisation $organisation) {
                                         return [
                                             $organisation->slug => [
-                                                'positions'   => JobPositionResource::collection($organisation->jobPositions),
-                                                'shops'       => \App\Http\Resources\Catalogue\ShopResource::collection($organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
+                                                'positions' => JobPositionResource::collection($organisation->jobPositions),
+                                                'shops' => \App\Http\Resources\Catalogue\ShopResource::collection($organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
                                                 'fulfilments' => ShopResource::collection($organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
-                                                'warehouses'  => WarehouseResource::collection($organisation->warehouses),
-                                            ]
+                                                'warehouses' => WarehouseResource::collection($organisation->warehouses),
+                                            ],
                                         ];
                                     })->toArray(),
-                                    'value'             => [
-                                        'group'         => $permissionsGroupData,
+                                    'value' => [
+                                        'group' => $permissionsGroupData,
                                         'organisations' => $jobPositionsOrganisationsData,
                                     ],
 
-                                    "fullComponentArea" => true,
+                                    'fullComponentArea' => true,
                                 ],
                             ],
                         ],
@@ -214,12 +210,12 @@ class EditGuest extends GrpAction
                     ],
                     'args' => [
                         'updateRoute' => [
-                            'name'      => 'grp.models.guest.update',
-                            'parameters' => $guest->id
+                            'name' => 'grp.models.guest.update',
+                            'parameters' => $guest->id,
 
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

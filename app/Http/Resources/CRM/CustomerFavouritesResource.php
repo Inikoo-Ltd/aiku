@@ -11,9 +11,9 @@ namespace App\Http\Resources\CRM;
 
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
+use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Traits\HasPriceMetrics;
 
 /**
  * @property string $slug
@@ -40,8 +40,8 @@ use App\Http\Resources\Traits\HasPriceMetrics;
  */
 class CustomerFavouritesResource extends JsonResource
 {
-    use HasSelfCall;
     use HasPriceMetrics;
+    use HasSelfCall;
 
     public function toArray($request): array
     {
@@ -58,7 +58,6 @@ class CustomerFavouritesResource extends JsonResource
                 $favourite = $customer->favourites()?->where('product_id', $this->id)->first();
             }
         }
-
 
         $back_in_stock = false;
 
@@ -83,33 +82,33 @@ class CustomerFavouritesResource extends JsonResource
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
         return [
-            'id'                   => $this->id,
-            'image_id'             => $this->image_id,
-            'image'                => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'code'                 => $this->code,
-            'name'                 => $this->name,
-            'stock'                => $this->available_quantity,
-            'price'                => $this->price,
-            'price_per_unit'       => $pricePerUnit,
-            'rrp'                  => $this->rrp,
-            'state'                => $this->state,
-            'status'               => $this->status,
-            'created_at'           => $this->created_at,
-            'updated_at'           => $this->updated_at,
-            'unit'                 => $this->unit,
-            'url'                  => $url,
-            'slug_product'         => $this->slug,
-            'web_images'           => $this->web_images,
-            'transaction_id'       => $this->transaction_id ?? null,
-            'quantity_ordered'     => (int)$this->quantity_ordered ?? 0,
-            'quantity_ordered_new' => (int)$this->quantity_ordered ?? 0,  // To editable in Frontend
-            'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
-            'is_back_in_stock'     => $back_in_stock,
-            'margin'               => $margin,
-            'profit'               => $profit,
-            'units'                => $units,
-            'profit_per_unit'      => $profitPerUnit,
-            'rrp_per_unit'         => $rrpPerUnit,
+            'id' => $this->id,
+            'image_id' => $this->image_id,
+            'image' => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'code' => $this->code,
+            'name' => $this->name,
+            'stock' => $this->available_quantity,
+            'price' => $this->price,
+            'price_per_unit' => $pricePerUnit,
+            'rrp' => $this->rrp,
+            'state' => $this->state,
+            'status' => $this->status,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'unit' => $this->unit,
+            'url' => $url,
+            'slug_product' => $this->slug,
+            'web_images' => $this->web_images,
+            'transaction_id' => $this->transaction_id ?? null,
+            'quantity_ordered' => (int) $this->quantity_ordered ?? 0,
+            'quantity_ordered_new' => (int) $this->quantity_ordered ?? 0,  // To editable in Frontend
+            'is_favourite' => $favourite && ! $favourite->unfavourited_at ?? false,
+            'is_back_in_stock' => $back_in_stock,
+            'margin' => $margin,
+            'profit' => $profit,
+            'units' => $units,
+            'profit_per_unit' => $profitPerUnit,
+            'rrp_per_unit' => $rrpPerUnit,
         ];
     }
 }

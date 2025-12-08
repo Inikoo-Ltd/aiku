@@ -18,7 +18,6 @@ class OrganisationHydrateCreditTransactions implements ShouldBeUnique
     use AsAction;
     use WithActionUpdate;
 
-
     public function getJobUniqueId(Organisation $organisation): string
     {
         return $organisation->id;
@@ -26,12 +25,10 @@ class OrganisationHydrateCreditTransactions implements ShouldBeUnique
 
     public function handle(Organisation $organisation): void
     {
-        $stats          = [
+        $stats = [
             'number_credit_transactions' => $organisation->creditTransactions()->count(),
         ];
 
         $organisation->accountingStats()->update($stats);
     }
-
-
 }

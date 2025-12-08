@@ -80,9 +80,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_collections_with_offline_webpage
  * @property int $number_web_user_requests
  * @property-read \App\Models\Web\Webpage $webpage
+ *
  * @method static Builder<static>|WebpageStats newModelQuery()
  * @method static Builder<static>|WebpageStats newQuery()
  * @method static Builder<static>|WebpageStats query()
+ *
  * @mixin Eloquent
  */
 class WebpageStats extends Model

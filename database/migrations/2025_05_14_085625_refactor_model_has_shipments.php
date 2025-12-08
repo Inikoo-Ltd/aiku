@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::dropIfExists('delivery_note_shipment');
@@ -22,7 +23,7 @@ return new class () extends Migration {
             $table->unsignedInteger('shipment_id')->index();
             $table->foreign('shipment_id')->references('id')->on('shipments')->nullOnDelete();
             $table->timestampsTz();
-            $table->unique(['model_type', 'model_id','shipment_id'], 'model_has_shipments_unique');
+            $table->unique(['model_type', 'model_id', 'shipment_id'], 'model_has_shipments_unique');
         });
     }
 

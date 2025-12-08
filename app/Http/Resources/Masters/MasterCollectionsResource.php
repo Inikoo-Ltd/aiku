@@ -37,38 +37,37 @@ class MasterCollectionsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                                => $this->id,
-            'slug'                              => $this->slug,
-            'code'                              => $this->code,
-            'name'                              => $this->name,
-            'description'                       => $this->description,
-            'products_status'                   => $this->products_status,
-            'master_shop_slug'                  => $this->master_shop_slug,
-            'master_shop_code'                  => $this->master_shop_code,
-            'master_shop_name'                  => $this->master_shop_name,
-            'used_in'                           => $this->used_in,
-            'number_current_master_families'    => $this->number_current_master_families,
-            'number_current_master_products'    => $this->number_current_master_products,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'description' => $this->description,
+            'products_status' => $this->products_status,
+            'master_shop_slug' => $this->master_shop_slug,
+            'master_shop_code' => $this->master_shop_code,
+            'master_shop_name' => $this->master_shop_name,
+            'used_in' => $this->used_in,
+            'number_current_master_families' => $this->number_current_master_families,
+            'number_current_master_products' => $this->number_current_master_products,
             'number_current_master_collections' => $this->number_current_master_collections,
-            'status_icon'                        => $this->status ? [
+            'status_icon' => $this->status ? [
                 'tooltip' => __('Active'),
-                'icon'    => 'fas fa-check-circle',
-                'class'   => 'text-green-400'
+                'icon' => 'fas fa-check-circle',
+                'class' => 'text-green-400',
             ] : [
                 'tooltip' => __('Closed'),
-                'icon'    => 'fas fa-times-circle',
-                'class'   => 'text-red-400'
+                'icon' => 'fas fa-times-circle',
+                'class' => 'text-red-400',
             ],
-            'parents_data'                      => $this->parseCollectionParentsData($this->parents_data),
+            'parents_data' => $this->parseCollectionParentsData($this->parents_data),
             'delete_route' => [
-                'method'     => 'delete',
-                'name'       => 'grp.models.master_collection.delete',
+                'method' => 'delete',
+                'name' => 'grp.models.master_collection.delete',
                 'parameters' => [
-                    'masterCollection' => $this->id
-                ]
+                    'masterCollection' => $this->id,
+                ],
             ],
             'has_active_webpage' => $this->has_active_webpage,
         ];
     }
-
 }

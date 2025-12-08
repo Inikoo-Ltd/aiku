@@ -34,26 +34,26 @@ class MasterSubDepartmentsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'              => $this->id,
-            'slug'            => $this->slug,
-            'code'            => $this->code,
-            'name'            => $this->name,
-            'description'     => $this->description,
-            'created_at'      => $this->created_at,
-            'updated_at'      => $this->updated_at,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'description' => $this->description,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
             'number_families' => $this->number_families,
             'number_products' => $this->number_products,
             'description_title' => $this->description_title,
             'description_extra' => $this->description_extra,
-            'image'        => $this ->imageSources(720, 480),
-            'status_icon'       => $this->status ? [
+            'image' => $this->imageSources(720, 480),
+            'status_icon' => $this->status ? [
                 'tooltip' => __('Active'),
-                'icon'    => 'fas fa-check-circle',
-                'class'   => 'text-green-400'
+                'icon' => 'fas fa-check-circle',
+                'class' => 'text-green-400',
             ] : [
                 'tooltip' => __('Closed'),
-                'icon'    => 'fas fa-times-circle',
-                'class'   => 'text-red-400'
+                'icon' => 'fas fa-times-circle',
+                'class' => 'text-red-400',
             ],
         ];
     }

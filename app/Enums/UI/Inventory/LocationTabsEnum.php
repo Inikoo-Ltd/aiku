@@ -22,31 +22,30 @@ enum LocationTabsEnum: string
     case STOCK_MOVEMENTS = 'stock_movements';
     case HISTORY = 'history';
 
-
     public function blueprint(): array
     {
         return match ($this) {
             LocationTabsEnum::ORG_STOCKS => [
                 'title' => 'SKUs',
-                'icon'  => 'fal fa-box',
+                'icon' => 'fal fa-box',
             ],
             LocationTabsEnum::PALLETS => [
                 'title' => __('Pallets'),
-                'icon'  => 'fal fa-pallet',
+                'icon' => 'fal fa-pallet',
             ],
             LocationTabsEnum::STOCK_MOVEMENTS => [
                 'title' => __('Stock movements'),
-                'icon'  => 'fal fa-exchange',
+                'icon' => 'fal fa-exchange',
             ],
             LocationTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             LocationTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

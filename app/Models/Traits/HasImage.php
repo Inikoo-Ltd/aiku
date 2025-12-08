@@ -22,6 +22,7 @@ trait HasImage
     {
         return $this->morphToMany(Media::class, 'model', 'model_has_media')->withTimestamps()->withPivot('scope', 'caption', 'sub_scope', 'is_public');
     }
+
     public function image(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'image_id');
@@ -31,8 +32,10 @@ trait HasImage
     {
         if ($this->{$getImage}) {
             $avatarThumbnail = $this->{$getImage}->getImage()->resize($width, $height);
+
             return GetPictureSources::run($avatarThumbnail);
         }
+
         return null;
     }
 
@@ -40,5 +43,4 @@ trait HasImage
     {
         return $this->hasOne(Media::class, 'id', 'seo_image_id');
     }
-
 }

@@ -23,11 +23,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderExtraPacking extends OrgAction
 {
-    use WithActionUpdate;
     use HasOrderHydrators;
-    use WithOrderingEditAuthorisation;
+    use WithActionUpdate;
     use WithChargeTransactions;
-
+    use WithOrderingEditAuthorisation;
 
     public function handle(Order $order, array $modelData): Order
     {
@@ -37,7 +36,7 @@ class UpdateOrderExtraPacking extends OrgAction
         if ($charge) {
 
             $chargeApplies = Arr::get($modelData, 'has_extra_packing', false);
-            $chargeTransaction   = null;
+            $chargeTransaction = null;
             $chargeTransactionID = DB::table('transactions')->where('order_id', $order->id)
                 ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
                 ->where('model_type', 'Charge')->where('charges.type', ChargeTypeEnum::PACKING->value)->value('transactions.id');
@@ -62,15 +61,12 @@ class UpdateOrderExtraPacking extends OrgAction
         return $order;
     }
 
-
-
     public function rules(): array
     {
         return [
             'has_extra_packing' => ['required', 'boolean'],
         ];
     }
-
 
     public function action(Order $order, array $modelData): Order
     {
@@ -79,7 +75,6 @@ class UpdateOrderExtraPacking extends OrgAction
 
         return $this->handle($order, $modelData);
     }
-
 
     public function asController(Order $order, ActionRequest $request): Order
     {

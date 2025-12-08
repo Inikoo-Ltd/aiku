@@ -9,8 +9,8 @@
 namespace App\Stubs\Migrations;
 
 use App\Enums\Discounts\Offer\OfferStateEnum;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
 use Illuminate\Database\Schema\Blueprint;
 
 trait HasDiscountsStats
@@ -50,5 +50,4 @@ trait HasDiscountsStats
 
         return $table;
     }
-
 }

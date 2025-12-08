@@ -21,26 +21,27 @@ class GetOrgSupplierProductShowcase
     {
         $data = [
             'contactCard' => [
-                'company'  => $orgSupplierProduct->organisation->name,
-                'contact'  => $orgSupplierProduct->organisation->contact_name ?? '',
-                'email'    => $orgSupplierProduct->organisation->email ?? '',
-                'phone'    => $orgSupplierProduct->organisation->phone ?? '',
+                'company' => $orgSupplierProduct->organisation->name,
+                'contact' => $orgSupplierProduct->organisation->contact_name ?? '',
+                'email' => $orgSupplierProduct->organisation->email ?? '',
+                'phone' => $orgSupplierProduct->organisation->phone ?? '',
                 'location' => $orgSupplierProduct->organisation->location ?? '',
                 // 'address'  => AddressResource::make($agent->organisation->address)->getArray(),
-                'photo'    => $orgSupplierProduct->organisation->imageSources()
+                'photo' => $orgSupplierProduct->organisation->imageSources(),
             ],
-            'stats'       => [
+            'stats' => [
                 [
                     'label' => __('purchase orders'),
                     'count' => $orgSupplierProduct->stats->number_purchase_orders,
-                    'full'  => true
+                    'full' => true,
                 ],
                 [
                     'label' => __('deliveries'),
-                    'count' => $orgSupplierProduct->stats->number_stock_deliveries
+                    'count' => $orgSupplierProduct->stats->number_stock_deliveries,
                 ],
-            ]
+            ],
         ];
+
         return $data;
     }
 }

@@ -34,6 +34,7 @@ class CreateRetinaNewAllPortfoliosToWoo extends RetinaAction
 
         CreateRetinaNewBulkPortfoliosToWoo::run($customerSalesChannel, $payload);
     }
+
     /**
      * @throws \Exception
      */

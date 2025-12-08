@@ -21,7 +21,6 @@ class FetchAuroraInvoiceTransactions
 {
     use AsAction;
 
-
     public function handle(SourceOrganisationService $organisationSource, int $source_id, Invoice $invoice): ?InvoiceTransaction
     {
         $transactionData = $organisationSource->fetchInvoiceTransaction(
@@ -29,10 +28,9 @@ class FetchAuroraInvoiceTransactions
             invoice: $invoice,
             isFulfilment: $invoice->shop->type === ShopTypeEnum::FULFILMENT
         );
-        if (!$transactionData) {
+        if (! $transactionData) {
             return null;
         }
-
 
         if ($invoiceTransaction = InvoiceTransaction::where('source_id', $transactionData['transaction']['source_id'])->first()) {
             $invoiceTransaction = UpdateInvoiceTransaction::make()->action(
@@ -55,10 +53,6 @@ class FetchAuroraInvoiceTransactions
                 ->update(['aiku_invoice_id' => $invoiceTransaction->id]);
         }
 
-
         return $invoiceTransaction;
     }
-
-
-
 }

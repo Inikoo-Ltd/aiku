@@ -47,12 +47,12 @@ class SeedOrganisationOutboxes
                             $orgPostRoom,
                             $organisation,
                             [
-                                'name'       => $case->label(),
-                                'code'       => $case,
-                                'type'       => $case->type(),
-                                'state'      => $case->defaultState(),
+                                'name' => $case->label(),
+                                'code' => $case,
+                                'type' => $case->type(),
+                                'state' => $case->defaultState(),
                                 'model_type' => $case->modelType(),
-                                'builder'    => $this->getDefaultBuilder($case, $organisation)
+                                'builder' => $this->getDefaultBuilder($case, $organisation),
 
                             ]
                         );
@@ -64,6 +64,4 @@ class SeedOrganisationOutboxes
     }
 
     public string $commandSignature = 'org:seed_outboxes {organisation? : The organisation slug}';
-
-
 }

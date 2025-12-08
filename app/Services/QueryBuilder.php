@@ -24,18 +24,16 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     ): self {
         $elementsData = null;
 
-        $argumentName = ($prefix ? $prefix . '_' : '') . 'elements';
-
+        $argumentName = ($prefix ? $prefix.'_' : '').'elements';
 
         if (request()->has("$argumentName.$key")) {
-            $elements               = explode(',', request()->input("$argumentName.$key"));
-            $validatedElements      = array_intersect($allowedElements, $elements);
+            $elements = explode(',', request()->input("$argumentName.$key"));
+            $validatedElements = array_intersect($allowedElements, $elements);
             $countValidatedElements = count($validatedElements);
             if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
                 $elementsData = $validatedElements;
             }
         }
-
 
         if ($elementsData) {
             $engine($this, $elementsData);
@@ -52,15 +50,14 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     ): self {
         $elementsData = null;
 
-        $argumentName = ($prefix ? $prefix . '_' : '') . 'radioFilter';
+        $argumentName = ($prefix ? $prefix.'_' : '').'radioFilter';
         if (request()->has($argumentName) || $defaultValue) {
             $elements = request()->input("$argumentName") ?? $defaultValue;
             if (is_array($elements)) {
                 $elements = Arr::get($elements, 'radio.value');
             }
 
-
-            $validatedElements      = array_intersect($allowedElements, [$elements]);
+            $validatedElements = array_intersect($allowedElements, [$elements]);
             $countValidatedElements = count($validatedElements);
             if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
                 $elementsData = $elements;
@@ -76,35 +73,34 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 
     public function withFilterPeriod($column, ?string $prefix = null): static
     {
-        $table      = $this->getModel()->getTable();
-        $periodType = array_key_first(request()->input(($prefix ? $prefix . '_' : '') . 'period') ?? []);
+        $table = $this->getModel()->getTable();
+        $periodType = array_key_first(request()->input(($prefix ? $prefix.'_' : '').'period') ?? []);
 
         if ($periodType) {
             $periodData = $this->validatePeriod($periodType, $prefix);
 
             if ($periodData) {
-                $this->whereBetween($table . '.' . $column, [$periodData['start'], $periodData['end']]);
+                $this->whereBetween($table.'.'.$column, [$periodData['start'], $periodData['end']]);
             }
         }
 
         return $this;
     }
 
-
     protected function validatePeriod(string $periodType, ?string $prefix = null): ?array
     {
-        $period = request()->input(($prefix ? $prefix . '_' : '') . 'period.' . $periodType);
+        $period = request()->input(($prefix ? $prefix.'_' : '').'period.'.$periodType);
 
         return ValidateQueryBuilderPeriods::run($periodType, $period);
     }
 
     public function withBetweenDates(array $allowedColumns, ?string $prefix = null): static
     {
-        $table          = $this->getModel()->getTable();
+        $table = $this->getModel()->getTable();
         $allowedColumns = array_merge($allowedColumns, ['created_at', 'updated_at']);
-        $argumentName   = ($prefix ? $prefix . '_' : '') . 'between';
+        $argumentName = ($prefix ? $prefix.'_' : '').'between';
 
-        $filters  = request()->input($argumentName, []);
+        $filters = request()->input($argumentName, []);
         $timezone = request()->header('X-Timezone');
 
         foreach ($allowedColumns as $column) {
@@ -129,9 +125,9 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                         ->toDateTimeString();
 
                     if ($this->getModel() instanceof FulfilmentCustomer) {
-                        $this->whereBetween('customers.' . $column, [$start, $end]);
+                        $this->whereBetween('customers.'.$column, [$start, $end]);
                     } elseif ($this->getModel() instanceof Customer && $column == 'last_invoiced_at') {
-                        $this->whereBetween('customer_stats.' . $column, [$start, $end]);
+                        $this->whereBetween('customer_stats.'.$column, [$start, $end]);
                     } else {
                         $this->whereBetween("$table.$column", [$start, $end]);
                     }
@@ -142,10 +138,10 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return $this;
     }
 
-    public function withIrisPaginator(int $numberOfRecords = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function withIrisPaginator(?int $numberOfRecords = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         if ($numberOfRecords === null && request()->has('perPage')) {
-            $numberOfRecords = (int)request()->input('perPage');
+            $numberOfRecords = (int) request()->input('perPage');
         }
 
         $perPage = 20;
@@ -161,34 +157,30 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return $this->paginate(perPage: $perPage);
     }
 
-    public function withRetinaPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function withRetinaPaginator(?string $prefix, ?int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         return $this->processPagination($prefix, $numberOfRecords, $tableName, $queryName, 'web-user');
     }
 
-
-    public function withPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function withPaginator(?string $prefix, ?int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         return $this->processPagination($prefix, $numberOfRecords, $tableName, $queryName);
     }
 
-
-    private function processPagination(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage', $userType = 'user'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    private function processPagination(?string $prefix, ?int $numberOfRecords = null, $tableName = null, $queryName = 'perPage', $userType = 'user'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
-
-
 
         if ($prefix === null) {
             $prefix = '';
         }
 
-        $argumentName = ($prefix ? $prefix . '_' : '') . $queryName;
+        $argumentName = ($prefix ? $prefix.'_' : '').$queryName;
         if ($numberOfRecords === null && request()->has($argumentName)) {
-            $numberOfRecords = (int)request()->input($argumentName);
+            $numberOfRecords = (int) request()->input($argumentName);
         }
 
-        $userId      = auth()->user()->id ?? null;
-        $keyRppCache = $tableName ? "ui_state-$userType:$userId;rrp-table:" . $prefix . "$tableName" : null;
+        $userId = auth()->user()->id ?? null;
+        $keyRppCache = $tableName ? "ui_state-$userType:$userId;rrp-table:".$prefix."$tableName" : null;
 
         if ($numberOfRecords) {
             $perPage = $numberOfRecords;
@@ -198,7 +190,6 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             $perPage = config('ui.table.records_per_page');
         }
 
-
         if ($perPage > config('ui.table.max_records_per_page')) {
             $perPage = config('ui.table.max_records_per_page');
         }
@@ -207,21 +198,20 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             $perPage = config('ui.table.min_records_per_page');
         }
 
-
         if ($tableName && $userId) {
             Cache::put($keyRppCache, $perPage, 60 * 60 * 24 * 180); // 6 months in seconds
         }
 
-
         return $this->paginate(
             perPage: $perPage,
-            pageName: $prefix ? $prefix . 'Page' : 'page'
+            pageName: $prefix ? $prefix.'Page' : 'page'
         );
     }
 
     public function withTrashed()
     {
         $this->queryBuilder->withTrashed();
+
         return $this;
     }
 }

@@ -93,9 +93,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_invoice_categories_state_closed
  * @property int $number_invoice_categories_state_cooldown
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupAccountingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupAccountingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupAccountingStats query()
+ *
  * @mixin \Eloquent
  */
 class GroupAccountingStats extends Model

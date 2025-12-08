@@ -41,7 +41,7 @@ class StoreOrgSupplier extends OrgAction
         data_set($modelData, 'supplier_id', $supplier->id);
         data_set($modelData, 'agent_id', $supplier->agent_id);
 
-        $orgSupplier = DB::transaction(function () use ($parent, $modelData, $organisation) {
+        $orgSupplier = DB::transaction(function () use ($parent, $modelData) {
             /** @var OrgSupplier $orgSupplier */
             $orgSupplier = $parent->orgSuppliers()->create($modelData);
             $orgSupplier->stats()->create();
@@ -58,11 +58,10 @@ class StoreOrgSupplier extends OrgAction
         return $orgSupplier;
     }
 
-
     public function rules(ActionRequest $request): array
     {
         $rules = [];
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictStoreRules($rules);
         }
 
@@ -80,13 +79,11 @@ class StoreOrgSupplier extends OrgAction
             $organisation = $parent;
         }
 
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($organisation, $modelData);
 
         return $this->handle($parent, $supplier, $this->validatedData);
     }
-
-
 }

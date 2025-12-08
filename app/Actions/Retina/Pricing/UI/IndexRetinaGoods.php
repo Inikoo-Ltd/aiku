@@ -29,12 +29,13 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexRetinaGoods extends RetinaAction
 {
     use WithRetinaPricingSubNavigation;
+
     protected function getElementGroups(Fulfilment $parent): array
     {
         return [
 
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     ProductStateEnum::labels(),
                     ProductStateEnum::count($parent->shop)
@@ -42,7 +43,7 @@ class IndexRetinaGoods extends RetinaAction
 
                 'engine' => function ($query, $elements) {
                     $query->whereIn('products.state', $elements);
-                }
+                },
 
             ],
         ];
@@ -65,7 +66,6 @@ class IndexRetinaGoods extends RetinaAction
         $queryBuilder->where('products.shop_id', $this->fulfilment->shop_id);
         $queryBuilder->join('assets', 'products.asset_id', '=', 'assets.id');
         $queryBuilder->join('currencies', 'assets.currency_id', '=', 'currencies.id');
-
 
         foreach ($this->getElementGroups($this->fulfilment) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -91,8 +91,7 @@ class IndexRetinaGoods extends RetinaAction
                 'assets.current_historic_asset_id as historic_asset_id',
             ]);
 
-
-        return $queryBuilder->allowedSorts(['id','code','name','price'])
+        return $queryBuilder->allowedSorts(['id', 'code', 'name', 'price'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -105,30 +104,28 @@ class IndexRetinaGoods extends RetinaAction
         return $this->handle();
     }
 
-
-
     public function htmlResponse(LengthAwarePaginator $goods, ActionRequest $request): Response
     {
         // dd(ServicesResource::collection($services));
         return Inertia::render(
             'Pricing/RetinaGoods',
             [
-                'title'       => __('Goods'),
+                'title' => __('Goods'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'pageHead'    => [
-                    'icon'    => [
-                        'icon'  => ['fal', 'fa-cube'],
-                        'title' => __('Goods')
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-cube'],
+                        'title' => __('Goods'),
                     ],
-                    'model'    => __('Pricing'),
-                    'title'         => __('Goods'),
+                    'model' => __('Pricing'),
+                    'title' => __('Goods'),
                     'subNavigation' => $this->getPricingNavigation($this->fulfilment),
                 ],
 
-                'data'        => PhysicalGoodsResource::collection($goods),
+                'data' => PhysicalGoodsResource::collection($goods),
             ]
         )->table(
             $this->tableStructure(
@@ -143,7 +140,7 @@ class IndexRetinaGoods extends RetinaAction
         $prefix = null,
         $canEdit = false
     ): Closure {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -164,7 +161,7 @@ class IndexRetinaGoods extends RetinaAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Fulfilment' => [
-                            'title' => __("No rentals found"),
+                            'title' => __('No rentals found'),
                             'count' => $parent->shop->stats->number_assets_type_product,
                         ],
                         default => null
@@ -172,33 +169,31 @@ class IndexRetinaGoods extends RetinaAction
                 );
 
             $table
-            ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
-            ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true, className: 'text-right font-mono', align: 'right')
-            ->defaultSort('code');
+                ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
+                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true, className: 'text-right font-mono', align: 'right')
+                ->defaultSort('code');
         };
     }
-
 
     public function jsonResponse(LengthAwarePaginator $goods): AnonymousResourceCollection
     {
         return PhysicalGoodsResource::collection($goods);
     }
 
-
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
     {
         $headCrumb = function (array $routeParameters = []) use ($suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Goods'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
@@ -208,12 +203,10 @@ class IndexRetinaGoods extends RetinaAction
                 IndexRetinaPricing::make()->getBreadcrumbs(routeName: $routeName),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ]
                 )
             );
     }
-
-
 }

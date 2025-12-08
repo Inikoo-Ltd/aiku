@@ -40,11 +40,11 @@ class Login
         $rememberMe = $request->boolean('remember');
 
         $authorised = false;
-        $processed  = false;
+        $processed = false;
         if (config('app.with_user_legacy_passwords')) {
             $user = User::where('username', Arr::get($request->validated(), 'username'))->first();
             if ($user and $user->auth_type == UserAuthTypeEnum::AURORA) {
-                $processed  = true;
+                $processed = true;
                 $authorised = AuthoriseUserWithLegacyPassword::run($user, $request->validated());
                 if ($authorised) {
                     Auth::login($user, $rememberMe);
@@ -52,13 +52,11 @@ class Login
             }
         }
 
-
-        if (!$processed) {
+        if (! $processed) {
             $authorised = Auth::guard($this->gate)->attempt(array_merge($request->validated(), ['status' => true]), $rememberMe);
         }
 
-
-        if (!$authorised) {
+        if (! $authorised) {
             RateLimiter::hit($this->throttleKey($request));
 
             LogUserFailLogin::dispatch(
@@ -87,10 +85,8 @@ class Login
             datetime: now()
         );
 
-
         $request->session()->regenerate();
         Session::put('reloadLayout', '1');
-
 
         $language = $user->language;
         if ($language) {
@@ -106,8 +102,4 @@ class Login
 
         return redirect()->intended('/dashboard');
     }
-
-
-
-
 }

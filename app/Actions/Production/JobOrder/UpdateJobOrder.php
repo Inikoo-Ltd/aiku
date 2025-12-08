@@ -23,7 +23,6 @@ class UpdateJobOrder extends OrgAction
 {
     use WithActionUpdate;
 
-
     private JobOrder $jobOrder;
 
     public function handle(JobOrder $jobOrder, array $modelData): JobOrder
@@ -48,16 +47,16 @@ class UpdateJobOrder extends OrgAction
     {
         $rules = [];
 
-        if (!request()->user() instanceof WebUser) {
+        if (! request()->user() instanceof WebUser) {
             $rules = [
-                'public_notes'  => ['sometimes','nullable','string','max:4000'],
-                'internal_notes' => ['sometimes','nullable','string','max:4000'],
+                'public_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+                'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             ];
         }
 
         return [
-            'customer_notes' => ['sometimes','nullable','string','max:4000'],
-            ...$rules
+            'customer_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            ...$rules,
         ];
     }
 
@@ -65,6 +64,7 @@ class UpdateJobOrder extends OrgAction
     {
         $this->jobOrder = $jobOrder;
         $this->initialisation($jobOrder->organisation, $request);
+
         return $this->handle($jobOrder, $this->validatedData);
     }
 
@@ -85,7 +85,7 @@ class UpdateJobOrder extends OrgAction
 
         return match ($routeName) {
             'grp.models.production.job-order.update' => Inertia::location(route('grp.org.productions.show.job-order.show', [
-                'organisation'           => $jobOrder->organisation->slug,
+                'organisation' => $jobOrder->organisation->slug,
             ])),
         };
     }
@@ -96,11 +96,11 @@ class UpdateJobOrder extends OrgAction
     {
         $this->asAction = true;
 
-
         try {
             $jobOrder = JobOrder::where('slug', $command->argument('job-order'))->firstOrFail();
         } catch (Exception $e) {
             $command->error($e->getMessage());
+
             return 1;
         }
 

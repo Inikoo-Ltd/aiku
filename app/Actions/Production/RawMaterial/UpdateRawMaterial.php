@@ -2,9 +2,9 @@
 
 namespace App\Actions\Production\RawMaterial;
 
+use App\Actions\OrgAction;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateRawMaterials;
 use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateUniversalSearch;
-use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRawMaterials;
 use App\Actions\Traits\WithActionUpdate;
@@ -22,9 +22,6 @@ class UpdateRawMaterial extends OrgAction
 {
     use WithActionUpdate;
 
-    /**
-     * @var \App\Models\Production\RawMaterial
-     */
     private RawMaterial $rawMaterial;
 
     public function handle(RawMaterial $rawMaterial, array $modelData): RawMaterial
@@ -49,13 +46,12 @@ class UpdateRawMaterial extends OrgAction
         return $request->user()->authTo("productions_rd.{$this->production->id}.edit");
     }
 
-
     public function rules(): array
     {
         return [
-            'type'        => ['sometimes', Rule::enum(RawMaterialTypeEnum::class)],
-            'state'       => ['sometimes', Rule::enum(RawMaterialStateEnum::class)],
-            'code'        => [
+            'type' => ['sometimes', Rule::enum(RawMaterialTypeEnum::class)],
+            'state' => ['sometimes', Rule::enum(RawMaterialStateEnum::class)],
+            'code' => [
                 'sometimes',
                 'alpha_dash',
                 'max:64',
@@ -64,20 +60,20 @@ class UpdateRawMaterial extends OrgAction
                     extraConditions: [
                         [
                             'column' => 'organisation_id',
-                            'value'  => $this->organisation->id,
+                            'value' => $this->organisation->id,
                         ],
                         [
-                            'column'    => 'id',
-                            'value'     => $this->rawMaterial->id,
-                            'operation' => '!='
-                        ]
+                            'column' => 'id',
+                            'value' => $this->rawMaterial->id,
+                            'operation' => '!=',
+                        ],
 
                     ]
                 ),
             ],
             'description' => ['sometimes', 'string', 'max:255'],
-            'unit'        => ['sometimes', Rule::enum(RawMaterialUnitEnum::class)],
-            'unit_cost'   => ['sometimes', 'numeric', 'min:0'],
+            'unit' => ['sometimes', Rule::enum(RawMaterialUnitEnum::class)],
+            'unit_cost' => ['sometimes', 'numeric', 'min:0'],
         ];
     }
 
@@ -85,7 +81,6 @@ class UpdateRawMaterial extends OrgAction
     {
         $this->rawMaterial = $rawMaterial;
         $this->initialisationFromProduction($rawMaterial->production, $request);
-
 
         return $this->handle(
             rawMaterial: $rawMaterial,
@@ -95,10 +90,9 @@ class UpdateRawMaterial extends OrgAction
 
     public function action(RawMaterial $rawMaterial, $modelData): RawMaterial
     {
-        $this->asAction    = true;
+        $this->asAction = true;
         $this->rawMaterial = $rawMaterial;
         $this->initialisation($rawMaterial->organisation, $modelData);
-
 
         return $this->handle(
             rawMaterial: $rawMaterial,

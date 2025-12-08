@@ -40,7 +40,7 @@ class SeedPlatforms extends OrgAction
                     [
                         'code' => $code,
                         'name' => $case->labels()[$case->value],
-                        'type' => $case
+                        'type' => $case,
                     ]
                 );
             }
@@ -58,7 +58,7 @@ class SeedPlatforms extends OrgAction
             $this->handle($group);
         }
 
-        $command->line("Success seed the platforms ✅");
+        $command->line('Success seed the platforms ✅');
 
         return 0;
     }

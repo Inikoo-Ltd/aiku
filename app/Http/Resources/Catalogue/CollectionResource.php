@@ -20,16 +20,14 @@ class CollectionResource extends JsonResource
         $collection = $this;
 
         return [
-            'id'                => $collection->id,
-            'slug'              => $collection->slug,
-            'state'             =>  $collection->state,
-            'code'              => $collection->code,
-            'name'              => $collection->name,
-            'description'       => html_entity_decode(strip_tags($collection->description)),
-            'created_at'        => $collection->created_at,
-            'updated_at'        => $collection->updated_at,
-
-
+            'id' => $collection->id,
+            'slug' => $collection->slug,
+            'state' => $collection->state,
+            'code' => $collection->code,
+            'name' => $collection->name,
+            'description' => html_entity_decode(strip_tags($collection->description)),
+            'created_at' => $collection->created_at,
+            'updated_at' => $collection->updated_at,
 
         ];
     }

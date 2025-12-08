@@ -8,9 +8,9 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-use App\Models\Helpers\Media;
 use App\Actions\Helpers\Images\GetPictureSources;
+use App\Models\Helpers\Media;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property string $slug
@@ -28,29 +28,27 @@ class FamiliesInCollectionResource extends JsonResource
     public function toArray($request): array
     {
         $imageSources = null;
-        $media        = Media::find($this->image_id);
+        $media = Media::find($this->image_id);
         if ($media) {
-            $width  = 720;
+            $width = 720;
             $height = 720;
 
-
-            $image        = $media->getImage()->resize($width, $height);
+            $image = $media->getImage()->resize($width, $height);
             $imageSources = GetPictureSources::run($image);
         }
 
-
         return [
-            'id'   => $this->id,
+            'id' => $this->id,
             'slug' => $this->slug,
-            'image'                   => $imageSources,
-            'state'                   => [
+            'image' => $imageSources,
+            'state' => [
                 'tooltip' => $this->state?->labels()[$this->state->value] ?? null,
-                'icon'    => $this->state?->stateIcon()[$this->state->value]['icon'] ?? null,
-                'class'   => $this->state?->stateIcon()[$this->state->value]['class'] ?? null
+                'icon' => $this->state?->stateIcon()[$this->state->value]['icon'] ?? null,
+                'class' => $this->state?->stateIcon()[$this->state->value]['class'] ?? null,
             ] ?? [],
-            'code'                    => $this->code,
-            'name'                    => $this->name,
-            'description'             => $this->description,
+            'code' => $this->code,
+            'name' => $this->name,
+            'description' => $this->description,
             'number_current_products' => $this->number_current_products ?? 0,
 
         ];

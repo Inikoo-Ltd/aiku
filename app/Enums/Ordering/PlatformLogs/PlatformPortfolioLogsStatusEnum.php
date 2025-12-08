@@ -21,9 +21,9 @@ enum PlatformPortfolioLogsStatusEnum: string
     public function labels(): array
     {
         return [
-            'ok'    => 'Ok',
-            'processing'    => 'Processing',
-            'fail'  => 'Fail'
+            'ok' => 'Ok',
+            'processing' => 'Processing',
+            'fail' => 'Fail',
         ];
     }
 }

@@ -29,6 +29,7 @@ use UnexpectedValueException;
 class IndexRetinaFulfilmentBaskets extends RetinaAction
 {
     private CustomerSalesChannel $customerSalesChannel;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -52,7 +53,7 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
         } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $query->leftJoin('shopify_user_has_fulfilments', function ($join) {
                 $join->on('shopify_user_has_fulfilments.model_id', '=', 'pallet_returns.id')
-                        ->where('shopify_user_has_fulfilments.model_type', '=', 'PalletReturn');
+                    ->where('shopify_user_has_fulfilments.model_type', '=', 'PalletReturn');
             });
         } else {
             throw new UnexpectedValueException('To be implemented');
@@ -75,6 +76,7 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
             'pallet_returns.created_at',
             'currencies.code as currency_code',
         );
+
         return $query->defaultSort('id')
             ->allowedSorts(['id'])
             ->allowedFilters([$globalSearch])
@@ -85,8 +87,9 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
     public function authorize(ActionRequest $request): bool
     {
         if ($this->customerSalesChannel->customer_id == $this->customer->id) {
-            return  true;
+            return true;
         }
+
         return false;
     }
 
@@ -95,6 +98,7 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
         $this->customerSalesChannel = $customerSalesChannel;
         $this->platform = $customerSalesChannel->platform;
         $this->initialisation($request);
+
         return $this->handle($customerSalesChannel);
     }
 
@@ -107,35 +111,35 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
             'Storage/RetinaPalletReturns',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($this->customerSalesChannel),
-                'title'       => $title,
-                'pageHead'    => [
+                'title' => $title,
+                'pageHead' => [
                     'title' => $title,
-                    'icon'  => 'fal fa-shopping-basket',
+                    'icon' => 'fal fa-shopping-basket',
                     'afterTitle' => [
-                        'label' => ' @'.$this->platform->name
+                        'label' => ' @'.$this->platform->name,
                     ],
                 ],
                 'routes' => [
                     'storeClientWithOrderRoute' => [
                         'name' => 'retina.models.customer_sales_channel.fulfilment.customer-client-with-order.store',
                         'parameters' => [
-                            $this->customerSalesChannel->id
+                            $this->customerSalesChannel->id,
                         ],
-                        'method' => 'post'
+                        'method' => 'post',
                     ],
                     'fetchClientsRoute' => [
                         'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.client.index',
                         'parameters' => [
-                            'customerSalesChannel' => $this->customerSalesChannel->slug
-                        ]
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
+                        ],
                     ],
                     'storeBasketRoute' => [
                         'name' => 'retina.models.customer-client.fulfilment_order.store',
                         'parameters' => [
                             // FE put client id here
                         ],
-                        'method' => 'post'
-                    ]
+                        'method' => 'post',
+                    ],
                 ],
                 'data' => PalletReturnsResource::collection($palletReturns),
             ]
@@ -148,9 +152,8 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
-
 
             $table
                 ->withModelOperations($modelOperations)
@@ -170,17 +173,17 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
                                 'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.basket.index',
                                 'parameters' => [
-                                    $customerSalesChannel->slug
-                                ]
+                                    $customerSalesChannel->slug,
+                                ],
                             ],
-                            'label'  => __('Baskets'),
-                        ]
-                    ]
+                            'label' => __('Baskets'),
+                        ],
+                    ],
                 ]
             );
     }

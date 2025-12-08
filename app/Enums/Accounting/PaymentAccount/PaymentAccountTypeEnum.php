@@ -27,23 +27,21 @@ enum PaymentAccountTypeEnum: string
     case PASTPAY = 'pastpay';
     case CASH_ON_DELIVERY = 'cash_on_delivery';
 
-
     public static function labels(): array
     {
         return [
-            'world_pay'        => 'World Pay',
-            'paypal'           => 'Paypal',
-            'bank'             => __('Bank'),
-            'sofort'           => 'Sofort',
-            'cash'             => __('Cash'),
-            'account'          => __('Account'),
-            'braintree'        => 'Braintree',
+            'world_pay' => 'World Pay',
+            'paypal' => 'Paypal',
+            'bank' => __('Bank'),
+            'sofort' => 'Sofort',
+            'cash' => __('Cash'),
+            'account' => __('Account'),
+            'braintree' => 'Braintree',
             'braintree_paypal' => 'Braintree Paypal',
-            'checkout'         => 'Checkout',
-            'hokodo'           => 'Hokodo',
-            'pastpay'          => 'Pastpay',
+            'checkout' => 'Checkout',
+            'hokodo' => 'Hokodo',
+            'pastpay' => 'Pastpay',
             'cash_on_delivery' => __('Cash on Delivery'),
         ];
     }
-
 }

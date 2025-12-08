@@ -22,13 +22,11 @@ class GuestReindexSearch
         $guest->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'        => $guest->group_id,
-                'sections'        => ['supply-sysadmin'],
+                'group_id' => $guest->group_id,
+                'sections' => ['supply-sysadmin'],
                 'haystack_tier_1' => trim($guest->slug.' '.$guest->contact_name),
-                'haystack_tier_2' => $guest->contact_name.' '.$guest->email.' '.$guest->phone.' '.$guest->company_name
+                'haystack_tier_2' => $guest->contact_name.' '.$guest->email.' '.$guest->phone.' '.$guest->company_name,
             ]
         );
     }
-
-
 }

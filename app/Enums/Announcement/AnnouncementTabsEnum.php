@@ -39,7 +39,7 @@ enum AnnouncementTabsEnum: string
     {
         return [
             'showcase' => __('Showcase'),
-            'snapshots'      => __('Snapshots')
+            'snapshots' => __('Snapshots'),
         ];
     }
 }

@@ -35,9 +35,8 @@ trait HasSearchFields
         }
         $table->jsonb('result');
 
-
-
         $table->timestampsTz();
+
         return $table;
     }
 
@@ -51,12 +50,10 @@ trait HasSearchFields
             $table->foreign('website_id')->references('id')->on('websites');
         }
 
-
         $table->unsignedInteger('customer_id')->nullable()->index();
         $table->foreign('customer_id')->references('id')->on('customers');
 
         return $this->searchFields($table);
-
 
     }
 }

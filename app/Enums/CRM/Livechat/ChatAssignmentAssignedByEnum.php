@@ -8,7 +8,6 @@ enum ChatAssignmentAssignedByEnum: string
 {
     use EnumHelperTrait;
 
-
     case USER = 'user';
     case AGENT = 'agent';
     case SYSTEM = 'system';

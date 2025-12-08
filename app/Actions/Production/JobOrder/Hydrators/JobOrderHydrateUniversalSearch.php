@@ -22,13 +22,12 @@ class JobOrderHydrateUniversalSearch
         $jobOrder->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'          => $jobOrder->group_id,
-                'organisation_id'   => $jobOrder->organisation_id,
+                'group_id' => $jobOrder->group_id,
+                'organisation_id' => $jobOrder->organisation_id,
                 'organisation_slug' => $jobOrder->organisation->slug,
-                'sections'          => ['manufacture'],
-                'haystack_tier_1'   => $jobOrder->reference,
+                'sections' => ['manufacture'],
+                'haystack_tier_1' => $jobOrder->reference,
             ]
         );
     }
-
 }

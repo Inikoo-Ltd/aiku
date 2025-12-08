@@ -14,9 +14,8 @@ enum TaxNumberStatusEnum: string
 {
     use EnumHelperTrait;
 
-
-    case VALID   = 'valid';
+    case VALID = 'valid';
     case INVALID = 'invalid';
-    case NA      = 'na';
+    case NA = 'na';
     case UNKNOWN = 'unknown';
 }

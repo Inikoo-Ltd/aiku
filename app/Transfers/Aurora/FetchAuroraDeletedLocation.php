@@ -19,14 +19,14 @@ class FetchAuroraDeletedLocation extends FetchAurora
         $parent = null;
 
         $deleted_at = $this->auroraModelData->{'Location Deleted Date'};
-        if (!$deleted_at) {
+        if (! $deleted_at) {
             return;
         }
 
         if (is_numeric($this->auroraModelData->{'Location Deleted Warehouse Area Key'})) {
             $parent = FetchAuroraWarehouseAreas::run($this->organisationSource, $this->auroraModelData->{'Location Deleted Warehouse Area Key'});
         }
-        if (!$parent) {
+        if (! $parent) {
             $parent = FetchAuroraWarehouses::run($this->organisationSource, $this->auroraModelData->{'Location Deleted Warehouse Key'});
         }
         $code = $this->auroraModelData->{'Location Deleted Code'};
@@ -39,18 +39,17 @@ class FetchAuroraDeletedLocation extends FetchAurora
 
         $code = $code.'-deleted-'.$this->auroraModelData->{'Location Deleted Key'};
 
-        $this->parsedData['parent']   = $parent;
+        $this->parsedData['parent'] = $parent;
         $this->parsedData['location'] = [
-            'code'            => $code,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Location Deleted Key'},
-            'deleted_at'      => $deleted_at,
-            'fetched_at'      => now(),
-            'last_fetched_at' => now()
+            'code' => $code,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Location Deleted Key'},
+            'deleted_at' => $deleted_at,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Location Deleted Dimension')

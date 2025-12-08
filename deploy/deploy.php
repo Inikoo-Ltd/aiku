@@ -22,7 +22,7 @@ task('deploy:check-fe-changes', function () {
         $prevHash = null;
     }
 
-    if (!empty($prevHash)) {
+    if (! empty($prevHash)) {
         try {
             $changedFiles = run("cd {{release_path}} && git diff --name-only $prevHash HEAD");
         } catch (\Throwable $e) {
@@ -33,7 +33,7 @@ task('deploy:check-fe-changes', function () {
         $changedFiles = 'resources'; // force detection
     }
 
-    $triggerFiles    = ['resources', 'vite.iris.config.mjs', 'vite.aiku-public.config.js'];
+    $triggerFiles = ['resources', 'vite.iris.config.mjs', 'vite.aiku-public.config.js'];
     $frontEndChanged = false;
     foreach ($triggerFiles as $triggerFile) {
         if (str_contains($changedFiles, $triggerFile)) {
@@ -47,7 +47,6 @@ task('deploy:check-fe-changes', function () {
     writeln(sprintf('Front-end changes detected: %s', $frontEndChanged ? 'yes' : 'no'));
 });
 
-
 desc('🚡 Migrating database');
 task('deploy:migrate', function () {
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
@@ -56,7 +55,7 @@ desc('🏗️ Build vue app');
 task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
-        run("cd {{release_path}} && {{bin/npm}} run build");
+        run('cd {{release_path}} && {{bin/npm}} run build');
     } else {
         // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
@@ -75,20 +74,16 @@ task('deploy:set-release', function () {
     run("cd {{release_path}} && sed -i~ '/^RELEASE=/s/=.*/=\"{{release_semver}}\"/' .env   ");
 });
 
-
 desc('Sync octane anchor');
 task('deploy:sync-octane-anchor', function () {
-    run("rsync -ahHq --delete {{release_path}}/ {{deploy_path}}/anchor/octane");
+    run('rsync -ahHq --delete {{release_path}}/ {{deploy_path}}/anchor/octane');
 });
 
 desc('Stops inertia SSR server');
 task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod');
 
-
-
 desc('Refresh vue after deployment');
 task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
-
 
 desc('Refresh vue after deployment');
 task('deploy:refresh-vue', function () {
@@ -103,10 +98,10 @@ task('deploy:refresh-vue', function () {
 desc('Save ssr checksums');
 task('deploy:save-ssr-checksums', function () {
     $manifestPath = '{{release_path}}/bootstrap/ssr/ssr-manifest.json';
-    $irisPath     = '{{release_path}}/bootstrap/ssr/ssr-iris.mjs';
+    $irisPath = '{{release_path}}/bootstrap/ssr/ssr-iris.mjs';
 
     $manifestChecksum = '';
-    $irisChecksum     = '';
+    $irisChecksum = '';
 
     try {
         if (test('[ -f '.$manifestPath.' ]')) {
@@ -135,17 +130,14 @@ task('deploy:save-ssr-checksums', function () {
     run('printf %s '.escapeshellarg($combined).' > '.$checksumFile);
     writeln('SSR checksum saved to '.$checksumFile);
 
-
-
 });
-
 
 desc('Flush varnish cache if ssr checksum if different as previous release');
 task('deploy:flush-varnish', function () {
-    $currentFile  = '{{release_path}}/SSR_CHECKSUM';
+    $currentFile = '{{release_path}}/SSR_CHECKSUM';
     $previousFile = '{{previous_release}}/SSR_CHECKSUM';
 
-    $current  = '';
+    $current = '';
     $previous = '';
 
     // Read current checksum
@@ -194,10 +186,10 @@ task('deploy:flush-varnish', function () {
 desc('Restart Inertia SSR by supervisorctl');
 task('deploy:restart-ssr-by-supervisorctl', function () {
 
-    $currentFile  = '{{release_path}}/SSR_CHECKSUM';
+    $currentFile = '{{release_path}}/SSR_CHECKSUM';
     $previousFile = '{{previous_release}}/SSR_CHECKSUM';
 
-    $current  = '';
+    $current = '';
     $previous = '';
 
     // Read current checksum
@@ -231,9 +223,8 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 
     if ($shouldRestartSSR) {
-        run("sudo supervisorctl restart inertia-ssr-production");
+        run('sudo supervisorctl restart inertia-ssr-production');
     }
-
 
 })->select('env=prod');
 

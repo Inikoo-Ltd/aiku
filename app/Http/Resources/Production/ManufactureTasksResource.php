@@ -20,11 +20,11 @@ class ManufactureTasksResource extends JsonResource
     {
 
         return [
-            'slug'    => $this->slug,
-            'code'    => $this->code,
-            'name'    => $this->name,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
             'organisation_name' => $this->organisation_name,
-            'organisation_slug' => $this->organisation_slug
+            'organisation_slug' => $this->organisation_slug,
         ];
     }
 }

@@ -12,12 +12,12 @@ use Illuminate\Support\Arr;
 
 trait WithTab
 {
-    protected ?string $tab                = null;
+    protected ?string $tab = null;
 
     public function withTab(array $tabs): static
     {
-        $tab =  $this->get('tab', Arr::first($tabs));
-        if (!in_array($tab, $tabs)) {
+        $tab = $this->get('tab', Arr::first($tabs));
+        if (! in_array($tab, $tabs)) {
             abort(404);
         }
         $this->tab = $tab;

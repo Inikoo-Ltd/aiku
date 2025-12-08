@@ -18,9 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDeliveryStateToReceived extends OrgAction
 {
-    use WithActionUpdate;
     use HasStockDeliveryHydrators;
-
+    use WithActionUpdate;
 
     private StockDelivery $stockDelivery;
 
@@ -30,8 +29,8 @@ class UpdateStockDeliveryStateToReceived extends OrgAction
             'state' => StockDeliveryStateEnum::RECEIVED,
         ];
 
-        $data[$stockDelivery->state->value.'_at']    = null;
-        $data['received_at']                         = now();
+        $data[$stockDelivery->state->value.'_at'] = null;
+        $data['received_at'] = now();
 
         $stockDelivery = $this->update($stockDelivery, $data);
 
@@ -51,20 +50,19 @@ class UpdateStockDeliveryStateToReceived extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!in_array($this->stockDelivery->state, [StockDeliveryStateEnum::IN_PROCESS, StockDeliveryStateEnum::DISPATCHED, StockDeliveryStateEnum::CHECKED])) {
+        if (! in_array($this->stockDelivery->state, [StockDeliveryStateEnum::IN_PROCESS, StockDeliveryStateEnum::DISPATCHED, StockDeliveryStateEnum::CHECKED])) {
             $validator->errors()->add('state', __('You can not change the status to received if state is'.' '.$this->stockDelivery->state->value));
         }
     }
 
     public function action(StockDelivery $stockDelivery): StockDelivery
     {
-        $this->asAction         = true;
-        $this->stockDelivery    = $stockDelivery;
+        $this->asAction = true;
+        $this->stockDelivery = $stockDelivery;
         $this->initialisation($stockDelivery->organisation, []);
 
         return $this->handle($stockDelivery);
     }
-
 
     public function asController(StockDelivery $stockDelivery): StockDelivery
     {

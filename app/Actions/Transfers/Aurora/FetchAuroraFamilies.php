@@ -31,12 +31,12 @@ class FetchAuroraFamilies extends FetchAuroraAction
             if ($family = ProductCategory::where('source_family_id', $familyData['family']['source_family_id'])
                 ->first()) {
                 try {
-                    $shop      = $family->shop;
+                    $shop = $family->shop;
                     $modelData = [];
 
                     if ($shop->type == ShopTypeEnum::B2B) {
                         $modelData = $familyData['family'];
-                    } elseif ($shop->type == ShopTypeEnum::DROPSHIPPING && !$family->image_id) {
+                    } elseif ($shop->type == ShopTypeEnum::DROPSHIPPING && ! $family->image_id) {
                         $modelData = Arr::only($familyData['family'], ['image', 'fetched_at', 'last_fetched_at']);
                     }
 
@@ -50,22 +50,20 @@ class FetchAuroraFamilies extends FetchAuroraAction
                         audit: false
                     );
 
-
                     if (isset($imageData['image_path']) and isset($imageData['filename'])) {
                         SaveModelImages::run(
                             model: $family,
                             mediaData: [
-                                'path'         => $imageData['image_path'],
+                                'path' => $imageData['image_path'],
                                 'originalName' => $imageData['filename'],
 
                             ],
-                            mediaScope:'product_images',
+                            mediaScope: 'product_images',
                             modelHasMediaData: [
-                                'scope' => 'photo'
+                                'scope' => 'photo',
                             ]
                         );
                     }
-
 
                     $this->recordChange($organisationSource, $family->wasChanged());
                 } catch (Exception $e) {
@@ -77,7 +75,6 @@ class FetchAuroraFamilies extends FetchAuroraAction
                 try {
                     $imageData = Arr::pull($familyData['family'], 'image');
 
-
                     $family = StoreProductCategory::make()->action(
                         parent: $familyData['parent'],
                         modelData: $familyData['family'],
@@ -85,7 +82,6 @@ class FetchAuroraFamilies extends FetchAuroraAction
                         strict: false,
                         audit: false
                     );
-
 
                     ProductCategory::enableAuditing();
                     $this->saveMigrationHistory(
@@ -102,19 +98,18 @@ class FetchAuroraFamilies extends FetchAuroraAction
 
                     if (isset($imageData['image_path']) and isset($imageData['filename'])) {
                         SaveModelImages::run(
-                            model:$family,
-                            mediaData:[
-                                'path'         => $imageData['image_path'],
+                            model: $family,
+                            mediaData: [
+                                'path' => $imageData['image_path'],
                                 'originalName' => $imageData['filename'],
 
                             ],
-                            mediaScope:'product_images',
+                            mediaScope: 'product_images',
                             modelHasMediaData: [
-                                'scope' => 'photo'
+                                'scope' => 'photo',
                             ]
                         );
                     }
-
 
                 } catch (Exception|Throwable $e) {
                     $this->recordError($organisationSource, $e, $familyData['family'], 'Family', 'store');
@@ -123,25 +118,21 @@ class FetchAuroraFamilies extends FetchAuroraAction
                 }
             }
 
-
             return $family;
         }
-
 
         return null;
     }
 
-
     public function getModelsQuery(): Builder
     {
         $familySourceIDs = [];
-        $query           = DB::connection('aurora')
+        $query = DB::connection('aurora')
             ->table('Store Dimension')
             ->select('Store Family Category Key');
         foreach ($query->get() as $row) {
             $familySourceIDs[] = $row->{'Store Family Category Key'};
         }
-
 
         $query = DB::connection('aurora')
             ->table('Category Dimension')
@@ -159,13 +150,12 @@ class FetchAuroraFamilies extends FetchAuroraAction
     public function count(): ?int
     {
         $familySourceIDs = [];
-        $query           = DB::connection('aurora')
+        $query = DB::connection('aurora')
             ->table('Store Dimension')
             ->select('Store Family Category Key');
         foreach ($query->get() as $row) {
             $familySourceIDs[] = $row->{'Store Family Category Key'};
         }
-
 
         $query = DB::connection('aurora')
             ->table('Category Dimension')

@@ -45,15 +45,15 @@ class GetWebsiteWorkshopCollection
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'departments'   => WebsiteDepartmentsResource::collection($departments),
-            'subDepartments'   => WorkshopSubDepartmentsResource::collection($subDepartments),
-            'layout'    => Arr::get($website->unpublishedCollectionSnapshot, 'layout.collection', []),
+            'departments' => WebsiteDepartmentsResource::collection($departments),
+            'subDepartments' => WorkshopSubDepartmentsResource::collection($subDepartments),
+            'layout' => Arr::get($website->unpublishedCollectionSnapshot, 'layout.collection', []),
             /* 'webpages'  => WebpagesResource::collection(GetWebpagesWithCollection::run($website)), */
             'autosaveRoute' => [
-                'name'       => 'grp.models.website.autosave.collection',
+                'name' => 'grp.models.website.autosave.collection',
                 'parameters' => [
-                    'website' => $website->id
-                ]
+                    'website' => $website->id,
+                ],
             ],
         ];
     }

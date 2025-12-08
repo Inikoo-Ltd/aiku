@@ -23,29 +23,28 @@ class FetchAuroraDeletedEmployee extends FetchAurora
 
         $this->parsedData['employee'] =
             [
-                'contact_name'             => $auDeletedModel->data->{'Staff Name'},
-                'email'                    => $auDeletedModel->data->{'Staff Email'},
-                'phone'                    => $auDeletedModel->data->{'Staff Telephone'},
+                'contact_name' => $auDeletedModel->data->{'Staff Name'},
+                'email' => $auDeletedModel->data->{'Staff Email'},
+                'phone' => $auDeletedModel->data->{'Staff Telephone'},
                 'identity_document_number' => $auDeletedModel->data->{'Staff Official ID'},
-                'date_of_birth'            => $this->parseDate($auDeletedModel->data->{'Staff Birthday'}),
-                'worker_number'            => $auDeletedModel->data->{'Staff ID'}.'-deleted',
-                'alias'                    => strtolower($auDeletedModel->data->{'Staff Alias'}.'-deleted'),
-                'employment_start_at'      => $this->parseDatetime($auDeletedModel->data->{'Staff Valid From'}),
-                'employment_end_at'        => $this->parseDatetime($auDeletedModel->data->{'Staff Valid To'}),
-                'type'                     => Str::snake($auDeletedModel->data->{'Staff Type'}, '-'),
-                'source_id'                => $this->organisation->id.':'.$auDeletedModel->data->{'Staff Key'},
-                'state'                    => 'left',
-                'data'                     => [
+                'date_of_birth' => $this->parseDate($auDeletedModel->data->{'Staff Birthday'}),
+                'worker_number' => $auDeletedModel->data->{'Staff ID'}.'-deleted',
+                'alias' => strtolower($auDeletedModel->data->{'Staff Alias'}.'-deleted'),
+                'employment_start_at' => $this->parseDatetime($auDeletedModel->data->{'Staff Valid From'}),
+                'employment_end_at' => $this->parseDatetime($auDeletedModel->data->{'Staff Valid To'}),
+                'type' => Str::snake($auDeletedModel->data->{'Staff Type'}, '-'),
+                'source_id' => $this->organisation->id.':'.$auDeletedModel->data->{'Staff Key'},
+                'state' => 'left',
+                'data' => [
                     'address' => $auDeletedModel->data->{'Staff Address'},
                 ],
-                'deleted_at'               => $this->auroraModelData->{'Staff Deleted Date'},
-                'fetched_at'               => now(),
-                'last_fetched_at'          => now(),
+                'deleted_at' => $this->auroraModelData->{'Staff Deleted Date'},
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
             ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Staff Deleted Dimension')

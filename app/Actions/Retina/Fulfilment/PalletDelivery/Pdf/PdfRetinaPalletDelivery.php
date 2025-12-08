@@ -30,20 +30,20 @@ class PdfRetinaPalletDelivery
     {
 
         $config = [
-            'title'                  => $palletDelivery->reference,
-            'margin_left'            => 8,
-            'margin_right'           => 8,
-            'margin_top'             => 2,
-            'margin_bottom'          => 2,
-            'auto_page_break'        => true,
-            'auto_page_break_margin' => 10
+            'title' => $palletDelivery->reference,
+            'margin_left' => 8,
+            'margin_right' => 8,
+            'margin_top' => 2,
+            'margin_bottom' => 2,
+            'auto_page_break' => true,
+            'auto_page_break_margin' => 10,
         ];
 
         return PDF::chunkLoadView('<html-separator/>', 'pickings.templates.pdf.delivery', [
             'filename' => $palletDelivery->reference,
             'delivery' => $palletDelivery,
             'customer' => $palletDelivery->fulfilmentCustomer->customer,
-            'shop'     => $palletDelivery->fulfilment->shop
+            'shop' => $palletDelivery->fulfilment->shop,
         ], [], $config);
     }
 
@@ -52,12 +52,13 @@ class PdfRetinaPalletDelivery
      */
     public function asController(PalletDelivery $palletDelivery, ActionRequest $request): Response
     {
-        $filename = 'pallet-delivery-' . $palletDelivery->slug . '.pdf';
+        $filename = 'pallet-delivery-'.$palletDelivery->slug.'.pdf';
 
         $pdf = $this->handle($palletDelivery);
-        return response($pdf->stream($filename . '.pdf'), 200)
+
+        return response($pdf->stream($filename.'.pdf'), 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="' . $filename . '.pdf"');
+            ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
 
     }
 }

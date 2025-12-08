@@ -25,12 +25,10 @@ class GroupHydrateCustomerClients
     public function handle(Group $group): void
     {
         $stats = [
-            'number_customer_clients'         => $group->clients()->count(),
-            'number_current_customer_clients' => $group->clients()->where('status', true)->count()
+            'number_customer_clients' => $group->clients()->count(),
+            'number_current_customer_clients' => $group->clients()->where('status', true)->count(),
         ];
 
         $group->dropshippingStats()->update($stats);
     }
-
-
 }

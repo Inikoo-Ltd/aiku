@@ -88,22 +88,21 @@ beforeEach(
      * @throws \Throwable
      */
     function () {
-        list(
+        [
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ] = createShop();
 
-        list(
+        [
             $this->tradeUnit,
             $this->product
-        ) = createProduct($this->shop);
+        ] = createProduct($this->shop);
 
         $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
 
-
         $website = Website::first();
-        if (!$website) {
+        if (! $website) {
             $storeData = Website::factory()->definition();
 
             $website = StoreWebsite::make()->action(
@@ -113,7 +112,6 @@ beforeEach(
         }
         $this->website = $website;
 
-
         Config::set(
             'inertia.testing.page_paths',
             [resource_path('js/Pages/Grp')]
@@ -121,7 +119,6 @@ beforeEach(
         actingAs($this->user);
     }
 );
-
 
 test('create customer', function () {
     $customer = StoreCustomer::make()->action(
@@ -157,18 +154,16 @@ test('create web user', function (Customer $customer) {
     $webUser = StoreWebUser::make()->action(
         $customer,
         [
-            'email'    => 'example@mail.com',
+            'email' => 'example@mail.com',
             'username' => 'example',
             'password' => 'password',
         ]
     );
 
-
     expect($webUser)->toBeInstanceOf(WebUser::class);
 
     return $customer;
 })->depends('create customer');
-
 
 test('prospect queries are seeded', function () {
     $this->artisan('query:seed-prospects')->assertExitCode(0);
@@ -176,7 +171,7 @@ test('prospect queries are seeded', function () {
 });
 
 test('create prospect', function () {
-    $shop      = $this->shop;
+    $shop = $this->shop;
     $modelData = Prospect::factory()->definition();
     data_set($modelData, 'tags', ['seo', 'tag 1', ' hello ', 'Seo']);
     $prospect = StoreProspect::make()->action($shop, $modelData);
@@ -193,27 +188,26 @@ test('create prospect', function () {
         ->and($this->organisation->crmStats->number_prospects_state_fail)->toBe(0)
         ->and($this->organisation->crmStats->number_prospects_state_success)->toBe(0);
 
-
     return $prospect;
 });
 
 test('update prospect', function () {
     /** @var Prospect $prospect */
-    $prospect  = Prospect::first();
+    $prospect = Prospect::first();
     $modelData = [
         'contact_name' => 'new name',
     ];
-    $prospect  = UpdateProspect::make()->action(prospect: $prospect, modelData: $modelData);
+    $prospect = UpdateProspect::make()->action(prospect: $prospect, modelData: $modelData);
     expect($prospect)->toBeInstanceOf(Prospect::class)->and($prospect->contact_name)->toBe('new name');
 
     return $prospect;
 });
 
 test('create 2nd prospect', function () {
-    $shop         = $this->shop;
+    $shop = $this->shop;
     $organisation = $this->organisation;
-    $modelData    = Prospect::factory()->definition();
-    $prospect     = StoreProspect::make()->action($shop, $modelData);
+    $modelData = Prospect::factory()->definition();
+    $prospect = StoreProspect::make()->action($shop, $modelData);
     expect($prospect)->toBeInstanceOf(Prospect::class)
         ->and($shop->crmStats->number_prospects)->toBe(2)
         ->and($shop->crmStats->number_prospects_state_no_contacted)->toBe(2)
@@ -232,7 +226,7 @@ test('create 2nd prospect', function () {
 test('prospect query count', function () {
     $this->artisan('query:count')->assertExitCode(0);
 
-    $query  = Query::first();
+    $query = Query::first();
     $query2 = Query::skip(1)->first();
 
     expect($query->number_items)->toBe(2)
@@ -240,36 +234,36 @@ test('prospect query count', function () {
 });
 
 test('create prospect mailshot', function () {
-    $shop   = $this->shop;
+    $shop = $this->shop;
     $outbox = Outbox::where('shop_id', $shop->id)->where('code', OutboxCodeEnum::INVITE)->first();
     expect($outbox)->toBeInstanceOf(Outbox::class);
     $dataModel = [
-        'subject'           => 'hello',
-        'type'              => MailshotTypeEnum::INVITE,
-        'state'             => MailshotStateEnum::IN_PROCESS,
-        'recipients_recipe' => []
+        'subject' => 'hello',
+        'type' => MailshotTypeEnum::INVITE,
+        'state' => MailshotStateEnum::IN_PROCESS,
+        'recipients_recipe' => [],
 
     ];
-    $mailshot  = StoreMailshot::make()->action($outbox, $dataModel);
+    $mailshot = StoreMailshot::make()->action($outbox, $dataModel);
     expect($mailshot)->toBeInstanceOf(Mailshot::class)
         ->and($outbox->intervals->runs_all)->toBe(1);
 });
 
 test('add delivery address to customer', function (Customer $customer) {
-    $country  = Country::latest()->first();
+    $country = Country::latest()->first();
     $customer = AddDeliveryAddressToCustomer::make()->action(
         $customer,
         [
             'delivery_address' => [
-                'address_line_1'      => fake()->streetAddress,
-                'address_line_2'      => fake()->buildingNumber,
-                'sorting_code'        => '',
-                'postal_code'         => fake()->postcode,
-                'locality'            => fake()->city,
-                'dependent_locality'  => '',
+                'address_line_1' => fake()->streetAddress,
+                'address_line_2' => fake()->buildingNumber,
+                'sorting_code' => '',
+                'postal_code' => fake()->postcode,
+                'locality' => fake()->city,
+                'dependent_locality' => '',
                 'administrative_area' => '',
-                'country_id'          => $country->id
-            ]
+                'country_id' => $country->id,
+            ],
         ]
     );
 
@@ -281,7 +275,7 @@ test('add delivery address to customer', function (Customer $customer) {
 
 test('remove delivery address from customer', function (Customer $customer) {
     /** @var \App\Models\Helpers\Address $address */
-    $address  = $customer->addresses()->skip(1)->first();
+    $address = $customer->addresses()->skip(1)->first();
     $customer = DeleteCustomerDeliveryAddress::make()->action($customer, $address);
 
     expect($customer)->toBeInstanceOf(Customer::class)
@@ -291,7 +285,7 @@ test('remove delivery address from customer', function (Customer $customer) {
 })->depends('add delivery address to customer');
 
 test('can show list of prospects lists', function () {
-    $shop     = $this->shop;
+    $shop = $this->shop;
     $response = get(route('grp.org.shops.show.crm.prospects.lists.index', [$shop->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -327,7 +321,7 @@ test('update favourite', function (Favourite $favourite) {
     $updatedFavourite = UpdateFavourite::make()->action(
         favourite: $favourite,
         modelData: [
-            'last_fetched_at' => $targetDate
+            'last_fetched_at' => $targetDate,
         ],
         strict: false
     );
@@ -341,12 +335,12 @@ test('update favourite', function (Favourite $favourite) {
 })->depends('add favourite to customer');
 
 test('un-favourite', function (Favourite $favourite) {
-    $customer   = $favourite->customer;
-    $product    = $favourite->product;
+    $customer = $favourite->customer;
+    $product = $favourite->product;
     $unFavorite = UnFavourite::make()->action(
         $favourite,
         [
-            'unfavourited_at' => now()
+            'unfavourited_at' => now(),
         ]
     );
 
@@ -358,7 +352,6 @@ test('un-favourite', function (Favourite $favourite) {
         ->and($this->product->stats->number_customers_who_favourited)->toBe(0)
         ->and($this->product->stats->number_customers_who_un_favourited)->toBe(1);
 })->depends('add favourite to customer');
-
 
 test('add back in stock reminder to customer', function (Customer $customer) {
     $reminder = StoreBackInStockReminder::make()->action(
@@ -376,7 +369,6 @@ test('add back in stock reminder to customer', function (Customer $customer) {
 
     return $reminder;
 })->depends('create customer');
-
 
 test('delete back in stock reminder', function (BackInStockReminder $reminder) {
     $deletedReminder = DeleteBackInStockReminder::make()->action(
@@ -396,7 +388,7 @@ test('create customer note', function (Customer $customer) {
     $note = StoreCustomerNote::make()->action(
         $customer,
         [
-            'note' => 'note A1234'
+            'note' => 'note A1234',
         ]
     );
 
@@ -414,7 +406,7 @@ test('update customer note', function (CustomerNote $note) {
     $updatedNote = UpdateCustomerNote::make()->action(
         $note,
         [
-            'note' => 'note A1234 update'
+            'note' => 'note A1234 update',
         ]
     );
 
@@ -440,19 +432,19 @@ test('store poll', function () {
     $poll = StorePoll::make()->action(
         $this->shop,
         [
-            'name'                     => 'name',
-            'label'                    => 'poll label',
-            'in_registration'          => false,
+            'name' => 'name',
+            'label' => 'poll label',
+            'in_registration' => false,
             'in_registration_required' => true,
-            'in_iris'                  => true,
-            'in_iris_required'         => true,
-            'type'                     => [
-                'type'    => PollTypeEnum::OPTION,
+            'in_iris' => true,
+            'in_iris_required' => true,
+            'type' => [
+                'type' => PollTypeEnum::OPTION,
                 'options' => [
                     ['label' => 'option 1'],
                     ['label' => 'option 2'],
-                ]
-            ]
+                ],
+            ],
         ]
     );
 
@@ -474,12 +466,12 @@ test('update poll', function (Poll $poll) {
     $poll = UpdatePoll::make()->action(
         $poll,
         [
-            'name'                     => 'option poll B',
-            'label'                    => 'some option',
-            'in_registration'          => true,
+            'name' => 'option poll B',
+            'label' => 'some option',
+            'in_registration' => true,
             'in_registration_required' => false,
-            'in_iris'                  => false,
-            'in_iris_required'         => false,
+            'in_iris' => false,
+            'in_iris_required' => false,
         ]
     );
 
@@ -539,15 +531,15 @@ test('store open question poll', function () {
     $poll = StorePoll::make()->action(
         $this->shop,
         [
-            'name'                     => 'open question',
-            'label'                    => 'open label',
-            'in_registration'          => false,
+            'name' => 'open question',
+            'label' => 'open label',
+            'in_registration' => false,
             'in_registration_required' => true,
-            'in_iris'                  => true,
-            'in_iris_required'         => true,
-            'type'                     => [
-                'type' => PollTypeEnum::OPEN_QUESTION
-            ]
+            'in_iris' => true,
+            'in_iris_required' => true,
+            'type' => [
+                'type' => PollTypeEnum::OPEN_QUESTION,
+            ],
         ]
     );
 
@@ -570,7 +562,7 @@ test('store open question poll reply', function (Customer $customer, Poll $poll)
         $poll,
         [
             'customer_id' => $customer->id,
-            'value'       => 'Something'
+            'value' => 'Something',
         ]
     );
 
@@ -591,8 +583,8 @@ test('store option poll reply', function (Customer $customer, PollOption $pollOp
     $pollReply = StorePollReply::make()->action(
         $poll,
         [
-            'customer_id'    => $customer->id,
-            'poll_option_id' => $pollOption->id
+            'customer_id' => $customer->id,
+            'poll_option_id' => $pollOption->id,
         ]
     );
 
@@ -611,7 +603,7 @@ test('update open question poll reply', function (PollReply $pollReply) {
     $pollReply = UpdatePollReply::make()->action(
         $pollReply,
         [
-            'value' => 'Something 1'
+            'value' => 'Something 1',
         ]
     );
 
@@ -689,7 +681,6 @@ test('UI edit customer', function () {
     });
 });
 
-
 test('UI Index customer web users', function () {
     $customer = Customer::first();
     $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.index', [$this->organisation->slug, $this->shop->slug, $customer->slug]));
@@ -738,7 +729,7 @@ test('UI show customer web users', function () {
         $this->organisation->slug,
         $this->shop->slug,
         $webUser->customer->slug,
-        $webUser->slug
+        $webUser->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($webUser) {
@@ -758,12 +749,12 @@ test('UI show customer web users', function () {
 });
 
 test('UI Edit customer web users', function () {
-    $webUser  = WebUser::first();
+    $webUser = WebUser::first();
     $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.edit', [
         $this->organisation->slug,
         $this->shop->slug,
         $webUser->customer->slug,
-        $webUser->slug
+        $webUser->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -812,7 +803,7 @@ test('UI Index customer orders', function () {
 
 test('UI show order', function () {
     $this->withoutExceptionHandling();
-    $order    = Order::first();
+    $order = Order::first();
     $customer = $order->customer;
     $response = $this->get(
         route(
@@ -821,7 +812,7 @@ test('UI show order', function () {
                 $this->organisation->slug,
                 $this->shop->slug,
                 $customer->slug,
-                $order->slug
+                $order->slug,
             ]
         )
     );
@@ -843,9 +834,9 @@ test('UI show order', function () {
 });
 
 test('can show list of mailshots', function () {
-    $shop         = $this->shop;
+    $shop = $this->shop;
     $organisation = $this->organisation;
-    $response     = get(route('grp.org.shops.show.marketing.mailshots.index', [$organisation->slug, $shop->slug]));
+    $response = get(route('grp.org.shops.show.marketing.mailshots.index', [$organisation->slug, $shop->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Comms/Mailshots')
@@ -854,9 +845,9 @@ test('can show list of mailshots', function () {
 });
 
 test('can show list of prospects', function () {
-    $shop         = $this->shop;
+    $shop = $this->shop;
     $organisation = $this->organisation;
-    $response     = get(route('grp.org.shops.show.crm.prospects.index', [$organisation->slug, $shop->slug]));
+    $response = get(route('grp.org.shops.show.crm.prospects.index', [$organisation->slug, $shop->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Shop/CRM/Prospects')
@@ -864,11 +855,10 @@ test('can show list of prospects', function () {
     });
 });
 
-
 test('UI get section route crm dashboard', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.index', [
         'organisation' => $this->organisation->slug,
-        'shop'         => $this->shop->slug
+        'shop' => $this->shop->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -876,18 +866,16 @@ test('UI get section route crm dashboard', function () {
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
 });
 
-
 test('UI get section route marketing mailshots index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.marketing.mailshots.index', [
         'organisation' => $this->organisation->slug,
-        'shop'         => $this->shop->slug
+        'shop' => $this->shop->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_MARKETING->value)
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
 });
-
 
 test('customers search', function () {
     $this->artisan('search:customers')->assertExitCode(0);
@@ -906,9 +894,9 @@ test('prospects search', function () {
 });
 
 test('create 3rd prospect (Email Clicked)', function () {
-    $shop      = $this->shop;
+    $shop = $this->shop;
     $modelData = Prospect::factory()->definition();
-    $prospect  = StoreProspect::make()->action($shop, $modelData);
+    $prospect = StoreProspect::make()->action($shop, $modelData);
     $prospect->refresh();
     expect($prospect)->toBeInstanceOf(Prospect::class)
         ->and($shop->crmStats->number_prospects)->toBe(3);
@@ -923,9 +911,9 @@ test('create 3rd prospect (Email Clicked)', function () {
 });
 
 test('create 4th prospect (Email hard Bounced)', function () {
-    $shop      = $this->shop;
+    $shop = $this->shop;
     $modelData = Prospect::factory()->definition();
-    $prospect  = StoreProspect::make()->action($shop, $modelData);
+    $prospect = StoreProspect::make()->action($shop, $modelData);
     $prospect->refresh();
     expect($prospect)->toBeInstanceOf(Prospect::class)
         ->and($shop->crmStats->number_prospects)->toBe(4);
@@ -941,11 +929,11 @@ test('create 4th prospect (Email hard Bounced)', function () {
 });
 
 test('create 5th prospect (Email Sent)', function () {
-    $shop      = $this->shop;
+    $shop = $this->shop;
     $modelData = Prospect::factory()->definition();
-    $prospect  = StoreProspect::make()->action($shop, $modelData);
-    $prospect  = UpdateProspect::make()->action($prospect, [
-        'contacted_state' => ProspectContactedStateEnum::NA
+    $prospect = StoreProspect::make()->action($shop, $modelData);
+    $prospect = UpdateProspect::make()->action($prospect, [
+        'contacted_state' => ProspectContactedStateEnum::NA,
     ]);
     $prospect->refresh();
     expect($prospect)->toBeInstanceOf(Prospect::class)
@@ -961,11 +949,11 @@ test('create 5th prospect (Email Sent)', function () {
 });
 
 test('create 6th prospect (Email Opened)', function () {
-    $shop      = $this->shop;
+    $shop = $this->shop;
     $modelData = Prospect::factory()->definition();
-    $prospect  = StoreProspect::make()->action($shop, $modelData);
-    $prospect  = UpdateProspect::make()->action($prospect, [
-        'contacted_state' => ProspectContactedStateEnum::NA
+    $prospect = StoreProspect::make()->action($shop, $modelData);
+    $prospect = UpdateProspect::make()->action($prospect, [
+        'contacted_state' => ProspectContactedStateEnum::NA,
     ]);
     $prospect->refresh();
     expect($prospect)->toBeInstanceOf(Prospect::class)
@@ -981,12 +969,12 @@ test('create 6th prospect (Email Opened)', function () {
 });
 
 test('create 7th prospect (Email Soft Bounced)', function () {
-    $shop      = $this->shop;
+    $shop = $this->shop;
     $modelData = Prospect::factory()->definition();
-    $prospect  = StoreProspect::make()->action($shop, $modelData);
-    $prospect  = UpdateProspect::make()->action($prospect, [
-        'state'           => ProspectStateEnum::NO_CONTACTED,
-        'contacted_state' => ProspectContactedStateEnum::NA
+    $prospect = StoreProspect::make()->action($shop, $modelData);
+    $prospect = UpdateProspect::make()->action($prospect, [
+        'state' => ProspectStateEnum::NO_CONTACTED,
+        'contacted_state' => ProspectContactedStateEnum::NA,
     ]);
     $prospect->refresh();
     expect($prospect)->toBeInstanceOf(Prospect::class)
@@ -1002,9 +990,9 @@ test('create 7th prospect (Email Soft Bounced)', function () {
 });
 
 test('create 8th prospect (Email Undo Unsubscribed)', function () {
-    $shop      = $this->shop;
+    $shop = $this->shop;
     $modelData = Prospect::factory()->definition();
-    $prospect  = StoreProspect::make()->action($shop, $modelData);
+    $prospect = StoreProspect::make()->action($shop, $modelData);
     $prospect->refresh();
 
     expect($prospect)->toBeInstanceOf(Prospect::class)
@@ -1021,10 +1009,10 @@ test('create 8th prospect (Email Undo Unsubscribed)', function () {
 });
 
 test('create 9th prospect (Email Undo Unsubscribed - last_contacted not null)', function () {
-    $shop      = $this->shop;
+    $shop = $this->shop;
     $modelData = Prospect::factory()->definition();
-    $prospect  = StoreProspect::make()->action($shop, $modelData);
-    $prospect  = UpdateProspect::make()->action($prospect, [
+    $prospect = StoreProspect::make()->action($shop, $modelData);
+    $prospect = UpdateProspect::make()->action($prospect, [
         'last_contacted_at' => Carbon::now(),
     ]);
     $prospect->refresh();
@@ -1043,9 +1031,9 @@ test('create 9th prospect (Email Undo Unsubscribed - last_contacted not null)', 
 });
 
 test('create 10th prospect (Email Unsubscribed)', function () {
-    $shop      = $this->shop;
+    $shop = $this->shop;
     $modelData = Prospect::factory()->definition();
-    $prospect  = StoreProspect::make()->action($shop, $modelData);
+    $prospect = StoreProspect::make()->action($shop, $modelData);
     $prospect->refresh();
 
     expect($prospect)->toBeInstanceOf(Prospect::class)
@@ -1084,7 +1072,7 @@ test('UI Show prospects', function (Prospect $prospect) {
     $response = $this->get(route('grp.org.shops.show.crm.prospects.show', [
         $this->organisation->slug,
         $this->shop->slug,
-        $prospect->slug
+        $prospect->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) use ($prospect) {
         $page
@@ -1113,16 +1101,16 @@ test('add balance customer', function (Customer $customer) {
         $customer,
         [
             'amount' => 100,
-            'type'   => CreditTransactionTypeEnum::ADD_FUNDS_OTHER->value,
-            'notes'  => 'test',
+            'type' => CreditTransactionTypeEnum::ADD_FUNDS_OTHER->value,
+            'notes' => 'test',
         ]
     );
     $customer->refresh();
 
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and((int)$customer->balance)->toBe(100)
+        ->and((int) $customer->balance)->toBe(100)
         ->and($creditTransaction)->toBeInstanceOf(CreditTransaction::class)
-        ->and((int)$creditTransaction->amount)->toBe(100)
+        ->and((int) $creditTransaction->amount)->toBe(100)
         ->and($creditTransaction->type)->toBe(CreditTransactionTypeEnum::ADD_FUNDS_OTHER)
         ->and($creditTransaction->notes)->toBe('test');
 
@@ -1134,15 +1122,15 @@ test('withdraw balance customer', function (Customer $customer) {
         $customer,
         [
             'amount' => 100,
-            'type'   => CreditTransactionTypeEnum::MONEY_BACK->value,
+            'type' => CreditTransactionTypeEnum::MONEY_BACK->value,
         ]
     );
     $customer->refresh();
 
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and((int)$customer->balance)->toBe(0)
+        ->and((int) $customer->balance)->toBe(0)
         ->and($creditTransaction)->toBeInstanceOf(CreditTransaction::class)
-        ->and((int)$creditTransaction->amount)->toBe(-100)
+        ->and((int) $creditTransaction->amount)->toBe(-100)
         ->and($creditTransaction->type)->toBe(CreditTransactionTypeEnum::MONEY_BACK);
 
     return $customer;

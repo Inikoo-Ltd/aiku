@@ -165,6 +165,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read TaxCategory $taxCategory
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $transactions
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Ordering\OrderFactory factory($count = null, $state = [])
  * @method static Builder<static>|Order newModelQuery()
  * @method static Builder<static>|Order newQuery()
@@ -172,73 +173,70 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Order query()
  * @method static Builder<static>|Order withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Order withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class Order extends Model implements HasMedia, Auditable
+class Order extends Model implements Auditable, HasMedia
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasUniversalSearch;
-    use HasFactory;
-    use InCustomer;
     use HasAddresses;
     use HasAttachments;
+    use HasFactory;
     use HasHistory;
-
+    use HasSlug;
+    use HasUniversalSearch;
+    use InCustomer;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'                          => 'array',
-        'payment_data'                  => 'array',
+        'data' => 'array',
+        'payment_data' => 'array',
         'post_submit_modification_data' => 'array',
-        'offer_meters'                  => 'array',
+        'offer_meters' => 'array',
 
-
-        'date'                   => 'datetime',
+        'date' => 'datetime',
         'updated_by_customer_at' => 'datetime',
-        'submitted_at'           => 'datetime',
-        'in_warehouse_at'        => 'datetime',
-        'handling_at'            => 'datetime',
-        'packed_at'              => 'datetime',
-        'finalised_at'           => 'datetime',
-        'dispatched_at'          => 'datetime',
-        'cancelled_at'           => 'datetime',
-        'settled_at'             => 'datetime',
-        'fetched_at'             => 'datetime',
-        'last_fetched_at'        => 'datetime',
-
+        'submitted_at' => 'datetime',
+        'in_warehouse_at' => 'datetime',
+        'handling_at' => 'datetime',
+        'packed_at' => 'datetime',
+        'finalised_at' => 'datetime',
+        'dispatched_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'settled_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
 
         'grp_exchange' => 'decimal:4',
         'org_exchange' => 'decimal:4',
 
-        'gross_amount'     => 'decimal:2',
-        'goods_amount'     => 'decimal:2',
-        'services_amount'  => 'decimal:2',
-        'charges_amount'   => 'decimal:2',
-        'shipping_amount'  => 'decimal:2',
+        'gross_amount' => 'decimal:2',
+        'goods_amount' => 'decimal:2',
+        'services_amount' => 'decimal:2',
+        'charges_amount' => 'decimal:2',
+        'shipping_amount' => 'decimal:2',
         'insurance_amount' => 'decimal:2',
-        'net_amount'       => 'decimal:2',
-        'grp_net_amount'   => 'decimal:2',
-        'org_net_amount'   => 'decimal:2',
-        'tax_amount'       => 'decimal:2',
-        'total_amount'     => 'decimal:2',
-        'payment_amount'   => 'decimal:2',
+        'net_amount' => 'decimal:2',
+        'grp_net_amount' => 'decimal:2',
+        'org_net_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'total_amount' => 'decimal:2',
+        'payment_amount' => 'decimal:2',
 
-
-        'state'               => OrderStateEnum::class,
-        'status'              => OrderStatusEnum::class,
-        'handing_type'        => OrderHandingTypeEnum::class,
-        'pay_status'          => OrderPayStatusEnum::class,
+        'state' => OrderStateEnum::class,
+        'status' => OrderStatusEnum::class,
+        'handing_type' => OrderHandingTypeEnum::class,
+        'pay_status' => OrderPayStatusEnum::class,
         'pay_detailed_status' => OrderPayDetailedStatusEnum::class,
-        'shipping_engine'     => OrderShippingEngineEnum::class,
-        'charges_engine'      => OrderChargesEngineEnum::class,
-        'to_be_paid_by'       => OrderToBePaidByEnum::class
+        'shipping_engine' => OrderShippingEngineEnum::class,
+        'charges_engine' => OrderChargesEngineEnum::class,
+        'to_be_paid_by' => OrderToBePaidByEnum::class,
     ];
 
     protected $attributes = [
-        'data'                          => '{}',
-        'payment_data'                  => '{}',
+        'data' => '{}',
+        'payment_data' => '{}',
         'post_submit_modification_data' => '{}',
-        'offer_meters'                  => '{}'
+        'offer_meters' => '{}',
     ];
 
     protected $guarded = [];
@@ -258,7 +256,6 @@ class Order extends Model implements HasMedia, Auditable
         'payment_amount',
         'handing_type',
     ];
-
 
     public function getRouteKeyName(): string
     {
@@ -282,7 +279,6 @@ class Order extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(Transaction::class);
     }
-
 
     public function deliveryNotes(): BelongsToMany
     {
@@ -363,6 +359,4 @@ class Order extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(OrderPaymentApiPoint::class);
     }
-
-
 }

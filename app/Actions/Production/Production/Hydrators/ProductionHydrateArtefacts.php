@@ -26,7 +26,7 @@ class ProductionHydrateArtefacts implements ShouldBeUnique
     public function handle(Production $production): void
     {
         $stats = [
-            'number_artefacts' => $production->artefacts()->count()
+            'number_artefacts' => $production->artefacts()->count(),
         ];
 
         $production->stats()->update($stats);

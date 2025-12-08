@@ -12,8 +12,8 @@ namespace App\Actions\SysAdmin\Organisation\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Purge\PurgeStateEnum;
 use App\Enums\Ordering\Purge\PurgeTypeEnum;
-use App\Models\SysAdmin\Organisation;
 use App\Models\Ordering\Purge;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -30,7 +30,7 @@ class OrganisationHydratePurges implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_purges' => $organisation->orders()->count()
+            'number_purges' => $organisation->orders()->count(),
         ];
 
         $stats = array_merge(
@@ -60,6 +60,4 @@ class OrganisationHydratePurges implements ShouldBeUnique
         );
         $organisation->orderingStats()->update($stats);
     }
-
-
 }

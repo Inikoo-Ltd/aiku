@@ -19,6 +19,7 @@ class UploadProgressResource extends JsonResource
     use HasSelfCall;
 
     public User|WebUser $user;
+
     public function __construct($resource, User|WebUser $user)
     {
         parent::__construct($resource);
@@ -31,29 +32,28 @@ class UploadProgressResource extends JsonResource
         $upload = $this;
 
         return [
-            'action_type'  => 'Upload',
-            'action_id'         => $upload->id,
-            'id'                => $upload->id,
-            'type'              => $upload->model,
+            'action_type' => 'Upload',
+            'action_id' => $upload->id,
+            'id' => $upload->id,
+            'type' => $upload->model,
             'original_filename' => $upload->original_filename,
-            'filename'          => $upload->filename,
-            'number_rows'       => $upload->number_rows,//need
-            'number_success'    => $upload->number_success,//need
-            'number_fails'      => $upload->number_fails,//need
-            'path'              => $upload->path,
-            'start_at'     => $upload->created_at,
-            'end_at'       => $upload->uploaded_at,
+            'filename' => $upload->filename,
+            'number_rows' => $upload->number_rows, // need
+            'number_success' => $upload->number_success, // need
+            'number_fails' => $upload->number_fails, // need
+            'path' => $upload->path,
+            'start_at' => $upload->created_at,
+            'end_at' => $upload->uploaded_at,
             'last_updated' => $upload->updated_at,
-            'total'        => $upload->number_rows,//need
-            'done'         => $upload->number_success + $upload->number_fails,//need
-            'data'         => [
-                'type'           => $upload->model,
-                'filename'       => $upload->filename,
+            'total' => $upload->number_rows, // need
+            'done' => $upload->number_success + $upload->number_fails, // need
+            'data' => [
+                'type' => $upload->model,
+                'filename' => $upload->filename,
                 'number_success' => $upload->number_success,
-                'number_fails'   => $upload->number_fails,
+                'number_fails' => $upload->number_fails,
 
             ],
-
 
         ];
     }

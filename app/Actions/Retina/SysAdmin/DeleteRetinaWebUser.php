@@ -26,7 +26,6 @@ class DeleteRetinaWebUser extends RetinaAction
         DeleteWebUser::run($webUser, true);
     }
 
-
     public function htmlResponse(): RedirectResponse
     {
         return Redirect::route('retina.sysadmin.web-users.index');
@@ -47,5 +46,4 @@ class DeleteRetinaWebUser extends RetinaAction
 
         $this->handle($webUser);
     }
-
 }

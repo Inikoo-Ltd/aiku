@@ -26,7 +26,7 @@ class PaymentServiceProviderSeeder extends Seeder
         $paymentServiceProvidersData->each(function ($modelData) {
             $paymentServiceProvider = PaymentServiceProvider::where('code', $modelData)->first();
 
-            if (!$paymentServiceProvider) {
+            if (! $paymentServiceProvider) {
                 $paymentServiceProvider = StorePaymentServiceProvider::run([
                     'code' => $modelData,
                     'type' => PaymentServiceProviderEnum::types()[$modelData],
@@ -35,13 +35,13 @@ class PaymentServiceProviderSeeder extends Seeder
             }
 
             $imageName = $paymentServiceProvider->code.'.png';
-            $imagePath = storage_path('app/public/payment-providers/' . $imageName);
+            $imagePath = storage_path('app/public/payment-providers/'.$imageName);
 
             $imageData = [
                 'path' => $imagePath,
                 'checksum' => md5_file($imagePath),
                 'extension' => 'image/png',
-                'originalName' => $imageName
+                'originalName' => $imageName,
             ];
 
             StoreMediaFromFile::run($paymentServiceProvider, $imageData, 'logo');

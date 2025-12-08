@@ -20,19 +20,17 @@ class DeleteWebBlock extends OrgAction
 
         $mediaIds = $webBlock->images()->pluck('media.id');
 
-
-        DB::table("model_has_web_blocks")
-            ->where("web_block_id", $webBlock->id)
+        DB::table('model_has_web_blocks')
+            ->where('web_block_id', $webBlock->id)
             ->delete();
 
-        DB::table("web_block_has_models")
-            ->where("web_block_id", $webBlock->id)
+        DB::table('web_block_has_models')
+            ->where('web_block_id', $webBlock->id)
             ->delete();
 
-
-        DB::table("model_has_media")
-            ->where("model_type", 'WebBlock')
-            ->where("model_id", $webBlock->id)
+        DB::table('model_has_media')
+            ->where('model_type', 'WebBlock')
+            ->where('model_id', $webBlock->id)
             ->delete();
 
         $externalLinks = $webBlock->externalLinks;
@@ -44,13 +42,13 @@ class DeleteWebBlock extends OrgAction
                 $prepareQuery += [
                     'number_websites_shown' => $externalLink->number_websites_shown - 1,
                     'number_webpages_shown' => $externalLink->number_webpages_shown - 1,
-                    'number_web_blocks_shown' => $externalLink->number_web_blocks_shown - 1
+                    'number_web_blocks_shown' => $externalLink->number_web_blocks_shown - 1,
                 ];
             } else {
                 $prepareQuery += [
                     'number_websites_hidden' => $externalLink->number_websites_hidden - 1,
                     'number_webpages_hidden' => $externalLink->number_webpages_hidden - 1,
-                    'number_web_blocks_hidden' => $externalLink->number_web_blocks_hidden - 1
+                    'number_web_blocks_hidden' => $externalLink->number_web_blocks_hidden - 1,
                 ];
             }
             $externalLink->update($prepareQuery);
@@ -70,7 +68,4 @@ class DeleteWebBlock extends OrgAction
         $webBlock->forceDelete();
 
     }
-
-
-
 }

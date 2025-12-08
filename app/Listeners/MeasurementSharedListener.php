@@ -19,7 +19,6 @@ class MeasurementSharedListener implements ShouldQueue
         //
     }
 
-
     public function handle(BroadcastFulfilmentCustomerNotification $event): void
     {
         foreach ($event->group->users as $user) {

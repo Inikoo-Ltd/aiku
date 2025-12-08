@@ -19,7 +19,6 @@ class GroupHydrateOrderStateHandlingBlocked implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $groupID): string
@@ -30,19 +29,16 @@ class GroupHydrateOrderStateHandlingBlocked implements ShouldBeUnique
     public function handle(int $groupID): void
     {
         $group = Group::find($groupID);
-        if (!$group) {
+        if (! $group) {
             return;
         }
         $stats = [
 
-            'number_orders_state_handling_blocked'              => $group->orders()->where('state', OrderStateEnum::HANDLING_BLOCKED)->count(),
+            'number_orders_state_handling_blocked' => $group->orders()->where('state', OrderStateEnum::HANDLING_BLOCKED)->count(),
             'orders_state_handling_blocked_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::HANDLING_BLOCKED)->sum('grp_net_amount'),
-
 
         ];
 
         $group->orderHandlingStats()->update($stats);
     }
-
-
 }

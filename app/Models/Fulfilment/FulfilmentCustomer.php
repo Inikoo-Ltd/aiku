@@ -152,27 +152,30 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\FulfilmentTransaction> $transactions
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class FulfilmentCustomer extends Model implements HasMedia
 {
-    use SoftDeletes;
-    use HasUniversalSearch;
-    use HasSlug;
-    use InFulfilment;
     use HasAttachments;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InFulfilment;
     use Notifiable;
+    use SoftDeletes;
 
     protected $guarded = [];
-    protected $casts   = [
-        'data'   => 'array',
-        'status' => FulfilmentCustomerStatusEnum::class
+
+    protected $casts = [
+        'data' => 'array',
+        'status' => FulfilmentCustomerStatusEnum::class,
 
     ];
 
@@ -196,7 +199,6 @@ class FulfilmentCustomer extends Model implements HasMedia
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
     }
-
 
     public function customer(): BelongsTo
     {

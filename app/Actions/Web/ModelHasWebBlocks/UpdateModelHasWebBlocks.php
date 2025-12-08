@@ -20,9 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateModelHasWebBlocks extends OrgAction
 {
-    use WithWebEditAuthorisation;
     use WithActionUpdate;
-
+    use WithWebEditAuthorisation;
 
     public function handle(ModelHasWebBlocks $modelHasWebBlocks, array $modelData): ModelHasWebBlocks
     {
@@ -35,7 +34,6 @@ class UpdateModelHasWebBlocks extends OrgAction
 
         UpdateWebpageContent::run($modelHasWebBlocks->webpage);
 
-
         return $modelHasWebBlocks;
 
     }
@@ -43,19 +41,19 @@ class UpdateModelHasWebBlocks extends OrgAction
     public function asController(ModelHasWebBlocks $modelHasWebBlocks, ActionRequest $request): ModelHasWebBlocks
     {
         $this->initialisationFromShop($modelHasWebBlocks->shop, $request);
+
         return $this->handle($modelHasWebBlocks, $this->validatedData);
     }
 
     public function rules(): array
     {
         return [
-            'layout'            => ['sometimes', 'array'],
-            'show'              => ['sometimes', 'boolean'],
-            'show_logged_in'    => ['sometimes', 'boolean'],
-            'show_logged_out'   => ['sometimes', 'boolean'],
+            'layout' => ['sometimes', 'array'],
+            'show' => ['sometimes', 'boolean'],
+            'show_logged_in' => ['sometimes', 'boolean'],
+            'show_logged_out' => ['sometimes', 'boolean'],
         ];
     }
-
 
     public function action(ModelHasWebBlocks $modelHasWebBlocks, $modelData): ModelHasWebBlocks
     {
@@ -69,7 +67,7 @@ class UpdateModelHasWebBlocks extends OrgAction
     public function jsonResponse(ModelHasWebBlocks $modelHasWebBlocks): WebpageResource
     {
         $modelHasWebBlocks->webpage->refresh();
+
         return new WebpageResource($modelHasWebBlocks->webpage);
     }
-
 }

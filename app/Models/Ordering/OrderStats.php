@@ -55,9 +55,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Ordering\Order $order
+ *
  * @method static Builder<static>|OrderStats newModelQuery()
  * @method static Builder<static>|OrderStats newQuery()
  * @method static Builder<static>|OrderStats query()
+ *
  * @mixin Eloquent
  */
 class OrderStats extends Model
@@ -65,7 +67,6 @@ class OrderStats extends Model
     protected $table = 'order_stats';
 
     protected $guarded = [];
-
 
     public function order(): BelongsTo
     {

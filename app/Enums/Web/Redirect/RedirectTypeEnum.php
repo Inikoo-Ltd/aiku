@@ -16,8 +16,7 @@ enum RedirectTypeEnum: string
 {
     use EnumHelperTrait;
 
-
-    case PERMANENT  = '301';
-    case TEMPORAL  = '302';
+    case PERMANENT = '301';
+    case TEMPORAL = '302';
 
 }

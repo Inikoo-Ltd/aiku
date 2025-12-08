@@ -11,9 +11,9 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class TimesheetsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class TimesheetsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
-    private Employee|null $employee;
+    private ?Employee $employee;
 
     public function __construct(Employee $employee)
     {
@@ -31,7 +31,7 @@ class TimesheetsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHe
         return $timesheets;
     }
 
-    /** @var Timesheet $row */
+    /** @var Timesheet */
     public function map($row): array
     {
         return [
@@ -43,7 +43,7 @@ class TimesheetsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHe
             $row->working_duration,
             $row->breaks_duration,
             $row->number_time_trackers,
-            $row->number_open_time_trackers
+            $row->number_open_time_trackers,
         ];
     }
 
@@ -58,7 +58,7 @@ class TimesheetsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHe
             'Working Duration',
             'Breaks Duration',
             'Number Time Trackers',
-            'Number Open Time Trackers'
+            'Number Open Time Trackers',
         ];
     }
 }

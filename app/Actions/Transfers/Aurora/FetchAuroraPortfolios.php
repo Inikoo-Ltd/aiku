@@ -47,22 +47,21 @@ class FetchAuroraPortfolios extends FetchAuroraAction
                 }
             } else {
                 try {
-                    $customer             = $portfolioData['customer'];
-                    $platform             = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+                    $customer = $portfolioData['customer'];
+                    $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
                     $customerSalesChannel = $customer->customerSalesChannels()
                         ->where('platform_id', $platform->id)
                         ->first();
-                    if (!$customerSalesChannel) {
+                    if (! $customerSalesChannel) {
                         $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
                             customer: $customer,
                             platform: $platform,
                             modelData: [
-                                'reference' => (string)$customer->id,
+                                'reference' => (string) $customer->id,
                             ],
                             hydratorsDelay: $this->hydratorsDelay
                         );
                     }
-
 
                     $portfolio = StorePortfolio::make()->action(
                         customerSalesChannel: $customerSalesChannel,
@@ -91,7 +90,6 @@ class FetchAuroraPortfolios extends FetchAuroraAction
                     return null;
                 }
             }
-
 
             return $portfolio;
         }
@@ -133,6 +131,4 @@ class FetchAuroraPortfolios extends FetchAuroraAction
 
         return $query->count();
     }
-
-
 }

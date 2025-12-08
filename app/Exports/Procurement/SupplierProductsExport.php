@@ -17,7 +17,7 @@ use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class SupplierProductsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings, WithChunkReading
+class SupplierProductsExport implements FromQuery, ShouldAutoSize, WithChunkReading, WithHeadings, WithMapping
 {
     use Exportable;
 
@@ -26,7 +26,7 @@ class SupplierProductsExport implements FromQuery, WithMapping, ShouldAutoSize, 
         return \App\Models\SupplyChain\SupplierProduct::query();
     }
 
-    /** @var \App\Models\SupplyChain\SupplierProduct $row */
+    /** @var \App\Models\SupplyChain\SupplierProduct */
     public function map($row): array
     {
         return [
@@ -41,7 +41,7 @@ class SupplierProductsExport implements FromQuery, WithMapping, ShouldAutoSize, 
             $row->cost,
             $row->units_per_pack,
             $row->units_per_carton,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -59,7 +59,7 @@ class SupplierProductsExport implements FromQuery, WithMapping, ShouldAutoSize, 
             'Cost',
             'Units Per Pack',
             'Units Per Carton',
-            'Created At'
+            'Created At',
         ];
     }
 

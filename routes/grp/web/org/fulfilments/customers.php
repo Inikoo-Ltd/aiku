@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Accounting\Invoice\UI\EditInvoice;
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
@@ -83,7 +82,6 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
     Route::get('', ShowFulfilmentCustomer::class);
     Route::get('/edit', EditFulfilmentCustomer::class)->name('.edit');
 
-
     Route::get('/rental-agreement', CreateRentalAgreement::class)->name('.rental-agreement.create');
     Route::get('/rental-agreement/edit', EditRentalAgreement::class)->name('.rental-agreement.edit');
 
@@ -97,7 +95,6 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
             Route::get('edit', [EditWebUser::class, 'inFulfilmentCustomer'])->name('edit');
         });
     });
-
 
     Route::get('stored-items', [IndexStoredItems::class, 'inFulfilmentCustomer'])->name('.stored-items.index');
     Route::get('stored-items/create', CreateStoredItem::class)->name('.stored-items.create');
@@ -203,7 +200,5 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
     Route::get('/stored-item-audits', [IndexStoredItemAudits::class, 'inFulfilmentCustomer'])->name('.stored-item-audits.index');
     Route::get('/stored-item-audits/create', [CreateStoredItemAudit::class, 'inFulfilmentCustomer'])->name('.stored-item-audits.create');
     Route::get('/stored-item-audits/{storedItemAudit}', [ShowStoredItemAudit::class, 'inFulfilmentCustomer'])->name('.stored-item-audits.show');
-
-
 
 });

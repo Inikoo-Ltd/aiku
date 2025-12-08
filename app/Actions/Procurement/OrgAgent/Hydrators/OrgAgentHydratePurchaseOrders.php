@@ -9,8 +9,8 @@
 namespace App\Actions\Procurement\OrgAgent\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -33,7 +33,7 @@ class OrgAgentHydratePurchaseOrders implements ShouldBeUnique
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'purchase_orders',
+            model: 'purchase_orders',
             field: 'state',
             enum: PurchaseOrderStateEnum::class,
             models: PurchaseOrder::class,
@@ -43,7 +43,7 @@ class OrgAgentHydratePurchaseOrders implements ShouldBeUnique
         ));
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'purchase_orders',
+            model: 'purchase_orders',
             field: 'delivery_state',
             enum: PurchaseOrderDeliveryStateEnum::class,
             models: PurchaseOrder::class,
@@ -54,6 +54,4 @@ class OrgAgentHydratePurchaseOrders implements ShouldBeUnique
 
         $orgAgent->stats()->update($stats);
     }
-
-
 }

@@ -168,9 +168,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_collections_products_status_discontinued
  * @property int $number_products_status_coming_soon
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static Builder<static>|OrganisationCatalogueStats newModelQuery()
  * @method static Builder<static>|OrganisationCatalogueStats newQuery()
  * @method static Builder<static>|OrganisationCatalogueStats query()
+ *
  * @mixin Eloquent
  */
 class OrganisationCatalogueStats extends Model

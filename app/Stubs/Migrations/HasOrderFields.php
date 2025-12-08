@@ -22,6 +22,7 @@ trait HasOrderFields
         $table->foreign('tax_category_id')->references('id')->on('tax_categories');
         $table->decimal('grp_exchange', 16, 4)->nullable();
         $table->decimal('org_exchange', 16, 4)->nullable();
+
         return $table;
     }
 }

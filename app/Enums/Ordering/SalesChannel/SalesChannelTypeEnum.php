@@ -27,15 +27,15 @@ enum SalesChannelTypeEnum: string
     public static function labels(): array
     {
         return [
-            'website'      => __('Website'),
-            'phone'        => __('Phone'),
-            'showroom'     => __('Showroom'),
-            'email'        => __('Email'),
-            'other'        => __('Other'),
-            'marketplace'  => __('Marketplace'),
+            'website' => __('Website'),
+            'phone' => __('Phone'),
+            'showroom' => __('Showroom'),
+            'email' => __('Email'),
+            'other' => __('Other'),
+            'marketplace' => __('Marketplace'),
             'social_media' => __('Social media'),
-            'platform'     => __('Platform'),
-            'na'           => __('N/A'),
+            'platform' => __('Platform'),
+            'na' => __('N/A'),
 
         ];
     }
@@ -45,10 +45,8 @@ enum SalesChannelTypeEnum: string
         return match ($this) {
             SalesChannelTypeEnum::MARKETPLACE,
             SalesChannelTypeEnum::SOCIAL_MEDIA,
-            SalesChannelTypeEnum::PLATFORM,
-            => false,
+            SalesChannelTypeEnum::PLATFORM, => false,
             default => true,
         };
     }
-
 }

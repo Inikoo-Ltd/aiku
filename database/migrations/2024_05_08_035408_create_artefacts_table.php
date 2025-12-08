@@ -14,9 +14,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasAssetCodeDescription;
     use HasGroupOrganisationRelationship;
+
     public function up(): void
     {
         Schema::create('artefacts', function (Blueprint $table) {
@@ -32,8 +34,6 @@ return new class () extends Migration {
 
             $table->string('state')->default(StockStateEnum::IN_PROCESS->value)->index();
 
-
-
             $table->jsonb('settings');
             $table->jsonb('data');
             $table->timestampsTz();
@@ -41,12 +41,10 @@ return new class () extends Migration {
             $table->softDeletesTz();
             $table->string('source_id')->nullable()->unique();
 
-
         });
         DB::statement('CREATE INDEX ON stocks USING gin (name gin_trgm_ops) ');
 
     }
-
 
     public function down(): void
     {

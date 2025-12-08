@@ -22,5 +22,4 @@ class ProcessAuroraDeliveryNote extends OrgAction
     {
         $this->fetcher = FetchAuroraDeliveryNotes::class;
     }
-
 }

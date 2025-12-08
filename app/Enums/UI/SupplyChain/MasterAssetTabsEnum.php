@@ -23,41 +23,40 @@ enum MasterAssetTabsEnum: string
     case IMAGES = 'images';
     case SALES = 'sales';
 
-    case HISTORY  = 'history';
+    case HISTORY = 'history';
     case TRADE_UNITS = 'trade_units';
-
 
     public function blueprint(): array
     {
         return match ($this) {
             MasterAssetTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             MasterAssetTabsEnum::PRODUCTS => [
                 'title' => __('Products in shop'),
-                'icon'  => 'fal fa-store',
+                'icon' => 'fal fa-store',
             ],
             MasterAssetTabsEnum::IMAGES => [
                 'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
+                'icon' => 'fal fa-camera-retro',
             ],
             MasterAssetTabsEnum::SALES => [
                 'title' => __('Sales'),
-                'icon'  => 'fal fa-money-bill-wave',
+                'icon' => 'fal fa-money-bill-wave',
             ],
 
             MasterAssetTabsEnum::TRADE_UNITS => [
                 'title' => __('Trade units'),
-                'icon'  => 'fal fa-atom',
-                'type'  => 'icon',
+                'icon' => 'fal fa-atom',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             MasterAssetTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
+                'icon' => 'fal fa-clock',
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
             ],
         };
     }

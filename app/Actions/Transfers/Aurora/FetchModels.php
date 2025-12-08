@@ -25,28 +25,26 @@ class FetchModels
 
     public string $commandSignature = 'fetch:models {organisations?*}';
 
-
     public function handle(SourceOrganisationService $organisationSource): void
     {
         FetchAuroraShippers::dispatch($organisationSource);
         FetchAuroraShops::dispatch($organisationSource);
         FetchAuroraEmployees::dispatch($organisationSource);
         Bus::chain([
-                       FetchAuroraWarehouses::makeJob($organisationSource),
-                       FetchAuroraWarehouseAreas::makeJob($organisationSource),
-                       FetchAuroraLocations::makeJob($organisationSource),
-                       FetchAuroraStocks::makeJob($organisationSource),
-                   ])->dispatch();
+            FetchAuroraWarehouses::makeJob($organisationSource),
+            FetchAuroraWarehouseAreas::makeJob($organisationSource),
+            FetchAuroraLocations::makeJob($organisationSource),
+            FetchAuroraStocks::makeJob($organisationSource),
+        ])->dispatch();
     }
-
 
     /**
      * @throws \Exception
      */
     public function asCommand(Command $command): int
     {
-        $organisations  = $this->getOrganisations($command);
-        $exitCode       = 0;
+        $organisations = $this->getOrganisations($command);
+        $exitCode = 0;
 
         foreach ($organisations as $organisation) {
 
@@ -54,7 +52,6 @@ class FetchModels
             $organisationSource->initialisation($organisation);
 
             $this->handle($organisationSource);
-
 
         }
 

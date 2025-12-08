@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 use App\Actions\CRM\Prospect\UI\CreateProspect;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 

@@ -14,9 +14,9 @@ enum RentalAgreementCauseStateEnum: string
 {
     use EnumHelperTrait;
 
-    case DRAFT   = 'draft';
-    case ACTIVE  = 'active';
-    case CLOSED  = 'closed';
+    case DRAFT = 'draft';
+    case ACTIVE = 'active';
+    case CLOSED = 'closed';
     case REMOVED = 'removed';
     case UPDATED = 'updated';
 }

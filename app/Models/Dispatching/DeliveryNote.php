@@ -163,45 +163,47 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Shop $shop
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
+ *
  * @method static Builder<static>|DeliveryNote newModelQuery()
  * @method static Builder<static>|DeliveryNote newQuery()
  * @method static Builder<static>|DeliveryNote onlyTrashed()
  * @method static Builder<static>|DeliveryNote query()
  * @method static Builder<static>|DeliveryNote withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|DeliveryNote withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class DeliveryNote extends Model implements Auditable
 {
-    use SoftDeletes;
+    use HasAddresses;
+    use HasFactory;
+    use HasHistory;
     use HasSlug;
     use HasUniversalSearch;
-    use HasFactory;
     use InCustomer;
-    use HasAddresses;
-    use HasHistory;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'               => 'array',
-        'parcels'            => 'array',
-        'state'              => DeliveryNoteStateEnum::class,
-        'type'               => DeliveryNoteTypeEnum::class,
-        'shop_type'          => ShopTypeEnum::class,
-        'date'               => 'datetime',
+        'data' => 'array',
+        'parcels' => 'array',
+        'state' => DeliveryNoteStateEnum::class,
+        'type' => DeliveryNoteTypeEnum::class,
+        'shop_type' => ShopTypeEnum::class,
+        'date' => 'datetime',
         'order_submitted_at' => 'datetime',
-        'assigned_at'        => 'datetime',
-        'picking_at'         => 'datetime',
-        'picked_at'          => 'datetime',
-        'packing_at'         => 'datetime',
-        'packed_at'          => 'datetime',
-        'dispatched_at'      => 'datetime',
-        'cancelled_at'       => 'datetime',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'assigned_at' => 'datetime',
+        'picking_at' => 'datetime',
+        'picked_at' => 'datetime',
+        'packing_at' => 'datetime',
+        'packed_at' => 'datetime',
+        'dispatched_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'    => '{}',
+        'data' => '{}',
         'parcels' => '{}',
     ];
 
@@ -239,7 +241,6 @@ class DeliveryNote extends Model implements Auditable
     {
         return $this->belongsToMany(Order::class, 'delivery_note_order')->withTimestamps();
     }
-
 
     public function deliveryNoteItems(): HasMany
     {
@@ -330,5 +331,4 @@ class DeliveryNote extends Model implements Auditable
             'picking_session_id'
         );
     }
-
 }

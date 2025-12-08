@@ -28,14 +28,14 @@ enum InvoiceCategoryTypeEnum: string
     public static function labels(): array
     {
         return [
-            'shop_type'             => __('Shop type'),
-            'shop_fallback'         => __('Shop fallback'),
-            'in_country'            => __('In country'),
-            'not_in_country'        => __('Not in country'),
-            'in_organisation'       => __('In organisation'),
-            'vip'                   => __('VIP'),
-            'external_invoicer'     => __('External invoicer'),
-            'in_sales_channel'      => __('In sales channel'),
+            'shop_type' => __('Shop type'),
+            'shop_fallback' => __('Shop fallback'),
+            'in_country' => __('In country'),
+            'not_in_country' => __('Not in country'),
+            'in_organisation' => __('In organisation'),
+            'vip' => __('VIP'),
+            'external_invoicer' => __('External invoicer'),
+            'in_sales_channel' => __('In sales channel'),
             'in_sales_channel_shop' => __('In sales channel/shop'),
         ];
     }

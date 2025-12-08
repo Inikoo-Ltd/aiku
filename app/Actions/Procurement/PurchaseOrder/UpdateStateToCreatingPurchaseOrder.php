@@ -18,9 +18,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateStateToCreatingPurchaseOrder
 {
-    use WithActionUpdate;
     use AsAction;
     use HasPurchaseOrderHydrators;
+    use WithActionUpdate;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -34,7 +34,7 @@ class UpdateStateToCreatingPurchaseOrder
         if ($purchaseOrder->state == PurchaseOrderStateEnum::SUBMITTED) {
             $purchaseOrder->purchaseOrderTransactions()->update($data);
 
-            $data[$purchaseOrder->state->value . '_at'] = null;
+            $data[$purchaseOrder->state->value.'_at'] = null;
 
             $purchaseOrder = $this->update($purchaseOrder, $data);
 

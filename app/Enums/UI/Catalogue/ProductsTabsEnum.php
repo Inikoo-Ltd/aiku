@@ -17,19 +17,19 @@ enum ProductsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case INDEX   = 'index';
-    case SALES      = 'sales';
+    case INDEX = 'index';
+    case SALES = 'sales';
 
     public function blueprint(): array
     {
         return match ($this) {
             ProductsTabsEnum::INDEX => [
                 'title' => __('Index'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             ProductsTabsEnum::SALES => [
                 'title' => __('Sales'),
-                'icon'  => 'fal fa-money-bill-wave',
+                'icon' => 'fal fa-money-bill-wave',
             ],
         };
     }

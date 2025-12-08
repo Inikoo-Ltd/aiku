@@ -16,11 +16,9 @@ enum OrgStockTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
     case SHOWCASE = 'showcase';
     case SALES = 'sales';
     case STOCK_HISTORY = 'stock_history';
-
 
     case PURCHASE_ORDERS = 'purchase_orders';
     case SUPPLIERS_PRODUCTS = 'supplier_products';
@@ -32,66 +30,65 @@ enum OrgStockTabsEnum: string
     case ATTACHMENTS = 'attachments';
     case FEEDBACKS = 'feedbacks';
 
-
     public function blueprint(): array
     {
         return match ($this) {
             OrgStockTabsEnum::HISTORY => [
                 'align' => 'right',
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
             ],
             OrgStockTabsEnum::SALES => [
                 'title' => __('Sales'),
-                'icon'  => 'fal fa-dollar-sign',
+                'icon' => 'fal fa-dollar-sign',
             ],
             OrgStockTabsEnum::STOCK_HISTORY => [
                 'title' => __('Stock history'),
-                'icon'  => 'fal fa-scanner',
+                'icon' => 'fal fa-scanner',
             ],
             OrgStockTabsEnum::FEEDBACKS => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('Issues'),
-                'icon'  => 'fal fa-poop',
+                'icon' => 'fal fa-poop',
             ],
             OrgStockTabsEnum::PURCHASE_ORDERS => [
                 'title' => __('Purchase orders'),
-                'icon'  => 'fal fa-clipboard',
+                'icon' => 'fal fa-clipboard',
             ],
             OrgStockTabsEnum::SUPPLIERS_PRODUCTS => [
                 'title' => __('Supplier product'),
-                'icon'  => 'fal fa-hand-receiving',
+                'icon' => 'fal fa-hand-receiving',
             ],
             OrgStockTabsEnum::PRODUCTS => [
                 'title' => __('Products'),
-                'icon'  => 'fal fa-cube',
+                'icon' => 'fal fa-cube',
             ],
             OrgStockTabsEnum::TRADE_UNITS => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('Trade units'),
-                'icon'  => 'fal fa-atom',
+                'icon' => 'fal fa-atom',
             ],
 
             OrgStockTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
+                'icon' => 'fal fa-paperclip',
 
             ],
             OrgStockTabsEnum::IMAGES => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('Images'),
-                'icon'  => 'fal fa-camera-retro',
+                'icon' => 'fal fa-camera-retro',
             ],
 
             OrgStockTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

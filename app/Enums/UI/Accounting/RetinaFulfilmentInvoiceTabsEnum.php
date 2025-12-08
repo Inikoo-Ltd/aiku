@@ -27,30 +27,30 @@ enum RetinaFulfilmentInvoiceTabsEnum: string
         return match ($this) {
             RetinaFulfilmentInvoiceTabsEnum::REFUNDS => [
                 'title' => __('Refunds'),
-                'icon'  => 'fal fa-arrow-circle-left',
-                'type'  => 'icon',
+                'icon' => 'fal fa-arrow-circle-left',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             RetinaFulfilmentInvoiceTabsEnum::PAYMENTS => [
                 'title' => __('Payments'),
-                'type'  => 'icon',
+                'type' => 'icon',
                 'align' => 'right',
-                'icon'  => 'fal fa-credit-card',
+                'icon' => 'fal fa-credit-card',
             ],
             RetinaFulfilmentInvoiceTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
 
             RetinaFulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS => [
                 'title' => __('Transactions'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
             RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS => [
                 'title' => __('Show individual pallets/spaces'),
-                'icon'  => 'fal fa-expand-arrows',
+                'icon' => 'fal fa-expand-arrows',
             ],
         };
     }

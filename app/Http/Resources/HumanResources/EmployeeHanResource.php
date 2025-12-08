@@ -22,13 +22,13 @@ class EmployeeHanResource extends JsonResource
         $employee = $this;
 
         return [
-            'id'              => $employee->id,
+            'id' => $employee->id,
             'organisation_id' => $employee->organisation_id,
-            'alias'           => $employee->alias,
-            'contact_name'    => $employee->contact_name,
-            'worker_number'   => $employee->worker_number,
-            'state'           => $employee->state,
-            'pin'             => $employee->pin,
+            'alias' => $employee->alias,
+            'contact_name' => $employee->contact_name,
+            'worker_number' => $employee->worker_number,
+            'state' => $employee->state,
+            'pin' => $employee->pin,
         ];
     }
 }

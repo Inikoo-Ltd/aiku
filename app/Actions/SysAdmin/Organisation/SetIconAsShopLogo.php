@@ -26,12 +26,12 @@ class SetIconAsShopLogo
         $this->attachMediaToModel($shop, $media, 'logo');
         $shop->updateQuietly(
             [
-                'image_id' => $media->id
+                'image_id' => $media->id,
             ]
         );
+
         return $shop;
     }
-
 
     public string $commandSignature = 'shop:logo {shop : Shop slug}';
 
@@ -46,8 +46,8 @@ class SetIconAsShopLogo
         }
 
         $command->info('Logo set');
-        return 0;
 
+        return 0;
 
     }
 }

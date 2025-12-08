@@ -23,7 +23,7 @@ class FetchAuroraOfferCampaign extends FetchAurora
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Deal Campaign Store Key'});
 
         $status = false;
-        //enum('Suspended','Active','Finish','Waiting')
+        // enum('Suspended','Active','Finish','Waiting')
         $state = match ($this->auroraModelData->{'Deal Campaign Status'}) {
             'Waiting' => OfferCampaignStateEnum::IN_PROCESS,
             'Finish' => OfferCampaignStateEnum::FINISHED,
@@ -45,18 +45,16 @@ class FetchAuroraOfferCampaign extends FetchAurora
             'VL' => OfferCampaignTypeEnum::VOLUME_DISCOUNT,
         };
 
-
-        $this->parsedData['shop']           = $shop;
-        $this->parsedData['type']           = $type;
+        $this->parsedData['shop'] = $shop;
+        $this->parsedData['type'] = $type;
         $this->parsedData['offer-campaign'] = [
-            'name'            => $this->auroraModelData->{'Deal Campaign Name'},
-            'status'          => $status,
-            'state'           => $state,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Deal Campaign Key'},
-            'fetched_at'      => now(),
-            'last_fetched_at' => now()
+            'name' => $this->auroraModelData->{'Deal Campaign Name'},
+            'status' => $status,
+            'state' => $state,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Deal Campaign Key'},
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
-
 
         $createdBy = $this->auroraModelData->{'Deal Campaign Valid From'};
 
@@ -65,8 +63,7 @@ class FetchAuroraOfferCampaign extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Deal Campaign Dimension')

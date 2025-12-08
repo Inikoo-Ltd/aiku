@@ -17,9 +17,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateStateToDispatchStockDelivery
 {
-    use WithActionUpdate;
     use AsAction;
     use HasStockDeliveryHydrators;
+    use WithActionUpdate;
 
     /**
      * @throws ValidationException
@@ -32,7 +32,7 @@ class UpdateStateToDispatchStockDelivery
 
         if (in_array($stockDelivery->state, [StockDeliveryStateEnum::IN_PROCESS, StockDeliveryStateEnum::RECEIVED])) {
             if ($stockDelivery->state !== StockDeliveryStateEnum::IN_PROCESS) {
-                $data[$stockDelivery->state->value . '_at'] = null;
+                $data[$stockDelivery->state->value.'_at'] = null;
             }
             $data['dispatched_at'] = now();
 

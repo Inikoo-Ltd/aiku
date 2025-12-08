@@ -23,7 +23,6 @@ class UserOrganisationResource extends JsonResource
 {
     use HasSelfCall;
 
-
     private static User $user;
 
     public function toArray($request): array
@@ -36,18 +35,18 @@ class UserOrganisationResource extends JsonResource
         $authorisedShops = $user->authorisedShops()->where('organisation_id', $organisation->id)->where('shops.type', '!=', ShopTypeEnum::FULFILMENT)->get();
 
         return [
-            'id'        => $organisation->id,
-            'slug'      => $organisation->slug,
-            'code'      => $organisation->code,
-            'label'     => $organisation->name,
-            'type'      => $organisation->type,
-            'currency'  => $organisation->currency,
-            'logo'      => $organisation->imageSources(48, 48),
-            'route'     => [
-                'name'       => 'grp.org.dashboard.show',
+            'id' => $organisation->id,
+            'slug' => $organisation->slug,
+            'code' => $organisation->code,
+            'label' => $organisation->name,
+            'type' => $organisation->type,
+            'currency' => $organisation->currency,
+            'logo' => $organisation->imageSources(48, 48),
+            'route' => [
+                'name' => 'grp.org.dashboard.show',
                 'parameters' => [
-                    $organisation->slug
-                ]
+                    $organisation->slug,
+                ],
             ],
             'authorised_shops' => ShopsNavigationResource::collection($authorisedShops),
             'authorised_fulfilments' => FulfilmentsNavigationResource::collection(
@@ -58,7 +57,7 @@ class UserOrganisationResource extends JsonResource
             ),
             'authorised_productions' => ProductionsNavigationResource::collection(
                 $user->authorisedProductions()->where('organisation_id', $organisation->id)->get()
-            )
+            ),
         ];
     }
 
@@ -66,10 +65,9 @@ class UserOrganisationResource extends JsonResource
         $resource,
         User $user
     ): AnonymousResourceCollection {
-        //you can add as many params as you want.
+        // you can add as many params as you want.
         self::$user = $user;
 
         return parent::collection($resource);
     }
-
 }

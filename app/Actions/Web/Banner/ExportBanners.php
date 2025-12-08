@@ -28,7 +28,7 @@ class ExportBanners
     {
         $type = $objectData['type'];
 
-        return $this->export(new BannersExport(), 'banners', $type);
+        return $this->export(new BannersExport, 'banners', $type);
     }
 
     /**

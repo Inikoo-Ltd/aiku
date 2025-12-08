@@ -34,7 +34,6 @@ class EditWebsite extends OrgAction
         return $website;
     }
 
-
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
         $this->parent = $shop;
@@ -52,7 +51,6 @@ class EditWebsite extends OrgAction
         return $this->handle($website);
     }
 
-
     /**
      * @throws Exception
      */
@@ -61,23 +59,23 @@ class EditWebsite extends OrgAction
         if ($website->shop->type == ShopTypeEnum::FULFILMENT) {
             $args = [
                 'updateRoute' => [
-                    'name'       => 'grp.models.fulfilment.website.update',
+                    'name' => 'grp.models.fulfilment.website.update',
                     'parameters' => [
                         $website->shop->fulfilment->id,
                         $website->id,
-                    ]
+                    ],
                 ],
             ];
         } else {
             $args = [
                 'updateRoute' => [
-                    'name'       => 'grp.models.website.update',
+                    'name' => 'grp.models.website.update',
                     'parameters' => [
                         [
 
                             $website->id,
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
             ];
         }
@@ -85,276 +83,273 @@ class EditWebsite extends OrgAction
         $blueprints = [];
 
         $blueprints[] = [
-            'label'  => __('ID/domain'),
-            'icon'   => 'fa-light fa-id-card',
+            'label' => __('ID/domain'),
+            'icon' => 'fa-light fa-id-card',
             'fields' => [
-                'code'                  => [
-                    'type'     => 'input',
-                    'label'    => __('code'),
-                    'value'    => $website->code,
+                'code' => [
+                    'type' => 'input',
+                    'label' => __('code'),
+                    'value' => $website->code,
                     'required' => true,
                 ],
-                'name'                  => [
-                    'type'     => 'input',
-                    'label'    => __('name'),
-                    'value'    => $website->name,
+                'name' => [
+                    'type' => 'input',
+                    'label' => __('name'),
+                    'value' => $website->name,
                     'required' => true,
                 ],
-                'domain'                => [
-                    'type'      => 'inputWithAddOn',
-                    'label'     => __('domain'),
+                'domain' => [
+                    'type' => 'inputWithAddOn',
+                    'label' => __('domain'),
                     'leftAddOn' => [
-                        'label' => 'https://www.'
+                        'label' => 'https://www.',
                     ],
-                    'value'     => $website->domain,
-                    'required'  => true,
+                    'value' => $website->domain,
+                    'required' => true,
                 ],
-                'google_tag_id'         => [
-                    'type'        => 'input',
+                'google_tag_id' => [
+                    'type' => 'input',
                     'information' => __('This only available for Google Tag Manager Container ID'),
-                    'label'       => __('GTM container ID'),
-                    'value'       => Arr::get($website->settings, "google_tag_id"),
+                    'label' => __('GTM container ID'),
+                    'value' => Arr::get($website->settings, 'google_tag_id'),
                     'placeholder' => 'GTM-ABC456GH',
-                    'required'    => false,
+                    'required' => false,
                 ],
-                'luigisbox_tracker_id'  => [
-                    'type'        => 'input',
-                    'label'       => __('Luigi Search Tracker ID'),
+                'luigisbox_tracker_id' => [
+                    'type' => 'input',
+                    'label' => __('Luigi Search Tracker ID'),
                     'information' => __('To showing the result search. This code will be placed the header. e.g. 123456-123456'),
-                    'value'       => Arr::get($website->settings, "luigisbox.tracker_id"),
+                    'value' => Arr::get($website->settings, 'luigisbox.tracker_id'),
                     'placeholder' => '',
-                    'required'    => false,
+                    'required' => false,
                 ],
                 'luigisbox_private_key' => [
-                    'type'                 => 'purePassword',
-                    'label'                => __('Luigi Search Private Key'),
-                    'information'          => __('Private key for API Luigi search. We need it for indexing the data.'),
-                    'value'                => Arr::get($website->settings, "luigisbox.private_key"),
-                    'placeholder'          => '',
-                    'current_value_length' => strlen(Arr::get($website->settings, "luigisbox.private_key", '')),
-                    'required'             => false,
+                    'type' => 'purePassword',
+                    'label' => __('Luigi Search Private Key'),
+                    'information' => __('Private key for API Luigi search. We need it for indexing the data.'),
+                    'value' => Arr::get($website->settings, 'luigisbox.private_key'),
+                    'placeholder' => '',
+                    'current_value_length' => strlen(Arr::get($website->settings, 'luigisbox.private_key', '')),
+                    'required' => false,
                 ],
 
-                'luigisbox_lbx_code'    => [
-                    'type'        => 'input',
-                    'label'       => __('Luigi LBX Tracker Script'),
+                'luigisbox_lbx_code' => [
+                    'type' => 'input',
+                    'label' => __('Luigi LBX Tracker Script'),
                     'information' => __('If this not provided, the statistics will not be collected. e.g. LBX-123456'),
-                    'value'       => Arr::get($website->settings, "luigisbox.lbx_code"),
+                    'value' => Arr::get($website->settings, 'luigisbox.lbx_code'),
                     'placeholder' => '',
-                    'required'    => false,
+                    'required' => false,
                 ],
-                "image"                 => [
-                    "type"    => "image_crop_square",
-                    "label"   => __("logo"),
-                    "value"   => $website->imageSources(320, 320),
+                'image' => [
+                    'type' => 'image_crop_square',
+                    'label' => __('logo'),
+                    'value' => $website->imageSources(320, 320),
                     'options' => [
-                        "minAspectRatio" => 1,
-                        "maxAspectRatio" => 12 / 4,
-                    ]
+                        'minAspectRatio' => 1,
+                        'maxAspectRatio' => 12 / 4,
+                    ],
                 ],
-                "favicon"               => [
-                    "information" => __("Will show on browsers tab icon in size 18x18 pixels."),
-                    "type"        => "image_crop_square",
-                    "label"       => __("favicon"),
-                    "value"       => $website->faviconSources(160, 160),
-                    'options'     => [
-                        'aspectRatio' => 1
-                    ]
+                'favicon' => [
+                    'information' => __('Will show on browsers tab icon in size 18x18 pixels.'),
+                    'type' => 'image_crop_square',
+                    'label' => __('favicon'),
+                    'value' => $website->faviconSources(160, 160),
+                    'options' => [
+                        'aspectRatio' => 1,
+                    ],
                 ],
-            ]
+            ],
         ];
 
         if (in_array($website->type, [WebsiteTypeEnum::B2B, WebsiteTypeEnum::DROPSHIPPING])) {
             $blueprints[] = [
-                'label'  => __('Registration'),
-                'icon'   => 'fa-light fa-id-card',
+                'label' => __('Registration'),
+                'icon' => 'fa-light fa-id-card',
                 'fields' => [
 
-                    'approval'           => [
-                        'hidden'   => true,
-                        'type'     => 'toggle',
-                        'label'    => __('Registrations Approval'),
-                        'value'    => false,
+                    'approval' => [
+                        'hidden' => true,
+                        'type' => 'toggle',
+                        'label' => __('Registrations Approval'),
+                        'value' => false,
                     ],
 
-                    'web_registrations'  => [
-                        'hidden'   => true,
-                        'type'     => 'webRegistrations',
-                        'label'    => __('Registration'),
-                        'value'    => [
+                    'web_registrations' => [
+                        'hidden' => true,
+                        'type' => 'webRegistrations',
+                        'label' => __('Registration'),
+                        'value' => [
                             [
-                                'key'      => 'telephone',
-                                'name'     => __('telephone'),
-                                'show'     => true,
+                                'key' => 'telephone',
+                                'name' => __('telephone'),
+                                'show' => true,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'address',
-                                'name'     => __('address'),
-                                'show'     => false,
+                                'key' => 'address',
+                                'name' => __('address'),
+                                'show' => false,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'company',
-                                'name'     => __('company'),
-                                'show'     => false,
+                                'key' => 'company',
+                                'name' => __('company'),
+                                'show' => false,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'contact_name',
-                                'name'     => __('contact_name'),
-                                'show'     => false,
+                                'key' => 'contact_name',
+                                'name' => __('contact_name'),
+                                'show' => false,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'registration_number',
-                                'name'     => __('registration number'),
-                                'show'     => true,
+                                'key' => 'registration_number',
+                                'name' => __('registration number'),
+                                'show' => true,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'tax_number',
-                                'name'     => __('tax number'),
-                                'show'     => false,
+                                'key' => 'tax_number',
+                                'name' => __('tax number'),
+                                'show' => false,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'terms_and_conditions',
-                                'name'     => __('terms and conditions'),
-                                'show'     => true,
+                                'key' => 'terms_and_conditions',
+                                'name' => __('terms and conditions'),
+                                'show' => true,
                                 'required' => true,
                             ],
                             [
-                                'key'      => 'marketing',
-                                'name'     => __('marketing'),
-                                'show'     => false,
+                                'key' => 'marketing',
+                                'name' => __('marketing'),
+                                'show' => false,
                                 'required' => false,
                             ],
                         ],
                         'required' => true,
-                        'options'  => [
+                        'options' => [
                             [
-                                'key'      => 'telephone',
-                                'name'     => __('telephone'),
-                                'show'     => true,
+                                'key' => 'telephone',
+                                'name' => __('telephone'),
+                                'show' => true,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'address',
-                                'name'     => __('address'),
-                                'show'     => false,
+                                'key' => 'address',
+                                'name' => __('address'),
+                                'show' => false,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'company',
-                                'name'     => __('company'),
-                                'show'     => false,
+                                'key' => 'company',
+                                'name' => __('company'),
+                                'show' => false,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'contact_name',
-                                'name'     => __('contact name'),
-                                'show'     => false,
+                                'key' => 'contact_name',
+                                'name' => __('contact name'),
+                                'show' => false,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'registration_number',
-                                'name'     => __('registration number'),
-                                'show'     => true,
+                                'key' => 'registration_number',
+                                'name' => __('registration number'),
+                                'show' => true,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'tax_number',
-                                'name'     => __('tax number'),
-                                'show'     => false,
+                                'key' => 'tax_number',
+                                'name' => __('tax number'),
+                                'show' => false,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'terms_and_conditions',
-                                'name'     => __('terms and conditions'),
-                                'show'     => true,
+                                'key' => 'terms_and_conditions',
+                                'name' => __('terms and conditions'),
+                                'show' => true,
                                 'required' => false,
                             ],
                             [
-                                'key'      => 'marketing',
-                                'name'     => __('marketing'),
-                                'show'     => false,
+                                'key' => 'marketing',
+                                'name' => __('marketing'),
+                                'show' => false,
                                 'required' => false,
                             ],
-                        ]
+                        ],
                     ],
                     'marketing_opt_in_label' => [
-                        'type'  => 'input',
+                        'type' => 'input',
                         'label' => __('Marketing opt-in label'),
-                        'placeholder'   => 'Opt in to our newsletter for updates and offers.',
+                        'placeholder' => 'Opt in to our newsletter for updates and offers.',
                         'value' => Arr::get($website->shop->settings, 'registration.marketing_opt_in_label', ''),
                     ],
                     'marketing_opt_in_default' => [
-                        'type'  => 'toggle',
+                        'type' => 'toggle',
                         'label' => __('Marketing opt-in set as checked'),
                         'value' => Arr::get($website->shop->settings, 'registration.marketing_opt_in_default', false),
                     ],
 
-
-                ]
+                ],
             ];
             $blueprints[] = [
-                'label'  => __('Return Policy'),
-                'icon'   => 'fa-light fa-exchange',
+                'label' => __('Return Policy'),
+                'icon' => 'fa-light fa-exchange',
                 'fields' => [
                     'return_policy' => [
-                        'type'     => 'editor',
-                        'label'    => __('Return Policy'),
-                        'value'    => Arr::get($website->settings, 'return_policy'),
+                        'type' => 'editor',
+                        'label' => __('Return Policy'),
+                        'value' => Arr::get($website->settings, 'return_policy'),
                         'required' => false,
                     ],
-                ]
+                ],
             ];
         }
-
 
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __("Website's settings"),
+                'title' => __("Website's settings"),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $website,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($website, $request),
-                    'next'     => $this->getNext($website, $request),
+                    'next' => $this->getNext($website, $request),
                 ],
-                'pageHead'    => [
-                    'title'     => __('Settings'),
+                'pageHead' => [
+                    'title' => __('Settings'),
                     'container' => [
-                        'icon'    => ['fal', 'fa-globe'],
+                        'icon' => ['fal', 'fa-globe'],
                         'tooltip' => __('Website'),
-                        'label'   => Str::possessive($website->name)
+                        'label' => Str::possessive($website->name),
                     ],
 
-                    'iconRight' =>
-                        [
-                            'icon'  => ['fal', 'sliders-h'],
-                            'title' => __("Website's settings")
-                        ],
+                    'iconRight' => [
+                        'icon' => ['fal', 'sliders-h'],
+                        'title' => __("Website's settings"),
+                    ],
 
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'label' => __('Exit settings'),
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
                     ],
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => $blueprints,
-                    'args'      => $args
+                    'args' => $args,
                 ],
 
             ]
@@ -387,7 +382,7 @@ class EditWebsite extends OrgAction
 
     private function getNavigation(?Website $website, string $routeName): ?array
     {
-        if (!$website) {
+        if (! $website) {
             return null;
         }
 
@@ -395,24 +390,24 @@ class EditWebsite extends OrgAction
             'grp.org.shops.show.web.websites.edit' => [
                 'label' => $website->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'organisation' => $website->shop->organisation->slug,
-                        'shop'         => $website->shop->slug,
-                        'website'      => $website->slug
-                    ]
-                ]
+                        'shop' => $website->shop->slug,
+                        'website' => $website->slug,
+                    ],
+                ],
             ],
             'grp.org.fulfilments.show.web.websites.edit' => [
                 'label' => $website->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'organisation' => $this->parent->organisation->slug,
-                        'fulfilment'   => $this->parent->slug,
-                        'website'      => $website->slug
-                    ]
-                ]
+                        'fulfilment' => $this->parent->slug,
+                        'website' => $website->slug,
+                    ],
+                ],
             ]
         };
     }

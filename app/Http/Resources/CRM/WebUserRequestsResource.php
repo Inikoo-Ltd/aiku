@@ -28,31 +28,33 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class WebUserRequestsResource extends JsonResource
 {
     use WithLogRequest;
+
     public function toArray($request): array
     {
         $location = json_decode($this->location);
+
         return [
-            'slug'        => $this->slug,
-            'username'    => $this->username,
-            'ip_address'  => $this->ip_address,
-            'user_agent'      => array_filter([
+            'slug' => $this->slug,
+            'username' => $this->username,
+            'ip_address' => $this->ip_address,
+            'user_agent' => array_filter([
                 $this->device ? [
                     'tooltip' => $this->device,
-                    'icon' => $this->getDeviceIcon($this->device)
+                    'icon' => $this->getDeviceIcon($this->device),
                 ] : null,
                 $this->os ? [
                     'tooltip' => $this->os,
-                    'icon'  => $this->getPlatformIcon($this->os)
+                    'icon' => $this->getPlatformIcon($this->os),
                 ] : null,
                 $this->browser ? [
                     'tooltip' => $this->browser,
-                    'icon'  => $this->getBrowserIcon($this->browser)
+                    'icon' => $this->getBrowserIcon($this->browser),
                 ] : null,
             ]),
-            'server'       => $location == ['localhost'],
-            'location'      => $location,
-            'url'      => '/' . ltrim(route($this->route_name, json_decode($this->route_params, true), false), '/'),
-            'date'     => $this->date,
-            ];
+            'server' => $location == ['localhost'],
+            'location' => $location,
+            'url' => '/'.ltrim(route($this->route_name, json_decode($this->route_params, true), false), '/'),
+            'date' => $this->date,
+        ];
     }
 }

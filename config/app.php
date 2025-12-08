@@ -51,7 +51,7 @@ return [
     |
     */
 
-    'debug' => (bool)env('APP_DEBUG', false),
+    'debug' => (bool) env('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -162,7 +162,6 @@ return [
     |
     */
 
-
     'providers' => ServiceProvider::defaultProviders()->merge([
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
@@ -238,53 +237,53 @@ return [
     'aurora' => [
         'domain' => env('AURORA_DOMAIN', 'aurora.systems'),
         'api_keys' => [
-                1 => env('AURORA_STOCK_API_KEY_1'),
-                2 => env('AURORA_STOCK_API_KEY_2'),
-                3 => env('AURORA_STOCK_API_KEY_3'),
-                4 => env('AURORA_STOCK_API_KEY_4')
-        ]
+            1 => env('AURORA_STOCK_API_KEY_1'),
+            2 => env('AURORA_STOCK_API_KEY_2'),
+            3 => env('AURORA_STOCK_API_KEY_3'),
+            4 => env('AURORA_STOCK_API_KEY_4'),
+        ],
     ],
 
-    'domain'                => env('APP_DOMAIN'),
-    'cloudflare_api_token'  => env('CLOUDFLARE_API_TOKEN'),
-    'cloudflare_api_url'    => env('CLOUDFLARE_API_URL'),
+    'domain' => env('APP_DOMAIN'),
+    'cloudflare_api_token' => env('CLOUDFLARE_API_TOKEN'),
+    'cloudflare_api_url' => env('CLOUDFLARE_API_URL'),
     'cloudflare_account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
-    'local'                 => [
-        'retina_fulfilment_domain'   => env('LOCAL_FULFILMENT_RETINA_DOMAIN'),
+    'local' => [
+        'retina_fulfilment_domain' => env('LOCAL_FULFILMENT_RETINA_DOMAIN'),
         'retina_dropshipping_domain' => env('LOCAL_DROPSHIPPING_RETINA_DOMAIN'),
-        'retina_b2b_domain'          => env('LOCAL_B2B_RETINA_DOMAIN'),
+        'retina_b2b_domain' => env('LOCAL_B2B_RETINA_DOMAIN'),
     ],
 
     'analytics' => [
         'cloudflare' => [
-            'api_token'  => env('CLOUDFLARE_ANALYTICS_API_TOKEN'),
+            'api_token' => env('CLOUDFLARE_ANALYTICS_API_TOKEN'),
         ],
-        'google'     => [
+        'google' => [
             'client_oauth_secret' => env('GOOGLE_OAUTH_CLIENT_SECRET'),
         ],
     ],
 
     'currency_exchange' => [
-        'pivot'     => env('EXCHANGE_PIVOT_CURRENCY', 'GBP'),
+        'pivot' => env('EXCHANGE_PIVOT_CURRENCY', 'GBP'),
         'providers' => [
-            'currency_beacon' => env('CURRENCY_EXCHANGE_CURRENCY_BEACON_API_KEYS')
-        ]
+            'currency_beacon' => env('CURRENCY_EXCHANGE_CURRENCY_BEACON_API_KEYS'),
+        ],
     ],
 
-    'with_user_legacy_passwords'     => env('WITH_USER_LEGACY_PASSWORDS', false),
+    'with_user_legacy_passwords' => env('WITH_USER_LEGACY_PASSWORDS', false),
     'with_web_user_legacy_passwords' => env('WITH_WEB_USER_LEGACY_PASSWORDS', false),
 
-    'dice_bear'         => [
+    'dice_bear' => [
         'mock' => env('DICE_BEAR_MOCK', false),
-        'url'  => env('DICE_BEAR_API_URL', 'https://api.dicebear.com/9.x'),
+        'url' => env('DICE_BEAR_API_URL', 'https://api.dicebear.com/9.x'),
     ],
     'log_user_requests' => env('LOG_USER_REQUESTS', false),
 
-    'default_outbox_builder'              => env('DEFAULT_OUTBOX_BUILDER', 'beefree'),
-    'send_email_in_non_production_env'    => env('SEND_EMAIL_IN_NON_PRODUCTION_ENV', false),
+    'default_outbox_builder' => env('DEFAULT_OUTBOX_BUILDER', 'beefree'),
+    'send_email_in_non_production_env' => env('SEND_EMAIL_IN_NON_PRODUCTION_ENV', false),
     'email_address_in_non_production_env' => env('EMAIL_ADDRESS_IN_NON_PRODUCTION_ENV', 'dev@aiku.io'),
-    'test_email_to_address'               => env('TEST_EMAIL_TO_ADDRESS'),
-    'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
+    'test_email_to_address' => env('TEST_EMAIL_TO_ADDRESS'),
+    'unpaid_invoices_unknown_before' => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
 
     'help_portal_url' => env('JIRA_HELP_PORTAL'),
 
@@ -297,17 +296,16 @@ return [
         'shipper_gls_es_token' => env('GLS_ES_TOKEN'),
         'shipper_packeta_access_token' => env('PACKETA_ACCESS_TOKEN'),
 
-
         'local_share_url' => env('SANDBOX_SHARE_URL'),
-        'checkout_com'    => [
-            'public_key'      => env('CHECKOUT_COM_PUBLIC_KEY'),
-            'secret_key'      => env('CHECKOUT_COM_SECRET_KEY'),
+        'checkout_com' => [
+            'public_key' => env('CHECKOUT_COM_PUBLIC_KEY'),
+            'secret_key' => env('CHECKOUT_COM_SECRET_KEY'),
             'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),
         ],
         'luigisbox' => [
-            'tracker_id'      => env('LS_TRACKER_ID'),
-            'private_key'      => env('LS_PRIVATE_KEY'),
+            'tracker_id' => env('LS_TRACKER_ID'),
+            'private_key' => env('LS_PRIVATE_KEY'),
         ],
-    ]
+    ],
 
 ];

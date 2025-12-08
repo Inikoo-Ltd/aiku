@@ -23,10 +23,10 @@ enum ModelHasContentTypeEnum: string
     public static function labels(): array
     {
         return [
-            'faq'         => __('frequently asked questions'),
+            'faq' => __('frequently asked questions'),
             'tag' => __('tag'),
             'information' => __('information'),
-            'review'      => __('review'),
+            'review' => __('review'),
         ];
     }
 }

@@ -18,6 +18,7 @@ class GroupHydrateLostRevenueIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
 
     public string $jobQueue = 'urgent';
+
     public string $commandSignature = 'hydrate:group-lost-revenue-intervals {group}';
 
     public function getJobUniqueId(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): string
@@ -37,7 +38,7 @@ class GroupHydrateLostRevenueIntervals implements ShouldBeUnique
         $stats = [];
 
         $queryBase = Invoice::where('in_process', false)->where('group_id', $group->id)->where('type', InvoiceTypeEnum::REFUND)->selectRaw('abs(sum(grp_net_amount)) as sum_aggregate');
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'lost_revenue_other_amount_grp_currency_',

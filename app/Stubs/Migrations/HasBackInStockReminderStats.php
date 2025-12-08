@@ -17,6 +17,7 @@ trait HasBackInStockReminderStats
     {
         $table->unsignedSmallInteger('number_reminders')->default(0);
         $table->unsignedSmallInteger('number_reminders_cancelled')->default(0);
+
         return $table;
     }
 
@@ -24,10 +25,7 @@ trait HasBackInStockReminderStats
     {
         $table->unsignedSmallInteger('number_customers_who_reminded')->default(0);
         $table->unsignedSmallInteger('number_customers_who_un_reminded')->default(0);
+
         return $table;
     }
-
-
-
-
 }

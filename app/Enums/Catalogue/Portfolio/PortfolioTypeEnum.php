@@ -14,7 +14,7 @@ enum PortfolioTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case MANUAL  = 'manual';
+    case MANUAL = 'manual';
     case SHOPIFY = 'shopify';
     case TIKTOK = 'tiktok';
     case WOOCOMMERCE = 'woocommerce';

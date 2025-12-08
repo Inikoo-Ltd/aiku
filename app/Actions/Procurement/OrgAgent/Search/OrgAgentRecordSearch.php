@@ -24,53 +24,52 @@ class OrgAgentRecordSearch
 
         $agent = $orgAgent->agent;
 
-
         $modelData = [
-            'group_id'          => $orgAgent->group_id,
-            'organisation_id'   => $orgAgent->organisation_id,
+            'group_id' => $orgAgent->group_id,
+            'organisation_id' => $orgAgent->organisation_id,
             'organisation_slug' => $orgAgent->organisation->slug,
-            'sections'          => ['procurement'],
-            'haystack_tier_1'   => trim($agent->code.' '.$agent->name),
-            'result'            => [
-                'route'     => [
-                    'name'          => 'grp.org.procurement.org_agents.show',
-                    'parameters'    => [
+            'sections' => ['procurement'],
+            'haystack_tier_1' => trim($agent->code.' '.$agent->name),
+            'result' => [
+                'route' => [
+                    'name' => 'grp.org.procurement.org_agents.show',
+                    'parameters' => [
                         $orgAgent->organisation->slug,
-                        $orgAgent->slug
-                    ]
+                        $orgAgent->slug,
+                    ],
                 ],
-                'description'     => [
-                    'label'   => $agent->name
+                'description' => [
+                    'label' => $agent->name,
                 ],
-                'code'         => [
+                'code' => [
                     'label' => $agent->code,
                 ],
-                'icon'          => [
-                    'icon' => 'fal fa-people-arrows'
+                'icon' => [
+                    'icon' => 'fal fa-people-arrows',
                 ],
-                'meta'          => [
+                'meta' => [
                     [
                         'type' => 'location',
-                        'location'  => $agent->organisation->location,
-                        'tooltip'   => __('Location'),
+                        'location' => $agent->organisation->location,
+                        'tooltip' => __('Location'),
                     ],
                     [
                         'type' => 'number',
-                        'number'     => $orgAgent->stats->number_purchase_orders,
-                        'label' => __('Purchase orders') . ": "
+                        'number' => $orgAgent->stats->number_purchase_orders,
+                        'label' => __('Purchase orders').': ',
                     ],
                     [
                         'type' => 'number',
-                        'number'     => $orgAgent->stats->number_org_suppliers,
-                        'label' => __('Suppliers') . ": "
+                        'number' => $orgAgent->stats->number_org_suppliers,
+                        'label' => __('Suppliers').': ',
                     ],
                     [
                         'type' => 'number',
-                        'number'     => $orgAgent->stats->number_org_supplier_products,
-                        'label' => __('Supplier products') . ": "
+                        'number' => $orgAgent->stats->number_org_supplier_products,
+                        'label' => __('Supplier products').': ',
                     ],
                 ],
-            ]
+            ],
         ];
 
         $orgAgent->universalSearch()->updateOrCreate(
@@ -78,8 +77,5 @@ class OrgAgentRecordSearch
             $modelData
         );
 
-
     }
-
-
 }

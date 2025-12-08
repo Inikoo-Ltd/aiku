@@ -14,8 +14,8 @@ enum StockTradeUnitCompositionEnum: string
 {
     use EnumHelperTrait;
 
-    case MATCH                 = 'match';
-    case MULTIPLE              = 'multiple';
-    case MULTIPLE_REPACKED     = 'multiple_repacked';
-    case MIX                   = 'mix';
+    case MATCH = 'match';
+    case MULTIPLE = 'multiple';
+    case MULTIPLE_REPACKED = 'multiple_repacked';
+    case MIX = 'mix';
 }

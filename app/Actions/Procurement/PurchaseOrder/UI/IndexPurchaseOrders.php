@@ -54,7 +54,6 @@ class IndexPurchaseOrders extends OrgAction
             $organisation = $parent->organisation;
         }
 
-
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('purchase_orders.reference', $value);
@@ -90,8 +89,6 @@ class IndexPurchaseOrders extends OrgAction
             $query->where('purchase_orders.organisation_id', $parent->id);
         }
 
-
-
         return $query->defaultSort('-purchase_orders.date')
             ->select([
                 'purchase_orders.*',
@@ -104,7 +101,7 @@ class IndexPurchaseOrders extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($parent, array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
@@ -131,7 +128,7 @@ class IndexPurchaseOrders extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
+            return $request->user()->authTo('group-overview');
         }
         $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
 
@@ -186,114 +183,112 @@ class IndexPurchaseOrders extends OrgAction
         return $this->handle($orgSupplier);
     }
 
-
     public function jsonResponse(LengthAwarePaginator $purchaseOrders): AnonymousResourceCollection
     {
         return PurchaseOrdersResource::collection($purchaseOrders);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $purchaseOrders, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $actions       = [];
-        $title         = __('Purchase Orders');
+        $actions = [];
+        $title = __('Purchase Orders');
 
-        $icon       = [
-            'icon'  => ['fal', 'fa-clipboard-list'],
-            'title' => __('Purchase orders')
+        $icon = [
+            'icon' => ['fal', 'fa-clipboard-list'],
+            'title' => __('Purchase orders'),
         ];
         $afterTitle = null;
-        $iconRight  = null;
+        $iconRight = null;
         if ($this->parent instanceof OrgAgent) {
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
-            $actions       =
+            $actions =
                 [
                     [
-                        'type'  => 'button',
+                        'type' => 'button',
                         'style' => 'create',
                         'route' => [
-                            'name'       => 'grp.models.org-agent.purchase-order.store',
+                            'name' => 'grp.models.org-agent.purchase-order.store',
                             'parameters' => [
-                                'orgAgent' => $this->parent->id
+                                'orgAgent' => $this->parent->id,
                             ],
-                            'method'     => 'post'
+                            'method' => 'post',
                         ],
-                        'label' => __('Purchase order')
-                    ]
+                        'label' => __('Purchase order'),
+                    ],
                 ];
-            $title         = $this->parent->agent->organisation->name;
+            $title = $this->parent->agent->organisation->name;
 
-            $icon       = [
-                'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Purchase orders')
+            $icon = [
+                'icon' => ['fal', 'fa-people-arrows'],
+                'title' => __('Purchase orders'),
             ];
-            $iconRight  = [
+            $iconRight = [
                 'icon' => 'fal fa-clipboard-list',
             ];
             $afterTitle = [
 
-                'label' => __('Purchase Orders')
+                'label' => __('Purchase Orders'),
             ];
         } elseif ($this->parent instanceof OrgPartner) {
             $subNavigation = $this->getOrgPartnerNavigation($this->parent);
-            $actions       =
+            $actions =
                 [
                     [
-                        'type'  => 'button',
+                        'type' => 'button',
                         'style' => 'create',
                         'route' => [
-                            'name'       => 'grp.models.org-partner.purchase-order.store',
+                            'name' => 'grp.models.org-partner.purchase-order.store',
                             'parameters' => [
-                                'orgPartner' => $this->parent->id
+                                'orgPartner' => $this->parent->id,
                             ],
-                            'method'     => 'post'
+                            'method' => 'post',
                         ],
-                        'label' => __('Purchase order')
-                    ]
+                        'label' => __('Purchase order'),
+                    ],
                 ];
-            $title         = $this->parent->partner->name;
+            $title = $this->parent->partner->name;
 
-            $icon       = [
-                'icon'  => ['fal', 'fa-users-class'],
-                'title' => __('Purchase orders')
+            $icon = [
+                'icon' => ['fal', 'fa-users-class'],
+                'title' => __('Purchase orders'),
             ];
-            $iconRight  = [
+            $iconRight = [
                 'icon' => 'fal fa-clipboard-list',
             ];
             $afterTitle = [
 
-                'label' => __('Purchase Orders')
+                'label' => __('Purchase Orders'),
             ];
         } elseif ($this->parent instanceof OrgSupplier) {
             $subNavigation = $this->getOrgSupplierNavigation($this->parent);
-            $actions       =
+            $actions =
                 [
                     [
-                        'type'  => 'button',
+                        'type' => 'button',
                         'style' => 'create',
                         'route' => [
-                            'name'       => 'grp.models.org-supplier.purchase-order.store',
+                            'name' => 'grp.models.org-supplier.purchase-order.store',
                             'parameters' => [
-                                'orgSupplier' => $this->parent->id
+                                'orgSupplier' => $this->parent->id,
                             ],
-                            'method'     => 'post'
+                            'method' => 'post',
                         ],
-                        'label' => __('purchase order')
-                    ]
+                        'label' => __('purchase order'),
+                    ],
                 ];
-            $title         = $this->parent->supplier->name;
+            $title = $this->parent->supplier->name;
 
-            $icon       = [
-                'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('Purchase orders')
+            $icon = [
+                'icon' => ['fal', 'fa-person-dolly'],
+                'title' => __('Purchase orders'),
             ];
-            $iconRight  = [
+            $iconRight = [
                 'icon' => 'fal fa-clipboard-list',
             ];
             $afterTitle = [
 
-                'label' => __('Purchase Orders')
+                'label' => __('Purchase Orders'),
             ];
         }
 
@@ -301,16 +296,16 @@ class IndexPurchaseOrders extends OrgAction
             'Procurement/PurchaseOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('purchase orders'),
-                'pageHead'    => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => __('purchase orders'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $actions
+                    'actions' => $actions,
                 ],
-                'data'        => PurchaseOrdersResource::collection($purchaseOrders),
+                'data' => PurchaseOrdersResource::collection($purchaseOrders),
             ]
         )->table($this->tableStructure($this->parent));
     }
@@ -322,81 +317,80 @@ class IndexPurchaseOrders extends OrgAction
                 ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.purchase_orders.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.purchase_orders.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Purchase Orders'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
             'grp.org.procurement.org_agents.show.purchase-orders.index' => array_merge(
                 ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.show.purchase-orders.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.org_agents.show.purchase-orders.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Purchase Orders'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
             'grp.org.procurement.org_suppliers.show.purchase_orders.index' => array_merge(
                 ShowOrgSupplier::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_suppliers.show.purchase_orders.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.org_suppliers.show.purchase_orders.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Purchase Orders'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
             'grp.org.procurement.org_partners.show.purchase-orders.index' => array_merge(
                 ShowOrgPartner::make()->getBreadcrumbs($this->parent, $routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_partners.show.purchase-orders.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.procurement.org_partners.show.purchase-orders.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Purchase Orders'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
-            'grp.overview.procurement.purchase-orders.index' =>
-            array_merge(
+            'grp.overview.procurement.purchase-orders.index' => array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.overview.procurement.purchase-orders.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.overview.procurement.purchase-orders.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Purchase Orders'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             ),
         };

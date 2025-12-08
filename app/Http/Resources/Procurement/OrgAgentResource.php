@@ -24,14 +24,14 @@ class OrgAgentResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'                         => $this->slug,
-            'code'                         => $this->agent->code,
-            'name'                         => $this->agent->name,
-            'email'                        => $this->agent->organisation->email,
-            'phone'                        => $this->agent->organisation->phone,
-            'number_org_suppliers'         => $this->stats->number_org_suppliers,
+            'slug' => $this->slug,
+            'code' => $this->agent->code,
+            'name' => $this->agent->name,
+            'email' => $this->agent->organisation->email,
+            'phone' => $this->agent->organisation->phone,
+            'number_org_suppliers' => $this->stats->number_org_suppliers,
             'number_org_supplier_products' => $this->stats->number_org_supplier_products,
-            'number_purchase_orders'       => $this->stats->number_purchase_orders
+            'number_purchase_orders' => $this->stats->number_purchase_orders,
         ];
     }
 }

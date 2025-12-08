@@ -10,11 +10,12 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     protected array $tables = [
         'products',
         'product_categories',
-        'collections'
+        'collections',
     ];
 
     public function up(): void
@@ -24,7 +25,6 @@ return new class () extends Migration {
                 $table->dropForeign(['webpage_id']);
             });
         }
-
 
         foreach ($this->tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) {

@@ -9,8 +9,8 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
 use App\Http\Resources\SysAdmin\UserResource;
 use App\Models\SysAdmin\Organisation;
@@ -38,25 +38,24 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
         return $user;
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit");
+        return $request->user()->authTo('sysadmin.edit');
     }
 
     public function rules(): array
     {
         return [
-            'job_positions'                             => ['sometimes', 'array'],
-            'job_positions.*.slug'                      => ['sometimes', 'string'],
-            'job_positions.*.scopes'                    => ['sometimes', 'array'],
-            'job_positions.*.scopes.warehouses.slug.*'  => ['sometimes', Rule::exists('warehouses', 'slug')->where('organisation_id', $this->organisation->id)],
+            'job_positions' => ['sometimes', 'array'],
+            'job_positions.*.slug' => ['sometimes', 'string'],
+            'job_positions.*.scopes' => ['sometimes', 'array'],
+            'job_positions.*.scopes.warehouses.slug.*' => ['sometimes', Rule::exists('warehouses', 'slug')->where('organisation_id', $this->organisation->id)],
             'job_positions.*.scopes.fulfilments.slug.*' => ['sometimes', Rule::exists('fulfilments', 'slug')->where('organisation_id', $this->organisation->id)],
-            'job_positions.*.scopes.shops.slug.*'       => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
+            'job_positions.*.scopes.shops.slug.*' => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
 
         ];
     }
@@ -64,7 +63,7 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
     public function action(User $user, Organisation $organisation, $modelData): User
     {
 
-        $this->asAction     = true;
+        $this->asAction = true;
         $this->organisation = $organisation;
         $this->user = $user;
         $this->initialisation($organisation, $modelData);
@@ -86,7 +85,6 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
         if ($employee) {
             $validator->errors()->add('permissions', 'User is an employee of the organisation');
         }
-
 
     }
 

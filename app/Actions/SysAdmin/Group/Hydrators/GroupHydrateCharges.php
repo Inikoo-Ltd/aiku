@@ -48,5 +48,4 @@ class GroupHydrateCharges implements ShouldBeUnique
 
         $group->catalogueStats()->update($stats);
     }
-
 }

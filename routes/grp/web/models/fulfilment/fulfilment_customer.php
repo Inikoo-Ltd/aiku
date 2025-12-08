@@ -48,7 +48,6 @@ Route::name('fulfilment-customer.')->prefix('fulfilment-customer/{fulfilmentCust
         Route::post('dispatched', DispatchPalletReturn::class)->name('dispatched');
     });
 
-
     Route::prefix('rental-agreements')->name('rental-agreements.')->group(function () {
         Route::post('/', StoreRentalAgreement::class)->name('store');
     });

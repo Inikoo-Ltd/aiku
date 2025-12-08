@@ -13,9 +13,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
     use HasSoftDeletes;
+
     public function up(): void
     {
         Schema::create('shops', function (Blueprint $table) {
@@ -65,7 +67,7 @@ return new class () extends Migration {
             $table->timestampsTz();
             $table = $this->softDeletes($table);
             $table->string('source_id')->nullable()->unique();
-            $table->unique(['group_id','code']);
+            $table->unique(['group_id', 'code']);
         });
     }
 

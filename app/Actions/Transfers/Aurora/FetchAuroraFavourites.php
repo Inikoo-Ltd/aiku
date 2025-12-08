@@ -21,7 +21,6 @@ class FetchAuroraFavourites extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:favourites {organisations?*} {--S|shop= : Shop slug} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Favourite
     {
         if ($favouriteData = $organisationSource->fetchFavourite($organisationSourceId)) {
@@ -66,7 +65,6 @@ class FetchAuroraFavourites extends FetchAuroraAction
                 }
             }
 
-
             return $favourite;
         }
 
@@ -106,6 +104,4 @@ class FetchAuroraFavourites extends FetchAuroraAction
 
         return $query->count();
     }
-
-
 }

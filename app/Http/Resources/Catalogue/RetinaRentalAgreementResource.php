@@ -22,12 +22,12 @@ class RetinaRentalAgreementResource extends JsonResource
         $rentalAgreement = $this;
 
         return [
-            'id'                                => $rentalAgreement->id,
-            'slug'                              => $rentalAgreement->slug,
-            'reference'                         => $rentalAgreement->reference,
-            'state'                             => $rentalAgreement->state,
-            'billing_cycle'                     => $rentalAgreement->billing_cycle,
-            'pallets_limit'                     => $rentalAgreement->pallets_limit,
+            'id' => $rentalAgreement->id,
+            'slug' => $rentalAgreement->slug,
+            'reference' => $rentalAgreement->reference,
+            'state' => $rentalAgreement->state,
+            'billing_cycle' => $rentalAgreement->billing_cycle,
+            'pallets_limit' => $rentalAgreement->pallets_limit,
         ];
     }
 }

@@ -14,18 +14,15 @@ enum FulfilmentTransactionTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case PRODUCT      = 'product';
-    case SERVICE      = 'service';
+    case PRODUCT = 'product';
+    case SERVICE = 'service';
 
     public static function labels(): array
     {
         return [
-            'product'      => __('Product'),
-            'service'      => __('Services'),
+            'product' => __('Product'),
+            'service' => __('Services'),
         ];
 
     }
-
-
-
 }

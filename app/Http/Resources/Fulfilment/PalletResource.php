@@ -37,68 +37,68 @@ class PalletResource extends JsonResource
         $timeline = [];
         foreach (PalletStateEnum::cases() as $state) {
             $timeline[] = [
-                'label'     => $state->labels()[$state->value],
-                'tooltip'   => $state->labels()[$state->value],
-                'key'       => $state->value,
-                'icon'      => $state->stateIcon()[$state->value]['icon'],
-                'current'   => $state == $this->state,
-                'timestamp' => $this->{$state->snake() . '_at'} ? $this->{$state->snake() . '_at'}->toISOString() : null
+                'label' => $state->labels()[$state->value],
+                'tooltip' => $state->labels()[$state->value],
+                'key' => $state->value,
+                'icon' => $state->stateIcon()[$state->value]['icon'],
+                'current' => $state == $this->state,
+                'timestamp' => $this->{$state->snake().'_at'} ? $this->{$state->snake().'_at'}->toISOString() : null,
             ];
         }
 
         return [
-            'id'                    => $this->id,
-            'reference'             => $pallet->reference,
-            'customer_reference'    => $pallet->customer_reference,
-            'slug'                  => $pallet->slug ?? null,
-            'customer'              => [
-                'name'                 => $this->fulfilmentCustomer->customer->name,
-                'contact_name'         => $this->fulfilmentCustomer->customer->contact_name,
-                'route'                => [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show',
-                    'parameters' => [$pallet->organisation->slug, $pallet->fulfilment->slug, $pallet->fulfilmentCustomer->slug]
-                                    ]
+            'id' => $this->id,
+            'reference' => $pallet->reference,
+            'customer_reference' => $pallet->customer_reference,
+            'slug' => $pallet->slug ?? null,
+            'customer' => [
+                'name' => $this->fulfilmentCustomer->customer->name,
+                'contact_name' => $this->fulfilmentCustomer->customer->contact_name,
+                'route' => [
+                    'name' => 'grp.org.fulfilments.show.crm.customers.show',
+                    'parameters' => [$pallet->organisation->slug, $pallet->fulfilment->slug, $pallet->fulfilmentCustomer->slug],
                 ],
+            ],
 
-            'location'              => $pallet->location ? [
-                                    'resource' => LocationResource::make($this->location),
-                                    'route'    => $request->user()->authTo("locations.{$pallet->warehouse_id}.view") ? [
-                                        'name'       => 'grp.org.warehouses.show.fulfilment.locations.show',
-                                        'parameters' => [$pallet->organisation->slug, $pallet->warehouse->slug, $pallet->location->slug]
-                                    ] : null
+            'location' => $pallet->location ? [
+                'resource' => LocationResource::make($this->location),
+                'route' => $request->user()->authTo("locations.{$pallet->warehouse_id}.view") ? [
+                    'name' => 'grp.org.warehouses.show.fulfilment.locations.show',
+                    'parameters' => [$pallet->organisation->slug, $pallet->warehouse->slug, $pallet->location->slug],
                 ] : null,
-            'state'                 => $this->state,
-            'status'                => $this->status,
-            'notes'                 => $this->notes ?? '',
-            'rental_id'             => $this->rental_id,
-            'status_label'          => $pallet->status->labels()[$pallet->status->value],
-            'state_icon'           => $pallet->state->stateIcon()[$pallet->state->value],
-            'status_icon'           => $pallet->status->statusIcon()[$pallet->status->value],
-            'items'                 => StoredItemResource::collection($this->storedItems ?? []),
-            'timeline'              => $timeline,
-            'audit'                 => $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first()?->id,
-            'pallet_delivery'       => $pallet->palletDelivery ? [
+            ] : null,
+            'state' => $this->state,
+            'status' => $this->status,
+            'notes' => $this->notes ?? '',
+            'rental_id' => $this->rental_id,
+            'status_label' => $pallet->status->labels()[$pallet->status->value],
+            'state_icon' => $pallet->state->stateIcon()[$pallet->state->value],
+            'status_icon' => $pallet->status->statusIcon()[$pallet->status->value],
+            'items' => StoredItemResource::collection($this->storedItems ?? []),
+            'timeline' => $timeline,
+            'audit' => $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first()?->id,
+            'pallet_delivery' => $pallet->palletDelivery ? [
                 'reference' => $pallet->palletDelivery->reference,
-                'route'     => [
+                'route' => [
                     'name' => 'grp.org.fulfilments.show.operations.pallet-deliveries.show',
                     'parameters' => [
                         'organisation' => $pallet->organisation->slug,
                         'fulfilment' => $pallet->fulfilment->slug,
-                        'palletDelivery' => $pallet->palletDelivery->slug
-                    ]
-                ]
+                        'palletDelivery' => $pallet->palletDelivery->slug,
+                    ],
+                ],
             ] : [],
-            'pallet_return'         => $pallet->palletReturn ? [
+            'pallet_return' => $pallet->palletReturn ? [
                 'reference' => $pallet->palletReturn->reference,
-                'route'     => [
+                'route' => [
                     'name' => $pallet->palletReturn->type == PalletReturnTypeEnum::PALLET ? 'grp.org.fulfilments.show.operations.pallet-returns.show' : 'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show',
                     'parameters' => [
                         'organisation' => $pallet->organisation->slug,
                         'fulfilment' => $pallet->fulfilment->slug,
-                        'palletReturn' => $pallet->palletReturn->slug
-                    ]
-                ]
-            ] : []
+                        'palletReturn' => $pallet->palletReturn->slug,
+                    ],
+                ],
+            ] : [],
         ];
     }
 }

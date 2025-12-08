@@ -57,12 +57,12 @@ beforeAll(function () {
     loadDB();
 });
 beforeEach(function () {
-    list(
+    [
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
-    $this->warehouse  = createWarehouse();
+    ] = createShop();
+    $this->warehouse = createWarehouse();
     $this->fulfilment = createFulfilment($this->organisation);
 
     Config::set(
@@ -83,11 +83,9 @@ test('create b2b website', function () {
         Website::factory()->definition()
     );
 
-
     expect($website)->toBeInstanceOf(Website::class)
         ->and($website->storefront)->toBeInstanceOf(Webpage::class)
         ->and($website->webStats->number_webpages)->toBe(9);
-
 
     return $website;
 });
@@ -100,7 +98,6 @@ test('launch website', function (Website $website) {
         ->and($website->status)->toBeTrue()
         ->and($website->launched_at)->toBeInstanceOf(Carbon::class);
 
-
     $home = $website->storefront;
     expect($home)->toBeInstanceOf(Webpage::class)
         ->and($home->state)->toBe(WebpageStateEnum::LIVE)
@@ -108,7 +105,6 @@ test('launch website', function (Website $website) {
         ->and($home->stats->number_snapshots)->toBe(2)
         ->and($home->stats->number_deployments)->toBe(1);
 })->depends('create b2b website');
-
 
 test('update website', function (Website $website) {
     $updateData = [
@@ -133,7 +129,6 @@ test('create webpage', function (Website $website) {
 
     $snapshot = $webpage->unpublishedSnapshot;
 
-
     expect($snapshot->layout)->toBeArray()
         ->and($snapshot->stats)->toBeInstanceOf(SnapshotStats::class)
         ->and($snapshot->layout['web_blocks'])->toBeArray()
@@ -152,7 +147,7 @@ test('create model has web block', function (Webpage $webpage) {
         $webpage,
         [
             'web_block_type_id' => $webBlockType->id,
-            'position'          => 0
+            'position' => 0,
         ]
     );
 
@@ -165,7 +160,6 @@ test('create model has web block', function (Webpage $webpage) {
     return $modelHasWebBlock;
 })->depends('create webpage');
 
-
 test('model external link', function () {
     $externalLink = ExternalLink::class;
     expect($externalLink)->toBe(ExternalLink::class);
@@ -174,23 +168,21 @@ test('model external link', function () {
 });
 
 test('store external link', function (ModelHasWebBlocks $modelHasWebBlock) {
-    $group    = $modelHasWebBlock->group;
-    $webpage  = $modelHasWebBlock->webpage;
+    $group = $modelHasWebBlock->group;
+    $webpage = $modelHasWebBlock->webpage;
     $webBlock = $modelHasWebBlock->webBlock;
-
 
     CheckExternalLinkStatus::shouldRun()->andReturn(200);
 
-    $link   = 'https://www.google.com';
+    $link = 'https://www.google.com';
     $status = CheckExternalLinkStatus::run($link);
 
-
     $externalLink = StoreExternalLink::make()->action($group, [
-        'url'    => $link,
+        'url' => $link,
         'status' => $status,
     ]);
     AttachExternalLinkToWebBlock::make()->action($webpage, $webBlock, $externalLink, [
-        'show' => true
+        'show' => true,
     ]);
 
     expect($externalLink)->toBeInstanceOf(ExternalLink::class)
@@ -202,9 +194,8 @@ test('store external link', function (ModelHasWebBlocks $modelHasWebBlock) {
         ->and($externalLink->number_webpages_hidden)->toBe(0)
         ->and($externalLink->number_web_blocks_hidden)->toBe(0);
 
-
     return $externalLink;
-})->depends("create model has web block");
+})->depends('create model has web block');
 
 test('model external link has web blocks', function (ExternalLink $externalLink) {
     $webBlocks = $externalLink->webBlocks;
@@ -249,7 +240,6 @@ test('create fulfilment website', function () {
         Website::factory()->definition()
     );
 
-
     expect($website)->toBeInstanceOf(Website::class)
         ->and($website->type)->toBe(WebsiteTypeEnum::FULFILMENT)
         ->and($website->state)->toBe(WebsiteStateEnum::IN_PROCESS)
@@ -289,9 +279,7 @@ test('launch fulfilment website from command', function (Website $website) {
     return $website;
 })->depends('create fulfilment website');
 
-
 // Hydrator commands
-
 
 test('store hello banner', function (Website $website) {
     $banner = StoreBanner::make()->action($website, [
@@ -354,12 +342,11 @@ test('webpages search', function () {
     expect($webpage->universalSearch()->count())->toBe(1);
 });
 
-
 test('hydrate website', function () {
     $website = Website::first();
     $this->artisan('hydrate:websites', [
         'organisations' => $this->organisation->slug,
-        '--slugs'       => $website->slug
+        '--slugs' => $website->slug,
     ])
         ->assertExitCode(0);
 
@@ -370,7 +357,7 @@ test('hydrate website', function () {
 test('hydrate webpage', function () {
     $webpage = Webpage::first();
     $this->artisan('hydrate:webpages', [
-        '--slugs' => $webpage->slug
+        '--slugs' => $webpage->slug,
     ])
         ->assertExitCode(0);
 
@@ -385,8 +372,8 @@ test('store redirect', function (Webpage $webpage) {
     $homepage = $webpage->website->storefront;
 
     $redirect = StoreRedirect::make()->action($webpage, [
-        'type'          => RedirectTypeEnum::PERMANENT,
-        'to_webpage_id' => $homepage->id
+        'type' => RedirectTypeEnum::PERMANENT,
+        'to_webpage_id' => $homepage->id,
     ]);
 
     expect($redirect)->toBeInstanceOf(Redirect::class)
@@ -396,7 +383,6 @@ test('store redirect', function (Webpage $webpage) {
 
     return $redirect;
 })->depends('create webpage');
-
 
 test('web sitemap creation', function () {
     $this->artisan('sitemaps:create')->assertExitCode(0);

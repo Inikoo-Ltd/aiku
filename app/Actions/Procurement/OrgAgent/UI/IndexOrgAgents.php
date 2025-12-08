@@ -41,10 +41,7 @@ class IndexOrgAgents extends OrgAction
 
         $queryBuilder = QueryBuilder::for(OrgAgent::class);
 
-
         $queryBuilder->where('org_agents.organisation_id', $organisation->id);
-
-
 
         return $queryBuilder
             ->defaultSort('organisations.code')
@@ -56,7 +53,7 @@ class IndexOrgAgents extends OrgAction
                 'number_org_suppliers',
                 'number_stock_deliveries',
                 'number_purchase_orders',
-                'number_org_supplier_products'
+                'number_org_supplier_products',
             ])
             ->leftJoin('agents', 'agents.id', 'org_agents.agent_id')
             ->leftJoin('organisations', 'organisations.id', 'agents.organisation_id')
@@ -73,7 +70,7 @@ class IndexOrgAgents extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
             $table
                 ->withGlobalSearch()
@@ -106,23 +103,22 @@ class IndexOrgAgents extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($organisation, $request)->withTab(OrgAgentTabsEnum::values());
+
         return $this->handle($organisation);
     }
 
     public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
-        $this->maya   = true;
+        $this->maya = true;
         $this->initialisation($organisation, $request);
 
         return $this->handle($organisation);
     }
 
-
     public function jsonResponse(LengthAwarePaginator $agents): AnonymousResourceCollection
     {
         return OrgAgentsResource::collection($agents);
     }
-
 
     public function htmlResponse(LengthAwarePaginator $agents, ActionRequest $request): Response
     {
@@ -132,28 +128,28 @@ class IndexOrgAgents extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('agents'),
-                'pageHead'    => [
-                    'model'   => __('Procurement'),
-                    'title'   => __('Agents'),
-                    'icon'    => [
+                'title' => __('agents'),
+                'pageHead' => [
+                    'model' => __('Procurement'),
+                    'title' => __('Agents'),
+                    'icon' => [
                         'title' => __('Website'),
-                        'icon'  => 'fal fa-people-arrows'
+                        'icon' => 'fal fa-people-arrows',
                     ],
                     'actions' => [
                         $this->canEdit && $request->route()->getName() == 'grp.org.procurement.org_agents.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
+                            'type' => 'button',
+                            'style' => 'create',
                             'tooltip' => __('New agent'),
-                            'label'   => __('agent'),
-                            'route'   => [
-                                'name'       => 'grp.org.procurement.org_agents.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                            'label' => __('agent'),
+                            'route' => [
+                                'name' => 'grp.org.procurement.org_agents.create',
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
-                    ]
+                    ],
                 ],
-                'data'        => OrgAgentsResource::collection($agents),
+                'data' => OrgAgentsResource::collection($agents),
             ]
         )->table($this->tableStructure($this->organisation));
     }
@@ -165,16 +161,16 @@ class IndexOrgAgents extends OrgAction
                 ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.index',
-                                'parameters' => ['organisation' => $routeParameters['organisation']]
+                                'name' => 'grp.org.procurement.org_agents.index',
+                                'parameters' => ['organisation' => $routeParameters['organisation']],
                             ],
                             'label' => __('Agents'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon' => 'fal fa-bars',
+                        ],
+                    ],
                 ]
             );
     }

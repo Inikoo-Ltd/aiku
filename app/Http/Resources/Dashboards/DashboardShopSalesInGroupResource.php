@@ -29,10 +29,8 @@ class DashboardShopSalesInGroupResource extends JsonResource
 
     protected string $organisationCurrencyCode;
 
-
     public function toArray($request): array
     {
-
 
         $currencyOrganisationId = $this->organisation_currency_id;
         $organisationCurrencyCode = Cache::remember('currency_code_'.$currencyOrganisationId, 3600 * 24 * 30, function () use ($currencyOrganisationId) {
@@ -85,17 +83,17 @@ class DashboardShopSalesInGroupResource extends JsonResource
             [
                 'label' => [
                     'formatted_value' => $this->name,
-                    'align'           => 'left',
-                    ...$routeTargets['shops']
-                ]
+                    'align' => 'left',
+                    ...$routeTargets['shops'],
+                ],
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $this->code,
-                    'tooltip'         => $this->name,
-                    'align'           => 'left',
-                    ...$routeTargets['shops']
-                ]
+                    'tooltip' => $this->name,
+                    'align' => 'left',
+                    ...$routeTargets['shops'],
+                ],
             ],
             $this->getDashboardTableColumn($this, 'baskets_created_org_currency', $routeTargets['inBasket']),
             $this->getDashboardTableColumn($this, 'baskets_created_org_currency_minified', $routeTargets['inBasket']),
@@ -115,10 +113,9 @@ class DashboardShopSalesInGroupResource extends JsonResource
             $this->getDashboardTableColumn($this, 'sales_grp_currency_delta'),
         );
 
-
         return [
-            'slug'    => $this->slug,
-            'state'   => $this->state == ShopStateEnum::OPEN ? 'active' : 'inactive',
+            'slug' => $this->slug,
+            'state' => $this->state == ShopStateEnum::OPEN ? 'active' : 'inactive',
             'columns' => $columns,
             'colour' => $this?->colour,
 

@@ -44,29 +44,31 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Rental|null $rental
  * @property-read \App\Models\Fulfilment\RentalAgreementClause|null $rentalAgreementClause
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Space newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Space newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Space query()
+ *
  * @mixin \Eloquent
  */
 class Space extends Model implements Auditable
 {
-    use InFulfilmentCustomer;
     use HasHistory;
     use HasSlug;
+    use InFulfilmentCustomer;
 
     protected $guarded = [];
+
     protected $casts = [
         'data' => 'array',
-        'state'    => SpaceStateEnum::class,
+        'state' => SpaceStateEnum::class,
         'start_at' => 'datetime',
-        'end_at'   => 'datetime',
-
+        'end_at' => 'datetime',
 
     ];
 
     protected $attributes = [
-        'data'            => '{}',
+        'data' => '{}',
     ];
 
     public function generateTags(): array
@@ -106,10 +108,8 @@ class Space extends Model implements Auditable
         return $this->belongsTo(RecurringBill::class, 'current_recurring_bill_id');
     }
 
-
     public function rentalAgreementClause(): BelongsTo
     {
         return $this->belongsTo(RentalAgreementClause::class);
     }
-
 }

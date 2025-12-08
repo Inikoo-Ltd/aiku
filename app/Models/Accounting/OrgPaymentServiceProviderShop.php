@@ -22,9 +22,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static Builder<static>|OrgPaymentServiceProviderShop newModelQuery()
  * @method static Builder<static>|OrgPaymentServiceProviderShop newQuery()
  * @method static Builder<static>|OrgPaymentServiceProviderShop query()
+ *
  * @mixin Eloquent
  */
 class OrgPaymentServiceProviderShop extends Pivot
@@ -32,11 +34,11 @@ class OrgPaymentServiceProviderShop extends Pivot
     public $incrementing = true;
 
     protected $casts = [
-        'data'     => 'array',
+        'data' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
     ];
 
     protected $guarded = [];

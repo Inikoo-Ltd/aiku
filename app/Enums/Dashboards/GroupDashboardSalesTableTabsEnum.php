@@ -38,19 +38,19 @@ enum GroupDashboardSalesTableTabsEnum: string
         return match ($this) {
             GroupDashboardSalesTableTabsEnum::ORGANISATIONS => [
                 'title' => __('Organisations'),
-                'icon'  => 'fal fa-city',
+                'icon' => 'fal fa-city',
             ],
             GroupDashboardSalesTableTabsEnum::SHOPS => [
                 'title' => __('Shops'),
-                'icon'  => 'fal fa-store-alt',
+                'icon' => 'fal fa-store-alt',
             ],
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
                 'title' => __('Invoice Categories'),
-                'icon'  => 'fal fa-sitemap',
+                'icon' => 'fal fa-sitemap',
             ],
             GroupDashboardSalesTableTabsEnum::DS_PLATFORMS => [
                 'title' => __('DS Platforms'),
-                'icon'  => 'fal fa-code-branch'
+                'icon' => 'fal fa-code-branch',
             ]
         };
     }
@@ -80,8 +80,8 @@ enum GroupDashboardSalesTableTabsEnum: string
 
         return [
             'header' => $header,
-            'body'   => $body,
-            'totals' => $totals
+            'body' => $body,
+            'totals' => $totals,
         ];
     }
 

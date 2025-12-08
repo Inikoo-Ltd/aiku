@@ -22,7 +22,6 @@ class FetchAuroraDeletedSuppliers extends FetchAuroraAction
         return $organisationSource->fetchDeletedSupplier($organisationSourceId);
     }
 
-
     public function getModelsQuery(): Builder
     {
         return DB::connection('aurora')

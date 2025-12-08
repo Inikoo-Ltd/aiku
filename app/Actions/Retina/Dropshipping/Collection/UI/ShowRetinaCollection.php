@@ -40,75 +40,74 @@ class ShowRetinaCollection extends RetinaAction
 
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
     {
-        $title      = $collection->code;
-        $model      = __('collection');
-        $icon       = [
-            'icon'  => ['fal', 'fa-cube'],
-            'title' => __('Collection')
+        $title = $collection->code;
+        $model = __('collection');
+        $icon = [
+            'icon' => ['fal', 'fa-cube'],
+            'title' => __('Collection'),
         ];
         $afterTitle = null;
-        $container  = null;
+        $container = null;
 
         return Inertia::render(
             'Catalogue/RetinaCollection',
             [
-                'title'       => __('collection'),
+                'title' => __('collection'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($collection, $request),
-                    'next'     => $this->getNext($collection, $request),
+                    'next' => $this->getNext($collection, $request),
                 ],
-                'pageHead'    => [
-                    'title'      => $title,
-                    'icon'       => $icon,
-                    'model'      => $model,
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'model' => $model,
                     'afterTitle' => $afterTitle,
-                    'container'  => $container,
+                    'container' => $container,
                     'exports' => [
                         [
                             'routes' => [
                                 [
                                     'label' => 'CSV',
-                                    'key'   => 'csv',
+                                    'key' => 'csv',
                                     'icon' => ['fal', 'fa-file-csv'],
                                     'popover' => false,
                                     'route' => [
                                         'name' => 'retina.catalogue.feeds.collection.download',
                                         'parameters' => [
                                             'collection' => $collection->slug,
-                                            'type'       => 'products_csv'
-                                        ]
+                                            'type' => 'products_csv',
+                                        ],
                                     ],
                                 ],
                                 [
                                     'label' => 'images',
-                                    'key'   => 'images',
+                                    'key' => 'images',
                                     'icon' => ['fal', 'fa-images'],
                                     'inside_popover' => true,
                                     'route' => [
                                         'name' => 'retina.catalogue.feeds.collection.download',
                                         'parameters' => [
                                             'collection' => $collection->slug,
-                                            'type'       => 'products_images'
-                                        ]
+                                            'type' => 'products_images',
+                                        ],
                                     ],
-                                ]
-                            ]
-                        ]
+                                ],
+                            ],
+                        ],
                     ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => RetinaCollectionTabsEnum::navigation($collection)
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => RetinaCollectionTabsEnum::navigation($collection),
                 ],
 
                 RetinaCollectionTabsEnum::SHOWCASE->value => $this->tab == RetinaCollectionTabsEnum::SHOWCASE->value ?
                     fn () => GetCollectionShowcase::run($collection)
                     : Inertia::lazy(fn () => GetCollectionShowcase::run($collection)),
-
 
                 RetinaCollectionTabsEnum::FAMILIES->value => $this->tab == RetinaCollectionTabsEnum::FAMILIES->value ?
                     fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: RetinaCollectionTabsEnum::FAMILIES->value))
@@ -155,18 +154,18 @@ class ShowRetinaCollection extends RetinaAction
             return [
 
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Collections')
+                            'label' => __('Collections'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
                             'label' => $collection->code,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
 
@@ -177,20 +176,19 @@ class ShowRetinaCollection extends RetinaAction
 
         return match ($routeName) {
 
-            'retina.catalogue.collections.show' =>
-            array_merge(
+            'retina.catalogue.collections.show' => array_merge(
                 ShowRetinaCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $collection,
                     [
                         'index' => [
-                            'name'       => 'retina.catalogue.collections.index',
-                            'parameters' => $routeParameters
+                            'name' => 'retina.catalogue.collections.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'retina.catalogue.collections.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'retina.catalogue.collections.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -215,7 +213,7 @@ class ShowRetinaCollection extends RetinaAction
 
     private function getNavigation(?Collection $collection, string $routeName): ?array
     {
-        if (!$collection) {
+        if (! $collection) {
             return null;
         }
 
@@ -223,12 +221,12 @@ class ShowRetinaCollection extends RetinaAction
             'retina.catalogue.collections.show' => [
                 'label' => $collection->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'collection' => $collection->slug
-                    ]
+                        'collection' => $collection->slug,
+                    ],
 
-                ]
+                ],
             ],
             default => null
         };

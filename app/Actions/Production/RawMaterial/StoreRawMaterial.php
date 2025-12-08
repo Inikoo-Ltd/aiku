@@ -8,9 +8,9 @@
 
 namespace App\Actions\Production\RawMaterial;
 
+use App\Actions\OrgAction;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateRawMaterials;
 use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateUniversalSearch;
-use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRawMaterials;
 use App\Enums\Production\RawMaterial\RawMaterialStateEnum;
@@ -43,6 +43,7 @@ class StoreRawMaterial extends OrgAction
         GroupHydrateRawMaterials::dispatch($production->group);
         OrganisationHydrateRawMaterials::dispatch($production->organisation);
         ProductionHydrateRawMaterials::dispatch($production);
+
         return $rawMaterial;
     }
 
@@ -52,16 +53,16 @@ class StoreRawMaterial extends OrgAction
             return true;
         }
 
-        //todo create/find correct permissions
+        // todo create/find correct permissions
         return $request->user()->authTo("productions_rd.{$this->production->id}.edit");
     }
 
     public function rules(): array
     {
         return [
-            'type'             => ['required', Rule::enum(RawMaterialTypeEnum::class)],
-            'state'            => ['required', Rule::enum(RawMaterialStateEnum::class)],
-            'code'             => [
+            'type' => ['required', Rule::enum(RawMaterialTypeEnum::class)],
+            'state' => ['required', Rule::enum(RawMaterialStateEnum::class)],
+            'code' => [
                 'required',
                 'alpha_dash',
                 'max:64',
@@ -72,9 +73,9 @@ class StoreRawMaterial extends OrgAction
                     ]
                 ),
             ],
-            'description'      => ['required', 'string', 'max:255'],
-            'unit'             => ['required', Rule::enum(RawMaterialUnitEnum::class)],
-            'unit_cost'        => ['required', 'numeric', 'min:0'],
+            'description' => ['required', 'string', 'max:255'],
+            'unit' => ['required', Rule::enum(RawMaterialUnitEnum::class)],
+            'unit_cost' => ['required', 'numeric', 'min:0'],
         ];
     }
 
@@ -85,8 +86,9 @@ class StoreRawMaterial extends OrgAction
 
     public function htmlResponse(RawMaterial $rawMaterial): RedirectResponse
     {
-        $production   = $rawMaterial->production;
+        $production = $rawMaterial->production;
         $organisation = $rawMaterial->organisation;
+
         return Redirect::route('grp.org.productions.show.crafts.raw_materials.index', [$organisation, $production]);
     }
 

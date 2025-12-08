@@ -15,8 +15,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ReindexAgentSearch
 {
     use AsAction;
-    public string $commandSignature = 'search:agents';
 
+    public string $commandSignature = 'search:agents';
 
     public function handle(Agent $agent): void
     {
@@ -31,5 +31,4 @@ class ReindexAgentSearch
 
         return 0;
     }
-
 }

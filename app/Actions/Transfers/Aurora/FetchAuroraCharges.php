@@ -86,6 +86,4 @@ class FetchAuroraCharges extends FetchAuroraAction
     {
         return DB::connection('aurora')->table('Charge Dimension')->count();
     }
-
-
 }

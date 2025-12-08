@@ -14,20 +14,19 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $shop_id
  * @property string $name
  * @property string $slug
- * @property boolean $status
+ * @property bool $status
  * @property mixed $created_at
  * @property mixed $updated_at
- *
  */
 class ShippingZoneSchemaResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'shop_id'    => $this->shop_id,
-            'slug'       => $this->slug,
-            'name'       => $this->name,
-            'status'     => $this->status,
+            'shop_id' => $this->shop_id,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'status' => $this->status,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

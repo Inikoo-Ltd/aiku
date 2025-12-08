@@ -16,14 +16,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class StockDeliveriesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class StockDeliveriesExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|StockDelivery|Builder
     {
         return StockDelivery::query();
     }
 
-    /** @var StockDelivery $row */
+    /** @var StockDelivery */
     public function map($row): array
     {
         return [
@@ -50,7 +50,7 @@ class StockDeliveriesExport implements FromQuery, WithMapping, ShouldAutoSize, W
             $row->cost_tax,
             $row->cost_total,
 
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -79,7 +79,7 @@ class StockDeliveriesExport implements FromQuery, WithMapping, ShouldAutoSize, W
             'Cost Tax',
             'Cost Total',
 
-            'Created At'
+            'Created At',
         ];
     }
 }

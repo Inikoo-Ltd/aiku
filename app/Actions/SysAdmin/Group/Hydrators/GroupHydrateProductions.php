@@ -20,7 +20,6 @@ class GroupHydrateProductions implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public function getJobUniqueId(Group $group): string
     {
         return $group->id;
@@ -29,14 +28,12 @@ class GroupHydrateProductions implements ShouldBeUnique
     public function handle(Group $group): void
     {
 
-
         $stats = [
-            'number_productions'                  => $group->productions()->count(),
+            'number_productions' => $group->productions()->count(),
         ];
 
-
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'productions',
+            model: 'productions',
             field: 'state',
             enum: ProductionStateEnum::class,
             models: Production::class,

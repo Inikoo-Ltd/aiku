@@ -14,10 +14,10 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ProductsInCollectionExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class ProductsInCollectionExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
-    use Exportable;
     use DataFeedsMapping;
+    use Exportable;
 
     protected Collection $collection;
 
@@ -37,5 +37,4 @@ class ProductsInCollectionExport implements FromQuery, WithMapping, ShouldAutoSi
             ->where('collection_has_models.collection_id', $this->collection->id)
             ->orderBy('products.id');
     }
-
 }

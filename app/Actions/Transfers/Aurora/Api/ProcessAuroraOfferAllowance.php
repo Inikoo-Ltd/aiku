@@ -22,5 +22,4 @@ class ProcessAuroraOfferAllowance extends OrgAction
     {
         $this->fetcher = FetchAuroraOfferComponents::class;
     }
-
 }

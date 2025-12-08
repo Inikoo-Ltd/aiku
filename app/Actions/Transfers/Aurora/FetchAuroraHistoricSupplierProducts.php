@@ -20,11 +20,10 @@ class FetchAuroraHistoricSupplierProducts
 {
     use AsAction;
 
-
     public function handle(SourceOrganisationService $organisationSource, int $source_id): ?HistoricSupplierProduct
     {
         $historicProductData = $organisationSource->fetchHistoricSupplierProduct($source_id);
-        if (!$historicProductData) {
+        if (! $historicProductData) {
             return null;
         }
 
@@ -41,8 +40,7 @@ class FetchAuroraHistoricSupplierProducts
             $historicSupplierProduct = HistoricSupplierProduct::whereJsonContains('sources->historic_supplier_parts', $historicProductData['historic_supplier_product']['source_id'])->first();
         }
 
-
-        if (!$historicSupplierProduct) {
+        if (! $historicSupplierProduct) {
             $historicSupplierProduct = HistoricSupplierProduct::where('units_per_pack', $historicProductData['historic_supplier_product']['units_per_pack'])
                 ->where('supplier_product_id', $historicProductData['supplier_product']->id)
                 ->where('cbm', Arr::get($historicProductData, 'historic_supplier_product.cbm'))
@@ -52,8 +50,7 @@ class FetchAuroraHistoricSupplierProducts
                 ->first();
         }
 
-
-        if (!$historicSupplierProduct) {
+        if (! $historicSupplierProduct) {
             $historicSupplierProduct = StoreHistoricSupplierProduct::make()->action(
                 supplierProduct: $historicProductData['supplier_product'],
                 modelData: $historicProductData['historic_supplier_product'],
@@ -61,7 +58,6 @@ class FetchAuroraHistoricSupplierProducts
                 strict: false
             );
         }
-
 
         if ($historicSupplierProduct) {
             $this->updateHistoricSupplierProductSources($historicSupplierProduct, $historicProductData['historic_supplier_product']['source_id']);
@@ -73,20 +69,19 @@ class FetchAuroraHistoricSupplierProducts
                 ->update(['aiku_supplier_historic_product_id' => $historicSupplierProduct->id]);
         }
 
-
         return $historicSupplierProduct;
     }
 
     public function updateHistoricSupplierProductSources(HistoricSupplierProduct $historicSupplierProduct, string $source): void
     {
-        $sources   = Arr::get($historicSupplierProduct->sources, 'supplier_parts', []);
+        $sources = Arr::get($historicSupplierProduct->sources, 'supplier_parts', []);
         $sources[] = $source;
-        $sources   = array_unique($sources);
+        $sources = array_unique($sources);
 
         $historicSupplierProduct->updateQuietly([
             'sources' => [
                 'historic_supplier_parts' => $sources,
-            ]
+            ],
         ]);
     }
 }

@@ -50,24 +50,26 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read StockFamily|null $stockFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockFamilyTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class OrgStockFamily extends Model
 {
     use HasSlug;
-    use SoftDeletes;
     use HasUniversalSearch;
     use InOrganisation;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'  => 'array',
-        'state' => OrgStockFamilyStateEnum::class
+        'data' => 'array',
+        'state' => OrgStockFamilyStateEnum::class,
 
     ];
 
@@ -86,7 +88,7 @@ class OrgStockFamily extends Model
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code. ' '.$this->organisation->code;
+                return $this->code.' '.$this->organisation->code;
             })
             ->slugsShouldBeNoLongerThan(128)
             ->doNotGenerateSlugsOnUpdate()
@@ -122,5 +124,4 @@ class OrgStockFamily extends Model
     {
         return $this->hasMany(OrgStockFamilyTimeSeries::class);
     }
-
 }

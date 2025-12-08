@@ -20,13 +20,13 @@ trait WithFavicon
     {
         if (Arr::has($modelData, 'favicon')) {
             /** @var UploadedFile $image */
-            $image     = Arr::pull($modelData, 'favicon');
+            $image = Arr::pull($modelData, 'favicon');
             $imageData = [
-                'path'         => $image->getPathName(),
+                'path' => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
-                'extension'    => $image->getClientOriginalExtension(),
+                'extension' => $image->getClientOriginalExtension(),
             ];
-            $website   = SaveModelFavicon::run(
+            $website = SaveModelFavicon::run(
                 model: $website,
                 imageData: $imageData,
                 scope: 'favicon'

@@ -22,5 +22,4 @@ class ProcessAuroraBarcode extends OrgAction
     {
         $this->fetcher = FetchAuroraBarcodes::class;
     }
-
 }

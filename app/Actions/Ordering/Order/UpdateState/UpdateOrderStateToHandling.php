@@ -19,8 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderStateToHandling extends OrgAction
 {
-    use WithActionUpdate;
     use HasOrderHydrators;
+    use WithActionUpdate;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -29,7 +29,7 @@ class UpdateOrderStateToHandling extends OrgAction
     {
         $oldState = $order->state;
         $data = [
-            'state' => OrderStateEnum::HANDLING
+            'state' => OrderStateEnum::HANDLING,
         ];
 
         if (in_array($order->state, [
@@ -40,7 +40,7 @@ class UpdateOrderStateToHandling extends OrgAction
             OrderStateEnum::FINALISED,
         ])) {
             $order->transactions()->update([
-                'state' => TransactionStateEnum::HANDLING
+                'state' => TransactionStateEnum::HANDLING,
             ]);
 
             $data['handling_at'] = now();

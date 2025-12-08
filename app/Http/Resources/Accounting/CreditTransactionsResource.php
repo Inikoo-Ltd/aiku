@@ -28,18 +28,18 @@ class CreditTransactionsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                => $this->id,
-            'payment_id'        => $this->payment_id,
-            'type'              => $this->type->label(),
-            'amount'            => $this->amount,
-            'running_amount'    => $this->running_amount,
+            'id' => $this->id,
+            'payment_id' => $this->payment_id,
+            'type' => $this->type->label(),
+            'amount' => $this->amount,
+            'running_amount' => $this->running_amount,
             'payment_reference' => $this->payment_reference,
-            'payment_type'      => $this->payment_type,
-            'currency_code'     => $this->currency_code,
-            'created_at'        => $this->created_at,
-            'order_slug'        => $this->order_slug,
-            'order_reference'   => $this->order_reference,
-            'notes'             => $this->notes,
+            'payment_type' => $this->payment_type,
+            'currency_code' => $this->currency_code,
+            'created_at' => $this->created_at,
+            'order_slug' => $this->order_slug,
+            'order_reference' => $this->order_reference,
+            'notes' => $this->notes,
         ];
     }
 }

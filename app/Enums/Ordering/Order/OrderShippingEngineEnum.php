@@ -18,6 +18,6 @@ enum OrderShippingEngineEnum: string
     case TO_BE_CONFIRMED = 'tbc';
     case TO_BE_CONFIRMED_SET = 'tbc_set';
     case MANUAL = 'manual';
-    case NO_APPLICABLE = 'no_applicable';// when order os for collection
+    case NO_APPLICABLE = 'no_applicable'; // when order os for collection
 
 }

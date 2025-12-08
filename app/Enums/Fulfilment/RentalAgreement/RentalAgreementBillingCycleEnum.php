@@ -14,14 +14,14 @@ enum RentalAgreementBillingCycleEnum: string
 {
     use EnumHelperTrait;
 
-    case WEEKLY              = 'weekly';
-    case MONTHLY             = 'monthly';
+    case WEEKLY = 'weekly';
+    case MONTHLY = 'monthly';
 
     public function labels(): array
     {
         return [
-            'weekly'  => __('Weekly'),
-            'monthly' => __('Monthly')
+            'weekly' => __('Weekly'),
+            'monthly' => __('Monthly'),
         ];
     }
 }

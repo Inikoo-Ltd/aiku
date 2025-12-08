@@ -98,7 +98,6 @@ class StoreGroup
 
         SetGroupLogo::run($group);
 
-
         GroupHydrateJobPositions::run($group);
 
         return $group;
@@ -107,17 +106,16 @@ class StoreGroup
     public function rules(): array
     {
         return [
-            'code'        => ['required', 'required', 'unique:groups', 'between:2,6'],
-            'name'        => ['required', 'required', 'max:64'],
+            'code' => ['required', 'required', 'unique:groups', 'between:2,6'],
+            'name' => ['required', 'required', 'max:64'],
             'currency_id' => ['required', 'exists:currencies,id'],
-            'country_id'  => ['required', 'exists:countries,id'],
+            'country_id' => ['required', 'exists:countries,id'],
             'language_id' => ['required', 'exists:languages,id'],
             'timezone_id' => ['required', 'exists:timezones,id'],
-            'subdomain'   => ['sometimes', 'nullable', 'unique:groups', 'between:2,64'],
-            'limits'      => ['sometimes', 'array'],
+            'subdomain' => ['sometimes', 'nullable', 'unique:groups', 'between:2,64'],
+            'limits' => ['sometimes', 'array'],
         ];
     }
-
 
     public function action($modelData): Group
     {
@@ -176,20 +174,20 @@ class StoreGroup
         }
 
         $this->setRawAttributes([
-            'code'        => $command->argument('code'),
-            'name'        => $command->argument('name'),
-            'country_id'  => $country->id,
+            'code' => $command->argument('code'),
+            'name' => $command->argument('name'),
+            'country_id' => $country->id,
             'currency_id' => $currency->id,
             'language_id' => $language->id,
             'timezone_id' => $timezone->id,
-            'subdomain'   => $command->option('subdomain') ?? null,
-            'limits'      => [
+            'subdomain' => $command->option('subdomain') ?? null,
+            'limits' => [
                 'organisations' => $command->option('organisations'),
-                'shops'         => $command->option('shops'),
-                'warehouses'    => $command->option('warehouses'),
-                'manufactures'  => $command->option('manufactures'),
-                'agents'        => $command->option('agents')
-            ]
+                'shops' => $command->option('shops'),
+                'warehouses' => $command->option('warehouses'),
+                'manufactures' => $command->option('manufactures'),
+                'agents' => $command->option('agents'),
+            ],
         ]);
 
         try {

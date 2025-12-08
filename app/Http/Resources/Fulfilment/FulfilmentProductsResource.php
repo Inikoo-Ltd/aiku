@@ -19,7 +19,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  * @property string $state
  * @property mixed $type
- *
  */
 class FulfilmentProductsResource extends JsonResource
 {
@@ -27,20 +26,19 @@ class FulfilmentProductsResource extends JsonResource
     {
         /** @var Asset $product */
         $product = $this;
+
         return [
-            'slug'               => $this->slug,
-            'code'               => $this->code,
-            'price'              => $product->price,
-            'currency_code'      => $product->currency_code,
-            'name'               => $this->name,
-            'state'              => $this->state,
-            'state_label'        => $product->state->labels()[$product->state->value],
-            'state_icon'         => $product->state->stateIcon()[$product->state->value],
-            'type'               => $this->type,
-            'type_label'         => $product->type->labels()[$product->type->value],
-            'type_icon'          => $product->type->typeIcon()[$product->type->value],
-
-
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'price' => $product->price,
+            'currency_code' => $product->currency_code,
+            'name' => $this->name,
+            'state' => $this->state,
+            'state_label' => $product->state->labels()[$product->state->value],
+            'state_icon' => $product->state->stateIcon()[$product->state->value],
+            'type' => $this->type,
+            'type_label' => $product->type->labels()[$product->type->value],
+            'type_icon' => $product->type->typeIcon()[$product->type->value],
 
         ];
     }

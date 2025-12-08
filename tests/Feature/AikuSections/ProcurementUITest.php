@@ -45,13 +45,12 @@ beforeAll(function () {
     loadDB();
 });
 
-
 beforeEach(function () {
     $this->organisation = createOrganisation();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
+    $this->adminGuest = createAdminGuest($this->organisation->group);
 
     $otherOrg = Organisation::skip(1)->take(1)->first();
-    if (!$otherOrg) {
+    if (! $otherOrg) {
         $orgData = Organisation::factory()->definition();
         data_set($orgData, 'code', 'acme2');
         data_set($orgData, 'type', OrganisationTypeEnum::SHOP);
@@ -61,9 +60,9 @@ beforeEach(function () {
     $this->otherOrg = $otherOrg;
 
     $agent = Agent::first();
-    if (!$agent) {
+    if (! $agent) {
         $storeData = Agent::factory()->definition();
-        $agent     = StoreAgent::make()->action(
+        $agent = StoreAgent::make()->action(
             $this->organisation->group,
             $storeData
         );
@@ -72,8 +71,8 @@ beforeEach(function () {
     $this->agent = $agent;
 
     $orgAgent = OrgAgent::first();
-    if (!$orgAgent) {
-        $orgAgent     = StoreOrgAgent::make()->action(
+    if (! $orgAgent) {
+        $orgAgent = StoreOrgAgent::make()->action(
             $this->organisation,
             $this->agent,
             []
@@ -82,11 +81,10 @@ beforeEach(function () {
 
     $this->orgAgent = $orgAgent;
 
-
     $supplier = Supplier::first();
-    if (!$supplier) {
+    if (! $supplier) {
         $storeData = Supplier::factory()->definition();
-        $supplier  = StoreSupplier::make()->action(
+        $supplier = StoreSupplier::make()->action(
             $this->agent,
             $storeData
         );
@@ -95,9 +93,9 @@ beforeEach(function () {
     $this->supplier = $supplier;
 
     $stock = Stock::first();
-    if (!$stock) {
+    if (! $stock) {
         $storeData = Stock::factory()->definition();
-        $stock  = StoreStock::make()->action(
+        $stock = StoreStock::make()->action(
             $this->organisation->group,
             $storeData
         );
@@ -106,10 +104,10 @@ beforeEach(function () {
     $this->stock = $stock;
 
     $supplierProduct = SupplierProduct::first();
-    if (!$supplierProduct) {
+    if (! $supplierProduct) {
         $storeData = SupplierProduct::factory()->definition();
         data_set($storeData, 'stock_id', $this->stock->id);
-        $supplierProduct  = StoreSupplierProduct::make()->action(
+        $supplierProduct = StoreSupplierProduct::make()->action(
             $this->supplier,
             $storeData
         );
@@ -118,7 +116,7 @@ beforeEach(function () {
     $this->supplierProduct = $supplierProduct;
 
     $orgSupplier = OrgSupplier::first();
-    if (!$orgSupplier) {
+    if (! $orgSupplier) {
         $orgSupplier = StoreOrgSupplier::make()->action(
             $this->organisation,
             $this->supplier,
@@ -128,7 +126,7 @@ beforeEach(function () {
     $this->orgSupplier = $orgSupplier;
 
     $orgSupplierProduct = OrgSupplierProduct::first();
-    if (!$orgSupplierProduct) {
+    if (! $orgSupplierProduct) {
         $orgSupplierProduct = StoreOrgSupplierProduct::make()->action(
             $this->orgSupplier,
             $this->supplierProduct
@@ -138,7 +136,7 @@ beforeEach(function () {
     $this->orgSupplierProduct = $orgSupplierProduct;
 
     $orgPartner = OrgPartner::first();
-    if (!$orgPartner) {
+    if (! $orgPartner) {
         $orgPartner = StoreOrgPartner::make()->action(
             $this->organisation,
             $this->otherOrganisation,
@@ -148,12 +146,12 @@ beforeEach(function () {
     $this->orgPartner = $orgPartner;
 
     $stockDelivery = StockDelivery::first();
-    if (!$stockDelivery) {
-        $stockDelivery  = StoreStockDelivery::make()->action(
+    if (! $stockDelivery) {
+        $stockDelivery = StoreStockDelivery::make()->action(
             $this->orgSupplier,
             [
                 'reference' => 12345,
-                'date'      => date('Y-m-d')
+                'date' => date('Y-m-d'),
             ]
         );
     }
@@ -161,8 +159,8 @@ beforeEach(function () {
     $this->stockDelivery = $stockDelivery;
 
     $purchaseOrder = PurchaseOrder::first();
-    if (!$purchaseOrder) {
-        $purchaseOrder  = StorePurchaseOrder::make()->action(
+    if (! $purchaseOrder) {
+        $purchaseOrder = StorePurchaseOrder::make()->action(
             $this->orgSupplier,
             PurchaseOrder::factory()->definition()
         );
@@ -182,7 +180,7 @@ beforeEach(function () {
 test('UI show procurement dashboard', function () {
     // dd($this->orgSupplier);
     $this->withoutExceptionHandling();
-    $response = get(route('grp.org.procurement.dashboard', [$this->organisation->slug,]));
+    $response = get(route('grp.org.procurement.dashboard', [$this->organisation->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Procurement/ProcurementDashboard')
@@ -191,8 +189,8 @@ test('UI show procurement dashboard', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Procurement')
-                        ->etc()
+                    ->where('title', 'Procurement')
+                    ->etc()
             )
             ->has('flatTreeMaps');
 
@@ -224,8 +222,8 @@ test('UI show org supplier', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->orgSupplier->supplier->name)
-                        ->etc()
+                    ->where('title', $this->orgSupplier->supplier->name)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -253,8 +251,8 @@ test('UI show org agents', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->orgAgent->agent->organisation->name)
-                        ->etc()
+                    ->where('title', $this->orgAgent->agent->organisation->name)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -271,8 +269,8 @@ test('UI index org supplier products', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Supplier products')
-                        ->etc()
+                    ->where('title', 'Supplier products')
+                    ->etc()
             );
 
     });
@@ -289,14 +287,13 @@ test('UI show org supplier product', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->orgSupplierProduct->supplierProduct->name)
-                        ->etc()
+                    ->where('title', $this->orgSupplierProduct->supplierProduct->name)
+                    ->etc()
             )
             ->has('tabs');
 
     });
 });
-
 
 test('UI Index purchase orders', function () {
     $response = $this->get(route('grp.org.procurement.purchase_orders.index', [$this->organisation->slug]));
@@ -320,8 +317,8 @@ test('UI show purchase order', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->purchaseOrder->reference)
-                        ->etc()
+                    ->where('title', $this->purchaseOrder->reference)
+                    ->etc()
             )
             ->has('tabs')
             ->has('currency')
@@ -352,8 +349,8 @@ test('UI show org partners', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->orgPartner->partner->name)
-                        ->etc()
+                    ->where('title', $this->orgPartner->partner->name)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -362,7 +359,7 @@ test('UI show org partners', function () {
 
 test('UI get section route index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.procurement.dashboard', [
-        'organisation' => $this->organisation->slug
+        'organisation' => $this->organisation->slug,
     ]);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->organisation_id)->toBe($this->organisation->id)
@@ -382,8 +379,8 @@ test('UI Index stock deliveries', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Stock Deliveries')
-                        ->etc()
+                    ->where('title', 'Stock Deliveries')
+                    ->etc()
             )
             ->has('data');
     });
@@ -413,8 +410,8 @@ test('UI show stock delivery', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->stockDelivery->reference)
-                        ->etc()
+                    ->where('title', $this->stockDelivery->reference)
+                    ->etc()
             )
             ->has('tabs');
 

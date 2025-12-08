@@ -19,5 +19,4 @@ enum MailshotTypeEnum: string
     case INVITE = 'invite';
     case ABANDONED_CART = 'abandoned_cart';
 
-
 }

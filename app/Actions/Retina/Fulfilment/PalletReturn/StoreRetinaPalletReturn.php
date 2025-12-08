@@ -14,10 +14,10 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Inventory\Warehouse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Http\RedirectResponse;
 
 class StoreRetinaPalletReturn extends RetinaAction
 {
@@ -27,7 +27,6 @@ class StoreRetinaPalletReturn extends RetinaAction
     {
         return StorePalletReturn::run($fulfilmentCustomer, $modelData);
     }
-
 
     public function prepareForValidation(ActionRequest $request): void
     {
@@ -47,27 +46,25 @@ class StoreRetinaPalletReturn extends RetinaAction
     public function action(FulfilmentCustomer $fulfilmentCustomer, array $modelData, bool $withStoredItems = false): PalletReturn
     {
         $this->withStoredItems = $withStoredItems;
-        $this->asAction        = true;
+        $this->asAction = true;
         $this->initialisationFulfilmentActions($fulfilmentCustomer, $modelData);
 
         return $this->handle($fulfilmentCustomer, $this->validatedData);
     }
 
-
     public function rules(): array
     {
         return [
-            'type'           => ['sometimes', 'required', Rule::enum(PalletReturnTypeEnum::class)],
-            'warehouse_id'   => [
+            'type' => ['sometimes', 'required', Rule::enum(PalletReturnTypeEnum::class)],
+            'warehouse_id' => [
                 'required',
                 'integer',
                 Rule::exists('warehouses', 'id')
                     ->where('organisation_id', $this->organisation->id),
             ],
-            'customer_notes' => ['sometimes', 'nullable', 'string']
+            'customer_notes' => ['sometimes', 'nullable', 'string'],
         ];
     }
-
 
     public function asController(ActionRequest $request): PalletReturn
     {
@@ -89,32 +86,34 @@ class StoreRetinaPalletReturn extends RetinaAction
         if ($this->withStoredItems) {
             return [
                 'route' => [
-                    'name'       => 'retina.fulfilment.storage.pallet_returns.with-stored-items.show',
+                    'name' => 'retina.fulfilment.storage.pallet_returns.with-stored-items.show',
                     'parameters' => [
-                        'palletReturn' => $palletReturn->slug
-                    ]
-                ]
+                        'palletReturn' => $palletReturn->slug,
+                    ],
+                ],
             ];
         }
+
         return [
             'route' => [
-                'name'       => 'retina.fulfilment.storage.pallet_returns.show',
+                'name' => 'retina.fulfilment.storage.pallet_returns.show',
                 'parameters' => [
-                    'palletReturn' => $palletReturn->slug
-                ]
-            ]
+                    'palletReturn' => $palletReturn->slug,
+                ],
+            ],
         ];
     }
 
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): RedirectResponse
     {
         if ($this->withStoredItems) {
-            return  Redirect::route('retina.fulfilment.storage.pallet_returns.with-stored-items.show', [
-                'palletReturn' => $palletReturn->slug
+            return Redirect::route('retina.fulfilment.storage.pallet_returns.with-stored-items.show', [
+                'palletReturn' => $palletReturn->slug,
             ]);
         }
-        return  Redirect::route('retina.fulfilment.storage.pallet_returns.show', [
-            'palletReturn' => $palletReturn->slug
+
+        return Redirect::route('retina.fulfilment.storage.pallet_returns.show', [
+            'palletReturn' => $palletReturn->slug,
         ]);
     }
 }

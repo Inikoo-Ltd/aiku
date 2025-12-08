@@ -84,9 +84,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SupplyChain\SupplierProduct $supplierProduct
+ *
  * @method static Builder<static>|SupplierProductStats newModelQuery()
  * @method static Builder<static>|SupplierProductStats newQuery()
  * @method static Builder<static>|SupplierProductStats query()
+ *
  * @mixin Eloquent
  */
 class SupplierProductStats extends Model
@@ -94,7 +96,6 @@ class SupplierProductStats extends Model
     protected $table = 'supplier_product_stats';
 
     protected $guarded = [];
-
 
     public function supplierProduct(): BelongsTo
     {

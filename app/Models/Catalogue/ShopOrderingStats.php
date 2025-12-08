@@ -141,9 +141,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $lost_revenue_other_amount_org_currency
  * @property string $lost_revenue_other_amount_grp_currency
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingStats query()
+ *
  * @mixin \Eloquent
  */
 class ShopOrderingStats extends Model

@@ -14,14 +14,14 @@ enum PollTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case OPEN_QUESTION     = 'open_question';
-    case OPTION            = 'option';
+    case OPEN_QUESTION = 'open_question';
+    case OPTION = 'option';
 
     public function label(): string
     {
         return match ($this) {
             self::OPEN_QUESTION => __('Open Question'),
-            self::OPTION        => __('Multiple Choice'),
+            self::OPTION => __('Multiple Choice'),
         };
     }
 
@@ -30,14 +30,14 @@ enum PollTypeEnum: string
         return [
             self::OPEN_QUESTION->value => [
                 'tooltip' => __('Open Question'),
-                'icon'    => 'fal fa-question-circle',
-                'class'   => 'text-blue-500'
+                'icon' => 'fal fa-question-circle',
+                'class' => 'text-blue-500',
             ],
             self::OPTION->value => [
                 'tooltip' => __('Option'),
-                'icon'    => 'fal fa-list',
-                'class'   => 'text-green-500'
-            ]
+                'icon' => 'fal fa-list',
+                'class' => 'text-green-500',
+            ],
         ];
     }
 }

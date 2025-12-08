@@ -15,7 +15,6 @@ trait HasTagSlug
 {
     protected SlugOptions $slugOptions;
 
-
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
@@ -26,14 +25,12 @@ trait HasTagSlug
             ->slugsShouldBeNoLongerThan(128);
     }
 
-
     public function generateTagSlug(): void
     {
         $this->slugOptions = $this->getSlugOptions();
 
         $this->addSlug();
     }
-
 
     protected function addSlug(): void
     {
@@ -53,7 +50,7 @@ trait HasTagSlug
     {
         $slugField = $this->slugOptions->slugField;
 
-        if ($this->hasCustomSlugBeenUsed() && !empty($this->$slugField)) {
+        if ($this->hasCustomSlugBeenUsed() && ! empty($this->$slugField)) {
             return $this->$slugField;
         }
 
@@ -90,7 +87,7 @@ trait HasTagSlug
     protected function makeSlugUnique(string $slug): string
     {
         $originalSlug = $slug;
-        $i            = $this->slugOptions->startSlugSuffixFrom;
+        $i = $this->slugOptions->startSlugSuffixFrom;
 
         while ($this->otherRecordExistsWithSlug($slug) || $slug === '') {
             $slug = $originalSlug.$this->slugOptions->slugSeparator.$i++;
@@ -124,8 +121,6 @@ trait HasTagSlug
         return in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses($this), true);
     }
 
-
-
     /**
      * Helper function to handle multi-bytes strings if the module mb_substr is present,
      * default to substr otherwise.
@@ -138,7 +133,4 @@ trait HasTagSlug
 
         return substr($slugSourceString, 0, $this->slugOptions->maximumLength);
     }
-
-
-
 }

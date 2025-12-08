@@ -21,8 +21,8 @@ trait WithOmegaData
 
     public function getOmegaExportText(Invoice $invoice, $base_country = 'SK'): string
     {
-        $surrogate_code   = 'zGB';
-        $surrogate        = (bool)$invoice->external_invoicer_id;
+        $surrogate_code = 'zGB';
+        $surrogate = (bool) $invoice->external_invoicer_id;
         $invoice_tax_code = $invoice->taxCategory->label;
 
         $european_union_2alpha = [
@@ -51,19 +51,17 @@ trait WithOmegaData
             'DK',
             'CZ',
             'HU',
-            'EE'
+            'EE',
         ];
 
         $store = $invoice->shop;
         $order = $invoice->order;
 
-
         $invoiceAddress = $this->getInvoiceAddress($invoice);
-        $invoiceCodes   = $this->determineInvoiceCodes($invoice, $invoiceAddress, $base_country, $surrogate, $store, $surrogate_code);
+        $invoiceCodes = $this->determineInvoiceCodes($invoice, $invoiceAddress, $base_country, $surrogate, $store, $surrogate_code);
 
         $code_tax = $this->determineTaxCode($invoiceAddress, $invoice_tax_code, $invoice->shop->taxNumber);
         $code_sum = $this->determineSumCode($invoiceAddress, $invoice_tax_code, $european_union_2alpha);
-
 
         $text = $this->generateHeaderRow($invoice, $order, $store, $invoiceCodes);
         $text .= $this->generateInvoiceTotalsRow($invoice, $invoiceCodes);
@@ -84,7 +82,6 @@ trait WithOmegaData
         return $text;
     }
 
-
     private function getInvoiceAddress(Invoice $invoice): ?\App\Models\Helpers\Address
     {
         if ($invoice->type == InvoiceTypeEnum::REFUND) {
@@ -100,32 +97,32 @@ trait WithOmegaData
     {
         if ($base_country == $invoiceAddress->country_code) {
             return [
-                'numeric_code'          => 100,
-                'alpha_code'            => 'OF',
-                'alpha_code_bis'        => 'OF',
-                'numeric_code_total'    => 100,
+                'numeric_code' => 100,
+                'alpha_code' => 'OF',
+                'alpha_code_bis' => 'OF',
+                'numeric_code_total' => 100,
                 'numeric_code_shipping' => 101,
-                'numeric_code_charges'  => 102,
-                'items_code'            => 100,
+                'numeric_code_charges' => 102,
+                'items_code' => 100,
             ];
         }
 
-        $alpha_code     = $surrogate ? $surrogate_code : 'zOF';
+        $alpha_code = $surrogate ? $surrogate_code : 'zOF';
         $alpha_code_bis = $surrogate ? $surrogate_code.$store->code : 'zOF'.$store->code;
 
         if ($invoice->type == InvoiceTypeEnum::REFUND) {
-            $alpha_code     = 'zOD';
+            $alpha_code = 'zOD';
             $alpha_code_bis = 'zOD'.$store->code;
         }
 
         return [
-            'numeric_code'          => 300,
-            'alpha_code'            => $alpha_code,
-            'alpha_code_bis'        => $alpha_code_bis,
-            'numeric_code_total'    => 200,
+            'numeric_code' => 300,
+            'alpha_code' => $alpha_code,
+            'alpha_code_bis' => $alpha_code_bis,
+            'numeric_code_total' => 200,
             'numeric_code_shipping' => 201,
-            'numeric_code_charges'  => 202,
-            'items_code'            => 200,
+            'numeric_code_charges' => 202,
+            'items_code' => 200,
         ];
     }
 
@@ -151,13 +148,11 @@ trait WithOmegaData
         return ($invoice_tax_code == 'S1' || $invoice_tax_code == 'XS1') ? '03' : '15t';
     }
 
-
     private function generateHeaderRow(Invoice $invoice, $order, $store, $invoiceCodes): string
     {
         $zeroLiteral = '0.000';
 
         $organisationSettings = $invoice->shop->organisation->settings;
-
 
         $header_data = [
             'R01',
@@ -220,7 +215,7 @@ trait WithOmegaData
             0,
             '',
             '',
-            0
+            0,
         ];
 
         return implode("\t", $header_data)."\r\n";
@@ -263,7 +258,6 @@ trait WithOmegaData
     {
         $undefinedLiteral = self::UNDEFINED_LITERAL;
 
-
         $row_data = [
             'R02',
             0,
@@ -295,7 +289,7 @@ trait WithOmegaData
             '',
             '',
             0,
-            0
+            0,
         ];
 
         return implode("\t", $row_data)."\r\n";
@@ -336,7 +330,7 @@ trait WithOmegaData
             '',
             '',
             0,
-            0
+            0,
         ];
 
         return implode("\t", $row_data)."\r\n";
@@ -377,7 +371,7 @@ trait WithOmegaData
             '',
             '',
             0,
-            0
+            0,
         ];
 
         return implode("\t", $row_data)."\r\n";
@@ -422,7 +416,7 @@ trait WithOmegaData
             '',
             '',
             0,
-            0
+            0,
         ];
 
         return implode("\t", $row_data)."\r\n";

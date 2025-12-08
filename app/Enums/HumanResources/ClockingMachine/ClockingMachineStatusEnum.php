@@ -14,16 +14,16 @@ enum ClockingMachineStatusEnum: string
 {
     use EnumHelperTrait;
 
-    case DISCONNECTED   = 'disconnected';
-    case CONNECTED      = 'connected';
+    case DISCONNECTED = 'disconnected';
+    case CONNECTED = 'connected';
     case DECOMMISSIONED = 'decommissioned';
 
     public static function labels(): array
     {
         return [
-            'disconnected'   => __('Disconnected'),
-            'connected'      => __('Connected'),
-            'decommissioned' => __('Decommissioned')
+            'disconnected' => __('Disconnected'),
+            'connected' => __('Connected'),
+            'decommissioned' => __('Decommissioned'),
         ];
     }
 }

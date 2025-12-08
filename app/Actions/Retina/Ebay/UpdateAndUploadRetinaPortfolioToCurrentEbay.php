@@ -56,5 +56,4 @@ class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
         $this->initialisation($request);
         $this->handle($portfolio, $this->validatedData, true);
     }
-
 }

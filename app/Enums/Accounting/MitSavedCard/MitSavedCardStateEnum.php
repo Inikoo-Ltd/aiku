@@ -21,6 +21,4 @@ enum MitSavedCardStateEnum: string
     case CANCELLED = 'cancelled';
     case ERROR = 'error';
 
-
-
 }

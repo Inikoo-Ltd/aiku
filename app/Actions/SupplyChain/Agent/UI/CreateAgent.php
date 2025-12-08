@@ -24,26 +24,26 @@ class CreateAgent extends GrpAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('New agent'),
-                'pageHead'    => [
-                    'title'   => __('New agent'),
+                'title' => __('New agent'),
+                'pageHead' => [
+                    'title' => __('New agent'),
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.supply-chain.agents.index',
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => 'grp.supply-chain.agents.index',
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => $this->supplyChainFields(),
-                    'route'     => [
+                    'route' => [
                         'name' => 'grp.models.agent.store',
-                    ]
+                    ],
                 ],
             ]
         );
@@ -53,7 +53,6 @@ class CreateAgent extends GrpAction
     {
         return $request->user()->authTo('supply-chain.edit');
     }
-
 
     public function asController(ActionRequest $request): ActionRequest
     {
@@ -68,11 +67,11 @@ class CreateAgent extends GrpAction
             IndexAgents::make()->getBreadcrumbs('grp.supply-chain.agents.index', $routeParameters),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __("creating agent"),
-                    ]
-                ]
+                        'label' => __('creating agent'),
+                    ],
+                ],
             ]
         );
     }

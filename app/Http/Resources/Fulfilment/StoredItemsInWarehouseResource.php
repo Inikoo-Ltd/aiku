@@ -31,19 +31,18 @@ class StoredItemsInWarehouseResource extends JsonResource
         $totalQuantity = $this->total_quantity;
         if (is_numeric($totalQuantity) && floor($totalQuantity) == $totalQuantity) {
             $totalQuantity = (int) $totalQuantity;
-        };
+        }
 
         return [
-            'id'             => $this->id,
-            'reference'      => $this->reference,
-            'slug'           => $this->slug,
-            'state'          => $this->state,
-            'state_icon'     => $this->state->stateIcon()[$this->state->value],
+            'id' => $this->id,
+            'reference' => $this->reference,
+            'slug' => $this->slug,
+            'state' => $this->state,
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
             'total_quantity' => $totalQuantity,
-            'name'           => $this->name,
+            'name' => $this->name,
             'number_pallets' => $this->number_pallets,
-            'number_audits' => $this->number_audits
-
+            'number_audits' => $this->number_audits,
 
         ];
     }

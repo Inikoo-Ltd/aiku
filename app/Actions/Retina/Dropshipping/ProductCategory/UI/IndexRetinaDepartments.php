@@ -29,6 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexRetinaDepartments extends RetinaAction
 {
     private Shop|Collection $parent;
+
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
@@ -51,7 +52,6 @@ class IndexRetinaDepartments extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
         $queryBuilder->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUING->value]);
-
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
@@ -105,14 +105,11 @@ class IndexRetinaDepartments extends RetinaAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
-
-
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-
 
             if (class_basename($parent) != 'Collection') {
                 $table->column(key: 'number_current_sub_departments', label: __('sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
@@ -135,80 +132,77 @@ class IndexRetinaDepartments extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $departments, ActionRequest $request): Response
     {
-        $title      = __('Departments');
-        $model      = '';
-        $icon       = [
-            'icon'  => ['fal', 'fa-folder-tree'],
-            'title' => __('Departments')
+        $title = __('Departments');
+        $model = '';
+        $icon = [
+            'icon' => ['fal', 'fa-folder-tree'],
+            'title' => __('Departments'),
         ];
         $afterTitle = null;
-        $iconRight  = null;
+        $iconRight = null;
 
         if ($this->parent instanceof Collection) {
-            $title      = $this->parent->name;
-            $model      = __('collection');
-            $icon       = [
-                'icon'  => ['fal', 'fa-cube'],
-                'title' => __('Collection')
+            $title = $this->parent->name;
+            $model = __('collection');
+            $icon = [
+                'icon' => ['fal', 'fa-cube'],
+                'title' => __('Collection'),
             ];
-            $iconRight  = [
+            $iconRight = [
                 'icon' => 'fal fa-folder-tree',
             ];
             $afterTitle = [
-                'label' => __('Departments')
+                'label' => __('Departments'),
             ];
         }
 
         return Inertia::render(
             'Catalogue/RetinaDepartments',
             [
-                'breadcrumbs'                         => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                               => __('Departments'),
-                'pageHead'                            => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => __('Departments'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                 ],
-                'data'                                => DepartmentsResource::collection($departments),
+                'data' => DepartmentsResource::collection($departments),
             ]
         )->table($this->tableStructure(parent: $this->parent));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Departments'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
-                    'suffix' => $suffix
-                ]
+                    'suffix' => $suffix,
+                ],
             ];
         };
 
         return match ($routeName) {
-            'retina.catalogue.department.index' =>
-            array_merge(
+            'retina.catalogue.department.index' => array_merge(
                 ShowRetinaCatalogue::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ],
                     $suffix
                 )
             ),
-
-
 
             default => []
         };

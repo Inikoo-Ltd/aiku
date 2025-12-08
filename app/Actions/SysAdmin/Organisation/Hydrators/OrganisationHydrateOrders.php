@@ -12,8 +12,8 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
-use App\Models\SysAdmin\Organisation;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -29,7 +29,6 @@ class OrganisationHydrateOrders implements ShouldBeUnique
     {
         return $organisation->id;
     }
-
 
     public function handle(Organisation $organisation): void
     {
@@ -78,6 +77,4 @@ class OrganisationHydrateOrders implements ShouldBeUnique
 
         $organisation->orderingStats()->update($stats);
     }
-
-
 }

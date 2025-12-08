@@ -18,12 +18,10 @@ trait WithMasterFetch
 
         $masterShop = null;
 
-
         if (in_array($shop->slug, ['uk', 'awd', 'awf', 'aroma', 'acar'])) {
             $masterShop = $shop->masterShop;
         }
 
         return $masterShop;
     }
-
 }

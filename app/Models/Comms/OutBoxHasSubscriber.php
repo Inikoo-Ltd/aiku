@@ -29,9 +29,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox $outbox
  * @property-read User|null $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutBoxHasSubscriber newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutBoxHasSubscriber newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutBoxHasSubscriber query()
+ *
  * @mixin \Eloquent
  */
 class OutBoxHasSubscriber extends Model
@@ -51,5 +53,4 @@ class OutBoxHasSubscriber extends Model
     {
         return $this->belongsTo(Outbox::class);
     }
-
 }

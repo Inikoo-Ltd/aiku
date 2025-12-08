@@ -35,17 +35,16 @@ class StoreOrgAgent extends OrgAction
         return $orgAgent;
     }
 
-
     public function rules(ActionRequest $request): array
     {
         return [
-            'source_id' => 'sometimes|nullable|string'
+            'source_id' => 'sometimes|nullable|string',
         ];
     }
 
     public function action(Organisation $organisation, Agent $agent, $modelData, $hydratorsDelay = 0): OrgAgent
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($organisation, $modelData);
 
@@ -80,6 +79,4 @@ class StoreOrgAgent extends OrgAction
 
         return 0;
     }
-
-
 }

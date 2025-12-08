@@ -17,7 +17,7 @@ class OfferFactory extends Factory
         return [
             'code' => fake()->lexify,
             'name' => fake()->name,
-            'type' => fake()->randomElement(['percentage','fixed']),
+            'type' => fake()->randomElement(['percentage', 'fixed']),
         ];
     }
 }

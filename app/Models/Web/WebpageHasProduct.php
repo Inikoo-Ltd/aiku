@@ -23,15 +23,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Product $product
  * @property-read \App\Models\Web\Webpage $webpage
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebpageHasProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebpageHasProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebpageHasProduct query()
+ *
  * @mixin \Eloquent
  */
 class WebpageHasProduct extends Model
 {
     protected $casts = [
-        'type'  => WebpageHasProductTypeEnum::class,
+        'type' => WebpageHasProductTypeEnum::class,
     ];
 
     protected $attributes = [
@@ -48,5 +50,4 @@ class WebpageHasProduct extends Model
     {
         return $this->belongsTo(Product::class);
     }
-
 }

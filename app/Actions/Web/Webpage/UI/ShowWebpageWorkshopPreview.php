@@ -12,26 +12,26 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Website\GetWebsiteWorkshopFooter;
 use App\Actions\Web\Website\GetWebsiteWorkshopHeader;
+use App\Actions\Web\Website\GetWebsiteWorkshopMenu;
 use App\Http\Resources\Web\WebpageResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Web\Website\GetWebsiteWorkshopMenu;
-use Illuminate\Support\Arr;
 
 class ShowWebpageWorkshopPreview extends OrgAction
 {
     use WithWebEditAuthorisation;
 
-
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->initialisationFromShop($shop, $request);
+
         return $webpage;
     }
 
@@ -39,12 +39,14 @@ class ShowWebpageWorkshopPreview extends OrgAction
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->initialisationFromFulfilment($fulfilment, $request);
+
         return $webpage;
     }
 
     public function inWebsite(Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
         $this->initialisation($website->organisation, $request);
+
         return $webpage;
     }
 
@@ -61,8 +63,8 @@ class ShowWebpageWorkshopPreview extends OrgAction
                 'navigation' => GetWebsiteWorkshopMenu::run($website),
                 'layout' => Arr::get($website->published_layout, 'theme'),
                 'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
-                "retina"   => [
-                    "type"     => $website->shop->type->value,
+                'retina' => [
+                    'type' => $website->shop->type->value,
                 ],
             ]
         );

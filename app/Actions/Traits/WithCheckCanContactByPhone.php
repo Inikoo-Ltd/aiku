@@ -23,7 +23,7 @@ trait WithCheckCanContactByPhone
 
     protected function canContactCustomerByPhone(Customer $customer): bool
     {
-        if (!$customer->phone) {
+        if (! $customer->phone) {
             return false;
         }
 
@@ -32,11 +32,10 @@ trait WithCheckCanContactByPhone
 
     protected function canContactProspectByPhone(Prospect $prospect): bool
     {
-        if (!$prospect->phone) {
+        if (! $prospect->phone) {
             return false;
         }
 
         return true;
     }
-
 }

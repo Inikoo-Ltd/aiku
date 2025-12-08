@@ -10,8 +10,8 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
-use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexIndexTransactionsInBasket;
+use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
@@ -24,17 +24,17 @@ use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
+use App\Http\Resources\Helpers\CurrencyResource;
+use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Http\Resources\Ordering\RetinaTransactionsInBasketResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Http\Resources\Sales\RetinaDropshippingBasketResource;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Helpers\CurrencyResource;
-use App\Http\Resources\Ordering\NonProductItemsResource;
-use App\Models\Dropshipping\CustomerSalesChannel;
 
 class ShowRetinaDropshippingBasket extends RetinaAction
 {
@@ -68,144 +68,142 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
         $premiumDispatch = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $extraPacking    = $order->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $insurance       = $order->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $extraPacking = $order->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $insurance = $order->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingBasket',
             [
-                'title'       => __('Basket'),
+                'title' => __('Basket'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $order,
                     $request->route()->originalParameters(),
                 ),
-                'pageHead'    => [
-                    'title'      => $order->reference,
-                    'model'      => $this->platform->name,
-                    'icon'       => [
-                        'icon'  => 'fal fa-shopping-basket',
-                        'title' => __('Customer client')
+                'pageHead' => [
+                    'title' => $order->reference,
+                    'model' => $this->platform->name,
+                    'icon' => [
+                        'icon' => 'fal fa-shopping-basket',
+                        'title' => __('Customer client'),
                     ],
                     'afterTitle' => [
-                        'label' => __('Basket')
+                        'label' => __('Basket'),
                     ],
-                    'actions'    => [
+                    'actions' => [
                         [
-                            'type'   => 'buttonGroup',
+                            'type' => 'buttonGroup',
                             'button' => [
                                 [
                                     'type' => 'button',
-                                    'key'  => 'upload-add',
+                                    'key' => 'upload-add',
                                     'icon' => 'fal fa-upload',
                                 ],
                             ],
                         ],
-                    ]
+                    ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => BasketTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => BasketTabsEnum::navigation(),
                 ],
 
                 'routes' => [
 
-                    'select_products'  => [
-                        'name'       => 'retina.dropshipping.select_products_for_basket',
+                    'select_products' => [
+                        'name' => 'retina.dropshipping.select_products_for_basket',
                         'parameters' => [
-                            'order' => $order->id
+                            'order' => $order->id,
                         ],
-                        'method'     => 'patch'
+                        'method' => 'patch',
                     ],
-                    'update_route'     => [
-                        'name'       => 'retina.models.order.update',
+                    'update_route' => [
+                        'name' => 'retina.models.order.update',
                         'parameters' => [
-                            'order' => $order->id
+                            'order' => $order->id,
                         ],
-                        'method'     => 'patch'
+                        'method' => 'patch',
                     ],
-                    'submit_route'     => [
-                        'name'       => 'retina.models.order.submit',
+                    'submit_route' => [
+                        'name' => 'retina.models.order.submit',
                         'parameters' => [
-                            'order' => $order->id
+                            'order' => $order->id,
                         ],
-                        'method'     => 'patch'
+                        'method' => 'patch',
                     ],
                     'pay_with_balance' => [
-                        'name'       => 'retina.models.order.pay_with_balance',
+                        'name' => 'retina.models.order.pay_with_balance',
                         'parameters' => [
-                            'order' => $order->id
+                            'order' => $order->id,
                         ],
-                        'method'     => 'patch'
+                        'method' => 'patch',
                     ],
                 ],
 
                 'upload_spreadsheet' => [
-                    'title'               => [
-                        'label'       => __('Upload product'),
-                        'information' => __('The list of column file').": code, quantity"
+                    'title' => [
+                        'label' => __('Upload product'),
+                        'information' => __('The list of column file').': code, quantity',
                     ],
                     'progressDescription' => __('Adding Products'),
-                    'preview_template'    => [
+                    'preview_template' => [
                         'header' => ['code', 'quantity'],
-                        'rows'   => [
+                        'rows' => [
                             [
-                                'code'     => 'product-001',
-                                'quantity' => '1'
-                            ]
-                        ]
-                    ],
-                    'upload_spreadsheet'  => [
-                        'event'           => 'action-progress',
-                        'channel'         => 'grp.personal.'.$this->organisation->id,
-                        'required_fields' => ['code', 'quantity'],
-                        'template'        => [
-                            'label' => 'Download template (.xlsx)'
-                        ],
-                        'route'           => [
-                            'upload'   => [
-                                'name'       => 'retina.models.order.transaction.upload',
-                                'parameters' => [
-                                    'order' => $order->id
-                                ]
+                                'code' => 'product-001',
+                                'quantity' => '1',
                             ],
-                            'history'  => [
-                                'name'       => 'retina.dropshipping.orders.recent_uploads',
+                        ],
+                    ],
+                    'upload_spreadsheet' => [
+                        'event' => 'action-progress',
+                        'channel' => 'grp.personal.'.$this->organisation->id,
+                        'required_fields' => ['code', 'quantity'],
+                        'template' => [
+                            'label' => 'Download template (.xlsx)',
+                        ],
+                        'route' => [
+                            'upload' => [
+                                'name' => 'retina.models.order.transaction.upload',
                                 'parameters' => [
-                                    'order' => $order->slug
-                                ]
+                                    'order' => $order->id,
+                                ],
+                            ],
+                            'history' => [
+                                'name' => 'retina.dropshipping.orders.recent_uploads',
+                                'parameters' => [
+                                    'order' => $order->slug,
+                                ],
                             ],
                             'download' => [
-                                'name'       => 'retina.dropshipping.order_upload_templates',
+                                'name' => 'retina.dropshipping.order_upload_templates',
                                 'parameters' => [
-                                ]
+                                ],
                             ],
                         ],
-                    ]
+                    ],
                 ],
 
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
 
-
                 'charges' => [
                     'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
-                    'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
-                    'insurance'       => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
+                    'extra_packing' => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
+                    'insurance' => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
                 ],
 
                 'is_unable_dispatch' => in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
 
-                'box_stats'      => $this->getDropshippingBasketBoxStats($order),
-                'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
-                'data'           => RetinaDropshippingBasketResource::make($order),
-                'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
-                'balance'        => $order->customer?->balance,
-                'total_to_pay'   => max(0, $order->total_amount - $order->customer->balance),
+                'box_stats' => $this->getDropshippingBasketBoxStats($order),
+                'currency' => CurrencyResource::make($order->currency)->toArray(request()),
+                'data' => RetinaDropshippingBasketResource::make($order),
+                'is_in_basket' => $order->state == OrderStateEnum::CREATING,
+                'balance' => $order->customer?->balance,
+                'total_to_pay' => max(0, $order->total_amount - $order->customer->balance),
                 'total_products' => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?
                     fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
-
 
             ]
         )
@@ -220,94 +218,91 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
     public function getDropshippingBasketBoxStats(Order $order): array
     {
-        $payAmount   = $order->total_amount - $order->payment_amount;
+        $payAmount = $order->total_amount - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
 
         $estWeight = ($order->estimated_weight ?? 0) / 1000;
 
-
         $customerChannel = $order->customerSalesChannel;
-
 
         $taxCategory = $order->taxCategory;
 
         return [
-            'customer'         => array_merge(
+            'customer' => array_merge(
                 CustomerResource::make($order->customer)->getArray(),
                 [
                     'addresses' => [
-                        'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
-                        'billing'  => AddressResource::make($order->billingAddress ?? new Address())
+                        'delivery' => AddressResource::make($order->deliveryAddress ?? new Address),
+                        'billing' => AddressResource::make($order->billingAddress ?? new Address),
                     ],
-                    'route'     => [
-                        'name'       => 'grp.org.shops.show.crm.customers.show',
+                    'route' => [
+                        'name' => 'grp.org.shops.show.crm.customers.show',
                         'parameters' => [
                             'organisation' => $order->organisation->slug,
-                            'shop'         => $order->shop->slug,
-                            'customer'     => $order->customer->slug,
-                        ]
-                    ]
+                            'shop' => $order->shop->slug,
+                            'customer' => $order->customer->slug,
+                        ],
+                    ],
                 ]
             ),
-            'customer_client'  => CustomerClientResource::make($order->customerClient)->getArray(),
+            'customer_client' => CustomerClientResource::make($order->customerClient)->getArray(),
             'customer_channel' => [
-                'slug'     => $customerChannel->slug,
-                'status'   => $order->customer_sales_channel_id,
+                'slug' => $customerChannel->slug,
+                'status' => $order->customer_sales_channel_id,
                 'platform' => [
-                    'name'  => $customerChannel->platform->name,
+                    'name' => $customerChannel->platform->name,
                     'image' => $this->getPlatformLogo($customerChannel->platform->code),
-                ]
-            ],
-            'products'         => [
-                'payment'          => [
-                    'total_amount' => (float)$order->total_amount,
-                    'paid_amount'  => (float)$order->payment_amount,
-                    'pay_amount'   => $roundedDiff,
                 ],
-                'estimated_weight' => $estWeight
+            ],
+            'products' => [
+                'payment' => [
+                    'total_amount' => (float) $order->total_amount,
+                    'paid_amount' => (float) $order->payment_amount,
+                    'pay_amount' => $roundedDiff,
+                ],
+                'estimated_weight' => $estWeight,
             ],
             'order_properties' => [
                 'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],
 
-
             'order_summary' => [
                 [
                     [
-                        'label'       => __('Items'),
-                        'quantity'    => $order->stats->number_item_transactions,
-                        'price_base'  => 'Multiple',
-                        'price_total' => $order->goods_amount
+                        'label' => __('Items'),
+                        'quantity' => $order->stats->number_item_transactions,
+                        'price_base' => 'Multiple',
+                        'price_total' => $order->goods_amount,
                     ],
                 ],
                 [
                     [
-                        'label'       => __('Charges'),
+                        'label' => __('Charges'),
                         'information' => '',
-                        'price_total' => $order->charges_amount
+                        'price_total' => $order->charges_amount,
                     ],
                     [
-                        'label'       => __('Shipping'),
+                        'label' => __('Shipping'),
                         'information' => '',
-                        'price_total' => $order->shipping_amount
-                    ]
+                        'price_total' => $order->shipping_amount,
+                    ],
                 ],
                 [
                     [
-                        'label'       => __('Net'),
+                        'label' => __('Net'),
                         'information' => '',
-                        'price_total' => $order->net_amount
+                        'price_total' => $order->net_amount,
                     ],
                     [
-                        'label'       => $taxCategory->name,
+                        'label' => $taxCategory->name,
                         'information' => '',
-                        'price_total' => $order->tax_amount
-                    ]
+                        'price_total' => $order->tax_amount,
+                    ],
                 ],
                 [
                     [
-                        'label'       => __('Total'),
-                        'price_total' => $order->total_amount
+                        'label' => __('Total'),
+                        'price_total' => $order->total_amount,
                     ],
                 ],
                 'currency' => CurrencyResource::make($order->currency),
@@ -325,7 +320,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         $headCrumb = function (Order $order, array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __($order->slug),
@@ -343,15 +338,15 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 $order,
                 [
                     'index' => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.basket.index',
+                        'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
                         'parameters' => [
-                            $customerSalesChannel->slug
-                        ]
+                            $customerSalesChannel->slug,
+                        ],
                     ],
                     'model' => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.basket.index',
-                        'parameters' => [$customerSalesChannel->slug, $order->slug]
-                    ]
+                        'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
+                        'parameters' => [$customerSalesChannel->slug, $order->slug],
+                    ],
                 ],
                 $suffix
             ),

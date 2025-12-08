@@ -15,7 +15,7 @@ enum BarcodeStatusEnum: string
     use EnumHelperTrait;
 
     case AVAILABLE = 'available';
-    case USED      = 'used';
-    case RESERVED  = 'reserved';
+    case USED = 'used';
+    case RESERVED = 'reserved';
 
 }

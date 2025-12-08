@@ -25,7 +25,7 @@ class DownloadOrderTransactionsTemplate
 
     public function handle(): BinaryFileResponse
     {
-        return Excel::download(new OrderTransactionTemplateExport(), 'order_transaction_templates.xlsx');
+        return Excel::download(new OrderTransactionTemplateExport, 'order_transaction_templates.xlsx');
     }
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Order $order): BinaryFileResponse

@@ -18,10 +18,6 @@ class TotalImagePortfolios
 {
     use AsAction;
 
-    /**
-     * @param CustomerSalesChannel $customerSalesChannel
-     * @return int
-     */
     public function handle(CustomerSalesChannel $customerSalesChannel): int
     {
         return Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)->count();

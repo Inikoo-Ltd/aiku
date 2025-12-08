@@ -17,27 +17,26 @@ enum TimesheetTabsEnum: string
     use HasTabs;
 
     case TIME_TRACKERS = 'time_trackers';
-    case HISTORY       = 'history';
-    case CLOCKINGS     = 'clockings';
-
+    case HISTORY = 'history';
+    case CLOCKINGS = 'clockings';
 
     public function blueprint(): array
     {
         return match ($this) {
             TimesheetTabsEnum::TIME_TRACKERS => [
                 'title' => __('Working periods'),
-                'icon'  => 'fal fa-arrows-h',
+                'icon' => 'fal fa-arrows-h',
             ],
             TimesheetTabsEnum::CLOCKINGS => [
                 'title' => __('Clockings'),
-                'icon'  => 'fal fa-vote-yea',
+                'icon' => 'fal fa-vote-yea',
 
             ],
 
             TimesheetTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
         };

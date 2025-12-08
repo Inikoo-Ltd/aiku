@@ -36,9 +36,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $share_work_time_including_guests This is the share of the total work time of the employees and guests in this job position
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionStats query()
+ *
  * @mixin \Eloquent
  */
 class JobPositionStats extends Model

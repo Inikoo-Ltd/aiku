@@ -16,9 +16,9 @@ use App\Models\Helpers\Timezone;
 use App\Models\HumanResources\Workplace;
 use Laravel\Sanctum\Sanctum;
 
-use function Pest\Laravel\{actingAs};
-use function Pest\Laravel\{getJson};
-use function Pest\Laravel\{postJson};
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\getJson;
+use function Pest\Laravel\postJson;
 
 beforeAll(function () {
     loadDB();
@@ -26,8 +26,8 @@ beforeAll(function () {
 
 beforeEach(function () {
     $this->organisation = createOrganisation();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
-    $this->user         = $this->adminGuest->getUser();
+    $this->adminGuest = createAdminGuest($this->organisation->group);
+    $this->user = $this->adminGuest->getUser();
 
     Config::set(
         'inertia.testing.page_paths',
@@ -35,13 +35,12 @@ beforeEach(function () {
     );
     $this->qrCode = Str::ulid()->toBase32();
 
-
-    if (!Workplace::where('name', 'office')->exists()) {
+    if (! Workplace::where('name', 'office')->exists()) {
         $modelData = [
-            'name'       => 'office',
-            'type'       => WorkplaceTypeEnum::BRANCH,
-            'address'    => Address::factory()->definition(),
-            'timezone_id' => Timezone::where('name', 'Asia/Kuala_Lumpur')->first()->id
+            'name' => 'office',
+            'type' => WorkplaceTypeEnum::BRANCH,
+            'address' => Address::factory()->definition(),
+            'timezone_id' => Timezone::where('name', 'Asia/Kuala_Lumpur')->first()->id,
         ];
 
         StoreWorkplace::make()->action($this->organisation, $modelData);
@@ -49,7 +48,6 @@ beforeEach(function () {
 
     $this->workplace = Workplace::where('name', 'office')->first();
 });
-
 
 test('create qr code', function () {
     actingAs($this->user);
@@ -61,7 +59,7 @@ test('create qr code', function () {
     $response = getJson(route('grp.models.profile.app-login-qrcode'));
     $response->assertOk();
     $response->assertJson([
-        'code' => $this->qrCode
+        'code' => $this->qrCode,
     ]);
 });
 
@@ -74,28 +72,26 @@ test('create api token from qr code', function () {
         ->once()
         ->with('profile-app-qr-code:'.$this->qrCode);
 
-
     $response = postJson(route('maya.connect.qr_code', [
-        'code'        => $this->qrCode,
-        'device_name' => 'test device'
+        'code' => $this->qrCode,
+        'device_name' => 'test device',
     ]));
-
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'token'
+        'token',
     ]);
 })->depends('create qr code');
 
 test('create api token from credentials', function () {
     $response = postJson(route('maya.connect.credentials', [
-        'username'    => $this->user->username,
-        'password'    => 'password',
-        'device_name' => 'test device'
+        'username' => $this->user->username,
+        'password' => 'password',
+        'device_name' => 'test device',
     ]));
     $response->assertOk();
     $response->assertJsonStructure([
-        'token'
+        'token',
     ]);
 });
 
@@ -127,7 +123,6 @@ test('get clocking machines list (empty)', function () {
         ->toHaveCount(0);
 });
 
-
 test('get working places list', function () {
     Sanctum::actingAs(
         $this->user,
@@ -149,10 +144,9 @@ test('get workplace data', function () {
 
     $response = getJson(route('maya.org.hr.workplaces.show', [
         $this->organisation->id,
-        $this->workplace->id
+        $this->workplace->id,
     ]));
     $response->assertOk();
-
 
     expect($response->json())->toBeArray()
         ->and($response->json())
@@ -170,7 +164,7 @@ test('get clocking machines list in workplace', function () {
             'maya.org.hr.workplaces.show.clocking_machines.index',
             [
                 $this->organisation->id,
-                $this->workplace->id
+                $this->workplace->id,
             ]
         )
     );

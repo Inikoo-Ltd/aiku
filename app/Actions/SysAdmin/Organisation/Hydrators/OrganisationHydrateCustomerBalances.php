@@ -45,7 +45,6 @@ class OrganisationHydrateCustomerBalances implements ShouldBeUnique
             ->where('balance', '<', 0)
             ->count();
 
-
         $organisation->accountingStats()->update($stats);
     }
 }

@@ -25,6 +25,7 @@ trait HasManufactureStats
         foreach (ProductionStateEnum::cases() as $case) {
             $table->unsignedInteger('number_productions_state_'.$case->snake())->default(0);
         }
+
         return $table;
     }
 
@@ -56,6 +57,7 @@ trait HasManufactureStats
         foreach (ManufactureTaskOperativeRewardAllowanceTypeEnum::cases() as $case) {
             $table->unsignedInteger('number_manufacture_tasks_operative_reward_allowance_type_'.$case->snake())->default(0);
         }
+
         return $table;
     }
 
@@ -72,7 +74,4 @@ trait HasManufactureStats
 
         return $table;
     }
-
-
-
 }

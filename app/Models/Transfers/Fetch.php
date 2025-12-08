@@ -27,20 +27,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Transfers\FetchRecord> $records
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fetch newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fetch newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fetch query()
+ *
  * @mixin \Eloquent
  */
 class Fetch extends Model
 {
     protected $casts = [
-        'data'     => 'array',
-        'type'     => FetchTypeEnum::class,
+        'data' => 'array',
+        'type' => FetchTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
     ];
 
     protected $guarded = [];
@@ -49,5 +51,4 @@ class Fetch extends Model
     {
         return $this->hasMany(FetchRecord::class);
     }
-
 }

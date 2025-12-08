@@ -21,18 +21,15 @@ enum SnapshotBuilderEnum: string
     case AIKU_BANNERS_V1 = 'aiku-banners-v1';
     case AIKU_ANNOUNCEMENT_V1 = 'aiku-announcement-v1';
 
-
     public static function labels(): array
     {
         return [
-            'unlayer'            => __('Unlayer'),
-            'beefree'            => __('BeeFree'),
-            'blade'              => __('Blade (Hard coded)'),
+            'unlayer' => __('Unlayer'),
+            'beefree' => __('BeeFree'),
+            'blade' => __('Blade (Hard coded)'),
             'aiku-web-blocks-v1' => __('Aiku Web Blocks V1'),
-            'aiku-banners-v1'    => __('Aiku Banners V1'),
-            'aiku-announcement-v1'    => __('Aiku Announcement V1'),
+            'aiku-banners-v1' => __('Aiku Banners V1'),
+            'aiku-announcement-v1' => __('Aiku Announcement V1'),
         ];
     }
-
-
 }

@@ -56,35 +56,34 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    list(
+    [
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
+    ] = createShop();
 
     $this->group = $this->organisation->group;
 
     $this->warehouse = createWarehouse();
 
-    list(
+    [
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+    ] = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
-    $this->order    = createOrder($this->customer, $this->product);
+    $this->order = createOrder($this->customer, $this->product);
 
     if ($this->order->state == OrderStateEnum::CREATING) {
         $this->order = SubmitOrder::make()->action($this->order);
     }
 
-    if (!isset($this->employee)) {
+    if (! isset($this->employee)) {
         $employeeData = Employee::factory()->definition();
         $employeeData['worker_number'] .= Str::random(6);
 
         $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
     }
-
 
 });
 
@@ -92,7 +91,7 @@ test('create shipper', function () {
     $arrayData = [
         'code' => 'ABC',
         'name' => 'ABC Shipping',
-        'trade_as' => 'abc'
+        'trade_as' => 'abc',
     ];
 
     $createdShipper = StoreShipper::make()->action($this->organisation, $arrayData);
@@ -104,7 +103,7 @@ test('create shipper', function () {
 test('update shipper', function ($createdShipper) {
     $arrayData = [
         'code' => 'DEF',
-        'name' => 'DEF Movers'
+        'name' => 'DEF Movers',
     ];
 
     $updatedShipper = UpdateShipper::make()->action($createdShipper, $arrayData);
@@ -112,22 +111,20 @@ test('update shipper', function ($createdShipper) {
     expect($updatedShipper->code)->toBe($arrayData['code']);
 })->depends('create shipper');
 
-
 test('create delivery note', function () {
     $arrayData = [
-        'reference'        => 'A123456',
-        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
-        'email'            => 'test@email.com',
-        'phone'            => '+62081353890000',
-        'date'             => date('Y-m-d'),
+        'reference' => 'A123456',
+        'state' => DeliveryNoteStateEnum::UNASSIGNED,
+        'email' => 'test@email.com',
+        'phone' => '+62081353890000',
+        'date' => date('Y-m-d'),
         'delivery_address' => new Address(Address::factory()->definition()),
-        'warehouse_id'     => $this->warehouse->id
+        'warehouse_id' => $this->warehouse->id,
     ];
 
     $deliveryNote = StoreDeliveryNote::make()->action($this->order, $arrayData);
     expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
         ->and($deliveryNote->reference)->toBe($arrayData['reference']);
-
 
     return $deliveryNote;
 });
@@ -135,10 +132,10 @@ test('create delivery note', function () {
 test('update delivery note', function ($lastDeliveryNote) {
     $arrayData = [
         'reference' => 'A2321321',
-        'state'     => DeliveryNoteStateEnum::HANDLING,
-        'email'     => 'test@email.com',
-        'phone'     => '+62081353890000',
-        'date'      => date('Y-m-d')
+        'state' => DeliveryNoteStateEnum::HANDLING,
+        'email' => 'test@email.com',
+        'phone' => '+62081353890000',
+        'date' => date('Y-m-d'),
     ];
 
     $updatedDeliveryNote = UpdateDeliveryNote::make()->action($lastDeliveryNote, $arrayData);
@@ -150,18 +147,18 @@ test('create delivery note item', function (DeliveryNote $deliveryNote) {
     /** @var HistoricAsset $historicAsset */
     $historicAsset = HistoricAsset::find(1);
 
-    $stock       = StoreStock::make()->action($this->group, Stock::factory()->definition());
-    $stock       = UpdateStock::make()->action($stock, [
-        'state' => StockStateEnum::ACTIVE
+    $stock = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock = UpdateStock::make()->action($stock, [
+        'state' => StockStateEnum::ACTIVE,
     ]);
-    $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
     $transaction = StoreTransaction::make()->action($this->order, $historicAsset, Transaction::factory()->definition());
 
     $deliveryNoteData = [
-        'delivery_note_id'  => $deliveryNote->id,
-        'org_stock_id'      => $orgStock->id,
-        'transaction_id'    => $transaction->id,
-        'quantity_required' => 10
+        'delivery_note_id' => $deliveryNote->id,
+        'org_stock_id' => $orgStock->id,
+        'transaction_id' => $transaction->id,
+        'quantity_required' => 10,
     ];
 
     $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteData);
@@ -170,7 +167,6 @@ test('create delivery note item', function (DeliveryNote $deliveryNote) {
 
     return $deliveryNoteItem;
 })->depends('create delivery note');
-
 
 test('remove delivery note', function ($deliveryNote) {
     $success = DeleteDeliveryNote::make()->handle($deliveryNote, []);
@@ -182,19 +178,18 @@ test('remove delivery note', function ($deliveryNote) {
 
 test('create second delivery note', function () {
     $arrayData = [
-        'reference'        => 'A234567',
-        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
-        'email'            => 'test@email.com',
-        'phone'            => '+62081353890000',
-        'date'             => date('Y-m-d'),
+        'reference' => 'A234567',
+        'state' => DeliveryNoteStateEnum::UNASSIGNED,
+        'email' => 'test@email.com',
+        'phone' => '+62081353890000',
+        'date' => date('Y-m-d'),
         'delivery_address' => new Address(Address::factory()->definition()),
-        'warehouse_id'     => $this->warehouse->id
+        'warehouse_id' => $this->warehouse->id,
     ];
 
     $deliveryNote = StoreDeliveryNote::make()->action($this->order, $arrayData);
     expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
         ->and($deliveryNote->reference)->toBe($arrayData['reference']);
-
 
     return $deliveryNote;
 });
@@ -203,18 +198,18 @@ test('create second delivery note item', function (DeliveryNote $deliveryNote) {
     /** @var HistoricAsset $historicAsset */
     $historicAsset = HistoricAsset::find(1);
 
-    $stock       = StoreStock::make()->action($this->group, Stock::factory()->definition());
-    $stock       = UpdateStock::make()->action($stock, [
-        'state' => StockStateEnum::ACTIVE
+    $stock = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock = UpdateStock::make()->action($stock, [
+        'state' => StockStateEnum::ACTIVE,
     ]);
-    $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
     $transaction = StoreTransaction::make()->action($this->order, $historicAsset, Transaction::factory()->definition());
 
     $deliveryNoteData = [
-        'delivery_note_id'  => $deliveryNote->id,
-        'org_stock_id'      => $orgStock->id,
-        'transaction_id'    => $transaction->id,
-        'quantity_required' => 10
+        'delivery_note_id' => $deliveryNote->id,
+        'org_stock_id' => $orgStock->id,
+        'transaction_id' => $transaction->id,
+        'quantity_required' => 10,
     ];
 
     $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteData);
@@ -229,18 +224,18 @@ test('create more delivery note item', function (DeliveryNote $deliveryNote) {
     /** @var HistoricAsset $historicAsset */
     $historicAsset2 = HistoricAsset::find(1);
 
-    $stock       = StoreStock::make()->action($this->group, Stock::factory()->definition());
-    $stock       = UpdateStock::make()->action($stock, [
-        'state' => StockStateEnum::ACTIVE
+    $stock = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock = UpdateStock::make()->action($stock, [
+        'state' => StockStateEnum::ACTIVE,
     ]);
-    $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
     $transaction = StoreTransaction::make()->action($this->order, $historicAsset2, Transaction::factory()->definition());
 
     $deliveryNoteData = [
-        'delivery_note_id'  => $deliveryNote->id,
-        'org_stock_id'      => $orgStock->id,
-        'transaction_id'    => $transaction->id,
-        'quantity_required' => 15
+        'delivery_note_id' => $deliveryNote->id,
+        'org_stock_id' => $orgStock->id,
+        'transaction_id' => $transaction->id,
+        'quantity_required' => 15,
     ];
 
     $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteData);
@@ -276,11 +271,11 @@ test('update second delivery note state to handling', function (DeliveryNote $de
 })->depends('update second delivery note state to in queue');
 
 test('store picking', function (DeliveryNote $deliveryNote) {
-    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $location = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
     $deliveryNoteItem = $deliveryNote->deliveryNoteItems->first();
     $locationOrgStock = StoreLocationOrgStock::make()->action(orgStock: $deliveryNoteItem->orgStock, location: $location, modelData: [
-        'quantity'   => 100,
-        'type'       => LocationStockTypeEnum::PICKING,
+        'quantity' => 100,
+        'type' => LocationStockTypeEnum::PICKING,
         'fetched_at' => now(),
     ], strict: false);
 
@@ -290,9 +285,9 @@ test('store picking', function (DeliveryNote $deliveryNote) {
         $deliveryNoteItem,
         $this->user,
         [
-            'picker_user_id'        => $this->user->id,
+            'picker_user_id' => $this->user->id,
             'location_org_stock_id' => $locationOrgStock->id,
-            'quantity'              => 5,
+            'quantity' => 5,
 
         ]
     );
@@ -310,7 +305,7 @@ test('store picking', function (DeliveryNote $deliveryNote) {
 
 test('update picking', function (Picking $picking) {
     $picking = UpdatePicking::make()->action($picking, [
-        'quantity' => 10
+        'quantity' => 10,
     ]);
 
     $picking->refresh();
@@ -343,14 +338,14 @@ test('pack item', function (Picking $picking) {
 })->depends('update picking');
 
 test('store second picking', function (DeliveryNote $deliveryNote) {
-    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $location = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
     $deliveryNoteItem = $deliveryNote->deliveryNoteItems->skip(1)->first();
     $locationOrgStock = StoreLocationOrgStock::make()->action(
         orgStock: $deliveryNoteItem->orgStock,
         location: $location,
         modelData: [
-            'quantity'   => 150,
-            'type'       => LocationStockTypeEnum::PICKING,
+            'quantity' => 150,
+            'type' => LocationStockTypeEnum::PICKING,
             'fetched_at' => now(),
         ],
         strict: false
@@ -358,9 +353,9 @@ test('store second picking', function (DeliveryNote $deliveryNote) {
 
     expect($deliveryNoteItem)->toBeInstanceOf(DeliveryNoteItem::class);
     $picking = StorePicking::make()->action($deliveryNoteItem, $this->user, [
-        'picker_user_id'        => $this->user->id,
+        'picker_user_id' => $this->user->id,
         'location_org_stock_id' => $locationOrgStock->id,
-        'quantity'              => 5,
+        'quantity' => 5,
 
     ]);
 
@@ -377,7 +372,7 @@ test('store second picking', function (DeliveryNote $deliveryNote) {
 
 test('set remaining quantity to not picked (2nd picking)', function (Picking $picking) {
     $deliveryNoteItem = $picking->deliveryNoteItem;
-    $picking          = StoreNotPickPicking::make()->action($deliveryNoteItem, $this->user, [
+    $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $this->user, [
     ]);
 
     expect($picking)->toBeInstanceOf(Picking::class)
@@ -392,7 +387,7 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
 })->depends('store second picking');
 
 test('Set Delivery Note state to Packed', function (Picking $picking) {
-    $deliveryNote     = $picking->deliveryNote;
+    $deliveryNote = $picking->deliveryNote;
     $deliveryNoteItem = $picking->deliveryNoteItem;
 
     $packedDeliveryNote = SetDeliveryNoteStateAsPacked::make()->action($deliveryNote, $this->user);
@@ -410,7 +405,7 @@ test('Set Delivery Note state to Packed', function (Picking $picking) {
 
 test('create shipment', function ($deliveryNote, $shipper) {
     $arrayData = [
-        'tracking' => 'AAA'
+        'tracking' => 'AAA',
     ];
 
     $shipment = StoreShipment::make()->action($deliveryNote, $shipper, $arrayData);
@@ -422,7 +417,7 @@ test('create shipment', function ($deliveryNote, $shipper) {
 
 test('update shipment', function ($lastShipment) {
     $arrayData = [
-        'reference' => 'BBB'
+        'reference' => 'BBB',
     ];
 
     $shipment = UpdateShipment::make()->action($lastShipment, $arrayData);

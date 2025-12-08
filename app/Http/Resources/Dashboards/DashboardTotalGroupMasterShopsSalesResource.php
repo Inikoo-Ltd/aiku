@@ -16,7 +16,6 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
-
     public function toArray($request): array
     {
         /** @var Group $group */
@@ -26,37 +25,34 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
 
             'group' => [
                 'route_target' => [
-                    'name'       => 'grp.dashboard.show',
+                    'name' => 'grp.dashboard.show',
                     'parameters' => [],
                 ],
             ],
         ];
 
-
-        $baskets_created_grp_currency          = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency');
+        $baskets_created_grp_currency = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency');
         $baskets_created_grp_currency_minified = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency_minified');
-        $sales_grp_currency                    = $this->getDashboardTableColumn($group->salesIntervals, 'sales_grp_currency');
-        $sales_grp_currency_delta              = $this->getDashboardTableColumn($group->salesIntervals, 'sales_grp_currency_delta');
-
+        $sales_grp_currency = $this->getDashboardTableColumn($group->salesIntervals, 'sales_grp_currency');
+        $sales_grp_currency_delta = $this->getDashboardTableColumn($group->salesIntervals, 'sales_grp_currency_delta');
 
         $sales_grp_currency_minified = $this->getDashboardTableColumn($group->salesIntervals, 'sales_grp_currency_minified');
-
 
         $columns = array_merge(
             [
                 'label' => [
                     'formatted_value' => $group->name,
-                    'align'           => 'left',
-                    ...$routeTargets['group']
-                ]
+                    'align' => 'left',
+                    ...$routeTargets['group'],
+                ],
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $group->code,
-                    'tooltip'         => $group->name,
-                    'align'           => 'left',
-                    ...$routeTargets['group']
-                ]
+                    'tooltip' => $group->name,
+                    'align' => 'left',
+                    ...$routeTargets['group'],
+                ],
             ],
             $baskets_created_grp_currency,
             $baskets_created_grp_currency_minified,
@@ -75,10 +71,9 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
             $sales_grp_currency_delta
         );
 
-
         return [
-            'slug'    => $group->slug,
-            'columns' => $columns
+            'slug' => $group->slug,
+            'columns' => $columns,
         ];
     }
 }

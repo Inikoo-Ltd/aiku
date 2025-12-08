@@ -80,9 +80,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static Builder<static>|ShopAccountingStats newModelQuery()
  * @method static Builder<static>|ShopAccountingStats newQuery()
  * @method static Builder<static>|ShopAccountingStats query()
+ *
  * @mixin Eloquent
  */
 class ShopAccountingStats extends Model

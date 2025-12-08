@@ -23,18 +23,16 @@ class UpdateJobPositionCategory extends GrpAction
         return $this->update($jobPositionCategory, $modelData, ['data']);
     }
 
-
     public function rules(): array
     {
         return [
-            'code'       => ['sometimes', 'required', 'max:16'],
-            'name'       => ['sometimes', 'required', 'max:255'],
-            'scope'      => ['required', Rule::enum(JobPositionScopeEnum::class)],
+            'code' => ['sometimes', 'required', 'max:16'],
+            'name' => ['sometimes', 'required', 'max:255'],
+            'scope' => ['required', Rule::enum(JobPositionScopeEnum::class)],
             'department' => ['sometimes', 'nullable', 'string'],
-            'team'       => ['sometimes', 'nullable', 'string']
+            'team' => ['sometimes', 'nullable', 'string'],
         ];
     }
-
 
     public function action(JobPositionCategory $jobPositionCategory, array $modelData): JobPositionCategory
     {
@@ -42,6 +40,4 @@ class UpdateJobPositionCategory extends GrpAction
 
         return $this->handle($jobPositionCategory, $this->validatedData);
     }
-
-
 }

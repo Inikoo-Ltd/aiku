@@ -39,7 +39,7 @@ it('adds number_products_state_coming_soon to all stats tables', function () {
     ];
 
     foreach ($tables as $table) {
-        if (!Schema::hasTable($table)) {
+        if (! Schema::hasTable($table)) {
             // Some installs may not include all tables; skip gracefully
             continue;
         }

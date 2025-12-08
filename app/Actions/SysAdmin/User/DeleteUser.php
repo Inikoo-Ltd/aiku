@@ -16,16 +16,14 @@ class DeleteUser
 {
     use AsObject;
 
-
     public function handle(User $user): User
     {
         $user->updateQuietly([
-            'username' => $user->username . '@deleted-' . $user->id
+            'username' => $user->username.'@deleted-'.$user->id,
         ]);
         $user->delete();
         GroupHydrateUsers::dispatch($user->group);
+
         return $user;
     }
-
-
 }

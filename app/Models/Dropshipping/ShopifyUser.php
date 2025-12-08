@@ -94,6 +94,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Shop|null $shop
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static Builder<static>|ShopifyUser newModelQuery()
  * @method static Builder<static>|ShopifyUser newQuery()
  * @method static Builder<static>|ShopifyUser onlyTrashed()
@@ -102,28 +103,29 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|ShopifyUser withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|ShopifyUser withoutPermission($permissions)
  * @method static Builder<static>|ShopifyUser withoutTrashed()
+ *
  * @mixin Eloquent
  */
-class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopModel
+class ShopifyUser extends Authenticatable implements Auditable, HasMedia, IShopModel
 {
-    use IsUserable;
-    use HasPermissions;
     use HasEmail;
     use HasImage;
+    use HasPermissions;
     use InCustomer;
+    use IsUserable;
     use ShopModel;
     use SoftDeletes;
     use WithInitShopifyClient;
 
     protected $casts = [
-        'data'      => 'array',
-        'settings'  => 'array',
-        'state'     => WebUserTypeEnum::class,
+        'data' => 'array',
+        'settings' => 'array',
+        'state' => WebUserTypeEnum::class,
         'auth_type' => WebUserAuthTypeEnum::class,
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 
@@ -132,7 +134,7 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
 
     public function generateTags(): array
     {
-        return ['crm','websites'];
+        return ['crm', 'websites'];
     }
 
     protected array $auditInclude = [
@@ -153,7 +155,6 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
     }
-
 
     public function orders(): MorphToMany
     {

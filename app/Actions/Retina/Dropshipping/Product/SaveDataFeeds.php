@@ -21,8 +21,8 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
-use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SaveDataFeeds extends RetinaAction
 {
@@ -39,7 +39,7 @@ class SaveDataFeeds extends RetinaAction
         }
 
         $filename = $baseFilename.'_'.$parent->slug.'.csv';
-        $path     = Str::snake(class_basename($parent)).'/'.$filename;
+        $path = Str::snake(class_basename($parent)).'/'.$filename;
 
         if ($parent instanceof ProductCategory) {
             Excel::store(new ProductsInProductCategoryExport($parent), $path, 'data-feeds');
@@ -49,7 +49,6 @@ class SaveDataFeeds extends RetinaAction
             Excel::store(new ProductsInShopExport($parent), $path, 'data-feeds');
         }
     }
-
 
     public $commandSignature = 'data_feeds:save';
 
@@ -81,7 +80,6 @@ class SaveDataFeeds extends RetinaAction
                 $command->info('Collection: '.$collection->slug);
             }
         }
-
 
         return 0;
     }

@@ -30,7 +30,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $product_name
  * @property mixed $product_created_at
  * @property mixed $product_updated_at
- *
  */
 class CustomerPortfolioResource extends JsonResource
 {
@@ -40,15 +39,15 @@ class CustomerPortfolioResource extends JsonResource
         $product = Product::find($this->product_id);
 
         return [
-            'id'                         => $this->id,
+            'id' => $this->id,
             'customer_product_reference' => $this->reference,
-            'status'                     => $this->status,
-            'last_added_at'              => $this->last_added_at,
-            'last_removed_at'            => $this->last_removed_at,
-            'product_id'                 => $this->product_id,
-            'created_at'                 => $this->created_at,
-            'updated_at'                 => $this->updated_at,
-            'product'                    => ProductResource::make($product)->getArray()
+            'status' => $this->status,
+            'last_added_at' => $this->last_added_at,
+            'last_removed_at' => $this->last_removed_at,
+            'product_id' => $this->product_id,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'product' => ProductResource::make($product)->getArray(),
         ];
     }
 }

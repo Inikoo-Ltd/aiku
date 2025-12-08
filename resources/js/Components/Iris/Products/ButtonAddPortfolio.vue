@@ -74,7 +74,7 @@ const onAddToAllPortfolios = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingAllPortfolios.value = true
                 // Luigi: event add to cart
                 window?.dataLayer?.push({
@@ -201,7 +201,7 @@ watch(() => props.productHasPortfolio, (newVal) => {
     productHasPortfolioList.value = [...newVal]
   } else {
     productHasPortfolioList.value = []
-  } 
+  }
 })
 
 watch(

@@ -32,19 +32,19 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    list(
+    [
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
+    ] = createShop();
 
     $this->group = $this->organisation->group;
     $this->adminGuest = createAdminGuest($this->group);
     $this->customer = createCustomer($this->shop);
     $warehouse = Warehouse::first();
-    if (!$warehouse) {
-        data_set($storeData, "code", "CODE");
-        data_set($storeData, "name", "NAME");
+    if (! $warehouse) {
+        data_set($storeData, 'code', 'CODE');
+        data_set($storeData, 'name', 'NAME');
 
         $warehouse = StoreWarehouse::make()->action($this->organisation, $storeData);
     }
@@ -52,129 +52,127 @@ beforeEach(function () {
 
     $order = Order::first();
 
-    if (!$order) {
-        $billingAddress  = new Address(Address::factory()->definition());
+    if (! $order) {
+        $billingAddress = new Address(Address::factory()->definition());
         $deliveryAddress = new Address(Address::factory()->definition());
 
         $modelData = Order::factory()->definition();
         data_set($modelData, 'billing_address', $billingAddress);
         data_set($modelData, 'delivery_address', $deliveryAddress);
 
-
         $order = StoreOrder::make()->action($this->customer, $modelData);
     }
     $this->order = $order;
 
-
     $deliveryNote = DeliveryNote::first();
-    if (!$deliveryNote) {
+    if (! $deliveryNote) {
         $arrayData = [
-            'reference'           => 'A123456',
-            'state'               => DeliveryNoteStateEnum::UNASSIGNED,
-            'email'               => 'test@email.com',
-            'phone'               => '+62081353890000',
-            'date'                => date('Y-m-d'),
-            'delivery_address'    => new Address(Address::factory()->definition()),
-            'warehouse_id'        => $this->warehouse->id
+            'reference' => 'A123456',
+            'state' => DeliveryNoteStateEnum::UNASSIGNED,
+            'email' => 'test@email.com',
+            'phone' => '+62081353890000',
+            'date' => date('Y-m-d'),
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'warehouse_id' => $this->warehouse->id,
         ];
         $deliveryNote = StoreDeliveryNote::make()->action($this->order, $arrayData);
     }
     $this->deliveryNote = $deliveryNote;
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
 
-    Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
+    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->adminGuest->getUser());
 });
 
-test("UI Index dispatching delivery-notes", function () {
+test('UI Index dispatching delivery-notes', function () {
     $this->withoutExceptionHandling();
 
     $response = get(
-        route("grp.org.warehouses.show.dispatching.delivery-notes", [
+        route('grp.org.warehouses.show.dispatching.delivery-notes', [
             $this->organisation->slug,
             $this->warehouse->slug,
         ])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Org/Dispatching/DeliveryNotes")
-            ->where("title", 'Delivery notes')
-            ->has("breadcrumbs", 3)
+            ->component('Org/Dispatching/DeliveryNotes')
+            ->where('title', 'Delivery notes')
+            ->has('breadcrumbs', 3)
             ->has(
-                "pageHead",
+                'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where("title", "Delivery notes")
-                ->etc()
+                    ->where('title', 'Delivery notes')
+                    ->etc()
             )
-            ->has("data");
+            ->has('data');
     });
 });
 
-test("UI Index dispatching show delivery-notes", function () {
+test('UI Index dispatching show delivery-notes', function () {
     $this->withoutExceptionHandling();
     $response = get(
-        route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
+        route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
             $this->organisation->slug,
             $this->warehouse->slug,
-            $this->deliveryNote->slug
+            $this->deliveryNote->slug,
         ])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Org/Dispatching/DeliveryNote")
-            ->where("title", 'delivery note')
-            ->has("breadcrumbs", 3)
+            ->component('Org/Dispatching/DeliveryNote')
+            ->where('title', 'delivery note')
+            ->has('breadcrumbs', 3)
             ->has(
-                "pageHead",
+                'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where("title", $this->deliveryNote->reference)
-                ->where("model", 'Delivery Note')
-                ->etc()
+                    ->where('title', $this->deliveryNote->reference)
+                    ->where('model', 'Delivery Note')
+                    ->etc()
             )
             ->has('delivery_note')
-            ->has("timelines")
-            ->has("box_stats")
-            ->has("routes")
+            ->has('timelines')
+            ->has('box_stats')
+            ->has('routes')
             ->has(DeliveryNoteTabsEnum::ITEMS->value)
-            ->has("tabs");
+            ->has('tabs');
     });
 });
 
-test("UI Index dispatching show delivery-notes (tab picking)", function () {
+test('UI Index dispatching show delivery-notes (tab picking)', function () {
     $response = get(
-        route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
+        route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
             $this->organisation->slug,
             $this->warehouse->slug,
-            $this->deliveryNote->slug
+            $this->deliveryNote->slug,
         ])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Org/Dispatching/DeliveryNote")
-            ->where("title", 'delivery note')
-            ->has("breadcrumbs", 3)
+            ->component('Org/Dispatching/DeliveryNote')
+            ->where('title', 'delivery note')
+            ->has('breadcrumbs', 3)
             ->has(
-                "pageHead",
+                'pageHead',
                 fn (AssertableInertia $page) => $page
-                ->where("title", $this->deliveryNote->reference)
-                ->where("model", 'Delivery Note')
-                ->etc()
+                    ->where('title', $this->deliveryNote->reference)
+                    ->where('model', 'Delivery Note')
+                    ->etc()
             )
             ->has('delivery_note')
-            ->has("alert")
-            ->has("notes")
-            ->has("timelines")
-            ->has("box_stats")
-            ->has("routes")
-            ->has("tabs");
+            ->has('alert')
+            ->has('notes')
+            ->has('timelines')
+            ->has('box_stats')
+            ->has('routes')
+            ->has('tabs');
     });
 })->todo();
 
 test('UI get section route dispatching show', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.warehouses.show.dispatching.delivery_notes.show', [
         'organisation' => $this->organisation->slug,
-        'warehouse' =>  $this->warehouse->slug,
-        'deliveryNote' => $this->deliveryNote->slug
+        'warehouse' => $this->warehouse->slug,
+        'deliveryNote' => $this->deliveryNote->slug,
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)

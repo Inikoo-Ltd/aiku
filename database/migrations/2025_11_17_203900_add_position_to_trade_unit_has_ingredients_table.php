@@ -7,21 +7,21 @@
  */
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         DB::transaction(function () {
             $table = 'trade_unit_has_ingredients';
 
-            if (!Schema::hasColumn($table, 'position')) {
+            if (! Schema::hasColumn($table, 'position')) {
                 Schema::table($table, function (Blueprint $table) {
                     $table->smallInteger('position')->nullable();
                 });
-
 
                 DB::statement("ALTER TABLE $table ADD CONSTRAINT {$table}_position_nonneg CHECK (position IS NULL OR position >= 0)");
             }

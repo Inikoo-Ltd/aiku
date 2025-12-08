@@ -25,7 +25,7 @@ class UpdateRetinaCustomerDeliveryAddress extends RetinaAction
     public function rules(): array
     {
         return [
-            'delivery_address_id'         => ['sometimes', 'nullable', 'exists:addresses,id'],
+            'delivery_address_id' => ['sometimes', 'nullable', 'exists:addresses,id'],
         ];
     }
 

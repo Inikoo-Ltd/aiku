@@ -25,7 +25,6 @@ class BindGroupInstance
             setPermissionsTeamId($group->id);
         }
 
-
         return $next($request);
     }
 }

@@ -33,5 +33,4 @@ class GroupHydrateOrgPostRooms implements ShouldBeUnique
 
         $group->commsStats()->update($stats);
     }
-
 }

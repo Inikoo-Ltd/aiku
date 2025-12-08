@@ -17,12 +17,14 @@ use Illuminate\Database\Schema\Blueprint;
 trait HasPaymentStats
 {
     use HasAmounts;
+
     public function paymentServiceProviderStats(Blueprint $table): Blueprint
     {
         $table->unsignedSmallInteger('number_org_payment_service_providers')->default(0);
         foreach (PaymentServiceProviderTypeEnum::cases() as $case) {
             $table->unsignedInteger("number_org_payment_service_providers_type_{$case->snake()}")->default(0);
         }
+
         return $table;
     }
 
@@ -32,6 +34,7 @@ trait HasPaymentStats
         foreach (PaymentAccountTypeEnum::cases() as $case) {
             $table->unsignedInteger("number_payment_accounts_type_{$case->snake()}")->default(0);
         }
+
         return $table;
     }
 

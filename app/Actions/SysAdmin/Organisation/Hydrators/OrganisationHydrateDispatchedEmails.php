@@ -18,7 +18,6 @@ class OrganisationHydrateDispatchedEmails implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public string $jobQueue = 'low-priority';
 
     public function getJobUniqueId(Organisation $organisation): string
@@ -34,6 +33,4 @@ class OrganisationHydrateDispatchedEmails implements ShouldBeUnique
 
         $organisation->commsStats()->update($stats);
     }
-
-
 }

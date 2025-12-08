@@ -24,7 +24,7 @@ trait WithCheckCanContactByEmail
 
     protected function canContactCustomerByEmail(Customer $customer): bool
     {
-        if (!filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
             return false;
         }
 
@@ -34,14 +34,14 @@ trait WithCheckCanContactByEmail
     protected function canContactProspectByEmail(Prospect $prospect): bool
     {
 
-        if (!$prospect->email) {
+        if (! $prospect->email) {
             return false;
         }
 
         if (in_array($prospect->fail_status, [
             ProspectFailStatusEnum::HARD_BOUNCED,
             ProspectFailStatusEnum::INVALID,
-            ProspectFailStatusEnum::UNSUBSCRIBED
+            ProspectFailStatusEnum::UNSUBSCRIBED,
         ])) {
             return false;
         }
@@ -50,11 +50,10 @@ trait WithCheckCanContactByEmail
             return false;
         }
 
-        if (!filter_var($prospect->email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($prospect->email, FILTER_VALIDATE_EMAIL)) {
             return false;
         }
 
         return true;
     }
-
 }

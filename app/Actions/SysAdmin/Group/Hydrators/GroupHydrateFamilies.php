@@ -49,6 +49,4 @@ class GroupHydrateFamilies implements ShouldBeUnique
 
         $group->catalogueStats()->update($stats);
     }
-
-
 }

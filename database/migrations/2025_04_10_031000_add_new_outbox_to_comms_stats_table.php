@@ -11,14 +11,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         $tables = [
             'group_comms_stats',
             'organisation_comms_stats',
             'shop_comms_stats',
-            'post_room_stats'
+            'post_room_stats',
         ];
 
         $columns = [
@@ -32,12 +33,12 @@ return new class () extends Migration {
         foreach ($tables as $table) {
             $columnsToAdd = [];
             foreach ($columns as $column) {
-                if (!Schema::hasColumn($table, $column)) {
+                if (! Schema::hasColumn($table, $column)) {
                     $columnsToAdd[] = $column;
                 }
             }
 
-            if (!empty($columnsToAdd)) {
+            if (! empty($columnsToAdd)) {
                 Schema::table($table, function (Blueprint $table) use ($columnsToAdd) {
                     foreach ($columnsToAdd as $column) {
                         $table->unsignedInteger($column)->default(0);
@@ -53,7 +54,7 @@ return new class () extends Migration {
             'group_comms_stats',
             'organisation_comms_stats',
             'shop_comms_stats',
-            'post_room_stats'
+            'post_room_stats',
         ];
 
         $columns = [
@@ -69,7 +70,7 @@ return new class () extends Migration {
                 return Schema::hasColumn($table, $column);
             });
 
-            if (!empty($existingColumns)) {
+            if (! empty($existingColumns)) {
                 Schema::table($table, function (Blueprint $table) use ($existingColumns) {
                     $table->dropColumn($existingColumns);
                 });

@@ -16,16 +16,12 @@ class OrganisationHydrateCrmTags
 {
     use AsAction;
 
-
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_tags' => DB::table('tags')->where('type', 'crm')->count()
+            'number_tags' => DB::table('tags')->where('type', 'crm')->count(),
         ];
-
 
         $organisation->crmStats()->update($stats);
     }
-
-
 }

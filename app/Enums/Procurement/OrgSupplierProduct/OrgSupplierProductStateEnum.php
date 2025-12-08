@@ -14,7 +14,7 @@ enum OrgSupplierProductStateEnum: string
 {
     use EnumHelperTrait;
 
-    case ACTIVE        = 'active';
+    case ACTIVE = 'active';
     case DISCONTINUING = 'discontinuing';
-    case DISCONTINUED  = 'discontinued';
+    case DISCONTINUED = 'discontinued';
 }

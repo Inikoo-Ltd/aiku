@@ -12,7 +12,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property string $slug
- *
  */
 class WebsitesSlugResource extends JsonResource
 {

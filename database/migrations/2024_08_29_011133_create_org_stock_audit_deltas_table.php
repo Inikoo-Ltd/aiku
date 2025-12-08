@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -27,11 +28,9 @@ return new class () extends Migration {
             $table->unsignedInteger('location_id')->index();
             $table->foreign('location_id')->references('id')->on('locations');
 
-
             $table->dateTimeTz('audited_at')->nullable();
             $table->unsignedSmallInteger('user_id')->nullable()->comment('User who audited the stock');
             $table->foreign('user_id')->references('id')->on('users');
-
 
             $table->decimal('original_quantity')->nullable();
             $table->decimal('audited_quantity');
@@ -44,7 +43,6 @@ return new class () extends Migration {
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

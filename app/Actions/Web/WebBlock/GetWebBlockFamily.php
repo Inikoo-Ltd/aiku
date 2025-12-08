@@ -18,11 +18,11 @@ class GetWebBlockFamily
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $permissions =  ['edit','hidden'];
+        $permissions = ['edit', 'hidden'];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue.family', WebBlockFamilyResource::make($webpage->model)->toArray(request()));
+
         return $webBlock;
     }
-
 }

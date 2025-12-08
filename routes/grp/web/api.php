@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-
 Route::get('/ping', function () {
     return 'pong';
 })->name('ping');

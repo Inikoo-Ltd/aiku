@@ -28,13 +28,13 @@ class StoreModelHasContent extends OrgAction
     {
         $imageData = [];
         if (Arr::exists($modelData, 'image')) {
-            $imageData = ['image' => Arr::pull($modelData, 'image')]; //TODO: image handling
+            $imageData = ['image' => Arr::pull($modelData, 'image')]; // TODO: image handling
         }
 
         $position = Arr::get($modelData, 'position', $parent->contents()->max('position') + 1);
         $contents = $parent->contents()->orderBy('position')->get();
 
-        if (!$contents->isEmpty() && $position) {
+        if (! $contents->isEmpty() && $position) {
             $positions = [];
             foreach ($contents as $content) {
                 if ($content->position >= $position) {
@@ -60,23 +60,25 @@ class StoreModelHasContent extends OrgAction
     public function rules(): array
     {
         return [
-            'type'         => ['required', Rule::enum(ModelHasContentTypeEnum::class)],
-            'title'        => ['required', 'string'],
-            'text'         => ['required', 'string'],
-            'image'        => ['nullable', 'image', 'mimes:jpg,png,jpeg', 'max:10240'],
-            'position'     => ['sometimes']
+            'type' => ['required', Rule::enum(ModelHasContentTypeEnum::class)],
+            'title' => ['required', 'string'],
+            'text' => ['required', 'string'],
+            'image' => ['nullable', 'image', 'mimes:jpg,png,jpeg', 'max:10240'],
+            'position' => ['sometimes'],
         ];
     }
 
     public function inProduct(Product $product, ActionRequest $request): ModelHasContent
     {
         $this->initialisationFromShop($product->shop, $request);
+
         return $this->handle($product, $this->validatedData);
     }
 
     public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): ModelHasContent
     {
         $this->initialisationFromShop($productCategory->shop, $request);
+
         return $this->handle($productCategory, $this->validatedData);
     }
 

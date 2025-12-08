@@ -58,33 +58,35 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read UniversalSearch|null $universalSearch
  * @property-read \App\Models\HumanResources\Workplace $workplace
+ *
  * @method static Builder<static>|ClockingMachine newModelQuery()
  * @method static Builder<static>|ClockingMachine newQuery()
  * @method static Builder<static>|ClockingMachine onlyTrashed()
  * @method static Builder<static>|ClockingMachine query()
  * @method static Builder<static>|ClockingMachine withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|ClockingMachine withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class ClockingMachine extends Authenticatable implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
-    use HasUniversalSearch;
+    use HasApiTokens;
     use HasFactory;
     use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
     use InOrganisation;
-    use HasApiTokens;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'                        => 'array',
-        'status'                      => ClockingMachineStatusEnum::class,
-        'fetched_at'                  => 'datetime',
-        'last_fetched_at'             => 'datetime',
+        'data' => 'array',
+        'status' => ClockingMachineStatusEnum::class,
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'        => '{}',
+        'data' => '{}',
     ];
 
     protected $guarded = [];
@@ -92,7 +94,7 @@ class ClockingMachine extends Authenticatable implements Auditable
     public function generateTags(): array
     {
         return [
-            'hr'
+            'hr',
         ];
     }
 
@@ -100,7 +102,7 @@ class ClockingMachine extends Authenticatable implements Auditable
         'name',
         'type',
         'status',
-        'device_name'
+        'device_name',
     ];
 
     public function getRouteKeyName(): string
@@ -136,5 +138,4 @@ class ClockingMachine extends Authenticatable implements Auditable
     {
         return $this->hasOne(ClockingMachineStats::class);
     }
-
 }

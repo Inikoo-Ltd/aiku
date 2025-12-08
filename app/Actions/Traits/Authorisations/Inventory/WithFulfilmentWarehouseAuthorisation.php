@@ -20,16 +20,16 @@ trait WithFulfilmentWarehouseAuthorisation
 
         $this->canEdit = $request->user()->authTo([
             "fulfilment.{$this->warehouse->id}.edit",
-            "supervisor-incoming.".$this->warehouse->id,
-            "supervisor-fulfilment.".$this->warehouse->id
+            'supervisor-incoming.'.$this->warehouse->id,
+            'supervisor-fulfilment.'.$this->warehouse->id,
         ]);
 
         $this->canDelete = $this->canEdit;
 
         return $request->user()->authTo([
             "fulfilment.{$this->warehouse->id}.view",
-            "supervisor-incoming.".$this->warehouse->id,
-            "supervisor-fulfilment.".$this->warehouse->id,
+            'supervisor-incoming.'.$this->warehouse->id,
+            'supervisor-fulfilment.'.$this->warehouse->id,
             'warehouses-view.'.$this->organisation->id,
         ]);
     }

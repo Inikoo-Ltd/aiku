@@ -18,8 +18,8 @@ use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Catalogue\Collection;
@@ -27,8 +27,8 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
-use App\Models\Web\Website;
 use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use App\Rules\AlphaDashSlash;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -40,10 +40,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreWebpage extends OrgAction
 {
-    use WithWebpageHydrators;
     use AsAction;
     use WithNoStrictRules;
     use WithStoreWebpage;
+    use WithWebpageHydrators;
 
     private Website $website;
 
@@ -54,17 +54,17 @@ class StoreWebpage extends OrgAction
      */
     public function handle(Website|Webpage $parent, array $modelData): Webpage
     {
-        if (!Arr::exists($modelData, 'type')) {
+        if (! Arr::exists($modelData, 'type')) {
             $modelData['type'] = WebpageTypeEnum::CONTENT;
         }
 
-        if (!Arr::exists($modelData, 'sub_type')) {
+        if (! Arr::exists($modelData, 'sub_type')) {
             $modelData['sub_type'] = WebpageSubTypeEnum::CONTENT;
         }
 
         if (Arr::exists($modelData, 'seo_structure_type')) {
             $modelData['data'] = [
-                'seo_structure_type' => Arr::pull($modelData, 'seo_structure_type')
+                'seo_structure_type' => Arr::pull($modelData, 'seo_structure_type'),
             ];
         }
 
@@ -77,7 +77,6 @@ class StoreWebpage extends OrgAction
         } else {
             data_set($modelData, 'level', 1);
         }
-
 
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
@@ -94,10 +93,10 @@ class StoreWebpage extends OrgAction
             $snapshot = StoreWebpageSnapshot::run(
                 $webpage,
                 [
-                    'layout'   => [
-                        'web_blocks' => []
+                    'layout' => [
+                        'web_blocks' => [],
                     ],
-                    'checksum' => hash('sha256', '')
+                    'checksum' => hash('sha256', ''),
                 ],
             );
 
@@ -111,20 +110,19 @@ class StoreWebpage extends OrgAction
             if ($model instanceof Product) {
                 UpdateProduct::make()->action($model, [
                     'webpage_id' => $webpage->id,
-                    'url'        => $webpage->url,
+                    'url' => $webpage->url,
                 ]);
             } elseif ($model instanceof ProductCategory) {
                 UpdateProductCategory::make()->action($model, [
                     'webpage_id' => $webpage->id,
-                    'url'        => $webpage->url,
+                    'url' => $webpage->url,
                 ]);
             } elseif ($model instanceof Collection) {
                 UpdateCollection::make()->action($model, [
                     'webpage_id' => $webpage->id,
-                    'url'        => $webpage->url,
+                    'url' => $webpage->url,
                 ]);
             }
-
 
             if ($this->strict) {
                 if ($model instanceof Product) {
@@ -156,7 +154,6 @@ class StoreWebpage extends OrgAction
                 }
             }
 
-
             UpdateWebpageCanonicalUrl::run($webpage);
 
             return $webpage;
@@ -173,22 +170,22 @@ class StoreWebpage extends OrgAction
         return match ($webpage->website->type) {
             WebsiteTypeEnum::FULFILMENT => Inertia::location(route('grp.org.fulfilments.show.web.webpages.show', [
                 'organisation' => $this->fulfilment->organisation->slug,
-                'fulfilment'   => $this->fulfilment->slug,
-                'website'      => $webpage->website->slug,
-                'webpage'      => $webpage->slug
+                'fulfilment' => $this->fulfilment->slug,
+                'website' => $webpage->website->slug,
+                'webpage' => $webpage->slug,
             ])),
             default => match ($webpage->type) {
                 WebpageTypeEnum::BLOG => Inertia::location(route('grp.org.shops.show.web.blogs.show', [
                     'organisation' => $this->shop->organisation->slug,
-                    'shop'         => $this->shop->slug,
-                    'website'      => $webpage->website->slug,
-                    'webpage'      => $webpage->slug
+                    'shop' => $this->shop->slug,
+                    'website' => $webpage->website->slug,
+                    'webpage' => $webpage->slug,
                 ])),
                 default => Inertia::location(route('grp.org.shops.show.web.webpages.show', [
                     'organisation' => $this->shop->organisation->slug,
-                    'shop'         => $this->shop->slug,
-                    'website'      => $webpage->website->slug,
-                    'webpage'      => $webpage->slug
+                    'shop' => $this->shop->slug,
+                    'website' => $webpage->website->slug,
+                    'webpage' => $webpage->slug,
                 ]))
             }
         };
@@ -210,19 +207,19 @@ class StoreWebpage extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'url'                => [
+            'url' => [
                 'sometimes',
                 'required',
                 'ascii',
                 'lowercase',
                 'max:255',
-                new AlphaDashSlash(),
+                new AlphaDashSlash,
                 new IUnique(
                     table: 'webpages',
                     extraConditions: [
                         [
                             'column' => 'website_id',
-                            'value'  => $this->website->id
+                            'value' => $this->website->id,
                         ],
 
                         ['column' => 'deleted_at', 'operator' => 'null'],
@@ -230,7 +227,7 @@ class StoreWebpage extends OrgAction
                     ]
                 ),
             ],
-            'code'               => [
+            'code' => [
                 'required',
                 'ascii',
                 'max:64',
@@ -243,17 +240,16 @@ class StoreWebpage extends OrgAction
                     ]
                 ),
             ],
-            'sub_type'           => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
-            'type'               => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
-            'state'              => ['sometimes', Rule::enum(WebpageStateEnum::class)],
-            'is_fixed'           => ['sometimes', 'boolean'],
-            'ready_at'           => ['sometimes', 'date'],
-            'live_at'            => ['sometimes', 'date'],
-            'model_type'         => ['sometimes', 'string'],
-            'model_id'           => ['sometimes', 'integer'],
-            'title'              => ['required', 'string'],
+            'sub_type' => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
+            'type' => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
+            'state' => ['sometimes', Rule::enum(WebpageStateEnum::class)],
+            'is_fixed' => ['sometimes', 'boolean'],
+            'ready_at' => ['sometimes', 'date'],
+            'live_at' => ['sometimes', 'date'],
+            'model_type' => ['sometimes', 'string'],
+            'model_id' => ['sometimes', 'integer'],
+            'title' => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
-
 
         ];
 
@@ -263,21 +259,21 @@ class StoreWebpage extends OrgAction
                 'ascii',
                 'lowercase',
                 'max:255',
-                new AlphaDashSlash(),
+                new AlphaDashSlash,
                 new IUnique(
                     table: 'webpages',
                     extraConditions: [
                         [
                             'column' => 'website_id',
-                            'value'  => $this->website->id
+                            'value' => $this->website->id,
                         ],
                     ]
                 ),
             ];
         }
 
-        if (!$this->strict) {
-            $rules                   = $this->noStrictStoreRules($rules);
+        if (! $this->strict) {
+            $rules = $this->noStrictStoreRules($rules);
             $rules['migration_data'] = ['sometimes', 'array'];
         }
 
@@ -289,7 +285,7 @@ class StoreWebpage extends OrgAction
      */
     public function inFulfilment(Fulfilment $fulfilment, Website $website, ActionRequest $request): Webpage
     {
-        $this->parent  = $website;
+        $this->parent = $website;
         $this->website = $website;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
@@ -301,7 +297,7 @@ class StoreWebpage extends OrgAction
      */
     public function inShop(Shop $shop, Website $website, ActionRequest $request): Webpage
     {
-        $this->parent  = $website;
+        $this->parent = $website;
         $this->website = $website;
         $this->initialisationFromShop($shop, $request);
 
@@ -313,7 +309,7 @@ class StoreWebpage extends OrgAction
      */
     public function inBlog(Shop $shop, Website $website, ActionRequest $request): Webpage
     {
-        $this->parent  = $website;
+        $this->parent = $website;
         $this->website = $website;
         $this->set('type', WebpageTypeEnum::BLOG);
         $this->set('sub_type', WebpageSubTypeEnum::BLOG);
@@ -322,25 +318,22 @@ class StoreWebpage extends OrgAction
         return $this->handle($website, $this->validatedData);
     }
 
-
     /**
      * @throws \Throwable
      */
     public function action(Website|Webpage $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Webpage
     {
-        if (!$audit) {
+        if (! $audit) {
             Webpage::disableAuditing();
         }
 
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->parent         = $parent;
-        $this->website        = $parent instanceof Website ? $parent : $parent->website;
+        $this->parent = $parent;
+        $this->website = $parent instanceof Website ? $parent : $parent->website;
         $this->initialisationFromShop($this->website->shop, $modelData);
 
         return $this->handle($parent, $this->validatedData);
     }
-
-
 }

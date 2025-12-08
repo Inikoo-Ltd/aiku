@@ -26,12 +26,10 @@ class OrganisationHydrateCustomerClients implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_customer_clients'                            => $organisation->clients()->count(),
-            'number_current_customer_clients'                    => $organisation->clients()->where('status', true)->count()
+            'number_customer_clients' => $organisation->clients()->count(),
+            'number_current_customer_clients' => $organisation->clients()->where('status', true)->count(),
         ];
 
         $organisation->dropshippingStats()->update($stats);
     }
-
-
 }

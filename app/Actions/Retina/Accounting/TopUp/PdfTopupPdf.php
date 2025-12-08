@@ -23,7 +23,6 @@ class PdfTopupPdf extends RetinaAction
     use AsAction;
     use WithAttributes;
 
-
     public function handle(Customer $customer, array $options): Response
     {
         $locale = $customer->shop->language->code;
@@ -31,22 +30,21 @@ class PdfTopupPdf extends RetinaAction
 
         try {
             $config = [
-                'title'                  => 'Topup All History - ' . $customer->reference,
-                'margin_left'            => 8,
-                'margin_right'           => 8,
-                'margin_top'             => 2,
-                'margin_bottom'          => 2,
-                'auto_page_break'        => true,
+                'title' => 'Topup All History - '.$customer->reference,
+                'margin_left' => 8,
+                'margin_right' => 8,
+                'margin_top' => 2,
+                'margin_bottom' => 2,
+                'auto_page_break' => true,
                 'auto_page_break_margin' => 10,
             ];
 
-
             $filename = $config['title'].'-'.now()->format('Y-m-d');
-            $pdf      = PDF::loadView('invoices.templates.pdf.topup-all', [
-                'shop'                 => $customer->shop,
-                'topups'                => $customer->topUps,
-                'reference'                => $config['title'],
-                'customer' => $customer
+            $pdf = PDF::loadView('invoices.templates.pdf.topup-all', [
+                'shop' => $customer->shop,
+                'topups' => $customer->topUps,
+                'reference' => $config['title'],
+                'customer' => $customer,
             ], [], $config);
 
             return response($pdf->stream($filename.'.pdf'), 200)

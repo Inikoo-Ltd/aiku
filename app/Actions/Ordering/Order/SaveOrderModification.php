@@ -25,8 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SaveOrderModification extends OrgAction
 {
-    use WithActionUpdate;
     use HasOrderHydrators;
+    use WithActionUpdate;
     use WithOrderingEditAuthorisation;
 
     private Order $order;
@@ -39,11 +39,11 @@ class SaveOrderModification extends OrgAction
                 foreach ($transactions as $key => $data) {
                     $transaction = Transaction::find($key);
                     UpdateTransaction::make()->action($transaction, [
-                        'quantity_ordered' => Arr::get($data, 'newQty')
+                        'quantity_ordered' => Arr::get($data, 'newQty'),
                     ]);
 
                     if ($order->state == OrderStateEnum::IN_WAREHOUSE && $order->deliveryNotes()->exists()) {
-                        //TODO:  do smthn for the dn items
+                        // TODO:  do smthn for the dn items
                     }
                 }
             }
@@ -53,18 +53,18 @@ class SaveOrderModification extends OrgAction
                 foreach ($products as $key => $data) {
                     $product = Product::find($key);
                     $transaction = StoreTransaction::make()->action($order, $product->currentHistoricProduct, [
-                        'quantity_ordered' => Arr::get($data, 'quantity_ordered')
+                        'quantity_ordered' => Arr::get($data, 'quantity_ordered'),
                     ]);
 
                     if ($order->state == OrderStateEnum::IN_WAREHOUSE && $order->deliveryNotes()->exists()) {
                         $deliveryNote = $order->deliveryNotes->first();
                         foreach ($product->orgStocks as $orgStock) {
-                            $quantity             = $orgStock->pivot->quantity * $transaction->quantity_ordered;
+                            $quantity = $orgStock->pivot->quantity * $transaction->quantity_ordered;
                             $deliveryNoteItemData = [
-                                'org_stock_id'      => $orgStock->id,
-                                'transaction_id'    => $transaction->id,
+                                'org_stock_id' => $orgStock->id,
+                                'transaction_id' => $transaction->id,
                                 'quantity_required' => $quantity,
-                                'original_quantity_required' => $quantity
+                                'original_quantity_required' => $quantity,
                             ];
                             StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
                         }
@@ -77,14 +77,14 @@ class SaveOrderModification extends OrgAction
             $modificationData = [
                 'date_time' => Carbon::now()->toDateTimeString(),
                 'modified_by' => request()->user()->username,
-                'data' => $modelData
+                'data' => $modelData,
             ];
 
             $modifications = $order->post_submit_modification_data ?? [];
             array_push($modifications, $modificationData);
 
             $this->update($order, [
-                'post_submit_modification_data' => $modifications
+                'post_submit_modification_data' => $modifications,
             ]);
 
             return $order;
@@ -95,7 +95,7 @@ class SaveOrderModification extends OrgAction
     {
         return [
             'transactions' => ['sometimes', 'array'],
-            'products' => ['sometimes', 'array']
+            'products' => ['sometimes', 'array'],
         ];
     }
 

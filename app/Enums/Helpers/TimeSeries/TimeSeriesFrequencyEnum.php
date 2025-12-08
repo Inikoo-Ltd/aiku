@@ -19,5 +19,4 @@ enum TimeSeriesFrequencyEnum: string
     case QUARTERLY = 'quarterly';
     case YEARLY = 'yearly';
 
-
 }

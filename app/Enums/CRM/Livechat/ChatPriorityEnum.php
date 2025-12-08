@@ -8,17 +8,17 @@ enum ChatPriorityEnum: string
 {
     use EnumHelperTrait;
 
-    case LOW    = 'low';
+    case LOW = 'low';
     case NORMAL = 'normal';
-    case HIGH   = 'high';
+    case HIGH = 'high';
     case URGENT = 'urgent';
 
     public static function labels(): array
     {
         return [
-            'low'    => __('Low'),
+            'low' => __('Low'),
             'normal' => __('Normal'),
-            'high'   => __('High'),
+            'high' => __('High'),
             'urgent' => __('Urgent'),
         ];
     }
@@ -28,27 +28,27 @@ enum ChatPriorityEnum: string
         return [
             'low' => [
                 'tooltip' => __('Low Priority'),
-                'icon'    => 'fas fa-arrow-down',
-                'class'   => 'text-gray-400',
-                'color'   => 'gray'
+                'icon' => 'fas fa-arrow-down',
+                'class' => 'text-gray-400',
+                'color' => 'gray',
             ],
             'normal' => [
                 'tooltip' => __('Normal Priority'),
-                'icon'    => 'fas fa-minus',
-                'class'   => 'text-blue-400',
-                'color'   => 'blue'
+                'icon' => 'fas fa-minus',
+                'class' => 'text-blue-400',
+                'color' => 'blue',
             ],
             'high' => [
                 'tooltip' => __('High Priority'),
-                'icon'    => 'fas fa-arrow-up',
-                'class'   => 'text-orange-500',
-                'color'   => 'orange'
+                'icon' => 'fas fa-arrow-up',
+                'class' => 'text-orange-500',
+                'color' => 'orange',
             ],
             'urgent' => [
                 'tooltip' => __('Urgent Priority'),
-                'icon'    => 'fas fa-exclamation-triangle',
-                'class'   => 'text-red-500',
-                'color'   => 'red'
+                'icon' => 'fas fa-exclamation-triangle',
+                'class' => 'text-red-500',
+                'color' => 'red',
             ],
         ];
     }
@@ -57,9 +57,9 @@ enum ChatPriorityEnum: string
     {
         // TODO: Implement count logic based on your stats
         return [
-            'low'    => 0,
+            'low' => 0,
             'normal' => 0,
-            'high'   => 0,
+            'high' => 0,
             'urgent' => 0,
         ];
     }

@@ -31,30 +31,30 @@ class WebsitesResource extends JsonResource
     {
         $fulfilment_slug = null;
         if ($this->shop_type === 'fulfilment') {
-            $shop            = Shop::find($this->shop_id);
+            $shop = Shop::find($this->shop_id);
             $fulfilment_slug = $shop->fulfilment->slug;
         }
 
         return [
-            'slug'              => $this->slug,
-            'code'              => $this->code,
-            'name'              => $this->name,
-            'domain'            => $this->domain,
-            'url'               => app()->environment('local') ? 'http://'.$this->domain.'/' : 'https://'.$this->domain.'/',
-            'state'             => $this->state,
-            'state_label'       => $this->state->labels()[$this->state->value],
-            'state_icon'        => $this->state->stateIcon()[$this->state->value],
-            'status'            => $this->status,
-            'shop_type'         => $this->shop_type,
-            'shop_slug'         => $this->shop_slug,
-            'shop_name'                 => $this->shop_name,
-            'organisation_name'         => $this->organisation_name,
-            'organisation_slug'         => $this->organisation_slug,
-            'routeUniqueVisitor'    => [
-                'name' => "grp.json.website.unique-visitors",
-                'parameters' => [$this->resource->slug]
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'domain' => $this->domain,
+            'url' => app()->environment('local') ? 'http://'.$this->domain.'/' : 'https://'.$this->domain.'/',
+            'state' => $this->state,
+            'state_label' => $this->state->labels()[$this->state->value],
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
+            'status' => $this->status,
+            'shop_type' => $this->shop_type,
+            'shop_slug' => $this->shop_slug,
+            'shop_name' => $this->shop_name,
+            'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
+            'routeUniqueVisitor' => [
+                'name' => 'grp.json.website.unique-visitors',
+                'parameters' => [$this->resource->slug],
             ],
-            'fulfilment_slug'   => $fulfilment_slug
+            'fulfilment_slug' => $fulfilment_slug,
 
         ];
     }

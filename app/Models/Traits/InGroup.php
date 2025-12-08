@@ -17,5 +17,4 @@ trait InGroup
     {
         return $this->belongsTo(Group::class);
     }
-
 }

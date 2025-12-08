@@ -9,16 +9,16 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithVarnishBan;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Traits\WithVarnishBan;
 
 class BreakWebpageVarnishCache extends OrgAction
 {
     use WithVarnishBan;
 
-    public function handle(Webpage $webpage, Command $command = null): array
+    public function handle(Webpage $webpage, ?Command $command = null): array
     {
 
         return $this->sendVarnishBanHttp(
@@ -28,7 +28,6 @@ class BreakWebpageVarnishCache extends OrgAction
             $command
         );
 
-
     }
 
     public function asController(Webpage $webpage, ActionRequest $request): array
@@ -37,7 +36,6 @@ class BreakWebpageVarnishCache extends OrgAction
 
         return $this->handle($webpage);
     }
-
 
     public function getCommandSignature(): string
     {
@@ -51,5 +49,4 @@ class BreakWebpageVarnishCache extends OrgAction
 
         return 0;
     }
-
 }

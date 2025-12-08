@@ -31,12 +31,12 @@ class UpdateRetinaCustomerClient extends RetinaAction
     public function rules(): array
     {
         return [
-        'contact_name'   => ['sometimes', 'nullable', 'string', 'max:255'],
-        'company_name'   => ['sometimes', 'nullable', 'string', 'max:255'],
-        'email'          => ['sometimes', 'nullable', 'email'],
-        'phone'          => ['sometimes', 'nullable', new Phone()],
-        'address'        => ['sometimes', new ValidAddress()],
-        'status'         => ['sometimes', 'boolean'],
+            'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email' => ['sometimes', 'nullable', 'email'],
+            'phone' => ['sometimes', 'nullable', new Phone],
+            'address' => ['sometimes', new ValidAddress],
+            'status' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -46,6 +46,4 @@ class UpdateRetinaCustomerClient extends RetinaAction
 
         $this->handle($customerClient, $this->validatedData);
     }
-
-
 }

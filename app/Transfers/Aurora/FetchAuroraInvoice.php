@@ -34,25 +34,21 @@ class FetchAuroraInvoice extends FetchAurora
             $order = $this->parseOrder($this->organisation->id.':'.$this->auroraModelData->{'Invoice Order Key'});
         }
 
-
         $data = [];
 
-
-        //enum('Yes','No','Unknown','API_Down')
+        // enum('Yes','No','Unknown','API_Down')
         $taxNumberStaus = match ($this->auroraModelData->{'Invoice Tax Number Valid'}) {
             'Yes' => 'valid',
             'Invalid' => 'invalid',
             default => 'unknown',
         };
 
-
-        $customerName           = $this->auroraModelData->{'Invoice Customer Name'};
-        $customerContactName    = $this->auroraModelData->{'Invoice Customer Contact Name'};
-        $taxNumber              = $this->auroraModelData->{'Invoice Tax Number'};
-        $taxNumberStatus        = $taxNumberStaus;
-        $taxNumberValid         = $taxNumberStaus == 'valid';
+        $customerName = $this->auroraModelData->{'Invoice Customer Name'};
+        $customerContactName = $this->auroraModelData->{'Invoice Customer Contact Name'};
+        $taxNumber = $this->auroraModelData->{'Invoice Tax Number'};
+        $taxNumberStatus = $taxNumberStaus;
+        $taxNumberValid = $taxNumberStaus == 'valid';
         $identityDocumentNumber = $this->auroraModelData->{'Invoice Registration Number'};
-
 
         $billingAddressData = $this->parseAddress(prefix: 'Invoice', auAddressData: $this->auroraModelData);
 
@@ -60,17 +56,15 @@ class FetchAuroraInvoice extends FetchAurora
             $billingAddressData['country_id'] = $shop->country_id;
         }
 
-
         $date = $this->parseDatetime($this->auroraModelData->{'Invoice Date'});
         $date = new Carbon($date);
 
         $taxLiabilityAt = $this->parseDatetime($this->auroraModelData->{'Invoice Tax Liability Date'});
-        if (!$taxLiabilityAt) {
+        if (! $taxLiabilityAt) {
             $taxLiabilityAt = $this->auroraModelData->{'Invoice Date'};
         }
 
         $taxCategory = $this->parseTaxCategory($this->auroraModelData->{'Invoice Tax Category Key'});
-
 
         $salesChannel = null;
 
@@ -83,7 +77,6 @@ class FetchAuroraInvoice extends FetchAurora
         if ($salesChannel->type == SalesChannelTypeEnum::SHOWROOM && $shop->type == ShopTypeEnum::DROPSHIPPING) {
             $salesChannel = $shop->group->salesChannels()->where('type', SalesChannelTypeEnum::OTHER)->first();
         }
-
 
         $metadata = $this->auroraModelData->{'Invoice Metadata'};
         if ($metadata) {
@@ -101,12 +94,10 @@ class FetchAuroraInvoice extends FetchAurora
 
         $isVip = $this->auroraModelData->{'Invoice Customer Level Type'} == 'VIP';
 
-
         $auroraCustomerData = DB::connection('aurora')->table('Customer Dimension')->where('Customer Key', $this->auroraModelData->{'Invoice Customer Key'})->first();
         if ($auroraCustomerData && $auroraCustomerData->{'Customer Level Type'} == 'VIP') {
             $isVip = true;
         }
-
 
         $AsOrganisation = null;
         if ($this->auroraModelData->{'Invoice Customer Level Type'} == 'Partner') {
@@ -125,12 +116,11 @@ class FetchAuroraInvoice extends FetchAurora
             if (in_array($this->auroraModelData->{'Invoice Customer Key'}, [
                 10362,
                 17032,
-                392469
+                392469,
             ])) {
                 $isVip = true;
             }
         }
-
 
         $asEmployeeID = null;
 
@@ -150,49 +140,45 @@ class FetchAuroraInvoice extends FetchAurora
             }
         }
 
-
         $this->parsedData['invoice'] = [
-            'reference'        => $this->auroraModelData->{'Invoice Public ID'},
-            'type'             => $type,
-            'created_at'       => $this->auroraModelData->{'Invoice Date'},
-            'date'             => $this->auroraModelData->{'Invoice Date'},
+            'reference' => $this->auroraModelData->{'Invoice Public ID'},
+            'type' => $type,
+            'created_at' => $this->auroraModelData->{'Invoice Date'},
+            'date' => $this->auroraModelData->{'Invoice Date'},
             'tax_liability_at' => $taxLiabilityAt,
 
             'org_exchange' => GetHistoricCurrencyExchange::run($this->parsedData['parent']->shop->currency, $this->parsedData['parent']->organisation->currency, $date),
             'grp_exchange' => GetHistoricCurrencyExchange::run($this->parsedData['parent']->shop->currency, $this->parsedData['parent']->group->currency, $date),
 
-
-            'gross_amount'     => $this->auroraModelData->{'Invoice Items Gross Amount'},
-            'goods_amount'     => $this->auroraModelData->{'Invoice Items Net Amount'},
-            'shipping_amount'  => $this->auroraModelData->{'Invoice Shipping Net Amount'},
-            'charges_amount'   => $this->auroraModelData->{'Invoice Charges Net Amount'},
+            'gross_amount' => $this->auroraModelData->{'Invoice Items Gross Amount'},
+            'goods_amount' => $this->auroraModelData->{'Invoice Items Net Amount'},
+            'shipping_amount' => $this->auroraModelData->{'Invoice Shipping Net Amount'},
+            'charges_amount' => $this->auroraModelData->{'Invoice Charges Net Amount'},
             'insurance_amount' => $this->auroraModelData->{'Invoice Insurance Net Amount'},
 
-            'net_amount'               => $this->auroraModelData->{'Invoice Total Net Amount'},
-            'tax_amount'               => $this->auroraModelData->{'Invoice Total Tax Amount'},
-            'total_amount'             => $this->auroraModelData->{'Invoice Total Amount'},
-            'source_id'                => $this->organisation->id.':'.$this->auroraModelData->{'Invoice Key'},
-            'data'                     => $data,
-            'billing_address'          => new Address($billingAddressData),
-            'currency_id'              => $this->parseCurrencyID($this->auroraModelData->{'Invoice Currency'}),
-            'tax_category_id'          => $taxCategory->id,
-            'fetched_at'               => now(),
-            'last_fetched_at'          => now(),
-            'footer'                   => $footer,
-            'is_vip'                   => $isVip,
-            'as_organisation_id'       => $AsOrganisation?->id,
-            'as_employee_id'           => $asEmployeeID,
-            'external_invoicer_id'     => $externalInvoicer,
-            'original_invoice_id'      => $originalInvoiceId,
-            'customer_name'            => $customerName,
-            'customer_contact_name'    => $customerContactName,
-            'tax_number'               => $taxNumber,
-            'tax_number_status'        => $taxNumberStatus,
-            'tax_number_valid'         => $taxNumberValid,
-            'identity_document_number' => $identityDocumentNumber
+            'net_amount' => $this->auroraModelData->{'Invoice Total Net Amount'},
+            'tax_amount' => $this->auroraModelData->{'Invoice Total Tax Amount'},
+            'total_amount' => $this->auroraModelData->{'Invoice Total Amount'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Invoice Key'},
+            'data' => $data,
+            'billing_address' => new Address($billingAddressData),
+            'currency_id' => $this->parseCurrencyID($this->auroraModelData->{'Invoice Currency'}),
+            'tax_category_id' => $taxCategory->id,
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
+            'footer' => $footer,
+            'is_vip' => $isVip,
+            'as_organisation_id' => $AsOrganisation?->id,
+            'as_employee_id' => $asEmployeeID,
+            'external_invoicer_id' => $externalInvoicer,
+            'original_invoice_id' => $originalInvoiceId,
+            'customer_name' => $customerName,
+            'customer_contact_name' => $customerContactName,
+            'tax_number' => $taxNumber,
+            'tax_number_status' => $taxNumberStatus,
+            'tax_number_valid' => $taxNumberValid,
+            'identity_document_number' => $identityDocumentNumber,
         ];
-
-
 
         if ($order) {
             $this->parsedData['invoice']['order_id'] = $order->id;
@@ -201,12 +187,12 @@ class FetchAuroraInvoice extends FetchAurora
             $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)
                 ->where('state', DeliveryNoteStateEnum::DISPATCHED)->first();
 
-            if (!$deliveryNote) {
+            if (! $deliveryNote) {
                 $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)
                     ->where('state', DeliveryNoteStateEnum::FINALISED)->first();
             }
 
-            if (!$deliveryNote) {
+            if (! $deliveryNote) {
                 $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)
                     ->where('state', DeliveryNoteStateEnum::PACKED)->first();
             }
@@ -227,22 +213,19 @@ class FetchAuroraInvoice extends FetchAurora
                     'dependent_locality',
                     'locality',
                     'administrative_area',
-                    'country_id'
+                    'country_id',
                 ]);
                 $this->parsedData['invoice']['delivery_address'] = new Address($deliveryAddress);
             }
 
         }
 
-
-
         if ($salesChannel) {
             $this->parsedData['invoice']['sales_channel_id'] = $salesChannel->id;
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Invoice Dimension')
@@ -259,5 +242,4 @@ class FetchAuroraInvoice extends FetchAurora
 
         return $this->parsedData;
     }
-
 }

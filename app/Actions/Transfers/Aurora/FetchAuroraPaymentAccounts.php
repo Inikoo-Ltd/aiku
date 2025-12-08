@@ -22,7 +22,6 @@ class FetchAuroraPaymentAccounts extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:payment_accounts {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?PaymentAccount
     {
         if ($paymentAccountData = $organisationSource->fetchPaymentAccount($organisationSourceId)) {
@@ -59,7 +58,6 @@ class FetchAuroraPaymentAccounts extends FetchAuroraAction
 
                     $this->recordNew($organisationSource);
 
-
                     $sourceId = explode(':', $paymentAccount->source_id);
                     DB::connection('aurora')->table('Payment Account Dimension')
                         ->where('Payment Account Key', $sourceId[1])
@@ -71,13 +69,11 @@ class FetchAuroraPaymentAccounts extends FetchAuroraAction
                 }
             }
 
-
             return $paymentAccount;
         }
 
         return null;
     }
-
 
     public function getModelsQuery(): Builder
     {

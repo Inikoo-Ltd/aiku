@@ -30,7 +30,7 @@ class StoreRedirect extends OrgAction
         data_set($modelData, 'shop_id', $webpage->shop_id);
         data_set($modelData, 'website_id', $webpage->website_id);
 
-        $url = 'https://'.$webpage->website->domain . '/' . $webpage->url;
+        $url = 'https://'.$webpage->website->domain.'/'.$webpage->url;
 
         data_set($modelData, 'from_url', $url);
         data_set($modelData, 'from_path', $webpage->url);
@@ -42,7 +42,7 @@ class StoreRedirect extends OrgAction
     public function rules(): array
     {
         return [
-            'type'                     => ['required', Rule::enum(RedirectTypeEnum::class)],
+            'type' => ['required', Rule::enum(RedirectTypeEnum::class)],
             'to_webpage_id' => [
                 'required',
                 Rule::exists(Webpage::class, 'id')->where('website_id', $this->shop->website->id)->where('state', WebpageStateEnum::LIVE),
@@ -56,30 +56,30 @@ class StoreRedirect extends OrgAction
             return FacadesRedirect::route(
                 'grp.org.fulfilments.show.web.webpages.show',
                 [
-                'organisation' => $redirect->organisation->slug,
-                'fulfilment' => $redirect->shop->fulfilment->slug,
-                'website' => $redirect->website->slug,
-                'webpage' => $redirect->webpage->slug,
-                'tab' => WebpageTabsEnum::REDIRECTS->value
-            ]
+                    'organisation' => $redirect->organisation->slug,
+                    'fulfilment' => $redirect->shop->fulfilment->slug,
+                    'website' => $redirect->website->slug,
+                    'webpage' => $redirect->webpage->slug,
+                    'tab' => WebpageTabsEnum::REDIRECTS->value,
+                ]
             );
         }
 
         return FacadesRedirect::route(
             'grp.org.shops.show.web.webpages.show',
             [
-            'organisation' => $redirect->organisation->slug,
-            'shop' => $redirect->shop->slug,
-            'website' => $redirect->website->slug,
-            'webpage' => $redirect->webpage->slug,
-            'tab' => WebpageTabsEnum::REDIRECTS->value
-        ]
+                'organisation' => $redirect->organisation->slug,
+                'shop' => $redirect->shop->slug,
+                'website' => $redirect->website->slug,
+                'webpage' => $redirect->webpage->slug,
+                'tab' => WebpageTabsEnum::REDIRECTS->value,
+            ]
         );
     }
 
     public function action(Webpage $webpage, array $modelData): Redirect
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisationFromShop($webpage->shop, $modelData);
 
         return $this->handle($webpage, $this->validatedData);
@@ -91,6 +91,4 @@ class StoreRedirect extends OrgAction
 
         return $this->handle($webpage, $this->validatedData);
     }
-
-
 }

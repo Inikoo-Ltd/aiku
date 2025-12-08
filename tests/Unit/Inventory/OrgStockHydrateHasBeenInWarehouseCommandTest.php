@@ -14,7 +14,7 @@
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateHasBeenInWarehouse;
 
 it('exposes a valid command signature for the hydrator action', function () {
-    $action = new OrgStockHydrateHasBeenInWarehouse();
+    $action = new OrgStockHydrateHasBeenInWarehouse;
 
     expect(method_exists($action, 'getCommandSignature'))
         ->toBeTrue();

@@ -22,15 +22,17 @@ class CustomerTagSeeder extends Seeder
     {
         $jsonPath = database_path('seeders/datasets/customer-tags/aiku-customer-tags.json');
 
-        if (!File::exists($jsonPath)) {
+        if (! File::exists($jsonPath)) {
             $this->command->error("File JSON tidak ditemukan: {$jsonPath}");
+
             return;
         }
 
         $tags = json_decode(File::get($jsonPath), true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->command->error('Error decoding JSON: ' . json_last_error_msg());
+            $this->command->error('Error decoding JSON: '.json_last_error_msg());
+
             return;
         }
 
@@ -48,6 +50,6 @@ class CustomerTagSeeder extends Seeder
             );
         }
 
-        $this->command->info('Successfully seeded ' . count($tags) . ' system customer tags for RFM segmentation.');
+        $this->command->info('Successfully seeded '.count($tags).' system customer tags for RFM segmentation.');
     }
 }

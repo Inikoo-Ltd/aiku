@@ -39,9 +39,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $source_id
  * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $auditable
  * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent|null $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Audit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Audit newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Audit query()
+ *
  * @mixin \Eloquent
  */
 class Audit extends \OwenIt\Auditing\Models\Audit
@@ -62,7 +64,7 @@ class Audit extends \OwenIt\Auditing\Models\Audit
         static::creating(
             function (Audit $audit) {
                 if ($audit->tags) {
-                    $audit->tags = json_encode(explode(",", $audit->tags));
+                    $audit->tags = json_encode(explode(',', $audit->tags));
                 } else {
                     $audit->tags = '[]';
                 }
@@ -80,5 +82,4 @@ class Audit extends \OwenIt\Auditing\Models\Audit
             return $morph;
         }
     }
-
 }

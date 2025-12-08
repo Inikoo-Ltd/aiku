@@ -27,11 +27,10 @@ class OrganisationHydrateProductsWithNoFamily implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_products_no_family' => $organisation->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->whereNull('family_id')->count()
+            'number_products_no_family' => $organisation->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->whereNull('family_id')->count(),
         ];
 
         $organisation->catalogueStats()->update($stats);
 
     }
-
 }

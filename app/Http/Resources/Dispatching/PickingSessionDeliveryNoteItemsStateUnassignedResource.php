@@ -39,24 +39,23 @@ class PickingSessionDeliveryNoteItemsStateUnassignedResource extends JsonResourc
         );
 
         return [
-            'id'                           => $this->id,
-            'state'                        => $this->state,
-            'state_icon'                   => $this->state->stateIcon()[$this->state->value],
-            'quantity_required'            => $this->quantity_required,
+            'id' => $this->id,
+            'state' => $this->state,
+            'state_icon' => $this->state->stateIcon()[$this->state->value],
+            'quantity_required' => $this->quantity_required,
             'quantity_required_fractional' => $requiredFactionalData,
-            'org_stock_slug'               => $this->org_stock_slug,
-            'org_stock_code'               => $this->org_stock_code,
-            'org_stock_name'               => $this->org_stock_name,
-            'delivery_note_reference'      => $this->delivery_note_reference,
-            'delivery_note_slug'           => $this->delivery_note_slug,
-            'delivery_note_is_premium_dispatch'          => $this->delivery_note_is_premium_dispatch,
-            'delivery_note_has_extra_packing'            => $this->delivery_note_has_extra_packing,
+            'org_stock_slug' => $this->org_stock_slug,
+            'org_stock_code' => $this->org_stock_code,
+            'org_stock_name' => $this->org_stock_name,
+            'delivery_note_reference' => $this->delivery_note_reference,
+            'delivery_note_slug' => $this->delivery_note_slug,
+            'delivery_note_is_premium_dispatch' => $this->delivery_note_is_premium_dispatch,
+            'delivery_note_has_extra_packing' => $this->delivery_note_has_extra_packing,
 
-            'delivery_note_customer_notes'   => $this->delivery_note_customer_notes,
-            'delivery_note_public_notes'     => $this->delivery_note_public_notes,
-            'delivery_note_internal_notes'   => $this->delivery_note_internal_notes,
-            'delivery_note_shipping_notes'   => $this->delivery_note_shipping_notes,
-
+            'delivery_note_customer_notes' => $this->delivery_note_customer_notes,
+            'delivery_note_public_notes' => $this->delivery_note_public_notes,
+            'delivery_note_internal_notes' => $this->delivery_note_internal_notes,
+            'delivery_note_shipping_notes' => $this->delivery_note_shipping_notes,
 
         ];
     }

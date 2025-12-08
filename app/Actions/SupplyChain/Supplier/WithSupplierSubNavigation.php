@@ -18,28 +18,28 @@ trait WithSupplierSubNavigation
     {
         return [
             [
-                "isAnchor" => true,
-                "label"    => __($parent->slug),
+                'isAnchor' => true,
+                'label' => __($parent->slug),
 
-                "route"     => [
-                    "name"       => "grp.supply-chain.suppliers.show",
-                    "parameters" => [$parent->slug],
+                'route' => [
+                    'name' => 'grp.supply-chain.suppliers.show',
+                    'parameters' => [$parent->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-person-dolly"],
-                    "tooltip" => __("Org Supplier"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-person-dolly'],
+                    'tooltip' => __('Org Supplier'),
                 ],
             ],
             [
-                "number"   => $parent->stats->number_supplier_products,
-                "label"    => __("Products"),
-                "route"     => [
-                    "name"       => "grp.supply-chain.suppliers.supplier_products.index",
-                    "parameters" => [$parent->slug],
+                'number' => $parent->stats->number_supplier_products,
+                'label' => __('Products'),
+                'route' => [
+                    'name' => 'grp.supply-chain.suppliers.supplier_products.index',
+                    'parameters' => [$parent->slug],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-box-usd"],
-                    "tooltip" => __("Products"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-box-usd'],
+                    'tooltip' => __('Products'),
                 ],
             ],
             // wait purchase order:

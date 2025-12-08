@@ -38,9 +38,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read WebBlock $webBlock
  * @property-read Webpage|null $webpage
  * @property-read Website $website
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasWebBlocks newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasWebBlocks newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ModelHasWebBlocks query()
+ *
  * @mixin \Eloquent
  */
 class ModelHasWebBlocks extends Model
@@ -52,7 +54,7 @@ class ModelHasWebBlocks extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'data' => 'array'
+        'data' => 'array',
     ];
 
     public function webBlock(): BelongsTo
@@ -69,7 +71,4 @@ class ModelHasWebBlocks extends Model
     {
         return $this->belongsTo(Webpage::class);
     }
-
-
-
 }

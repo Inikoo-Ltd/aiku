@@ -23,14 +23,12 @@ class FetchAuroraHistories extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:histories {organisations?*} {--s|source_id=} {--m|model= : model to Fetch } {--N|only_new : Fetch only new}  {--d|db_suffix=} {--r|reset} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?History
     {
         $historyData = $organisationSource->fetchHistory($organisationSourceId);
-        if (!$historyData) {
+        if (! $historyData) {
             return null;
         }
-
 
         if ($history = History::where('source_id', $historyData['history']['source_id'])->first()) {
             try {
@@ -64,12 +62,10 @@ class FetchAuroraHistories extends FetchAuroraAction
             }
         }
 
-
         $this->updateModelCreatedAt($history);
 
         return $history;
     }
-
 
     protected function updateModelCreatedAt($history): void
     {
@@ -99,10 +95,9 @@ class FetchAuroraHistories extends FetchAuroraAction
 
     public function getModelsQuery(): Builder
     {
-        //enum('sold_since','last_sold','first_sold','placed','wrote','deleted','edited','cancelled','charged','merged','created','associated','disassociate','register','login','logout','fail_login','password_request','password_reset','search')
+        // enum('sold_since','last_sold','first_sold','placed','wrote','deleted','edited','cancelled','charged','merged','created','associated','disassociate','register','login','logout','fail_login','password_request','password_reset','search')
         $query = DB::connection('aurora')->table('History Dimension');
         $query = $this->commonSelectModelsToFetch($query);
-
 
         $query->select('History Key as source_id')
             ->orderBy('History Date', $this->orderDesc ? 'desc' : 'asc');
@@ -132,6 +127,4 @@ class FetchAuroraHistories extends FetchAuroraAction
 
         return $query;
     }
-
-
 }

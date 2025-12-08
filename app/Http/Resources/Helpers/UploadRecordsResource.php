@@ -21,14 +21,14 @@ class UploadRecordsResource extends JsonResource
         $record = $this;
 
         return [
-            'id'          => $record->id,
-            'original_filename'  => $record->excel->original_filename,
-            'row_number'  => $record->row_number,
-            'errors'      => $record->errors,
+            'id' => $record->id,
+            'original_filename' => $record->excel->original_filename,
+            'row_number' => $record->row_number,
+            'errors' => $record->errors,
             'fail_column' => $record->fail_column,
-            'status'      => $record->status,
-            'created_at'  => $record->created_at,
-            'updated_at'  => $record->updated_at
+            'status' => $record->status,
+            'created_at' => $record->created_at,
+            'updated_at' => $record->updated_at,
         ];
     }
 }

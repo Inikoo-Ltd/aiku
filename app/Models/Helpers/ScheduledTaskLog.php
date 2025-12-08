@@ -22,9 +22,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $error_message
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduledTaskLog newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduledTaskLog newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduledTaskLog query()
+ *
  * @mixin \Eloquent
  */
 class ScheduledTaskLog extends Model
@@ -41,8 +43,8 @@ class ScheduledTaskLog extends Model
     ];
 
     protected $casts = [
-        'started_at'   => 'datetime',
-        'finished_at'  => 'datetime',
+        'started_at' => 'datetime',
+        'finished_at' => 'datetime',
         'scheduled_at' => 'string',
     ];
 }

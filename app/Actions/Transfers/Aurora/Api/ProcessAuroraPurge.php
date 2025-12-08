@@ -22,5 +22,4 @@ class ProcessAuroraPurge extends OrgAction
     {
         $this->fetcher = FetchAuroraPurges::class;
     }
-
 }

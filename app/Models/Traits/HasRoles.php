@@ -16,7 +16,6 @@ trait HasRoles
 {
     use SpatieHasRoles;
 
-
     public function authTo(string|array $permission): bool
     {
         if (is_array($permission)) {
@@ -38,7 +37,6 @@ trait HasRoles
         );
     }
 
-
     public function assignJoBPositionRoles(JobPosition $jobPosition): void
     {
         foreach ($jobPosition->roles as $roleID) {
@@ -59,6 +57,4 @@ trait HasRoles
             }
         }
     }
-
-
 }

@@ -21,23 +21,23 @@ trait WithCustomersSubNavigation
         $meta = [];
 
         $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.customers.index',
+            'route' => [
+                'name' => 'grp.org.shops.show.crm.customers.index',
                 'parameters' => array_merge(
                     $request->route()->originalParameters(),
                     [
                         '_query' => [
-                            'tab' => 'customers'
-                        ]
+                            'tab' => 'customers',
+                        ],
                     ]
-                )
+                ),
             ],
-            'number'   => $this->parent->crmStats->number_customers,
-            'label'    => __('Customers'),
+            'number' => $this->parent->crmStats->number_customers,
+            'label' => __('Customers'),
             'leftIcon' => [
-                'icon'    => 'fal fa-transporter',
-                'tooltip' => __('customers')
-            ]
+                'icon' => 'fal fa-transporter',
+                'tooltip' => __('customers'),
+            ],
         ];
 
         // $meta[] = [
@@ -54,58 +54,58 @@ trait WithCustomersSubNavigation
         // ];
 
         $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.polls.index',
-                'parameters' => $request->route()->originalParameters()
+            'route' => [
+                'name' => 'grp.org.shops.show.crm.polls.index',
+                'parameters' => $request->route()->originalParameters(),
             ],
-            'number'   => $this->parent->crmStats->number_polls,
-            'label'    => __('Polls'),
+            'number' => $this->parent->crmStats->number_polls,
+            'label' => __('Polls'),
             'leftIcon' => [
-                'icon'    => 'fal fa-poll',
-                'tooltip' => __('polls')
-            ]
+                'icon' => 'fal fa-poll',
+                'tooltip' => __('polls'),
+            ],
         ];
 
         $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.traffic_sources.index',
-                'parameters' => $request->route()->originalParameters()
+            'route' => [
+                'name' => 'grp.org.shops.show.crm.traffic_sources.index',
+                'parameters' => $request->route()->originalParameters(),
             ],
-            'number'   => $this->parent->crmStats?->number_traffic_sources ?? 0,
-            'label'    => __('Traffic Sources'),
+            'number' => $this->parent->crmStats?->number_traffic_sources ?? 0,
+            'label' => __('Traffic Sources'),
             'leftIcon' => [
-                'icon'    => 'fal fa-route',
-                'tooltip' => __('traffic sources')
-            ]
+                'icon' => 'fal fa-route',
+                'tooltip' => __('traffic sources'),
+            ],
         ];
 
         if ($this->parent instanceof Shop && $this->parent->type === ShopTypeEnum::DROPSHIPPING) {
             $meta[] = [
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.platforms.index',
-                    'parameters' => $request->route()->originalParameters()
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.platforms.index',
+                    'parameters' => $request->route()->originalParameters(),
                 ],
-                'number'   => Platform::all()->count(), // Fix Later with hydrators
-                'label'    => __('Platforms'),
+                'number' => Platform::all()->count(), // Fix Later with hydrators
+                'label' => __('Platforms'),
                 'leftIcon' => [
-                    'icon'    => 'fal fa-route',
-                    'tooltip' => __('platforms')
-                ]
+                    'icon' => 'fal fa-route',
+                    'tooltip' => __('platforms'),
+                ],
             ];
         }
 
         $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.web_users.index',
-                'parameters' => $request->route()->originalParameters()
+            'route' => [
+                'name' => 'grp.org.shops.show.crm.web_users.index',
+                'parameters' => $request->route()->originalParameters(),
             ],
-            'align'    => 'right',
-            'number'   => $this->parent->crmStats->number_web_users,
-            'label'    => __('Web users'),
+            'align' => 'right',
+            'number' => $this->parent->crmStats->number_web_users,
+            'label' => __('Web users'),
             'leftIcon' => [
-                'icon'    => 'fal fa-user-circle',
-                'tooltip' => __('Website users')
-            ]
+                'icon' => 'fal fa-user-circle',
+                'tooltip' => __('Website users'),
+            ],
         ];
 
         return $meta;

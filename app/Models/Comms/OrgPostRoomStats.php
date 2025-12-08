@@ -78,9 +78,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_outboxes_type_pallet_delivery_deleted
  * @property int $number_outboxes_type_pallet_return_deleted
  * @property int $number_outboxes_type_pallet_deleted
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats query()
+ *
  * @mixin \Eloquent
  */
 class OrgPostRoomStats extends Model
@@ -88,6 +90,4 @@ class OrgPostRoomStats extends Model
     protected $table = 'org_post_room_stats';
 
     protected $guarded = [];
-
-
 }

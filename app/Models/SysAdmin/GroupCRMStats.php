@@ -83,9 +83,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customers_status_pre_registration
  * @property int $number_traffic_sources
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCRMStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCRMStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCRMStats query()
+ *
  * @mixin \Eloquent
  */
 class GroupCRMStats extends Model

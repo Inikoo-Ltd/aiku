@@ -34,8 +34,8 @@ class IndexBanners extends OrgAction
     use WithWebAuthorisation;
 
     protected array $elementGroups = [];
-    private Group|Fulfilment|Shop $parent;
 
+    private Group|Fulfilment|Shop $parent;
 
     public function handle(Group|Fulfilment|Shop $parent, $prefix = null): LengthAwarePaginator
     {
@@ -55,7 +55,6 @@ class IndexBanners extends OrgAction
             ->leftJoin('organisations', 'banners.organisation_id', '=', 'organisations.id')
             ->leftJoin('shops', 'banners.shop_id', '=', 'shops.id');
 
-
         switch ($parent::class) {
             case Shop::class:
                 $queryBuilder->where('banners.shop_id', $parent->id);
@@ -70,7 +69,6 @@ class IndexBanners extends OrgAction
                 abort(419);
         }
 
-
         $queryBuilder->select(
             'banners.id',
             'banners.slug',
@@ -84,7 +82,6 @@ class IndexBanners extends OrgAction
             'organisations.slug as organisation_slug',
         );
 
-
         return $queryBuilder
             ->defaultSort('-date')
             ->allowedSorts(['name', 'date', 'number_views', 'organisation_name', 'shop_name'])
@@ -92,7 +89,6 @@ class IndexBanners extends OrgAction
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
-
 
     public function tableStructure(
         Group|Fulfilment|Shop $parent,
@@ -107,18 +103,16 @@ class IndexBanners extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-
             $action = null;
 
             $description = null;
 
             $emptyState = [
-                'title'       => __('No banners found'),
-                'count'       => 0,
+                'title' => __('No banners found'),
+                'count' => 0,
                 'description' => $description,
-                'action'      => $action
+                'action' => $action,
             ];
-
 
             $table
                 ->withModelOperations($modelOperations)
@@ -177,25 +171,25 @@ class IndexBanners extends OrgAction
             $actions = [
                 match ($this->parent::class) {
                     Shop::class => [
-                        'type'  => 'button',
+                        'type' => 'button',
                         'style' => 'create',
                         'label' => __('Create Banner'),
                         'route' => [
-                            'name'       => 'grp.org.shops.show.web.banners.create',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
+                            'name' => 'grp.org.shops.show.web.banners.create',
+                            'parameters' => $request->route()->originalParameters(),
+                        ],
                     ],
                     Fulfilment::class => [
-                        'type'  => 'button',
+                        'type' => 'button',
                         'style' => 'create',
                         'label' => __('Create Banner'),
                         'route' => [
-                            'name'       => 'grp.org.fulfilments.show.web.banners.create',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
+                            'name' => 'grp.org.fulfilments.show.web.banners.create',
+                            'parameters' => $request->route()->originalParameters(),
+                        ],
                     ],
                     default => null
-                }
+                },
             ];
         }
 
@@ -206,16 +200,15 @@ class IndexBanners extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('banners'),
-                'pageHead'    => [
-                    'title'     => __('banners'),
+                'title' => __('banners'),
+                'pageHead' => [
+                    'title' => __('banners'),
                     'container' => $container,
                     'iconRight' => [
                         'title' => __('Banner'),
-                        'icon'  => 'fal fa-sign'
+                        'icon' => 'fal fa-sign',
                     ],
-                    'actions'   => $actions,
-
+                    'actions' => $actions,
 
                 ],
 
@@ -233,11 +226,11 @@ class IndexBanners extends OrgAction
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Banners'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
@@ -249,8 +242,8 @@ class IndexBanners extends OrgAction
                     ShowGroupOverviewHub::make()->getBreadcrumbs(),
                     $headCrumb(
                         [
-                            'name'       => $routeName,
-                            'parameters' => $routeParameters
+                            'name' => $routeName,
+                            'parameters' => $routeParameters,
                         ]
                     ),
                 );
@@ -266,8 +259,8 @@ class IndexBanners extends OrgAction
                     ),
                     $headCrumb(
                         [
-                            'name'       => 'grp.org.shops.show.web.banners.index',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.shops.show.web.banners.index',
+                            'parameters' => $routeParameters,
                         ]
                     ),
                 );
@@ -284,8 +277,8 @@ class IndexBanners extends OrgAction
                     ),
                     $headCrumb(
                         [
-                            'name'       => 'grp.org.fulfilments.show.web.banners.index',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.fulfilments.show.web.banners.index',
+                            'parameters' => $routeParameters,
                         ]
                     ),
                 );

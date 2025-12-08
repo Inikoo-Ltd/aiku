@@ -20,6 +20,7 @@ class ResetWebUserPasswordMiddleware
         if ($request->user(Auth::getDefaultDriver())->reset_password) {
             return redirect()->route('retina.reset-password.edit');
         }
+
         return $next($request);
     }
 }

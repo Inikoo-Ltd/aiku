@@ -37,14 +37,14 @@ class UpdateRedirect extends OrgAction
     public function rules(): array
     {
         return [
-            'type'                     => ['sometimes', Rule::enum(RedirectTypeEnum::class)],
-            'path'                     => ['sometimes', 'string', new NoDomainString()],
+            'type' => ['sometimes', Rule::enum(RedirectTypeEnum::class)],
+            'path' => ['sometimes', 'string', new NoDomainString],
         ];
     }
 
     public function action(Redirect $redirect, array $modelData): Redirect
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisationFromShop($redirect->shop, $modelData);
 
         return $this->handle($redirect, $this->validatedData);
@@ -56,6 +56,4 @@ class UpdateRedirect extends OrgAction
 
         return $this->handle($redirect, $this->validatedData);
     }
-
-
 }

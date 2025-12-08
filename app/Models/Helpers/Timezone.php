@@ -23,9 +23,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Country> $countries
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Timezone newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Timezone newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Timezone query()
+ *
  * @mixin \Eloquent
  */
 class Timezone extends Model
@@ -40,11 +42,11 @@ class Timezone extends Model
 
     public function formatOffset(): string
     {
-        $hours     = $this->offset / 3600;
+        $hours = $this->offset / 3600;
         $remainder = $this->offset % 3600;
-        $sign      = $hours > 0 ? '+' : '-';
-        $hour      = (int) abs($hours);
-        $minutes   = (int) abs($remainder / 60);
+        $sign = $hours > 0 ? '+' : '-';
+        $hour = (int) abs($hours);
+        $minutes = (int) abs($remainder / 60);
 
         if ($hour == 0 and $minutes == 0) {
             $sign = ' ';

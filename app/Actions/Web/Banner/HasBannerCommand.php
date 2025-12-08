@@ -18,16 +18,14 @@ trait HasBannerCommand
     protected function getBanner($command): ?Banner
     {
         $bannerData = DB::table('banners')->select('id', 'customer_id')->where('slug', $command->argument('slug'))->first();
-        if (!$bannerData) {
+        if (! $bannerData) {
             $command->error('Banner not found');
 
             return null;
         }
 
-
         Config::set('global.customer_id', $bannerData->customer_id);
 
         return Banner::find($bannerData->id);
     }
-
 }

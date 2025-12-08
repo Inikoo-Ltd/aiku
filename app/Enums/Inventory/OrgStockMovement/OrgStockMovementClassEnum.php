@@ -14,8 +14,7 @@ enum OrgStockMovementClassEnum: string
 {
     use EnumHelperTrait;
 
-
-    case MOVEMENT  = 'movement';
-    case INFO      = 'info';
-    case HELPER    = 'helper';
+    case MOVEMENT = 'movement';
+    case INFO = 'info';
+    case HELPER = 'helper';
 }

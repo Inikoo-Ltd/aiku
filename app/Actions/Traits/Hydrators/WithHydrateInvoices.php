@@ -22,10 +22,10 @@ trait WithHydrateInvoices
     public function getInvoicesStats(Group|Organisation|Shop|Customer|InvoiceCategory|CustomerClient $model): array
     {
         $numberInvoices = $model->invoices()->where('invoices.in_process', false)->count();
-        $stats          = [
-            'number_invoices'              => $numberInvoices,
+        $stats = [
+            'number_invoices' => $numberInvoices,
             'number_invoices_type_invoice' => $model->invoices()->where('invoices.in_process', false)->where('type', InvoiceTypeEnum::INVOICE)->count(),
-            'last_invoiced_at'             => $model->invoices()->where('invoices.in_process', false)->where('type', InvoiceTypeEnum::INVOICE)->max('date'),
+            'last_invoiced_at' => $model->invoices()->where('invoices.in_process', false)->where('type', InvoiceTypeEnum::INVOICE)->max('date'),
         ];
 
         if ($model instanceof Customer) {
@@ -61,7 +61,6 @@ trait WithHydrateInvoices
                 'unpaid_invoices_amount_grp_currency' => $unpaidQuery->sum('grp_net_amount'),
             ]);
         }
-
 
         $stats['number_invoices_type_refund'] = $stats['number_invoices'] - $stats['number_invoices_type_invoice'];
 

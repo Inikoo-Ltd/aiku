@@ -33,9 +33,8 @@ class ShowOperationsDashboard extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit   = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
+        $this->canEdit = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
         $this->canDelete = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
-
 
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
@@ -55,52 +54,49 @@ class ShowOperationsDashboard extends OrgAction
         return $this->handle($production);
     }
 
-
     public function htmlResponse(Production $production, ActionRequest $request): Response
     {
 
         return Inertia::render(
             'Org/Production/OperationsDashboard',
             [
-                'title'                            => __('Operations'),
-                'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'navigation'                       => [
+                'title' => __('Operations'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'navigation' => [
                     'previous' => $this->getPrevious($production, $request),
-                    'next'     => $this->getNext($production, $request),
+                    'next' => $this->getNext($production, $request),
                 ],
-                'pageHead'                         => [
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'fa-fill-drip'],
-                            'title' => __('Factory operations')
-                        ],
-                        'iconRight' => [
-                            'icon'  => ['fal', 'fa-chart-network'],
-                            'title' => __('Factory operations')
-                        ],
-                    'title'   => __('Operations'),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-fill-drip'],
+                        'title' => __('Factory operations'),
+                    ],
+                    'iconRight' => [
+                        'icon' => ['fal', 'fa-chart-network'],
+                        'title' => __('Factory operations'),
+                    ],
+                    'title' => __('Operations'),
                     'actions' => [
                         $this->canEdit ?
                             [
-                                'type'    => 'button',
-                                'style'   => 'create',
+                                'type' => 'button',
+                                'style' => 'create',
                                 'tooltip' => __('New job order'),
-                                'label'   => __('job order'),
-                                'route'   => [
-                                    'name'       => 'grp.org.productions.show.job-orders.create',
-                                    'parameters' => $request->route()->originalParameters()
-                                ]
+                                'label' => __('job order'),
+                                'route' => [
+                                    'name' => 'grp.org.productions.show.job-orders.create',
+                                    'parameters' => $request->route()->originalParameters(),
+                                ],
                             ]
                             : null,
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
 
                     ],
 
-
                 ],
-                'tabs'                             => [
+                'tabs' => [
 
-                    'current'    => $this->tab,
+                    'current' => $this->tab,
                     'navigation' => ProductionTabsEnum::navigation(),
                 ],
 
@@ -108,18 +104,13 @@ class ShowOperationsDashboard extends OrgAction
                     fn () => GetProductionShowcase::run($production)
                     : Inertia::lazy(fn () => GetProductionShowcase::run($production)),
 
-
-
-
-
                 ProductionTabsEnum::HISTORY->value => $this->tab == ProductionTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($production))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($production)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($production))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));
     }
-
 
     public function jsonResponse(Production $production): ProductionResource
     {
@@ -131,29 +122,29 @@ class ShowOperationsDashboard extends OrgAction
         $production = Production::where('slug', $routeParameters['production'])->first();
 
         return array_merge(
-            (new ShowOrganisationDashboard())->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
+            (new ShowOrganisationDashboard)->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.index',
-                                'parameters' => $routeParameters['organisation']
+                                'name' => 'grp.org.productions.index',
+                                'parameters' => $routeParameters['organisation'],
                             ],
                             'label' => __('Factories'),
-                            'icon'  => 'fal fa-bars'
+                            'icon' => 'fal fa-bars',
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.index',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.productions.index',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $production?->code,
-                            'icon'  => 'fal fa-bars'
+                            'icon' => 'fal fa-bars',
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
             ]
@@ -176,7 +167,7 @@ class ShowOperationsDashboard extends OrgAction
 
     private function getNavigation(?Production $production, string $routeName): ?array
     {
-        if (!$production) {
+        if (! $production) {
             return null;
         }
 
@@ -184,13 +175,13 @@ class ShowOperationsDashboard extends OrgAction
             'grp.org.productions.show.operations.dashboard' => [
                 'label' => $production->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'organisation'  => $this->organisation->slug,
-                        'production'    => $production->slug
-                    ]
+                        'organisation' => $this->organisation->slug,
+                        'production' => $production->slug,
+                    ],
 
-                ]
+                ],
             ]
         };
     }

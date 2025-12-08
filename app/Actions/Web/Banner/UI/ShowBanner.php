@@ -37,7 +37,6 @@ class ShowBanner extends OrgAction
         return $banner;
     }
 
-
     public function asController(Organisation $organisation, Shop $shop, Website $website, Banner $banner, ActionRequest $request): Banner
     {
         $this->parent = $website;
@@ -64,40 +63,40 @@ class ShowBanner extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($banner, $request),
-                    'next'     => $this->getNext($banner, $request),
+                    'next' => $this->getNext($banner, $request),
                 ],
-                'title'       => $banner->name,
-                'pageHead'    => [
-                    'title'     => $banner->name,
-                    'icon'      => [
+                'title' => $banner->name,
+                'pageHead' => [
+                    'title' => $banner->name,
+                    'icon' => [
                         'tooltip' => __('Banner'),
-                        'icon'    => 'fal fa-sign'
+                        'icon' => 'fal fa-sign',
                     ],
                     'container' => [
-                        'icon'    => ['fal', 'fa-globe'],
+                        'icon' => ['fal', 'fa-globe'],
                         'tooltip' => __('Website'),
-                        'label'   => Str::possessive($this->parent->name)
+                        'label' => Str::possessive($this->parent->name),
                     ],
                     'iconRight' => $banner->state->stateIcon()[$banner->state->value],
-                    'actions'   => [
+                    'actions' => [
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
                         $this->canEdit ? [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'primary',
                             'label' => __('Workshop'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
+                            'icon' => ['fal', 'fa-drafting-compass'],
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'workshop', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                                'name' => preg_replace('/show$/', 'workshop', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
                         ] : false,
                     ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => BannerTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => BannerTabsEnum::navigation(),
                 ],
 
                 BannerTabsEnum::SHOWCASE->value => $this->tab == BannerTabsEnum::SHOWCASE->value
@@ -130,16 +129,16 @@ class ShowBanner extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
-        $headCrumb = function (string $type, Banner $banner, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (string $type, Banner $banner, array $routeParameters, ?string $suffix = null) {
             return [
                 [
-                    'type'           => $type,
+                    'type' => $type,
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('banners')
+                            'label' => __('banners'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -147,54 +146,50 @@ class ShowBanner extends OrgAction
                         ],
 
                     ],
-                    'simple'         => [
+                    'simple' => [
                         'route' => $routeParameters['model'],
-                        'label' => $banner->name
+                        'label' => $banner->name,
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
 
         return match ($routeName) {
             'grp.org.shops.show.web.banners.show',
-            'grp.org.shops.show.web.banners.edit',
-            =>
-            array_merge(
+            'grp.org.shops.show.web.banners.edit', => array_merge(
                 IndexBanners::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
                     'modelWithIndex',
                     Banner::firstWhere('slug', $routeParameters['banner']),
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.web.banners.index',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.shops.show.web.banners.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.web.banners.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.shops.show.web.banners.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 ),
             ),
             'grp.org.fulfilments.show.web.banners.show',
-            'grp.org.fulfilments.show.web.banners.edit'
-            =>
-            array_merge(
+            'grp.org.fulfilments.show.web.banners.edit' => array_merge(
                 IndexBanners::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
                     'modelWithIndex',
                     Banner::firstWhere('slug', $routeParameters['banner']),
                     [
                         'index' => [
-                            'name'       => 'grp.org.fulfilments.show.web.banners.index',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.fulfilments.show.web.banners.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.fulfilments.show.web.banners.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.fulfilments.show.web.banners.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 ),
@@ -224,30 +219,27 @@ class ShowBanner extends OrgAction
             $next = Banner::where('slug', '>', $banner->slug)->orderBy('slug')->first();
         }
 
-
         return $this->getNavigation($next, $request->route()->getName());
     }
 
     private function getNavigation(?Banner $banner, string $routeName): ?array
     {
-        if (!$banner) {
+        if (! $banner) {
             return null;
         }
-
 
         return match ($routeName) {
             'customer.banners.banners.show',
             'customer.banners.banners.edit' => [
                 'label' => $banner->slug,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'banner' => $banner->slug
-                    ]
-                ]
+                        'banner' => $banner->slug,
+                    ],
+                ],
             ],
             default => []
         };
     }
-
 }

@@ -58,14 +58,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Masters\MasterProductCategory $masterProductCategory
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategorySalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategorySalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategorySalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class MasterProductCategorySalesIntervals extends Model
 {
     protected $table = 'master_product_category_sales_intervals';
+
     protected $guarded = [];
 
     public function masterProductCategory(): BelongsTo

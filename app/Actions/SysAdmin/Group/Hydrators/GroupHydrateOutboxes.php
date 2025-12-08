@@ -9,8 +9,8 @@
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\Outbox;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -47,7 +47,6 @@ class GroupHydrateOutboxes implements ShouldBeUnique
             )
         );
 
-
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
@@ -63,6 +62,4 @@ class GroupHydrateOutboxes implements ShouldBeUnique
 
         $group->commsStats()->update($stats);
     }
-
-
 }

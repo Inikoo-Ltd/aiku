@@ -22,16 +22,17 @@ class ResetAnnouncement extends OrgAction
     use WithActionUpdate;
 
     private Customer|Website $parent;
-    private string $scope;
-    private Customer $customer;
 
+    private string $scope;
+
+    private Customer $customer;
 
     public function handle(Announcement $announcement): void
     {
         $this->update($announcement, [
-            'fields'                  => Arr::get($announcement->liveSnapshot->layout, 'fields'),
-            'container_properties'    => Arr::get($announcement->liveSnapshot->layout, 'container_properties'),
-            'is_dirty'                => false
+            'fields' => Arr::get($announcement->liveSnapshot->layout, 'fields'),
+            'container_properties' => Arr::get($announcement->liveSnapshot->layout, 'container_properties'),
+            'is_dirty' => false,
         ]);
     }
 
@@ -46,8 +47,8 @@ class ResetAnnouncement extends OrgAction
 
     public function asController(Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): void
     {
-        $this->scope    = 'website';
-        $this->parent   = $website;
+        $this->scope = 'website';
+        $this->parent = $website;
 
         $this->initialisation($website->organisation, $request);
 

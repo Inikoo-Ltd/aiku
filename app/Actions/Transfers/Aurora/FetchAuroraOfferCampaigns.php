@@ -23,14 +23,13 @@ class FetchAuroraOfferCampaigns extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OfferCampaign
     {
         $offerCampaignData = $organisationSource->fetchOfferCampaign($organisationSourceId);
-        if (!$offerCampaignData) {
+        if (! $offerCampaignData) {
             return null;
         }
 
-
-        $shop          = $offerCampaignData['shop'];
+        $shop = $offerCampaignData['shop'];
         $offerCampaign = $shop->offerCampaigns()->where('source_id', $offerCampaignData['offer-campaign']['source_id'])->first();
-        if (!$offerCampaign) {
+        if (! $offerCampaign) {
             $offerCampaign = $shop->offerCampaigns()->where('type', $offerCampaignData['type'])->first();
             unset($offerCampaignData['offer-campaign']['last_fetched_at']);
         } else {
@@ -45,11 +44,11 @@ class FetchAuroraOfferCampaigns extends FetchAuroraAction
                     strict: false
                 );
 
-                if (!$offerCampaign->fetched_at) {
+                if (! $offerCampaign->fetched_at) {
                     $offerCampaign->updateQuietly(
                         [
                             'fetched_at' => now(),
-                            'source_id'  => $offerCampaignData['offer-campaign']['source_id']
+                            'source_id' => $offerCampaignData['offer-campaign']['source_id'],
                         ]
                     );
                     OfferCampaign::enableAuditing();
@@ -86,6 +85,4 @@ class FetchAuroraOfferCampaigns extends FetchAuroraAction
     {
         return DB::connection('aurora')->table('Deal Campaign Dimension')->count();
     }
-
-
 }

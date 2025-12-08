@@ -22,24 +22,21 @@ class ConnectMayaWithQRCode
 
     private bool $asAction = false;
 
-
     public function handle(User $user, array $modelData): array
     {
         return [
-            'token' => $user->createToken(Arr::get($modelData, 'device_name', 'unknown-device'))->plainTextToken
+            'token' => $user->createToken(Arr::get($modelData, 'device_name', 'unknown-device'))->plainTextToken,
         ];
     }
-
 
     public function rules(): array
     {
         return [
-            'code'                 => ['required', 'ulid'],
+            'code' => ['required', 'ulid'],
             'organisation_user_id' => ['required', 'exists:users,id'],
-            'device_name'          => ['required', 'string'],
+            'device_name' => ['required', 'string'],
         ];
     }
-
 
     public function prepareForValidation(): void
     {
@@ -47,7 +44,7 @@ class ConnectMayaWithQRCode
             $userId = Cache::get('profile-app-qr-code:'.$this->get('code'));
             if ($userId) {
                 $this->fill([
-                    'organisation_user_id' => $userId
+                    'organisation_user_id' => $userId,
                 ]);
                 Cache::forget('profile-app-qr-code:'.$this->get('code'));
             }
@@ -60,7 +57,6 @@ class ConnectMayaWithQRCode
             'organisation_user_id.required' => __('Invalid QR Code'),
         ];
     }
-
 
     public function asController(ActionRequest $request): array
     {

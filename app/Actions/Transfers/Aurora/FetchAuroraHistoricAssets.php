@@ -19,14 +19,12 @@ class FetchAuroraHistoricAssets
 {
     use AsAction;
 
-
     public function handle(SourceOrganisationService $organisationSource, int $source_id): ?HistoricAsset
     {
         $historicProductData = $organisationSource->fetchHistoricAsset($source_id);
-        if (!$historicProductData) {
+        if (! $historicProductData) {
             return null;
         }
-
 
         if ($historicProduct = HistoricAsset::withTrashed()->where('source_id', $historicProductData['historic_asset']['source_id'])
             ->first()) {

@@ -20,7 +20,7 @@ enum ShopDashboardSalesTableTabsEnum: string
         return match ($this) {
             ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => [
                 'title' => __('DS Platforms'),
-                'icon'  => 'fal fa-code-branch'
+                'icon' => 'fal fa-code-branch',
             ]
         };
     }
@@ -41,8 +41,8 @@ enum ShopDashboardSalesTableTabsEnum: string
 
         return [
             'header' => $header,
-            'body'   => $body,
-            'totals' => $totals
+            'body' => $body,
+            'totals' => $totals,
         ];
     }
 

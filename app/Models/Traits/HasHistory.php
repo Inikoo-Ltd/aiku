@@ -13,5 +13,4 @@ use OwenIt\Auditing\Auditable;
 trait HasHistory
 {
     use Auditable;
-
 }

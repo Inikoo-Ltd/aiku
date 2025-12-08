@@ -21,14 +21,14 @@ class ScheduleLogger
     {
         try {
             return ScheduledTaskLog::create([
-                'task_name'    => $taskName,
-                'task_type'    => $taskType,
+                'task_name' => $taskName,
+                'task_type' => $taskType,
                 'scheduled_at' => $scheduledAt,
-                'started_at'   => now(),
-                'status'       => 'running',
+                'started_at' => now(),
+                'status' => 'running',
             ]);
         } catch (Exception $e) {
-            Log::error('Failed to start schedule log: ' . $e->getMessage());
+            Log::error('Failed to start schedule log: '.$e->getMessage());
             throw $e;
         }
     }
@@ -38,11 +38,11 @@ class ScheduleLogger
         try {
             $log->update([
                 'finished_at' => now(),
-                'status'      => 'completed',
-                'duration'    => $log->started_at->diffInSeconds(now()),
+                'status' => 'completed',
+                'duration' => $log->started_at->diffInSeconds(now()),
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to finish schedule log: ' . $e->getMessage());
+            Log::error('Failed to finish schedule log: '.$e->getMessage());
         }
     }
 
@@ -50,13 +50,13 @@ class ScheduleLogger
     {
         try {
             $log->update([
-                'finished_at'   => now(),
-                'status'        => 'failed',
+                'finished_at' => now(),
+                'status' => 'failed',
                 'error_message' => $errorMessage,
-                'duration'      => $log->started_at->diffInSeconds(now()),
+                'duration' => $log->started_at->diffInSeconds(now()),
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to update error schedule log: ' . $e->getMessage());
+            Log::error('Failed to update error schedule log: '.$e->getMessage());
         }
     }
 }

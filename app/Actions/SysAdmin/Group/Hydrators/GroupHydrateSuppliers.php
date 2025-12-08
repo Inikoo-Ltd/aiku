@@ -28,6 +28,4 @@ class GroupHydrateSuppliers implements ShouldBeUnique
         $stats = $this->getSuppliersStats($group);
         $group->supplyChainStats()->update($stats);
     }
-
-
 }

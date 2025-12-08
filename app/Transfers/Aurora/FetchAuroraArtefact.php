@@ -22,14 +22,11 @@ class FetchAuroraArtefact extends FetchAurora
             return;
         }
 
-
         $production = $this->organisation->productions()->first();
 
-
-        if (!$production) {
+        if (! $production) {
             return;
         }
-
 
         $auroraPartData = DB::connection('aurora')
             ->table('Part Dimension')
@@ -37,17 +34,16 @@ class FetchAuroraArtefact extends FetchAurora
             ->first();
 
         $tradeUnitReference = $this->cleanTradeUnitReference($auroraPartData->{'Part Reference'});
-        $tradeUnitSlug      = Str::lower($tradeUnitReference);
+        $tradeUnitSlug = Str::lower($tradeUnitReference);
 
         $this->parsedData['trade_unit'] = $this->parseTradeUnit(
             $tradeUnitSlug,
             $auroraPartData->{'Part SKU'}
         );
 
-
         $this->parsedData['production'] = $production;
 
-        $data     = [];
+        $data = [];
         $settings = [];
 
         $status = true;
@@ -71,18 +67,15 @@ class FetchAuroraArtefact extends FetchAurora
 
         $data['original_unit_cost'] = $this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0;
 
-
         $stock_quantity_status = match ($auroraPartData->{'Part Stock Status'}) {
             'Out_Of_Stock', 'Error' => 'out-of-stock',
             default => strtolower($auroraPartData->{'Part Stock Status'})
         };
 
-
         $name = $this->auroraModelData->{'Supplier Part Description'};
         if ($name == '') {
             $name = $this->auroraModelData->{'Supplier Part Reference'};
         }
-
 
         $code = $this->auroraModelData->{'Supplier Part Reference'};
         $code = str_replace('&', 'and', $code);
@@ -93,24 +86,22 @@ class FetchAuroraArtefact extends FetchAurora
                 'code' => $code,
                 'name' => $name,
 
-                'cost'                  => round($this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0, 2),
-                'units_per_pack'        => $auroraPartData->{'Part Units Per Package'},
-                'units_per_carton'      => $this->auroraModelData->{'Supplier Part Packages Per Carton'} * $auroraPartData->{'Part Units Per Package'},
-
+                'cost' => round($this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0, 2),
+                'units_per_pack' => $auroraPartData->{'Part Units Per Package'},
+                'units_per_carton' => $this->auroraModelData->{'Supplier Part Packages Per Carton'} * $auroraPartData->{'Part Units Per Package'},
 
                 //  'status'                => $status,
-                'state'                 => $state,
+                'state' => $state,
                 'stock_quantity_status' => $stock_quantity_status,
 
-                'data'       => $data,
-                'settings'   => $settings,
+                'data' => $data,
+                'settings' => $settings,
                 'created_at' => $created_at,
-                'source_id'  => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Part Key'}
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Part Key'},
             ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Supplier Part Dimension as ssp')

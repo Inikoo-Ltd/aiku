@@ -32,7 +32,7 @@ class UpdateBannerState
                 break;
         }
 
-        $this->update($banner, $modelData, ['data','layout']);
+        $this->update($banner, $modelData, ['data', 'layout']);
 
         return $banner;
     }
@@ -43,20 +43,20 @@ class UpdateBannerState
             return true;
         }
 
-        return $request->get('customerUser')->hasPermissionTo("portfolio.banners.edit");
+        return $request->get('customerUser')->hasPermissionTo('portfolio.banners.edit');
     }
 
     public function rules(): array
     {
         return [
-            'state' => ['sometimes', 'required', Rule::in(BannerStateEnum::values())]
+            'state' => ['sometimes', 'required', Rule::in(BannerStateEnum::values())],
         ];
     }
 
     public function asController(Banner $banner, $state): Banner
     {
         $this->setRawAttributes([
-            'state' => $state
+            'state' => $state,
         ]);
 
         return $this->handle($banner, $this->validateAttributes());

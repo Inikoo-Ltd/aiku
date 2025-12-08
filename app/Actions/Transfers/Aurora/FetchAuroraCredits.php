@@ -47,7 +47,6 @@ class FetchAuroraCredits extends FetchAuroraAction
                     strict: false,
                 );
 
-
                 $this->recordNew($organisationSource);
 
                 $sourceData = explode(':', $creditTransaction->source_id);
@@ -91,6 +90,4 @@ class FetchAuroraCredits extends FetchAuroraAction
 
         return $query->count();
     }
-
-
 }

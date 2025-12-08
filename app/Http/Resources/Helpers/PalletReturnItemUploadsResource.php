@@ -16,20 +16,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class PalletReturnItemUploadsResource extends JsonResource
 {
     use HasSelfCall;
+
     public function toArray($request): array
     {
         /** @var Upload $upload */
         $upload = $this;
 
         return [
-            'id'                => $upload->id,
-            'uploaded_at'       => $upload->created_at,
+            'id' => $upload->id,
+            'uploaded_at' => $upload->created_at,
             'original_filename' => $upload->original_filename,
-            'filename'          => $upload->filename,
-            'number_rows'       => $upload->number_rows,
-            'number_success'    => $upload->number_success,
-            'number_fails'      => $upload->number_fails,
-            'path'              => $upload->path,
+            'filename' => $upload->filename,
+            'number_rows' => $upload->number_rows,
+            'number_success' => $upload->number_success,
+            'number_fails' => $upload->number_fails,
+            'path' => $upload->path,
         ];
     }
 }

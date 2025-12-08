@@ -25,11 +25,9 @@ class FetchAuroraEmails extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Email
     {
         $emailData = $organisationSource->fetchEmail($organisationSourceId);
-        if (!$emailData) {
+        if (! $emailData) {
             return null;
         }
-
-
 
         if ($email = Email::where('source_id', $emailData['email']['source_id'])
             ->first()) {
@@ -44,10 +42,10 @@ class FetchAuroraEmails extends FetchAuroraAction
                 $this->recordChange($organisationSource, $email->wasChanged());
             } catch (Exception $e) {
                 $this->recordError($organisationSource, $e, $emailData['email'], 'Email', 'update');
+
                 return null;
             }
         } else {
-
 
             try {
                 $email = StoreEmail::make()->action(
@@ -78,7 +76,6 @@ class FetchAuroraEmails extends FetchAuroraAction
             }
         }
 
-
         return $email;
     }
 
@@ -89,7 +86,6 @@ class FetchAuroraEmails extends FetchAuroraAction
             ->select('Email Template Key as source_id')
             ->orderBy('source_id');
     }
-
 
     public function count(): ?int
     {

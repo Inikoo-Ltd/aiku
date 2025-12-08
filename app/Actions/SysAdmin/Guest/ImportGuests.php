@@ -38,7 +38,6 @@ class ImportGuests
 
         return $upload;
 
-
     }
 
     public string $commandSignature = 'guest:import {--g|g_drive} {filename}';

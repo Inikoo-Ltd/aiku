@@ -15,6 +15,6 @@ enum PurgeTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case CRON    = 'cron';
-    case MANUAL    = 'manual';
+    case CRON = 'cron';
+    case MANUAL = 'manual';
 }

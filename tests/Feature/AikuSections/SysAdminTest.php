@@ -65,8 +65,8 @@ use Inertia\Testing\AssertableInertia;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 
-use function Pest\Laravel\{get};
-use function Pest\Laravel\{actingAs};
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 
 beforeAll(function () {
     loadDB();
@@ -77,7 +77,6 @@ beforeEach(function () {
     GetDiceBearAvatar::mock()
         ->shouldReceive('handle')
         ->andReturn(Storage::disk('art')->get('icons/shapes.svg'));
-
 
     Config::set(
         'inertia.testing.page_paths',
@@ -93,8 +92,7 @@ test('create group', function () {
         'name' => 'Test Group',
     ]);
 
-    $jobPositions = collect(config("blueprint.job_positions.positions"));
-
+    $jobPositions = collect(config('blueprint.job_positions.positions'));
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
@@ -105,7 +103,7 @@ test('create group', function () {
 });
 
 test('group scoped job positions', function (Group $group) {
-    $jobPositions = collect(config("blueprint.job_positions.positions"));
+    $jobPositions = collect(config('blueprint.job_positions.positions'));
     expect($group->jobPositions()->count())->toBe(8)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
@@ -116,7 +114,6 @@ test('group scoped job positions', function (Group $group) {
     expect($group->jobPositions()->count())->toBe(8)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
-
 
 test('set group logo by command', function (Group $group) {
     $this->artisan('group:logo', [
@@ -129,10 +126,10 @@ test('create group by command', function () {
     $currency = Currency::where('code', 'USD')->firstOrFail();
 
     $this->artisan('group:create', [
-        'code'          => 'TEST2',
-        'name'          => 'Test Group',
+        'code' => 'TEST2',
+        'name' => 'Test Group',
         'currency_code' => $currency->code,
-        'country_code'  => 'US'
+        'country_code' => 'US',
     ])->assertSuccessful();
     $group = Group::where('code', 'TEST2')->firstOrFail();
     expect($group)->toBeInstanceOf(Group::class);
@@ -145,12 +142,10 @@ test('update group name', function (Group $group) {
     expect($group->name)->toBe('Test Group 2');
 })->depends('create group');
 
-
 test('create a system admin', function () {
     $admin = StoreAdmin::make()->action(Admin::factory()->definition());
     $this->assertModelExists($admin);
 });
-
 
 test('create organisation type shop', function (Group $group) {
     $modelData = Organisation::factory()->definition();
@@ -159,7 +154,6 @@ test('create organisation type shop', function (Group $group) {
 
     $address = new Address(Address::factory()->definition());
     data_set($modelData, 'address', $address->toArray());
-
 
     $organisation = StoreOrganisation::make()->action($group, $modelData);
 
@@ -181,14 +175,14 @@ test('set organisation logo by command', function (Organisation $organisation) {
 
 test('create organisation by command', function (Group $group) {
     $this->artisan('org:create', [
-        'group'         => $group->slug,
-        'type'          => 'shop',
-        'code'          => 'TEST',
-        'email'         => 'a@example.com',
-        'name'          => 'Test Organisation in group 2',
-        'country_code'  => 'MY',
+        'group' => $group->slug,
+        'type' => 'shop',
+        'code' => 'TEST',
+        'email' => 'a@example.com',
+        'name' => 'Test Organisation in group 2',
+        'country_code' => 'MY',
         'currency_code' => 'MYR',
-        '--address'     => json_encode(Address::factory()->definition())
+        '--address' => json_encode(Address::factory()->definition()),
     ])->assertSuccessful();
     $organisation = Organisation::where('code', 'TEST')->firstOrFail();
     expect($organisation)->toBeInstanceOf(Organisation::class);
@@ -206,10 +200,10 @@ test('update organisation name', function (Organisation $organisation) {
 
 test('set organisation google key', function (Organisation $organisation) {
     $this->artisan('org:set-google-key', [
-        'organisation'               => $organisation->slug,
-        'google_cloud_client_id'     => '1234567890',
+        'organisation' => $organisation->slug,
+        'google_cloud_client_id' => '1234567890',
         'google_cloud_client_secret' => '1234567890',
-        'google_drive_folder_key'    => '1234567890'
+        'google_drive_folder_key' => '1234567890',
     ])->assertSuccessful();
 })->depends('create organisation by command');
 
@@ -221,14 +215,13 @@ test('update organisation logo', function (Organisation $organisation) {
     $organisation = UpdateOrganisation::make()->action(
         $organisation,
         [
-            'logo' => $fakeImage
+            'logo' => $fakeImage,
         ]
     );
     $organisation->refresh();
     expect($organisation->images->count())->toBe(1)
         ->and($organisation->image->name)->toBe('logo.jpg');
 })->depends('create organisation by command');
-
 
 test('create guest', function (Group $group, Organisation $organisation) {
     app()->instance('group', $group);
@@ -237,7 +230,7 @@ test('create guest', function (Group $group, Organisation $organisation) {
     $jobPosition1 = $group->jobPositions()->where('code', 'gp-sc')->first();
     $jobPosition2 = $group->jobPositions()->where('code', 'org-admin')->where('organisation_id', $organisation->id)->first();
     $jobPosition3 = $group->jobPositions()->where('code', 'sys-admin')->first();
-    $guestData    = Guest::factory()->definition();
+    $guestData = Guest::factory()->definition();
     data_set($guestData, 'user.username', 'hello');
     data_set($guestData, 'user.password', 'secret-password');
     data_set($guestData, 'phone', '+6281212121212');
@@ -246,25 +239,23 @@ test('create guest', function (Group $group, Organisation $organisation) {
         'positions',
         [
             $jobPosition1->slug => [
-                'slug'   => $jobPosition1->slug,
-                'scopes' => []
+                'slug' => $jobPosition1->slug,
+                'scopes' => [],
             ],
-            $jobPosition2->slug =>
-                [
-                    'slug'   => $jobPosition2->slug,
-                    'scopes' => [
-                        'organisations' => [
-                            $organisation->slug
-                        ]
-                    ]
+            $jobPosition2->slug => [
+                'slug' => $jobPosition2->slug,
+                'scopes' => [
+                    'organisations' => [
+                        $organisation->slug,
+                    ],
                 ],
+            ],
             $jobPosition3->slug => [
-                'slug'   => $jobPosition3->slug,
-                'scopes' => []
+                'slug' => $jobPosition3->slug,
+                'scopes' => [],
             ],
         ]
     );
-
 
     $guest = StoreGuest::make()->action(
         $group,
@@ -299,7 +290,6 @@ test('SetUserAuthorisedModels command', function (Guest $guest) {
 
     return $user;
 })->depends('create guest');
-
 
 test('UI index users (active)', function (User $user) {
     $this->withoutExceptionHandling();
@@ -372,7 +362,7 @@ test('UI show dashboard org', function (User $user) {
         route(
             'grp.org.dashboard.show',
             [
-                $organisation->slug
+                $organisation->slug,
             ]
         )
     );
@@ -390,7 +380,6 @@ test('UI show dashboard org', function (User $user) {
             );
     });
 })->depends('SetUserAuthorisedModels command')->todo();
-
 
 test('UI create shop', function (User $user) {
     $this->withoutExceptionHandling();
@@ -424,7 +413,6 @@ test('UI edit shop', function (User $user) {
 
     $shop = StoreShop::make()->action($organisation, Shop::factory()->definition());
 
-
     $response = get(
         route(
             'grp.org.shops.show.settings.edit',
@@ -455,7 +443,7 @@ test('UI show shop', function (User $user, Shop $shop) {
             'grp.org.shops.show.dashboard.show',
             [
                 $shop->organisation->slug,
-                $shop->slug
+                $shop->slug,
             ]
         )
     );
@@ -491,7 +479,6 @@ test('UI index shop', function (User $user) {
     });
 })->depends('SetUserAuthorisedModels command');
 
-
 test('UI show dashboard org (tab invoice_categories)', function (User $user) {
     $this->withoutExceptionHandling();
 
@@ -524,7 +511,6 @@ test('UI show dashboard org (tab invoice_categories)', function (User $user) {
     });
 })->depends('SetUserAuthorisedModels command')->todo();
 
-
 test('UI index overview org', function (User $user) {
     $this->withoutExceptionHandling();
 
@@ -536,7 +522,7 @@ test('UI index overview org', function (User $user) {
         route(
             'grp.org.overview.hub',
             [
-                $organisation->slug
+                $organisation->slug,
             ]
         )
     );
@@ -566,7 +552,7 @@ test('UI index overview org changelog', function (User $user) {
         route(
             'grp.org.overview.changelog.index',
             [
-                $organisation->slug
+                $organisation->slug,
             ]
         )
     );
@@ -585,29 +571,27 @@ test('UI index overview org changelog', function (User $user) {
     });
 })->depends('SetUserAuthorisedModels command');
 
-
 test('create guest from command', function (Group $group) {
     expect($group->sysadminStats->number_guests)->toBe(1);
 
     $superAdminJobPosition = $group->jobPositions()->where('code', 'group-admin')->first();
 
-
     $positions = json_encode([
         [
-            'slug'   => $superAdminJobPosition->slug,
-            'scopes' => []
+            'slug' => $superAdminJobPosition->slug,
+            'scopes' => [],
         ],
     ]);
 
     $this->artisan(
         'guest:create',
         [
-            'group'       => $group->slug,
-            'name'        => 'Mr Pika',
-            'username'    => 'pika',
-            '--password'  => 'hello1234',
-            '--email'     => 'pika@inikoo.com',
-            '--positions' => $positions
+            'group' => $group->slug,
+            'name' => 'Mr Pika',
+            'username' => 'pika',
+            '--password' => 'hello1234',
+            '--email' => 'pika@inikoo.com',
+            '--positions' => $positions,
         ]
     )->assertSuccessful();
 
@@ -685,10 +669,9 @@ test('fail to create guest with invalid usernames', function (Group $group) {
     })->toThrow(ValidationException::class);
 })->depends('create group');
 
-
 test('update user password', function (Guest $guest) {
     $user = UpdateUser::make()->action($guest->getUser(), [
-        'password' => 'secret'
+        'password' => 'secret',
     ]);
 
     expect(Hash::check('secret', $user->password))->toBeTrue();
@@ -699,7 +682,7 @@ test('update user password', function (Guest $guest) {
 test('update user username', function (User $user) {
     expect($user->username)->toBe('test_user');
     $user = UpdateUser::make()->action($user, [
-        'username' => 'new-username'
+        'username' => 'new-username',
     ]);
 
     expect($user->username)->toBe('new-username')
@@ -734,7 +717,6 @@ test('sync user roles', function (Guest $guest) {
     expect($user->hasRole(['group-admin', 'system-admin']))->toBeTrue();
 })->depends('create guest');
 
-
 test('user status change', function (User $user) {
     expect($user->status)->toBeTrue();
     $user = UpdateUserStatus::make()->action($user, false);
@@ -746,10 +728,9 @@ test('delete guest', function (User $user) {
     /** @var Guest $guest */
     $guest = $user->guests()->first();
     $guest = DeleteGuest::make()->action($guest);
-    ;
+
     expect($guest->deleted_at)->toBeInstanceOf(Carbon::class);
 })->depends('update user password');
-
 
 test('can show app login', function () {
     Config::set(
@@ -797,7 +778,6 @@ test('can login', function (Guest $guest) {
     $user->refresh();
     expect($user->stats->number_logins)->toBe(1);
 })->depends('create guest');
-
 
 test('Hydrate group', function (Group $group) {
     HydrateGroup::run($group);
@@ -895,13 +875,11 @@ test('reindex search', function () {
 test('employee job position in another organisation', function () {
     $group = Group::where('slug', 'test')->first();
     /** @var Organisation $org1 */
-    $org1  = $group->organisations()->first();
-
+    $org1 = $group->organisations()->first();
 
     $org2 = StoreOrganisation::make()->action($group, Organisation::factory()->definition());
     $group->refresh();
     expect($org2)->toBeInstanceOf(Organisation::class);
-
 
     $employee = StoreEmployee::make()->action(
         $org1,
@@ -913,7 +891,7 @@ test('employee job position in another organisation', function () {
             ]
         )
     );
-    $user     = $employee->getUser();
+    $user = $employee->getUser();
 
     $jobPosition1 = $org2->jobPositions()->where('code', 'hr-c')->first();
 
@@ -922,18 +900,16 @@ test('employee job position in another organisation', function () {
         ->and($user)->toBeInstanceOf(User::class)
         ->and($jobPosition1)->toBeInstanceOf(JobPosition::class);
 
-
     $user = UpdateUserOrganisationPseudoJobPositions::make()->action(
         $user,
         $org2,
         [
             'permissions' => [
-                $jobPosition1->code => []
-            ]
+                $jobPosition1->code => [],
+            ],
         ]
     );
     $user->refresh();
-
 
     expect($user->authorisedOrganisations()->count())->toBe(1)
         ->and($user->authorisedOrganisations()->where('model_type', 'Organisation')->where('model_id', $org2->id)->count())->toBe(1)
@@ -952,7 +928,7 @@ test('UI index users (in Employee)', function (Employee $employee) {
             'grp.org.hr.employees.show.users.index',
             [
                 'organisation' => $employee->organisation->slug,
-                'employee'     => $employee->slug
+                'employee' => $employee->slug,
             ]
         )
     );
@@ -965,7 +941,7 @@ test('UI index users (in Employee)', function (Employee $employee) {
             ->has('data')
             ->has('pageHead');
     });
-})->depends('employee job position in another organisation')->todo();//authorisation issue
+})->depends('employee job position in another organisation')->todo(); // authorisation issue
 
 test('users search', function () {
     $this->artisan('search:users')->assertExitCode(0);
@@ -987,7 +963,6 @@ test('can show hr dashboard', function () {
             ->has('breadcrumbs', 2);
     });
 });
-
 
 test('UI show organisation setting', function () {
     $this->withoutExceptionHandling();
@@ -1018,7 +993,6 @@ test('UI show organisation setting', function () {
             );
     });
 });
-
 
 test('UI index organisation', function () {
     actingAs(User::first());
@@ -1163,7 +1137,6 @@ test('UI get section route org setting edit', function () {
         ->and($sectionScope->code)->toBe(AikuSectionEnum::ORG_SETTINGS->value)
         ->and($sectionScope->model_slug)->toBe($organisation->slug);
 });
-
 
 test('UI get section route org reports index', function () {
     $organisation = Organisation::first();

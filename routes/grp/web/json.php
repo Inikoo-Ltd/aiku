@@ -15,10 +15,10 @@ use App\Actions\Catalogue\Collection\Json\GetWebpagesInCollection;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetProductsNotAttachedToACollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
+use App\Actions\Catalogue\Product\Json\GetProductsNotAttachedToACollection;
 use App\Actions\Catalogue\Product\Json\GetProductsWithNoWebpage;
 use App\Actions\Catalogue\Product\Json\GetTopProductsInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentAndSubDepartments;
@@ -29,11 +29,6 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
-use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
-use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
-use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
-use App\Actions\Masters\MasterCollection\UI\GetMasterSubDepartments;
-use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartments;
@@ -45,6 +40,7 @@ use App\Actions\Comms\EmailTemplate\GetSeededEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
+use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
@@ -53,6 +49,7 @@ use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodeComputers;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
 use App\Actions\Fulfilment\Pallet\Json\GetFulfilmentCustomerStoringPallets;
@@ -66,15 +63,19 @@ use App\Actions\Helpers\Brand\Json\GetBrands;
 use App\Actions\Helpers\Brand\Json\GetGrpBrands;
 use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\Json\GetTags;
+use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Masters\MasterAsset\Json\GetAllTradeUnits;
+use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
-use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
+use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
 use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;
+use App\Actions\Masters\MasterCollection\UI\GetMasterSubDepartments;
+use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterSubDepartments;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
@@ -85,7 +86,6 @@ use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
-use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use Illuminate\Support\Facades\Route;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
@@ -201,16 +201,13 @@ Route::get('master-shop/{masterShop}/departments-and-sub-departments', GetMaster
 Route::get('master-shop/{masterShop}/scopes/{scope}/departments', GetMasterDepartments::class)->name('master_shop.master_departments');
 Route::get('master-shop/{masterShop}/scopes/{scope}/sub-departments', GetMasterSubDepartments::class)->name('master_shop.master_sub_departments');
 
-
 Route::get('master-shop/{masterShop}/scopes/{scope}/families', GetMasterFamilies::class)->name('master_shop.master_families_not_attached_to_master_collection');
 Route::get('master-shop/{masterShop}/scope/{scope}/collections', [GetMasterCollections::class, 'inMasterCollection'])->name('master_shop.master_collections_not_attached_to_master_collection');
 Route::get('master-shop/{masterShop}/master-collection/{masterCollection}/products', GetMasterProductsNotAttachedToAMasterCollection::class)->name('master_shop.master_products_not_attached_to_master_collection');
 
-
 Route::get('webpage/{webpage:id}/web-block-histories', GetWebBlockHistories::class)->name('webpage.web_block_histories.index')->withoutScopedBindings();
 Route::get('webpage/{webpage:id}/web-block/{webBlock:id}/web-block-histories', [GetWebBlockHistories::class, 'inWebBlock'])->name('web-block.web_block_histories.index')->withoutScopedBindings();
 Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-histories', [GetWebBlockHistories::class, 'inWebBlockType'])->name('web-block-type.web_block_histories.index')->withoutScopedBindings();
-
 
 Route::get('master-product-category/{masterProductCategory}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();

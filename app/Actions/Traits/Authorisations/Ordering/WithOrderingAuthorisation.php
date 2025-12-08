@@ -21,13 +21,14 @@ trait WithOrderingAuthorisation
         $routeName = $request->route()->getName();
 
         if (str_starts_with($routeName, 'grp.org.shops.show.crm..')) {
-            $this->canEdit = $request->user()->authTo(["orders.{$this->shop->id}.edit","crm.{$this->shop->id}.edit",]);
+            $this->canEdit = $request->user()->authTo(["orders.{$this->shop->id}.edit", "crm.{$this->shop->id}.edit"]);
+
             return $request->user()->authTo(["crm.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
 
         }
 
-
         $this->canEdit = $request->user()->authTo("orders.{$this->shop->id}.edit");
+
         return $request->user()->authTo(["orders.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
 
     }

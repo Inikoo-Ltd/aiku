@@ -27,7 +27,8 @@ class RemoveFilesFromCatalogueIrisR2
         try {
             return $disk->delete($destinationPaths);
         } catch (Exception $e) {
-            Log::error('R2 Remove Error: ' . $e->getMessage());
+            Log::error('R2 Remove Error: '.$e->getMessage());
+
             return false;
         }
     }

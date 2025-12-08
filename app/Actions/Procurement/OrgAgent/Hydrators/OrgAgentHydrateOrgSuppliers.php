@@ -29,6 +29,4 @@ class OrgAgentHydrateOrgSuppliers implements ShouldBeUnique
         $stats = $this->getOrgSuppliersStats($orgAgent);
         $orgAgent->stats()->update($stats);
     }
-
-
 }

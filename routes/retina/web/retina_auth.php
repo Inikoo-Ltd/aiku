@@ -7,17 +7,17 @@
  */
 
 use App\Actions\CRM\WebUser\Retina\GoogleLoginRetina;
-use App\Actions\CRM\WebUser\Retina\RetinaLogout;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
+use App\Actions\CRM\WebUser\Retina\RetinaLogout;
 use App\Actions\CRM\WebUser\Retina\UI\AuthenticateRetinaShopifyUser;
-use App\Actions\CRM\WebUser\Retina\UI\ShowStandAloneRegistration;
 use App\Actions\CRM\WebUser\Retina\UI\ShowFinishPreRetinaRegister;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaPrepareAccount;
-use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterWithGoogle;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterChooseMethod;
+use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterWithGoogle;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPassword;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
+use App\Actions\CRM\WebUser\Retina\UI\ShowStandAloneRegistration;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFromGoogle;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFromStandalone;
@@ -30,18 +30,15 @@ Route::middleware('guest:retina')->group(function () {
     Route::post('login', RetinaLogin::class)->name('login.store');
     Route::post('login-google', GoogleLoginRetina::class)->name('login_google');
 
-
     Route::post('register-from-google', RegisterRetinaFromGoogle::class)->name('register_from_google.store');
     Route::post('register-from-standalone', RegisterRetinaFromStandalone::class)->name('register_from_standalone.store');
 
     Route::post('reset-password-send', SendRetinaResetPasswordEmail::class)->name('reset-password.send');
     Route::patch('reset-password', UpdateRetinaWebUserPassword::class)->name('reset-password.update');
 
-
     Route::get('auth-shopify', AuthenticateRetinaShopifyUser::class)->name('auth.shopify');
 
     Route::get('login', ShowRetinaLogin::class)->name('login.show');
-
 
     Route::get('register', ShowRetinaRegisterChooseMethod::class)->name('register');
     Route::get('registration-form', ShowStandAloneRegistration::class)->name('register_standalone');

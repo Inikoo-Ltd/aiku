@@ -29,9 +29,8 @@ class CheckWebsiteState
         if ($status) {
             return $next($request);
         } else {
-            $url    = '';
+            $url = '';
             $status = 307;
-
 
             switch ($website->state) {
                 case WebsiteStateEnum::LIVE:
@@ -51,12 +50,12 @@ class CheckWebsiteState
                     if ($request->route()->getName() == 'iris.disclosure.closed') {
                         return $next($request);
                     }
-                    $url    = 'disclosure/closed';
+                    $url = 'disclosure/closed';
                     $status = 308;
                     break;
             }
 
-            if (!$url) {
+            if (! $url) {
                 return $next($request);
             }
 

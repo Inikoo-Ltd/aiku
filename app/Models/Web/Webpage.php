@@ -9,8 +9,8 @@
 namespace App\Models\Web;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Analytics\WebUserRequest;
 use App\Models\Dropshipping\ModelHasWebBlocks;
@@ -119,6 +119,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Web\WebpageHasProduct> $webpageHasProducts
  * @property-read Collection<int, Webpage> $webpages
  * @property-read \App\Models\Web\Website $website
+ *
  * @method static \Database\Factories\Web\WebpageFactory factory($count = null, $state = [])
  * @method static Builder<static>|Webpage newModelQuery()
  * @method static Builder<static>|Webpage newQuery()
@@ -126,42 +127,43 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Webpage query()
  * @method static Builder<static>|Webpage withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Webpage withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Webpage extends Model implements Auditable, HasMedia
 {
-    use HasSlug;
     use HasFactory;
-    use HasUniversalSearch;
-    use SoftDeletes;
-    use InWebsite;
     use HasHistory;
     use HasImage;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InWebsite;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'             => 'array',
-        'settings'         => 'array',
+        'data' => 'array',
+        'settings' => 'array',
         'published_layout' => 'array',
-        'migration_data'   => 'array',
-        'seo_data'         => 'array',
-        'structured_data'  => 'array',
-        'state'            => WebpageStateEnum::class,
-        'sub_type'         => WebpageSubTypeEnum::class,
-        'type'             => WebpageTypeEnum::class,
-        'ready_at'         => 'datetime',
-        'live_at'          => 'datetime',
-        'closed_at'        => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime'
+        'migration_data' => 'array',
+        'seo_data' => 'array',
+        'structured_data' => 'array',
+        'state' => WebpageStateEnum::class,
+        'sub_type' => WebpageSubTypeEnum::class,
+        'type' => WebpageTypeEnum::class,
+        'ready_at' => 'datetime',
+        'live_at' => 'datetime',
+        'closed_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'             => '{}',
-        'settings'         => '{}',
+        'data' => '{}',
+        'settings' => '{}',
         'published_layout' => '{}',
-        'seo_data'         => '{}',
-        'migration_data'   => '{}',
-        'structured_data'  => '{}'
+        'seo_data' => '{}',
+        'migration_data' => '{}',
+        'structured_data' => '{}',
     ];
 
     protected $guarded = [];
@@ -185,7 +187,7 @@ class Webpage extends Model implements Auditable, HasMedia
     public function generateTags(): array
     {
         return [
-            'websites'
+            'websites',
         ];
     }
 
@@ -198,7 +200,7 @@ class Webpage extends Model implements Auditable, HasMedia
         'live_at',
         'closed_at',
         'sub_type',
-        'type'
+        'type',
     ];
 
     public function stats(): HasOne
@@ -241,7 +243,6 @@ class Webpage extends Model implements Auditable, HasMedia
         return $this->hasMany(ModelHasWebBlocks::class);
     }
 
-
     public function webBlocks(): MorphToMany
     {
         return $this->morphToMany(WebBlock::class, 'model', 'model_has_web_blocks')
@@ -257,16 +258,15 @@ class Webpage extends Model implements Auditable, HasMedia
 
     public function linkedWebpages(): BelongsToMany
     {
-        return $this->belongsToMany(Webpage::class, "webpage_has_linked_webpages", 'webpage_id', 'child_id')
+        return $this->belongsToMany(Webpage::class, 'webpage_has_linked_webpages', 'webpage_id', 'child_id')
             ->withTimestamps()->withPivot('model_type', 'model_id', 'scope');
     }
-
 
     public function getUrl($withWWW = false): string
     {
         $domain = $this->website->domain;
 
-        if ($withWWW && !str_starts_with($domain, 'www.')) {
+        if ($withWWW && ! str_starts_with($domain, 'www.')) {
             $domain = 'www.'.$domain;
         }
 
@@ -287,7 +287,6 @@ class Webpage extends Model implements Auditable, HasMedia
         $url = $this->canonical_url;
         $environment = app()->environment();
 
-
         if ($environment == 'local') {
             $localDomain = match ($this->shop->type) {
                 ShopTypeEnum::FULFILMENT => 'fulfilment.test',
@@ -295,12 +294,10 @@ class Webpage extends Model implements Auditable, HasMedia
                 default => 'ecom.test'
             };
 
-
             return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain), '');
         } elseif ($environment == 'staging') {
             return replaceUrlSubdomain($url, 'canary');
         }
-
 
         return $url;
     }
@@ -317,7 +314,6 @@ class Webpage extends Model implements Auditable, HasMedia
         return $this->hasMany(WebpageTimeSeries::class);
     }
 
-
     public function webpageHasProducts(): HasMany
     {
         return $this->hasMany(WebpageHasProduct::class);
@@ -329,8 +325,6 @@ class Webpage extends Model implements Auditable, HasMedia
      * This relationship retrieves all redirect rules that point to this webpage.
      * Each redirect maps an external URL or path to this webpage, allowing
      * multiple entry points to reach the same content.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function incomingRedirects(): HasMany
     {
@@ -356,5 +350,4 @@ class Webpage extends Model implements Auditable, HasMedia
     {
         return $this->hasMany(WebBlockHistory::class);
     }
-
 }

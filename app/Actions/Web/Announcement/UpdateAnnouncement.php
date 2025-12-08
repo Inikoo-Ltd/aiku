@@ -22,7 +22,9 @@ class UpdateAnnouncement extends OrgAction
     use WithActionUpdate;
 
     private Customer|Website $parent;
+
     private string $scope;
+
     private Customer $customer;
 
     public function handle(Announcement $announcement, array $modelData): void
@@ -34,13 +36,13 @@ class UpdateAnnouncement extends OrgAction
                 'layout' => [
                     'container_properties' => Arr::get($modelData, 'container_properties', Arr::get($snapshot->layout, 'container_properties')),
                     'fields' => Arr::get($modelData, 'fields', Arr::get($snapshot->layout, 'fields')),
-                    'settings' => Arr::get($modelData, 'settings', Arr::get($snapshot->layout, 'settings'))
-                ]
+                    'settings' => Arr::get($modelData, 'settings', Arr::get($snapshot->layout, 'settings')),
+                ],
             ]
         );
         $announcement->update(
             [
-                'is_dirty' => true
+                'is_dirty' => true,
             ]
         );
 
@@ -55,18 +57,18 @@ class UpdateAnnouncement extends OrgAction
     public function rules(): array
     {
         return [
-            'name'                 => ['sometimes', 'string'],
-            'template_code'        => ['sometimes', 'string'],
-            'fields'               => ['sometimes', 'array'],
-            'settings'             => ['sometimes', 'array'],
-            'container_properties' => ['sometimes', 'array']
+            'name' => ['sometimes', 'string'],
+            'template_code' => ['sometimes', 'string'],
+            'fields' => ['sometimes', 'array'],
+            'settings' => ['sometimes', 'array'],
+            'container_properties' => ['sometimes', 'array'],
         ];
     }
 
     public function asController(Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): void
     {
-        $this->scope    = 'website';
-        $this->parent   = $website;
+        $this->scope = 'website';
+        $this->parent = $website;
         $this->initialisation($website->organisation, $request);
 
         $this->handle($announcement, $this->validatedData);

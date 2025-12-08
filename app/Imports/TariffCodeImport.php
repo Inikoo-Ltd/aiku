@@ -21,13 +21,13 @@ class TariffCodeImport implements ToCollection
         $i = 0;
         foreach ($collection as $row) {
             if ($i > 0) {
-                $parent         = TariffCode::where('hs_code', $row[3])->first();
+                $parent = TariffCode::where('hs_code', $row[3])->first();
                 $tariffCodeData = [
-                    'section'     => $row[0],
-                    'hs_code'     => $row[1],
+                    'section' => $row[0],
+                    'hs_code' => $row[1],
                     'description' => $row[2],
-                    'parent_id'   => $parent->id ?? null,
-                    'level'       => $row[4],
+                    'parent_id' => $parent->id ?? null,
+                    'level' => $row[4],
                 ];
 
                 $tariffCode = TariffCode::where('hs_code', $row[1])->first();

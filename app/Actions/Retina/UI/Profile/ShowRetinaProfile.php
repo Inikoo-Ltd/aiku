@@ -32,27 +32,27 @@ class ShowRetinaProfile extends RetinaAction
 
         $personalInformationFields = [
             'contact_name' => [
-                'type'  => 'input',
+                'type' => 'input',
                 'label' => __('contact name'),
-                'value' => $customer->contact_name
+                'value' => $customer->contact_name,
             ],
-            'email'        => [
-                'type'  => 'input',
+            'email' => [
+                'type' => 'input',
                 'label' => __('email'),
-                'value' => $customer->email
+                'value' => $customer->email,
             ],
-            'about'        => [
-                'type'  => 'textarea',
+            'about' => [
+                'type' => 'textarea',
                 'label' => __('about'),
-                'value' => $customer->about
+                'value' => $customer->about,
             ],
-            'image'        => [
-                'type'  => 'avatar',
+            'image' => [
+                'type' => 'avatar',
                 'label' => __('avatar'),
-                'value' => !blank($webUser->image_id)
+                'value' => ! blank($webUser->image_id)
                     ? $customer->imageSources(320, 320)
                     : [
-                        'original' => '/retina-default-user.svg'
+                        'original' => '/retina-default-user.svg',
                     ],
             ],
         ];
@@ -61,58 +61,57 @@ class ShowRetinaProfile extends RetinaAction
             unset($personalInformationFields['email']);
         }
 
-
-        $sections["properties"] = [
-            "label"  => __("Personal information"),
-            "icon"   => "fal fa-user-circle",
-            "fields" => $personalInformationFields,
+        $sections['properties'] = [
+            'label' => __('Personal information'),
+            'icon' => 'fal fa-user-circle',
+            'fields' => $personalInformationFields,
         ];
 
-        $sections["credentials"] = [
-            "label"  => __("Username/Password"),
-            "icon"   => "fal fa-key",
-            "fields" => [
-                "username" => [
-                    "type"  => "input",
-                    "label" => __("username"),
-                    "value" => $webUser->username,
+        $sections['credentials'] = [
+            'label' => __('Username/Password'),
+            'icon' => 'fal fa-key',
+            'fields' => [
+                'username' => [
+                    'type' => 'input',
+                    'label' => __('username'),
+                    'value' => $webUser->username,
                 ],
-                "password" => [
-                    "type"  => "password",
-                    "label" => __("password"),
-                    "value" => "",
+                'password' => [
+                    'type' => 'password',
+                    'label' => __('password'),
+                    'value' => '',
                 ],
             ],
         ];
 
         if ($webUser->is_root) {
-            $sections["customer"] = [
-                "label"  => __("Account details"),
-                "icon"   => "fal fa-user",
-                "fields" => [
-                    'company_name'    => [
-                        'type'  => 'input',
+            $sections['customer'] = [
+                'label' => __('Account details'),
+                'icon' => 'fal fa-user',
+                'fields' => [
+                    'company_name' => [
+                        'type' => 'input',
                         'label' => __('company'),
-                        'value' => $customer->company_name
+                        'value' => $customer->company_name,
                     ],
-                    'email'           => [
-                        'type'  => 'input',
+                    'email' => [
+                        'type' => 'input',
                         'label' => __('email'),
-                        'value' => $customer->email
+                        'value' => $customer->email,
                     ],
-                    'phone'           => [
-                        'type'  => 'phone',
+                    'phone' => [
+                        'type' => 'phone',
                         'label' => __('Phone'),
-                        'value' => $customer->phone
+                        'value' => $customer->phone,
                     ],
                     'contact_address' => [
-                        'type'    => 'address',
-                        'label'   => __('Address'),
-                        'value'   => AddressFormFieldsResource::make($customer->address)->getArray(),
+                        'type' => 'address',
+                        'label' => __('Address'),
+                        'value' => AddressFormFieldsResource::make($customer->address)->getArray(),
                         'options' => [
-                            'countriesAddressData' => GetAddressData::run()
-                        ]
-                    ]
+                            'countriesAddressData' => GetAddressData::run(),
+                        ],
+                    ],
                 ],
             ];
         }
@@ -131,24 +130,24 @@ class ShowRetinaProfile extends RetinaAction
              ],
          ]; */
 
-        $currentSection = "properties";
-        if ($request->has("section") and Arr::has($sections, $request->get("section"))) {
-            $currentSection = $request->get("section");
+        $currentSection = 'properties';
+        if ($request->has('section') and Arr::has($sections, $request->get('section'))) {
+            $currentSection = $request->get('section');
         }
 
-        return Inertia::render("EditModel", [
-            "title"       => __("Profile"),
-            "breadcrumbs" => $this->getBreadcrumbs(),
-            "pageHead"    => [
-                "title" => __("My Profile"),
+        return Inertia::render('EditModel', [
+            'title' => __('Profile'),
+            'breadcrumbs' => $this->getBreadcrumbs(),
+            'pageHead' => [
+                'title' => __('My Profile'),
             ],
 
-            "formData" => [
-                "current"   => $currentSection,
-                "blueprint" => $sections,
-                "args"      => [
-                    "updateRoute" => [
-                        "name" => "retina.models.profile.update",
+            'formData' => [
+                'current' => $currentSection,
+                'blueprint' => $sections,
+                'args' => [
+                    'updateRoute' => [
+                        'name' => 'retina.models.profile.update',
                     ],
                 ],
             ],
@@ -159,12 +158,12 @@ class ShowRetinaProfile extends RetinaAction
     {
         return array_merge(ShowRetinaDashboard::make()->getBreadcrumbs(), [
             [
-                "type"   => "simple",
-                "simple" => [
-                    "route" => [
-                        "name" => "retina.profile.show",
+                'type' => 'simple',
+                'simple' => [
+                    'route' => [
+                        'name' => 'retina.profile.show',
                     ],
-                    "label" => __("My profile"),
+                    'label' => __('My profile'),
                 ],
             ],
         ]);

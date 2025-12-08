@@ -12,7 +12,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -34,7 +35,6 @@ return new class () extends Migration {
             $table->date('expires_at')->nullable()->index()->comment('Card expiration date');
             $table->string('label')->nullable()->comment('User defined label');
 
-
             $table->string('state')->nullable()->index()->default(MitSavedCardStateEnum::IN_PROCESS->value);
 
             $table->smallInteger('priority')->default(1)->index();
@@ -45,7 +45,6 @@ return new class () extends Migration {
             $table->softDeletesTz();
         });
     }
-
 
     public function down(): void
     {

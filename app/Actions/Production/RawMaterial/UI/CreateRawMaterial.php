@@ -31,91 +31,91 @@ class CreateRawMaterial extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New raw material'),
-                'pageHead'    => [
-                    'title'        => __('New raw material'),
-                    'icon'         => [
+                'title' => __('New raw material'),
+                'pageHead' => [
+                    'title' => __('New raw material'),
+                    'icon' => [
                         'title' => __('Create raw material'),
-                        'icon'  => 'fal fa-industry'
+                        'icon' => 'fal fa-industry',
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
-                                'parameters' => $request->route()->originalParameters()
+                                'name' => 'grp.org.productions.show.crafts.raw_materials.index',
+                                'parameters' => $request->route()->originalParameters(),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Create raw material'),
+                            'title' => __('Create raw material'),
                             'fields' => [
 
                                 'type' => [
-                                    'type'     => 'select',
-                                    'options'  => RawMaterialTypeEnum::values(),
-                                    'label'    => __('type'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'select',
+                                    'options' => RawMaterialTypeEnum::values(),
+                                    'label' => __('type'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'state' => [
-                                    'type'     => 'select',
-                                    'options'  => RawMaterialStateEnum::values(),
-                                    'label'    => __('state'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'select',
+                                    'options' => RawMaterialStateEnum::values(),
+                                    'label' => __('state'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('code'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'description' => [
-                                    'type'     => 'input',
-                                    'label'    => __('description'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('description'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'unit' => [
-                                    'type'      => 'select',
-                                    'options'   => RawMaterialUnitEnum::values(),
-                                    'label'     => __('unit'),
-                                    'value'     => '',
-                                    'required'  => true
+                                    'type' => 'select',
+                                    'options' => RawMaterialUnitEnum::values(),
+                                    'label' => __('unit'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'unit_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('unit cost'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('unit cost'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'quantity_on_location' => [
-                                    'type'     => 'input',
-                                    'label'    => __('quantity on location'),
-                                    'value'    => '',
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('quantity on location'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'stock_status' => [
-                                    'type'      => 'select',
-                                    'options'   => RawMaterialStockStatusEnum::values(),
-                                    'label'     => __('stock status'),
-                                    'value'     => '',
-                                    'required'  => true
+                                    'type' => 'select',
+                                    'options' => RawMaterialStockStatusEnum::values(),
+                                    'label' => __('stock status'),
+                                    'value' => '',
+                                    'required' => true,
                                 ],
 
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    'route'      => [
-                        'name'        => 'grp.models.production.raw-materials.store',
-                        'parameters'  => [$this->parent->id]
-                    ]
+                    'route' => [
+                        'name' => 'grp.models.production.raw-materials.store',
+                        'parameters' => [$this->parent->id],
+                    ],
                 ],
 
             ]
@@ -130,7 +130,7 @@ class CreateRawMaterial extends OrgAction
             return $request->user()->authTo(
                 [
                     'productions-view.'.$this->organisation->id,
-                    'org-supervisor.'.$this->organisation->id
+                    'org-supervisor.'.$this->organisation->id,
                 ]
             );
         }
@@ -139,7 +139,6 @@ class CreateRawMaterial extends OrgAction
 
         return $request->user()->authTo("productions_rd.{$this->production->id}.view");
     }
-
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): Response
     {
@@ -163,11 +162,11 @@ class CreateRawMaterial extends OrgAction
             IndexRawMaterials::make()->getBreadcrumbs(request()->route()->getName(), $routeParameters),
             [
                 [
-                    'type'         => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating raw material'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

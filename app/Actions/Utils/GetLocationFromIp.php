@@ -15,13 +15,13 @@ class GetLocationFromIp
 {
     use AsAction;
 
-    public function handle(string|null $ip): array
+    public function handle(?string $ip): array
     {
         if ($position = FacadesLocation::get($ip)) {
             return [
                 $position->countryCode,
                 $position->countryName,
-                $position->cityName
+                $position->cityName,
             ];
         }
 

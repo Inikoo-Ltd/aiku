@@ -16,16 +16,14 @@ enum TagScopeEnum: string
 {
     use EnumHelperTrait;
 
-    case PRODUCT_PROPERTY       = 'product_property';
-    case SYSTEM_CUSTOMER        = 'system_customer';
-    case ADMIN_CUSTOMER         = 'admin_customer';
-    case USER_CUSTOMER          = 'user_customer';
-    case OTHER                  = 'other';
+    case PRODUCT_PROPERTY = 'product_property';
+    case SYSTEM_CUSTOMER = 'system_customer';
+    case ADMIN_CUSTOMER = 'admin_customer';
+    case USER_CUSTOMER = 'user_customer';
+    case OTHER = 'other';
 
     /**
      * Get a human-readable version of the enum value.
-     *
-     * @return string
      */
     public function pretty(): string
     {

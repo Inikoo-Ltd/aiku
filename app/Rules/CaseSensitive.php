@@ -14,7 +14,9 @@ class CaseSensitive implements ValidationRule
      * @return void
      */
     public $tableName;
+
     public $message;
+
     public function __construct($tableName)
     {
         $this->tableName = $tableName;
@@ -22,8 +24,8 @@ class CaseSensitive implements ValidationRule
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $query         = DB::table($this->tableName);
-        $column        = $query->getGrammar()->wrap($attribute);
+        $query = DB::table($this->tableName);
+        $column = $query->getGrammar()->wrap($attribute);
         if ($query->whereRaw("lower($column) = lower(?)", [$value])->count() >= 1) {
             $fail('The '.$attribute.' has already been taken.');
         }

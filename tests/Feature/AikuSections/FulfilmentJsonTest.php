@@ -48,11 +48,11 @@ beforeEach(function () {
         ->andReturn();
 
     $this->organisation = createOrganisation();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
-    $this->warehouse    = createWarehouse();
-    $this->fulfilment   = createFulfilment($this->organisation);
-    $location           = $this->warehouse->locations()->first();
-    if (!$location) {
+    $this->adminGuest = createAdminGuest($this->organisation->group);
+    $this->warehouse = createWarehouse();
+    $this->fulfilment = createFulfilment($this->organisation);
+    $location = $this->warehouse->locations()->first();
+    if (! $location) {
         StoreLocation::run(
             $this->warehouse,
             Location::factory()->definition()
@@ -64,7 +64,7 @@ beforeEach(function () {
     }
 
     $shop = Shop::first();
-    if (!$shop) {
+    if (! $shop) {
         $storeData = Shop::factory()->definition();
         data_set($storeData, 'type', ShopTypeEnum::FULFILMENT);
         data_set($storeData, 'warehouses', [$this->warehouse->id]);
@@ -78,22 +78,18 @@ beforeEach(function () {
 
     $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
 
-    list(
+    [
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
-
+    ] = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
 
-
     $pallet = Pallet::first();
-    if (!$pallet) {
+    if (! $pallet) {
         $storeData = Pallet::factory()->definition();
         data_set($storeData, 'state', PalletStateEnum::SUBMITTED);
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
-
-
 
         $pallet = StorePallet::make()->action(
             $this->customer->fulfilmentCustomer,
@@ -104,7 +100,7 @@ beforeEach(function () {
     $this->pallet = $pallet;
 
     $palletDelivery = PalletDelivery::first();
-    if (!$palletDelivery) {
+    if (! $palletDelivery) {
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
         data_set($storeData, 'state', PalletDeliveryStateEnum::IN_PROCESS);
 
@@ -117,7 +113,7 @@ beforeEach(function () {
     $this->palletDelivery = $palletDelivery;
 
     $palletReturn = PalletReturn::first();
-    if (!$palletReturn) {
+    if (! $palletReturn) {
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
         data_set($storeData, 'state', PalletReturnStateEnum::IN_PROCESS);
 
@@ -130,7 +126,7 @@ beforeEach(function () {
     $this->palletReturn = $palletReturn;
 
     $service = Service::first();
-    if (!$service) {
+    if (! $service) {
         data_set($storeData, 'code', 'TEST1');
         data_set($storeData, 'state', ServiceStateEnum::ACTIVE);
         data_set($storeData, 'name', 'test1');
@@ -146,7 +142,7 @@ beforeEach(function () {
     $this->service = $service;
 
     $physicalGoods = Product::first();
-    if (!$physicalGoods) {
+    if (! $physicalGoods) {
         data_set($storeData, 'code', 'TEST2');
         data_set($storeData, 'name', 'test2');
         data_set($storeData, 'state', ProductStateEnum::ACTIVE);
@@ -173,28 +169,28 @@ beforeEach(function () {
 });
 
 test('UI Index fulfilment services (delivery)', function () {
-    $response     = $this->get(route('grp.json.fulfilment.delivery.services.index', [$this->fulfilment->slug, $this->palletDelivery->slug]));
+    $response = $this->get(route('grp.json.fulfilment.delivery.services.index', [$this->fulfilment->slug, $this->palletDelivery->slug]));
     $responseData = $response->json('data');
     $this->assertNotEmpty($responseData);
     $response->assertStatus(200);
 });
 
 test('UI Index fulfilment services (return)', function () {
-    $response     = $this->get(route('grp.json.fulfilment.return.services.index', [$this->fulfilment->slug, $this->palletReturn->slug]));
+    $response = $this->get(route('grp.json.fulfilment.return.services.index', [$this->fulfilment->slug, $this->palletReturn->slug]));
     $responseData = $response->json('data');
     $this->assertNotEmpty($responseData);
     $response->assertStatus(200);
 });
 
 test('UI Index fulfilment physical goods (delivery)', function () {
-    $response     = $this->get(route('grp.json.fulfilment.delivery.physical-goods.index', [$this->fulfilment->slug, $this->palletDelivery->slug]));
+    $response = $this->get(route('grp.json.fulfilment.delivery.physical-goods.index', [$this->fulfilment->slug, $this->palletDelivery->slug]));
     $responseData = $response->json('data');
     $this->assertNotEmpty($responseData);
     $response->assertStatus(200);
 });
 
 test('UI Index fulfilment physical goods (return)', function () {
-    $response     = $this->get(route('grp.json.fulfilment.return.physical-goods.index', [$this->fulfilment->slug, $this->palletReturn->slug]));
+    $response = $this->get(route('grp.json.fulfilment.return.physical-goods.index', [$this->fulfilment->slug, $this->palletReturn->slug]));
     $responseData = $response->json('data');
     $this->assertNotEmpty($responseData);
     $response->assertStatus(200);

@@ -30,7 +30,6 @@ class MacroServiceProvider extends ServiceProvider
         // be used for binding services into the container, which is not needed here.
     }
 
-
     public function boot(): void
     {
         Str::macro('possessive', function (string $string): string {
@@ -43,7 +42,7 @@ class MacroServiceProvider extends ServiceProvider
             return $this->props['queryBuilderProps'] ?? [];
         });
 
-        InertiaResponse::macro('table', function (callable $withTableBuilder = null): Response {
+        InertiaResponse::macro('table', function (?callable $withTableBuilder = null): Response {
             $tableBuilder = new InertiaTable(request());
 
             if ($withTableBuilder) {
@@ -56,7 +55,8 @@ class MacroServiceProvider extends ServiceProvider
         Builder::macro('whereAnyWordStartWith', function (string $column, string $value): Builder {
             /** @var Builder $this */
             $quotedValue = DB::connection()->getPdo()->quote($value);
-            return $this->where(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
+
+            return $this->where(DB::raw('extensions.remove_accents('.$column.')  COLLATE "C"'), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
                 ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
 
         });
@@ -68,13 +68,14 @@ class MacroServiceProvider extends ServiceProvider
 
         Builder::macro('whereWith', function (string $column, string $value): Builder {
             /** @var Builder $this */
-            return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", "%".$value.'%');
+            return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
         });
 
         Builder::macro('orWhereAnyWordStartWith', function (string $column, string $value): Builder {
             /** @var Builder $this */
             $quotedValue = DB::connection()->getPdo()->quote($value);
-            return $this->orWhere(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
+
+            return $this->orWhere(DB::raw('extensions.remove_accents('.$column.')  COLLATE "C"'), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
                 ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
         });
 
@@ -85,9 +86,8 @@ class MacroServiceProvider extends ServiceProvider
 
         Builder::macro('orWhereWith', function (string $column, string $value): Builder {
             /** @var Builder $this */
-            return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", "%".$value.'%');
+            return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
         });
-
 
         Request::macro('validatedShiftToArray', function ($map = []): array {
             /** @noinspection PhpUndefinedMethodInspection */
@@ -102,7 +102,7 @@ class MacroServiceProvider extends ServiceProvider
             return $validated;
         });
 
-        if (!Collection::hasMacro('paginate')) {
+        if (! Collection::hasMacro('paginate')) {
             Collection::macro(
                 'paginate',
                 function ($perPage = 15, $page = null, $options = []) {

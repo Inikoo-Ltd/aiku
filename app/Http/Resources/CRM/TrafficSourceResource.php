@@ -10,8 +10,8 @@
 
 namespace App\Http\Resources\CRM;
 
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\CRM\TrafficSource;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class TrafficSourceResource extends JsonResource
 {
@@ -19,10 +19,11 @@ class TrafficSourceResource extends JsonResource
     {
         /** @var TrafficSource $poll */
         $trafficSource = $this;
+
         return [
-            'id'                       => $trafficSource->id,
-            'slug'                     => $trafficSource->slug,
-            'name'                     => $trafficSource->name,
+            'id' => $trafficSource->id,
+            'slug' => $trafficSource->slug,
+            'name' => $trafficSource->name,
         ];
     }
 }

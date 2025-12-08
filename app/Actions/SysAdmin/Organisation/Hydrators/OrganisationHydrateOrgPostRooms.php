@@ -31,5 +31,4 @@ class OrganisationHydrateOrgPostRooms implements ShouldBeUnique
 
         $organisation->commsStats()->update($stats);
     }
-
 }

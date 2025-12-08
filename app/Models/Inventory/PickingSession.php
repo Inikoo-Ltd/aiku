@@ -57,9 +57,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Trolley> $trolleys
  * @property-read User $user
  * @property-read \App\Models\Inventory\Warehouse $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSession newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSession newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSession query()
+ *
  * @mixin \Eloquent
  */
 class PickingSession extends Model
@@ -70,14 +72,13 @@ class PickingSession extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'state'                  => PickingSessionStateEnum::class,
+        'state' => PickingSessionStateEnum::class,
     ];
 
     public function getRouteKeyName(): string
     {
         return 'slug';
     }
-
 
     public function group(): BelongsTo
     {

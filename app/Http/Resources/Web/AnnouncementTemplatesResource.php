@@ -16,9 +16,9 @@ class AnnouncementTemplatesResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                           => $this->id,
-            'code'                         => $this->code,
-            'screenshot'                   => $this->screenshot ? GetPictureSources::run($this->screenshot->getImage()) : null
+            'id' => $this->id,
+            'code' => $this->code,
+            'screenshot' => $this->screenshot ? GetPictureSources::run($this->screenshot->getImage()) : null,
         ];
     }
 }

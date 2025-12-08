@@ -15,9 +15,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use HasGroupOrganisationRelationship;
+return new class extends Migration
+{
     use HasAssetModel;
+    use HasGroupOrganisationRelationship;
 
     public function up(): void
     {
@@ -41,12 +42,11 @@ return new class () extends Migration {
             $table->string('unit_relationship_type')->nullable()->index();
             $table->unsignedInteger('available_quantity')->default(0)->nullable()->comment('outer available quantity for sale');
 
-            //variants fields
+            // variants fields
 
             $table->decimal('variant_ratio', 9, 3)->default(1);
             $table->boolean('variant_is_visible')->default(true)->index();
             $table->unsignedInteger('main_product_id')->nullable()->index();
-
 
             $table->timestampsTz();
             $table->datetimeTz('fetched_at')->nullable();
@@ -60,7 +60,6 @@ return new class () extends Migration {
             $table->foreign('main_product_id')->references('id')->on('products');
         });
     }
-
 
     public function down(): void
     {

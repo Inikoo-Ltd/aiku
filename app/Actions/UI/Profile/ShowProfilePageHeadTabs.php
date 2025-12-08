@@ -18,32 +18,33 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ShowProfilePageHeadTabs extends OrgAction
 {
     use AsAction;
-    use WithInertia;
     use WithActionButtons;
+    use WithInertia;
 
     public function asController(ActionRequest $request): array
     {
         $this->initialisationFromGroup(group(), $request)->withTab(ProfileTabsEnum::values());
+
         return [
-            "pageHead"                       => [
-                "title"        => $request->user()->contact_name,
-                'model'        => __('Profile'),
-                'actions'      => [
+            'pageHead' => [
+                'title' => $request->user()->contact_name,
+                'model' => __('Profile'),
+                'actions' => [
                     [
-                        'type'  => 'button',
-                        'key'   => 'edit-profile',
+                        'type' => 'button',
+                        'key' => 'edit-profile',
                         'style' => 'edit',
                         'label' => __('Edit profile'),
                         'route' => [
-                            'name'       => 'grp.profile.edit',
-                            'parameters' => array_values(request()->route()->originalParameters())
+                            'name' => 'grp.profile.edit',
+                            'parameters' => array_values(request()->route()->originalParameters()),
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ],
-            'tabs'                           => [
-                'current'    => $this->tab,
-                'navigation' => ProfileTabsEnum::navigation()
+            'tabs' => [
+                'current' => $this->tab,
+                'navigation' => ProfileTabsEnum::navigation(),
             ],
 
         ];

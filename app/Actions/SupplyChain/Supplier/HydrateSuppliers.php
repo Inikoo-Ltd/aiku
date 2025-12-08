@@ -26,6 +26,4 @@ class HydrateSuppliers extends HydrateModel
         SupplierHydratePurchaseOrders::run($supplier);
         SupplierHydrateStockDeliveries::run($supplier);
     }
-
-
 }

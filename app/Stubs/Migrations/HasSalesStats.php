@@ -8,6 +8,4 @@
 
 namespace App\Stubs\Migrations;
 
-trait HasSalesStats
-{
-}
+trait HasSalesStats {}

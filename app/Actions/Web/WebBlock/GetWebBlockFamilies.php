@@ -67,11 +67,11 @@ class GetWebBlockFamilies
 
         $productRoute = [
             'workshop' => [
-                'name'       => 'grp.json.product_category.products.index',
+                'name' => 'grp.json.product_category.products.index',
                 'parameters' => [$webpage->model->slug],
             ],
-            'iris'     => [
-                'name'       => 'iris.json.product_category.products.index',
+            'iris' => [
+                'name' => 'iris.json.product_category.products.index',
                 'parameters' => [$webpage->model->slug],
             ],
         ];
@@ -90,5 +90,4 @@ class GetWebBlockFamilies
 
         return $webBlock;
     }
-
 }

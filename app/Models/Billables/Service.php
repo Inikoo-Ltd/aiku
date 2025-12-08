@@ -66,6 +66,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecurringBill> $recurringBills
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Billables\ServiceFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service newQuery()
@@ -73,30 +74,31 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Service extends Model implements Auditable
 {
-    use SoftDeletes;
+    use HasFactory;
+    use HasHistory;
+    use HasSlug;
     use HasUniversalSearch;
     use InAssetModel;
-    use HasHistory;
-    use HasFactory;
-    use HasSlug;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     protected $casts = [
-        'price'     => 'decimal:2',
-        'state'     => ServiceStateEnum::class,
+        'price' => 'decimal:2',
+        'state' => ServiceStateEnum::class,
         'edit_type' => ServiceEditTypeEnum::class,
-        'status'    => 'boolean',
-        'data'      => 'array',
-        'settings'  => 'array',
+        'status' => 'boolean',
+        'data' => 'array',
+        'settings' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
     ];
 
@@ -119,9 +121,8 @@ class Service extends Model implements Auditable
         'unit',
         'barcode',
         'rrp',
-        'unit_relationship_type'
+        'unit_relationship_type',
     ];
-
 
     public function getRouteKeyName(): string
     {
@@ -143,5 +144,4 @@ class Service extends Model implements Auditable
     {
         return $this->morphToMany(RecurringBill::class, 'model', 'model_has_recurring_bills')->withTimestamps();
     }
-
 }

@@ -14,10 +14,10 @@ enum OrgStockQuantityStatusEnum: string
 {
     use EnumHelperTrait;
 
-    case EXCESS             = 'excess';
-    case IDEAL              = 'ideal';
-    case LOW                = 'low';
-    case CRITICAL           = 'critical';
-    case OUT_OF_STOCK       = 'out-of-stock';
-    case ERROR              = 'error';
+    case EXCESS = 'excess';
+    case IDEAL = 'ideal';
+    case LOW = 'low';
+    case CRITICAL = 'critical';
+    case OUT_OF_STOCK = 'out-of-stock';
+    case ERROR = 'error';
 }

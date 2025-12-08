@@ -32,11 +32,11 @@ class ShowRetinaDepartment extends RetinaAction
         return $department;
     }
 
-
     public function asController(ProductCategory $department, ActionRequest $request): ProductCategory
     {
 
         $this->initialisation($request)->withTab(RetinaDepartmentTabsEnum::values());
+
         return $this->handle($department);
     }
 
@@ -45,62 +45,62 @@ class ShowRetinaDepartment extends RetinaAction
         return Inertia::render(
             'Catalogue/RetinaDepartment',
             [
-                'title'       => __('department'),
+                'title' => __('department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($department, $request),
-                    'next'     => $this->getNext($department, $request),
+                    'next' => $this->getNext($department, $request),
                 ],
-                'pageHead'    => [
-                    'title'         => $department->name,
-                    'model'        => __('Department'),
-                    'icon'          => [
-                        'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('Department')
+                'pageHead' => [
+                    'title' => $department->name,
+                    'model' => __('Department'),
+                    'icon' => [
+                        'icon' => ['fal', 'fa-folder-tree'],
+                        'title' => __('Department'),
                     ],
                     'iconRight' => $department->state->stateIcon()[$department->state->value],
                     'exports' => [
                         [
                             'routes' => [
                                 [
-                                    'label'   => 'CSV',
-                                    'key'     => 'csv',
-                                    'icon'    => ['fal', 'fa-file-csv'],
+                                    'label' => 'CSV',
+                                    'key' => 'csv',
+                                    'icon' => ['fal', 'fa-file-csv'],
                                     'popover' => false,
-                                    'route'   => [
-                                        'name'       => 'retina.catalogue.feeds.product_category.download',
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product_category.download',
                                         'parameters' => [
                                             'productCategory' => $department->slug,
-                                            'type' => 'products_csv'
-                                        ]
+                                            'type' => 'products_csv',
+                                        ],
                                     ],
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => RetinaDepartmentTabsEnum::navigation($department)
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => RetinaDepartmentTabsEnum::navigation($department),
                 ],
                 'actions' => [
                     [
                         'route' => [
                             'name' => 'retina.models.portfolio.store_to_multi_channels',
                             'parameters' => [
-                                'family' => $department->id
-                            ]
+                                'family' => $department->id,
+                            ],
                         ],
                         'type' => 'button',
                         'style' => 'create',
                         'label' => __('to Portfolio'),
-                    ]
+                    ],
                 ],
-                "data" => [
-                    'department'    => DepartmentResource::make($department)->resolve(),
+                'data' => [
+                    'department' => DepartmentResource::make($department)->resolve(),
                     'showcase' => $department->id,
                     'products' => ProductsResource::collection(
                         IndexRetinaProductsInCatalogue::run($department)
@@ -171,7 +171,6 @@ class ShowRetinaDepartment extends RetinaAction
                         )
                     )),
 
-
             ]
         )->table(
             IndexRetinaSubDepartments::make()->tableStructure(
@@ -194,7 +193,6 @@ class ShowRetinaDepartment extends RetinaAction
         );
     }
 
-
     public function jsonResponse(ProductCategory $department): DepartmentsResource
     {
         return new DepartmentsResource($department);
@@ -206,18 +204,18 @@ class ShowRetinaDepartment extends RetinaAction
             return [
 
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Departments')
+                            'label' => __('Departments'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
                             'label' => $department->code,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
 
@@ -228,20 +226,19 @@ class ShowRetinaDepartment extends RetinaAction
 
         return match ($routeName) {
 
-            'retina.catalogue.departments.show' =>
-            array_merge(
+            'retina.catalogue.departments.show' => array_merge(
                 ShowRetinaCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $department,
                     [
                         'index' => [
-                            'name'       => 'retina.catalogue.departments.index',
-                            'parameters' => $routeParameters
+                            'name' => 'retina.catalogue.departments.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'retina.catalogue.departments.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'retina.catalogue.departments.show',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -266,7 +263,7 @@ class ShowRetinaDepartment extends RetinaAction
 
     private function getNavigation(?ProductCategory $department, string $routeName): ?array
     {
-        if (!$department) {
+        if (! $department) {
             return null;
         }
 
@@ -275,11 +272,11 @@ class ShowRetinaDepartment extends RetinaAction
             'retina.catalogue.departments.show' => [
                 'label' => $department->name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'department'   => $department->slug
-                    ]
-                ]
+                        'department' => $department->slug,
+                    ],
+                ],
             ],
         };
     }

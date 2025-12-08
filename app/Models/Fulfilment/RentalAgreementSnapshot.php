@@ -22,9 +22,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Fulfilment\RentalAgreement $rentalAgreement
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementSnapshot newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementSnapshot newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementSnapshot query()
+ *
  * @mixin \Eloquent
  */
 class RentalAgreementSnapshot extends Model
@@ -32,12 +34,11 @@ class RentalAgreementSnapshot extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'data'                        => 'array',
+        'data' => 'array',
     ];
 
-
     protected $attributes = [
-        'data'           => '{}',
+        'data' => '{}',
     ];
 
     public function rentalAgreement(): BelongsTo

@@ -28,11 +28,10 @@ class GroupHydratePaymentServiceProviders implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
         $stats = [
-            'number_payment_service_providers'     => $group->paymentServiceProviders()->count(),
+            'number_payment_service_providers' => $group->paymentServiceProviders()->count(),
             'number_org_payment_service_providers' => $group->orgPaymentServiceProviders()->count(),
 
         ];
@@ -62,7 +61,6 @@ class GroupHydratePaymentServiceProviders implements ShouldBeUnique
                 }
             )
         );
-
 
         $group->accountingStats()->update($stats);
     }

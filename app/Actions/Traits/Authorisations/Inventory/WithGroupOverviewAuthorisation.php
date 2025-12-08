@@ -14,6 +14,6 @@ trait WithGroupOverviewAuthorisation
 {
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("group-overview");
+        return $request->user()->authTo('group-overview');
     }
 }

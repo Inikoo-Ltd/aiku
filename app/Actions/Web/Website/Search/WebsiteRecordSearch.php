@@ -26,64 +26,65 @@ class WebsiteRecordSearch
             if ($website->universalSearch) {
                 $website->universalSearch()->delete();
             }
+
             return;
         }
 
         $modelData = [
-            'group_id'          => $website->group_id,
-            'organisation_id'   => $website->organisation_id,
+            'group_id' => $website->group_id,
+            'organisation_id' => $website->organisation_id,
             'organisation_slug' => $website->organisation->slug,
-            'shop_id'           => $website->shop_id,
-            'shop_slug'         => $website->shop->slug,
-            'website_id'        => $website->id,
-            'website_slug'      => $website->slug,
-            'sections'          => ['web'],
-            'haystack_tier_1'   => trim($website->code.' '.$website->name.' '.$website->domain),
-            'result'            => [
-                'route'     => match($website->type) {
+            'shop_id' => $website->shop_id,
+            'shop_slug' => $website->shop->slug,
+            'website_id' => $website->id,
+            'website_slug' => $website->slug,
+            'sections' => ['web'],
+            'haystack_tier_1' => trim($website->code.' '.$website->name.' '.$website->domain),
+            'result' => [
+                'route' => match ($website->type) {
                     'fulfilment' => [
-                        'name'          => 'grp.org.fulfilments.show.web.websites.show',
-                        'parameters'    => [
+                        'name' => 'grp.org.fulfilments.show.web.websites.show',
+                        'parameters' => [
                             $website->organisation->slug,
                             $website->shop->slug,
-                            $website->slug
-                        ]
+                            $website->slug,
+                        ],
                     ],
                     default => [
-                        'name'          => 'grp.org.shops.show.web.websites.show',
-                        'parameters'    => [
+                        'name' => 'grp.org.shops.show.web.websites.show',
+                        'parameters' => [
                             $website->organisation->slug,
                             $website->shop->slug,
-                            $website->slug
-                        ]
+                            $website->slug,
+                        ],
                     ],
                 },
-                'description'     => [
-                    'label'   => $website->name
+                'description' => [
+                    'label' => $website->name,
                 ],
-                'code'         => [
+                'code' => [
                     'label' => $website->code,
                 ],
-                'icon'          => [
-                    'icon' => 'fal fa-globe'
+                'icon' => [
+                    'icon' => 'fal fa-globe',
                 ],
-                'meta'          => [
+                'meta' => [
                     [
                         'icon' => $website->state->stateIcon()[$website->state->value],
-                        'label'     => $website->state->labels()[$website->state->value],
-                        'tooltip'   => __('State'),
+                        'label' => $website->state->labels()[$website->state->value],
+                        'tooltip' => __('State'),
                     ],
                     [
-                        'type'      => 'date',
-                        'label'     => $website->created_at,
-                        'tooltip'   => __('Created at')
+                        'type' => 'date',
+                        'label' => $website->created_at,
+                        'tooltip' => __('Created at'),
                     ],
                     [
-                        'label'     => $website->domain,
-                        'tooltip'   => __('Domain')
+                        'label' => $website->domain,
+                        'tooltip' => __('Domain'),
                     ],
                 ],
-            ]
+            ],
         ];
 
         if ($website->type == WebsiteTypeEnum::FULFILMENT) {
@@ -96,8 +97,5 @@ class WebsiteRecordSearch
             $modelData
         );
 
-
     }
-
-
 }

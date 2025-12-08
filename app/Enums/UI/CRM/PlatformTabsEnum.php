@@ -17,29 +17,29 @@ enum PlatformTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE   = 'showcase';
-    case CHANNELS   = 'channels';
-    case CUSTOMERS  = 'customers';
-    case PRODUCTS   = 'products';
+    case SHOWCASE = 'showcase';
+    case CHANNELS = 'channels';
+    case CUSTOMERS = 'customers';
+    case PRODUCTS = 'products';
 
     public function blueprint(): array
     {
         return match ($this) {
             PlatformTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fal fa-tachometer-alt',
+                'icon' => 'fal fa-tachometer-alt',
             ],
             PlatformTabsEnum::PRODUCTS => [
                 'title' => __('Portfolios'),
-                'icon'  => 'fal fa-cube',
+                'icon' => 'fal fa-cube',
             ],
             PlatformTabsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
-                'icon'  => 'fal fa-users',
+                'icon' => 'fal fa-users',
             ],
             PlatformTabsEnum::CHANNELS => [
                 'title' => __('Channels'),
-                'icon'  => 'fal fa-code-branch',
+                'icon' => 'fal fa-code-branch',
                 'icon_rotation' => '90',
             ],
         };

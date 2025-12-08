@@ -11,8 +11,8 @@ namespace App\Imports\CRM;
 use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Imports\WithImport;
-use App\Models\Helpers\Upload;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Upload;
 use App\Rules\Phone;
 use Exception;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
@@ -21,17 +21,17 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class ProspectImport implements SkipsOnFailure, ToCollection, WithEvents, WithHeadingRow, WithValidation
 {
     use WithImport;
 
     protected Shop $scope;
+
     public function __construct(Shop $scope, Upload $upload)
     {
-        $this->scope  = $scope;
+        $this->scope = $scope;
         $this->upload = $upload;
     }
-
 
     public function storeModel($row, $uploadRecord): void
     {
@@ -45,16 +45,14 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
             'phone' => $validatedData['telephone'],
         ];
 
-
-
         try {
             $prospectKey = $validatedData['id_prospect_key'];
             $existingProspect = null;
             if (is_numeric($prospectKey)) {
                 $prospectKey = (int) $prospectKey;
                 $existingProspect = $this->scope->prospects()
-                ->where('id', $prospectKey)
-                ->first();
+                    ->where('id', $prospectKey)
+                    ->first();
             }
 
             $isNew = is_string($validatedData['id_prospect_key'])
@@ -65,17 +63,14 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
             } elseif ($isNew) {
                 StoreProspect::run($this->scope, $modelData);
             } else {
-                throw new Exception("Part key not found");
+                throw new Exception('Part key not found');
             }
-
-
 
             $this->setRecordAsCompleted($uploadRecord);
         } catch (Exception $e) {
             $this->setRecordAsFailed($uploadRecord, [$e->getMessage()]);
         }
     }
-
 
     protected function processExcelData($data)
     {
@@ -92,8 +87,6 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         return $mappedRow;
     }
 
-
-
     public function rules(): array
     {
         return [
@@ -101,18 +94,17 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
                 'sometimes',
                 'nullable',
             ],
-            'company'         => ['nullable', 'nullable', 'string', 'max:255'],
-            'contact_name'    => ['nullable', 'nullable', 'string', 'max:255'],
-            'email'           => [
-                'present','nullable',
+            'company' => ['nullable', 'nullable', 'string', 'max:255'],
+            'contact_name' => ['nullable', 'nullable', 'string', 'max:255'],
+            'email' => [
+                'present', 'nullable',
                 'email',
                 'max:500',
 
-
             ],
-            'telephone'           => [
+            'telephone' => [
                 'nullable',
-                new Phone(),
+                new Phone,
             ],
             // 'contact_website' => ['nullable'],
             // 'tags'            => ['nullable', 'array'],

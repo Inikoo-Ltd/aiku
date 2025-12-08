@@ -437,9 +437,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $registrations_without_orders_pq4
  * @property int $registrations_without_orders_pq5
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingIntervals query()
+ *
  * @mixin \Eloquent
  */
 class GroupOrderingIntervals extends Model

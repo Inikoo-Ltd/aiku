@@ -23,11 +23,10 @@ class GroupHydrateArtefacts implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
         $stats = [
-            'number_artefacts' => $group->artefacts()->count()
+            'number_artefacts' => $group->artefacts()->count(),
         ];
 
         $group->manufactureStats()->update($stats);

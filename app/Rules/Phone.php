@@ -22,7 +22,7 @@ class Phone implements ValidationRule
     {
         $validate = preg_match('%^(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-. /]?)?((?:\(?\d+\)?[\-. /]?)*)(?:[\-. /]?(?:#|ext\.?|extension|x)[\-. /]?(\d+))?$%i', $value) && strlen($value) >= 10;
 
-        if (!$validate) {
+        if (! $validate) {
             $fail(__('The phone :attribute is invalid', ['attribute' => $attribute]));
         }
     }

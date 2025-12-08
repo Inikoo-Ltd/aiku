@@ -24,8 +24,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrdersBacklog extends OrgAction
 {
-    use WithTabsBox;
     use WithOrderingAuthorisation;
+    use WithTabsBox;
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
@@ -49,13 +49,13 @@ class ShowOrdersBacklog extends OrgAction
             'Ordering/OrdersBacklog',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($parent, $request->route()->originalParameters()),
-                'title'       => __('Orders backlog'),
-                'pageHead'    => [
+                'title' => __('Orders backlog'),
+                'pageHead' => [
                     'title' => __('Orders backlog'),
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => $tabsBox
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => $tabsBox,
                 ],
 
                 OrdersBacklogTabsEnum::IN_BASKET->value => $this->tab == OrdersBacklogTabsEnum::IN_BASKET->value ?
@@ -108,36 +108,34 @@ class ShowOrdersBacklog extends OrgAction
     public function getBreadcrumbs(Organisation|Shop $parent, array $routeParameters): array
     {
         return match (class_basename($parent)) {
-            'Shop' =>
-            array_merge(
+            'Shop' => array_merge(
                 ShowOrderingDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.ordering.backlog',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.shops.show.ordering.backlog',
+                                'parameters' => $routeParameters,
                             ],
-                            'label' => __('Orders backlog')
-                        ]
-                    ]
+                            'label' => __('Orders backlog'),
+                        ],
+                    ],
                 ]
             ),
-            default =>
-            array_merge(
+            default => array_merge(
                 ShowOrganisationDashboard::make()->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.ordering.backlog',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.ordering.backlog',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Orders backlog').' ('.__('all shops').')',
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             )
         };

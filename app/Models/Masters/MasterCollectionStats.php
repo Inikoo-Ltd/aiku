@@ -35,9 +35,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_parents
  * @property int $number_current_collections
  * @property-read \App\Models\Masters\MasterCollection $masterCollection
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionStats query()
+ *
  * @mixin \Eloquent
  */
 class MasterCollectionStats extends Model

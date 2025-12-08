@@ -31,13 +31,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $currency_code
  * @property mixed $payment_account_type
  * @property mixed $payment_account_code
- *
  */
 class RefundPaymentsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $apiRefund    = false;
+        $apiRefund = false;
         $manualRefund = false;
         //        if ($this->payment_account_code == 'checkout-v2') {
         //            $apiRefund = true;
@@ -46,39 +45,39 @@ class RefundPaymentsResource extends JsonResource
             $manualRefund = true;
         }
 
-        return array(
-            'id'                   => $this->id,
-            'status'               => $this->status,
-            'refunded'             => $this->refunded,
+        return [
+            'id' => $this->id,
+            'status' => $this->status,
+            'refunded' => $this->refunded,
             'payment_account_code' => $this->payment_account_code,
             'payment_account_name' => $this->payment_account_name,
             'payment_account_slug' => $this->payment_account_slug,
-            'date'                 => $this->date,
-            'reference'            => $this->reference,
-            'created_at'           => $this->created_at,
-            'updated_at'           => $this->updated_at,
-            'amount'               => $this->amount,
-            'manual_refund_route'  => [
-                'name'       => 'grp.models.payment.refund_manual',
+            'date' => $this->date,
+            'reference' => $this->reference,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'amount' => $this->amount,
+            'manual_refund_route' => [
+                'name' => 'grp.models.payment.refund_manual',
                 'parameters' => [
-                    'payment' => $this->id
-                ]
+                    'payment' => $this->id,
+                ],
             ],
-            'api_refund_route'     => [
-                'name'       => 'grp.models.payment.refund_api',
+            'api_refund_route' => [
+                'name' => 'grp.models.payment.refund_api',
                 'parameters' => [
-                    'payment' => $this->id
-                ]
+                    'payment' => $this->id,
+                ],
             ],
             'balance_refund_route' => [
-                'name'       => 'grp.models.payment.refund_to_balance',
+                'name' => 'grp.models.payment.refund_to_balance',
                 'parameters' => [
-                    'payment' => $this->id
-                ]
+                    'payment' => $this->id,
+                ],
             ],
-            'currency_code'        => $this->currency_code,
-            'can_api_refund'       => $apiRefund,
-            'can_manual_refund'    => $manualRefund
-        );
+            'currency_code' => $this->currency_code,
+            'can_api_refund' => $apiRefund,
+            'can_manual_refund' => $manualRefund,
+        ];
     }
 }

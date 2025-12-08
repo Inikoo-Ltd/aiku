@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     /**
      * PostgresSQL cannot create/drop indexes CONCURRENTLY inside a transaction.
      * Disable the migration transaction so we can use CONCURRENTLY safely.
@@ -19,7 +20,7 @@ return new class () extends Migration {
 
     public function up(): void
     {
-        if (!Schema::hasTable('portfolios')) {
+        if (! Schema::hasTable('portfolios')) {
             return;
         }
 
@@ -46,7 +47,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        if (!Schema::hasTable('portfolios')) {
+        if (! Schema::hasTable('portfolios')) {
             return;
         }
 

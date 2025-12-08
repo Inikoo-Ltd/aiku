@@ -18,15 +18,15 @@ use App\Actions\Web\Redirect\UI\ShowRedirect;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
-use App\Actions\Web\Webpage\UI\ShowSidebarWorkshop;
-use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
-use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
 use App\Actions\Web\Webpage\UI\ShowFooterWorkshop;
 use App\Actions\Web\Webpage\UI\ShowHeaderWorkshop;
 use App\Actions\Web\Webpage\UI\ShowMenuWorkshop;
+use App\Actions\Web\Webpage\UI\ShowSidebarWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpage;
 use App\Actions\Web\Webpage\UI\ShowWebpagesTree;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
+use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
+use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
 use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
@@ -72,7 +72,6 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
 
     Route::get('/type/operations', [IndexWebpages::class, 'operationsInFulfilment'])->name('index.type.operations');
 
-
     Route::get('create', [CreateWebpage::class, 'inFulfilment'])->name('create');
 
     Route::prefix('{webpage}')
@@ -94,8 +93,6 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
         });
 });
 
-
-
 Route::prefix('{website}/banners')->name('banners.')->group(function () {
     Route::get('', [IndexBanners::class, 'inFulfilment'])->name('index');
     Route::get('/create', [CreateBanner::class, 'inFulfilment'])->name('create');
@@ -106,6 +103,6 @@ Route::prefix('{website}/banners')->name('banners.')->group(function () {
 });
 
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
-    Route::get('', [ShowWebsiteAnalyticsDashboard::class,'inFulfilment'])->name('dashboard');
-    Route::get('web-user-requests', [IndexWebUserRequests::class,'inFulfilment'])->name('web_user_requests.index');
+    Route::get('', [ShowWebsiteAnalyticsDashboard::class, 'inFulfilment'])->name('dashboard');
+    Route::get('web-user-requests', [IndexWebUserRequests::class, 'inFulfilment'])->name('web_user_requests.index');
 });

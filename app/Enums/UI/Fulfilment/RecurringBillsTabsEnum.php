@@ -17,20 +17,20 @@ enum RecurringBillsTabsEnum: string
     use HasTabs;
 
     case RECURRING_BILLS = 'recurring_bills';
-    case HISTORY         = 'history';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
             RecurringBillsTabsEnum::RECURRING_BILLS => [
                 'title' => __('Recurring Bills'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
 
             RecurringBillsTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ]
         };

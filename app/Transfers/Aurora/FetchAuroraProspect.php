@@ -24,15 +24,13 @@ class FetchAuroraProspect extends FetchAurora
     {
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Prospect Store Key'});
 
-
         if ($shop->is_aiku) {
             return;
         }
 
-
         $customerId = null;
         if ($this->auroraModelData->{'Prospect Customer Key'}) {
-            $customer   = $this->parseCustomer(
+            $customer = $this->parseCustomer(
                 $this->organisation->id.':'.
                 $this->auroraModelData->{'Prospect Customer Key'}
             );
@@ -43,34 +41,34 @@ class FetchAuroraProspect extends FetchAurora
             $lastContacted = $this->parseDatetime($this->auroraModelData->{'Prospect Last Contacted Date'});
         }
 
-        $dontContactMe  = false;
+        $dontContactMe = false;
         $contactedState = ProspectContactedStateEnum::NA;
-        $failStatus     = ProspectFailStatusEnum::NA;
-        $successStatus  = ProspectSuccessStatusEnum::NA;
+        $failStatus = ProspectFailStatusEnum::NA;
+        $successStatus = ProspectSuccessStatusEnum::NA;
         switch ($this->auroraModelData->{'Prospect Status'}) {
             case 'NoContacted':
-                $state         = ProspectStateEnum::NO_CONTACTED;
+                $state = ProspectStateEnum::NO_CONTACTED;
                 $lastContacted = null;
                 break;
             case 'Contacted':
-                $state          = ProspectStateEnum::CONTACTED;
+                $state = ProspectStateEnum::CONTACTED;
                 $contactedState = ProspectContactedStateEnum::NEVER_OPEN;
                 break;
             case 'NotInterested':
-                $state         = ProspectStateEnum::FAIL;
-                $failStatus    = ProspectFailStatusEnum::UNSUBSCRIBED;
+                $state = ProspectStateEnum::FAIL;
+                $failStatus = ProspectFailStatusEnum::UNSUBSCRIBED;
                 $dontContactMe = true;
                 break;
             case 'Registered':
-                $state         = ProspectStateEnum::SUCCESS;
+                $state = ProspectStateEnum::SUCCESS;
                 $successStatus = ProspectSuccessStatusEnum::REGISTERED;
                 break;
             case 'Invoiced':
-                $state         = ProspectStateEnum::SUCCESS;
+                $state = ProspectStateEnum::SUCCESS;
                 $successStatus = ProspectSuccessStatusEnum::INVOICED;
                 break;
             case 'Bounced':
-                $state      = ProspectStateEnum::FAIL;
+                $state = ProspectStateEnum::FAIL;
                 $failStatus = ProspectFailStatusEnum::HARD_BOUNCED;
                 break;
             default:
@@ -87,22 +85,22 @@ class FetchAuroraProspect extends FetchAurora
 
         $this->parsedData['prospect'] =
             [
-                'state'             => $state,
-                'contacted_state'   => $contactedState,
-                'fail_status'       => $failStatus,
-                'success_status'    => $successStatus,
-                'dont_contact_me'   => $dontContactMe,
+                'state' => $state,
+                'contacted_state' => $contactedState,
+                'fail_status' => $failStatus,
+                'success_status' => $successStatus,
+                'dont_contact_me' => $dontContactMe,
                 'last_contacted_at' => $lastContacted,
-                'contact_name'      => $this->auroraModelData->{'Prospect Main Contact Name'},
-                'company_name'      => $this->auroraModelData->{'Prospect Company Name'},
-                'email'             => $email,
-                'phone'             => $phone,
-                'contact_website'   => $this->auroraModelData->{'Prospect Website'},
-                'source_id'         => $this->organisation->id.':'.$this->auroraModelData->{'Prospect Key'},
-                'customer_id'       => $customerId,
-                'address'           => $this->parseAddress(prefix: 'Prospect', auAddressData: $this->auroraModelData),
-                'fetched_at'        => now(),
-                'last_fetched_at'   => now(),
+                'contact_name' => $this->auroraModelData->{'Prospect Main Contact Name'},
+                'company_name' => $this->auroraModelData->{'Prospect Company Name'},
+                'email' => $email,
+                'phone' => $phone,
+                'contact_website' => $this->auroraModelData->{'Prospect Website'},
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Prospect Key'},
+                'customer_id' => $customerId,
+                'address' => $this->parseAddress(prefix: 'Prospect', auAddressData: $this->auroraModelData),
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
             ];
         if ($this->parseDatetime($this->auroraModelData->{'Prospect Created Date'})) {
             $this->parsedData['prospect']['created_at'] = $this->auroraModelData->{'Prospect Created Date'};
@@ -111,8 +109,7 @@ class FetchAuroraProspect extends FetchAurora
         $this->parsedData['shop'] = $shop;
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Prospect Dimension')

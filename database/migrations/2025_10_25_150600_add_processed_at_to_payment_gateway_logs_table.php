@@ -10,17 +10,18 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('payment_gateway_logs', function (Blueprint $table) {
-            if (!Schema::hasColumn('payment_gateway_logs', 'gateway_date')) {
+            if (! Schema::hasColumn('payment_gateway_logs', 'gateway_date')) {
                 $table->dateTime('gateway_date', 6)->nullable();
             }
             if (Schema::hasColumn('payment_gateway_logs', 'date')) {
                 $table->dropColumn('date');
             }
-            if (!Schema::hasColumn('payment_gateway_logs', 'gateway_id')) {
+            if (! Schema::hasColumn('payment_gateway_logs', 'gateway_id')) {
                 $table->string('gateway_id')->nullable()->index();
             }
 
@@ -34,7 +35,7 @@ return new class () extends Migration {
     public function down(): void
     {
         Schema::table('payment_gateway_logs', function (Blueprint $table) {
-            if (!Schema::hasColumn('payment_gateway_logs', 'date')) {
+            if (! Schema::hasColumn('payment_gateway_logs', 'date')) {
                 $table->date('date')->nullable();
             }
             if (Schema::hasColumn('payment_gateway_logs', 'gateway_date')) {

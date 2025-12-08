@@ -20,15 +20,16 @@ class WebsiteIrisResource extends JsonResource
     {
         /** @var Website $website */
         $website = $this;
+
         return [
-            'id'     => $website->id,
-            'slug'   => $website->slug,
-            'code'   => $website->code,
-            'name'   => $website->name,
+            'id' => $website->id,
+            'slug' => $website->slug,
+            'code' => $website->code,
+            'name' => $website->name,
             'domain' => $website->domain,
-            'url'    => app()->environment('local') ? 'http://'.$website->domain : 'https://'.$website->domain,
-            'logo'   => $website->imageSources(350, 350),
-            'type'  => $website->shop->type,
+            'url' => app()->environment('local') ? 'http://'.$website->domain : 'https://'.$website->domain,
+            'logo' => $website->imageSources(350, 350),
+            'type' => $website->shop->type,
         ];
     }
 }

@@ -81,20 +81,20 @@ class UpdateRetinaStoredItem extends RetinaAction
                 'sometimes',
                 'required',
                 'max:128',
-                new AlphaDashDotSpaceSlashParenthesisPlus(),
+                new AlphaDashDotSpaceSlashParenthesisPlus,
                 new IUnique(
                     table: 'stored_items',
                     extraConditions: [
                         [
                             'column' => 'fulfilment_customer_id',
-                            'value'  => $this->fulfilmentCustomer->id,
+                            'value' => $this->fulfilmentCustomer->id,
                         ],
-                        ['column' => 'id', 'value' => $this->storedItem->id, 'operator' => '!=']
+                        ['column' => 'id', 'value' => $this->storedItem->id, 'operator' => '!='],
                     ]
-                )
+                ),
             ],
-            'name'      => ['sometimes','nullable',  'max:250', 'string'],
-            'state'     => ['sometimes', 'required', Rule::enum(StoredItemStateEnum::class)],
+            'name' => ['sometimes', 'nullable',  'max:250', 'string'],
+            'state' => ['sometimes', 'required', Rule::enum(StoredItemStateEnum::class)],
         ];
     }
 
@@ -102,6 +102,7 @@ class UpdateRetinaStoredItem extends RetinaAction
     {
         $this->storedItem = $storedItem;
         $this->initialisation($request);
+
         return $this->handle($storedItem, $this->validatedData);
     }
 
@@ -110,6 +111,7 @@ class UpdateRetinaStoredItem extends RetinaAction
         $this->action = true;
         $this->storedItem = $storedItem;
         $this->initialisationFulfilmentActions($storedItem->fulfilmentCustomer, $modelData);
+
         return $this->handle($storedItem, $this->validatedData);
     }
 

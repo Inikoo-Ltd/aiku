@@ -8,15 +8,15 @@ enum ChatSessionClosedByTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case USER   = 'user';
-    case AGENT  = 'agent';
+    case USER = 'user';
+    case AGENT = 'agent';
     case SYSTEM = 'system';
 
     public static function labels(): array
     {
         return [
-            'user'   => __('User'),
-            'agent'  => __('Agent'),
+            'user' => __('User'),
+            'agent' => __('Agent'),
             'system' => __('System'),
         ];
     }
@@ -26,21 +26,21 @@ enum ChatSessionClosedByTypeEnum: string
         return [
             'user' => [
                 'tooltip' => __('Closed by User'),
-                'icon'    => 'fas fa-user',
-                'class'   => 'text-green-500',
-                'color'   => 'green'
+                'icon' => 'fas fa-user',
+                'class' => 'text-green-500',
+                'color' => 'green',
             ],
             'agent' => [
                 'tooltip' => __('Closed by Agent'),
-                'icon'    => 'fas fa-headset',
-                'class'   => 'text-blue-500',
-                'color'   => 'blue'
+                'icon' => 'fas fa-headset',
+                'class' => 'text-blue-500',
+                'color' => 'blue',
             ],
             'system' => [
                 'tooltip' => __('Closed by System'),
-                'icon'    => 'fas fa-robot',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray'
+                'icon' => 'fas fa-robot',
+                'class' => 'text-gray-500',
+                'color' => 'gray',
             ],
         ];
     }
@@ -49,8 +49,8 @@ enum ChatSessionClosedByTypeEnum: string
     {
         // TODO: Implement count logic based on your stats
         return [
-            'user'   => 0,
-            'agent'  => 0,
+            'user' => 0,
+            'agent' => 0,
             'system' => 0,
         ];
     }

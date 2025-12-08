@@ -20,7 +20,7 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class TransactionImport implements SkipsOnFailure, ToCollection, WithEvents, WithHeadingRow, WithValidation
 {
     use WithImport;
 
@@ -28,8 +28,8 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
 
     public function __construct(Order $order, Upload $upload)
     {
-        $this->upload            = $upload;
-        $this->scope             = $order;
+        $this->upload = $upload;
+        $this->scope = $order;
     }
 
     public function storeModel($row, $uploadRecord): void
@@ -44,11 +44,11 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
         $validatedData = $row->only($fields)->all();
 
         $modelData = [
-            'quantity_ordered' => (int) $validatedData['quantity']
+            'quantity_ordered' => (int) $validatedData['quantity'],
         ];
 
         data_set($modelData, 'data.bulk_import', [
-            'id'   => $this->upload->id,
+            'id' => $this->upload->id,
             'type' => 'Upload',
         ]);
 
@@ -58,15 +58,17 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
 
         if ($modelData['quantity_ordered'] < 1) {
             $this->setRecordAsFailed($uploadRecord, [
-                'Product with code ' . $validatedData['code'] . ' has invalid quantity.'
+                'Product with code '.$validatedData['code'].' has invalid quantity.',
             ]);
+
             return;
         }
 
-        if (!in_array($product->id, $this->scope->customerSalesChannel->portfolios->pluck('item_id')->toArray())) {
+        if (! in_array($product->id, $this->scope->customerSalesChannel->portfolios->pluck('item_id')->toArray())) {
             $this->setRecordAsFailed($uploadRecord, [
-                'Product with code ' . $validatedData['code'] . ' is not available for this customer.'
+                'Product with code '.$validatedData['code'].' is not available for this customer.',
             ]);
+
             return;
         }
 
@@ -92,7 +94,7 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
                 'sometimes',
                 'nullable',
                 'max:64',
-                'string'
+                'string',
             ],
             'quantity' => ['sometimes'],
         ];

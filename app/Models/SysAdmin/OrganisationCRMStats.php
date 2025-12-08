@@ -85,9 +85,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customers_status_pre_registration
  * @property int $number_traffic_sources
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ *
  * @method static Builder<static>|OrganisationCRMStats newModelQuery()
  * @method static Builder<static>|OrganisationCRMStats newQuery()
  * @method static Builder<static>|OrganisationCRMStats query()
+ *
  * @mixin Eloquent
  */
 class OrganisationCRMStats extends Model

@@ -9,7 +9,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     private array $tables = [
         'group_discounts_stats',
         'organisation_discounts_stats',
@@ -17,16 +18,17 @@ return new class () extends Migration {
     ];
 
     private string $componentsPrefix = 'number_offer_components_state_';
+
     private string $allowancesPrefix = 'number_offer_allowances_state_';
 
     public function up(): void
     {
         foreach ($this->tables as $table) {
             // Base counters
-            if ($this->columnExists($table, 'number_offer_components') && !$this->columnExists($table, 'number_offer_allowances')) {
+            if ($this->columnExists($table, 'number_offer_components') && ! $this->columnExists($table, 'number_offer_allowances')) {
                 DB::statement("ALTER TABLE \"$table\" RENAME COLUMN \"number_offer_components\" TO \"number_offer_allowances\"");
             }
-            if ($this->columnExists($table, 'number_current_offer_components') && !$this->columnExists($table, 'number_current_offer_allowances')) {
+            if ($this->columnExists($table, 'number_current_offer_components') && ! $this->columnExists($table, 'number_current_offer_allowances')) {
                 DB::statement("ALTER TABLE \"$table\" RENAME COLUMN \"number_current_offer_components\" TO \"number_current_offer_allowances\"");
             }
 
@@ -35,7 +37,7 @@ return new class () extends Migration {
             foreach ($stateColumns as $oldCol) {
                 $suffix = substr($oldCol, strlen($this->componentsPrefix));
                 $newCol = $this->allowancesPrefix.$suffix;
-                if (!$this->columnExists($table, $newCol)) {
+                if (! $this->columnExists($table, $newCol)) {
                     DB::statement("ALTER TABLE \"$table\" RENAME COLUMN \"$oldCol\" TO \"$newCol\"");
                 }
             }
@@ -46,10 +48,10 @@ return new class () extends Migration {
     {
         foreach ($this->tables as $table) {
             // Base counters
-            if ($this->columnExists($table, 'number_offer_allowances') && !$this->columnExists($table, 'number_offer_components')) {
+            if ($this->columnExists($table, 'number_offer_allowances') && ! $this->columnExists($table, 'number_offer_components')) {
                 DB::statement("ALTER TABLE \"$table\" RENAME COLUMN \"number_offer_allowances\" TO \"number_offer_components\"");
             }
-            if ($this->columnExists($table, 'number_current_offer_allowances') && !$this->columnExists($table, 'number_current_offer_components')) {
+            if ($this->columnExists($table, 'number_current_offer_allowances') && ! $this->columnExists($table, 'number_current_offer_components')) {
                 DB::statement("ALTER TABLE \"$table\" RENAME COLUMN \"number_current_offer_allowances\" TO \"number_current_offer_components\"");
             }
 
@@ -58,7 +60,7 @@ return new class () extends Migration {
             foreach ($stateColumns as $oldCol) {
                 $suffix = substr($oldCol, strlen($this->allowancesPrefix));
                 $newCol = $this->componentsPrefix.$suffix;
-                if (!$this->columnExists($table, $newCol)) {
+                if (! $this->columnExists($table, $newCol)) {
                     DB::statement("ALTER TABLE \"$table\" RENAME COLUMN \"$oldCol\" TO \"$newCol\"");
                 }
             }
@@ -79,7 +81,7 @@ return new class () extends Migration {
             [$table, $column]
         );
 
-        return (bool)$row;
+        return (bool) $row;
     }
 
     private function getColumnsByPrefix(string $table, string $prefix): array

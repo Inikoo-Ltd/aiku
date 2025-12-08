@@ -26,17 +26,14 @@ class SeedGroupPermissions
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-
         $groupPermissions = collect(GroupPermissionsEnum::getAllValues());
-        $groupRoles       = collect(RolesEnum::getRolesWithScope($group));
-
+        $groupRoles = collect(RolesEnum::getRolesWithScope($group));
 
         $currentPermissions = Permission::where('scope_type', 'Group')->pluck('name');
         $currentPermissions->diff($groupPermissions)
             ->each(function ($permissionName) {
                 Permission::where('name', $permissionName)->first()->delete();
             });
-
 
         $currentRoles = Role::where('scope_type', 'Group')->pluck('name');
 
@@ -46,38 +43,35 @@ class SeedGroupPermissions
                 Role::where('name', $roleName)->first()->delete();
             });
 
-
         $groupPermissions->each(function ($permissionName) use ($group) {
             try {
                 Permission::create(
                     [
-                        'name'       => $permissionName,
+                        'name' => $permissionName,
                         'scope_type' => 'Group',
-                        'scope_id'   => $group->id,
+                        'scope_id' => $group->id,
                     ]
                 );
             } catch (Exception) {
             }
         });
 
-
-
         foreach (RolesEnum::cases() as $case) {
             if ($case->scope() === 'Group') {
 
-                if (!$role = (new Role())->where('name', $case->value)->first()) {
+                if (! $role = (new Role)->where('name', $case->value)->first()) {
                     $role = Role::create(
                         [
-                            'name'       => $case->value,
-                            'group_id'   => $group->id,
+                            'name' => $case->value,
+                            'group_id' => $group->id,
                             'scope_type' => 'Group',
-                            'scope_id'   => $group->id,
+                            'scope_id' => $group->id,
                         ]
                     );
                 }
                 $permissions = [];
                 foreach ($case->getPermissions() as $permissionName) {
-                    if ($permission = (new Permission())->where('name', $permissionName)->first()) {
+                    if ($permission = (new Permission)->where('name', $permissionName)->first()) {
                         $permissions[] = $permission;
                     }
                 }
@@ -86,7 +80,6 @@ class SeedGroupPermissions
             }
         }
     }
-
 
     public string $commandSignature = 'group:seed-permissions';
 
@@ -100,5 +93,4 @@ class SeedGroupPermissions
 
         return 0;
     }
-
 }

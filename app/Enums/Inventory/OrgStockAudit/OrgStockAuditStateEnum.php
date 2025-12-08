@@ -16,15 +16,14 @@ enum OrgStockAuditStateEnum: string
 {
     use EnumHelperTrait;
 
-    case IN_PROCESS   = 'in_process';
-    case COMPLETED    = 'completed';
-
+    case IN_PROCESS = 'in_process';
+    case COMPLETED = 'completed';
 
     public static function labels(): array
     {
         return [
-            'in_process'   => __('In Process'),
-            'completed'    => __('Completed'),
+            'in_process' => __('In Process'),
+            'completed' => __('Completed'),
         ];
     }
 
@@ -33,23 +32,23 @@ enum OrgStockAuditStateEnum: string
         return [
             'in_process' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
-                'color'   => 'lime',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',  // Color for normal icon (Aiku)
+                'color' => 'lime',  // Color for box (Retina)
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'completed' => [
                 'tooltip' => __('Completed'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-indigo-400',
-                'color'   => 'indigo',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-indigo-400',
+                'color' => 'indigo',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
         ];
     }
@@ -60,23 +59,22 @@ enum OrgStockAuditStateEnum: string
 
         $stats = $parent->stats;
 
-
         return [
-            'in_process'   => $stats->number_org_stock_audits_state_in_process,
-            'completed'    => $stats->number_org_stock_audits_state_cmpleted,
+            'in_process' => $stats->number_org_stock_audits_state_in_process,
+            'completed' => $stats->number_org_stock_audits_state_cmpleted,
         ];
     }
 
     public static function notifications(string $reference): array
     {
         return [
-            'in_process'   => [
-                'title'    => __("Audit :reference created", ['reference' => $reference]),
-                'subtitle' => __('Audit (stored items) has been created')
+            'in_process' => [
+                'title' => __('Audit :reference created', ['reference' => $reference]),
+                'subtitle' => __('Audit (stored items) has been created'),
             ],
-            'completed'    => [
-                'title'    => __("Audit :reference completed", ['reference' => $reference]),
-                'subtitle' => __('Audit (stored items) has been completed')
+            'completed' => [
+                'title' => __('Audit :reference completed', ['reference' => $reference]),
+                'subtitle' => __('Audit (stored items) has been completed'),
             ],
 
         ];

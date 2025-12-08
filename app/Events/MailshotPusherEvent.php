@@ -38,7 +38,7 @@ class MailshotPusherEvent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('grp.general')
+            new PrivateChannel('grp.general'),
         ];
     }
 
@@ -46,5 +46,4 @@ class MailshotPusherEvent implements ShouldBroadcast
     {
         return 'mailshot.'.$this->mailshot->id;
     }
-
 }

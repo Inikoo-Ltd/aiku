@@ -23,7 +23,6 @@ class GroupHydrateGuests implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
         $numberGuests = $group->guests()->count();
@@ -31,13 +30,11 @@ class GroupHydrateGuests implements ShouldBeUnique
         $numberActiveGuests = $group->guests()->where('status', true)
             ->count();
 
-
         $stats = [
-            'number_guests'                 => $numberGuests,
-            'number_guests_status_active'   => $numberActiveGuests,
+            'number_guests' => $numberGuests,
+            'number_guests_status_active' => $numberActiveGuests,
             'number_guests_status_inactive' => $numberGuests - $numberActiveGuests,
         ];
-
 
         $group->sysadminStats->update($stats);
     }

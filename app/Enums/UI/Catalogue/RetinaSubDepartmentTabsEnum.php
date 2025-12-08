@@ -22,7 +22,6 @@ enum RetinaSubDepartmentTabsEnum: string
     case PRODUCTS = 'products';
     case COLLECTIONS = 'collections';
 
-
     public function blueprint(ProductCategory $parent): array
     {
         $families = $parent->stats->number_families_state_active + $parent->stats->number_families_state_discontinuing;
@@ -32,22 +31,22 @@ enum RetinaSubDepartmentTabsEnum: string
         return match ($this) {
             RetinaSubDepartmentTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             RetinaSubDepartmentTabsEnum::FAMILIES => [
-                'title' => __('Families'). " ({$families})",
-                'icon'  => 'fal fa-folder',
-                'type'  => 'icon',
+                'title' => __('Families')." ({$families})",
+                'icon' => 'fal fa-folder',
+                'type' => 'icon',
             ],
             RetinaSubDepartmentTabsEnum::PRODUCTS => [
-                'title' => __('Products'). " ({$products})",
-                'icon'  => 'fal fa-cube',
-                'type'  => 'icon',
+                'title' => __('Products')." ({$products})",
+                'icon' => 'fal fa-cube',
+                'type' => 'icon',
             ],
             RetinaSubDepartmentTabsEnum::COLLECTIONS => [
-                'title' => __('Collections'). " ({$collection})",
-                'icon'  => 'fal fa-album-collection',
-                'type'  => 'icon',
+                'title' => __('Collections')." ({$collection})",
+                'icon' => 'fal fa-album-collection',
+                'type' => 'icon',
             ],
 
         };

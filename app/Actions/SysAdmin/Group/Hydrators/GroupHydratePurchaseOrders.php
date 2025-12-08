@@ -9,10 +9,10 @@
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
-use App\Models\SysAdmin\Group;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -29,9 +29,8 @@ class GroupHydratePurchaseOrders implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_purchase_orders' => $group->purchaseOrders->count()
+            'number_purchase_orders' => $group->purchaseOrders->count(),
         ];
-
 
         $stats = array_merge(
             $stats,
@@ -45,7 +44,6 @@ class GroupHydratePurchaseOrders implements ShouldBeUnique
                 }
             )
         );
-
 
         $stats = array_merge(
             $stats,

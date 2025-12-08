@@ -24,12 +24,9 @@ class StoreHistoricSupplierProduct extends GrpAction
         data_set($modelData, 'units_per_pack', $supplierProduct->units_per_pack, overwrite: false);
         data_set($modelData, 'units_per_carton', $supplierProduct->units_per_carton, overwrite: false);
 
-
-
         if ($supplierProduct->cbm != '') {
             data_set($modelData, 'cbm', $supplierProduct->cbm, overwrite: false);
         }
-
 
         /** @var HistoricSupplierProduct $historicSupplierProduct */
         $historicSupplierProduct = $supplierProduct->historicSupplierProducts()->create($modelData);
@@ -41,16 +38,15 @@ class StoreHistoricSupplierProduct extends GrpAction
     public function rules(): array
     {
         $rules = [
-            'code'             => ['sometimes','required', 'string', 'max:255'],
-            'name'             => ['sometimes','required', 'string', 'max:255'],
-            'status'           => ['required', 'boolean'],
-            'units_per_pack'   => ['sometimes', 'required', 'numeric'],
+            'code' => ['sometimes', 'required', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'status' => ['required', 'boolean'],
+            'units_per_pack' => ['sometimes', 'required', 'numeric'],
             'units_per_carton' => ['sometimes', 'required', 'numeric'],
-            'cbm'              => ['sometimes','nullable', 'numeric']
+            'cbm' => ['sometimes', 'nullable', 'numeric'],
         ];
 
-
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictStoreRules($rules);
         }
 
@@ -59,8 +55,8 @@ class StoreHistoricSupplierProduct extends GrpAction
 
     public function action(SupplierProduct $supplierProduct, array $modelData, int $hydratorsDelay = 0, bool $strict = true): HistoricSupplierProduct
     {
-        $this->strict         = $strict;
-        $this->asAction       = true;
+        $this->strict = $strict;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisation($supplierProduct->group, $modelData);

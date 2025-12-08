@@ -11,8 +11,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
+
     public function up(): void
     {
         Schema::create('org_agents', function (Blueprint $table) {
@@ -24,11 +26,10 @@ return new class () extends Migration {
             $table->boolean('status')->default(true)->index();
             $table->timestampsTz();
             $table->string('source_id')->index()->nullable();
-            $table->unique(['group_id','organisation_id','agent_id']);
+            $table->unique(['group_id', 'organisation_id', 'agent_id']);
 
         });
     }
-
 
     public function down(): void
     {

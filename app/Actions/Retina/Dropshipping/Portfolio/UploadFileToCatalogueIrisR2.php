@@ -32,7 +32,8 @@ class UploadFileToCatalogueIrisR2
                 'public'
             );
         } catch (Exception $e) {
-            Log::error('R2 Upload Error: ' . $e->getMessage());
+            Log::error('R2 Upload Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -46,8 +47,4 @@ class UploadFileToCatalogueIrisR2
     {
         return $this->handle($command->argument('sourcePath'), $command->argument('destinationPath'));
     }
-
-
-
-
 }

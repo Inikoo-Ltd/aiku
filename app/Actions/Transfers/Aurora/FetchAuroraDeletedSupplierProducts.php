@@ -22,11 +22,10 @@ class FetchAuroraDeletedSupplierProducts extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:deleted_supplier_products {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?SupplierProduct
     {
         if ($supplierDeletedProductData = $organisationSource->fetchDeletedSupplierProduct($organisationSourceId)) {
-            if (!empty($supplierDeletedProductData['supplierProduct'])) {
+            if (! empty($supplierDeletedProductData['supplierProduct'])) {
                 if ($supplierProduct = SupplierProduct::withTrashed()->where('source_id', $supplierDeletedProductData['supplierProduct']['source_id'])->first()) {
                     try {
                         $supplierProduct = UpdateSupplierProduct::make()->action(

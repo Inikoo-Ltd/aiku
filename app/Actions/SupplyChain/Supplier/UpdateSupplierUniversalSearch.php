@@ -29,6 +29,7 @@ class UpdateSupplierUniversalSearch
         $command->withProgressBar(Supplier::all(), function (Supplier $supplier) {
             $this->handle($supplier);
         });
+
         return 0;
     }
 }

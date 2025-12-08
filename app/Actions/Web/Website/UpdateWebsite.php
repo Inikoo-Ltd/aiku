@@ -28,12 +28,11 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateWebsite extends OrgAction
 {
     use WithActionUpdate;
-    use WithWebEditAuthorisation;
-    use WithLogo;
     use WithFavicon;
+    use WithLogo;
+    use WithWebEditAuthorisation;
 
     private Website $website;
-
 
     public function handle(Website $website, array $modelData): Website
     {
@@ -43,60 +42,60 @@ class UpdateWebsite extends OrgAction
         data_forget($modelData, 'favicon');
 
         $shopUpdateData = [];
-        if (Arr::has($modelData, "marketing_opt_in_label")) {
-            data_set($shopUpdateData, "settings.registration.marketing_opt_in_label", Arr::pull($modelData, 'marketing_opt_in_label'));
+        if (Arr::has($modelData, 'marketing_opt_in_label')) {
+            data_set($shopUpdateData, 'settings.registration.marketing_opt_in_label', Arr::pull($modelData, 'marketing_opt_in_label'));
         }
 
-        if (Arr::has($modelData, "marketing_opt_in_default")) {
-            data_set($shopUpdateData, "settings.registration.marketing_opt_in_default", Arr::pull($modelData, 'marketing_opt_in_default'));
+        if (Arr::has($modelData, 'marketing_opt_in_default')) {
+            data_set($shopUpdateData, 'settings.registration.marketing_opt_in_default', Arr::pull($modelData, 'marketing_opt_in_default'));
         }
 
-        if (Arr::has($modelData, "required_phone_number")) {
-            data_set($shopUpdateData, "settings.registration.require_phone_number", Arr::pull($modelData, 'required_phone_number'));
+        if (Arr::has($modelData, 'required_phone_number')) {
+            data_set($shopUpdateData, 'settings.registration.require_phone_number', Arr::pull($modelData, 'required_phone_number'));
         }
-        if (!empty($shopUpdateData)) {
+        if (! empty($shopUpdateData)) {
             $shop = $website->shop;
             UpdateShop::run($shop, $shopUpdateData);
         }
 
-        if (Arr::has($modelData, "jira_help_desk_widget")) {
-            data_set($modelData, "settings.jira_help_desk_widget", Arr::pull($modelData, "jira_help_desk_widget"));
+        if (Arr::has($modelData, 'jira_help_desk_widget')) {
+            data_set($modelData, 'settings.jira_help_desk_widget', Arr::pull($modelData, 'jira_help_desk_widget'));
         }
 
-        if (Arr::has($modelData, "google_tag_id")) {
-            data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
+        if (Arr::has($modelData, 'google_tag_id')) {
+            data_set($modelData, 'settings.google_tag_id', Arr::pull($modelData, 'google_tag_id'));
         }
 
-        if (Arr::has($modelData, "catalogue_template")) {
-            data_set($modelData, "settings.catalogue_template", Arr::pull($modelData, "catalogue_template"));
+        if (Arr::has($modelData, 'catalogue_template')) {
+            data_set($modelData, 'settings.catalogue_template', Arr::pull($modelData, 'catalogue_template'));
         }
 
-        if (Arr::has($modelData, "luigisbox_tracker_id")) {
-            data_set($modelData, "settings.luigisbox.tracker_id", Arr::pull($modelData, "luigisbox_tracker_id"));
+        if (Arr::has($modelData, 'luigisbox_tracker_id')) {
+            data_set($modelData, 'settings.luigisbox.tracker_id', Arr::pull($modelData, 'luigisbox_tracker_id'));
         }
 
-        if (Arr::has($modelData, "luigisbox_script_lbx")) {
-            data_set($modelData, "settings.luigisbox.script_lbx", Arr::pull($modelData, "luigisbox_script_lbx"));
+        if (Arr::has($modelData, 'luigisbox_script_lbx')) {
+            data_set($modelData, 'settings.luigisbox.script_lbx', Arr::pull($modelData, 'luigisbox_script_lbx'));
         }
 
-        if (Arr::has($modelData, "luigisbox_lbx_code")) {
-            data_set($modelData, "settings.luigisbox.lbx_code", Arr::pull($modelData, "luigisbox_lbx_code"));
+        if (Arr::has($modelData, 'luigisbox_lbx_code')) {
+            data_set($modelData, 'settings.luigisbox.lbx_code', Arr::pull($modelData, 'luigisbox_lbx_code'));
         }
 
-        if (Arr::has($modelData, "luigisbox_private_key")) {
-            data_set($modelData, "settings.luigisbox.private_key", Arr::pull($modelData, "luigisbox_private_key"));
+        if (Arr::has($modelData, 'luigisbox_private_key')) {
+            data_set($modelData, 'settings.luigisbox.private_key', Arr::pull($modelData, 'luigisbox_private_key'));
         }
 
-        if (Arr::has($modelData, "last_reindex_at")) {
-            data_set($modelData, "settings.luigisbox.last_reindex_at", Arr::pull($modelData, "last_reindex_at"));
+        if (Arr::has($modelData, 'last_reindex_at')) {
+            data_set($modelData, 'settings.luigisbox.last_reindex_at', Arr::pull($modelData, 'last_reindex_at'));
         }
 
-        if (Arr::has($modelData, "return_policy")) {
-            data_set($modelData, "settings.return_policy", Arr::pull($modelData, "return_policy"));
+        if (Arr::has($modelData, 'return_policy')) {
+            data_set($modelData, 'settings.return_policy', Arr::pull($modelData, 'return_policy'));
         }
 
-        if (Arr::has($modelData, "script_website")) {
-            data_set($modelData, "settings.script_website.header", Arr::pull($modelData, "script_website"));
+        if (Arr::has($modelData, 'script_website')) {
+            data_set($modelData, 'settings.script_website.header', Arr::pull($modelData, 'script_website'));
         }
 
         $website = $this->update($website, $modelData, ['data', 'settings']);
@@ -120,11 +119,10 @@ class UpdateWebsite extends OrgAction
         return $website;
     }
 
-
     public function rules(): array
     {
         $rules = [
-            'domain'                   => [
+            'domain' => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -135,22 +133,22 @@ class UpdateWebsite extends OrgAction
                     extraConditions: [
                         [
                             'column' => 'group_id',
-                            'value'  => $this->organisation->group_id
+                            'value' => $this->organisation->group_id,
                         ],
                         [
-                            'column'    => 'status',
+                            'column' => 'status',
                             'operation' => '=',
-                            'value'     => true
+                            'value' => true,
                         ],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->website->id
+                            'value' => $this->website->id,
                         ],
                     ]
-                )
+                ),
             ],
-            'code'                     => [
+            'code' => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -163,70 +161,70 @@ class UpdateWebsite extends OrgAction
 
                         ['column' => 'group_id', 'value' => $this->organisation->group_id],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->website->id
+                            'value' => $this->website->id,
                         ],
                     ]
                 ),
 
             ],
-            'name'                     => ['sometimes', 'required', 'string', 'max:255'],
-            'launched_at'              => ['sometimes', 'date'],
-            'state'                    => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
-            'status'                   => ['sometimes', 'boolean'],
-            'google_tag_id'            => [
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'launched_at' => ['sometimes', 'date'],
+            'state' => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
+            'status' => ['sometimes', 'boolean'],
+            'google_tag_id' => [
                 'sometimes',
                 'nullable',
                 'string',
-                'regex:/^GTM-[A-Z0-9]+$/'
+                'regex:/^GTM-[A-Z0-9]+$/',
             ],
-            'catalogue_template'       => ['sometimes', 'array'],
-            'luigisbox_tracker_id'     => [
+            'catalogue_template' => ['sometimes', 'array'],
+            'luigisbox_tracker_id' => [
                 'sometimes',
                 'string',
                 'nullable',
-                'regex:/^\d{6}-\d{6}$/'
+                'regex:/^\d{6}-\d{6}$/',
             ],
-            'luigisbox_script_lbx'     => [
+            'luigisbox_script_lbx' => [
                 'sometimes',
                 'nullable',
                 'string',
             ],
-            'luigisbox_lbx_code'       => [
+            'luigisbox_lbx_code' => [
                 'sometimes',
                 'nullable',
                 'string',
                 'regex:/^LBX-\d{6}$/',
             ],
-            'luigisbox_private_key'    => ['sometimes', 'nullable', 'string'],
-            'last_reindex_at'          => ['sometimes', 'nullable', 'string'],
-            'jira_help_desk_widget'    => ['sometimes', 'nullable', 'string'],
-            'return_policy'            => ['sometimes', 'string'],
-            'image'                    => [
+            'luigisbox_private_key' => ['sometimes', 'nullable', 'string'],
+            'last_reindex_at' => ['sometimes', 'nullable', 'string'],
+            'jira_help_desk_widget' => ['sometimes', 'nullable', 'string'],
+            'return_policy' => ['sometimes', 'string'],
+            'image' => [
                 'sometimes',
                 'nullable',
                 File::image()
-                    ->max(12 * 1024)
+                    ->max(12 * 1024),
             ],
-            'favicon'                  => [
+            'favicon' => [
                 'sometimes',
                 'nullable',
                 File::image()
-                    ->max(12 * 1024)
+                    ->max(12 * 1024),
             ],
-            'marketing_opt_in_label'   => ['sometimes', 'string'],
+            'marketing_opt_in_label' => ['sometimes', 'string'],
             'marketing_opt_in_default' => ['sometimes', 'boolean'],
-            'script_website'           => [
+            'script_website' => [
                 'sometimes',
                 'nullable',
                 'string',
             ],
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules['last_fetched_at'] = ['sometimes', 'date'];
-            $rules['domain']          = [
+            $rules['domain'] = [
                 'sometimes',
                 'required',
                 'ascii',
@@ -237,20 +235,20 @@ class UpdateWebsite extends OrgAction
                     extraConditions: [
                         [
                             'column' => 'organisation_id',
-                            'value'  => $this->organisation->id
+                            'value' => $this->organisation->id,
                         ],
                         [
-                            'column'    => 'status',
+                            'column' => 'status',
                             'operation' => '=',
-                            'value'     => true
+                            'value' => true,
                         ],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->website->id
+                            'value' => $this->website->id,
                         ],
                     ]
-                )
+                ),
             ];
         }
 
@@ -259,13 +257,13 @@ class UpdateWebsite extends OrgAction
 
     public function action(Website $website, array $modelData, int $hydratorsDelay = 0, $strict = true, bool $audit = true): Website
     {
-        if (!$audit) {
+        if (! $audit) {
             Website::disableAuditing();
         }
-        $this->strict         = $strict;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->asAction       = true;
-        $this->website        = $website;
+        $this->asAction = true;
+        $this->website = $website;
 
         $this->initialisation($website->organisation, $modelData);
 
@@ -279,7 +277,6 @@ class UpdateWebsite extends OrgAction
 
         return $this->handle($website, $this->validatedData);
     }
-
 
     public function inFulfilment(Fulfilment $fulfilment, Website $website, ActionRequest $request): Website
     {

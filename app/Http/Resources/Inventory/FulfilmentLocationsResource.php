@@ -20,9 +20,9 @@ class FulfilmentLocationsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'             => $this->slug,
-            'code'             => $this->code,
-            'number_pallets'   => $this->number_pallets,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'number_pallets' => $this->number_pallets,
 
         ];
     }

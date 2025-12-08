@@ -16,7 +16,6 @@ enum StockTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
     case SHOWCASE = 'showcase';
     case SALES = 'sales';
 
@@ -27,52 +26,51 @@ enum StockTabsEnum: string
     case ATTACHMENTS = 'attachments';
     case FEEDBACKS = 'feedbacks';
 
-
     public function blueprint(): array
     {
         return match ($this) {
             StockTabsEnum::SALES => [
                 'title' => __('Sales'),
-                'icon'  => 'fal fa-dollar-sign',
+                'icon' => 'fal fa-dollar-sign',
             ],
 
             StockTabsEnum::FEEDBACKS => [
                 'align' => 'right',
-                'type'  => 'icon',
+                'type' => 'icon',
                 'title' => __('Issues'),
-                'icon'  => 'fal fa-poop',
+                'icon' => 'fal fa-poop',
             ],
 
             StockTabsEnum::ATTACHMENTS => [
-                'type'  => 'icon',
+                'type' => 'icon',
                 'align' => 'right',
                 'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
+                'icon' => 'fal fa-paperclip',
 
             ],
             StockTabsEnum::IMAGES => [
-                'type'  => 'icon',
+                'type' => 'icon',
                 'align' => 'right',
                 'title' => __('Images'),
-                'icon'  => 'fal fa-camera-retro',
+                'icon' => 'fal fa-camera-retro',
             ],
             StockTabsEnum::HISTORY => [
-                'type'  => 'icon',
+                'type' => 'icon',
                 'align' => 'right',
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
+                'icon' => 'fal fa-clock',
 
             ],
             StockTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
 
             StockTabsEnum::TRADE_UNITS => [
-                'type'  => 'icon',
+                'type' => 'icon',
                 'align' => 'right',
                 'title' => __('Trade units'),
-                'icon'  => 'fal fa-cubes',
+                'icon' => 'fal fa-cubes',
             ],
         };
     }

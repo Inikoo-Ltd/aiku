@@ -112,6 +112,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read mixed $translations
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
+ *
  * @method static \Database\Factories\Catalogue\ProductCategoryFactory factory($count = null, $state = [])
  * @method static Builder<static>|ProductCategory newModelQuery()
  * @method static Builder<static>|ProductCategory newQuery()
@@ -123,38 +124,39 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|ProductCategory whereLocales(string $column, array $locales)
  * @method static Builder<static>|ProductCategory withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|ProductCategory withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class ProductCategory extends Model implements Auditable, HasMedia
 {
-    use HasSlug;
-    use SoftDeletes;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
-    use InShop;
     use HasImage;
+    use HasSlug;
     use HasTranslations;
+    use HasUniversalSearch;
+    use InShop;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'data'             => 'array',
-        'web_images'       => 'array',
-        'state'            => ProductCategoryStateEnum::class,
-        'type'             => ProductCategoryTypeEnum::class,
-        'activated_at'     => 'datetime',
+        'data' => 'array',
+        'web_images' => 'array',
+        'state' => ProductCategoryStateEnum::class,
+        'type' => ProductCategoryTypeEnum::class,
+        'activated_at' => 'datetime',
         'discontinuing_at' => 'datetime',
-        'discontinued_at'  => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime',
-        'offers_data'      => 'array',
+        'discontinued_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
+        'offers_data' => 'array',
     ];
 
     protected $attributes = [
-        'data'       => '{}',
+        'data' => '{}',
         'web_images' => '{}',
         'offers_data' => '{}',
     ];
@@ -193,7 +195,6 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->morphMany(ModelHasContent::class, 'model');
     }
 
-
     public function stats(): HasOne
     {
         return $this->hasOne(ProductCategoryStats::class);
@@ -224,12 +225,10 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsTo(ProductCategory::class, 'department_id');
     }
 
-
     public function subDepartment(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'sub_department_id');
     }
-
 
     public function parent(): BelongsTo
     {
@@ -250,7 +249,6 @@ class ProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->children()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
     }
-
 
     public function getProducts(): LaravelCollection
     {
@@ -277,10 +275,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->morphOne(Webpage::class, 'model');
     }
 
-
     public function masterProductCategory(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class);
     }
-
 }

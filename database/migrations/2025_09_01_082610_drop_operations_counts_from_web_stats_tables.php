@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // group_web_stats
@@ -55,10 +56,10 @@ return new class () extends Migration {
         // Column types per HasWebStats: number_webpages_type_* and number_child_webpages_type_* are unsignedSmallInteger
         if (Schema::hasTable('group_web_stats')) {
             Schema::table('group_web_stats', function (Blueprint $table) {
-                if (!Schema::hasColumn('group_web_stats', 'number_webpages_type_operations')) {
+                if (! Schema::hasColumn('group_web_stats', 'number_webpages_type_operations')) {
                     $table->unsignedSmallInteger('number_webpages_type_operations')->default(0);
                 }
-                if (!Schema::hasColumn('group_web_stats', 'number_child_webpages_type_operations')) {
+                if (! Schema::hasColumn('group_web_stats', 'number_child_webpages_type_operations')) {
                     $table->unsignedSmallInteger('number_child_webpages_type_operations')->default(0);
                 }
             });
@@ -66,10 +67,10 @@ return new class () extends Migration {
 
         if (Schema::hasTable('organisation_web_stats')) {
             Schema::table('organisation_web_stats', function (Blueprint $table) {
-                if (!Schema::hasColumn('organisation_web_stats', 'number_webpages_type_operations')) {
+                if (! Schema::hasColumn('organisation_web_stats', 'number_webpages_type_operations')) {
                     $table->unsignedSmallInteger('number_webpages_type_operations')->default(0);
                 }
-                if (!Schema::hasColumn('organisation_web_stats', 'number_child_webpages_type_operations')) {
+                if (! Schema::hasColumn('organisation_web_stats', 'number_child_webpages_type_operations')) {
                     $table->unsignedSmallInteger('number_child_webpages_type_operations')->default(0);
                 }
             });
@@ -77,10 +78,10 @@ return new class () extends Migration {
 
         if (Schema::hasTable('website_stats')) {
             Schema::table('website_stats', function (Blueprint $table) {
-                if (!Schema::hasColumn('website_stats', 'number_webpages_type_operations')) {
+                if (! Schema::hasColumn('website_stats', 'number_webpages_type_operations')) {
                     $table->unsignedSmallInteger('number_webpages_type_operations')->default(0);
                 }
-                if (!Schema::hasColumn('website_stats', 'number_child_webpages_type_operations')) {
+                if (! Schema::hasColumn('website_stats', 'number_child_webpages_type_operations')) {
                     $table->unsignedSmallInteger('number_child_webpages_type_operations')->default(0);
                 }
             });

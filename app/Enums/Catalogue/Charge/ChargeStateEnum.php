@@ -19,10 +19,9 @@ enum ChargeStateEnum: string
     use EnumHelperTrait;
     use IsBillableState;
 
-    case IN_PROCESS   = 'in_process';
-    case ACTIVE       = 'active';
+    case IN_PROCESS = 'in_process';
+    case ACTIVE = 'active';
     case DISCONTINUED = 'discontinued';
-
 
     public static function count(Shop|Organisation|Group $parent): array
     {
@@ -31,20 +30,19 @@ enum ChargeStateEnum: string
             'Organisation', 'Group' => $parent->catalogueStats,
         };
 
-
         return [
-            'in_process'   => $stats->number_charges_state_in_process,
-            'active'       => $stats->number_charges_state_active,
-            'discontinued' => $stats->number_charges_state_discontinued
+            'in_process' => $stats->number_charges_state_in_process,
+            'active' => $stats->number_charges_state_active,
+            'discontinued' => $stats->number_charges_state_discontinued,
         ];
     }
 
     public static function labels(): array
     {
         return [
-            'in_process'    => __('In Process'),
-            'active'        => __('Active'),
-            'discontinued'  => __('Discontinued'),
+            'in_process' => __('In Process'),
+            'active' => __('Active'),
+            'discontinued' => __('Discontinued'),
         ];
     }
 
@@ -53,35 +51,34 @@ enum ChargeStateEnum: string
         return [
             'in_process' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
-                'color'   => 'lime',  // Color for box (Retina)
-                'app'     => [
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-lime-500',  // Color for normal icon (Aiku)
+                'color' => 'lime',  // Color for box (Retina)
+                'app' => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'active' => [
                 'tooltip' => __('Active'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-green-500',
-                'color'   => 'green',
-                'app'     => [
+                'icon' => 'fal fa-check',
+                'class' => 'text-green-500',
+                'color' => 'green',
+                'app' => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
 
             'discontinued' => [
                 'tooltip' => __('Discontinued'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
+                'app' => [
                     'name' => 'times',
-                ]
+                ],
             ],
         ];
     }
-
 }

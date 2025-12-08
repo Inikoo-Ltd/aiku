@@ -15,15 +15,15 @@ class GuestFactory extends Factory
     public function definition(): array
     {
         return [
-            'alias'                    => fake()->lexify(),
-            'contact_name'             => fake()->company(),
-            'email'                    => fake()->email,
+            'alias' => fake()->lexify(),
+            'contact_name' => fake()->company(),
+            'email' => fake()->email,
             'identity_document_number' => fake('en_GB')->vat(),
-            'identity_document_type'   => 'passport',
-            'user'                     => [
+            'identity_document_type' => 'passport',
+            'user' => [
                 'username' => fake()->userName,
                 'password' => 'password',
-            ]
+            ],
 
         ];
     }

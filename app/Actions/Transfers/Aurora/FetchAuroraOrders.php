@@ -12,10 +12,10 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
-use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderFixedAddress;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Models\Discounts\TransactionHasOfferAllowance;
 use App\Models\Helpers\Address;
@@ -37,6 +37,7 @@ class FetchAuroraOrders extends FetchAuroraAction
     public string $commandSignature = 'fetch:orders {organisations?*} {--S|shop= : Shop slug} {--s|source_id=} {--d|db_suffix=} {--w|with=* : Accepted values: transactions payments full} {--N|only_new : Fetch only new} {--only_cancelled : Fetch only cancelled}   {--d|db_suffix=} {--r|reset} {--B|basket : fetch updated orders in basket} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
     private bool $errorReported = false;
+
     private string $fingerPrint;
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId, bool $forceWithTransactions = false): ?Order
@@ -45,16 +46,14 @@ class FetchAuroraOrders extends FetchAuroraAction
 
         $orderData = $organisationSource->fetchOrder($organisationSourceId);
 
-        if (!$orderData) {
+        if (! $orderData) {
             return null;
         }
 
-
         $order = $this->processFetchOrder($organisationSource, $orderData);
 
-
-        if (!$order) {
-            if (!$this->errorReported) {
+        if (! $order) {
+            if (! $this->errorReported) {
                 $this->recordFetchError($organisationSource, $orderData, 'Order', 'fetching');
             }
 
@@ -62,7 +61,6 @@ class FetchAuroraOrders extends FetchAuroraAction
         }
 
         $sourceData = explode(':', $order->source_id);
-
 
         if (in_array('transactions', $this->with) or in_array('full', $this->with) or $forceWithTransactions) {
             $this->fetchTransactions($organisationSource, $order);
@@ -75,7 +73,6 @@ class FetchAuroraOrders extends FetchAuroraAction
         if (in_array('payments', $this->with) or in_array('full', $this->with)) {
             $this->fetchPayments($organisationSource, $order);
         }
-
 
         if (in_array('full', $this->with)) {
             foreach (
@@ -99,7 +96,6 @@ class FetchAuroraOrders extends FetchAuroraAction
             ) {
                 FetchAuroraInvoices::run($organisationSource, $invoice->source_id, true);
             }
-
 
             foreach (
                 DB::connection('aurora')
@@ -130,8 +126,7 @@ class FetchAuroraOrders extends FetchAuroraAction
     private function processFetchOrder($organisationSource, $orderData): ?Order
     {
         $order = null;
-        if (!empty($orderData['order']['source_id']) and $order = Order::withTrashed()->where('source_id', $orderData['order']['source_id'])->first()) {
-
+        if (! empty($orderData['order']['source_id']) and $order = Order::withTrashed()->where('source_id', $orderData['order']['source_id'])->first()) {
 
             try {
                 /** @var Address $deliveryAddress */
@@ -143,7 +138,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                             order: $order,
                             modelData: [
                                 'address' => $deliveryAddress,
-                                'type'    => 'delivery'
+                                'type' => 'delivery',
                             ],
                             hydratorsDelay: $this->hydratorsDelay,
                             audit: false
@@ -165,7 +160,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                                     'country_id',
                                     'checksum',
                                     'is_fixed',
-                                    'fixed_scope'
+                                    'fixed_scope',
 
                                 ]
                             )
@@ -175,7 +170,6 @@ class FetchAuroraOrders extends FetchAuroraAction
                     dd('todo make order to be collected');
                 }
 
-
                 /** @var Address $billingAddress */
                 $billingAddress = Arr::pull($orderData['order'], 'billing_address');
                 if ($order->billing_locked) {
@@ -183,7 +177,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                         order: $order,
                         modelData: [
                             'address' => $billingAddress,
-                            'type'    => 'billing'
+                            'type' => 'billing',
                         ],
                         hydratorsDelay: $this->hydratorsDelay,
                         audit: false
@@ -201,7 +195,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                         'country_id',
                         'checksum',
                         'is_fixed',
-                        'fixed_scope'
+                        'fixed_scope',
 
                     ]));
                 }
@@ -256,8 +250,7 @@ class FetchAuroraOrders extends FetchAuroraAction
     private function fetchPayments($organisationSource, Order $order): void
     {
         $organisation = $organisationSource->getOrganisation();
-        $sourceData   = explode(':', $order->source_id);
-
+        $sourceData = explode(':', $order->source_id);
 
         $modelHasPayments = [];
         foreach (
@@ -273,7 +266,7 @@ class FetchAuroraOrders extends FetchAuroraAction
             if ($payment) {
                 $modelHasPayments[$payment->id] = [
                     'amount' => $payment->amount,
-                    'share'  => 1
+                    'share' => 1,
                 ];
             }
         }
@@ -285,7 +278,6 @@ class FetchAuroraOrders extends FetchAuroraAction
     private function fetchTransactions($organisationSource, Order $order): void
     {
         $transactionsToDelete = $order->transactions()->whereIn('model_type', ['Product', 'Service'])->pluck('source_id', 'id')->all();
-
 
         $sourceData = explode(':', $order->source_id);
         foreach (
@@ -391,7 +383,6 @@ class FetchAuroraOrders extends FetchAuroraAction
             $query->where('Order Store Key', $sourceData[1]);
         }
 
-
         return $query;
     }
 
@@ -399,5 +390,4 @@ class FetchAuroraOrders extends FetchAuroraAction
     {
         DB::connection('aurora')->table('Order Dimension')->update(['aiku_id' => null]);
     }
-
 }

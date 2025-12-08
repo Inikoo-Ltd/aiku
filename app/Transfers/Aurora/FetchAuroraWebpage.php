@@ -31,10 +31,9 @@ class FetchAuroraWebpage extends FetchAurora
 
     protected function parseModel(): void
     {
-        if (!$this->auroraModelData) {
+        if (! $this->auroraModelData) {
             return;
         }
-
 
         if (in_array($this->auroraModelData->{'Webpage Scope'}, ['Register', 'Login', 'ResetPwd', 'Basket', 'Top_Up', 'Checkout'])) {
             return;
@@ -48,16 +47,14 @@ class FetchAuroraWebpage extends FetchAurora
             return;
         }
 
-
-
         if (preg_match('/\.sys$/', $this->auroraModelData->{'Webpage Code'})) {
-            if (!in_array($this->auroraModelData->{'Webpage Code'}, [
+            if (! in_array($this->auroraModelData->{'Webpage Code'}, [
                 'home.sys',
                 'home_logout.sys',
                 'contact.sys',
                 'tac.sys',
                 'shipping.sys',
-                'about.sys'
+                'about.sys',
             ])) {
                 return;
             }
@@ -84,24 +81,17 @@ class FetchAuroraWebpage extends FetchAurora
             return;
         }
 
-
         $parsedData = $this->processAuroraWebpage($this->organisation, $website, $this->auroraModelData);
-        if (!$parsedData) {
+        if (! $parsedData) {
             return;
         }
 
-
-
         $website = $parsedData['website'];
-
-
-
 
         if ($website->shop->type == ShopTypeEnum::FULFILMENT &&
             $parsedData['webpage']['code'] == 'shipping.sys') {
             $parsedData['webpage']['code'] = 'shipping';
         }
-
 
         $this->parsedData['website'] = $parsedData['website'];
         $this->parsedData['webpage'] = $parsedData['webpage'];
@@ -115,8 +105,7 @@ class FetchAuroraWebpage extends FetchAurora
         $this->parsedData['last_published'] = $this->auroraModelData->{'Webpage Last Launch Date'};
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Page Store Dimension')
@@ -124,7 +113,7 @@ class FetchAuroraWebpage extends FetchAurora
             ->where('Page Key', $id)->first();
     }
 
-    public function processAuroraWebpage(Organisation $organisation, Website $website, $auroraModelData): array|null
+    public function processAuroraWebpage(Organisation $organisation, Website $website, $auroraModelData): ?array
     {
 
         if ($website->state == WebsiteStateEnum::CLOSED) {
@@ -164,39 +153,32 @@ class FetchAuroraWebpage extends FetchAurora
             default => WebpageTypeEnum::CONTENT,
         };
 
-
         $model = null;
-
 
         if ($auroraModelData->{'Webpage Scope'} == 'Category Products') {
             $model = $this->parseFamily($organisation->id.':'.$auroraModelData->{'Webpage Scope Key'});
-            if (!$model) {
+            if (! $model) {
                 $model = $this->parseCollection($organisation->id.':'.$auroraModelData->{'Webpage Scope Key'});
             }
 
-
-
-            if (!$model) {
+            if (! $model) {
                 return null;
             }
 
-
-
         } elseif ($auroraModelData->{'Webpage Scope'} == 'Category Categories') {
             $model = $this->parseDepartment($organisation->id.':'.$auroraModelData->{'Webpage Scope Key'});
-            if (!$model) {
+            if (! $model) {
                 $model = $this->parseCollection($organisation->id.':'.$auroraModelData->{'Webpage Scope Key'});
             }
-            if (!$model) {
+            if (! $model) {
                 return null;
             }
         } elseif ($auroraModelData->{'Webpage Scope'} == 'Product') {
             $model = $this->parseProduct($organisation->id.':'.$auroraModelData->{'Webpage Scope Key'});
-            if (!$model) {
+            if (! $model) {
                 return null;
             }
         }
-
 
         $migrationData = null;
         if ($auroraModelData->{'Page Store Content Published Data'}) {
@@ -209,8 +191,6 @@ class FetchAuroraWebpage extends FetchAurora
         if ($title == '') {
             $title = $auroraModelData->{'Webpage Code'};
         }
-
-
 
         //        switch ($type) {
         //            case WebpageTypeEnum::CATALOGUE:
@@ -249,43 +229,40 @@ class FetchAuroraWebpage extends FetchAurora
         //                break;
         //        }
 
-
         if (strtolower($url) == 'products') {
             $url = 'products-showcase';
         }
 
-
         $webpage =
             [
-               // 'parent_id'       => $parentId,
-                'code'            => $url,
-                'title'           => $title,
-                'url'             => strtolower($url),
-                'state'           => $status,
-                'sub_type'        => $subType,
-                'type'            => $type,
-                'fetched_at'      => now(),
+                // 'parent_id'       => $parentId,
+                'code' => $url,
+                'title' => $title,
+                'url' => strtolower($url),
+                'state' => $status,
+                'sub_type' => $subType,
+                'type' => $type,
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
-                'source_id'       => $organisation->id.':'.$auroraModelData->{'Page Key'},
+                'source_id' => $organisation->id.':'.$auroraModelData->{'Page Key'},
 
             ];
 
         if ($migrationData) {
             if ($auroraModelData->{'Webpage Code'} == 'home.sys') {
                 $webpage['migration_data'] = [
-                    'loggedIn' => $migrationData
+                    'loggedIn' => $migrationData,
                 ];
             } elseif ($auroraModelData->{'Webpage Code'} == 'home_logout.sys') {
                 $webpage['migration_data'] = [
-                    'loggedOut' => $migrationData
+                    'loggedOut' => $migrationData,
                 ];
             } else {
                 $webpage['migration_data'] = [
-                    'both' => $migrationData
+                    'both' => $migrationData,
                 ];
             }
         }
-
 
         if ($createdAt = $this->parseDatetime($auroraModelData->{'Webpage Creation Date'})) {
             $webpage['created_at'] = $createdAt;
@@ -293,14 +270,12 @@ class FetchAuroraWebpage extends FetchAurora
 
         if ($model) {
             $webpage['model_type'] = class_basename($model);
-            $webpage['model_id']   = $model->id;
+            $webpage['model_id'] = $model->id;
         }
-
 
         return [
             'website' => $website,
-            'webpage' => $webpage
+            'webpage' => $webpage,
         ];
     }
-
 }

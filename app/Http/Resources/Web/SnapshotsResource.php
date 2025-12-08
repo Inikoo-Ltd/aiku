@@ -19,7 +19,7 @@ class SnapshotsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            "id" => $this->id,
+            'id' => $this->id,
             'scope' => $this->scope,
             'parent_type' => $this->parent_type,
             'state' => $this->state,

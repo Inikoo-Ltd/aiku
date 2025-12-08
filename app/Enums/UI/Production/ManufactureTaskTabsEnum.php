@@ -16,26 +16,26 @@ enum ManufactureTaskTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE            = 'showcase';
-    case HISTORY             = 'history';
-    case ARTEFACT            = 'artefact';
+    case SHOWCASE = 'showcase';
+    case HISTORY = 'history';
+    case ARTEFACT = 'artefact';
 
     public function blueprint(): array
     {
         return match ($this) {
             ManufactureTaskTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fal fa-drone',
+                'icon' => 'fal fa-drone',
             ],
             ManufactureTaskTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
-                'align' => 'right'
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ],
             ManufactureTaskTabsEnum::ARTEFACT => [
                 'title' => __('Artefact'),
-                'icon'  => 'fal fa-drone',
+                'icon' => 'fal fa-drone',
             ]
         };
     }

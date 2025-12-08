@@ -15,10 +15,10 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Inventory\Warehouse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Http\RedirectResponse;
 
 class StoreRetinaPlatformPalletReturn extends RetinaAction
 {
@@ -30,7 +30,6 @@ class StoreRetinaPlatformPalletReturn extends RetinaAction
 
         return StorePalletReturn::run($customerClient->customer->fulfilmentCustomer, $modelData);
     }
-
 
     public function prepareForValidation(): void
     {
@@ -81,7 +80,7 @@ class StoreRetinaPlatformPalletReturn extends RetinaAction
     {
         return Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.basket.show', [
             'customerSalesChannel' => $palletReturn->customerSaleChannel->slug,
-            'palletReturn'         => $palletReturn->slug
+            'palletReturn' => $palletReturn->slug,
         ]);
     }
 }

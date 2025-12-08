@@ -29,7 +29,6 @@ class StoreRetinaMultiplePalletsFromDelivery extends RetinaAction
         return $palletDelivery;
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -53,14 +52,14 @@ class StoreRetinaMultiplePalletsFromDelivery extends RetinaAction
     public function rules(): array
     {
         return [
-            'warehouse_id'   => [
+            'warehouse_id' => [
                 'required',
                 'integer',
                 Rule::exists('warehouses', 'id')
                     ->where('organisation_id', $this->organisation->id),
             ],
             'number_pallets' => ['required', 'integer', 'min:1', 'max:1000'],
-            'type'           => ['required', Rule::enum(PalletTypeEnum::class)],
+            'type' => ['required', Rule::enum(PalletTypeEnum::class)],
         ];
     }
 
@@ -73,18 +72,17 @@ class StoreRetinaMultiplePalletsFromDelivery extends RetinaAction
 
     public function action(PalletDelivery $palletDelivery, array $modelData): PalletDelivery
     {
-        $this->asAction           = true;
+        $this->asAction = true;
         $this->fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
         $this->initialisationFulfilmentActions($this->fulfilmentCustomer, $modelData);
 
         return $this->handle($palletDelivery, $this->validatedData);
     }
 
-
     public function htmlResponse(PalletDelivery $palletDelivery): RedirectResponse
     {
         return Redirect::route('retina.fulfilment.storage.pallet_deliveries.show', [
-            'palletDelivery' => $palletDelivery->slug
+            'palletDelivery' => $palletDelivery->slug,
         ]);
     }
 }

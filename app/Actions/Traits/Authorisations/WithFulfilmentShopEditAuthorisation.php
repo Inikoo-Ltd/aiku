@@ -20,7 +20,7 @@ trait WithFulfilmentShopEditAuthorisation
 
         return $request->user()->authTo([
             "fulfilment-shop.{$this->fulfilment->id}.edit",
-            "supervisor-fulfilment-shop.".$this->fulfilment->id,
+            'supervisor-fulfilment-shop.'.$this->fulfilment->id,
         ]);
     }
 }

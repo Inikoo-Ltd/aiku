@@ -38,12 +38,9 @@ class IndexRetinaFulfilmentInvoices extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-
         $queryBuilder = QueryBuilder::for(Invoice::class);
 
         $queryBuilder->where('invoices.customer_id', $fulfilmentCustomer->customer->id);
-
-
 
         $queryBuilder->defaultSort('-invoices.date')
             ->select([
@@ -62,9 +59,6 @@ class IndexRetinaFulfilmentInvoices extends RetinaAction
             ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
             ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id');
 
-
-
-
         return $queryBuilder->allowedSorts(['number', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -80,8 +74,7 @@ class IndexRetinaFulfilmentInvoices extends RetinaAction
                     ->pageName($prefix.'Page');
             }
 
-
-            $noResults = __("No invoices found");
+            $noResults = __('No invoices found');
 
             $table
                 ->withGlobalSearch()
@@ -98,58 +91,46 @@ class IndexRetinaFulfilmentInvoices extends RetinaAction
 
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
-
-
-
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('reference');
         };
     }
-
-
-
 
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
     {
         return InvoicesResource::collection($invoices);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
 
-
         $afterTitle = null;
-        $iconRight  = null;
-        $model      = null;
-        $actions    = null;
+        $iconRight = null;
+        $model = null;
+        $actions = null;
 
-        $title      = __('Invoices');
+        $title = __('Invoices');
 
-        $icon  = [
-            'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            'title' => __('Invoices')
+        $icon = [
+            'icon' => ['fal', 'fa-file-invoice-dollar'],
+            'title' => __('Invoices'),
         ];
-
-
-
 
         return Inertia::render(
             'Billing/RetinaInvoices',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Invoices'),
-                'pageHead'    => [
+                'title' => __('Invoices'),
+                'pageHead' => [
 
-                    'title'         => $title,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'icon'          => $icon,
-                    'actions'       => $actions
+                    'title' => $title,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
+                    'icon' => $icon,
+                    'actions' => $actions,
                 ],
-                'data'        => InvoicesResource::collection($invoices),
-
+                'data' => InvoicesResource::collection($invoices),
 
             ]
         )->table($this->tableStructure($this->parent));
@@ -169,16 +150,16 @@ class IndexRetinaFulfilmentInvoices extends RetinaAction
             ShowRetinaBillingDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
                             'name' => 'retina.fulfilment.billing.invoices.index',
                         ],
                         'label' => __('Invoices'),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
                     ],
 
-                ]
+                ],
             ]
         );
     }

@@ -13,7 +13,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasHelpersStats;
     use HasQueriesStats;
 
@@ -24,12 +25,10 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('group_id');
             $table->foreign('group_id')->references('id')->on('groups')->onUpdate('cascade')->onDelete('cascade');
 
-
             $table->unsignedSmallInteger('number_organisations')->default(0);
             foreach (OrganisationTypeEnum::cases() as $case) {
                 $table->unsignedInteger('number_organisations_type_'.$case->snake())->default(0);
             }
-
 
             $table = $this->imagesStats($table);
             $table = $this->attachmentsStats($table);
@@ -39,7 +38,6 @@ return new class () extends Migration {
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

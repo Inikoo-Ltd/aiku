@@ -18,7 +18,6 @@ class GetWebsiteWorkshopProduct
     public function handle(Website $website, Product $product): array
     {
 
-
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
 
         $layout = Arr::get($website->unpublishedProductSnapshot, 'layout.product', []);
@@ -33,17 +32,17 @@ class GetWebsiteWorkshopProduct
             'autosaveRoute' => [
                 'name' => 'grp.models.website.autosave.product',
                 'parameters' => [
-                    'website' => $website->id
-                ]
+                    'website' => $website->id,
+                ],
             ],
         ];
         $updateRoute = [
             'updateRoute' => [
                 'name' => 'grp.models.website.settings.update',
                 'parameters' => [
-                    'website' => $website->id
-                ]
-            ]
+                    'website' => $website->id,
+                ],
+            ],
         ];
 
         return array_merge($propsValue, $updateRoute);

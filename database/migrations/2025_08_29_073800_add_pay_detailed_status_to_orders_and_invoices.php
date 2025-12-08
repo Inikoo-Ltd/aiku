@@ -10,16 +10,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            if (!Schema::hasColumn('orders', 'pay_detailed_status')) {
+            if (! Schema::hasColumn('orders', 'pay_detailed_status')) {
                 $table->string('pay_detailed_status')->index()->nullable();
             }
         });
         Schema::table('invoices', function (Blueprint $table) {
-            if (!Schema::hasColumn('invoices', 'pay_detailed_status')) {
+            if (! Schema::hasColumn('invoices', 'pay_detailed_status')) {
                 $table->string('pay_detailed_status')->index()->nullable();
             }
         });

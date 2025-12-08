@@ -21,7 +21,6 @@ class FetchAuroraNoProductTransactionHasOfferComponents
     use AsAction;
     use WithAuroraParsers;
 
-
     private SourceOrganisationService $organisationSource;
 
     public function handle(SourceOrganisationService $organisationSource, int $source_id, Order $order): ?TransactionHasOfferAllowance
@@ -29,7 +28,7 @@ class FetchAuroraNoProductTransactionHasOfferComponents
         $this->organisationSource = $organisationSource;
 
         $noProductTransactionHasOfferComponentData = $organisationSource->fetchNoProductTransactionHasOfferComponent(id: $source_id, order: $order);
-        if (!$noProductTransactionHasOfferComponentData) {
+        if (! $noProductTransactionHasOfferComponentData) {
             return null;
         }
 
@@ -44,7 +43,7 @@ class FetchAuroraNoProductTransactionHasOfferComponents
             );
         }
 
-        if (!$transactionHasOfferComponent) {
+        if (! $transactionHasOfferComponent) {
             $transactionHasOfferComponent = StoreTransactionHasOfferAllowance::make()->action(
                 transaction: $noProductTransactionHasOfferComponentData['transaction'],
                 offerAllowance: $noProductTransactionHasOfferComponentData['offer_allowance'],
@@ -56,6 +55,4 @@ class FetchAuroraNoProductTransactionHasOfferComponents
 
         return $transactionHasOfferComponent;
     }
-
-
 }

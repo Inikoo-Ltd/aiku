@@ -54,6 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Billables\ShippingZone> $shippingZones
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Billables\ShippingZoneSchemaStats|null $stats
+ *
  * @method static \Database\Factories\Billables\ShippingZoneSchemaFactory factory($count = null, $state = [])
  * @method static Builder<static>|ShippingZoneSchema newModelQuery()
  * @method static Builder<static>|ShippingZoneSchema newQuery()
@@ -61,22 +62,23 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|ShippingZoneSchema query()
  * @method static Builder<static>|ShippingZoneSchema withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|ShippingZoneSchema withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class ShippingZoneSchema extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasSlug;
     use HasFactory;
-    use InShop;
     use HasHistory;
+    use HasSlug;
+    use InShop;
+    use SoftDeletes;
 
     protected $casts = [
-        'state'             => ShippingZoneSchemaStateEnum::class,
-        'live_at'           => 'datetime',
+        'state' => ShippingZoneSchemaStateEnum::class,
+        'live_at' => 'datetime',
         'decommissioned_at' => 'datetime',
-        'fetched_at'        => 'datetime',
-        'last_fetched_at'   => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $guarded = [];
@@ -91,7 +93,7 @@ class ShippingZoneSchema extends Model implements Auditable
         'code',
         'name',
         'territories',
-        'price'
+        'price',
 
     ];
 
@@ -130,5 +132,4 @@ class ShippingZoneSchema extends Model implements Auditable
     {
         return $this->hasMany(Invoice::class);
     }
-
 }

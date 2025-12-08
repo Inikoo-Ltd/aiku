@@ -39,6 +39,7 @@ class DeleteReindexWebsiteLuigiData
             $website = Website::first();
         }
         $this->handle($website);
+
         return 0;
     }
 }

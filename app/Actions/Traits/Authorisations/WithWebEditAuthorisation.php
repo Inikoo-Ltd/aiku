@@ -20,8 +20,7 @@ trait WithWebEditAuthorisation
         }
 
         $routeName = $request->route()->getName();
-        $user      = $request->user();
-
+        $user = $request->user();
 
         if ($routeName == 'grp.websites.webpage.preview') {
             return true;
@@ -35,7 +34,7 @@ trait WithWebEditAuthorisation
             return $user->authTo([
                 "supervisor-web.{$this->shop->id}",
                 "web.{$this->shop->id}.edit",
-                "group-webmaster.view"
+                'group-webmaster.view',
             ]);
         }
 
@@ -43,13 +42,13 @@ trait WithWebEditAuthorisation
             return $user->authTo([
                 "supervisor-fulfilment-shop.{$this->fulfilment->id}",
                 "fulfilment-shop.{$this->fulfilment->id}.edit",
-                "group-webmaster.view"
+                'group-webmaster.view',
             ]);
         }
 
         if (str_starts_with($routeName, 'grp.models.')) {
             $permissions = [
-                "group-webmaster.view",
+                'group-webmaster.view',
                 "supervisor-web.{$this->shop->id}",
                 "web.{$this->shop->id}.edit",
             ];

@@ -34,7 +34,7 @@ class OrganisationHydrateAudits implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_audits'                 => DB::table('audits')->select("organisation_id")->where('organisation_id', $organisation->id)->count(),
+            'number_audits' => DB::table('audits')->select('organisation_id')->where('organisation_id', $organisation->id)->count(),
         ];
 
         $stats = array_merge(
@@ -67,9 +67,9 @@ class OrganisationHydrateAudits implements ShouldBeUnique
             foreach (AuditEventEnum::cases() as $case2) {
                 if ($case2 == AuditEventEnum::MIGRATED and $case != AuditUserTypeEnum::SYSTEM) {
                     continue;
-                };
+                }
                 $stats["number_audits_user_type_{$case->snake()}_event_{$case2->snake()}"] = DB::table('audits')
-                    ->selectRaw("organisation_id, user_type, event")
+                    ->selectRaw('organisation_id, user_type, event')
                     ->where('organisation_id', $organisation->id)
                     ->where('user_type', $case->value)
                     ->where('event', $case2->value)
@@ -90,5 +90,4 @@ class OrganisationHydrateAudits implements ShouldBeUnique
             $this->handle($organisation);
         }
     }
-
 }

@@ -64,58 +64,57 @@ class TransactionsResource extends JsonResource
         }
 
         return [
-            'id'                  => $this->id,
-            'state'               => $this->state,
-            'status'              => $this->status,
-            'quantity_ordered'    => $this->quantity_ordered,
-            'quantity_bonus'      => $this->quantity_bonus,
+            'id' => $this->id,
+            'state' => $this->state,
+            'status' => $this->status,
+            'quantity_ordered' => $this->quantity_ordered,
+            'quantity_bonus' => $this->quantity_bonus,
             'quantity_dispatched' => $this->quantity_dispatched,
-            'quantity_fail'       => $this->quantity_fail,
-            'quantity_cancelled'  => $this->quantity_cancelled,
-            'gross_amount'        => $this->gross_amount,
-            'net_amount'          => $this->net_amount,
-            'price'               => $this->price,
-            'asset_code'          => $this->asset_code,
-            'asset_name'          => $this->asset_name,
-            'asset_type'          => $this->asset_type,
-            'image'               => $this->product_image_id ? ImageResource::make($media)->getArray() : null,
-            'product_slug'        => $this->product_slug,
-            'created_at'          => $this->created_at,
-            'currency_code'       => $this->currency_code,
-            'available_quantity'  => $this->available_quantity ?? 0,
-            'webpage_url'         => $webpageUrl,
-            'offers_data'         => $this->offers_data,
-
+            'quantity_fail' => $this->quantity_fail,
+            'quantity_cancelled' => $this->quantity_cancelled,
+            'gross_amount' => $this->gross_amount,
+            'net_amount' => $this->net_amount,
+            'price' => $this->price,
+            'asset_code' => $this->asset_code,
+            'asset_name' => $this->asset_name,
+            'asset_type' => $this->asset_type,
+            'image' => $this->product_image_id ? ImageResource::make($media)->getArray() : null,
+            'product_slug' => $this->product_slug,
+            'created_at' => $this->created_at,
+            'currency_code' => $this->currency_code,
+            'available_quantity' => $this->available_quantity ?? 0,
+            'webpage_url' => $webpageUrl,
+            'offers_data' => $this->offers_data,
 
             'deleteRoute' => $request->user() instanceof User
                 ? [
-                    'name'       => 'grp.models.transaction.delete',
+                    'name' => 'grp.models.transaction.delete',
                     'parameters' => [
-                        'transaction' => $this->id
+                        'transaction' => $this->id,
                     ],
-                    'method'     => 'delete'
+                    'method' => 'delete',
                 ]
                 : [
-                    'name'       => 'retina.models.transaction.delete',
+                    'name' => 'retina.models.transaction.delete',
                     'parameters' => [
-                        'transaction' => $this->id
+                        'transaction' => $this->id,
                     ],
-                    'method'     => 'delete'
+                    'method' => 'delete',
                 ],
             'updateRoute' => $request->user() instanceof User
                 ? [
-                    'name'       => 'grp.models.transaction.update',
+                    'name' => 'grp.models.transaction.update',
                     'parameters' => [
-                        'transaction' => $this->id
+                        'transaction' => $this->id,
                     ],
-                    'method'     => 'patch'
+                    'method' => 'patch',
                 ]
                 : [
-                    'name'       => 'retina.models.transaction.update',
+                    'name' => 'retina.models.transaction.update',
                     'parameters' => [
-                        'transaction' => $this->id
+                        'transaction' => $this->id,
                     ],
-                    'method'     => 'patch'
+                    'method' => 'patch',
                 ],
         ];
     }

@@ -30,7 +30,7 @@ class SeedGroupPaymentServiceProviders
             $data = [
                 'code' => $modelData,
                 'type' => PaymentServiceProviderEnum::types()[$modelData],
-                'name' => PaymentServiceProviderEnum::labels()[$modelData]
+                'name' => PaymentServiceProviderEnum::labels()[$modelData],
             ];
 
             if ($paymentServiceProvider) {
@@ -48,7 +48,6 @@ class SeedGroupPaymentServiceProviders
         });
     }
 
-
     public string $commandSignature = 'groups:seed-payment-service-providers';
 
     public function asCommand(Command $command): int
@@ -61,5 +60,4 @@ class SeedGroupPaymentServiceProviders
 
         return 0;
     }
-
 }

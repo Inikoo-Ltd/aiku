@@ -22,31 +22,29 @@ class DashboardMasterShopSalesInGroupResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
-
     public function toArray($request): array
     {
-
 
         $columns = array_merge(
             [
                 'label' => [
                     'formatted_value' => $this->name,
-                    'align'           => 'left',
-                    'route_target'    => [
+                    'align' => 'left',
+                    'route_target' => [
                         'name' => 'grp.masters.master_shops.show',
                         'parameters' => [
                             'masterShop' => $this->slug,
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $this->code,
-                    'tooltip'         => $this->name,
-                    'align'           => 'left',
-                    'route_target'    => []
-                ]
+                    'tooltip' => $this->name,
+                    'align' => 'left',
+                    'route_target' => [],
+                ],
             ],
             $this->getDashboardTableColumn($this, 'baskets_created_grp_currency'),
             $this->getDashboardTableColumn($this, 'baskets_created_grp_currency_minified'),
@@ -61,12 +59,10 @@ class DashboardMasterShopSalesInGroupResource extends JsonResource
             $this->getDashboardTableColumn($this, 'sales_grp_currency_delta'),
         );
 
-
         return [
-            'slug'    => $this->slug,
-            'state'   => $this->status ? 'active' : 'inactive',
+            'slug' => $this->slug,
+            'state' => $this->status ? 'active' : 'inactive',
             'columns' => $columns,
-
 
         ];
     }

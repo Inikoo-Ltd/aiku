@@ -25,58 +25,56 @@ class UserRecordSearch
             if ($user->universalSearch) {
                 $user->universalSearch()->delete();
             }
+
             return;
         }
-
 
         $user->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'          => $user->group_id,
-                'sections'          => ['sysadmin'],
-                'haystack_tier_1'   => $user->username,
-                'haystack_tier_2'   => trim($user->email.' '.$user->contact_name),
-                'result'            => [
+                'group_id' => $user->group_id,
+                'sections' => ['sysadmin'],
+                'haystack_tier_1' => $user->username,
+                'haystack_tier_2' => trim($user->email.' '.$user->contact_name),
+                'result' => [
                     // 'aaa'       => $user,
-                    'route'     => [
-                        'name'       => 'grp.sysadmin.users.show',
-                        'parameters' => $user->username
+                    'route' => [
+                        'name' => 'grp.sysadmin.users.show',
+                        'parameters' => $user->username,
                     ],
-                    'container'     => [
-                        'key'       => 'auth_type',
-                        'label'     => $user->auth_type->labels()[$user->auth_type->value],
-                        'tooltip'   => 'Auth type'
+                    'container' => [
+                        'key' => 'auth_type',
+                        'label' => $user->auth_type->labels()[$user->auth_type->value],
+                        'tooltip' => 'Auth type',
                     ],
-                    'title'         => $user->contact_name,
-                    'afterTitle'    => [
-                        'label'     => '('.$user->username.')',
+                    'title' => $user->contact_name,
+                    'afterTitle' => [
+                        'label' => '('.$user->username.')',
                     ],
-                    'icon'          => [
-                        'icon'  => 'fal fa-terminal',
+                    'icon' => [
+                        'icon' => 'fal fa-terminal',
                     ],
-                    'meta'          => [
+                    'meta' => [
                         [
-                            'key'   => 'type',
-                            'label' => $user->type
+                            'key' => 'type',
+                            'label' => $user->type,
                         ],
                         [
-                            'key'       => 'created_date',
-                            'type'      => 'date',
-                            'label'     => $user->created_at,
-                            'tooltip'   => 'Created at'
+                            'key' => 'created_date',
+                            'type' => 'date',
+                            'label' => $user->created_at,
+                            'tooltip' => 'Created at',
                         ],
                         [
-                            'key'       => 'email',
-                            'label'     => $user->email,
-                            'tooltip'   => 'Email'
+                            'key' => 'email',
+                            'label' => $user->email,
+                            'tooltip' => 'Email',
                         ],
                     ],
 
                     // 'meta'       => UserSearchResultResource::make($user)
-                ]
+                ],
             ]
         );
     }
-
-
 }

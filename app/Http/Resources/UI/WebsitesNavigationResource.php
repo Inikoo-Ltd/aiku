@@ -16,7 +16,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $code
  * @property string $name
  * @property ?Shop $shop
- *
  */
 class WebsitesNavigationResource extends JsonResource
 {
@@ -31,7 +30,7 @@ class WebsitesNavigationResource extends JsonResource
                 function () {
                     return $this->shop->slug;
                 }
-            )
+            ),
 
         ];
     }

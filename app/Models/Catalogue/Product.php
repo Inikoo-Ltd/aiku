@@ -219,6 +219,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, WebpageHasProduct> $webpageHasProducts
+ *
  * @method static \Database\Factories\Catalogue\ProductFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newQuery()
@@ -230,54 +231,54 @@ use Spatie\Translatable\HasTranslations;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereLocales(string $column, array $locales)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Product extends Model implements Auditable, HasMedia
 {
-    use SoftDeletes;
+    use HasAttachments;
+    use HasFactory;
+    use HasHistory;
+    use HasImage;
     use HasSlug;
+    use HasTranslations;
     use HasUniversalSearch;
     use InAssetModel;
-    use HasHistory;
-    use HasFactory;
-    use HasImage;
-    use HasTranslations;
-    use HasAttachments;
+    use SoftDeletes;
 
     protected $guarded = [];
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
-
     protected $casts = [
-        'variant_ratio'                 => 'decimal:3',
-        'price'                         => 'decimal:2',
-        'rrp'                           => 'decimal:2',
-        'data'                          => 'array',
-        'settings'                      => 'array',
-        'web_images'                    => 'array',
-        'marketing_dimensions'          => 'array',
-        'variant_is_visible'            => 'boolean',
-        'state'                         => ProductStateEnum::class,
-        'status'                        => ProductStatusEnum::class,
-        'trade_config'                  => ProductTradeConfigEnum::class,
-        'unit_relationship_type'        => ProductUnitRelationshipType::class,
-        'fetched_at'                    => 'datetime',
-        'last_fetched_at'               => 'datetime',
+        'variant_ratio' => 'decimal:3',
+        'price' => 'decimal:2',
+        'rrp' => 'decimal:2',
+        'data' => 'array',
+        'settings' => 'array',
+        'web_images' => 'array',
+        'marketing_dimensions' => 'array',
+        'variant_is_visible' => 'boolean',
+        'state' => ProductStateEnum::class,
+        'status' => ProductStatusEnum::class,
+        'trade_config' => ProductTradeConfigEnum::class,
+        'unit_relationship_type' => ProductUnitRelationshipType::class,
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
         'available_quantity_updated_at' => 'datetime',
-        'cpnp_number'                   => 'string',
-        'ufi_number'                    => 'string',
-        'scpn_number'                   => 'string',
-        'offers_data'                   => 'array',
-        'not_for_sale_since'            => 'datetime',
+        'cpnp_number' => 'string',
+        'ufi_number' => 'string',
+        'scpn_number' => 'string',
+        'offers_data' => 'array',
+        'not_for_sale_since' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'                 => '{}',
-        'settings'             => '{}',
-        'web_images'           => '{}',
+        'data' => '{}',
+        'settings' => '{}',
+        'web_images' => '{}',
         'marketing_dimensions' => '{}',
-        'offers_data'          => '{}',
+        'offers_data' => '{}',
     ];
 
     public function generateTags(): array

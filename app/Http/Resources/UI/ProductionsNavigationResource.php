@@ -19,10 +19,10 @@ class ProductionsNavigationResource extends JsonResource
         $production = $this;
 
         return [
-            'id'     => $production->id,
-            'slug'   => $production->slug,
-            'code'   => $production->code,
-            'label'  => $production->name
+            'id' => $production->id,
+            'slug' => $production->slug,
+            'code' => $production->code,
+            'label' => $production->name,
         ];
     }
 }

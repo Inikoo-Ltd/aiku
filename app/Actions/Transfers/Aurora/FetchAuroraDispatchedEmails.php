@@ -21,13 +21,11 @@ class FetchAuroraDispatchedEmails extends FetchAuroraAction
 {
     public string $jobQueue = 'low-priority';
 
-
     public string $commandSignature = 'fetch:dispatched_emails {organisations?*} {--s|source_id=} {--N|only_new : Fetch only new} {--d|db_suffix=} {--w|with=* : Accepted values: events copies full}  {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
-
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?DispatchedEmail
     {
-        $dispatchedEmail     = null;
+        $dispatchedEmail = null;
         $dispatchedEmailData = $organisationSource->fetchDispatchedEmail($organisationSourceId);
 
         if ($dispatchedEmailData) {
@@ -68,7 +66,6 @@ class FetchAuroraDispatchedEmails extends FetchAuroraAction
             }
         }
 
-
         if ($dispatchedEmail && (in_array('events', $this->with) or in_array('full', $this->with))) {
             $sourceData = explode(':', $dispatchedEmail->source_id);
 
@@ -97,10 +94,8 @@ class FetchAuroraDispatchedEmails extends FetchAuroraAction
             }
         }
 
-
         return $dispatchedEmail;
     }
-
 
     public function getModelsQuery(): Builder
     {
@@ -130,5 +125,4 @@ class FetchAuroraDispatchedEmails extends FetchAuroraAction
 
         return $query;
     }
-
 }

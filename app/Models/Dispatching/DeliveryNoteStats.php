@@ -22,9 +22,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
+ *
  * @method static Builder<static>|DeliveryNoteStats newModelQuery()
  * @method static Builder<static>|DeliveryNoteStats newQuery()
  * @method static Builder<static>|DeliveryNoteStats query()
+ *
  * @mixin Eloquent
  */
 class DeliveryNoteStats extends Model

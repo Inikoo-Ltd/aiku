@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 use App\Actions\UI\Notification\IndexNotification;
 use App\Actions\UI\Notification\ShowNotification;
 use App\Actions\UI\Profile\GetMayaProfile;

@@ -31,11 +31,11 @@ class ShopifyAppInstalledListener
     {
         $shopifyUser = ShopifyUser::find($event->shopId->toNative());
 
-        if (!$shopifyUser) {
+        if (! $shopifyUser) {
             Sentry::captureMessage('Shopify user not found in ShopifyAppInstalledListener');
+
             return;
         }
-
 
         CreateShopifyWebhooks::run($shopifyUser);
 

@@ -29,7 +29,7 @@ class IndexRetinaUploadRecords extends RetinaAction
 
     private bool $action = false;
 
-    public function handle(Upload $upload, string $prefix = null): LengthAwarePaginator
+    public function handle(Upload $upload, ?string $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -62,14 +62,14 @@ class IndexRetinaUploadRecords extends RetinaAction
             'Uploads/UploadRecords',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Upload Records'),
-                'pageHead'    => [
-                    'icon'          => ['fal', 'fa-upload'],
-                    'model'         => __('Upload'),
-                    'title'         => __('Records'),
-                    'iconRight'     => 'fal fa-history'
+                'title' => __('Upload Records'),
+                'pageHead' => [
+                    'icon' => ['fal', 'fa-upload'],
+                    'model' => __('Upload'),
+                    'title' => __('Records'),
+                    'iconRight' => 'fal fa-history',
                 ],
-                'data'        => UploadRecordsResource::collection($collection),
+                'data' => UploadRecordsResource::collection($collection),
 
             ]
         )->table($this->tableStructure());
@@ -89,9 +89,9 @@ class IndexRetinaUploadRecords extends RetinaAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                            'title'       => __("No upload records found"),
-                            'count'       => 0
-                        ]
+                        'title' => __('No upload records found'),
+                        'count' => 0,
+                    ]
                 )
                 ->column(key: 'original_filename', label: __('filename'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'row_number', label: __('row number'), canBeHidden: false, searchable: true)
@@ -112,15 +112,15 @@ class IndexRetinaUploadRecords extends RetinaAction
         return [
             [
 
-                'type'   => 'simple',
+                'type' => 'simple',
                 'simple' => [
-                    'icon'  => 'fal fa-tachometer-alt-fast',
+                    'icon' => 'fal fa-tachometer-alt-fast',
                     'label' => 'Upload Records',
                     'route' => [
                         'name' => 'retina.helpers.uploads.records.show',
-                        'parameters' => request()->route()->originalParameters()
-                    ]
-                ]
+                        'parameters' => request()->route()->originalParameters(),
+                    ],
+                ],
 
             ],
 
@@ -130,6 +130,7 @@ class IndexRetinaUploadRecords extends RetinaAction
     public function asController(Upload $upload, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
+
         return $this->handle($upload);
     }
 }

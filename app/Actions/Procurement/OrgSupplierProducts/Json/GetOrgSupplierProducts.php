@@ -36,18 +36,18 @@ class GetOrgSupplierProducts extends OrgAction
 
         $queryBuilder = QueryBuilder::for(OrgSupplierProduct::class);
         $queryBuilder->leftJoin('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')
-                        ->leftJoin('stock_has_supplier_products', 'stock_has_supplier_products.supplier_product_id', '=', 'supplier_products.id')
-                        ->leftJoinSub(
-                            DB::table('stocks')
-                                ->where('available', true)
-                                ->orderBy('created_at', 'asc')
-                                ->limit(1),
-                            'first_stock',
-                            'first_stock.id',
-                            '=',
-                            'stock_has_supplier_products.stock_id'
-                        )
-                        ->leftJoin('org_stocks', 'org_stocks.stock_id', '=', 'first_stock.id');
+            ->leftJoin('stock_has_supplier_products', 'stock_has_supplier_products.supplier_product_id', '=', 'supplier_products.id')
+            ->leftJoinSub(
+                DB::table('stocks')
+                    ->where('available', true)
+                    ->orderBy('created_at', 'asc')
+                    ->limit(1),
+                'first_stock',
+                'first_stock.id',
+                '=',
+                'stock_has_supplier_products.stock_id'
+            )
+            ->leftJoin('org_stocks', 'org_stocks.stock_id', '=', 'first_stock.id');
         $queryBuilder->leftjoin('suppliers', 'supplier_products.supplier_id', 'suppliers.id');
         $queryBuilder->leftJoin('purchase_order_transactions', function ($join) use ($purchaseOrder) {
             $join->on('purchase_order_transactions.org_supplier_product_id', '=', 'org_supplier_products.id')
@@ -78,7 +78,7 @@ class GetOrgSupplierProducts extends OrgAction
                 'purchase_orders.id as purchase_order_id',
                 'org_stocks.id as org_stock_id',
                 'first_stock.id as stock_id',
-                'suppliers.name as supplier_name'
+                'suppliers.name as supplier_name',
             ])
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
@@ -96,12 +96,14 @@ class GetOrgSupplierProducts extends OrgAction
     public function inOrgAgent(OrgAgent $orgAgent, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($orgAgent->organisation, $request);
+
         return $this->handle($orgAgent, $purchaseOrder);
     }
 
     public function inOrgSupplier(OrgSupplier $orgSupplier, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($orgSupplier->organisation, $request);
+
         return $this->handle($orgSupplier, $purchaseOrder);
     }
 

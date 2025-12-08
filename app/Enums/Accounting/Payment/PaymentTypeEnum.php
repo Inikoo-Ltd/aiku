@@ -13,7 +13,7 @@ use App\Enums\EnumHelperTrait;
 enum PaymentTypeEnum: string
 {
     use EnumHelperTrait;
-    case PAYMENT  = 'payment';
-    case REFUND   = 'refund';
+    case PAYMENT = 'payment';
+    case REFUND = 'refund';
 
 }

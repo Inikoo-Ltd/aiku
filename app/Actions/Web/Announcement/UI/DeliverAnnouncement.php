@@ -4,8 +4,8 @@ namespace App\Actions\Web\Announcement\UI;
 
 use App\Actions\OrgAction;
 use App\Models\Announcement;
-use Lorisleiva\Actions\Concerns\AsController;
 use Inertia\Inertia;
+use Lorisleiva\Actions\Concerns\AsController;
 
 class DeliverAnnouncement extends OrgAction
 {
@@ -21,7 +21,7 @@ class DeliverAnnouncement extends OrgAction
         return Inertia::render(
             'DeliverAnnouncement',
             [
-                'announcement_data' => $announcement
+                'announcement_data' => $announcement,
             ]
         );
     }

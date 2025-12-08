@@ -26,12 +26,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read Production $production
  * @property-read \App\Models\SysAdmin\Task $task
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class TaskProductionStat extends Model
@@ -40,9 +42,9 @@ class TaskProductionStat extends Model
 
     protected $guarded = [];
 
-    protected $casts   = [
-        'operative_reward_terms'              => ManufactureTaskOperativeRewardTermsEnum::class,
-        'operative_reward_allowance_type'     => ManufactureTaskOperativeRewardAllowanceTypeEnum::class,
+    protected $casts = [
+        'operative_reward_terms' => ManufactureTaskOperativeRewardTermsEnum::class,
+        'operative_reward_allowance_type' => ManufactureTaskOperativeRewardAllowanceTypeEnum::class,
     ];
 
     public function task(): BelongsTo
@@ -51,6 +53,7 @@ class TaskProductionStat extends Model
         return $this->belongsTo(Task::class);
 
     }
+
     public function production(): BelongsTo
     {
 

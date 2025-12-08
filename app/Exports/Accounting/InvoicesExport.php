@@ -11,14 +11,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class InvoicesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class InvoicesExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Payment|Builder
     {
         return Invoice::query();
     }
 
-    /** @var Invoice $row */
+    /** @var Invoice */
     public function map($row): array
     {
         return [
@@ -32,7 +32,7 @@ class InvoicesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHead
             $row->net,
             $row->total,
             $row->payment,
-            $row->paid_at
+            $row->paid_at,
         ];
     }
 
@@ -49,7 +49,7 @@ class InvoicesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHead
             'Net',
             'Total',
             'Payment',
-            'Paid At'
+            'Paid At',
         ];
     }
 }

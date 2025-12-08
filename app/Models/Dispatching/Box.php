@@ -35,17 +35,19 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Box newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Box newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Box query()
+ *
  * @mixin \Eloquent
  */
 class Box extends Model implements Auditable
 {
-    use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
+    use HasSlug;
+    use HasUniversalSearch;
     use InOrganisation;
 
     protected $guarded = [];
@@ -72,5 +74,4 @@ class Box extends Model implements Auditable
     {
         return 'slug';
     }
-
 }

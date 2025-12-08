@@ -29,6 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexRetinaFulfilmentOrders extends RetinaAction
 {
     private CustomerSalesChannel $customerSalesChannel;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -52,7 +53,7 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
         } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $query->leftJoin('shopify_user_has_fulfilments', function ($join) {
                 $join->on('shopify_user_has_fulfilments.model_id', '=', 'pallet_returns.id')
-                        ->where('shopify_user_has_fulfilments.model_type', '=', 'PalletReturn');
+                    ->where('shopify_user_has_fulfilments.model_type', '=', 'PalletReturn');
             });
         }
 
@@ -73,6 +74,7 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
             'pallet_returns.total_amount',
             'currencies.code as currency_code',
         );
+
         return $query->defaultSort('id')
             ->allowedSorts(['id'])
             ->allowedFilters([$globalSearch])
@@ -86,6 +88,7 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
         if ($customerSalesChannel->customer_id == $this->customer->id) {
             return true;
         }
+
         return false;
     }
 
@@ -94,6 +97,7 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
         $this->customerSalesChannel = $customerSalesChannel;
         $this->platform = $customerSalesChannel->platform;
         $this->initialisation($request);
+
         return $this->handle($customerSalesChannel);
     }
 
@@ -105,12 +109,12 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
             'Storage/RetinaPalletReturns',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($this->customerSalesChannel),
-                'title'       => $title,
-                'pageHead'    => [
+                'title' => $title,
+                'pageHead' => [
                     'title' => $title,
-                    'icon'  => 'fal fa-shopping-basket',
+                    'icon' => 'fal fa-shopping-basket',
                     'afterTitle' => [
-                        'label' => ' @'.$this->platform->name
+                        'label' => ' @'.$this->platform->name,
                     ],
                 ],
 
@@ -125,9 +129,8 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
-
 
             $table
                 ->withModelOperations($modelOperations)
@@ -147,17 +150,17 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
                                 'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.orders.index',
                                 'parameters' => [
-                                    $customerSalesChannel->slug
-                                ]
+                                    $customerSalesChannel->slug,
+                                ],
                             ],
-                            'label'  => __('Orders'),
-                        ]
-                    ]
+                            'label' => __('Orders'),
+                        ],
+                    ],
                 ]
             );
     }

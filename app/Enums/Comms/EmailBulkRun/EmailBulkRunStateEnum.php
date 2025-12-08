@@ -14,21 +14,20 @@ enum EmailBulkRunStateEnum: string
 {
     use EnumHelperTrait;
 
-
-    case SCHEDULED  = 'scheduled';
-    case SENDING    = 'sending';
-    case SENT       = 'sent';
-    case CANCELLED  = 'cancelled';
-    case STOPPED    = 'stopped';
+    case SCHEDULED = 'scheduled';
+    case SENDING = 'sending';
+    case SENT = 'sent';
+    case CANCELLED = 'cancelled';
+    case STOPPED = 'stopped';
 
     public static function labels(): array
     {
         return [
-            'scheduled'  => __('Scheduled'),
-            'sending'    => __('Sending'),
-            'sent'       => __('Sent'),
-            'cancelled'  => __('Cancelled'),
-            'stopped'    => __('Stopped'),
+            'scheduled' => __('Scheduled'),
+            'sending' => __('Sending'),
+            'sent' => __('Sent'),
+            'cancelled' => __('Cancelled'),
+            'stopped' => __('Stopped'),
         ];
     }
 
@@ -38,35 +37,34 @@ enum EmailBulkRunStateEnum: string
             'scheduled' => [
 
                 'tooltip' => __('Scheduled'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-indigo-500'
-
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-indigo-500',
 
             ],
-            'sending'        => [
+            'sending' => [
 
                 'tooltip' => __('sending'),
-                'icon'    => 'fal fa-paper-plane',
-                'class'   => 'animate-pulse'
+                'icon' => 'fal fa-paper-plane',
+                'class' => 'animate-pulse',
 
             ],
-            'sent'     => [
+            'sent' => [
 
                 'tooltip' => __('sent'),
-                'icon'    => 'fal fa-paper-plane',
-                'class'   => 'text-green-600'
+                'icon' => 'fal fa-paper-plane',
+                'class' => 'text-green-600',
             ],
-            'cancelled'     => [
+            'cancelled' => [
 
                 'tooltip' => __('cancelled'),
-                'icon'    => 'fal fa-paper-plane',
-                'class'   => 'text-red-600'
+                'icon' => 'fal fa-paper-plane',
+                'class' => 'text-red-600',
             ],
-            'stopped'     => [
+            'stopped' => [
 
                 'tooltip' => __('stopped'),
-                'icon'    => 'fas fa-stop',
-                'class'   => 'text-red-600'
+                'icon' => 'fas fa-stop',
+                'class' => 'text-red-600',
             ],
 
         ];

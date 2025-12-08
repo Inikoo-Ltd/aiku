@@ -24,11 +24,9 @@ class FetchAuroraStockFamilies extends FetchAuroraAction
     {
         $stockFamilyData = $organisationSource->fetchStockFamily($organisationSourceId);
 
-
-        if (!$stockFamilyData) {
+        if (! $stockFamilyData) {
             return null;
         }
-
 
         if ($stockFamily = StockFamily::where('source_id', $stockFamilyData['stock_family']['source_id'])->first()) {
             return UpdateStockFamily::make()->action(
@@ -40,10 +38,9 @@ class FetchAuroraStockFamilies extends FetchAuroraAction
             );
         }
 
-
         $baseStockFamily = StockFamily::withTrashed()->where('source_slug', $stockFamilyData['stock_family']['source_slug'])->first();
 
-        if (!$baseStockFamily) {
+        if (! $baseStockFamily) {
 
             $stockFamily = StoreStockFamily::make()->action(
                 group: $organisationSource->getOrganisation()->group,
@@ -58,9 +55,7 @@ class FetchAuroraStockFamilies extends FetchAuroraAction
 
         $effectiveStockFamily = $stockFamily ?? $baseStockFamily;
 
-
-
-        if (!$effectiveStockFamily->orgStockFamilies()->where('organisation_id', $organisation->id)->first()) {
+        if (! $effectiveStockFamily->orgStockFamilies()->where('organisation_id', $organisation->id)->first()) {
             StoreOrgStockFamily::run($organisation, $effectiveStockFamily, [
                 'source_id' => $stockFamilyData['stock_family']['source_id'],
             ]);
@@ -68,7 +63,6 @@ class FetchAuroraStockFamilies extends FetchAuroraAction
 
         return $effectiveStockFamily;
     }
-
 
     public function getModelsQuery(): Builder
     {

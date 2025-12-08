@@ -16,28 +16,25 @@ enum ProspectTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
-    case SHOWCASE            = 'showcase';
-    case HISTORY             = 'history';
-    case DISPATCHED_EMAILS   = 'dispatched_emails';
-
-
+    case SHOWCASE = 'showcase';
+    case HISTORY = 'history';
+    case DISPATCHED_EMAILS = 'dispatched_emails';
 
     public function blueprint(): array
     {
         return match ($this) {
             ProspectTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             ProspectTabsEnum::DISPATCHED_EMAILS => [
                 'title' => __('Dispatched emails'),
-                'icon'  => 'fal fa-paper-plane',
+                'icon' => 'fal fa-paper-plane',
             ],
             ProspectTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
         };

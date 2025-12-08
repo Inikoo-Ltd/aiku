@@ -30,13 +30,11 @@ class FetchAuroraWebsites extends FetchAuroraAction
 
     public string $commandSignature = 'fetch:websites {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
-
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Website
     {
         if ($websiteData = $organisationSource->fetchWebsite($organisationSourceId)) {
             if ($website = Website::where('source_id', $websiteData['website']['source_id'])
                 ->first()) {
-
 
                 if ($website->shop->type == ShopTypeEnum::FULFILMENT) {
                     // Do no process fulfilment websites (Level 2)
@@ -65,7 +63,6 @@ class FetchAuroraWebsites extends FetchAuroraAction
                     Arr::except($websiteData['website'], ['fetched_at', 'last_fetched_at', 'source_id'])
                 );
 
-
                 $this->recordNew($organisationSource);
                 $sourceData = explode(':', $website->source_id);
                 DB::connection('aurora')->table('Website Dimension')
@@ -77,10 +74,8 @@ class FetchAuroraWebsites extends FetchAuroraAction
                 }
             }
 
-
             if ($website->state == WebsiteStateEnum::LIVE) {
                 $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->storefront, 'home.sys');
-
 
                 $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->storefront, 'home_logout.sys');
 
@@ -92,42 +87,39 @@ class FetchAuroraWebsites extends FetchAuroraAction
                 $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::SHIPPING)->first(), 'shipping.sys');
                 $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::TERMS_AND_CONDITIONS)->first(), 'tac.sys');
 
-
                 $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::LOGIN)->first(), 'login.sys');
                 $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::REGISTER)->first(), 'register.sys');
                 $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::CATALOGUE)->first(), 'catalogue.sys');
 
                 $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::RETURNS)->first(), 'returns');
                 $result = $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::SHOWROOM)->first(), 'showroom');
-                if (!$result) {
+                if (! $result) {
                     $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::SHOWROOM)->first(), 'showroom.sys');
                 }
 
                 $result = $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::COOKIES_POLICY)->first(), 'cookie_policy');
-                if (!$result) {
+                if (! $result) {
                     $result = $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::COOKIES_POLICY)->first(), 'cookies_policy');
                 }
-                if (!$result) {
+                if (! $result) {
                     $result = $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::COOKIES_POLICY)->first(), 'cookiespolicy');
                 }
 
-
-                if (!$result) {
+                if (! $result) {
                     $result = $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::COOKIES_POLICY)->first(), 'cookies');
                 }
-                if (!$result) {
+                if (! $result) {
                     $result = $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::COOKIES_POLICY)->first(), 'cookie');
                 }
-                if (!$result) {
+                if (! $result) {
                     $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::COOKIES_POLICY)->first(), 'cookie.sys');
                 }
 
-
                 $result = $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::PRIVACY)->first(), 'privacy');
-                if (!$result) {
+                if (! $result) {
                     $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::PRIVACY)->first(), 'privacy_policy');
                 }
-                if (!$result) {
+                if (! $result) {
                     $this->saveFixedWebpageMigrationData($organisationSource, $website, $website->webpages()->where('sub_type', WebpageSubTypeEnum::PRIVACY)->first(), 'integritet');
                 }
 
@@ -147,9 +139,7 @@ class FetchAuroraWebsites extends FetchAuroraAction
                     );
                 }
 
-
             }
-
 
             $this->setShopSetOutboxesSourceId($website->shop);
 
@@ -159,10 +149,9 @@ class FetchAuroraWebsites extends FetchAuroraAction
         return null;
     }
 
-
     protected function saveFixedWebpageMigrationData(SourceOrganisationService $organisationSource, Website $website, ?Webpage $webpage, $code): bool
     {
-        if (!$webpage) {
+        if (! $webpage) {
             return false;
         }
 
@@ -171,7 +160,6 @@ class FetchAuroraWebsites extends FetchAuroraAction
         $auroraModelData = DB::connection('aurora')
             ->table('Page Store Dimension')->where('Webpage Website Key', $sourceData[1])
             ->where('Webpage Code', $code)->first();
-
 
         if ($auroraModelData) {
             $firstTime = $webpage->source_id == null;
@@ -182,13 +170,11 @@ class FetchAuroraWebsites extends FetchAuroraAction
                 ]
             );
 
-            if (!$webpage->fetched_at) {
+            if (! $webpage->fetched_at) {
                 $webpage->updateQuietly(['fetched_at' => now()]);
             }
 
-
             $webpage = FetchAuroraWebpages::run($organisationSource, $auroraModelData->{'Page Key'});
-
 
             if ($webpage) {
                 if ($firstTime) {
@@ -201,12 +187,10 @@ class FetchAuroraWebsites extends FetchAuroraAction
                     );
                 }
 
-
                 DB::connection('aurora')->table('Page Store Dimension')
                     ->where('Page Key', $auroraModelData->{'Page Key'})
                     ->update(['aiku_id' => $webpage->id]);
             }
-
 
             return true;
         }

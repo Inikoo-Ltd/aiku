@@ -30,6 +30,7 @@ class IndexAnnouncements extends OrgAction
     use WithWebAuthorisation;
 
     protected array $elementGroups = [];
+
     private Website $parent;
 
     public function handle(Website $website, $prefix = null)
@@ -63,7 +64,6 @@ class IndexAnnouncements extends OrgAction
             'organisations.slug as organisation_slug',
         );
 
-
         return $queryBuilder
             ->defaultSort('-created_at')
             ->allowedSorts(['name', 'created_at', 'number_views', 'organisation_name'])
@@ -72,32 +72,29 @@ class IndexAnnouncements extends OrgAction
             ->withQueryString();
     }
 
-
     public function tableStructure(
         Website $parent,
         ?array $modelOperations = null,
         $prefix = null,
         ?array $exportLinks = null
     ): Closure {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $exportLinks) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $exportLinks) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
 
-
             $action = null;
 
             $description = null;
 
             $emptyState = [
-                'title'       => __('No announcement found'),
-                'count'       => 0,
+                'title' => __('No announcement found'),
+                'count' => 0,
                 'description' => $description,
-                'action'      => $action
+                'action' => $action,
             ];
-
 
             $table
                 ->withModelOperations($modelOperations)
@@ -128,15 +125,15 @@ class IndexAnnouncements extends OrgAction
 
         $actions = [
             [
-                'type'  => 'button',
+                'type' => 'button',
                 'style' => 'primary',
                 'label' => __('Create New'),
-                'icon'  => ["fas", "fa-plus"],
+                'icon' => ['fas', 'fa-plus'],
                 'route' => [
-                    'name'       => 'grp.org.shops.show.web.announcements.create',
-                    'parameters' => array_values($request->route()->originalParameters())
-                ]
-            ]
+                    'name' => 'grp.org.shops.show.web.announcements.create',
+                    'parameters' => array_values($request->route()->originalParameters()),
+                ],
+            ],
         ];
 
         return Inertia::render(
@@ -146,15 +143,15 @@ class IndexAnnouncements extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Announcements'),
-                'pageHead'    => [
-                    'title'     => __('Announcements'),
+                'title' => __('Announcements'),
+                'pageHead' => [
+                    'title' => __('Announcements'),
                     'container' => $container,
                     'icon' => [
                         'title' => __('Announcements'),
-                        'icon'  => 'fal fa-megaphone'
+                        'icon' => 'fal fa-megaphone',
                     ],
-                    'actions'   => $actions,
+                    'actions' => $actions,
                 ],
 
                 'data' => AnnouncementsResource::collection($announcements),
@@ -171,11 +168,11 @@ class IndexAnnouncements extends OrgAction
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Announcements'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
@@ -195,8 +192,8 @@ class IndexAnnouncements extends OrgAction
                     ),
                     $headCrumb(
                         [
-                            'name'       => 'grp.org.shops.show.web.announcements.index',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.shops.show.web.announcements.index',
+                            'parameters' => $routeParameters,
                         ]
                     ),
                 );

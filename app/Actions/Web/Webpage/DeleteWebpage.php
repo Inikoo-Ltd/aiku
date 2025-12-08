@@ -25,13 +25,11 @@ class DeleteWebpage extends OrgAction
     use AsAction;
     use WithAttributes;
 
-
     /**
      * @throws \Throwable
      */
     public function handle(Webpage $webpage, bool $forceDelete = false): Webpage
     {
-
 
         if ($forceDelete) {
             $webpage = DB::transaction(function () use ($webpage) {
@@ -80,16 +78,15 @@ class DeleteWebpage extends OrgAction
         return $this->handle($webpage, $forceDelete);
     }
 
-
     public function htmlResponse(Webpage $webpage): RedirectResponse
     {
         return redirect()->route(
             'grp.org.shops.show.web.webpages.index',
             [
                 'organisation' => $webpage->organisation->slug,
-                'shop'         => $webpage->shop->slug,
-                'website'      => $webpage->website->slug,
-                'webpage'      => $webpage->slug
+                'shop' => $webpage->shop->slug,
+                'website' => $webpage->website->slug,
+                'webpage' => $webpage->slug,
             ]
         );
     }

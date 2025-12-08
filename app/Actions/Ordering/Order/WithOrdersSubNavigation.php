@@ -17,33 +17,33 @@ trait WithOrdersSubNavigation
     {
         return [
             [
-                "number"   => $shop->orderingStats->number_orders,
-                "label"    => __("Orders"),
-                "route"     => [
-                    "name"       => 'grp.org.shops.show.ordering.orders.index',
-                    "parameters" => [
+                'number' => $shop->orderingStats->number_orders,
+                'label' => __('Orders'),
+                'route' => [
+                    'name' => 'grp.org.shops.show.ordering.orders.index',
+                    'parameters' => [
                         'organisation' => $shop->organisation->slug,
-                        'shop'         => $shop->slug
+                        'shop' => $shop->slug,
                     ],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-shopping-cart"],
-                    "tooltip" => __("Orders"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-shopping-cart'],
+                    'tooltip' => __('Orders'),
                 ],
             ],
             [
-                "number"   => $shop->orderingStats->number_purges,
-                "label"    => __("Purges"),
-                "route"     => [
-                    "name"       => 'grp.org.shops.show.ordering.purges.index',
-                    "parameters" => [
+                'number' => $shop->orderingStats->number_purges,
+                'label' => __('Purges'),
+                'route' => [
+                    'name' => 'grp.org.shops.show.ordering.purges.index',
+                    'parameters' => [
                         'organisation' => $shop->organisation->slug,
-                        'shop'         => $shop->slug
+                        'shop' => $shop->slug,
                     ],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-trash-alt"],
-                    "tooltip" => __("Purges"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-trash-alt'],
+                    'tooltip' => __('Purges'),
                 ],
             ],
 

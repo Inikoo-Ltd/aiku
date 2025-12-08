@@ -22,14 +22,14 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_deleted_invoices
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategoryStats query()
+ *
  * @mixin \Eloquent
  */
 class InvoiceCategoryStats extends Model
 {
     protected $table = 'invoice_category_stats';
-
-
 }

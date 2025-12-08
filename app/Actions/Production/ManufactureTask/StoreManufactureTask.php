@@ -8,9 +8,9 @@
 
 namespace App\Actions\Production\ManufactureTask;
 
+use App\Actions\OrgAction;
 use App\Actions\Production\ManufactureTask\Hydrators\ManufactureTaskHydrateUniversalSearch;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateManufactureTasks;
-use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateManufactureTasks;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateManufactureTasks;
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowanceTypeEnum;
@@ -57,16 +57,16 @@ class StoreManufactureTask extends OrgAction
 
     public function htmlResponse(ManufactureTask $manufactureTask): RedirectResponse
     {
-        $production   = $manufactureTask->production;
+        $production = $manufactureTask->production;
         $organisation = $manufactureTask->organisation;
+
         return Redirect::route('grp.org.productions.show.crafts.manufacture_tasks.index', [$organisation, $production]);
     }
-
 
     public function rules(): array
     {
         return [
-            'code'             => [
+            'code' => [
                 'required',
                 'alpha_dash',
                 'max:64',
@@ -77,16 +77,16 @@ class StoreManufactureTask extends OrgAction
                     ]
                 ),
             ],
-            'name'                              => ['required', 'string', 'max:255'],
-            'task_materials_cost'               => ['required', 'numeric', 'min:0'],
-            'task_energy_cost'                  => ['required', 'numeric', 'min:0'],
-            'task_other_cost'                   => ['required', 'numeric', 'min:0'],
-            'task_work_cost'                    => ['required', 'numeric', 'min:0'],
-            'task_lower_target'                 => ['required', 'numeric', 'min:0'],
-            'task_upper_target'                 => ['required', 'numeric', 'min:0'],
-            'operative_reward_terms'            => ['required', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
-            'operative_reward_allowance_type'   => ['required', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
-            'operative_reward_amount'           => ['required', 'numeric', 'min:0'],
+            'name' => ['required', 'string', 'max:255'],
+            'task_materials_cost' => ['required', 'numeric', 'min:0'],
+            'task_energy_cost' => ['required', 'numeric', 'min:0'],
+            'task_other_cost' => ['required', 'numeric', 'min:0'],
+            'task_work_cost' => ['required', 'numeric', 'min:0'],
+            'task_lower_target' => ['required', 'numeric', 'min:0'],
+            'task_upper_target' => ['required', 'numeric', 'min:0'],
+            'operative_reward_terms' => ['required', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
+            'operative_reward_allowance_type' => ['required', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
+            'operative_reward_amount' => ['required', 'numeric', 'min:0'],
         ];
     }
 
@@ -95,10 +95,9 @@ class StoreManufactureTask extends OrgAction
     //     dd($validator);
     // }
 
-
     public function action(Production $production, array $modelData): ManufactureTask
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisationFromProduction($production, $modelData);
 
         return $this->handle($production, $this->validatedData);

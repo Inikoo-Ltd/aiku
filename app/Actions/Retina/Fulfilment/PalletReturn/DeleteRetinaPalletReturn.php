@@ -12,9 +12,9 @@ use App\Actions\Fulfilment\PalletReturn\DeletePalletReturn;
 use App\Actions\RetinaAction;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Organisation;
-use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
+use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRetinaPalletReturn extends RetinaAction
 {
@@ -31,7 +31,7 @@ class DeleteRetinaPalletReturn extends RetinaAction
     public function rules(): array
     {
         return [
-            'deleted_note' => ['sometimes', 'nullable']
+            'deleted_note' => ['sometimes', 'nullable'],
         ];
     }
 

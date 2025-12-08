@@ -23,7 +23,7 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class PalletImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class PalletImport implements SkipsOnFailure, ToCollection, WithEvents, WithHeadingRow, WithValidation
 {
     use WithImport;
 
@@ -31,8 +31,8 @@ class PalletImport implements ToCollection, WithHeadingRow, SkipsOnFailure, With
 
     public function __construct(PalletDelivery $palletDelivery, Upload $upload)
     {
-        $this->upload            = $upload;
-        $this->scope             = $palletDelivery;
+        $this->upload = $upload;
+        $this->scope = $palletDelivery;
     }
 
     public function storeModel($row, $uploadRecord): void
@@ -49,10 +49,10 @@ class PalletImport implements ToCollection, WithHeadingRow, SkipsOnFailure, With
         $modelData = [
             'type' => $validatedData['pallet_type'],
             'customer_reference' => $validatedData['pallet_customer_reference'],
-            'notes' => $validatedData['pallet_notes']
+            'notes' => $validatedData['pallet_notes'],
         ];
 
-        if (!Arr::get($modelData, 'type')) {
+        if (! Arr::get($modelData, 'type')) {
             data_set($modelData, 'type', PalletTypeEnum::PALLET->value);
         } else {
             $type = strtolower(str_replace(' ', '', trim($modelData['type'])));
@@ -66,7 +66,7 @@ class PalletImport implements ToCollection, WithHeadingRow, SkipsOnFailure, With
         }
 
         data_set($modelData, 'data.bulk_import', [
-            'id'   => $this->upload->id,
+            'id' => $this->upload->id,
             'type' => 'Upload',
         ]);
 
@@ -101,10 +101,9 @@ class PalletImport implements ToCollection, WithHeadingRow, SkipsOnFailure, With
                     ]
                 ),
 
-
             ],
-            'pallet_notes'              => ['nullable'],
-            'pallet_type'               => ['nullable'],
+            'pallet_notes' => ['nullable'],
+            'pallet_type' => ['nullable'],
         ];
     }
 }

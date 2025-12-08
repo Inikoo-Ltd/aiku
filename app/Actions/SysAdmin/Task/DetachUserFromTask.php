@@ -20,7 +20,6 @@ class DetachUserFromTask
         $task->users()->detach($user->id);
     }
 
-
     public function asController(Task $task, $user): void
     {
         $this->handle($task, $user);

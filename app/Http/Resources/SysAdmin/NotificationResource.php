@@ -12,7 +12,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
 /**
-* @property array $data
+ * @property array $data
  */
 class NotificationResource extends JsonResource
 {
@@ -21,13 +21,13 @@ class NotificationResource extends JsonResource
         $data = $this->data;
 
         return [
-            'id'      => $this->id,
+            'id' => $this->id,
             'read_at' => $this->read_at,
-            'title'   => Arr::get($data, 'title'),
-            'body'    => Arr::get($data, 'body'),
-            'type'    => Arr::get($data, 'type'),
-            'slug'    => Arr::get($data, 'slug'),
-            'route'   => Arr::get($data, 'route')
+            'title' => Arr::get($data, 'title'),
+            'body' => Arr::get($data, 'body'),
+            'type' => Arr::get($data, 'type'),
+            'slug' => Arr::get($data, 'slug'),
+            'route' => Arr::get($data, 'route'),
         ];
     }
 }

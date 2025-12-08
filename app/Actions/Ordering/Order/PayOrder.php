@@ -33,17 +33,15 @@ class PayOrder extends OrgAction
 
         $payment = StorePayment::make()->action($order->customer, $paymentAccount, $modelData);
 
-
         if ($paymentAccount->is_accounts) {
             $creditTransactionData = [
-                'amount'     => -$payment->amount,
-                'type'       => CreditTransactionTypeEnum::PAYMENT,
+                'amount' => -$payment->amount,
+                'type' => CreditTransactionTypeEnum::PAYMENT,
                 'payment_id' => $payment->id,
             ];
             StoreCreditTransaction::make()->action($order->customer, $creditTransactionData);
 
         }
-
 
         AttachPaymentToOrder::make()->action($order, $payment, []);
 
@@ -52,17 +50,16 @@ class PayOrder extends OrgAction
             AttachPaymentToInvoice::make()->action($invoice, $payment, []);
         }
 
-
         return $payment;
     }
 
     public function rules(): array
     {
         return [
-            'amount'       => ['required', 'decimal:0,2'],
-            'reference'    => ['nullable', 'string', 'max:255'],
-            'status'       => ['sometimes', 'required', Rule::enum(PaymentStatusEnum::class)],
-            'state'        => ['sometimes', 'required', Rule::enum(PaymentStateEnum::class)],
+            'amount' => ['required', 'decimal:0,2'],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'status' => ['sometimes', 'required', Rule::enum(PaymentStatusEnum::class)],
+            'state' => ['sometimes', 'required', Rule::enum(PaymentStateEnum::class)],
         ];
     }
 
@@ -85,7 +82,6 @@ class PayOrder extends OrgAction
 
         return $this->handle($order, $paymentAccount, $this->validatedData);
     }
-
 
     public function htmlResponse(): RedirectResponse
     {

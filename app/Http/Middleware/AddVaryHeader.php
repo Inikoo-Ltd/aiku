@@ -17,7 +17,6 @@ class AddVaryHeader
     {
         $response = $next($request);
 
-
         $existingVary = $response->headers->get('Vary');
         $varyHeaders = ['X-Logged-Status'];
 

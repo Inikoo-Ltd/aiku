@@ -30,6 +30,4 @@ class SupplierHydrateSupplierProducts implements ShouldBeUnique
         $stats = $this->getSupplierProductsStats($supplier);
         $supplier->stats()->update($stats);
     }
-
-
 }

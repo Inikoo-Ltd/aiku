@@ -8,8 +8,8 @@
 
 namespace App\Models\Comms;
 
-use App\Enums\Comms\EmailOngoingRun\EmailOngoingRunStatusEnum;
 use App\Enums\Comms\EmailOngoingRun\EmailOngoingRunCodeEnum;
+use App\Enums\Comms\EmailOngoingRun\EmailOngoingRunStatusEnum;
 use App\Enums\Comms\EmailOngoingRun\EmailOngoingRunTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Traits\InShop;
@@ -45,9 +45,11 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read Shop|null $shop
  * @property-read \App\Models\Comms\EmailOngoingRunStats|null $stats
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailOngoingRun newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailOngoingRun newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailOngoingRun query()
+ *
  * @mixin \Eloquent
  */
 class EmailOngoingRun extends Model
@@ -55,12 +57,12 @@ class EmailOngoingRun extends Model
     use InShop;
 
     protected $casts = [
-        'data'            => 'array',
-        'code'            => EmailOngoingRunCodeEnum::class,
-        'type'            => EmailOngoingRunTypeEnum::class,
-        'status'          => EmailOngoingRunStatusEnum::class,
-        'date'            => 'datetime',
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'code' => EmailOngoingRunCodeEnum::class,
+        'type' => EmailOngoingRunTypeEnum::class,
+        'status' => EmailOngoingRunStatusEnum::class,
+        'date' => 'datetime',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
@@ -73,7 +75,7 @@ class EmailOngoingRun extends Model
     public function generateTags(): array
     {
         return [
-            'comms'
+            'comms',
         ];
     }
 
@@ -82,12 +84,10 @@ class EmailOngoingRun extends Model
         'schedule_at',
     ];
 
-
     public function email(): MorphOne
     {
         return $this->morphOne(Email::class, 'parent');
     }
-
 
     public function outbox(): BelongsTo
     {

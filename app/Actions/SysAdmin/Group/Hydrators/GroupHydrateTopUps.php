@@ -48,5 +48,4 @@ class GroupHydrateTopUps implements ShouldBeUnique
 
         $group->accountingStats()->update($stats);
     }
-
 }

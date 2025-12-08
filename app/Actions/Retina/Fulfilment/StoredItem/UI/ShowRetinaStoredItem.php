@@ -34,7 +34,7 @@ class ShowRetinaStoredItem extends RetinaAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return true; //TODO: @raul Permission
+        return true; // TODO: @raul Permission
     }
 
     public function asController(StoredItem $storedItem, ActionRequest $request): StoredItem
@@ -54,25 +54,23 @@ class ShowRetinaStoredItem extends RetinaAction
         return Inertia::render(
             'Storage/RetinaStoredItem',
             [
-                'title'       => __('stored item'),
+                'title' => __('stored item'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     request()->route()->originalParameters()
                 ),
-                'pageHead'    => [
-                    'icon'          =>
-                        [
-                            'icon'  => ['fal', 'fa-narwhal'],
-                            'title' => __('Stored item')
-                        ],
-                    'model'  => 'stored item',
-                    'title'  => $storedItem->slug,
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-narwhal'],
+                        'title' => __('Stored item'),
+                    ],
+                    'model' => 'stored item',
+                    'title' => $storedItem->slug,
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
+                'tabs' => [
+                    'current' => $this->tab,
                     'navigation' => StoredItemTabsEnum::navigation(),
                 ],
-
 
                 StoredItemTabsEnum::SHOWCASE->value => $this->tab == StoredItemTabsEnum::SHOWCASE->value ?
                     fn () => GetStoredItemShowcase::run($storedItem)
@@ -87,7 +85,7 @@ class ShowRetinaStoredItem extends RetinaAction
                 : Inertia::lazy(fn () => StoredItemAuditDeltasResource::collection(IndexStoredItemAuditDeltas::run($storedItem, prefix: StoredItemTabsEnum::AUDITS->value))),
 
                 StoredItemTabsEnum::MOVEMENTS->value => $this->tab == StoredItemTabsEnum::MOVEMENTS->value ?
-                    fn () =>  StoredItemMovementsResource::collection(IndexStoredItemMovements::run($storedItem, StoredItemTabsEnum::MOVEMENTS->value))
+                    fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($storedItem, StoredItemTabsEnum::MOVEMENTS->value))
                     : Inertia::lazy(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($storedItem, StoredItemTabsEnum::MOVEMENTS->value))),
 
                 StoredItemTabsEnum::HISTORY->value => $this->tab == StoredItemTabsEnum::HISTORY->value ?
@@ -101,7 +99,6 @@ class ShowRetinaStoredItem extends RetinaAction
             ->table(IndexStoredItemPallets::make()->tableStructure($storedItem, StoredItemTabsEnum::PALLETS->value));
     }
 
-
     public function jsonResponse(StoredItem $storedItem): StoredItemResource
     {
         return new StoredItemResource($storedItem);
@@ -112,11 +109,11 @@ class ShowRetinaStoredItem extends RetinaAction
         $headCrumb = function (StoredItem $storedItem, array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Stored Items')
+                            'label' => __('Stored Items'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -124,32 +121,30 @@ class ShowRetinaStoredItem extends RetinaAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
 
         $storedItem = StoredItem::where('slug', $routeParameters['storedItem'])->first();
 
-
         return match ($routeName) {
-            'retina.fulfilment.itemised_storage.stored_items.show' =>
-            array_merge(
+            'retina.fulfilment.itemised_storage.stored_items.show' => array_merge(
                 IndexRetinaStoredItems::make()->getBreadcrumbs(
                 ),
                 $headCrumb(
                     $storedItem,
                     [
                         'index' => [
-                            'name'       => 'retina.fulfilment.itemised_storage.stored_items.index',
-                            'parameters' => $routeParameters
+                            'name' => 'retina.fulfilment.itemised_storage.stored_items.index',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'retina.fulfilment.itemised_storage.stored_items.show',
+                            'name' => 'retina.fulfilment.itemised_storage.stored_items.show',
                             'parameters' => [
-                                'storedItem' => $storedItem
-                            ]
-                        ]
+                                'storedItem' => $storedItem,
+                            ],
+                        ],
                     ],
                     $suffix
                 )
@@ -161,6 +156,7 @@ class ShowRetinaStoredItem extends RetinaAction
     public function getPrevious(StoredItem $storedItem, ActionRequest $request): ?array
     {
         $previous = StoredItem::where('slug', '<', $storedItem->slug)->orderBy('id', 'desc')->first();
+
         return $this->getNavigation($previous, $request->route()->getName());
 
     }
@@ -168,12 +164,13 @@ class ShowRetinaStoredItem extends RetinaAction
     public function getNext(StoredItem $storedItem, ActionRequest $request): ?array
     {
         $next = StoredItem::where('slug', '>', $storedItem->slug)->orderBy('id')->first();
+
         return $this->getNavigation($next, $request->route()->getName());
     }
 
     private function getNavigation(?StoredItem $storedItem, string $routeName): ?array
     {
-        if (!$storedItem) {
+        if (! $storedItem) {
             return null;
         }
 
@@ -181,12 +178,12 @@ class ShowRetinaStoredItem extends RetinaAction
             'retina.fulfilment.itemised_storage.stored_items.show' => [
                 'label' => $storedItem->reference,
                 'route' => [
-                    'name'      => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
-                        'storedItem'              => $storedItem->slug
-                    ]
+                        'storedItem' => $storedItem->slug,
+                    ],
 
-                ]
+                ],
             ],
         };
     }

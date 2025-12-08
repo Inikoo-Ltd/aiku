@@ -18,6 +18,5 @@ Route::get('/', ShowIncomingHub::class)->name('backlog');
 Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inWarehouse'])->name('stock_deliveries.index');
 Route::get('stock-deliveries/{palletDelivery}', [ShowStockDelivery::class, 'inWarehouse'])->name('stock_deliveries.show');
 
-
 Route::get('fulfilment-deliveries', IndexWarehousePalletDeliveries::class)->name('pallet_deliveries.index');
 Route::get('fulfilment-deliveries/{palletDelivery}', ShowWarehousePalletDelivery::class)->name('pallet_deliveries.show');

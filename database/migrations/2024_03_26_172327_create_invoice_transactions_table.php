@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
 
     public function up(): void
@@ -42,7 +43,6 @@ return new class () extends Migration {
             $table->unsignedInteger('department_id')->nullable();
             $table->foreign('department_id')->references('id')->on('product_categories');
 
-
             $table->unsignedInteger('order_id')->nullable();
             $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
 
@@ -55,8 +55,6 @@ return new class () extends Migration {
             $table->decimal('gross_amount', 16)->default(0);
             $table->decimal('net_amount', 16)->default(0);
             $table->decimal('profit_amount', 16)->nullable();
-
-
 
             $table->unsignedSmallInteger('tax_category_id')->index();
             $table->foreign('tax_category_id')->references('id')->on('tax_categories');
@@ -77,7 +75,6 @@ return new class () extends Migration {
 
         });
     }
-
 
     public function down(): void
     {

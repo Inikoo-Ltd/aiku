@@ -26,7 +26,6 @@ class IndexRetinaPalletReturns extends RetinaAction
 {
     private FulfilmentCustomer $parent;
 
-
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
@@ -66,6 +65,7 @@ class IndexRetinaPalletReturns extends RetinaAction
             'pallet_returns.total_amount',
             'currencies.code as currency_code',
         );
+
         return $queryBuilder
             ->defaultSort('reference', 'state', 'type', 'date')
             ->allowedSorts(['reference', 'customer_reference', 'number_pallets'])
@@ -76,13 +76,12 @@ class IndexRetinaPalletReturns extends RetinaAction
 
     public function tableStructure(FulfilmentCustomer $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
-
 
             $table
                 ->withModelOperations($modelOperations)
@@ -97,7 +96,6 @@ class IndexRetinaPalletReturns extends RetinaAction
         };
     }
 
-
     public function htmlResponse(LengthAwarePaginator $palletReturns, ActionRequest $request): Response
     {
 
@@ -108,26 +106,26 @@ class IndexRetinaPalletReturns extends RetinaAction
         // if (!app()->environment('production')) {
         $actions = [
             $fulfilmentCustomer->number_pallets_status_storing ? [
-                'type'    => 'button',
-                'style'   => 'create',
+                'type' => 'button',
+                'style' => 'create',
                 'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Create new dispatch (whole goods)') : __('Create new dispatch'),
-                'label'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Dispatch') : __('Dispatch'),
-                'route'   => [
-                    'method'     => 'post',
-                    'name'       => 'retina.models.pallet-return.store',
-                    'parameters' => []
-                ]
+                'label' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Dispatch') : __('Dispatch'),
+                'route' => [
+                    'method' => 'post',
+                    'name' => 'retina.models.pallet-return.store',
+                    'parameters' => [],
+                ],
             ] : false,
             $this->customer->fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? [
-                'type'    => 'button',
-                'style'   => 'create',
+                'type' => 'button',
+                'style' => 'create',
                 'tooltip' => __('Create new dispatch (Selected SKUs)'),
-                'label'   => __('Dropshipping dispatch'),
-                'route'   => [
-                    'method'     => 'post',
-                    'name'       => 'retina.models.pallet-return-stored-items.store',
-                    'parameters' => []
-                ]
+                'label' => __('Dropshipping dispatch'),
+                'route' => [
+                    'method' => 'post',
+                    'name' => 'retina.models.pallet-return-stored-items.store',
+                    'parameters' => [],
+                ],
             ] : false,
         ];
         // }
@@ -136,15 +134,15 @@ class IndexRetinaPalletReturns extends RetinaAction
             'Storage/RetinaPalletReturns',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'    => __('Goods out'),
+                'title' => __('Goods out'),
                 'pageHead' => [
-                    'title'     => __('Goods Out'),
-                    'model'     => __('Storage'),
+                    'title' => __('Goods Out'),
+                    'model' => __('Storage'),
                     'icon' => [
-                        'icon'  => ['fal', 'fa-truck-ramp'],
-                        'title' => __('Return')
+                        'icon' => ['fal', 'fa-truck-ramp'],
+                        'title' => __('Return'),
                     ],
-                    'actions'       => $actions
+                    'actions' => $actions,
                 ],
                 'data' => PalletReturnsResource::collection($palletReturns),
 
@@ -158,18 +156,17 @@ class IndexRetinaPalletReturns extends RetinaAction
             ShowRetinaStorageDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
                             'name' => 'retina.fulfilment.storage.pallet_returns.index',
                         ],
                         'label' => __('Goods Out'),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
                     ],
 
-                ]
+                ],
             ]
         );
     }
-
 }

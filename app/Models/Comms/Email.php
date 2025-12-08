@@ -49,9 +49,11 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Snapshot> $snapshots
  * @property-read Snapshot|null $unpublishedSnapshot
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Email newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Email newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Email query()
+ *
  * @mixin \Eloquent
  */
 class Email extends Model implements Auditable
@@ -60,9 +62,9 @@ class Email extends Model implements Auditable
     use InShop;
 
     protected $casts = [
-        'data'            => 'array',
-        'builder'         => EmailBuilderEnum::class,
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'builder' => EmailBuilderEnum::class,
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
@@ -75,7 +77,7 @@ class Email extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'comms'
+            'comms',
         ];
     }
 
@@ -112,5 +114,4 @@ class Email extends Model implements Auditable
     {
         return $this->morphMany(Deployment::class, 'model');
     }
-
 }

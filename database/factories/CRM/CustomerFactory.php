@@ -16,13 +16,13 @@ class CustomerFactory extends Factory
     public function definition(): array
     {
         return [
-            'contact_name'             => fake()->name,
-            'company_name'             => fake()->company,
-            'email'                    => fake()->email,
+            'contact_name' => fake()->name,
+            'company_name' => fake()->company,
+            'email' => fake()->email,
             'identity_document_number' => fake('en_GB')->vat(),
-            'website'                  => fake()->url,
-            'contact_address'          => Address::factory()->definition(),
-            'is_fulfilment'            => true
+            'website' => fake()->url,
+            'contact_address' => Address::factory()->definition(),
+            'is_fulfilment' => true,
         ];
     }
 }

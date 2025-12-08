@@ -8,8 +8,8 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\Ordering\Order\Hydrators\OrderHydrateOfferCampaigns;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateOfferAllowances;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateOfferCampaigns;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateOffers;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
@@ -21,14 +21,12 @@ class HydrateOrders
 
     public string $commandSignature = 'hydrate:orders {organisations?*} {--s|slugs=}';
 
-
     public function handle(Order $order): void
     {
         OrderHydrateTransactions::run($order);
         OrderHydrateOfferCampaigns::run($order);
         OrderHydrateOffers::run($order);
         OrderHydrateOfferAllowances::run($order);
-
 
     }
 

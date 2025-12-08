@@ -30,11 +30,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ShowBlogWebpage extends OrgAction
 {
     use AsAction;
-    use WithInertia;
     use HasWorkshopAction;
+    use WithInertia;
     use WithWebAuthorisation;
     use WithWebpageSubNavigation;
-
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
@@ -59,23 +58,23 @@ class ShowBlogWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpage'),
-                'pageHead'    => [
-                    'title'         => $webpage->code,
-                    'afterTitle'    => [
+                'title' => __('Webpage'),
+                'pageHead' => [
+                    'title' => $webpage->code,
+                    'afterTitle' => [
                         'label' => '../'.$webpage->url,
                     ],
-                    'icon'          => [
+                    'icon' => [
                         'title' => __('Webpage'),
-                        'icon'  => 'fal fa-browser'
+                        'icon' => 'fal fa-browser',
                     ],
-                    'iconRight'     => $webpage->state->stateIcon()[$webpage->state->value],
-                    'actions'       => $actions,
+                    'iconRight' => $webpage->state->stateIcon()[$webpage->state->value],
+                    'actions' => $actions,
                 ],
 
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => BlogWebpageTabsEnum::navigation()
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => BlogWebpageTabsEnum::navigation(),
                 ],
                 'root_active' => $subNavigationRoot,
 
@@ -92,11 +91,11 @@ class ShowBlogWebpage extends OrgAction
             return [
                 [
 
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Blogs')
+                            'label' => __('Blogs'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -104,12 +103,11 @@ class ShowBlogWebpage extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
 
                 ],
             ];
         };
-
 
         $webpage = Webpage::where('slug', $routeParameters['webpage'])->first();
         /** @var Website $website */
@@ -126,13 +124,13 @@ class ShowBlogWebpage extends OrgAction
                     $webpage,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.web.blogs.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website'])
+                            'name' => 'grp.org.shops.show.web.blogs.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website']),
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.web.blogs.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website', 'webpage'])
-                        ]
+                            'name' => 'grp.org.shops.show.web.blogs.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website', 'webpage']),
+                        ],
                     ],
                     $suffix
                 ),

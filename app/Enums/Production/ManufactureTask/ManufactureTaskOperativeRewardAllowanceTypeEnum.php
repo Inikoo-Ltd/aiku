@@ -8,6 +8,6 @@ enum ManufactureTaskOperativeRewardAllowanceTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case ON_TOP_SALARY  = 'on_top_salary';
-    case OFFSET_SALARY  = 'offset_salary';
+    case ON_TOP_SALARY = 'on_top_salary';
+    case OFFSET_SALARY = 'offset_salary';
 }

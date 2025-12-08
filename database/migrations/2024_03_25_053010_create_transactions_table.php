@@ -13,10 +13,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use HasSalesTransactionParents;
+return new class extends Migration
+{
     use HasGroupOrganisationRelationship;
     use HasOrderFields;
+    use HasSalesTransactionParents;
 
     public function up(): void
     {
@@ -37,8 +38,6 @@ return new class () extends Migration {
 
             $table->string('model_type')->index()->nullable();
             $table->unsignedInteger('model_id')->index()->nullable();
-
-
 
             $table->unsignedInteger('asset_id')->index()->nullable();
             $table->foreign('asset_id')->references('id')->on('assets');
@@ -68,7 +67,6 @@ return new class () extends Migration {
             $table->string('source_alt_id')->nullable()->unique()->comment('to be used in no products transactions');
         });
     }
-
 
     public function down(): void
     {

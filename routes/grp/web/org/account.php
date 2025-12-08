@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-
 use App\Actions\SysAdmin\Organisation\UI\ShowOrganisation;
 
 Route::get('/', ShowOrganisation::class)->name('show');

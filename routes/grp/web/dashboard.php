@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use Illuminate\Support\Facades\Route;
 

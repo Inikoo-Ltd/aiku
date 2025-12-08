@@ -28,18 +28,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Timezone> $timezones
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Country extends Model
 {
     use SoftDeletes;
-
 
     protected $table = 'countries';
 

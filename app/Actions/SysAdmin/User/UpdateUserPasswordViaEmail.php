@@ -27,16 +27,16 @@ class UpdateUserPasswordViaEmail
     public function handle(User $user, array $modelData): User
     {
         data_set($modelData, 'reset_password', false);
+
         return $this->update($user, $modelData, 'settings');
     }
-
 
     public function rules(): array
     {
         return [
             'password' => ['required', app()->isLocal() || app()->environment('testing') ? null : Password::min(8)],
-            'token'    => ['nullable', 'string'],
-            'email'    => ['nullable', 'string']
+            'token' => ['nullable', 'string'],
+            'email' => ['nullable', 'string'],
         ];
     }
 
@@ -48,8 +48,8 @@ class UpdateUserPasswordViaEmail
         $request->validate();
 
         $this->handle(User::where('email', $request->input('email'))->first(), [
-            'password'       => Hash::make($request->input('password')),
-            'reset_password' => false
+            'password' => Hash::make($request->input('password')),
+            'reset_password' => false,
         ]);
 
         /*$response = \Illuminate\Support\Facades\Password::broker('web-users')->reset(

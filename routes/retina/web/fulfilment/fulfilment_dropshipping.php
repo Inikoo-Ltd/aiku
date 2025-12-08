@@ -17,8 +17,8 @@ use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiDropshipping;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
-use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Fulfilment\Basket\UI\IndexRetinaFulfilmentBaskets;
 use App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI\IndexFulfilmentCustomerSalesChannels;
 use App\Actions\Retina\Fulfilment\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
@@ -37,15 +37,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/inventory', IndexRetinaStoredItems::class)->name('inventory');
 
-
-
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
 
     Route::get('/', IndexFulfilmentCustomerSalesChannels::class)->name('index');
 
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
-
-
 
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
@@ -94,13 +90,9 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
         });
 
-
     });
 
 });
-
-
-
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');

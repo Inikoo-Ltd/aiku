@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WarehouseTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WarehouseTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WarehouseTimeSeriesRecord query()
+ *
  * @mixin \Eloquent
  */
 class WarehouseTimeSeriesRecord extends Model
@@ -21,7 +22,4 @@ class WarehouseTimeSeriesRecord extends Model
     protected $table = 'warehouse_time_series_records';
 
     protected $guarded = [];
-
-
-
 }

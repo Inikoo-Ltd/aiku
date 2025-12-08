@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierTimeSeriesRecord query()
+ *
  * @mixin \Eloquent
  */
 class SupplierTimeSeriesRecord extends Model
@@ -21,7 +22,4 @@ class SupplierTimeSeriesRecord extends Model
     protected $table = 'supplier_time_series_records';
 
     protected $guarded = [];
-
-
-
 }

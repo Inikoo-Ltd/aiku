@@ -33,6 +33,4 @@ class GroupHydrateCreditTransactions implements ShouldBeUnique
 
         $group->accountingStats()->update($stats);
     }
-
-
 }

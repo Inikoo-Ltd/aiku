@@ -26,60 +26,59 @@ class GetAgentOrganisationNavigation
 
         if ($user->hasPermissionTo("procurement.$organisation->id.view")) {
             $navigation['procurement'] = [
-                'root'    => 'grp.org.procurement',
-                'label'   => __('procurement'),
-                'icon'    => ['fal', 'fa-box-usd'],
-                'route'   => [
-                    'name'       => 'grp.org.procurement.dashboard',
+                'root' => 'grp.org.procurement',
+                'label' => __('procurement'),
+                'icon' => ['fal', 'fa-box-usd'],
+                'route' => [
+                    'name' => 'grp.org.procurement.dashboard',
                     'parameters' => [$organisation->slug],
                 ],
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'icon'  => ['fal', 'fa-chart-network'],
-                            'root'  => 'grp.org.procurement.dashboard',
+                            'icon' => ['fal', 'fa-chart-network'],
+                            'root' => 'grp.org.procurement.dashboard',
                             'route' => [
-                                'name'       => 'grp.org.procurement.dashboard',
+                                'name' => 'grp.org.procurement.dashboard',
                                 'parameters' => [$organisation->slug],
-                            ]
+                            ],
                         ],
 
                         [
                             'label' => __('suppliers'),
-                            'icon'  => ['fal', 'fa-person-dolly'],
-                            'root'  => 'grp.org.procurement.org_suppliers.',
+                            'icon' => ['fal', 'fa-person-dolly'],
+                            'root' => 'grp.org.procurement.org_suppliers.',
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_suppliers.index',
+                                'name' => 'grp.org.procurement.org_suppliers.index',
                                 'parameters' => [$organisation->slug],
-                            ]
+                            ],
                         ],
                         [
                             'label' => __('partners'),
-                            'icon'  => ['fal', 'fa-users-class'],
-                            'root'  => 'grp.org.procurement.org_partners.',
+                            'icon' => ['fal', 'fa-users-class'],
+                            'root' => 'grp.org.procurement.org_partners.',
                             'route' => [
-                                'name'       => 'grp.org.procurement.org_partners.index',
+                                'name' => 'grp.org.procurement.org_partners.index',
                                 'parameters' => [$organisation->slug],
-                            ]
+                            ],
                         ],
                         [
                             'label' => __('purchase orders'),
-                            'icon'  => ['fal', 'fa-clipboard-list'],
-                            'root'  => 'grp.org.procurement.purchase_orders.',
+                            'icon' => ['fal', 'fa-clipboard-list'],
+                            'root' => 'grp.org.procurement.purchase_orders.',
                             'route' => [
-                                'name'       => 'grp.org.procurement.purchase_orders.index',
+                                'name' => 'grp.org.procurement.purchase_orders.index',
                                 'parameters' => [$organisation->slug],
-                            ]
+                            ],
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ];
         }
 
         $navigation = $this->getAccountingNavs($user, $organisation, $navigation);
 
         $navigation = $this->getHumanResourcesNavs($user, $organisation, $navigation);
-
 
         $navigation = $this->getReportsNavs($user, $organisation, $navigation);
 

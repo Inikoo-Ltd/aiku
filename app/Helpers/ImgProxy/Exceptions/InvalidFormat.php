@@ -10,6 +10,4 @@ namespace App\Helpers\ImgProxy\Exceptions;
 
 use InvalidArgumentException;
 
-class InvalidFormat extends InvalidArgumentException
-{
-}
+class InvalidFormat extends InvalidArgumentException {}

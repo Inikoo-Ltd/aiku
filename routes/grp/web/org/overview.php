@@ -36,12 +36,10 @@ Route::get('/departments', IndexDepartmentsInOrganisation::class)->name('departm
 Route::get('/products', IndexProductsInOrganisation::class)->name('products.index');
 Route::get('/collections', IndexCollectionsInOrganisation::class)->name('collections.index');
 
-
 Route::get('/customers', [IndexCustomersInOverview::class, 'inOrganisation'])->name('customers.index');
 
 Route::get('/web-users', IndexWebUsersInOrganisation::class)->name('web_users.index');
 Route::get('/web-user-requests', IndexWebUserRequestsInOrganisation::class)->name('web_user_requests.index');
-
 
 Route::name('changelog.')->prefix('changelog')->group(function () {
     Route::get('/', IndexHistoryInOrganisation::class)->name('index');

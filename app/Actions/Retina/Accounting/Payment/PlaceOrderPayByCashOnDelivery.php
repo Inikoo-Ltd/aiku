@@ -18,8 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 class PlaceOrderPayByCashOnDelivery extends RetinaAction
 {
     use WithBasketStateWarning;
-    use WithRetinaOrderPlacedRedirection;
     use WithPlaceOrderByPaymentMethod;
+    use WithRetinaOrderPlacedRedirection;
 
     /**
      * @throws \Throwable
@@ -35,7 +35,7 @@ class PlaceOrderPayByCashOnDelivery extends RetinaAction
     public function asController(ActionRequest $request): array
     {
         $this->initialisation($request);
+
         return $this->handle($this->customer);
     }
-
 }

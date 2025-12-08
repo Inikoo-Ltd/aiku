@@ -251,9 +251,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Comms\EmailBulkRun|null $emailBulkRun
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRunIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRunIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRunIntervals query()
+ *
  * @mixin \Eloquent
  */
 class EmailBulkRunIntervals extends Model

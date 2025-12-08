@@ -23,7 +23,6 @@ class FetchAuroraAgents extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:agents {organisations?*} {--s|source_id=} {--d|db_suffix=}';
 
-
     /**
      * @throws \Throwable
      */
@@ -36,8 +35,6 @@ class FetchAuroraAgents extends FetchAuroraAction
 
             $baseAgent = null;
 
-
-
             if (isset($agentData['foundAgent'])) {
                 $agent = $agentData['foundAgent'];
                 $this->updateAgentSources($agent, $agentData['agent']['source_id']);
@@ -45,7 +42,7 @@ class FetchAuroraAgents extends FetchAuroraAction
             } elseif ($baseAgent = Agent::withTrashed()->where('source_slug', $agentData['agent']['source_slug'])->first()) {
                 if ($agent = Agent::withTrashed()->where('source_id', $agentData['agent']['source_id'])->first()) {
                     $agent = UpdateAgent::make()->action(
-                        agent:$agent,
+                        agent: $agent,
                         modelData: $agentData['agent'],
                         hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
@@ -66,9 +63,8 @@ class FetchAuroraAgents extends FetchAuroraAction
 
                 $this->saveMigrationHistory(
                     $agent,
-                    Arr::except($agentData['agent'], ['fetched_at','last_fetched_at'])
+                    Arr::except($agentData['agent'], ['fetched_at', 'last_fetched_at'])
                 );
-
 
                 foreach (Arr::get($agentData, 'photo', []) as $photoData) {
                     if (isset($photoData['image_path']) and isset($photoData['filename'])) {
@@ -90,7 +86,7 @@ class FetchAuroraAgents extends FetchAuroraAction
 
             if ($effectiveAgent) {
                 $orgAgent = OrgAgent::where('organisation_id', $organisation->id)->where('agent_id', $effectiveAgent->id)->first();
-                if (!$orgAgent) {
+                if (! $orgAgent) {
                     StoreOrgAgent::make()->action(
                         $organisation,
                         $effectiveAgent,
@@ -101,8 +97,6 @@ class FetchAuroraAgents extends FetchAuroraAction
                 }
             }
 
-
-
             return $effectiveAgent;
         }
 
@@ -111,14 +105,14 @@ class FetchAuroraAgents extends FetchAuroraAction
 
     public function updateAgentSources(Agent $agent, string $source): void
     {
-        $sources   = Arr::get($agent->sources, 'agents', []);
+        $sources = Arr::get($agent->sources, 'agents', []);
         $sources[] = $source;
-        $sources   = array_unique($sources);
+        $sources = array_unique($sources);
 
         $agent->updateQuietly([
             'sources' => [
                 'agents' => $sources,
-            ]
+            ],
         ]);
     }
 
@@ -139,6 +133,4 @@ class FetchAuroraAgents extends FetchAuroraAction
             ->where('aiku_ignore', 'No')
             ->count();
     }
-
-
 }

@@ -44,22 +44,23 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Role> $roles
  * @property-read \App\Models\HumanResources\JobPositionStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static Builder<static>|JobPosition newModelQuery()
  * @method static Builder<static>|JobPosition newQuery()
  * @method static Builder<static>|JobPosition query()
+ *
  * @mixin Eloquent
  */
 class JobPosition extends Model implements Auditable
 {
-    use HasSlug;
     use HasHistory;
+    use HasSlug;
     use HasUniversalSearch;
     use inOrganisation;
 
-
     protected $casts = [
-        'data'  => 'array',
-        'scope' => JobPositionScopeEnum::class
+        'data' => 'array',
+        'scope' => JobPositionScopeEnum::class,
     ];
 
     protected $attributes = [
@@ -71,7 +72,7 @@ class JobPosition extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'hr'
+            'hr',
         ];
     }
 
@@ -99,8 +100,8 @@ class JobPosition extends Model implements Auditable
     public function employees(): BelongsToMany
     {
         return $this->belongsToMany(Employee::class, 'employee_has_job_positions')
-                    ->withPivot(['share', 'scopes'])
-                    ->withTimestamps();
+            ->withPivot(['share', 'scopes'])
+            ->withTimestamps();
     }
 
     public function roles(): BelongsToMany

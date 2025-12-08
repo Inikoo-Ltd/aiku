@@ -10,19 +10,19 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('trade_units', function (Blueprint $table) {
-            if (!Schema::hasColumn('trade_units', 'ufi_number')) {
+            if (! Schema::hasColumn('trade_units', 'ufi_number')) {
                 $table->string('ufi_number')->nullable();
             }
-            if (!Schema::hasColumn('trade_units', 'scpn_number')) {
+            if (! Schema::hasColumn('trade_units', 'scpn_number')) {
                 $table->string('scpn_number')->nullable();
             }
         });
     }
-
 
     public function down(): void
     {

@@ -144,6 +144,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Accounting\InvoiceStats|null $stats
  * @property-read TaxCategory $taxCategory
  * @property-read UniversalSearch|null $universalSearch
+ *
  * @method static \Database\Factories\Accounting\InvoiceFactory factory($count = null, $state = [])
  * @method static Builder<static>|Invoice newModelQuery()
  * @method static Builder<static>|Invoice newQuery()
@@ -151,36 +152,37 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Invoice query()
  * @method static Builder<static>|Invoice withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Invoice withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Invoice extends Model implements Auditable
 {
-    use SoftDeletes;
+    use HasFactory;
+    use HasHistory;
+    use HasRetinaSearch;
     use HasSlug;
     use HasUniversalSearch;
-    use HasRetinaSearch;
-    use HasFactory;
     use InCustomer;
-    use HasHistory;
+    use SoftDeletes;
 
     protected $casts = [
-        'type'                => InvoiceTypeEnum::class,
-        'pay_status'          => InvoicePayStatusEnum::class,
+        'type' => InvoiceTypeEnum::class,
+        'pay_status' => InvoicePayStatusEnum::class,
         'pay_detailed_status' => InvoicePayDetailedStatusEnum::class,
-        'data'                => 'array',
-        'payment_data'        => 'array',
-        'date'                => 'datetime',
-        'paid_at'             => 'datetime',
-        'tax_liability_at'    => 'datetime',
-        'fetched_at'          => 'datetime',
-        'last_fetched_at'     => 'datetime',
-        'grp_exchange'        => 'decimal:4',
-        'org_exchange'        => 'decimal:4',
-        'tax_number_status'   => 'boolean',
+        'data' => 'array',
+        'payment_data' => 'array',
+        'date' => 'datetime',
+        'paid_at' => 'datetime',
+        'tax_liability_at' => 'datetime',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
+        'grp_exchange' => 'decimal:4',
+        'org_exchange' => 'decimal:4',
+        'tax_number_status' => 'boolean',
     ];
 
     protected $attributes = [
-        'data'         => '{}',
+        'data' => '{}',
         'payment_data' => '{}',
     ];
 
@@ -225,8 +227,6 @@ class Invoice extends Model implements Auditable
 
     /**
      * Relation to main order, usually the only one, used no avoid looping over orders
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function order(): BelongsTo
     {
@@ -237,7 +237,6 @@ class Invoice extends Model implements Auditable
     {
         return $this->hasMany(InvoiceTransaction::class);
     }
-
 
     public function stats(): HasOne
     {
@@ -287,7 +286,6 @@ class Invoice extends Model implements Auditable
     /**
      * Get the original invoice that this invoice is related to (for refunds).
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      * @noinspection PhpUnused
      */
     public function originalInvoice(): BelongsTo
@@ -309,5 +307,4 @@ class Invoice extends Model implements Auditable
     {
         return $this->belongsTo(TaxCategory::class);
     }
-
 }

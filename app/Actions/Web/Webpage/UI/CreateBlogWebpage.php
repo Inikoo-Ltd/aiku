@@ -27,8 +27,6 @@ class CreateBlogWebpage extends OrgAction
 
     protected Fulfilment|Website|Webpage $parent;
 
-
-
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
         $this->scope = $shop;
@@ -42,8 +40,8 @@ class CreateBlogWebpage extends OrgAction
     {
 
         $route = [
-            'name'       => 'grp.models.shop.blog_webpage.store',
-            'parameters' => [$this->scope->id, $parent->id]
+            'name' => 'grp.models.shop.blog_webpage.store',
+            'parameters' => [$this->scope->id, $parent->id],
         ];
 
         return Inertia::render(
@@ -53,78 +51,76 @@ class CreateBlogWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New blog'),
-                'pageHead'    => [
-                    'title'   => __('New blog'),
+                'title' => __('New blog'),
+                'pageHead' => [
+                    'title' => __('New blog'),
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
-                            'route' =>  [
-                                        'name'       => 'grp.org.shops.show.web.blogs.index' ,
-                                        'parameters' => array_values($request->route()->originalParameters())
-                                    ],
-                        ]
-                    ]
-
+                            'route' => [
+                                'name' => 'grp.org.shops.show.web.blogs.index',
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
+                    ],
 
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => [
 
-
                         [
-                            'title'  => __('Id'),
-                            'icon'   => ['fal', 'fa-fingerprint'],
+                            'title' => __('Id'),
+                            'icon' => ['fal', 'fa-fingerprint'],
                             'fields' => [
                                 'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => '',
+                                    'type' => 'input',
+                                    'label' => __('code'),
+                                    'value' => '',
                                     'required' => true,
                                 ],
                                 'title' => [
-                                    'type'     => 'input',
-                                    'label'    => __('title'),
-                                    'value'    => '',
+                                    'type' => 'input',
+                                    'label' => __('title'),
+                                    'value' => '',
                                     'required' => true,
                                 ],
-//                                'type' => [
-//                                    'type'     => 'select',
-//                                    'label'    => __('type'),
-//                                    'options'  => Options::forEnum(WebpageTypeEnum::class),
-//                                    'value'    => '',
-//                                    'required' => true,
-//                                ],
-//                                'sub_type' => [
-//                                    'type'     => 'select',
-//                                    'label'    => __('sub type'),
-//                                    'options'  => Options::forEnum(WebpageSubTypeEnum::class),
-//                                    'value'    => '',
-//                                    'required' => true,
-//                                ],
+                                //                                'type' => [
+                                //                                    'type'     => 'select',
+                                //                                    'label'    => __('type'),
+                                //                                    'options'  => Options::forEnum(WebpageTypeEnum::class),
+                                //                                    'value'    => '',
+                                //                                    'required' => true,
+                                //                                ],
+                                //                                'sub_type' => [
+                                //                                    'type'     => 'select',
+                                //                                    'label'    => __('sub type'),
+                                //                                    'options'  => Options::forEnum(WebpageSubTypeEnum::class),
+                                //                                    'value'    => '',
+                                //                                    'required' => true,
+                                //                                ],
                                 'url' => [
-                                    'type'      => 'inputWithAddOn',
-                                    'label'     => __('URL'),
+                                    'type' => 'inputWithAddOn',
+                                    'label' => __('URL'),
                                     'label_no_capitalize' => true,
                                     'leftAddOn' => [
-                                        'label' => 'https://'.($parent instanceof Webpage ? $parent->website->domain : $parent->domain).'/blog'
+                                        'label' => 'https://'.($parent instanceof Webpage ? $parent->website->domain : $parent->domain).'/blog',
                                     ],
-                                    'value'     => '',
-                                    'required'  => true,
+                                    'value' => '',
+                                    'required' => true,
                                 ],
                                 'seo_structure_type' => [
-                                        'type'     => 'select',
-                                        'label'    => __('seo structure type'),
-                                        'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
-                                        'value'    => '',
-                                        'required' => false,
+                                    'type' => 'select',
+                                    'label' => __('seo structure type'),
+                                    'options' => Options::forEnum(WebpageSeoStructureTypeEnum::class),
+                                    'value' => '',
+                                    'required' => false,
                                 ],
 
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    'route'     => $route,
+                    'route' => $route,
 
                 ],
 
@@ -132,28 +128,23 @@ class CreateBlogWebpage extends OrgAction
         );
     }
 
-
     public function getBreadcrumbs($routeName, $routeParameters): array
     {
 
         return match ($routeName) {
-            'grp.org.shops.show.web.blogs.create' =>
-            array_merge(
+            'grp.org.shops.show.web.blogs.create' => array_merge(
                 IndexBlogWebpages::make()->getBreadcrumbs('grp.org.shops.show.web.blogs.index', $routeParameters),
                 [
                     [
-                        'type'          => 'creatingModel',
+                        'type' => 'creatingModel',
                         'creatingModel' => [
-                            'label' => __("webpage"),
-                        ]
-                    ]
+                            'label' => __('webpage'),
+                        ],
+                    ],
                 ]
             ),
             default => []
         };
 
-
     }
-
-
 }

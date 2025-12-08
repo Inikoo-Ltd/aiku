@@ -24,12 +24,11 @@ class ProcessAuroraDeleteDeliveryNote extends OrgAction
     public function rules(): array
     {
         return [
-            'id'    => ['required', 'integer'],
-            'bg'    => ['sometimes', 'boolean'],
-            'delay' => ['sometimes', 'integer']
+            'id' => ['required', 'integer'],
+            'bg' => ['sometimes', 'boolean'],
+            'delay' => ['sometimes', 'integer'],
         ];
     }
-
 
     /**
      * @throws \Throwable
@@ -37,11 +36,10 @@ class ProcessAuroraDeleteDeliveryNote extends OrgAction
     public function handle(Organisation $organisation, array $modelData): array
     {
         $res = [
-            'status'  => 'error',
+            'status' => 'error',
             'message' => 'Delivery note not found',
-            'model'   => 'DeleteDeliverNote'
+            'model' => 'DeleteDeliverNote',
         ];
-
 
         $deliveryNote = DeliveryNote::where('source_id', $organisation->id.':'.$modelData['id'])->first();
 
@@ -50,14 +48,13 @@ class ProcessAuroraDeleteDeliveryNote extends OrgAction
 
             $res = [
                 'status' => 'ok',
-                'id'     => $deliveryNote->source_id,
-                'model'  => 'DeleteDeliverNote',
+                'id' => $deliveryNote->source_id,
+                'model' => 'DeleteDeliverNote',
             ];
         }
 
         return $res;
     }
-
 
     /**
      * @throws \Throwable
@@ -69,7 +66,6 @@ class ProcessAuroraDeleteDeliveryNote extends OrgAction
         return $this->handle($organisation, $this->validatedData);
     }
 
-
     /**
      * @throws \Throwable
      */
@@ -80,5 +76,4 @@ class ProcessAuroraDeleteDeliveryNote extends OrgAction
 
         return $this->handle($organisation, $this->validatedData);
     }
-
 }

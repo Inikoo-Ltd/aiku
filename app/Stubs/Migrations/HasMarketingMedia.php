@@ -35,7 +35,6 @@ trait HasMarketingMedia
         $table->string('video_url')->nullable()->index();
     }
 
-
     public function getMarketingMediaFieldNames(): array
     {
         return [
@@ -47,7 +46,7 @@ trait HasMarketingMedia
             'top_image_id',
             'bottom_image_id',
             'size_comparison_image_id',
-            'video_url'
+            'video_url',
         ];
     }
 }

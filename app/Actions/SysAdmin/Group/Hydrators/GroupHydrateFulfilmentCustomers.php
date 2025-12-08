@@ -31,11 +31,10 @@ class GroupHydrateFulfilmentCustomers implements ShouldBeUnique
     {
         $stats = [
             'number_customers_interest_pallets_storage' => $group->fulfilmentCustomers()->where('pallets_storage', true)->count(),
-            'number_customers_interest_items_storage'   => $group->fulfilmentCustomers()->where('items_storage', true)->count(),
-            'number_customers_interest_dropshipping'    => $group->fulfilmentCustomers()->where('dropshipping', true)->count(),
+            'number_customers_interest_items_storage' => $group->fulfilmentCustomers()->where('items_storage', true)->count(),
+            'number_customers_interest_dropshipping' => $group->fulfilmentCustomers()->where('dropshipping', true)->count(),
         ];
 
         $group->fulfilmentStats()->update($stats);
     }
-
 }

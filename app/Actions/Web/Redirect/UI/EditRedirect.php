@@ -32,43 +32,43 @@ class EditRedirect extends OrgAction
     {
 
         $title = __('Edit Redirect');
+
         return Inertia::render(
             'CreateModel',
             [
                 // 'breadcrumbs' => $this->getBreadcrumbs(
                 //     $request->route()->originalParameters()
                 // ),
-                'title'       => $title,
-                'pageHead'    => [
+                'title' => $title,
+                'pageHead' => [
                     'title' => $title,
                 ],
-                'formData'    => [
+                'formData' => [
                     'fullLayout' => true,
-                    'blueprint'  =>
+                    'blueprint' => [
                         [
-                            [
-                                'title'  => $title,
-                                'fields' => [
-                                    'type' => [
-                                        'type'     => 'select',
-                                        'label'    => __('type'),
-                                        'options'  => Options::forEnum(RedirectTypeEnum::class),
-                                        'value'    => $redirect->type
-                                    ],
-                                    'path' => [
-                                        'type'     => 'input',
-                                        'label'    => __('path'),
-                                        'value'    => $redirect->path
-                                    ],
-                                ]
-                            ]
+                            'title' => $title,
+                            'fields' => [
+                                'type' => [
+                                    'type' => 'select',
+                                    'label' => __('type'),
+                                    'options' => Options::forEnum(RedirectTypeEnum::class),
+                                    'value' => $redirect->type,
+                                ],
+                                'path' => [
+                                    'type' => 'input',
+                                    'label' => __('path'),
+                                    'value' => $redirect->path,
+                                ],
+                            ],
                         ],
-                    'route'      => [
+                    ],
+                    'route' => [
                         'name' => 'grp.models.redirect.update',
                         'parameters' => [
-                            'redirect' => $redirect->id
-                        ]
-                    ]
+                            'redirect' => $redirect->id,
+                        ],
+                    ],
                 ],
 
             ]
@@ -77,6 +77,7 @@ class EditRedirect extends OrgAction
 
     /**
      * @throws Exception
+     *
      * @noinspection PhpUnusedParameterInspection
      */
     public function inWebpage(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, Redirect $redirect, ActionRequest $request): Response
@@ -88,6 +89,7 @@ class EditRedirect extends OrgAction
 
     /**
      * @throws \Exception
+     *
      * @noinspection PhpUnusedParameterInspection
      */
     public function inWebpageInFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Webpage $webpage, Redirect $redirect, ActionRequest $request): Response
@@ -110,7 +112,4 @@ class EditRedirect extends OrgAction
 
         return $this->handle($redirect, $request);
     }
-
-
-
 }

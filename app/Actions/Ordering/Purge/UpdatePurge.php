@@ -48,16 +48,16 @@ class UpdatePurge extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'state'         => ['sometimes', Rule::enum(PurgeStateEnum::class)],
-            'scheduled_at'  => ['sometimes', 'date'],
-            'cancelled_at'  => ['sometimes', 'date'],
-            'start_at'      => ['sometimes', 'date'],
-            'end_at'        => ['sometimes', 'date'],
+            'state' => ['sometimes', Rule::enum(PurgeStateEnum::class)],
+            'scheduled_at' => ['sometimes', 'date'],
+            'cancelled_at' => ['sometimes', 'date'],
+            'start_at' => ['sometimes', 'date'],
+            'end_at' => ['sometimes', 'date'],
             'inactive_days' => ['sometimes', 'required', 'integer', 'min:1', 'max:3652'],
 
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
         }
 
@@ -73,11 +73,11 @@ class UpdatePurge extends OrgAction
 
     public function action(Purge $purge, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Purge
     {
-        if (!$audit) {
+        if (! $audit) {
             Purge::disableAuditing();
         }
-        $this->strict         = $strict;
-        $this->asAction       = true;
+        $this->strict = $strict;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($purge->shop, $modelData);
 

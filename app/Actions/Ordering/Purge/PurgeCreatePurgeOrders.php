@@ -20,7 +20,7 @@ class PurgeCreatePurgeOrders extends OrgAction
     public function handle(Purge $purge): Purge
     {
         $dateThreshold = Carbon::now()->subDays($purge->inactive_days);
-        $orders        = $purge->shop->orders()
+        $orders = $purge->shop->orders()
             ->where('updated_at', '<', $dateThreshold)
             ->where('state', OrderStateEnum::CREATING)
             ->get();

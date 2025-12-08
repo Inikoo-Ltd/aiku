@@ -87,7 +87,7 @@ class IndexBasketTransactions extends OrgAction
             $table
                 ->withEmptyState(
                     [
-                        'title' => __("No transactions found"),
+                        'title' => __('No transactions found'),
                     ]
                 );
 
@@ -100,6 +100,4 @@ class IndexBasketTransactions extends OrgAction
             $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
-
-
 }

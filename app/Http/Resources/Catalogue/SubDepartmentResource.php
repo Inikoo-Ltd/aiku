@@ -17,38 +17,37 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $updated_at
  * @property string $name
  * @property string $state
- * @property integer $image_id
- *
+ * @property int $image_id
  */
 class SubDepartmentResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $urlMaster                              = null;
+        $urlMaster = null;
         if ($this->master_product_category_id) {
             $urlMaster = [
-                'name'       => 'grp.helpers.redirect_master_product_category',
+                'name' => 'grp.helpers.redirect_master_product_category',
                 'parameters' => [
-                    $this->masterProductCategory->id
-                ]
+                    $this->masterProductCategory->id,
+                ],
             ];
         }
 
         return [
-            'slug'       => $this->slug,
-            'id'        => $this->id,
-            'image_id'   => $this->image_id,
-            'image'      => $this->imageSources(720, 720),
-            'code'       => $this->code,
-            'name'       => $this->name,
-            'state'      => $this->state,
+            'slug' => $this->slug,
+            'id' => $this->id,
+            'image_id' => $this->image_id,
+            'image' => $this->imageSources(720, 720),
+            'code' => $this->code,
+            'name' => $this->name,
+            'state' => $this->state,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'url_master'       => $urlMaster,
-             'is_name_reviewed' => $this->is_name_reviewed,
+            'url_master' => $urlMaster,
+            'is_name_reviewed' => $this->is_name_reviewed,
             'is_description_title_reviewed' => $this->is_description_title_reviewed,
             'is_description_reviewed' => $this->is_description_reviewed,
-            'is_description_extra_reviewed' => $this->is_description_extra_reviewed
+            'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
         ];
     }
 }

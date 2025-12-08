@@ -16,7 +16,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     /**
      * Laravel by default wraps migrations in a transaction. PostgreSQL cannot create/drop indexes
      * CONCURRENTLY inside a transaction. Set withinTransaction to false so we can use CONCURRENTLY.
@@ -25,7 +26,7 @@ return new class () extends Migration {
 
     public function up(): void
     {
-        if (!Schema::hasTable('delivery_note_items')) {
+        if (! Schema::hasTable('delivery_note_items')) {
             return;
         }
 
@@ -33,24 +34,24 @@ return new class () extends Migration {
         // Include the aggregated column to allow index-only scans when possible.
         $statements = [
             // With organisation_id + stock_id
-            "CREATE INDEX IF NOT EXISTS dnis_org_sales_stock_date_idx ON delivery_note_items (organisation_id, sales_type, stock_id, date) INCLUDE (grp_revenue_amount)",
+            'CREATE INDEX IF NOT EXISTS dnis_org_sales_stock_date_idx ON delivery_note_items (organisation_id, sales_type, stock_id, date) INCLUDE (grp_revenue_amount)',
 
             // With organisation_id + stock_family_id
-            "CREATE INDEX IF NOT EXISTS dnis_org_sales_stockfam_date_idx ON delivery_note_items (organisation_id, sales_type, stock_family_id, date) INCLUDE (grp_revenue_amount)",
+            'CREATE INDEX IF NOT EXISTS dnis_org_sales_stockfam_date_idx ON delivery_note_items (organisation_id, sales_type, stock_family_id, date) INCLUDE (grp_revenue_amount)',
 
             // Without organisation_id (stock_id)
-            "CREATE INDEX IF NOT EXISTS dnis_sales_stock_date_idx ON delivery_note_items (sales_type, stock_id, date) INCLUDE (grp_revenue_amount)",
+            'CREATE INDEX IF NOT EXISTS dnis_sales_stock_date_idx ON delivery_note_items (sales_type, stock_id, date) INCLUDE (grp_revenue_amount)',
 
             // Without organisation_id (stock_family_id)
-            "CREATE INDEX IF NOT EXISTS dnis_sales_stockfam_date_idx ON delivery_note_items (sales_type, stock_family_id, date) INCLUDE (grp_revenue_amount)",
+            'CREATE INDEX IF NOT EXISTS dnis_sales_stockfam_date_idx ON delivery_note_items (sales_type, stock_family_id, date) INCLUDE (grp_revenue_amount)',
 
             // OrgStock dimensions (inventory side)
-            "CREATE INDEX IF NOT EXISTS dnis_sales_orgstock_date_idx ON delivery_note_items (sales_type, org_stock_id, date) INCLUDE (org_revenue_amount)",
+            'CREATE INDEX IF NOT EXISTS dnis_sales_orgstock_date_idx ON delivery_note_items (sales_type, org_stock_id, date) INCLUDE (org_revenue_amount)',
 
-            "CREATE INDEX IF NOT EXISTS dnis_sales_orgstockfam_date_idx ON delivery_note_items (sales_type, org_stock_family_id, date) INCLUDE (org_revenue_amount)",
+            'CREATE INDEX IF NOT EXISTS dnis_sales_orgstockfam_date_idx ON delivery_note_items (sales_type, org_stock_family_id, date) INCLUDE (org_revenue_amount)',
 
             // Optional BRIN on date for very wide scans; tiny size, complementary to BTREE.
-            "CREATE INDEX IF NOT EXISTS dnis_date_brin ON delivery_note_items USING BRIN (date) WITH (pages_per_range = 128)"
+            'CREATE INDEX IF NOT EXISTS dnis_date_brin ON delivery_note_items USING BRIN (date) WITH (pages_per_range = 128)',
         ];
 
         // Use CONCURRENTLY when supported (PostgreSQL). If using a different DB, these will fail;
@@ -71,7 +72,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        if (!Schema::hasTable('delivery_note_items')) {
+        if (! Schema::hasTable('delivery_note_items')) {
             return;
         }
 

@@ -28,9 +28,7 @@ trait HasSalesTransactionParents
         if ($table->getTable() === 'invoices') {
             $table->unsignedInteger('recurring_bill_id')->nullable()->index();
         }
+
         return $table;
     }
-
-
-
 }

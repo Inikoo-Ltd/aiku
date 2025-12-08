@@ -21,14 +21,13 @@ use Illuminate\Support\Facades\Cache;
 class DashboardOrganisationSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
-    protected string $organisationCurrencyCode;
 
+    protected string $organisationCurrencyCode;
 
     public function toArray($request): array
     {
 
         $currencyOrganisationId = $this->organisation_currency_id;
-
 
         $organisationCurrencyCode = Cache::remember('currency_code_'.$currencyOrganisationId, 3600 * 24 * 30, function () use ($currencyOrganisationId) {
             return Currency::find($currencyOrganisationId)->code;
@@ -73,23 +72,22 @@ class DashboardOrganisationSalesResource extends JsonResource
             ],
         ];
 
-
         $columns = array_merge(
             [
                 'label' => [
                     'formatted_value' => $this->name,
-                    'align'           => 'left',
-                    ...$routeTargets['organisations']
+                    'align' => 'left',
+                    ...$routeTargets['organisations'],
 
-                ]
+                ],
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $this->code,
-                    'tooltip'         => $this->name,
-                    'align'           => 'left',
-                    ...$routeTargets['organisations']
-                ]
+                    'tooltip' => $this->name,
+                    'align' => 'left',
+                    ...$routeTargets['organisations'],
+                ],
             ],
             $this->getDashboardTableColumn($this, 'baskets_created_org_currency', $routeTargets['inBasket']),
             $this->getDashboardTableColumn($this, 'baskets_created_org_currency_minified', $routeTargets['inBasket']),
@@ -110,11 +108,10 @@ class DashboardOrganisationSalesResource extends JsonResource
         );
 
         return [
-            'slug'    => $this->slug,
-            'state'   => 'active',
+            'slug' => $this->slug,
+            'state' => 'active',
             'columns' => $columns,
-            'colour'  => $this?->colour,
-
+            'colour' => $this?->colour,
 
         ];
     }

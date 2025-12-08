@@ -57,20 +57,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_traffic_sources
  * @property-read \App\Models\CRM\Customer $customer
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms query()
+ *
  * @mixin \Eloquent
  */
 class CustomerComms extends Model
 {
     protected $table = 'customer_comms';
-    protected $guarded = [];
 
+    protected $guarded = [];
 
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
-
 }

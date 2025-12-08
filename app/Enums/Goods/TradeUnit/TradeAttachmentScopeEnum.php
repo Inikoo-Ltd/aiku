@@ -32,28 +32,25 @@ enum TradeAttachmentScopeEnum: string
     case CPSR_PRIVATE = 'cpsr_private';
     case OTHER_PRIVATE = 'other_private';
 
-
     public static function labels(): array
     {
         return [
-            'ifra'                          => 'IFRA',
-            'sds'                           => 'SDS',
-            'clp'                           => 'CLP',
-            'msds'                          => 'MSDS',
-            'allergen_declarations'         => __('Allergen Declarations'),
-            'doc'                           => __('Declaration of Conformity'),
-            'cpsr'                          => 'CPSR',
-            'other'                         => __('Other'),
-            'ifra_private'                  => 'UFRA'.' ('.__('Private').')',
-            'sds_private'                   => 'SDS'.' ('.__('Private').')',
-            'clp_private'                   => 'CLP'.' ('.__('Private').')',
-            'msds_private'                  => 'MSDS'.' ('.__('Private').')',
+            'ifra' => 'IFRA',
+            'sds' => 'SDS',
+            'clp' => 'CLP',
+            'msds' => 'MSDS',
+            'allergen_declarations' => __('Allergen Declarations'),
+            'doc' => __('Declaration of Conformity'),
+            'cpsr' => 'CPSR',
+            'other' => __('Other'),
+            'ifra_private' => 'UFRA'.' ('.__('Private').')',
+            'sds_private' => 'SDS'.' ('.__('Private').')',
+            'clp_private' => 'CLP'.' ('.__('Private').')',
+            'msds_private' => 'MSDS'.' ('.__('Private').')',
             'allergen_declarations_private' => __('Allergen Declarations').' ('.__('Private').')',
-            'doc_private'                   => __('Declaration of Conformity (Private)').' ('.__('Private').')',
-            'cpsr_private'                  => 'CPSR'.' ('.__('Private').')',
-            'other_private'                 => __('Other').' ('.__('Private').')',
+            'doc_private' => __('Declaration of Conformity (Private)').' ('.__('Private').')',
+            'cpsr_private' => 'CPSR'.' ('.__('Private').')',
+            'other_private' => __('Other').' ('.__('Private').')',
         ];
     }
-
-
 }

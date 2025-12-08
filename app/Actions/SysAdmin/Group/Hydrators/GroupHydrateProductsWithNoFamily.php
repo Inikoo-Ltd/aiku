@@ -25,14 +25,14 @@ class GroupHydrateProductsWithNoFamily implements ShouldBeUnique
     {
         return $group->id;
     }
+
     public function handle(Group $group): void
     {
 
-        $stats         = [
-            'number_products_no_family' => $group->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->whereNull('family_id')->count()
+        $stats = [
+            'number_products_no_family' => $group->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->whereNull('family_id')->count(),
         ];
 
         $group->catalogueStats()->update($stats);
     }
-
 }

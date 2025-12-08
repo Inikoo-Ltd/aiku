@@ -16,30 +16,29 @@ enum EmployeeTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE                       = 'showcase';
-    case HISTORY                        = 'history';
-    case ATTACHMENTS                    = 'attachments';
-
+    case SHOWCASE = 'showcase';
+    case HISTORY = 'history';
+    case ATTACHMENTS = 'attachments';
 
     public function blueprint(): array
     {
         return match ($this) {
             EmployeeTabsEnum::ATTACHMENTS => [
                 'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
-                'type'  => 'icon',
+                'icon' => 'fal fa-paperclip',
+                'type' => 'icon',
                 'align' => 'right',
             ],
 
             EmployeeTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             EmployeeTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
         };
     }

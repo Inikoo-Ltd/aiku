@@ -22,7 +22,7 @@ trait IsAddress
 {
     private function getAdr(): ImmutableAddressInterface|Adr
     {
-        $address = new Adr();
+        $address = new Adr;
 
         return $address
             ->withCountryCode($this->country_code)
@@ -37,20 +37,20 @@ trait IsAddress
 
     public function getFormattedAddressAttribute(): string
     {
-        $addressFormatRepository = new AddressFormatRepository();
-        $countryRepository       = new CountryRepository();
-        $subdivisionRepository   = new SubdivisionRepository();
-        $formatter               = new DefaultFormatter($addressFormatRepository, $countryRepository, $subdivisionRepository, ['html' => false]);
+        $addressFormatRepository = new AddressFormatRepository;
+        $countryRepository = new CountryRepository;
+        $subdivisionRepository = new SubdivisionRepository;
+        $formatter = new DefaultFormatter($addressFormatRepository, $countryRepository, $subdivisionRepository, ['html' => false]);
 
         return $formatter->format($this->getAdr());
     }
 
     public function getHtml(): string
     {
-        $addressFormatRepository = new AddressFormatRepository();
-        $countryRepository       = new CountryRepository();
-        $subdivisionRepository   = new SubdivisionRepository();
-        $formatter               = new DefaultFormatter($addressFormatRepository, $countryRepository, $subdivisionRepository);
+        $addressFormatRepository = new AddressFormatRepository;
+        $countryRepository = new CountryRepository;
+        $subdivisionRepository = new SubdivisionRepository;
+        $formatter = new DefaultFormatter($addressFormatRepository, $countryRepository, $subdivisionRepository);
 
         return $formatter->format($this->getAdr());
     }
@@ -82,7 +82,7 @@ trait IsAddress
 
     public function getCountryName(): string
     {
-        if ($country = (new Country())->firstWhere('id', $this->country_id)) {
+        if ($country = (new Country)->firstWhere('id', $this->country_id)) {
             return $country->name;
         }
 
@@ -94,7 +94,7 @@ trait IsAddress
         return [
             $this->country_code,
             $this->getCountryName(),
-            $this->locality ?? $this->administrative_area ?? $this->postal_code
+            $this->locality ?? $this->administrative_area ?? $this->postal_code,
         ];
     }
 
@@ -111,16 +111,15 @@ trait IsAddress
     public function getFields(): array
     {
         return [
-            'address_line_1'      => $this->address_line_1,
-            'address_line_2'      => $this->address_line_2,
-            'sorting_code'        => $this->sorting_code,
-            'postal_code'         => $this->postal_code,
-            'dependent_locality'  => $this->dependent_locality,
-            'locality'            => $this->locality,
+            'address_line_1' => $this->address_line_1,
+            'address_line_2' => $this->address_line_2,
+            'sorting_code' => $this->sorting_code,
+            'postal_code' => $this->postal_code,
+            'dependent_locality' => $this->dependent_locality,
+            'locality' => $this->locality,
             'administrative_area' => $this->administrative_area,
-            'country_code'        => $this->country_code,
-            'country_id'          => $this->country_id,
+            'country_code' => $this->country_code,
+            'country_id' => $this->country_id,
         ];
     }
-
 }

@@ -11,14 +11,13 @@ namespace App\Actions\Retina\CRM;
 use App\Actions\CRM\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use Lorisleiva\Actions\ActionRequest;
-use App\Models\CRM\Customer;
 use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
+use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRetinaBackInStockReminder extends RetinaAction
 {
     use WithActionUpdate;
-
 
     public function handle(Customer $customer, Product $product): void
     {
@@ -27,7 +26,6 @@ class DeleteRetinaBackInStockReminder extends RetinaAction
             DeleteBackInStockReminder::make()->action($backInStockReminder);
         }
     }
-
 
     public function asController(Product $product, ActionRequest $request): void
     {

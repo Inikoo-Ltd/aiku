@@ -15,15 +15,16 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
-    use HasPaymentStats;
-    use HasSalesStats;
+return new class extends Migration
+{
     use HasCreditsStats;
     use HasOrderingStats;
+    use HasPaymentStats;
+    use HasSalesStats;
 
     public function up(): void
     {
-        if (!Schema::hasTable('group_accounting_stats')) {
+        if (! Schema::hasTable('group_accounting_stats')) {
             Schema::create('group_accounting_stats', function (Blueprint $table) {
                 $table->smallIncrements('id');
                 $table->unsignedSmallInteger('group_id');
@@ -45,7 +46,6 @@ return new class () extends Migration {
             });
         }
     }
-
 
     public function down(): void
     {

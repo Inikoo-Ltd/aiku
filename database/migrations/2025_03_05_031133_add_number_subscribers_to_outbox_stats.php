@@ -10,16 +10,16 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('outbox_stats', function (Blueprint $table) {
-            $table->unsignedSmallInteger("number_subscribed_user")->default(0);
-            $table->unsignedSmallInteger("number_subscribed_external_emails")->default(0);
+            $table->unsignedSmallInteger('number_subscribed_user')->default(0);
+            $table->unsignedSmallInteger('number_subscribed_external_emails')->default(0);
 
         });
     }
-
 
     public function down(): void
     {

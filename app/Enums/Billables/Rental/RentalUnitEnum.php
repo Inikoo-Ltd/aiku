@@ -14,15 +14,15 @@ enum RentalUnitEnum: string
 {
     use EnumHelperTrait;
 
-    case DAY   = 'day';
-    case WEEK  = 'week';
+    case DAY = 'day';
+    case WEEK = 'week';
     case MONTH = 'month';
 
     public static function labels(): array
     {
         return [
-            'day'   => __('day'),
-            'week'  => __('week'),
+            'day' => __('day'),
+            'week' => __('week'),
             'month' => __('month'),
         ];
     }
@@ -30,11 +30,9 @@ enum RentalUnitEnum: string
     public static function abbreviations(): array
     {
         return [
-            'day'   => 'd',
-            'week'  => 'w',
-            'month' => 'm'
+            'day' => 'd',
+            'week' => 'w',
+            'month' => 'm',
         ];
     }
-
-
 }

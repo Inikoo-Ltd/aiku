@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Website\GetWebsiteWorkshopFooter;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
+use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -20,7 +21,6 @@ use App\Models\Web\Website;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Web\WebBlockTypesResource;
 
 class ShowFooterWorkshop extends OrgAction
 {
@@ -44,41 +44,40 @@ class ShowFooterWorkshop extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('footer'),
-                'pageHead'    => [
+                'title' => __('footer'),
+                'pageHead' => [
                     'subNavigation' => $this->getFooterSubNavigation($website),
-                    'title'         => $website->code,
-                    'icon'          => [
+                    'title' => $website->code,
+                    'icon' => [
                         'title' => __('Footer'),
-                        'icon'  => 'fal fa-browser'
+                        'icon' => 'fal fa-browser',
                     ],
-                    'actions'       => $this->getActions($website, 'grp.models.website.publish.footer')
+                    'actions' => $this->getActions($website, 'grp.models.website.publish.footer'),
 
                 ],
 
                 'uploadImageRoute' => [
-                    'name'       => 'grp.models.website.footer.images.store',
+                    'name' => 'grp.models.website.footer.images.store',
                     'parameters' => [
-                        'website' => $website->id
-                    ]
+                        'website' => $website->id,
+                    ],
                 ],
 
                 'autosaveRoute' => [
-                    'name'       => 'grp.models.website.autosave.footer',
+                    'name' => 'grp.models.website.autosave.footer',
                     'parameters' => [
-                        'website' => $website->id
-                    ]
+                        'website' => $website->id,
+                    ],
                 ],
 
-                'domain'        => $website->domain,
-                'data'          => GetWebsiteWorkshopFooter::run($website),
+                'domain' => $website->domain,
+                'data' => GetWebsiteWorkshopFooter::run($website),
                 'webBlockTypes' => WebBlockTypesResource::collection(
                     $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'website')->get()
-                )
+                ),
             ]
         );
     }
-
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
@@ -102,7 +101,7 @@ class ShowFooterWorkshop extends OrgAction
         $headCrumb = function (array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
@@ -115,11 +114,10 @@ class ShowFooterWorkshop extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
-
 
         return match ($routeName) {
             'grp.org.shops.show.web.websites.workshop.footer' => array_merge(
@@ -130,13 +128,13 @@ class ShowFooterWorkshop extends OrgAction
                 $headCrumb(
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.web.websites.workshop',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.shops.show.web.websites.workshop',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.web.websites.workshop.footer',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.shops.show.web.websites.workshop.footer',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -144,5 +142,4 @@ class ShowFooterWorkshop extends OrgAction
             default => []
         };
     }
-
 }

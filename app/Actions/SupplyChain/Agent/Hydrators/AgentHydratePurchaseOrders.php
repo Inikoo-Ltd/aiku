@@ -8,8 +8,8 @@
 
 namespace App\Actions\SupplyChain\Agent\Hydrators;
 
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\SupplyChain\Agent;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
@@ -50,6 +50,4 @@ class AgentHydratePurchaseOrders implements ShouldBeUnique
 
         $agent->stats()->update($stats);
     }
-
-
 }

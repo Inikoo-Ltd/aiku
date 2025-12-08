@@ -25,12 +25,10 @@ class ShowWebsiteAnalyticsDashboard extends OrgAction
     use WithWebAuthorisation;
     use WithWebsiteAnalyticsSubNavigation;
 
-
     public function handle(Website $website): Website
     {
         return $website;
     }
-
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
@@ -73,22 +71,21 @@ class ShowWebsiteAnalyticsDashboard extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => $title,
-                'pageHead'    => [
-                    'icon'          => [
-                        'icon'  => ['fal', 'fa-satellite-dish'],
-                        'title' => __('Comms')
+                'title' => $title,
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-satellite-dish'],
+                        'title' => __('Comms'),
                     ],
-                    'iconRight'     => [
-                        'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('Dashboard')
+                    'iconRight' => [
+                        'icon' => ['fal', 'fa-chart-network'],
+                        'title' => __('Dashboard'),
                     ],
-                    'title'         => $title,
+                    'title' => $title,
                     'subNavigation' => $this->getWebsiteAnalyticsNavigation($website),
 
                 ],
-                'data'        => GetWebsiteCloudflareAnalytics::make()->action($website, $analyticReq)
-
+                'data' => GetWebsiteCloudflareAnalytics::make()->action($website, $analyticReq),
 
             ]
         );
@@ -101,21 +98,19 @@ class ShowWebsiteAnalyticsDashboard extends OrgAction
         $website = request()->route()->parameter('website');
         if ($routeName == 'grp.org.shops.show.web.analytics.dashboard') {
 
-
-
             return array_merge(
                 ShowWebsite::make()->getBreadcrumbs($website, 'grp.org.shops.show.web.websites.show', $routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.web.analytics.dashboard',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.shops.show.web.analytics.dashboard',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Analytics Dashboard'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
         } else {
@@ -123,21 +118,18 @@ class ShowWebsiteAnalyticsDashboard extends OrgAction
                 ShowWebsite::make()->getBreadcrumbs($website, 'grp.org.fulfilments.show.web.websites.show', $routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.web.analytics.dashboard',
-                                'parameters' => $routeParameters
+                                'name' => 'grp.org.fulfilments.show.web.analytics.dashboard',
+                                'parameters' => $routeParameters,
                             ],
                             'label' => __('Analytics Dashboard'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
         }
 
-
     }
-
-
 }

@@ -30,16 +30,16 @@ class RentalsResource extends JsonResource
         $currency = Currency::find($this->currency_id);
 
         return [
-            'id'                   => $this->id,
-            'asset_id'             => $this->asset_id,
-            'slug'                 => $this->slug,
-            'name'                 => $this->name,
-            'code'                 => $this->code,
-            'price'                => $this->price,
-            'agreed_price'         => $this->agreed_price ?? $this->price,
-            'percentage_off'       => 0,
-            'unit'                 => $this->unit,
-            'currency'             => CurrencyResource::make($currency)
+            'id' => $this->id,
+            'asset_id' => $this->asset_id,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'code' => $this->code,
+            'price' => $this->price,
+            'agreed_price' => $this->agreed_price ?? $this->price,
+            'percentage_off' => 0,
+            'unit' => $this->unit,
+            'currency' => CurrencyResource::make($currency),
         ];
     }
 }

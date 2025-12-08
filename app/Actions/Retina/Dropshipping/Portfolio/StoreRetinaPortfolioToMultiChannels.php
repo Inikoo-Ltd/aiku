@@ -22,11 +22,6 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
 {
     use WithActionUpdate;
 
-
-
-    /**
-     * @var ProductCategory|null
-     */
     private ?ProductCategory $productCategory = null;
 
     public function handle(Customer $customer, array $modelData): void
@@ -43,13 +38,13 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
                 ->whereIn('item_id', $items->pluck('id'))
                 ->where('item_type', $items->first()->getMorphClass())
                 ->get(['item_id', 'customer_sales_channel_id'])
-                ->map(fn ($portfolio) => $portfolio->customer_sales_channel_id . '-' . $portfolio->item_id);
+                ->map(fn ($portfolio) => $portfolio->customer_sales_channel_id.'-'.$portfolio->item_id);
         })->unique()->values()->toArray();
 
         $channels->each(function ($salesChannel) use ($items, $existingPortfolios) {
             $items->chunk(100)->each(function ($chunkedItems) use ($salesChannel, $existingPortfolios) {
                 $chunkedItems->each(function ($item) use ($salesChannel, $existingPortfolios) {
-                    if (!in_array($salesChannel->id . '-' . $item->id, $existingPortfolios)) {
+                    if (! in_array($salesChannel->id.'-'.$item->id, $existingPortfolios)) {
                         StorePortfolio::make()->action($salesChannel, $item, []);
                     }
                 });
@@ -63,7 +58,7 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
             'customer_sales_channel_ids' => 'required|array|min:1',
             'customer_sales_channel_ids.*' => 'required|integer|exists:customer_sales_channels,id',
             // 'item_id' => 'required|array|min:1',
-            'item_id.*' => 'required|integer|exists:products,id'
+            'item_id.*' => 'required|integer|exists:products,id',
         ];
     }
 
@@ -80,7 +75,6 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
 
         $this->handle($this->customer, $this->validatedData);
     }
-
 
     public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): void
     {

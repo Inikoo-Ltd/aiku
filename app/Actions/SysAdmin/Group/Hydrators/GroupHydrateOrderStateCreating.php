@@ -19,7 +19,6 @@ class GroupHydrateOrderStateCreating implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $groupID): string
@@ -30,18 +29,16 @@ class GroupHydrateOrderStateCreating implements ShouldBeUnique
     public function handle(int $groupID): void
     {
         $group = Group::find($groupID);
-        if (!$group) {
+        if (! $group) {
             return;
         }
 
         $stats = [
-            'number_orders_state_creating'              => $group->orders()->where('state', OrderStateEnum::CREATING)->count(),
+            'number_orders_state_creating' => $group->orders()->where('state', OrderStateEnum::CREATING)->count(),
             'orders_state_creating_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::CREATING)->sum('grp_net_amount'),
 
         ];
 
         $group->orderHandlingStats()->update($stats);
     }
-
-
 }

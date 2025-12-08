@@ -28,7 +28,7 @@ class OrganisationHydrateWorkplaces implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_workplaces' => $organisation->workplaces()->count()
+            'number_workplaces' => $organisation->workplaces()->count(),
         ];
         $stats = array_merge(
             $stats,

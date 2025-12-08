@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         $tables = [
@@ -25,11 +26,10 @@ return new class () extends Migration {
             'shop_crm_stats',
             'poll_stats',
 
-
         ];
         foreach ($tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName) {
-                if (!Schema::hasColumn($tableName, 'number_customers_status_pre_registration')) {
+                if (! Schema::hasColumn($tableName, 'number_customers_status_pre_registration')) {
                     $table->unsignedInteger('number_customers_status_pre_registration')->default(0);
                 }
             });

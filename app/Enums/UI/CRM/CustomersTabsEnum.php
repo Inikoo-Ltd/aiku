@@ -24,7 +24,7 @@ enum CustomersTabsEnum: string
         return match ($this) {
             CustomersTabsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
-                'icon'  => 'fal fa-transporter',
+                'icon' => 'fal fa-transporter',
             ]
         };
     }

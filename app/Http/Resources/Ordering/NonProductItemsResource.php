@@ -33,27 +33,27 @@ class NonProductItemsResource extends JsonResource
         $transaction = $this;
 
         return [
-            'id'                  => $transaction->id,
-            'state'               => $transaction->state,
-            'status'              => $transaction->status,
-            'quantity_ordered'    => intVal($transaction->quantity_ordered),
-            'quantity_bonus'      => intVal($transaction->quantity_bonus),
-            'quantity_dispatched' => intVal($transaction->quantity_dispatched),
-            'quantity_fail'       => intVal($transaction->quantity_fail),
-            'quantity_cancelled'  => intVal($transaction->quantity_cancelled),
-            'gross_amount'        => $transaction->gross_amount,
-            'net_amount'          => $transaction->net_amount,
-            'asset_name'          => $transaction->asset_name,
-            'model_type'          => $transaction->model_type,
-            'created_at'          => $transaction->created_at,
-            'currency_code'       => $transaction->currency_code,
+            'id' => $transaction->id,
+            'state' => $transaction->state,
+            'status' => $transaction->status,
+            'quantity_ordered' => intval($transaction->quantity_ordered),
+            'quantity_bonus' => intval($transaction->quantity_bonus),
+            'quantity_dispatched' => intval($transaction->quantity_dispatched),
+            'quantity_fail' => intval($transaction->quantity_fail),
+            'quantity_cancelled' => intval($transaction->quantity_cancelled),
+            'gross_amount' => $transaction->gross_amount,
+            'net_amount' => $transaction->net_amount,
+            'asset_name' => $transaction->asset_name,
+            'model_type' => $transaction->model_type,
+            'created_at' => $transaction->created_at,
+            'currency_code' => $transaction->currency_code,
 
             'deleteRoute' => [
-                'name'       => 'grp.models.transaction.delete',
+                'name' => 'grp.models.transaction.delete',
                 'parameters' => [
-                    'transaction' => $transaction->id
-                ]
-            ]
+                    'transaction' => $transaction->id,
+                ],
+            ],
         ];
     }
 }

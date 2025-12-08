@@ -24,10 +24,10 @@ class PinRule implements ValidationRule
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        list($letters, $emojis, $numbers) = SetEmployeePin::make()->pinCharacterSet();
+        [$letters, $emojis, $numbers] = SetEmployeePin::make()->pinCharacterSet();
 
         $letterCount = 0;
-        $emojiCount  = 0;
+        $emojiCount = 0;
         $numberCount = 0;
 
         $characters = preg_split('//u', $value, -1, PREG_SPLIT_NO_EMPTY);

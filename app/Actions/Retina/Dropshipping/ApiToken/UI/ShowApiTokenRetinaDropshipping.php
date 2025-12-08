@@ -19,7 +19,6 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
 {
     use AsAction;
 
-
     public function handle(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         $env = app()->environment('production')
@@ -27,20 +26,20 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
             : 'sandbox';
         $domain = $this->customer->shop?->website?->domain;
         $baseUrl = app()->environment('production')
-        ? 'https://v2.' . $domain
-        : 'https://canary.' . $domain;
+        ? 'https://v2.'.$domain
+        : 'https://canary.'.$domain;
 
         return Inertia::render(
             'Dropshipping/Api/ApiTokenRetinaDropshipping',
             [
-                'title'       => __('API token'),
+                'title' => __('API token'),
                 'breadcrumbs' => $this->getBreadcrumbs(),
 
                 'pageHead' => [
                     'title' => 'API token',
-                    'icon'  => [
+                    'icon' => [
                         'title' => __('Api token'),
-                        'icon'  => 'fal fa-key'
+                        'icon' => 'fal fa-key',
                     ],
                 ],
 
@@ -48,8 +47,8 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                     'api_base_url' => $baseUrl,
 
                     'redirect_link' => [
-                        'message' => __('Generate API token in') . " " . $env ,
-                        'link' => $baseUrl .  '/app/dropshipping/platforms/manual/api/',
+                        'message' => __('Generate API token in').' '.$env,
+                        'link' => $baseUrl.'/app/dropshipping/platforms/manual/api/',
                     ],
 
                     'route_generate' => [
@@ -63,14 +62,12 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
         );
     }
 
-
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         $this->initialisation($request);
 
         return $this->handle($customerSalesChannel, $request);
     }
-
 
     public function jsonResponse(array $data): array
     {
@@ -82,13 +79,13 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
         return [
             [
 
-                'type'   => 'simple',
+                'type' => 'simple',
                 'simple' => [
-                    'icon'  => 'fal fa-home',
+                    'icon' => 'fal fa-home',
                     'route' => [
-                        'name' => 'retina.dashboard.show'
-                    ]
-                ]
+                        'name' => 'retina.dashboard.show',
+                    ],
+                ],
 
             ],
 

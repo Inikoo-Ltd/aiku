@@ -22,11 +22,10 @@ class CurrencyResource extends JsonResource
         $currency = $this;
 
         return [
-            'id'     => $currency->id,
-            'code'   => $currency->code,
-            'name'   => $currency->name,
-            'symbol' => $currency->symbol
+            'id' => $currency->id,
+            'code' => $currency->code,
+            'name' => $currency->name,
+            'symbol' => $currency->symbol,
         ];
     }
-
 }

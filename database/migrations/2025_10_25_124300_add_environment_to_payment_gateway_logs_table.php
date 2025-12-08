@@ -10,19 +10,20 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('payment_gateway_logs', function (Blueprint $table) {
-            if (!Schema::hasColumn('payment_gateway_logs', 'origin')) {
+            if (! Schema::hasColumn('payment_gateway_logs', 'origin')) {
                 $table->string('origin')->nullable()->index();
             }
 
-            if (!Schema::hasColumn('payment_gateway_logs', 'operation')) {
+            if (! Schema::hasColumn('payment_gateway_logs', 'operation')) {
                 $table->string('operation')->nullable()->index();
             }
 
-            if (!Schema::hasColumn('payment_gateway_logs', 'environment')) {
+            if (! Schema::hasColumn('payment_gateway_logs', 'environment')) {
                 $table->string('environment')->nullable()->index();
             }
         });

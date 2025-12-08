@@ -14,11 +14,11 @@ enum DispatchedEmailProviderEnum: string
 {
     use EnumHelperTrait;
 
-    case SES    = 'ses';
+    case SES = 'ses';
     case MAILGUN = 'mailgun';
     case RESEND = 'resend';
     case MAILERSEND = 'mailersend';
-    case ALIBABA    = 'alibaba';
+    case ALIBABA = 'alibaba';
     case SENDMAIL = 'sendmail';
 
 }

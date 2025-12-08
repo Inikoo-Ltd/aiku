@@ -39,7 +39,7 @@ class FetchAuroraCharge extends FetchAurora
         };
 
         $settings = [
-            'rules'        => $this->auroraModelData->{'Charge Terms Metadata'},
+            'rules' => $this->auroraModelData->{'Charge Terms Metadata'},
             'rule_subject' => $this->auroraModelData->{'Charge Terms Type'},
         ];
 
@@ -63,22 +63,20 @@ class FetchAuroraCharge extends FetchAurora
             $name = 'Pastpay charge (60 days)';
         }
 
-
-        $state                      = $this->auroraModelData->{'Charge Active'} === 'Yes' ? ChargeStateEnum::ACTIVE : ChargeStateEnum::DISCONTINUED;
-        $this->parsedData['shop']   = $shop;
+        $state = $this->auroraModelData->{'Charge Active'} === 'Yes' ? ChargeStateEnum::ACTIVE : ChargeStateEnum::DISCONTINUED;
+        $this->parsedData['shop'] = $shop;
         $this->parsedData['charge'] = [
-            'code'            => $code,
-            'name'            => $name,
-            'description'     => $description,
-            'type'            => $type,
-            'trigger'         => $trigger,
-            'settings'        => $settings,
-            'state'           => $state,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Charge Key'},
-            'fetched_at'      => now(),
-            'last_fetched_at' => now()
+            'code' => $code,
+            'name' => $name,
+            'description' => $description,
+            'type' => $type,
+            'trigger' => $trigger,
+            'settings' => $settings,
+            'state' => $state,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Charge Key'},
+            'fetched_at' => now(),
+            'last_fetched_at' => now(),
         ];
-
 
         $createdBy = $this->auroraModelData->{'Charge Begin Date'};
 
@@ -87,8 +85,7 @@ class FetchAuroraCharge extends FetchAurora
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Charge Dimension')

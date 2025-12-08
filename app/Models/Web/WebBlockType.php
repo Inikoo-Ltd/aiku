@@ -44,31 +44,33 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Web\WebBlockTypeStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\WebBlock> $webBlocks
+ *
  * @method static Builder<static>|WebBlockType newModelQuery()
  * @method static Builder<static>|WebBlockType newQuery()
  * @method static Builder<static>|WebBlockType onlyTrashed()
  * @method static Builder<static>|WebBlockType query()
  * @method static Builder<static>|WebBlockType withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|WebBlockType withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class WebBlockType extends Model implements HasMedia
 {
-    use SoftDeletes;
+    use HasImage;
     use HasSlug;
     use InGroup;
-    use HasImage;
+    use SoftDeletes;
 
     protected $casts = [
         'blueprint' => 'array',
-        'data'      => 'array',
-        'scope'     => WebBlockTypeScopeEnum::class,
+        'data' => 'array',
+        'scope' => WebBlockTypeScopeEnum::class,
         'website_type' => 'array',
     ];
 
     protected $attributes = [
         'blueprint' => '{}',
-        'data'      => '{}',
+        'data' => '{}',
     ];
 
     protected $guarded = [];
@@ -90,6 +92,4 @@ class WebBlockType extends Model implements HasMedia
     {
         return $this->hasMany(WebBlock::class);
     }
-
-
 }

@@ -26,13 +26,11 @@ class SeedOrganisationPermissions
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-
         $organisationPermissions = collect(OrganisationPermissionsEnum::getAllValues($organisation));
-
 
         $currentPermissions = Permission::where('scope_type', 'Organisation')->where('scope_id', $organisation->id)->pluck('name');
         $currentPermissions->diff($organisationPermissions)
-            ->each(function ($permissionName) use ($organisation) {
+            ->each(function ($permissionName) {
                 Permission::where('name', $permissionName)->first()->delete();
             });
 
@@ -40,9 +38,9 @@ class SeedOrganisationPermissions
             try {
                 Permission::create(
                     [
-                        'name'       => $permissionName,
+                        'name' => $permissionName,
                         'scope_type' => 'Organisation',
-                        'scope_id'   => $organisation->id,
+                        'scope_id' => $organisation->id,
                     ]
                 );
             } catch (Exception) {
@@ -51,34 +49,32 @@ class SeedOrganisationPermissions
 
         $organisationRoles = collect(RolesEnum::getRolesWithScope($organisation));
 
-
         $currentRoles = Role::where('scope_type', 'Organisation')->where('scope_id', $organisation->id)->pluck('name');
         $currentRoles->diff($organisationRoles)
-            ->each(function ($roleName) use ($organisation) {
+            ->each(function ($roleName) {
                 Role::where(
                     'name',
                     $roleName
                 )->first()->delete();
             });
 
-
         foreach (RolesEnum::cases() as $case) {
-            if ($case->scope() === 'Organisation'  and in_array($organisation->type, $case->scopeTypes())) {
+            if ($case->scope() === 'Organisation' and in_array($organisation->type, $case->scopeTypes())) {
 
-                if (!$role = (new Role())->where('name', RolesEnum::getRoleName($case->value, $organisation))->first()) {
+                if (! $role = (new Role)->where('name', RolesEnum::getRoleName($case->value, $organisation))->first()) {
                     $role = Role::create(
                         [
-                            'name'       => RolesEnum::getRoleName($case->value, $organisation),
+                            'name' => RolesEnum::getRoleName($case->value, $organisation),
                             'scope_type' => 'Organisation',
-                            'scope_id'   => $organisation->id,
-                            'group_id'   => $organisation->group_id,
+                            'scope_id' => $organisation->id,
+                            'group_id' => $organisation->group_id,
                         ]
                     );
                 }
                 $organisationPermissions = [];
 
                 foreach ($case->getPermissions() as $permissionName) {
-                    if ($permission = (new Permission())->where('name', OrganisationPermissionsEnum::getPermissionName($permissionName->value, $organisation))->first()) {
+                    if ($permission = (new Permission)->where('name', OrganisationPermissionsEnum::getPermissionName($permissionName->value, $organisation))->first()) {
                         $organisationPermissions[] = $permission;
                     }
                 }
@@ -86,7 +82,6 @@ class SeedOrganisationPermissions
             }
         }
     }
-
 
     public string $commandSignature = 'org:seed-permissions';
 
@@ -100,5 +95,4 @@ class SeedOrganisationPermissions
 
         return 0;
     }
-
 }

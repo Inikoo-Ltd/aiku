@@ -21,7 +21,6 @@ class UpdateJobOrderItem extends OrgAction
 {
     use WithActionUpdate;
 
-
     private JobOrderItem $jobOrderItem;
 
     public function handle(JobOrderItem $jobOrderItem, array $modelData): JobOrderItem
@@ -46,20 +45,19 @@ class UpdateJobOrderItem extends OrgAction
     public function rules(): array
     {
         return [
-            'status'             => [
+            'status' => [
                 'sometimes',
-                Rule::enum(JobOrderItemStatusEnum::class)
+                Rule::enum(JobOrderItemStatusEnum::class),
             ],
-            'state'              => [
+            'state' => [
                 'sometimes',
-                Rule::enum(JobOrderItemStateEnum::class)
+                Rule::enum(JobOrderItemStateEnum::class),
             ],
-            'notes'              => ['sometimes', 'nullable', 'string', 'max:1024'],
-            'quantity'           => ['sometimes', 'integer', 'min:1'],
-            'received_at'        => ['sometimes', 'nullable', 'date'],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
+            'received_at' => ['sometimes', 'nullable', 'date'],
         ];
     }
-
 
     public function asController(JobOrderItem $jobOrderItem, ActionRequest $request): JobOrderItem
     {
@@ -69,16 +67,13 @@ class UpdateJobOrderItem extends OrgAction
         return $this->handle($jobOrderItem, $this->validatedData);
     }
 
-
     public function action(JobOrderItem $jobOrderItem, array $modelData, int $hydratorsDelay = 0): JobOrderItem
     {
-        $this->jobOrderItem         = $jobOrderItem;
-        $this->asAction             = true;
-        $this->hydratorsDelay       = $hydratorsDelay;
+        $this->jobOrderItem = $jobOrderItem;
+        $this->asAction = true;
+        $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($jobOrderItem->organisation, $modelData);
 
         return $this->handle($jobOrderItem, $this->validatedData);
     }
-
-
 }

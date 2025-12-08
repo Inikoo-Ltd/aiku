@@ -13,10 +13,4 @@ use App\Actions\Transfers\FetchAction;
 class FetchWowsbarAction extends FetchAction
 {
     use WithWowsbarOrganisationsArgument;
-
-
-
-
-
-
 }

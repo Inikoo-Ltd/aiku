@@ -18,6 +18,6 @@ trait WithMastersEditAuthorisation
             return true;
         }
 
-        return $request->user()->authTo("masters.edit");
+        return $request->user()->authTo('masters.edit');
     }
 }

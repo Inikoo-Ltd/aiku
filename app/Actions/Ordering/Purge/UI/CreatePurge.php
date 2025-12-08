@@ -29,48 +29,47 @@ class CreatePurge extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('New purge'),
+                'title' => __('New purge'),
                 'pageHead' => [
-                    'title'        => __('New purge'),
-                    'actions'      => [
+                    'title' => __('New purge'),
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.shops.show.ordering.purges.index',
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name' => 'grp.org.shops.show.ordering.purges.index',
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'formData' => [
                     'fullLayout' => true,
-                    'blueprint'  =>
+                    'blueprint' => [
                         [
-                            [
-                                'title'  => __('New Purge'),
-                                'fields' => [
-                                    'type' => [
-                                        'type'     => 'select',
-                                        'label'    => __('type'),
-                                        'required' => true,
-                                        'options'  => Options::forEnum(PurgeTypeEnum::class),
-                                    ],
-                                    'scheduled_at' => [
-                                        'type'     => 'date',
-                                        'label'    => __('schedule'),
-                                        'required' => true,
-                                    ],
-                                ]
-                            ]
+                            'title' => __('New Purge'),
+                            'fields' => [
+                                'type' => [
+                                    'type' => 'select',
+                                    'label' => __('type'),
+                                    'required' => true,
+                                    'options' => Options::forEnum(PurgeTypeEnum::class),
+                                ],
+                                'scheduled_at' => [
+                                    'type' => 'date',
+                                    'label' => __('schedule'),
+                                    'required' => true,
+                                ],
+                            ],
                         ],
+                    ],
                     'route' => [
-                        'name'       => 'grp.models.purge.store',
+                        'name' => 'grp.models.purge.store',
                         'parameters' => [
-                            'shop'         => $shop->id,
-                        ]
-                    ]
+                            'shop' => $shop->id,
+                        ],
+                    ],
                 ],
 
             ]
@@ -93,11 +92,11 @@ class CreatePurge extends OrgAction
             ),
             [
                 [
-                    'type'         => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating purge'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

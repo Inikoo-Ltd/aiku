@@ -49,24 +49,26 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Accounting\Payment $payment
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUp newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUp newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUp query()
+ *
  * @mixin \Eloquent
  */
 class TopUp extends Model implements Auditable
 {
+    use HasHistory;
     use HasSlug;
     use HasUniversalSearch;
     use InCustomer;
-    use HasHistory;
 
     protected $casts = [
-        'status'         => TopUpStatusEnum::class,
-        'data'           => 'array',
-        'amount'         => 'decimal:2',
-        'grp_amount'     => 'decimal:2',
-        'org_amount'     => 'decimal:2',
+        'status' => TopUpStatusEnum::class,
+        'data' => 'array',
+        'amount' => 'decimal:2',
+        'grp_amount' => 'decimal:2',
+        'org_amount' => 'decimal:2',
 
     ];
 
@@ -114,5 +116,4 @@ class TopUp extends Model implements Auditable
     {
         return $this->hasOne(CreditTransaction::class);
     }
-
 }

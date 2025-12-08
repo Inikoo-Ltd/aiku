@@ -32,11 +32,11 @@ class OrganisationHydrateSpaces implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_spaces' => $organisation->spaces()->count()
+            'number_spaces' => $organisation->spaces()->count(),
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'spaces',
+            model: 'spaces',
             field: 'state',
             enum: SpaceStateEnum::class,
             models: Space::class,
@@ -47,5 +47,4 @@ class OrganisationHydrateSpaces implements ShouldBeUnique
 
         $organisation->fulfilmentStats()->update($stats);
     }
-
 }

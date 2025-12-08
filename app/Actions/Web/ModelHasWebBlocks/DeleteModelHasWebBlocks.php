@@ -19,7 +19,6 @@ class DeleteModelHasWebBlocks extends OrgAction
 {
     use WithWebEditAuthorisation;
 
-
     public function handle(ModelHasWebBlocks $modelHasWebBlocks): ModelHasWebBlocks
     {
         $webpage = $modelHasWebBlocks->webpage;
@@ -34,7 +33,7 @@ class DeleteModelHasWebBlocks extends OrgAction
 
         $modelHasWebBlocksInWebpage = $webpage->modelHasWebBlocks()->orderBy('position')->get();
 
-        if (!$modelHasWebBlocksInWebpage->isEmpty()) {
+        if (! $modelHasWebBlocksInWebpage->isEmpty()) {
             $positions = [];
             /** @var ModelHasWebBlocks $block */
             foreach ($modelHasWebBlocksInWebpage as $index => $block) {

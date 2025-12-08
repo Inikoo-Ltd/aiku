@@ -22,45 +22,45 @@ class AppointmentResource extends JsonResource
         $appointment = $this;
 
         return [
-            'slug'             => $appointment->slug,
-            'name'             => $appointment->name,
-            'customer_name'    => $appointment->customer->name,
-            'customer_slug'    => $appointment->customer->slug,
-            'event'            => $appointment->event,
-            'event_address'    => match($appointment->event) {
+            'slug' => $appointment->slug,
+            'name' => $appointment->name,
+            'customer_name' => $appointment->customer->name,
+            'customer_slug' => $appointment->customer->slug,
+            'event' => $appointment->event,
+            'event_address' => match ($appointment->event) {
                 AppointmentEventEnum::CALLBACK => [
-                    'label'   => 'Zoom',
+                    'label' => 'Zoom',
                     'address' => $appointment->event_address,
                 ],
                 AppointmentEventEnum::IN_PERSON => [
-                    'label'   => __('Office'),
+                    'label' => __('Office'),
                     'address' => $appointment->event_address,
                 ],
             },
-            'type'             => $appointment->type,
-            'schedule_at'      => $appointment->schedule_at,
-            'state'            => match ($appointment->state) {
+            'type' => $appointment->type,
+            'schedule_at' => $appointment->schedule_at,
+            'state' => match ($appointment->state) {
                 AppointmentStateEnum::BOOKED => [
                     'tooltip' => __('live'),
-                    'icon'    => 'fal fa-broadcast-tower',
-                    'class'   => 'text-green-600 animate-pulse'
+                    'icon' => 'fal fa-broadcast-tower',
+                    'class' => 'text-green-600 animate-pulse',
                 ],
                 AppointmentStateEnum::OVERDUE => [
                     'tooltip' => __('unpublished'),
-                    'icon'    => 'fal fa-seedling',
-                    'class'   => 'text-indigo-500'
+                    'icon' => 'fal fa-seedling',
+                    'class' => 'text-indigo-500',
                 ],
                 AppointmentStateEnum::ONGOING => [
                     'tooltip' => __('ongoing'),
-                    'icon'    => 'fal fa-ghost'
+                    'icon' => 'fal fa-ghost',
                 ],
                 AppointmentStateEnum::FINISH => [
                     'tooltip' => __('finish'),
-                    'icon'    => 'fal fa-ghost'
+                    'icon' => 'fal fa-ghost',
                 ],
                 AppointmentStateEnum::CANCEL => [
                     'tooltip' => __('canceled'),
-                    'icon'    => 'fal fa-ghost'
+                    'icon' => 'fal fa-ghost',
                 ],
                 default => []
 

@@ -30,53 +30,47 @@ Route::get('wi/{image}', function () {
     return redirect('/image_not_found.png');
 })->where('image', '.*')->name('wi.not_found');
 
-
-Route::get(".well-known/apple-developer-merchantid-domain-association", function () {
+Route::get('.well-known/apple-developer-merchantid-domain-association', function () {
     return config('services.apple_pay.verification_string', '');
-})->name("apple-pay-verification");
+})->name('apple-pay-verification');
 
-Route::prefix("disclosure")
-    ->name("disclosure.")
-    ->group(__DIR__."/disclosure.php");
+Route::prefix('disclosure')
+    ->name('disclosure.')
+    ->group(__DIR__.'/disclosure.php');
 
-Route::prefix("unsubscribe")
-    ->name("unsubscribe.")
-    ->group(__DIR__."/unsubscribe.php");
-
+Route::prefix('unsubscribe')
+    ->name('unsubscribe.')
+    ->group(__DIR__.'/unsubscribe.php');
 
 Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscribe.aurora');
 
-
-Route::prefix("json")
-    ->name("json.")
-    ->group(__DIR__."/json.php");
+Route::prefix('json')
+    ->name('json.')
+    ->group(__DIR__.'/json.php');
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
-Route::middleware(["iris-relax-auth:retina"])->group(function () {
-    Route::prefix("models")
-        ->name("models.")
-        ->group(__DIR__."/models.php");
-
+Route::middleware(['iris-relax-auth:retina'])->group(function () {
+    Route::prefix('models')
+        ->name('models.')
+        ->group(__DIR__.'/models.php');
 
     Route::get('data-feed.csv', DownloadIrisProduct::class)->name('shop.data_feed');
     Route::get('{productCategory}/data-feed.csv', [DownloadIrisProduct::class, 'inProductCategory'])->name('product_category.data_feed');
 
-    Route::prefix("catalogue")
-        ->name("catalogue.")
-        ->group(__DIR__."/catalogue.php");
+    Route::prefix('catalogue')
+        ->name('catalogue.')
+        ->group(__DIR__.'/catalogue.php');
 
-
-    Route::prefix("")->group(function () {
+    Route::prefix('')->group(function () {
         Route::group([], __DIR__.'/system.php');
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
-        Route::get('/warming_base.txt', [ShowIrisWebpagesList::class,'base'])->name('warming.base');
-        Route::get('/warming_families.txt', [ShowIrisWebpagesList::class,'families'])->name('warming.families');
-        Route::get('/warming_products.txt', [ShowIrisWebpagesList::class,'products'])->name('warming.products');
+        Route::get('/warming_base.txt', [ShowIrisWebpagesList::class, 'base'])->name('warming.base');
+        Route::get('/warming_families.txt', [ShowIrisWebpagesList::class, 'families'])->name('warming.families');
+        Route::get('/warming_products.txt', [ShowIrisWebpagesList::class, 'products'])->name('warming.products');
 
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
-
 
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');

@@ -47,9 +47,6 @@ class GroupHydrateCustomerBalances implements ShouldBeUnique
             ->where('balance', '<', 0)
             ->count();
 
-
         $group->accountingStats->update($stats);
     }
-
-
 }

@@ -31,16 +31,12 @@ class GetRetinaFulfilmentPhysicalGoods extends RetinaAction
             });
         });
 
-
-
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.shop_id', $parent->shop_id);
         $queryBuilder->join('assets', 'products.asset_id', '=', 'assets.id');
         $queryBuilder->join('currencies', 'products.currency_id', '=', 'currencies.id');
 
         $queryBuilder->whereNotIn('products.asset_id', $scope->products()->pluck('asset_id'));
-
-
 
         $queryBuilder
             ->defaultSort('products.id')
@@ -58,8 +54,7 @@ class GetRetinaFulfilmentPhysicalGoods extends RetinaAction
 
             ]);
 
-
-        return $queryBuilder->allowedSorts(['id','code','name','price'])
+        return $queryBuilder->allowedSorts(['id', 'code', 'name', 'price'])
             ->allowedFilters([$globalSearch])
             ->withPaginator(null)
             ->withQueryString();

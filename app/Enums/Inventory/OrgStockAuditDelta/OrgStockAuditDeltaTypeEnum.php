@@ -14,9 +14,8 @@ enum OrgStockAuditDeltaTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case ADDITION       = 'addition';
-    case SUBTRACTION    = 'subtraction';
-    case NO_CHANGE      = 'no_change';
-
+    case ADDITION = 'addition';
+    case SUBTRACTION = 'subtraction';
+    case NO_CHANGE = 'no_change';
 
 }

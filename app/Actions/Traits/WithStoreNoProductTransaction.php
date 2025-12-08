@@ -43,7 +43,7 @@ trait WithStoreNoProductTransaction
         data_set($modelData, 'model_type', 'Adjustment');
         data_set($modelData, 'model_id', $adjustment->id);
 
-        $net   = $adjustment->net_amount;
+        $net = $adjustment->net_amount;
         $gross = $net;
 
         data_set($modelData, 'gross_amount', $gross, overwrite: false);
@@ -51,5 +51,4 @@ trait WithStoreNoProductTransaction
 
         return $modelData;
     }
-
 }

@@ -15,11 +15,11 @@ class TradeUnitFamilyResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'                    => $this->slug,
-            'code'                    => $this->code,
-            'name'                    => $this->name,
-            'id'                      => $this->id,
-            'description'             => $this->description,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'id' => $this->id,
+            'description' => $this->description,
         ];
     }
 }

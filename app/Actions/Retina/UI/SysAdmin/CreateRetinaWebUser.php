@@ -21,69 +21,67 @@ class CreateRetinaWebUser extends RetinaAction
         return $request->user()->is_root;
     }
 
-
     public function htmlResponse(ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'    => __('Create User'),
+                'title' => __('Create User'),
                 'pageHead' => [
                     'title' => __('Create User'),
-                    'icon'  => [
-                        'icon'  => 'fal fa-user-circle',
-                        'title' => __('user')
+                    'icon' => [
+                        'icon' => 'fal fa-user-circle',
+                        'title' => __('user'),
                     ],
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
                                 'name' => 'retina.sysadmin.web-users.index',
-                                'parameters' => $request->route()->originalParameters()
+                                'parameters' => $request->route()->originalParameters(),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'formData' => [
-                    'blueprint' =>
+                    'blueprint' => [
                         [
-                            [
-                                'fields' => [
-                                    'contact_name' => [
-                                        'type'  => 'input',
-                                        'label' => __('contact name'),
-                                        'value' => ''
-                                    ],
-                                    'email' => [
-                                        'required' => true,
-                                        'type'  => 'input',
-                                        'label' => __('email'),
-                                        'value' => $this->customer->hasUsers() ? '' : $this->customer->email
-                                    ],
-                                    'username' => [
-                                        'required' => true,
-                                        'type'  => 'input',
-                                        'label' => __('username'),
-                                        'value' => ''
-                                    ],
-                                    'password' => [
-                                        'required' => true,
-                                        'type'  => 'password',
-                                        'label' => __('password'),
-                                        'value' => ''
-                                    ],
+                            'fields' => [
+                                'contact_name' => [
+                                    'type' => 'input',
+                                    'label' => __('contact name'),
+                                    'value' => '',
+                                ],
+                                'email' => [
+                                    'required' => true,
+                                    'type' => 'input',
+                                    'label' => __('email'),
+                                    'value' => $this->customer->hasUsers() ? '' : $this->customer->email,
+                                ],
+                                'username' => [
+                                    'required' => true,
+                                    'type' => 'input',
+                                    'label' => __('username'),
+                                    'value' => '',
+                                ],
+                                'password' => [
+                                    'required' => true,
+                                    'type' => 'password',
+                                    'label' => __('password'),
+                                    'value' => '',
+                                ],
 
-                                ]
-                            ]
+                            ],
                         ],
+                    ],
                     'route' => [
                         'name' => 'retina.models.web-users.store',
-                        'parameters' => []
-                    ]
-                ]
+                        'parameters' => [],
+                    ],
+                ],
             ]
         );
     }
@@ -91,6 +89,7 @@ class CreateRetinaWebUser extends RetinaAction
     public function asController(ActionRequest $request): ActionRequest
     {
         $this->initialisation($request);
+
         return $request;
     }
 
@@ -101,11 +100,11 @@ class CreateRetinaWebUser extends RetinaAction
                 IndexRetinaWebUsers::make()->getBreadcrumbs('retina.sysadmin.web-users.index'),
                 [
                     [
-                        'type'          => 'creatingModel',
+                        'type' => 'creatingModel',
                         'creatingModel' => [
                             'label' => __('Creating web user'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
     }

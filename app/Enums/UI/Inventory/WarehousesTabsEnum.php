@@ -16,21 +16,21 @@ enum WarehousesTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case WAREHOUSES                       = 'warehouses';
-    case WAREHOUSES_HISTORIES             = 'warehouses_histories';
+    case WAREHOUSES = 'warehouses';
+    case WAREHOUSES_HISTORIES = 'warehouses_histories';
 
     public function blueprint(): array
     {
         return match ($this) {
             WarehousesTabsEnum::WAREHOUSES => [
                 'title' => __('Warehouses'),
-                'icon'  => 'fal fa-warehouse-alt',
+                'icon' => 'fal fa-warehouse-alt',
             ],
             WarehousesTabsEnum::WAREHOUSES_HISTORIES => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
-                'align' => 'right'
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
+                'align' => 'right',
             ],
         };
     }

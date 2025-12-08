@@ -37,7 +37,6 @@ Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustom
 Route::get('redirect-delivery-note/{deliveryNote:id}', RedirectDeliveryNotesLink::class)->name('redirect_delivery_notes');
 Route::get('redirect-org-stock/{orgStock:id}', RedirectOrgStockLink::class)->name('redirect_org_stock');
 
-
 Route::get('redirect-invoices-from-dashboard/{shop:id}', RedirectInvoicesInShopFromDashboard::class)->name('redirect_invoices_from_dashboard');
 Route::get('redirect-customers-from-dashboard/{shop:id}', RedirectCustomersInShopFromDashboard::class)->name('redirect_customers_from_dashboard');
 Route::get('redirect-shops-from-dashboard/{shop:id}', RedirectShopInShopFromDashboard::class)->name('redirect_shops_from_dashboard');
@@ -53,12 +52,10 @@ Route::get('redirect-master-product/{masterAsset:id}', RedirectMasterProductLink
 Route::get('redirect-master-product-category/{masterProductCategory:id}', RedirectMasterProductCategoryLink::class)->name('redirect_master_product_category');
 Route::get('redirect-master-collections/{masterCollection:id}', RedirectMasterCollectionLink::class)->name('redirect_master_collection');
 
-
 Route::get('redirect-outbox/{outbox:id}', RedirectOutboxLink::class)->name('redirect_outbox');
 Route::get('redirect-outbox-workshop/{outbox:id}', RedirectOutboxWorkShopLink::class)->name('redirect_outbox_workshop');
 
 Route::get('redirect-order/{order:id}', RedirectOrder::class)->name('redirect_order');
-
 
 Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {
     Route::get('records', ShowUpload::class)->name('records.show');

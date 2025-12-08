@@ -28,12 +28,11 @@ class FetchAuroraTransactionHasOfferComponents
         $this->organisationSource = $organisationSource;
 
         $transactionHasOfferComponentData = $organisationSource->fetchTransactionHasOfferComponent(id: $source_id, order: $order);
-        if (!$transactionHasOfferComponentData) {
+        if (! $transactionHasOfferComponentData) {
             return null;
         }
 
-
-        $transactionHasOfferComponent      = TransactionHasOfferAllowance::where('source_id', $transactionHasOfferComponentData['transaction_has_offer_component']['source_id'])->first();
+        $transactionHasOfferComponent = TransactionHasOfferAllowance::where('source_id', $transactionHasOfferComponentData['transaction_has_offer_component']['source_id'])->first();
 
         if ($transactionHasOfferComponent) {
             $transactionHasOfferComponent = UpdateTransactionHasOfferAllowance::make()->action(
@@ -44,7 +43,7 @@ class FetchAuroraTransactionHasOfferComponents
             );
         }
 
-        if (!$transactionHasOfferComponent) {
+        if (! $transactionHasOfferComponent) {
             $transactionHasOfferComponent = StoreTransactionHasOfferAllowance::make()->action(
                 transaction: $transactionHasOfferComponentData['transaction'],
                 offerAllowance: $transactionHasOfferComponentData['offer_allowance'],
@@ -56,7 +55,4 @@ class FetchAuroraTransactionHasOfferComponents
 
         return $transactionHasOfferComponent;
     }
-
-
-
 }

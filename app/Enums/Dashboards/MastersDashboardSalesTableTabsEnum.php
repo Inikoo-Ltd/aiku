@@ -23,19 +23,17 @@ enum MastersDashboardSalesTableTabsEnum: string
 
     case MASTER_SHOPS = 'master_shops';
 
-
     public function blueprint(): array
     {
         return match ($this) {
 
             MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => [
                 'title' => __('Shops'),
-                'icon'  => 'fal fa-store-alt',
+                'icon' => 'fal fa-store-alt',
             ],
 
         };
     }
-
 
     public function table(Group $group): array
     {
@@ -46,7 +44,6 @@ enum MastersDashboardSalesTableTabsEnum: string
 
         Arr::set($header, 'columns.label.formatted_value', __('Master Shop'));
 
-
         $body = match ($this) {
             MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => IndexMasterShopsSalesTable::make()->action($group),
         };
@@ -55,12 +52,10 @@ enum MastersDashboardSalesTableTabsEnum: string
             MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => json_decode(DashboardTotalGroupMasterShopsSalesResource::make($group)->toJson(), true),
         };
 
-
-
         return [
             'header' => $header,
-            'body'   => $body,
-            'totals' => $totals
+            'body' => $body,
+            'totals' => $totals,
         ];
     }
 
@@ -70,6 +65,4 @@ enum MastersDashboardSalesTableTabsEnum: string
             return [$case->value => $case->table($group)];
         })->all();
     }
-
-
 }

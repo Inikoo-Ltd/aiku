@@ -18,7 +18,6 @@ trait HasOrderAmountTotals
         $table->decimal('gross_amount', 16)->default(0)
             ->comment('Total asserts amount (excluding charges and shipping) before discounts');
 
-
         $table->decimal('goods_amount', 16)->default(0);
         $table->decimal('services_amount', 16)->default(0);
 
@@ -54,7 +53,6 @@ trait HasOrderAmountTotals
         $table->foreign('currency_id')->references('id')->on('currencies');
         $table->decimal('grp_exchange', 16, 4)->nullable();
         $table->decimal('org_exchange', 16, 4)->nullable();
-
 
         return $table;
     }

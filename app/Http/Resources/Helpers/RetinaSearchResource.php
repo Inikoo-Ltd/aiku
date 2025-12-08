@@ -21,8 +21,8 @@ class RetinaSearchResource extends JsonResource
     {
         return [
             'model_type' => $this->model_type,
-            'model_id'   => $this->model_id,
-            'result'     => $this->result,
+            'model_id' => $this->model_id,
+            'result' => $this->result,
         ];
     }
 }

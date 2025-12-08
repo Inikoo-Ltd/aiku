@@ -11,7 +11,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('trade_units', function (Blueprint $table) {
@@ -26,7 +27,6 @@ return new class () extends Migration {
         });
     }
 
-
     public function down(): void
     {
         Schema::table('trade_units', function (Blueprint $table) {
@@ -38,7 +38,7 @@ return new class () extends Migration {
                 'number_trade_units_status_in_process',
                 'number_trade_units_status_active',
                 'number_trade_units_status_discontinued',
-                'number_trade_units_status_anomaly'
+                'number_trade_units_status_anomaly',
             ]);
         });
     }

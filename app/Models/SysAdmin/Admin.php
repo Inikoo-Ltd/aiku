@@ -28,6 +28,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ *
  * @method static \Database\Factories\SysAdmin\AdminFactory factory($count = null, $state = [])
  * @method static Builder<static>|Admin newModelQuery()
  * @method static Builder<static>|Admin newQuery()
@@ -35,13 +36,14 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Admin query()
  * @method static Builder<static>|Admin withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Admin withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Admin extends Model
 {
+    use HasFactory;
     use HasSlug;
     use SoftDeletes;
-    use HasFactory;
 
     protected $guarded = [];
 
@@ -65,5 +67,4 @@ class Admin extends Model
     {
         return 'slug';
     }
-
 }

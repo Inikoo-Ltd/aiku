@@ -15,14 +15,14 @@ enum WebpageHasProductTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case DIRECT    = 'direct';
-    case INDIRECT  = 'indirect';
+    case DIRECT = 'direct';
+    case INDIRECT = 'indirect';
 
     public static function labels(): array
     {
         return [
             'direct' => __('Direct'),
-            'indirect'      => __('Indirect'),
+            'indirect' => __('Indirect'),
         ];
     }
 }

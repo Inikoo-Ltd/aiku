@@ -25,7 +25,6 @@ class UpdateGuest extends GrpAction
 {
     use WithActionUpdate;
 
-
     private bool $validatePhone = false;
 
     private Guest $guest;
@@ -42,13 +41,13 @@ class UpdateGuest extends GrpAction
         ]);
 
         if ($guest->wasChanged('status')) {
-            if (!$guest->status) {
+            if (! $guest->status) {
                 foreach ($guest->users as $user) {
                     UpdateUser::make()->action($user, ['status' => false]);
                 }
             }
         }
-        if (!empty($credentials) && $user = $guest->getUser()) {
+        if (! empty($credentials) && $user = $guest->getUser()) {
             UpdateUser::run($user, $credentials);
         }
 
@@ -69,11 +68,11 @@ class UpdateGuest extends GrpAction
         $phoneValidation = ['sometimes', 'nullable'];
 
         if ($this->validatePhone) {
-            $phoneValidation[] = new Phone();
+            $phoneValidation[] = new Phone;
         }
 
         $rules = [
-            'code'                     => [
+            'code' => [
                 'sometimes',
                 'string',
                 'max:12',
@@ -82,29 +81,29 @@ class UpdateGuest extends GrpAction
                     table: 'guests',
                     extraConditions: [
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->guest->id
+                            'value' => $this->guest->id,
                         ],
                     ]
                 ),
 
             ],
-            'status'                   => ['sometimes'],
-            'company_name'             => ['sometimes', 'nullable', 'string', 'max:255'],
-            'contact_name'             => ['sometimes', 'required', 'string', 'max:255'],
-            'email'                    => ['sometimes', 'nullable', 'email', 'max:255'],
-            'phone'                    => $phoneValidation,
+            'status' => ['sometimes'],
+            'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'email' => ['sometimes', 'nullable', 'email', 'max:255'],
+            'phone' => $phoneValidation,
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
-            'identity_document_type'   => ['sometimes', 'nullable', 'string'],
+            'identity_document_type' => ['sometimes', 'nullable', 'string'],
         ];
 
         if ($user = $this->guest->getUser()) {
-            $rules['username']          = [
+            $rules['username'] = [
                 'sometimes',
                 'required',
                 'lowercase',
-                new AlphaDashDot(),
+                new AlphaDashDot,
 
                 Rule::notIn(['export', 'create']),
                 new IUnique(
@@ -112,13 +111,12 @@ class UpdateGuest extends GrpAction
                     extraConditions: [
 
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $user->id
+                            'value' => $user->id,
                         ],
                     ]
                 ),
-
 
             ];
             $rules['password'] = [
@@ -128,10 +126,8 @@ class UpdateGuest extends GrpAction
             ];
         }
 
-
         return $rules;
     }
-
 
     public function asController(Guest $guest, ActionRequest $request): Guest
     {
@@ -145,7 +141,7 @@ class UpdateGuest extends GrpAction
     public function action(Guest $guest, $modelData): Guest
     {
         $this->asAction = true;
-        $this->guest    = $guest;
+        $this->guest = $guest;
         $this->setRawAttributes($modelData);
         $validatedData = $this->validateAttributes();
 

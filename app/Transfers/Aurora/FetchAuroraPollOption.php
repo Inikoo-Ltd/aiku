@@ -16,16 +16,15 @@ class FetchAuroraPollOption extends FetchAurora
     {
         $this->parsedData['poll'] = $this->parsePoll($this->organisation->id.':'.$this->auroraModelData->{'Customer Poll Query Option Query Key'});
         $this->parsedData['poll_option'] = [
-            'value'           => $this->auroraModelData->{'Customer Poll Query Option Name'},
-            'label'           => $this->auroraModelData->{'Customer Poll Query Option Label'},
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Customer Poll Query Option Key'},
-            'fetched_at'      => now(),
+            'value' => $this->auroraModelData->{'Customer Poll Query Option Name'},
+            'label' => $this->auroraModelData->{'Customer Poll Query Option Label'},
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Customer Poll Query Option Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Customer Poll Query Option Dimension')

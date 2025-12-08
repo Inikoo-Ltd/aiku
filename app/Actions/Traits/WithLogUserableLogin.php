@@ -21,28 +21,28 @@ trait WithLogUserableLogin
 
     public function logUserableLogin(string $index, string $type, Carbon $datetime, string $ip, string $userAgent, User|WebUser $userable): void
     {
-        $parsedUserAgent = (new Browser())->parse($userAgent);
+        $parsedUserAgent = (new Browser)->parse($userAgent);
 
         $body = [
-            'type'        => $type,
-            'datetime'    => $datetime,
-            'username'    => $userable->username,
+            'type' => $type,
+            'datetime' => $datetime,
+            'username' => $userable->username,
             'userable_id' => $userable->id,
-            'ip_address'  => $ip,
-            'location'    => json_encode($this->getLocation($ip)), // reference: https://github.com/stevebauman/location
-            'user_agent'  => $userAgent,
+            'ip_address' => $ip,
+            'location' => json_encode($this->getLocation($ip)), // reference: https://github.com/stevebauman/location
+            'user_agent' => $userAgent,
             'device_type' => json_encode([
                 'title' => $parsedUserAgent->deviceType(),
-                'icon'  => $this->getDeviceIcon($parsedUserAgent->deviceType())
+                'icon' => $this->getDeviceIcon($parsedUserAgent->deviceType()),
             ]),
-            'platform'    => json_encode([
+            'platform' => json_encode([
                 'title' => $this->detectWindows11($parsedUserAgent),
-                'icon'  => $this->getPlatformIcon($this->detectWindows11($parsedUserAgent))
+                'icon' => $this->getPlatformIcon($this->detectWindows11($parsedUserAgent)),
             ]),
-            'browser'     => json_encode([
+            'browser' => json_encode([
                 'title' => explode(' ', $parsedUserAgent->browserName())[0],
-                'icon'  => $this->getBrowserIcon(strtolower($parsedUserAgent->browserName()))
-            ])
+                'icon' => $this->getBrowserIcon(strtolower($parsedUserAgent->browserName())),
+            ]),
         ];
 
         IndexElasticsearchDocument::dispatch(index: $index, body: $body);

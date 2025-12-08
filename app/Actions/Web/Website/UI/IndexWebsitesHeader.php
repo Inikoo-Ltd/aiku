@@ -26,25 +26,23 @@ class IndexWebsitesHeader extends InertiaAction
 
     public function tableStructure(?array $modelOperations = null): array
     {
-        return  $modelOperations;
+        return $modelOperations;
     }
 
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('websites.edit');
-        return
-            (
-                $request->user()->tokenCan('root') or
-                $request->user()->authTo('websites.view')
-            );
-    }
 
+        return
+
+                $request->user()->tokenCan('root') or
+                $request->user()->authTo('websites.view');
+    }
 
     public function jsonResponse(Website $website): AnonymousResourceCollection
     {
         return WebsiteResource::collection($this->handle(website: $website));
     }
-
 
     public function htmlResponse(ActionRequest $request): Response
     {
@@ -55,22 +53,21 @@ class IndexWebsitesHeader extends InertiaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Websites header'),
-                'pageHead'    => [
-                    'title'  => __('websites header'),
+                'title' => __('Websites header'),
+                'pageHead' => [
+                    'title' => __('websites header'),
                 ],
             ]
         );
     }
 
-
     public function asController(Website $website, ActionRequest $request): Website
     {
 
         $this->initialisation($request);
+
         return $this->handle($website);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
@@ -78,24 +75,23 @@ class IndexWebsitesHeader extends InertiaAction
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Websites header'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
         return match ($routeName) {
-            'websites.header.index' =>
-            array_merge(
+            'websites.header.index' => array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => 'websites.header.index',
-                        null
+                        null,
                     ]
                 ),
             ),

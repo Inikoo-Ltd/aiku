@@ -12,8 +12,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasSoftDeletes;
+
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -59,7 +61,6 @@ return new class () extends Migration {
         DB::statement('CREATE INDEX ON users USING gin (contact_name gin_trgm_ops) ');
 
     }
-
 
     public function down(): void
     {

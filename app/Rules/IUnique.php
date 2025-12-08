@@ -42,10 +42,9 @@ class IUnique implements ValidationRule
         $count = DB::table($this->table)
             ->whereRaw("lower($this->column) = lower(?)", [$value]);
 
-
-        if (!blank($this->extraConditions)) {
+        if (! blank($this->extraConditions)) {
             foreach ($this->extraConditions as $columnCollection) {
-                if (!isset($columnCollection['column'])) {
+                if (! isset($columnCollection['column'])) {
                     continue;
                 }
 
@@ -55,21 +54,23 @@ class IUnique implements ValidationRule
 
                 if ($columnCollection['operator'] === 'null') {
                     $count = $count->whereNull($columnCollection['column']);
+
                     continue;
                 }
-
 
                 if ($columnCollection['operator'] === 'notNull') {
                     $count = $count->whereNotNull($columnCollection['column']);
+
                     continue;
                 }
 
-                if (!isset($columnCollection['value'])) {
+                if (! isset($columnCollection['value'])) {
                     continue;
                 }
 
                 if ($columnCollection['operator'] === 'in') {
                     $count = $count->whereIn($columnCollection['column'], $columnCollection['value']);
+
                     continue;
                 }
                 $count->where($columnCollection['column'], $columnCollection['operator'], $columnCollection['value']);

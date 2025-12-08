@@ -27,7 +27,6 @@ class CloseWebpage extends OrgAction
     use WithAttributes;
     use WithWebpageHydrators;
 
-
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
         StoreRedirect::make()->action(
@@ -41,7 +40,6 @@ class CloseWebpage extends OrgAction
         $webpage->update([
             'state' => WebpageStateEnum::CLOSED->value,
         ]);
-
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);
 
@@ -62,7 +60,6 @@ class CloseWebpage extends OrgAction
     public function action(Webpage $webpage, array $modelData): Webpage
     {
         $this->asAction = true;
-
 
         $this->initialisationFromShop($webpage->shop, $modelData);
 

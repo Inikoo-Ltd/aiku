@@ -17,7 +17,6 @@ class StoreSlide
 {
     use AsAction;
 
-
     public function handle(Snapshot $snapshot, array $modelData): Slide
     {
         data_fill($modelData, 'ulid', Str::ulid());

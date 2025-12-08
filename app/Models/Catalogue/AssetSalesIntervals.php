@@ -132,13 +132,14 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $sales_grp_currency_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AssetSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AssetSalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AssetSalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class AssetSalesIntervals extends Model
 {
     protected $guarded = [];
-
 }

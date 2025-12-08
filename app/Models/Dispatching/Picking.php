@@ -8,8 +8,8 @@
 
 namespace App\Models\Dispatching;
 
-use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
+use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
@@ -48,9 +48,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read User|null $picker
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Picking newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Picking newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Picking query()
+ *
  * @mixin \Eloquent
  */
 class Picking extends Model
@@ -58,10 +60,10 @@ class Picking extends Model
     use InShop;
 
     protected $casts = [
-        'data'              => 'array',
-        'type'              => PickingTypeEnum::class,
+        'data' => 'array',
+        'type' => PickingTypeEnum::class,
         'not_picked_reason' => PickingNotPickedReasonEnum::class,
-        'engine'            => PickingEngineEnum::class,
+        'engine' => PickingEngineEnum::class,
     ];
 
     protected $guarded = [];
@@ -99,6 +101,4 @@ class Picking extends Model
     {
         return $this->belongsTo(OrgStockMovement::class, 'org_stock_movement_id');
     }
-
-
 }

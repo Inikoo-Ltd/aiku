@@ -30,23 +30,23 @@ class WebUsersResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'              => $this->slug,
-            'username'          => $this->username,
-            'email'             => $this->email,
-            'created_at'        => $this->created_at,
+            'slug' => $this->slug,
+            'username' => $this->username,
+            'email' => $this->email,
+            'created_at' => $this->created_at,
             'organisation_code' => $this->organisation_code,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
-            'shop_name'         => $this->shop_name,
-            'shop_slug'         => $this->shop_slug,
-            'shop_code'         => $this->shop_code,
-            'shop_type'       => $this->shop_type,
+            'shop_name' => $this->shop_name,
+            'shop_slug' => $this->shop_slug,
+            'shop_code' => $this->shop_code,
+            'shop_type' => $this->shop_type,
             'delete_route' => [
                 'name' => 'grp.models.web-user.delete',
                 'parameters' => [
-                    'webUser' => $this->id
-                ]
-            ]
+                    'webUser' => $this->id,
+                ],
+            ],
         ];
     }
 }

@@ -18,11 +18,11 @@ class OrgPartnersResource extends JsonResource
         $orgPartner = $this;
 
         return [
-            'id'                       => $orgPartner->id,
-            'slug'                     => $orgPartner->slug,
-            'code'                     => $orgPartner->code,
-            'name'                     => $orgPartner->name,
-            'email'                    => $orgPartner->email
+            'id' => $orgPartner->id,
+            'slug' => $orgPartner->slug,
+            'code' => $orgPartner->code,
+            'name' => $orgPartner->name,
+            'email' => $orgPartner->email,
 
         ];
     }

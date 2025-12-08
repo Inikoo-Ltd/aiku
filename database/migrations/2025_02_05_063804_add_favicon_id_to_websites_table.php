@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('websites', function (Blueprint $table) {
@@ -19,7 +20,6 @@ return new class () extends Migration {
             $table->foreign('favicon_id')->references('id')->on('media')->onDelete('set null');
         });
     }
-
 
     public function down(): void
     {

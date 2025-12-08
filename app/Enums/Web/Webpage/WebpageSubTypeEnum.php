@@ -25,7 +25,6 @@ enum WebpageSubTypeEnum: string
     case SUB_DEPARTMENT = 'sub_department';
     case COLLECTION = 'collection';
 
-
     case CONTENT = 'content';
 
     case ABOUT_US = 'about-us';
@@ -45,21 +44,19 @@ enum WebpageSubTypeEnum: string
     case APPOINTMENT = 'appointment';
     case PRICING = 'pricing';
 
-
     case BLOG = 'blog';
     case ARTICLE = 'article';
-
 
     public static function labels(): array
     {
         return [
-            'storefront'  => __('storefront'),
+            'storefront' => __('storefront'),
             'appointment' => __('appointment'),
-            'login'       => __('login'),
-            'register'    => __('register'),
-            'blog'        => __('blog'),
-            'article'     => __('article'),
-            'content'     => __('content'),
+            'login' => __('login'),
+            'register' => __('register'),
+            'blog' => __('blog'),
+            'article' => __('article'),
+            'content' => __('content'),
 
         ];
     }

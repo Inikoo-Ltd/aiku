@@ -21,22 +21,21 @@ trait WithIrisGetWebpageWebBlocks
         return $this->getParsedWebBlocks($webpage, $webBlocks, isLoggedIn: $isLoggedIn);
     }
 
-
     public function getParsedWebBlocks(Webpage $webpage, array $webBlocks, bool $isLoggedIn)
     {
         $parsedWebBlocks = [];
 
         /** @var WebBlock $webBlock */
         foreach ($webBlocks as $key => $webBlock) {
-            if (!Arr::get($webBlock, 'show')) {
+            if (! Arr::get($webBlock, 'show')) {
                 continue;
             }
 
-            if ($isLoggedIn && !Arr::get($webBlock, 'visibility.in')) {
+            if ($isLoggedIn && ! Arr::get($webBlock, 'visibility.in')) {
                 continue;
             }
 
-            if (!$isLoggedIn && !Arr::get($webBlock, 'visibility.out')) {
+            if (! $isLoggedIn && ! Arr::get($webBlock, 'visibility.out')) {
                 continue;
             }
 
@@ -45,5 +44,4 @@ trait WithIrisGetWebpageWebBlocks
 
         return $parsedWebBlocks;
     }
-
 }

@@ -22,8 +22,8 @@ enum OutboxStateEnum: string
     {
         return [
             'in_process' => __('In Process'),
-            'active'     => __('Active'),
-            'suspended'  => __('Suspended')
+            'active' => __('Active'),
+            'suspended' => __('Suspended'),
         ];
     }
 
@@ -32,24 +32,24 @@ enum OutboxStateEnum: string
         return [
             'in_process' => [
                 'tooltip' => __('In Process'),
-                'class'   => 'text-orange-400',
-                'icon'    => 'fal fa-seedling',
-                'app'     => [
+                'class' => 'text-orange-400',
+                'icon' => 'fal fa-seedling',
+                'app' => [
                     'name' => 'Outbox',
-                ]
+                ],
             ],
-            'active'     => [
+            'active' => [
                 'tooltip' => __('Active'),
-                'icon'    => 'fal fa-broadcast-tower',
-                'class'   => 'text-emerald-500',
-                'color'   => 'emerald',
+                'icon' => 'fal fa-broadcast-tower',
+                'class' => 'text-emerald-500',
+                'color' => 'emerald',
             ],
-            'suspended'  => [
+            'suspended' => [
                 'tooltip' => __('Suspended'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-            ]
+                'icon' => 'fal fa-times',
+                'class' => 'text-red-500',
+                'color' => 'red',
+            ],
         ];
     }
 }

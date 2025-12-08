@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('user_has_pseudo_job_positions', function (Blueprint $table) {
@@ -24,7 +25,6 @@ return new class () extends Migration {
 
             $table->unsignedSmallInteger('organisation_id')->index()->nullable();
             $table->foreign('organisation_id')->references('id')->on('organisations')->onUpdate('cascade')->onDelete('cascade');
-
 
             $table->unsignedSmallInteger('job_position_id')->index()->nullable();
             $table->foreign('job_position_id')->references('id')->on('job_positions')->onUpdate('cascade')->onDelete('cascade');

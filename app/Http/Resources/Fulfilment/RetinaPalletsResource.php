@@ -39,50 +39,50 @@ class RetinaPalletsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                 => $this->id,
-            'slug'               => $this->slug,
-            'reference'          => $this->reference,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'reference' => $this->reference,
             'customer_reference' => $this->customer_reference,
-            'notes'              => (string)$this->notes,
-            'type_icon'          => $this->type->typeIcon()[$this->type->value],
-            'type'               => $this->type,
-            'rental_code'        => $this->rental_code,
-            'rental_name'        => $this->rental_name,
-            'location_code'      => $this->location_code,
-            'status'             => $this->status,
-            'status_label'       => $this->status->labels()[$this->status->value],
-            'status_icon'        => $this->status->statusIcon()[$this->status->value],
+            'notes' => (string) $this->notes,
+            'type_icon' => $this->type->typeIcon()[$this->type->value],
+            'type' => $this->type,
+            'rental_code' => $this->rental_code,
+            'rental_name' => $this->rental_name,
+            'location_code' => $this->location_code,
+            'status' => $this->status,
+            'status_label' => $this->status->labels()[$this->status->value],
+            'status_icon' => $this->status->statusIcon()[$this->status->value],
 
             'incident_report_message' => $this->incident_report->message ?? '-',
-            'stored_items'            => $this->storedItems->map(fn (StoredItem $storedItem) => [
-                'id'         => $storedItem->id,
-                'reference'  => $storedItem->reference,
-                'notes'      => $storedItem->notes,
-                'state'      => $storedItem->state,
+            'stored_items' => $this->storedItems->map(fn (StoredItem $storedItem) => [
+                'id' => $storedItem->id,
+                'reference' => $storedItem->reference,
+                'notes' => $storedItem->notes,
+                'state' => $storedItem->state,
                 'state_icon' => $storedItem->state->stateIcon()[$storedItem->state->value],
-                'quantity'   => (int)$storedItem->pivot->quantity,
+                'quantity' => (int) $storedItem->pivot->quantity,
             ]),
-            'stored_items_quantity'   => (int)$this->storedItems()->sum('quantity'),
-            'updateRoute'             => [
-                'name'       => 'retina.models.pallet.update',
-                'parameters' => $this->id
+            'stored_items_quantity' => (int) $this->storedItems()->sum('quantity'),
+            'updateRoute' => [
+                'name' => 'retina.models.pallet.update',
+                'parameters' => $this->id,
             ],
-            'deleteRoute'             => [
-                'name'       => 'retina.models.pallet.delete',
-                'parameters' => $this->id
+            'deleteRoute' => [
+                'name' => 'retina.models.pallet.delete',
+                'parameters' => $this->id,
             ],
             'deleteFromDeliveryRoute' => [
-                'name'       => 'retina.models.pallet-delivery.pallet.delete',
-                'parameters' => [$this->pallet_delivery_id, $this->id]
+                'name' => 'retina.models.pallet-delivery.pallet.delete',
+                'parameters' => [$this->pallet_delivery_id, $this->id],
             ],
-            'deleteFromReturnRoute'   => [
-                'name'       => 'retina.models.pallet-return.pallet.delete',
-                'parameters' => [$this->pallet_return_id, $this->id]
+            'deleteFromReturnRoute' => [
+                'name' => 'retina.models.pallet-return.pallet.delete',
+                'parameters' => [$this->pallet_return_id, $this->id],
             ],
-            'storeStoredItemRoute'    => [
-                'name'       => 'retina.models.pallet.stored-items.update',
-                'parameters' => [$this->id]
-            ]
+            'storeStoredItemRoute' => [
+                'name' => 'retina.models.pallet.stored-items.update',
+                'parameters' => [$this->id],
+            ],
         ];
     }
 }

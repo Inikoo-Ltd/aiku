@@ -21,8 +21,7 @@ class CleanUserCaches
 
     public string $commandSignature = 'users:clean_cache {--i|id=} {--u|username=}';
 
-
-    public function handle(User $user, array $patterns = null): void
+    public function handle(User $user, ?array $patterns = null): void
     {
         if ($patterns === null) {
             $patterns = ['auth-user:'.$user->id.';*'];
@@ -38,7 +37,6 @@ class CleanUserCaches
         $this->handle($user, ['auth-user:'.$user->id.';*']);
     }
 
-
     public function asCommand(Command $command): int
     {
         $query = DB::table('users')->select('id')->orderBy('id');
@@ -51,7 +49,6 @@ class CleanUserCaches
             $query->where('id', $command->option('id'));
         }
 
-
         $count = $query->count();
 
         $bar = $command->getOutput()->createProgressBar($count);
@@ -62,7 +59,7 @@ class CleanUserCaches
             1000,
             function (Collection $modelsData) use ($bar) {
                 foreach ($modelsData as $modelId) {
-                    $user = (new User());
+                    $user = (new User);
                     $instance = $user->withTrashed()->find($modelId->id);
 
                     $patterns = ['auth-user:'.$user->id.';*'];
@@ -74,10 +71,8 @@ class CleanUserCaches
         );
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
 
         return 0;
     }
-
-
 }

@@ -6,7 +6,6 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
 return [
     'cache' => [
         'varnish' => env('IRIS_VARNISH_ENABLED', false),
@@ -23,6 +22,6 @@ return [
         'webpage' => [
             'ttl' => env('IRIS_WEBPAGE_CACHE_TTL', 3600), // 1 hour in seconds
             'prefix' => env('IRIS_WEBPAGE_CACHE_PREFIX', 'iris_webpage_cache'),
-        ]
+        ],
     ],
 ];

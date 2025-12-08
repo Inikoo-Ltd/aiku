@@ -29,6 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexRetinaBaskets extends RetinaAction
 {
     private CustomerSalesChannel $customerSalesChannel;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -75,6 +76,7 @@ class IndexRetinaBaskets extends RetinaAction
         if ($this->customerSalesChannel->customer_id == $this->customer->id) {
             return true;
         }
+
         return false;
     }
 
@@ -92,30 +94,28 @@ class IndexRetinaBaskets extends RetinaAction
 
         $title = __('Baskets');
 
-
-
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($this->customerSalesChannel),
-                'title'       => $title,
-                'pageHead'    => [
+                'title' => $title,
+                'pageHead' => [
                     'title' => $title,
-                    'icon'  => 'fal fa-shopping-basket',
-                    'afterTitle'    => [
-                        'label'     => '@'.$this->customerSalesChannel->name,
+                    'icon' => 'fal fa-shopping-basket',
+                    'afterTitle' => [
+                        'label' => '@'.$this->customerSalesChannel->name,
                     ],
                 ],
                 'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => ProductTabsEnum::navigation()
+                    'current' => $this->tab,
+                    'navigation' => ProductTabsEnum::navigation(),
                 ],
 
-                'is_show_button_create_order'   => true,
+                'is_show_button_create_order' => true,
 
-                'currency'                  => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
-                'customer_sales_channel'    => CustomerSalesChannelsResourceTOFIX::make($this->customerSalesChannel)->toArray(request()),
-                'data'                      => RetinaOrdersResource::collection($orders)
+                'currency' => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
+                'customer_sales_channel' => CustomerSalesChannelsResourceTOFIX::make($this->customerSalesChannel)->toArray(request()),
+                'data' => RetinaOrdersResource::collection($orders),
             ]
         )->table($this->tableStructure());
     }
@@ -149,17 +149,17 @@ class IndexRetinaBaskets extends RetinaAction
                 ShowRetinaCustomerSalesChannelDashboard::make()->getBreadcrumbs($customerSalesChannel),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
                                 'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
                                 'parameters' => [
-                                    $customerSalesChannel->slug
-                                ]
+                                    $customerSalesChannel->slug,
+                                ],
                             ],
-                            'label'  => __('Baskets'),
-                        ]
-                    ]
+                            'label' => __('Baskets'),
+                        ],
+                    ],
                 ]
             );
     }

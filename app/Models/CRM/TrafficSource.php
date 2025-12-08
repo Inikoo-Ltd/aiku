@@ -34,16 +34,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\CRM\TrafficSourceStat|null $stats
+ *
  * @method static Builder<static>|TrafficSource newModelQuery()
  * @method static Builder<static>|TrafficSource newQuery()
  * @method static Builder<static>|TrafficSource query()
+ *
  * @mixin Eloquent
  */
 class TrafficSource extends Model
 {
-    use InShop;
-    use HasSlug;
     use HasFactory;
+    use HasSlug;
+    use InShop;
 
     protected $guarded = [];
 
@@ -68,7 +70,6 @@ class TrafficSource extends Model
     {
         return $this->hasOne(TrafficSourceStat::class, 'traffic_source_id');
     }
-
 
     public function orders(): MorphToMany
     {

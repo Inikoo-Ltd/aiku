@@ -25,14 +25,14 @@ class GroupHydrateSalesMetrics implements ShouldBeUnique
 
     public function getJobUniqueId(Group $group, Carbon $date): string
     {
-        return $group->id . '-' . $date->format('YmdHis');
+        return $group->id.'-'.$date->format('YmdHis');
     }
 
     public function asCommand(Command $command): void
     {
         $group = Group::where('slug', $command->argument('group'))->first();
 
-        if (!$group) {
+        if (! $group) {
             return;
         }
 
@@ -44,13 +44,13 @@ class GroupHydrateSalesMetrics implements ShouldBeUnique
     public function handle(Group $group, Carbon $date): void
     {
         $dayStart = $date->copy()->startOfDay();
-        $dayEnd   = $date->copy()->endOfDay();
+        $dayEnd = $date->copy()->endOfDay();
 
         $metrics = $this->getSalesMetrics([
             'context' => ['group_id' => $group->id],
-            'start'   => $dayStart,
-            'end'     => $dayEnd,
-            'fields'  => [
+            'start' => $dayStart,
+            'end' => $dayEnd,
+            'fields' => [
                 'invoices',
                 'refunds',
                 'orders',
@@ -58,14 +58,14 @@ class GroupHydrateSalesMetrics implements ShouldBeUnique
                 'baskets_created_grp_currency',
                 'sales_grp_currency',
                 'revenue_grp_currency',
-                'lost_revenue_grp_currency'
-            ]
+                'lost_revenue_grp_currency',
+            ],
         ]);
 
         GroupSalesMetrics::updateOrCreate(
             [
                 'group_id' => $group->id,
-                'date'     => $dayStart
+                'date' => $dayStart,
             ],
             $metrics
         );

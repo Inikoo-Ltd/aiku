@@ -15,8 +15,8 @@ enum ClockingTypeEnum: string
     use EnumHelperTrait;
 
     case CLOCKING_MACHINE = 'clocking-machine';
-    case MANUAL           = 'manual';
-    case SELF_CHECK       = 'self-check';
-    case SYSTEM           = 'system';
+    case MANUAL = 'manual';
+    case SELF_CHECK = 'self-check';
+    case SYSTEM = 'system';
 
 }

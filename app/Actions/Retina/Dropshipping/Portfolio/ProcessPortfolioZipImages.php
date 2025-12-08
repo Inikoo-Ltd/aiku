@@ -18,8 +18,8 @@ class ProcessPortfolioZipImages extends RetinaAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, string $randomString): string
     {
-        $filename   = "portfolio_images_$randomString.zip";
-        $fullPath   = "portfolio_images/$customerSalesChannel->id/$filename";
+        $filename = "portfolio_images_$randomString.zip";
+        $fullPath = "portfolio_images/$customerSalesChannel->id/$filename";
 
         $result = $this->createAndUploadZip($customerSalesChannel, $filename, $fullPath);
 
@@ -27,7 +27,6 @@ class ProcessPortfolioZipImages extends RetinaAction
 
         return $result;
     }
-
 
     private function generateDownloadResponse(string $fullPath): string
     {
@@ -44,7 +43,7 @@ class ProcessPortfolioZipImages extends RetinaAction
                 $filename
             );
 
-            if (!UploadFileToCatalogueIrisR2::run($tempZipArr['file_path'], $fullPath)) {
+            if (! UploadFileToCatalogueIrisR2::run($tempZipArr['file_path'], $fullPath)) {
                 throw new \Exception('Failed to upload zip file to R2');
             }
 
@@ -65,6 +64,4 @@ class ProcessPortfolioZipImages extends RetinaAction
             }
         }
     }
-
-
 }

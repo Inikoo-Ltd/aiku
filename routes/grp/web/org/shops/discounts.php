@@ -6,9 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Discounts\Offer\UI\EditOffer;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Discounts\Offer\UI\ShowOffer;
-use App\Actions\Discounts\Offer\UI\EditOffer;
 use App\Actions\Discounts\Offer\UpdateOffer;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
@@ -18,14 +18,14 @@ use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
-Route::name("campaigns.")->prefix('campaigns')
+Route::name('campaigns.')->prefix('campaigns')
     ->group(function () {
         Route::get('', IndexOfferCampaigns::class)->name('index');
         Route::get('{offerCampaign}', ShowOfferCampaign::class)->name('show');
         Route::get('{offerCampaign}/edit', EditDummy::class)->name('edit');
     });
 
-Route::name("offers.")->prefix('offers')
+Route::name('offers.')->prefix('offers')
     ->group(function () {
         Route::get('', IndexOffers::class)->name('index');
         Route::get('create', CreateDummy::class)->name('create');

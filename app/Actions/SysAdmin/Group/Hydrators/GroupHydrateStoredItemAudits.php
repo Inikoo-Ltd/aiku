@@ -27,15 +27,14 @@ class GroupHydrateStoredItemAudits implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
         $stats = [
-            'number_stored_item_audits' => StoredItemAudit::where('group_id', $group->id)->count()
+            'number_stored_item_audits' => StoredItemAudit::where('group_id', $group->id)->count(),
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'stored_item_audits',
+            model: 'stored_item_audits',
             field: 'state',
             enum: StoredItemAuditStateEnum::class,
             models: StoredItemAudit::class,

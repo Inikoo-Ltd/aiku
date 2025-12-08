@@ -41,10 +41,10 @@ return [
             'api_key' => 'ollama',
             'api_url' => env('OLLAMA_API_URL', 'http://10.0.0.100:11435/api/'),
             'models' => [
-                //@see https://github.com/ollama/ollama/blob/main/docs/openai.md
+                // @see https://github.com/ollama/ollama/blob/main/docs/openai.md
                 'completion_model' => env('OLLAMA_COMPLETION_MODEL', 'llama3.2:3b'),
                 'embedding_model' => env('OLLAMA_EMBEDDING_MODEL', 'nomic-embed-text'),
-                'chat_output_model' => env('OLLAMA_COMPLETION_MODEL', 'llama3.2:3b'), //this is good to use other systems for better repsonses to people in chat
+                'chat_output_model' => env('OLLAMA_COMPLETION_MODEL', 'llama3.2:3b'), // this is good to use other systems for better repsonses to people in chat
             ],
         ],
     ],

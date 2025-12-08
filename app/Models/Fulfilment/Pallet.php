@@ -100,6 +100,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
+ *
  * @method static \Database\Factories\Fulfilment\PalletFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet locationId($located)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet newModelQuery()
@@ -108,42 +109,44 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Pallet extends Model implements Auditable
 {
-    use HasSlug;
-    use SoftDeletes;
     use HasFactory;
-    use HasUniversalSearch;
-    use HasRetinaSearch;
-    use InFulfilmentCustomer;
     use HasHistory;
+    use HasRetinaSearch;
+    use HasSlug;
+    use HasUniversalSearch;
+    use InFulfilmentCustomer;
+    use SoftDeletes;
 
     protected $guarded = [];
+
     protected $casts = [
-        'data'                    => 'array',
-        'incident_report'         => 'object',
-        'state'                   => PalletStateEnum::class,
-        'status'                  => PalletStatusEnum::class,
-        'type'                    => PalletTypeEnum::class,
-        'set_as_not_received_at'  => 'datetime',
-        'received_at'             => 'datetime',
-        'booking_in_at'           => 'datetime',
-        'booked_in_at'            => 'datetime',
-        'storing_at'              => 'datetime',
+        'data' => 'array',
+        'incident_report' => 'object',
+        'state' => PalletStateEnum::class,
+        'status' => PalletStatusEnum::class,
+        'type' => PalletTypeEnum::class,
+        'set_as_not_received_at' => 'datetime',
+        'received_at' => 'datetime',
+        'booking_in_at' => 'datetime',
+        'booked_in_at' => 'datetime',
+        'storing_at' => 'datetime',
         'requested_for_return_at' => 'datetime',
-        'picking_at'              => 'datetime',
-        'picked_at'               => 'datetime',
-        'set_as_incident_at'      => 'datetime',
-        'dispatched_at'           => 'datetime',
+        'picking_at' => 'datetime',
+        'picked_at' => 'datetime',
+        'set_as_incident_at' => 'datetime',
+        'dispatched_at' => 'datetime',
 
     ];
 
     protected $attributes = [
-        'data'            => '{}',
+        'data' => '{}',
         'incident_report' => '{}',
-        'notes'           => '',
+        'notes' => '',
     ];
 
     public function generateTags(): array
@@ -157,7 +160,7 @@ class Pallet extends Model implements Auditable
         'status',
         'state',
         'type',
-        'notes'
+        'notes',
     ];
 
     public function getRouteKeyName(): string
@@ -229,11 +232,10 @@ class Pallet extends Model implements Auditable
         return DB::table('pallet_stored_items')
             ->leftJoin('stored_items', 'stored_items.id', '=', 'pallet_stored_items.stored_item_id')
 
-
             ->leftJoin('stored_item_audit_deltas', function ($join) use ($palletID, $storedItemAuditId) {
                 $join->on('pallet_stored_items.stored_item_id', '=', 'stored_item_audit_deltas.stored_item_id')
                     ->where('stored_item_audit_deltas.stored_item_audit_id', '=', $storedItemAuditId)
-                  ->where('stored_item_audit_deltas.pallet_id', '=', $palletID);
+                    ->where('stored_item_audit_deltas.pallet_id', '=', $palletID);
             })
 
             ->select(
@@ -248,7 +250,6 @@ class Pallet extends Model implements Auditable
                 'pallet_stored_items.pallet_id as pallet_id'
             )->orderBy('stored_items.reference');
     }
-
 
     public function getEditNewStoredItemDeltasQuery(int $palletID): Builder
     {
@@ -271,7 +272,6 @@ class Pallet extends Model implements Auditable
             )->orderBy('stored_item_audit_deltas.created_at');
     }
 
-
     public function palletDelivery(): BelongsTo
     {
         return $this->belongsTo(PalletDelivery::class);
@@ -291,5 +291,4 @@ class Pallet extends Model implements Auditable
     {
         return $this->belongsTo(RentalAgreementClause::class);
     }
-
 }

@@ -27,7 +27,7 @@ class FetchRetinaFulfilmentCustomerClientFromShopify extends RetinaAction
     {
         $response = $shopifyUser->api()->getRestClient()->request('GET', 'admin/api/2024-07/customers.json');
 
-        if (!$response['errors']) {
+        if (! $response['errors']) {
             foreach ($response['body']['customers'] as $customer) {
                 $customer = $customer->toArray();
                 $address = Arr::get($customer, 'default_address', []);

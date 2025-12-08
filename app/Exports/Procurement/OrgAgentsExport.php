@@ -16,14 +16,14 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class OrgAgentsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
+class OrgAgentsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function query(): Relation|Agent|Builder
     {
         return Agent::query();
     }
 
-    /** @var \App\Models\SupplyChain\Agent $row */
+    /** @var \App\Models\SupplyChain\Agent */
     public function map($row): array
     {
         return [
@@ -36,7 +36,7 @@ class OrgAgentsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             $row->contact_name,
             $row->currency->code,
             $row->location,
-            $row->created_at
+            $row->created_at,
         ];
     }
 
@@ -52,7 +52,7 @@ class OrgAgentsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             'Contact Name',
             'Currency',
             'Location',
-            'Created At'
+            'Created At',
         ];
     }
 }

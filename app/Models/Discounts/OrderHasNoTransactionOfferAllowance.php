@@ -37,16 +37,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Discounts\OfferAllowance $offerAllowance
  * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
  * @property-read Order $order
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHasNoTransactionOfferAllowance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHasNoTransactionOfferAllowance newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHasNoTransactionOfferAllowance query()
+ *
  * @mixin \Eloquent
  */
 class OrderHasNoTransactionOfferAllowance extends Model
 {
     protected $casts = [
-        'data'            => 'array',
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
@@ -75,5 +77,4 @@ class OrderHasNoTransactionOfferAllowance extends Model
     {
         return $this->belongsTo(OfferAllowance::class);
     }
-
 }

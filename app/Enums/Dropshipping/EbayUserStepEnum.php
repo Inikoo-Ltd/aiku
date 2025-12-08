@@ -25,7 +25,7 @@ enum EbayUserStepEnum: string
             self::NAME->value => __('Name'),
             self::MARKETPLACE->value => __('Marketplace'),
             self::AUTH->value => __('Auth'),
-            self::COMPLETED->value => __('Completed')
+            self::COMPLETED->value => __('Completed'),
         ];
     }
 }

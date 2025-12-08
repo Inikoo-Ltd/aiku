@@ -11,8 +11,8 @@ namespace App\Http\Resources\Web;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Helpers\Media;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class WebBlockFamilyResource extends JsonResource
 {
@@ -24,27 +24,25 @@ class WebBlockFamilyResource extends JsonResource
         $family = $this;
 
         $imageSources = null;
-        $media        = Media::find($family->image_id);
+        $media = Media::find($family->image_id);
         if ($media) {
-            $width  = 0;
+            $width = 0;
             $height = 0;
 
-
-            $image        = $media->getImage()->resize($width, $height);
+            $image = $media->getImage()->resize($width, $height);
             $imageSources = GetPictureSources::run($image);
         }
 
-
         return [
-            'slug'              => $family->slug,
-            'code'              => $family->code,
-            'name'              => $family->name,
-            'description'       => $family->description,
+            'slug' => $family->slug,
+            'code' => $family->code,
+            'name' => $family->name,
+            'description' => $family->description,
             'description_title' => $family->description_title,
             'description_extra' => $family->description_extra,
-            'id'                => $family->id,
-            'image'             => $imageSources,
-            'url'               => $family->webpage->url
+            'id' => $family->id,
+            'image' => $imageSources,
+            'url' => $family->webpage->url,
         ];
     }
 }

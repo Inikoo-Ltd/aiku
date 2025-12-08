@@ -36,16 +36,16 @@ class CreateAnnouncement extends OrgAction
         $fields = [];
 
         $fields[] = [
-            'title'  => '',
+            'title' => '',
             'fields' => [
                 'name' => [
-                    'type'        => 'input',
-                    'label'       => __('Name'),
+                    'type' => 'input',
+                    'label' => __('Name'),
                     'placeholder' => __('Name for new announcement'),
-                    'required'    => true,
-                    'value'       => '',
+                    'required' => true,
+                    'value' => '',
                 ],
-            ]
+            ],
         ];
 
         return Inertia::render(
@@ -55,31 +55,31 @@ class CreateAnnouncement extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new announcement'),
-                'pageHead'    => [
-                    'model'   => __('Announcement'),
-                    'icon'    => ['fal', 'fa-megaphone'],
-                    'title'   => __('Create'),
+                'title' => __('new announcement'),
+                'pageHead' => [
+                    'model' => __('Announcement'),
+                    'icon' => ['fal', 'fa-megaphone'],
+                    'title' => __('Create'),
                     'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'cancel',
                             'route' => [
-                                'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
-                    ]
-                ],
-                'formData'    => [
-                    'blueprint' => $fields,
-                    'route'     => [
-                                'name'       => 'grp.models.shop.website.announcement.store',
-                                'parameters' => [
-                                    'shop' => $parent->shop_id,
-                                    'website' => $parent->id,
-                                ]
+                                'name' => preg_replace('/create$/', 'index', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
+                        ],
+                    ],
+                ],
+                'formData' => [
+                    'blueprint' => $fields,
+                    'route' => [
+                        'name' => 'grp.models.shop.website.announcement.store',
+                        'parameters' => [
+                            'shop' => $parent->shop_id,
+                            'website' => $parent->id,
+                        ],
+                    ],
 
                 ],
             ]
@@ -95,14 +95,12 @@ class CreateAnnouncement extends OrgAction
             ),
             [
                 [
-                    'type'          => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __("creating banner"),
-                    ]
-                ]
+                        'label' => __('creating banner'),
+                    ],
+                ],
             ]
         );
     }
-
-
 }

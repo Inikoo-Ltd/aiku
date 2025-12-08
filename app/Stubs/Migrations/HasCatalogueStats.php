@@ -42,7 +42,6 @@ trait HasCatalogueStats
         return $table;
     }
 
-
     public function productVariantFields(Blueprint $table): Blueprint
     {
         $table->unsignedInteger('number_product_variants')->default(0);
@@ -73,10 +72,9 @@ trait HasCatalogueStats
         foreach (ProductCategoryStateEnum::cases() as $departmentState) {
             $table->unsignedInteger('number_departments_state_'.$departmentState->snake())->default(0);
         }
+
         return $table;
     }
-
-
 
     public function topSellersStats(Blueprint $table): Blueprint
     {
@@ -96,7 +94,6 @@ trait HasCatalogueStats
 
         return $table;
     }
-
 
     public function catalogueFamilyStats(Blueprint $table): Blueprint
     {
@@ -130,7 +127,6 @@ trait HasCatalogueStats
         foreach (AssetStateEnum::cases() as $case) {
             $table->unsignedInteger('number_assets_state_'.$case->snake())->default(0);
         }
-
 
         $table->unsignedInteger('number_assets_type_product')->default(0);
         $table->unsignedInteger('number_assets_type_service')->default(0);
@@ -201,10 +197,4 @@ trait HasCatalogueStats
 
         return $table;
     }
-
-
-
-
-
-
 }

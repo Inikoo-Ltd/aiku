@@ -17,30 +17,30 @@ enum PalletTabsEnum: string
     use EnumHelperTrait;
     use HasTabsWithQuantity;
 
-    case SHOWCASE     = 'showcase';
+    case SHOWCASE = 'showcase';
     case STORED_ITEMS = 'stored_items';
-    case MOVEMENTS      = 'movements';
-    case HISTORY      = 'history';
+    case MOVEMENTS = 'movements';
+    case HISTORY = 'history';
 
     public function blueprint(Pallet $pallet): array
     {
         return match ($this) {
             PalletTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fas fa-info-circle',
+                'icon' => 'fas fa-info-circle',
             ],
             PalletTabsEnum::STORED_ITEMS => [
-                'title' => __("Customer's SKUs"). " ({$pallet->number_stored_items})",
-                'icon'  => 'fal fa-narwhal',
+                'title' => __("Customer's SKUs")." ({$pallet->number_stored_items})",
+                'icon' => 'fal fa-narwhal',
             ],
             PalletTabsEnum::MOVEMENTS => [
                 'title' => __('SKU movements'),
-                'icon'  => 'fal fa-exchange',
+                'icon' => 'fal fa-exchange',
             ],
             PalletTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ]
         };

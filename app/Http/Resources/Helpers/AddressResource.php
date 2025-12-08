@@ -24,36 +24,34 @@ class AddressResource extends JsonResource
         /** @var Address $address */
         $address = $this;
 
-        if (!$this->resource) {
+        if (! $this->resource) {
             return [];
         }
 
-
         return [
-            'id'                  => $address->id,
-            'address_line_1'      => $address->address_line_1,
-            'address_line_2'      => $address->address_line_2,
-            'sorting_code'        => $address->sorting_code,
-            'postal_code'         => $address->postal_code,
-            'locality'            => $address->locality,
-            'dependent_locality'  => $address->dependent_locality,
+            'id' => $address->id,
+            'address_line_1' => $address->address_line_1,
+            'address_line_2' => $address->address_line_2,
+            'sorting_code' => $address->sorting_code,
+            'postal_code' => $address->postal_code,
+            'locality' => $address->locality,
+            'dependent_locality' => $address->dependent_locality,
             'administrative_area' => $address->administrative_area,
-            'country_code'        => $address->country_code,
-            'country_id'          => $address->country_id,
-            'checksum'            => $address->checksum,
-            'created_at'          => $address->created_at,
-            'updated_at'          => $address->updated_at,
-            'country'             => $this->whenLoaded(
+            'country_code' => $address->country_code,
+            'country_id' => $address->country_id,
+            'checksum' => $address->checksum,
+            'created_at' => $address->created_at,
+            'updated_at' => $address->updated_at,
+            'country' => $this->whenLoaded(
                 'country',
                 CountryResource::make($address->country)
             ),
-            'formatted_address'   => GetFormattedAddress::run($address),
-            'label'               => $address->whenPivotLoadedAs('pivot', 'model_has_addresses', function () {
+            'formatted_address' => GetFormattedAddress::run($address),
+            'label' => $address->whenPivotLoadedAs('pivot', 'model_has_addresses', function () {
                 return $this->pivot->label;
             }),
-            'can_edit'            => $address->can_edit ?? null,
-            'can_delete'          => $address->can_delete ?? null,
+            'can_edit' => $address->can_edit ?? null,
+            'can_delete' => $address->can_delete ?? null,
         ];
     }
-
 }

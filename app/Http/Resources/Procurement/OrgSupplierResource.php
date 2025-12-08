@@ -19,11 +19,11 @@ class OrgSupplierResource extends JsonResource
         $orgSupplier = $this;
 
         return [
-            'code'                     => $orgSupplier->supplier->code,
-            'name'                     => $orgSupplier->supplier->name,
-            'contact_name'             => $orgSupplier->supplier->contact_name,
-            'company_name'             => $orgSupplier->supplier->company_name,
-            'email'                    => $orgSupplier->supplier->email,
+            'code' => $orgSupplier->supplier->code,
+            'name' => $orgSupplier->supplier->name,
+            'contact_name' => $orgSupplier->supplier->contact_name,
+            'company_name' => $orgSupplier->supplier->company_name,
+            'email' => $orgSupplier->supplier->email,
         ];
     }
 }

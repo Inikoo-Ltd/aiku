@@ -30,9 +30,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read Stock|null $stock
  * @property-read StockFamily|null $stockFamily
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSessionItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSessionItem newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSessionItem query()
+ *
  * @mixin \Eloquent
  */
 class PickingSessionItem extends Model

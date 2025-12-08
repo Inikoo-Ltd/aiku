@@ -19,7 +19,6 @@ class PrepareAuroraInstance
 {
     use AsAction;
 
-
     public string $commandSignature = 'fetch:prepare_aurora {token} {organisation}';
 
     public function getCommandDescription(): string
@@ -27,13 +26,13 @@ class PrepareAuroraInstance
         return 'Save token and aiku url in aurora database.';
     }
 
-
     public function asCommand(Command $command): int
     {
         try {
             $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
         } catch (Exception) {
             $command->error('Organisation not found');
+
             return 1;
         }
         $aurora_db = Arr::get($organisation->data, 'source.aurora_db');
@@ -53,7 +52,6 @@ class PrepareAuroraInstance
                     ->update(['aiku_url' => (app()->isLocal() ? 'http://' : 'https://').$command->argument('organisation').'.'.config('app.domain')]);
             }
         }
-
 
         return 0;
     }

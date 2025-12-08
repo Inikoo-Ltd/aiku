@@ -16,10 +16,9 @@ use App\Models\Web\Webpage;
 
 class UpdateWebpageContent extends OrgAction
 {
+    use WebpageContentManagement;
     use WithActionUpdate;
     use WithWebEditAuthorisation;
-    use WebpageContentManagement;
-
 
     public function handle(Webpage $webpage): Webpage
     {
@@ -33,36 +32,33 @@ class UpdateWebpageContent extends OrgAction
                 'sha256',
                 serialize(
                     [
-                        'show'   => $webBlock->pivot->show,
-                        'in'     => $webBlock->pivot->show_logged_in,
-                        'out'    => $webBlock->pivot->show_logged_out,
+                        'show' => $webBlock->pivot->show,
+                        'in' => $webBlock->pivot->show_logged_in,
+                        'out' => $webBlock->pivot->show_logged_out,
                         'layout' => $webBlock->layout,
-                        'data'   => $webBlock->data,
+                        'data' => $webBlock->data,
                     ]
                 )
             );
 
-
             $layout['web_blocks'][] = [
-                'id'         => $webBlock->pivot->id,
-                'name'       => $webBlock->webBlockType->name,
-                'show'       => $webBlock->pivot->show,
-                'type'       => $webBlock->webBlockType->code,
+                'id' => $webBlock->pivot->id,
+                'name' => $webBlock->webBlockType->name,
+                'show' => $webBlock->pivot->show,
+                'type' => $webBlock->webBlockType->code,
                 'visibility' => ['in' => $webBlock->pivot->show_logged_in, 'out' => $webBlock->pivot->show_logged_out],
-                'web_block'  => WebBlockResource::make($webBlock)->getArray(),
+                'web_block' => WebBlockResource::make($webBlock)->getArray(),
 
             ];
         }
         $fingerprintData = hash('sha256', $fingerprintData);
 
-
         $snapshot->update(
             [
-                'layout'   => $layout,
+                'layout' => $layout,
                 'checksum' => $fingerprintData,
             ]
         );
-
 
         $isDirty = true;
 
@@ -72,13 +68,10 @@ class UpdateWebpageContent extends OrgAction
 
         $webpage->update(
             [
-                'is_dirty' => $isDirty
+                'is_dirty' => $isDirty,
             ]
         );
 
-
         return $webpage;
     }
-
-
 }

@@ -29,8 +29,8 @@ trait WithChargeTransactions
             $charge->historicAsset,
             [
                 'quantity_ordered' => 1,
-                'gross_amount'     => $chargeAmount,
-                'net_amount'       => $chargeAmount,
+                'gross_amount' => $chargeAmount,
+                'net_amount' => $chargeAmount,
             ],
             false
         );
@@ -44,11 +44,11 @@ trait WithChargeTransactions
         return UpdateTransaction::run(
             $transaction,
             [
-                'model_id'          => $charge->id,
-                'asset_id'          => $charge->asset_id,
+                'model_id' => $charge->id,
+                'asset_id' => $charge->asset_id,
                 'historic_asset_id' => $charge->historicAsset->id,
-                'gross_amount'      => $chargeAmount ?? 0,
-                'net_amount'        => $chargeAmount ?? 0,
+                'gross_amount' => $chargeAmount ?? 0,
+                'net_amount' => $chargeAmount ?? 0,
             ],
             false
         );

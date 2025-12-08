@@ -28,6 +28,4 @@ class ReindexBannerSearch
     {
         BannerRecordSearch::run($banner);
     }
-
-
 }

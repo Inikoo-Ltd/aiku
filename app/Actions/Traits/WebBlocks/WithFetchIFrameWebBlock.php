@@ -13,9 +13,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 trait WithFetchIFrameWebBlock
 {
     use AsAction;
+
     public function processIFrameData($auroraBlock): array
     {
-        data_set($layout, "data.fieldValue.link", "https://" . $auroraBlock["src"]);
+        data_set($layout, 'data.fieldValue.link', 'https://'.$auroraBlock['src']);
+
         return $layout;
     }
 }

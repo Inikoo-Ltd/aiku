@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('media', function (Blueprint $table) {
@@ -39,17 +40,14 @@ return new class () extends Migration {
             $table->json('generated_conversions');
             $table->json('responsive_images');
 
-
             $table->unsignedSmallInteger('multiplicity')->index()->default(1);
             $table->unsignedSmallInteger('usage')->index()->default(1);
             $table->boolean('is_animated')->default(false);
             $table->unsignedInteger('order_column')->nullable()->index();
             $table->nullableTimestamps();
-            $table->index(['model_type','model_id']);
-
+            $table->index(['model_type', 'model_id']);
 
         });
-
 
         Schema::table('groups', function (Blueprint $table) {
             $table->foreign('image_id')->references('id')->on('media');
@@ -82,8 +80,6 @@ return new class () extends Migration {
         Schema::table('master_assets', function (Blueprint $table) {
             $table->foreign('image_id')->references('id')->on('media');
         });
-
-
 
     }
 

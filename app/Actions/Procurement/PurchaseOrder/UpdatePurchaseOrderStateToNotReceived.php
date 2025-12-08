@@ -20,20 +20,16 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdatePurchaseOrderStateToNotReceived extends OrgAction
 {
-    use WithActionUpdate;
     use AsAction;
     use HasPurchaseOrderHydrators;
+    use WithActionUpdate;
 
-
-    /**
-     * @var \App\Models\Procurement\PurchaseOrder
-     */
     private PurchaseOrder $purchaseOrder;
 
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
         $data = [
-            'state' => PurchaseOrderStateEnum::NOT_RECEIVED
+            'state' => PurchaseOrderStateEnum::NOT_RECEIVED,
         ];
 
         $purchaseOrder->purchaseOrderTransactions()->update($data);
@@ -56,13 +52,12 @@ class UpdatePurchaseOrderStateToNotReceived extends OrgAction
 
     public function action(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
-        $this->asAction      = true;
+        $this->asAction = true;
         $this->purchaseOrder = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, []);
 
         return $this->handle($purchaseOrder);
     }
-
 
     public function asController(PurchaseOrder $purchaseOrder): PurchaseOrder
     {

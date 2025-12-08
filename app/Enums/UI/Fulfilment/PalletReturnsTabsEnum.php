@@ -17,21 +17,21 @@ enum PalletReturnsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case RETURNS        = 'returns';
-    case UPLOADS       = 'uploads';
+    case RETURNS = 'returns';
+    case UPLOADS = 'uploads';
 
     public function blueprint(): array
     {
         return match ($this) {
             PalletReturnsTabsEnum::UPLOADS => [
                 'title' => __('uploads'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             PalletReturnsTabsEnum::RETURNS => [
-                'title'     => __("returns"),
-                'icon'      => 'fal fa-sign-out-alt',
+                'title' => __('returns'),
+                'icon' => 'fal fa-sign-out-alt',
             ],
         };
     }

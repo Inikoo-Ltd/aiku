@@ -15,7 +15,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 trait WithFetchSeeAlsoWebBlock
 {
     use AsAction;
-    public function processSeeAlsoData(): array|null
+
+    public function processSeeAlsoData(): ?array
     {
         return null;
     }

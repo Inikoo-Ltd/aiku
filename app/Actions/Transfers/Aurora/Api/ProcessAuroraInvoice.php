@@ -18,10 +18,8 @@ class ProcessAuroraInvoice extends OrgAction
 {
     use WithProcessAurora;
 
-
     public function __construct()
     {
         $this->fetcher = FetchAuroraInvoices::class;
     }
-
 }

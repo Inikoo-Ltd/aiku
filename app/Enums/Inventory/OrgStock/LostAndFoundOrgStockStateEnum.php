@@ -14,6 +14,6 @@ enum LostAndFoundOrgStockStateEnum: string
 {
     use EnumHelperTrait;
 
-    case LOST  = 'lost';
+    case LOST = 'lost';
     case FOUND = 'found';
 }

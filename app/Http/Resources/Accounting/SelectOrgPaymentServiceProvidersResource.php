@@ -25,9 +25,8 @@ use Illuminate\Support\Arr;
  * @property int $id
  * @property mixed $org_slug
  * @property mixed $org_code
- *  @property \App\Models\Helpers\Media $media
+ * @property \App\Models\Helpers\Media $media
  * @property \App\Models\SysAdmin\Organisation $organisation
- *
  */
 class SelectOrgPaymentServiceProvidersResource extends JsonResource
 {
@@ -37,7 +36,7 @@ class SelectOrgPaymentServiceProvidersResource extends JsonResource
     {
         $provider = Arr::get(explode('-', $this->code), 1);
 
-        if (!$provider) {
+        if (! $provider) {
             $provider = $this->code;
         }
 
@@ -46,30 +45,30 @@ class SelectOrgPaymentServiceProvidersResource extends JsonResource
         $formData = [
             'blueprint' => [
                 [
-                    'title'  => __('payment account'),
+                    'title' => __('payment account'),
                     'fields' => [
                         'code' => [
-                            'type'     => 'input',
-                            'label'    => __('code'),
+                            'type' => 'input',
+                            'label' => __('code'),
                             'required' => true,
-                         /*    'column'   => '1/2' */
+                            /*    'column'   => '1/2' */
                         ],
                         'name' => [
-                            'type'     => 'input',
-                            'label'    => __('name'),
+                            'type' => 'input',
+                            'label' => __('name'),
                             'required' => true,
-                       /*      'column'   => '1/2' */
+                            /*      'column'   => '1/2' */
                         ],
-                        ...$additionalFields
-                    ]
-                ]
+                        ...$additionalFields,
+                    ],
+                ],
             ],
-            'route'      => [
-                'name'       => "grp.models.org.payment-service-provider-account.store",
+            'route' => [
+                'name' => 'grp.models.org.payment-service-provider-account.store',
                 'parameters' => [
-                    'paymentServiceProvider' => $this->id
-                ]
-            ]
+                    'paymentServiceProvider' => $this->id,
+                ],
+            ],
         ];
 
         if ($this->media && $this->media->isNotEmpty()) {
@@ -79,17 +78,17 @@ class SelectOrgPaymentServiceProvidersResource extends JsonResource
         }
 
         return [
-            'number_payments'             => $this->number_payments,
-            'number_payment_accounts'     => $this->number_payment_accounts,
-            'slug'                        => $this->slug,
-            'org_id'                      => $this->organisation_id,
-            'org_slug'                    => $this->org_slug,
-            'code'                        => $this->code,
-            'org_code'                    => $this->org_code,
-            'name'                        => $this->name,
-            'state'                       => $this->state,
-            'logo'                        => $logo,
-            'formData'                    => $formData
+            'number_payments' => $this->number_payments,
+            'number_payment_accounts' => $this->number_payment_accounts,
+            'slug' => $this->slug,
+            'org_id' => $this->organisation_id,
+            'org_slug' => $this->org_slug,
+            'code' => $this->code,
+            'org_code' => $this->org_code,
+            'name' => $this->name,
+            'state' => $this->state,
+            'logo' => $logo,
+            'formData' => $formData,
         ];
     }
 }

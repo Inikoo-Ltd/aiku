@@ -31,9 +31,7 @@ trait WithStoreOffer
             $status = true;
         }
 
-
         data_set($modelData, 'status', $status);
-
 
         return $modelData;
     }

@@ -22,12 +22,12 @@ class OrganisationApiResource extends JsonResource
         $organisation = $this;
 
         return [
-            'id'    => $organisation->id,
-            'slug'  => $organisation->slug,
-            'code'  => $organisation->code,
-            'name'  => $organisation->name,
-            'type'  => $organisation->type,
-            'logo'  => $organisation->imageSources(48, 48),
+            'id' => $organisation->id,
+            'slug' => $organisation->slug,
+            'code' => $organisation->code,
+            'name' => $organisation->name,
+            'type' => $organisation->type,
+            'logo' => $organisation->imageSources(48, 48),
         ];
     }
 }

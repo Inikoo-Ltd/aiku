@@ -21,20 +21,20 @@ trait WithPermissionsPictogram
     public function getPermissionsPictogram(User $user, $permissionsGroupData, $jobPositionsOrganisationsData): array
     {
         return [
-            'organisation_list'    => OrganisationsResource::collection($user->group->organisations),
-            "current_organisation" => $user->getOrganisation(),
-            'options'              => Organisation::get()->flatMap(function (Organisation $organisation) {
+            'organisation_list' => OrganisationsResource::collection($user->group->organisations),
+            'current_organisation' => $user->getOrganisation(),
+            'options' => Organisation::get()->flatMap(function (Organisation $organisation) {
                 return [
                     $organisation->slug => [
-                        'positions'   => JobPositionResource::collection($organisation->jobPositions),
-                        'shops'       => \App\Http\Resources\Catalogue\ShopResource::collection($organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
+                        'positions' => JobPositionResource::collection($organisation->jobPositions),
+                        'shops' => \App\Http\Resources\Catalogue\ShopResource::collection($organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
                         'fulfilments' => ShopResource::collection($organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
-                        'warehouses'  => WarehouseResource::collection($organisation->warehouses),
-                    ]
+                        'warehouses' => WarehouseResource::collection($organisation->warehouses),
+                    ],
                 ];
             })->toArray(),
-            'group'                => $permissionsGroupData,
-            'organisations'        => $jobPositionsOrganisationsData
+            'group' => $permissionsGroupData,
+            'organisations' => $jobPositionsOrganisationsData,
         ];
     }
 }

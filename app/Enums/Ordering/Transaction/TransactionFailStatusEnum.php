@@ -14,10 +14,9 @@ enum TransactionFailStatusEnum: string
 {
     use EnumHelperTrait;
 
-
-    case OUT_OF_STOCK  = 'out_of_stock';
+    case OUT_OF_STOCK = 'out_of_stock';
     case NO_AUTHORISED = 'no_authorised';
-    case NOT_FOUND     = 'not_found';
-    case OTHER         = 'other';
+    case NOT_FOUND = 'not_found';
+    case OTHER = 'other';
 
 }

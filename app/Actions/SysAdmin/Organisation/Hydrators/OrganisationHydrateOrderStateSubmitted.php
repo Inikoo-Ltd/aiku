@@ -20,7 +20,6 @@ class OrganisationHydrateOrderStateSubmitted implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-
     public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $organisationID): string
@@ -31,18 +30,16 @@ class OrganisationHydrateOrderStateSubmitted implements ShouldBeUnique
     public function handle(int $organisationID): void
     {
         $organisation = Organisation::find($organisationID);
-        if (!$organisation) {
+        if (! $organisation) {
             return;
         }
         $stats = [
 
-
-            'number_orders_state_submitted'              => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)->count(),
+            'number_orders_state_submitted' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)->count(),
             'orders_state_submitted_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)->sum('org_net_amount'),
             'orders_state_submitted_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)->sum('grp_net_amount'),
 
-
-            'number_orders_state_submitted_paid'              => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'number_orders_state_submitted_paid' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
                 ->count(),
             'orders_state_submitted_paid_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
@@ -53,7 +50,7 @@ class OrganisationHydrateOrderStateSubmitted implements ShouldBeUnique
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
                 ->sum('grp_net_amount'),
 
-            'number_orders_state_submitted_not_paid'              => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'number_orders_state_submitted_not_paid' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
                 ->count(),
             'orders_state_submitted_not_paid_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
@@ -67,6 +64,4 @@ class OrganisationHydrateOrderStateSubmitted implements ShouldBeUnique
 
         $organisation->orderHandlingStats()->update($stats);
     }
-
-
 }

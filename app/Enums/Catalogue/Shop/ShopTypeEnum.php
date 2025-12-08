@@ -14,18 +14,18 @@ enum ShopTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case B2B          = 'b2b';
-    case B2C          = 'b2c';
-    case FULFILMENT   = 'fulfilment';
+    case B2B = 'b2b';
+    case B2C = 'b2c';
+    case FULFILMENT = 'fulfilment';
     case DROPSHIPPING = 'dropshipping';
 
     public static function labels(): array
     {
         return [
-            'b2b'              => __('B2B'),
-            'b2c'              => __('B2C'),
-            'fulfilment'       => __('Fulfilment'),
-            'dropshipping'     => __('Dropshipping')
+            'b2b' => __('B2B'),
+            'b2c' => __('B2C'),
+            'fulfilment' => __('Fulfilment'),
+            'dropshipping' => __('Dropshipping'),
         ];
     }
 }

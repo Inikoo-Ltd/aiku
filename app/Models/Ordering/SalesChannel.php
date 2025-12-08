@@ -39,33 +39,35 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Ordering\SalesChannelStats|null $stats
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class SalesChannel extends Model implements Auditable
 {
-    use HasSlug;
-    use SoftDeletes;
     use HasHistory;
+    use HasSlug;
     use InGroup;
+    use SoftDeletes;
 
     protected $casts = [
-        'type'            => SalesChannelTypeEnum::class,
-        'data'            => 'array',
-        'is_active'       => 'boolean',
-        'fetched_at'      => 'datetime',
+        'type' => SalesChannelTypeEnum::class,
+        'data' => 'array',
+        'is_active' => 'boolean',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
-        'sources'         => 'array'
+        'sources' => 'array',
     ];
 
     protected $attributes = [
-        'data'    => '{}',
-        'sources' => '{}'
+        'data' => '{}',
+        'sources' => '{}',
     ];
 
     protected $guarded = [];
@@ -78,7 +80,7 @@ class SalesChannel extends Model implements Auditable
     protected array $auditInclude = [
         'code',
         'name',
-        'is_active'
+        'is_active',
     ];
 
     public function getRouteKeyName(): string

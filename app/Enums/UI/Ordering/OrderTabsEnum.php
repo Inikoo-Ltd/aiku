@@ -16,23 +16,18 @@ enum OrderTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case TRANSACTIONS                       = 'transactions';
-    case PAYMENTS                    = 'payments';
+    case TRANSACTIONS = 'transactions';
+    case PAYMENTS = 'payments';
     // case DISCOUNTS                   = 'discounts';
-    case INVOICES                    = 'invoices';
-    case DELIVERY_NOTES              = 'delivery_notes';
+    case INVOICES = 'invoices';
+    case DELIVERY_NOTES = 'delivery_notes';
 
     // case HISTORY                     = 'history';
 
-    case ATTACHMENTS                 = 'attachments';
+    case ATTACHMENTS = 'attachments';
 
     // case SENT_EMAILS                 = 'sent_emails';
-    case DISPATCHED_EMAILS           = 'dispatched_emails';
-
-
-
-
-
+    case DISPATCHED_EMAILS = 'dispatched_emails';
 
     public function blueprint(): array
     {
@@ -40,19 +35,19 @@ enum OrderTabsEnum: string
 
             OrderTabsEnum::TRANSACTIONS => [
                 'title' => __('Transactions'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
             OrderTabsEnum::PAYMENTS => [
-                'type'  => 'icon',
+                'type' => 'icon',
                 'align' => 'right',
                 'title' => __('Payments'),
-                'icon'  => 'fal fa-dollar-sign',
+                'icon' => 'fal fa-dollar-sign',
             ],
 
             OrderTabsEnum::DISPATCHED_EMAILS => [
                 'title' => __('Dispatched emails'),
-                'icon'  => 'fal fa-envelope',
-                'type'  => 'icon',
+                'icon' => 'fal fa-envelope',
+                'type' => 'icon',
                 'align' => 'right',
             ],
 
@@ -65,24 +60,24 @@ enum OrderTabsEnum: string
             // ],
             OrderTabsEnum::INVOICES => [
                 'title' => __('Invoices'),
-                'icon'  => 'fal fa-file-invoice-dollar',
-                'type'  => 'icon',
+                'icon' => 'fal fa-file-invoice-dollar',
+                'type' => 'icon',
                 'align' => 'right',
 
             ],
             OrderTabsEnum::DELIVERY_NOTES => [
                 'title' => __('Delivery notes'),
-                'icon'  => 'fal fa-truck',
-                'type'  => 'icon',
+                'icon' => 'fal fa-truck',
+                'type' => 'icon',
                 'align' => 'right',
             ],
             OrderTabsEnum::ATTACHMENTS => [
                 'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
-                'type'  => 'icon',
+                'icon' => 'fal fa-paperclip',
+                'type' => 'icon',
                 'align' => 'right',
             ],
-            //OrderTabsEnum::HISTORY => [
+            // OrderTabsEnum::HISTORY => [
             //     'title' => __('History'),
             //     'icon'  => 'fal fa-clock',
             //     'type'  => 'icon',

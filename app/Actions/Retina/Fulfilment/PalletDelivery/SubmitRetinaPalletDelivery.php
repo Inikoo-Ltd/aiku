@@ -37,14 +37,14 @@ class SubmitRetinaPalletDelivery extends RetinaAction
     {
         // We're not using aiku action because this is only retina stuff
         $modelData['submitted_at'] = now();
-        $modelData['state']        = PalletDeliveryStateEnum::SUBMITTED;
+        $modelData['state'] = PalletDeliveryStateEnum::SUBMITTED;
 
         $palletDelivery = $this->update($palletDelivery, $modelData);
 
         foreach ($palletDelivery->pallets as $pallet) {
             foreach ($pallet->storedItems as $storedItem) {
                 UpdateStoredItem::run($storedItem, [
-                    'state' => StoredItemStateEnum::SUBMITTED->value
+                    'state' => StoredItemStateEnum::SUBMITTED->value,
                 ]);
             }
         }
@@ -87,12 +87,10 @@ class SubmitRetinaPalletDelivery extends RetinaAction
 
     public function action(PalletDelivery $palletDelivery, array $modelData): PalletDelivery
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->palletDelivery = $palletDelivery;
         $this->initialisationFulfilmentActions($palletDelivery->fulfilmentCustomer, $modelData);
 
         return $this->handle($palletDelivery);
     }
-
-
 }

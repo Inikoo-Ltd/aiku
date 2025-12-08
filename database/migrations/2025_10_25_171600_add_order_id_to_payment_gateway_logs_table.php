@@ -10,15 +10,16 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('payment_gateway_logs', function (Blueprint $table) {
-            if (!Schema::hasColumn('payment_gateway_logs', 'order_id')) {
+            if (! Schema::hasColumn('payment_gateway_logs', 'order_id')) {
                 $table->unsignedInteger('order_id')->nullable()->index();
                 $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
             }
-            if (!Schema::hasColumn('payment_gateway_logs', 'gateway_payment_id')) {
+            if (! Schema::hasColumn('payment_gateway_logs', 'gateway_payment_id')) {
                 $table->string('gateway_payment_id')->nullable()->index();
             }
         });

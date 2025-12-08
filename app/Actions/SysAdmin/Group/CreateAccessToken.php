@@ -21,22 +21,21 @@ class CreateAccessToken extends GrpAction
     use AsAction;
     use WithAttributes;
 
-
     public function handle(Group $group, $data): string
     {
         $plainAccessToken = $group->createToken($data['name'], $data['abilities'])->plainTextToken;
 
         GroupHydrateApiTokens::dispatch($group);
+
         return $plainAccessToken;
     }
 
     public string $commandSignature = 'group:access-token {group : group slug} {name} {abilities*}';
 
-
     public function rules(): array
     {
         return [
-            'name'      => ['required', 'string'],
+            'name' => ['required', 'string'],
             'abilities' => ['required', 'array'],
         ];
     }
@@ -44,9 +43,9 @@ class CreateAccessToken extends GrpAction
     public function action(Group $group, array $data): string
     {
         $this->initialisation($group, $data);
+
         return $this->handle($group, $this->validatedData);
     }
-
 
     public function asCommand(Command $command): int
     {
@@ -59,12 +58,11 @@ class CreateAccessToken extends GrpAction
         }
 
         $fields = [
-            'name'      => $command->argument('name'),
+            'name' => $command->argument('name'),
             'abilities' => $command->argument('abilities'),
         ];
 
         $this->initialisation($group, $fields);
-
 
         $token = $this->handle($group, $this->validatedData);
 
@@ -72,6 +70,4 @@ class CreateAccessToken extends GrpAction
 
         return 0;
     }
-
-
 }

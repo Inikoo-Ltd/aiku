@@ -24,10 +24,10 @@ class RetinaPreparingAccount
         ) {
             return Inertia::render('Errors/ErrorInApp', [
                 'error' => [
-                    'code'        => 403,
-                    'title'       => 'We still prepare your account',
-                    'description' => 'please come back shortly.'
-                ]
+                    'code' => 403,
+                    'title' => 'We still prepare your account',
+                    'description' => 'please come back shortly.',
+                ],
             ]);
         }
 

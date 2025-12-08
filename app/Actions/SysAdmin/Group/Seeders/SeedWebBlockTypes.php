@@ -25,7 +25,7 @@ class SeedWebBlockTypes
     {
         foreach (Storage::disk('datasets')->files('web-block-types') as $file) {
             $rawWebBlockTypeData = Storage::disk('datasets')->json($file);
-            $webBlockTypeData    = Arr::only(
+            $webBlockTypeData = Arr::only(
                 $rawWebBlockTypeData,
                 [
                     'scope',
@@ -34,7 +34,7 @@ class SeedWebBlockTypes
                     'category',
                     'fixed',
                     'data',
-                    'website_type'
+                    'website_type',
                 ]
             );
 
@@ -42,35 +42,30 @@ class SeedWebBlockTypes
 
             if (Arr::has($rawWebBlockTypeData, 'icon')) {
                 $additionalData = [
-                    'icon' => Arr::get($rawWebBlockTypeData, 'icon')
+                    'icon' => Arr::get($rawWebBlockTypeData, 'icon'),
                 ];
             }
 
             if (Arr::has($rawWebBlockTypeData, 'component')) {
                 $additionalData = [
-                    'component' => Arr::get($rawWebBlockTypeData, 'component')
+                    'component' => Arr::get($rawWebBlockTypeData, 'component'),
                 ];
             }
-
 
             if ($additionalData != []) {
                 $data = array_merge($webBlockTypeData['data'], $additionalData);
                 data_set($webBlockTypeData, 'data', $data);
             }
 
-
             $code = Arr::get($webBlockTypeData, 'code');
-
 
             $webBlockType = $group->webBlockTypes()->where('code', $code)->first();
             if ($webBlockType) {
-
 
                 $webBlockType = UpdateWebBlockType::run($webBlockType, $webBlockTypeData);
             } else {
                 $webBlockType = StoreWebBlockType::run($group, $webBlockTypeData);
             }
-
 
             $imagePath = 'web-block-types/screenshots/'.$webBlockType->code.'.png';
             if (Storage::disk('datasets')->exists($imagePath)) {

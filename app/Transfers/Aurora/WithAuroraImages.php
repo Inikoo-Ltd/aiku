@@ -37,7 +37,6 @@ trait WithAuroraImages
             ->first();
     }
 
-
     public function fetchImage($auroraImageData): array
     {
         $image_path = sprintf(
@@ -50,19 +49,19 @@ trait WithAuroraImages
         if (file_exists($image_path)) {
             return [
                 'image_path' => $image_path,
-                'filename'   => $auroraImageData->{'Image Filename'},
-                'mime'       => $auroraImageData->{'Image MIME Type'},
-                'checksum'   => $auroraImageData->{'Image File Checksum'},
-                'is_public'  => $auroraImageData->{'Image Subject Is Public'} == 'Yes',
-                'position'   => $auroraImageData->{'Image Subject Order'},
-                'caption'    => $auroraImageData->{'Image Subject Image Caption'},
-                'source_id'  => $this->organisation->id.':'.$auroraImageData->{'Image Subject Key'},
-//                'is_main'    => $auroraImageData->{'Image Subject Is Principal'},
-//                'order'    => $auroraImageData->{'Image Subject Order'},
+                'filename' => $auroraImageData->{'Image Filename'},
+                'mime' => $auroraImageData->{'Image MIME Type'},
+                'checksum' => $auroraImageData->{'Image File Checksum'},
+                'is_public' => $auroraImageData->{'Image Subject Is Public'} == 'Yes',
+                'position' => $auroraImageData->{'Image Subject Order'},
+                'caption' => $auroraImageData->{'Image Subject Image Caption'},
+                'source_id' => $this->organisation->id.':'.$auroraImageData->{'Image Subject Key'},
+                //                'is_main'    => $auroraImageData->{'Image Subject Is Principal'},
+                //                'order'    => $auroraImageData->{'Image Subject Order'},
 
             ];
         } else {
-            //print "Image not found: $image_path\n";
+            // print "Image not found: $image_path\n";
 
             return [];
         }
@@ -80,15 +79,13 @@ trait WithAuroraImages
         if (file_exists($image_path)) {
             return [
                 'image_path' => $image_path,
-                'filename'   => $auroraImageData->{'Image Filename'},
-
+                'filename' => $auroraImageData->{'Image Filename'},
 
             ];
         } else {
-            //print "Image not found: $image_path\n";
+            // print "Image not found: $image_path\n";
 
             return [];
         }
     }
-
 }

@@ -22,13 +22,12 @@ class ArtefactHydrateUniversalSearch
         $artefact->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'          => $artefact->group_id,
-                'organisation_id'   => $artefact->organisation_id,
+                'group_id' => $artefact->group_id,
+                'organisation_id' => $artefact->organisation_id,
                 'organisation_slug' => $artefact->organisation->slug,
-                'sections'          => ['manufacture'],
-                'haystack_tier_1'   => trim($artefact->name.' '.$artefact->code),
+                'sections' => ['manufacture'],
+                'haystack_tier_1' => trim($artefact->name.' '.$artefact->code),
             ]
         );
     }
-
 }

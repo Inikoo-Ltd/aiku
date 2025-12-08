@@ -14,10 +14,8 @@ enum EmailBulkRunTypeEnum: string
 {
     use EnumHelperTrait;
 
-
     case BASKET_LOW_STOCK = 'basket_low_stock';
     case REORDER_REMINDER = 'reorder_reminder';
     case OOS_NOTIFICATION = 'oos_notification';
-
 
 }

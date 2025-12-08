@@ -17,9 +17,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateStateToCreatingStockDelivery
 {
-    use WithActionUpdate;
     use AsAction;
     use HasStockDeliveryHydrators;
+    use WithActionUpdate;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -31,8 +31,8 @@ class UpdateStateToCreatingStockDelivery
         ];
 
         if ($stockDelivery->state == StockDeliveryStateEnum::DISPATCHED) {
-            $data[$stockDelivery->state->value . '_at']    = null;
-            $data['creating_at']                           = now();
+            $data[$stockDelivery->state->value.'_at'] = null;
+            $data['creating_at'] = now();
 
             $stockDelivery = $this->update($stockDelivery, $data);
 

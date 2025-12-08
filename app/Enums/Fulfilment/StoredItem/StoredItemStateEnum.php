@@ -20,56 +20,55 @@ enum StoredItemStateEnum: string
 {
     use EnumHelperTrait;
 
-    case SUBMITTED     = 'submitted';
-    case IN_PROCESS    = 'in_process';
-    case ACTIVE        = 'active';
+    case SUBMITTED = 'submitted';
+    case IN_PROCESS = 'in_process';
+    case ACTIVE = 'active';
     case DISCONTINUING = 'discontinuing';
-    case DISCONTINUED  = 'discontinued';
-
+    case DISCONTINUED = 'discontinued';
 
     public static function labels(): array
     {
         return [
-            'submitted'     => __('Submitted'),
-            'in_process'    => __('In Process'),
-            'active'        => __('Active'),
+            'submitted' => __('Submitted'),
+            'in_process' => __('In Process'),
+            'active' => __('Active'),
             'discontinuing' => __('Discontinuing'),
-            'discontinued'  => __('Discontinued'),
+            'discontinued' => __('Discontinued'),
         ];
     }
 
     public function stateIcon(): array
     {
         return [
-            'submitted'   => [
+            'submitted' => [
                 'tooltip' => __('Submitted'),
-                'icon'    => 'fal fa-share',
-                'class'   => 'text-indigo-500',  // Color for normal icon (Aiku)
-                'color'   => '#7CCE00',  // Color for box (Retina)
+                'icon' => 'fal fa-share',
+                'class' => 'text-indigo-500',  // Color for normal icon (Aiku)
+                'color' => '#7CCE00',  // Color for box (Retina)
             ],
-            'in_process'   => [
+            'in_process' => [
                 'tooltip' => __('In process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-gray-300',  // Color for normal icon (Aiku)
-                'color'   => '#E5E7EB',  // Color for box (Retina)
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-gray-300',  // Color for normal icon (Aiku)
+                'color' => '#E5E7EB',  // Color for box (Retina)
             ],
-            'active'   => [
+            'active' => [
                 'tooltip' => __('Active'),
-                'icon'    => 'fal fa-inventory',
-                'class'   => 'text-green-700',  // Color for normal icon (Aiku)
-                'color'   => '#008236',  // Color for box (Retina)
+                'icon' => 'fal fa-inventory',
+                'class' => 'text-green-700',  // Color for normal icon (Aiku)
+                'color' => '#008236',  // Color for box (Retina)
             ],
-            'discontinuing'   => [
+            'discontinuing' => [
                 'tooltip' => __('Discontinuing'),
-                'icon'    => 'fal fa-sign-out-alt',
-                'class'   => 'text-red-500',  // Color for normal icon (Aiku)
-                'color'   => '#FB2C36',  // Color for box (Retina)
+                'icon' => 'fal fa-sign-out-alt',
+                'class' => 'text-red-500',  // Color for normal icon (Aiku)
+                'color' => '#FB2C36',  // Color for box (Retina)
             ],
-            'discontinued'   => [
+            'discontinued' => [
                 'tooltip' => __('Discontinued'),
-                'icon'    => 'fal fa-ghost',
-                'class'   => 'text-gray-500',  // Color for normal icon (Aiku)
-                'color'   => '#6A7282',  // Color for box (Retina)
+                'icon' => 'fal fa-ghost',
+                'class' => 'text-gray-500',  // Color for normal icon (Aiku)
+                'color' => '#6A7282',  // Color for box (Retina)
             ],
         ];
     }
@@ -88,11 +87,11 @@ enum StoredItemStateEnum: string
         }
 
         return [
-            'submitted'       => $stats?->number_stored_items_in_submitted,
-            'in_process'      => $stats?->number_stored_items_in_process,
-            'active'          => $stats?->number_stored_items_received,
-            'discontinuing'   => $stats?->number_stored_items_booked_in,
-            'discontinued'    => $stats?->number_stored_items_settled
+            'submitted' => $stats?->number_stored_items_in_submitted,
+            'in_process' => $stats?->number_stored_items_in_process,
+            'active' => $stats?->number_stored_items_received,
+            'discontinuing' => $stats?->number_stored_items_booked_in,
+            'discontinued' => $stats?->number_stored_items_settled,
         ];
     }
 }

@@ -19,7 +19,7 @@ trait WithHumanResourcesAuthorisation
         }
 
         if (str_starts_with($request->route()->getName(), 'grp.overview.hr.')) {
-            return $request->user()->authTo("group-overview");
+            return $request->user()->authTo('group-overview');
         }
 
         $this->canEdit = $request->user()->authTo(["human-resources.{$this->organisation->id}.edit", "org-supervisor.{$this->organisation->id}.human-resources"]);

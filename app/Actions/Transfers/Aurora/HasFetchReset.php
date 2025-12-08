@@ -23,8 +23,8 @@ trait HasFetchReset
 
     public function stepTime(): string
     {
-        $rollTime           = microtime(true) - $this->timeStart;
-        $diff               = microtime(true) - $this->timeLastStep;
+        $rollTime = microtime(true) - $this->timeStart;
+        $diff = microtime(true) - $this->timeLastStep;
         $this->timeLastStep = microtime(true);
 
         return "\t".round($rollTime, 2).'s'."\t\t".round($diff, 2).'s';

@@ -31,7 +31,7 @@ class SeedPostRooms extends GrpAction
                 UpdatePostRoom::make()->action(
                     $postRoom,
                     [
-                        'name' => $case->label()
+                        'name' => $case->label(),
                     ]
                 );
             } else {

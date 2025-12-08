@@ -23,7 +23,6 @@ class OrganisationHydrateOrgSuppliers implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
 

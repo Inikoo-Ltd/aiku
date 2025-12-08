@@ -18,40 +18,39 @@ trait WithGuestsSubNavigations
     {
         return [
             [
-                "number"   => $group->sysadminStats->number_guests_status_active,
-                "label"    => __("Active"),
-                "route"     => [
-                    "name"       => "grp.sysadmin.guests.index",
-                    "parameters" => [],
+                'number' => $group->sysadminStats->number_guests_status_active,
+                'label' => __('Active'),
+                'route' => [
+                    'name' => 'grp.sysadmin.guests.index',
+                    'parameters' => [],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-user-circle"],
-                    "tooltip" => __("Active Users"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-user-circle'],
+                    'tooltip' => __('Active Users'),
                 ],
             ],
             [
-                "number"   => $group->sysadminStats->number_guests_status_inactive,
-                "label"    => __("Inactive"),
-                "route"     => [
-                    "name"       => "grp.sysadmin.guests.inactive.index",
-                    "parameters" => [],
+                'number' => $group->sysadminStats->number_guests_status_inactive,
+                'label' => __('Inactive'),
+                'route' => [
+                    'name' => 'grp.sysadmin.guests.inactive.index',
+                    'parameters' => [],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-user-slash"],
-                    "tooltip" => __("Suspended Users"),
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-user-slash'],
+                    'tooltip' => __('Suspended Users'),
                 ],
             ],
 
             [
-                "number"   => $group->sysadminStats->number_guests,
-                "label"    => __("All"),
-                'align'  => 'right',
-                "route"     => [
-                    "name"       => "grp.sysadmin.guests.all.index",
-                    "parameters" => [],
-                ]
+                'number' => $group->sysadminStats->number_guests,
+                'label' => __('All'),
+                'align' => 'right',
+                'route' => [
+                    'name' => 'grp.sysadmin.guests.all.index',
+                    'parameters' => [],
+                ],
             ],
-
 
         ];
     }

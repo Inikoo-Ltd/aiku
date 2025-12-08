@@ -61,17 +61,14 @@ class StoreOrganisation extends GrpAction
         /** @var Address $addressData */
         $addressData = Arr::pull($modelData, 'address');
 
-
         data_set($modelData, 'ulid', Str::ulid());
         data_set($modelData, 'settings.ui.name', Arr::get($modelData, 'name'));
         data_set($modelData, 'colour', GetRandomColour::run());
-
 
         return DB::transaction(function () use ($group, $modelData, $addressData) {
             /** @var Organisation $organisation */
             $organisation = $group->organisations()->create($modelData);
             $organisation->refresh();
-
 
             SetOrganisationLogo::run($organisation);
             SeedOrganisationPermissions::run($organisation);
@@ -84,10 +81,9 @@ class StoreOrganisation extends GrpAction
             StoreOrganisationAddress::make()->action(
                 $organisation,
                 [
-                    'address' => $addressData
+                    'address' => $addressData,
                 ]
             );
-
 
             $superAdmins = $group->users()->with('roles')->get()->filter(
                 fn ($user) => $user->roles->where('name', 'group-admin')->toArray()
@@ -101,10 +97,9 @@ class StoreOrganisation extends GrpAction
                             'org-admin',
                             $organisation
                         )
-                    )->where('scope_id', $organisation->id)->first()
+                    )->where('scope_id', $organisation->id)->first(),
                 ]);
             }
-
 
             $organisation->refresh();
 
@@ -133,7 +128,6 @@ class StoreOrganisation extends GrpAction
 
             $organisation->outboxUserNotificationIntervals()->create();
             $organisation->outboxTestIntervals()->create();
-
 
             if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
                 $organisation->crmStats()->create();
@@ -168,27 +162,25 @@ class StoreOrganisation extends GrpAction
 
                 $organisation->serialReferences()->create(
                     [
-                        'model'           => SerialReferenceModelEnum::PICKING_SESSION,
+                        'model' => SerialReferenceModelEnum::PICKING_SESSION,
                         'organisation_id' => $organisation->id,
-                        'format'          => 'PS'.$organisation->slug.'-%04d'
+                        'format' => 'PS'.$organisation->slug.'-%04d',
                     ]
                 );
             }
 
-
-
             $organisation->serialReferences()->create(
                 [
-                    'model'           => SerialReferenceModelEnum::PURCHASE_ORDER,
+                    'model' => SerialReferenceModelEnum::PURCHASE_ORDER,
                     'organisation_id' => $organisation->id,
-                    'format'          => 'PO'.$organisation->slug.'-%04d'
+                    'format' => 'PO'.$organisation->slug.'-%04d',
                 ]
             );
             $organisation->serialReferences()->create(
                 [
-                    'model'           => SerialReferenceModelEnum::STOCK_DELIVERY,
+                    'model' => SerialReferenceModelEnum::STOCK_DELIVERY,
                     'organisation_id' => $organisation->id,
-                    'format'          => 'SD'.$organisation->slug.'-%04d'
+                    'format' => 'SD'.$organisation->slug.'-%04d',
                 ]
             );
 
@@ -199,11 +191,10 @@ class StoreOrganisation extends GrpAction
         });
     }
 
-
     public function rules(): array
     {
         return [
-            'code'         => [
+            'code' => [
                 'required',
                 new IUnique(
                     table: 'organisations',
@@ -213,11 +204,11 @@ class StoreOrganisation extends GrpAction
                     ]
                 ),
                 'max:16',
-                'alpha_dash:ascii'
+                'alpha_dash:ascii',
             ],
-            'name'         => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'contact_name' => ['sometimes', 'string', 'max:255'],
-            'email'        => [
+            'email' => [
                 'required',
                 'nullable',
                 'email',
@@ -229,15 +220,15 @@ class StoreOrganisation extends GrpAction
                     ]
                 ),
             ],
-            'phone'        => ['sometimes', 'nullable', new Phone()],
-            'currency_id'  => ['required', 'exists:currencies,id'],
-            'country_id'   => ['required', 'exists:countries,id'],
-            'language_id'  => ['required', 'exists:languages,id'],
-            'timezone_id'  => ['required', 'exists:timezones,id'],
-            'source'       => ['sometimes', 'array'],
-            'type'         => ['required', Rule::enum(OrganisationTypeEnum::class)],
-            'address'      => ['required', new ValidAddress()],
-            'created_at'   => ['sometimes', 'date'],
+            'phone' => ['sometimes', 'nullable', new Phone],
+            'currency_id' => ['required', 'exists:currencies,id'],
+            'country_id' => ['required', 'exists:countries,id'],
+            'language_id' => ['required', 'exists:languages,id'],
+            'timezone_id' => ['required', 'exists:timezones,id'],
+            'source' => ['sometimes', 'array'],
+            'type' => ['required', Rule::enum(OrganisationTypeEnum::class)],
+            'address' => ['required', new ValidAddress],
+            'created_at' => ['sometimes', 'date'],
         ];
     }
 
@@ -328,7 +319,6 @@ class StoreOrganisation extends GrpAction
             $timezone = Timezone::where('name', 'UTC')->firstOrFail();
         }
 
-
         $source = [];
         if ($command->option('source')) {
             if (Str::isJson($command->option('source'))) {
@@ -339,7 +329,6 @@ class StoreOrganisation extends GrpAction
                 return 1;
             }
         }
-
 
         if ($command->option('address')) {
             if (Str::isJson($command->option('address'))) {
@@ -356,15 +345,15 @@ class StoreOrganisation extends GrpAction
         }
 
         $data = [
-            'type'        => $command->argument('type'),
-            'code'        => $command->argument('code'),
-            'name'        => $command->argument('name'),
-            'email'       => $command->argument('email'),
-            'country_id'  => $country->id,
+            'type' => $command->argument('type'),
+            'code' => $command->argument('code'),
+            'name' => $command->argument('name'),
+            'email' => $command->argument('email'),
+            'country_id' => $country->id,
             'currency_id' => $currency->id,
             'language_id' => $language->id,
             'timezone_id' => $timezone->id,
-            'source'      => $source,
+            'source' => $source,
         ];
 
         if ($address) {
@@ -382,6 +371,4 @@ class StoreOrganisation extends GrpAction
 
         return 0;
     }
-
-
 }

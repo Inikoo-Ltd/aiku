@@ -20,29 +20,29 @@ class GetSupplierShowcase
     {
         return [
             'contactCard' => [
-                'company'  => $supplier->company_name,
-                'contact'  => $supplier->contact_name,
-                'website'  => $supplier->contact_website,
-                'email'    => $supplier->email,
-                'phone'    => $supplier->phone,
+                'company' => $supplier->company_name,
+                'contact' => $supplier->contact_name,
+                'website' => $supplier->contact_website,
+                'email' => $supplier->email,
+                'phone' => $supplier->phone,
                 // 'address'  => AddressResource::make($supplier->getAddress('supplier'))->getArray(), Todo: Need Fix
-                'image_id' => $supplier->image_id
+                'image_id' => $supplier->image_id,
             ],
-            'stats'       => [
+            'stats' => [
                 [
                     'label' => __('products'),
-                    'count' => $supplier->stats->number_supplier_products
+                    'count' => $supplier->stats->number_supplier_products,
                 ],
                 [
                     'label' => __('purchase orders'),
-                    'count' => $supplier->stats->number_purchase_orders
+                    'count' => $supplier->stats->number_purchase_orders,
                 ],
                 [
                     'label' => __('deliveries'),
-                    'count' => $supplier->stats->number_stock_deliveries
+                    'count' => $supplier->stats->number_stock_deliveries,
                 ],
 
-            ]
+            ],
         ];
     }
 }

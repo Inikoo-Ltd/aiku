@@ -20,9 +20,9 @@ class OrgPaymentProvidersResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'code'                        => $this->code,
-            'name'                        => $this->name,
-            'state'                       => $this->state,
+            'code' => $this->code,
+            'name' => $this->name,
+            'state' => $this->state,
         ];
     }
 }

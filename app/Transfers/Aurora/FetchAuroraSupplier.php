@@ -22,20 +22,18 @@ class FetchAuroraSupplier extends FetchAurora
             return;
         }
 
-
         $agentData = Db::connection('aurora')->table('Agent Supplier Bridge')
             ->leftJoin('Agent Dimension', 'Agent Supplier Agent Key', '=', 'Agent Key')
             ->select('Agent Code', 'Agent Key')
             ->where('Agent Supplier Supplier Key', $this->auroraModelData->{'Supplier Key'})->first();
-
 
         $agent = null;
         if ($agentData) {
             $agent = $this->parseAgent(
                 $this->organisation->id.':'.$agentData->{'Agent Key'}
             );
-            if (!$agent) {
-                print "agent not found ".$agentData->{'Agent Supplier Agent Key'}." \n";
+            if (! $agent) {
+                echo 'agent not found '.$agentData->{'Agent Supplier Agent Key'}." \n";
 
                 return;
             }
@@ -47,12 +45,11 @@ class FetchAuroraSupplier extends FetchAurora
             $this->parsedData['parent'] = $this->organisation->group;
         }
 
-
         $status = true;
 
         $archivedAt = $this->parseDatetime($this->auroraModelData->{'Supplier Valid To'});
         if ($this->auroraModelData->{'Supplier Type'} == 'Archived') {
-            $status     = false;
+            $status = false;
             $archivedAt = null;
         }
         $phone = $this->auroraModelData->{'Supplier Main Plain Mobile'};
@@ -60,9 +57,8 @@ class FetchAuroraSupplier extends FetchAurora
             $phone = $this->auroraModelData->{'Supplier Main Plain Telephone'};
         }
 
-
         $name = $this->auroraModelData->{'Supplier Nickname'};
-        if (!$name) {
+        if (! $name) {
             $name = $this->auroraModelData->{'Supplier Name'};
         }
 
@@ -73,30 +69,29 @@ class FetchAuroraSupplier extends FetchAurora
         $code = preg_replace('/\s|\?|\.|\'/', '', $code);
         $code = preg_replace('/-?\(.+\)/', '', $code);
 
-
         $scopeType = 'Group';
-        $scopeId   = $this->organisation->group_id;
+        $scopeId = $this->organisation->group_id;
 
         $this->parsedData['supplier'] =
             [
-                'name'            => $name,
-                'code'            => $code,
-                'company_name'    => $this->auroraModelData->{'Supplier Company Name'},
-                'contact_name'    => $this->auroraModelData->{'Supplier Main Contact Name'},
-                'email'           => $this->auroraModelData->{'Supplier Main Plain Email'},
-                'phone'           => $phone,
-                'currency_id'     => $this->parseCurrencyID($this->auroraModelData->{'Supplier Default Currency Code'}),
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Key'},
-                'source_slug'     => $sourceSlug,
-                'created_at'      => $this->parseDatetime($this->auroraModelData->{'Supplier Valid From'}),
-                'deleted_at'      => $archivedAt,
-                'address'         => $this->parseAddress(prefix: 'Supplier Contact', auAddressData: $this->auroraModelData),
-                'archived_at'     => $archivedAt,
-                'status'          => $status,
-                'fetched_at'      => now(),
+                'name' => $name,
+                'code' => $code,
+                'company_name' => $this->auroraModelData->{'Supplier Company Name'},
+                'contact_name' => $this->auroraModelData->{'Supplier Main Contact Name'},
+                'email' => $this->auroraModelData->{'Supplier Main Plain Email'},
+                'phone' => $phone,
+                'currency_id' => $this->parseCurrencyID($this->auroraModelData->{'Supplier Default Currency Code'}),
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Key'},
+                'source_slug' => $sourceSlug,
+                'created_at' => $this->parseDatetime($this->auroraModelData->{'Supplier Valid From'}),
+                'deleted_at' => $archivedAt,
+                'address' => $this->parseAddress(prefix: 'Supplier Contact', auAddressData: $this->auroraModelData),
+                'archived_at' => $archivedAt,
+                'status' => $status,
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
-                'scope_type'      => $scopeType,
-                'scope_id'        => $scopeId
+                'scope_type' => $scopeType,
+                'scope_id' => $scopeId,
             ];
 
         $this->parsePhoto();
@@ -104,7 +99,7 @@ class FetchAuroraSupplier extends FetchAurora
 
     private function parsePhoto(): void
     {
-        $profile_images            = $this->getModelImagesCollection(
+        $profile_images = $this->getModelImagesCollection(
             'Supplier',
             $this->auroraModelData->{'Supplier Key'}
         )->map(function ($auroraImage) {
@@ -113,8 +108,7 @@ class FetchAuroraSupplier extends FetchAurora
         $this->parsedData['photo'] = $profile_images->toArray();
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Supplier Dimension')

@@ -18,6 +18,7 @@ trait WithDispatchingAuthorisation
         if ($this->asAction) {
             return true;
         }
+
         return $request->user()->authTo("dispatching.{$this->warehouse->id}.view");
 
     }

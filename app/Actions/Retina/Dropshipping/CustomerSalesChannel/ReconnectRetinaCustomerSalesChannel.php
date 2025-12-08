@@ -13,8 +13,8 @@ use App\Actions\Dropshipping\Magento\ReAuthorizeMagentoUser;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\MagentoUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -31,7 +31,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
 
         return match ($customerSalesChannel->platform->type) {
             PlatformTypeEnum::SHOPIFY => route('pupil.authenticate', [
-                'shop' => $platformUser->name
+                'shop' => $platformUser->name,
             ]),
             PlatformTypeEnum::WOOCOMMERCE => ReAuthorizeRetinaWooCommerceUser::run($platformUser),
             PlatformTypeEnum::MAGENTO => ReAuthorizeMagentoUser::run($platformUser),

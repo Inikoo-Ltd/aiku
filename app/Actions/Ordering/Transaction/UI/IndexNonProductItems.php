@@ -68,7 +68,7 @@ class IndexNonProductItems extends OrgAction
                 WHEN transactions.model_type = 'ShippingZone' THEN shipping_zones.name
                 ELSE null
             END as asset_name"
-                )
+                ),
             ]);
 
         return $query->get();

@@ -34,13 +34,13 @@ class SettleRetinaOrderWithBalance extends RetinaAction
 
         $paymentAccountShop = PaymentAccountShop::where('shop_id', $order->shop_id)->where('type', 'account')->where('state', 'active')->first();
 
-        if (!$paymentAccountShop) {
+        if (! $paymentAccountShop) {
             return [
                 'success' => false,
-                'reason'  => 'No payment account found',
-                'status'  => PaymentStatusEnum::SUCCESS,
-                'state'   => PaymentStateEnum::COMPLETED,
-                'type'    => PaymentTypeEnum::PAYMENT
+                'reason' => 'No payment account found',
+                'status' => PaymentStatusEnum::SUCCESS,
+                'state' => PaymentStateEnum::COMPLETED,
+                'type' => PaymentTypeEnum::PAYMENT,
 
             ];
         }
@@ -54,26 +54,26 @@ class SettleRetinaOrderWithBalance extends RetinaAction
         }
 
         $paymentData = [
-            'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
-            'amount'                  => $amount,
-            'status'                  => PaymentStatusEnum::SUCCESS,
-            'payment_account_shop_id' => $paymentAccountShop->id
+            'reference' => 'cu-'.$customer->id.'-bal-'.Str::random(10),
+            'amount' => $amount,
+            'status' => PaymentStatusEnum::SUCCESS,
+            'payment_account_shop_id' => $paymentAccountShop->id,
         ];
 
         $order = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData, $amount) {
             $payment = StorePayment::make()->action($customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             AttachPaymentToOrder::make()->action($order, $payment, [
-                'amount' => $amount
+                'amount' => $amount,
             ]);
 
-            $order = UpdateOrder::make()->action(order: $order, modelData:[
-                'payment_amount' => $order->payments->sum('amount')
+            $order = UpdateOrder::make()->action(order: $order, modelData: [
+                'payment_amount' => $order->payments->sum('amount'),
             ], strict: false);
 
             $creditTransactionData = [
-                'amount'     => -$amount,
-                'type'       => CreditTransactionTypeEnum::PAYMENT,
+                'amount' => -$amount,
+                'type' => CreditTransactionTypeEnum::PAYMENT,
                 'payment_id' => $payment->id,
             ];
             StoreCreditTransaction::make()->action($customer, $creditTransactionData);
@@ -83,8 +83,8 @@ class SettleRetinaOrderWithBalance extends RetinaAction
 
         return [
             'success' => true,
-            'reason'  => 'Order paid successfully',
-            'order'   => $order,
+            'reason' => 'Order paid successfully',
+            'order' => $order,
         ];
     }
 }

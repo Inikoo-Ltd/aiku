@@ -25,7 +25,7 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class PalletImportWithStoredItems implements SkipsOnFailure, ToCollection, WithEvents, WithHeadingRow, WithValidation
 {
     use WithImport;
 
@@ -33,8 +33,8 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
 
     public function __construct(PalletDelivery $palletDelivery, Upload $upload)
     {
-        $this->upload            = $upload;
-        $this->scope             = $palletDelivery;
+        $this->upload = $upload;
+        $this->scope = $palletDelivery;
     }
 
     public function storeModel($row, $uploadRecord): void
@@ -53,7 +53,7 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
             'type' => $rowData['pallet_type'],
             'stored_item_reference' => $rowData['sku_reference'],
             'quantity' => $rowData['sku_quantity'],
-            'stored_item_name' => $rowData['sku_name']
+            'stored_item_name' => $rowData['sku_name'],
         ];
 
         $currentCustomerRef = $convertedData['customer_reference'] ?? null;
@@ -68,9 +68,9 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
                 ? $prevPallet->storedItems()->where('stored_item_id', $existingStoredItem->id)->first()
                 : null;
 
-            if ($existingStoredItem && !$existingStoredItemInPallet) {
+            if ($existingStoredItem && ! $existingStoredItemInPallet) {
                 AttachStoredItemToPallet::run($prevPallet, $existingStoredItem, $convertedData['quantity']);
-            } elseif (!$existingStoredItem) {
+            } elseif (! $existingStoredItem) {
                 $storedItemData = [
                     'reference' => $convertedData['stored_item_reference'],
                     'name' => $convertedData['stored_item_name'],
@@ -106,9 +106,9 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
                     ? $pallet->storedItems()->where('stored_item_id', $existingStoredItem->id)->first()
                     : null;
 
-                if ($existingStoredItem && !$existingStoredItemInPallet) {
+                if ($existingStoredItem && ! $existingStoredItemInPallet) {
                     AttachStoredItemToPallet::run($pallet, $existingStoredItem, $convertedData['quantity']);
-                } elseif (!$existingStoredItem) {
+                } elseif (! $existingStoredItem) {
                     $storedItemData = [
                         'reference' => $convertedData['stored_item_reference'],
                         'name' => $convertedData['stored_item_name'],
@@ -119,11 +119,12 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
                 }
 
                 $this->setRecordAsCompleted($uploadRecord);
-            } catch (Exception | \Throwable $e) {
+            } catch (Exception|\Throwable $e) {
                 $this->setRecordAsFailed($uploadRecord, [$e->getMessage()]);
             }
         }
     }
+
     public function rules(): array
     {
         return [
@@ -141,13 +142,12 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
                     ]
                 ),
 
-
             ],
-            'pallet_notes'                 => ['nullable'],
-            'pallet_type'                  => ['nullable'],
+            'pallet_notes' => ['nullable'],
+            'pallet_type' => ['nullable'],
             'sku_reference' => ['nullable'],
-            'sku_quantity'              => ['nullable'],
-            'sku_name'      => ['nullable'],
+            'sku_quantity' => ['nullable'],
+            'sku_name' => ['nullable'],
         ];
     }
 }

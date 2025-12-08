@@ -18,10 +18,10 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Arr;
 
 class ShowHeaderWorkshop extends OrgAction
 {
@@ -31,7 +31,6 @@ class ShowHeaderWorkshop extends OrgAction
 
     private Webpage|Website $parent;
 
-
     public function handle(Website $website): Website
     {
         return $website;
@@ -39,7 +38,7 @@ class ShowHeaderWorkshop extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-        $headerLayout   = Arr::get($website->published_layout, 'header');
+        $headerLayout = Arr::get($website->published_layout, 'header');
         $isHeaderActive = Arr::get($headerLayout, 'status');
 
         return Inertia::render(
@@ -49,68 +48,67 @@ class ShowHeaderWorkshop extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("Website Header's Workshop"),
-                'pageHead'    => [
+                'title' => __("Website Header's Workshop"),
+                'pageHead' => [
                     'subNavigation' => $this->getHeaderSubNavigation($website),
-                    'title'         => __("Header's Workshop"),
-                    'model'         => $website->name,
-                    'icon'          => [
+                    'title' => __("Header's Workshop"),
+                    'model' => $website->name,
+                    'icon' => [
                         'tooltip' => __('Header'),
-                        'icon'    => 'fal fa-browser'
+                        'icon' => 'fal fa-browser',
                     ],
-                    'meta'          => [
+                    'meta' => [
                         [
-                            'key'      => 'website',
-                            'label'    => $website->domain,
+                            'key' => 'website',
+                            'label' => $website->domain,
                             'leftIcon' => [
-                                'icon' => 'fal fa-globe'
-                            ]
-                        ]
+                                'icon' => 'fal fa-globe',
+                            ],
+                        ],
                     ],
-                    'actions'       => $this->getActions($website, 'grp.models.website.publish.header')
+                    'actions' => $this->getActions($website, 'grp.models.website.publish.header'),
 
                 ],
 
                 'uploadImageRoute' => [
-                    'name'       => 'grp.models.website.header.images.store',
+                    'name' => 'grp.models.website.header.images.store',
                     'parameters' => [
-                        'website' => $website->id
-                    ]
+                        'website' => $website->id,
+                    ],
                 ],
 
                 'autosaveRoute' => [
-                    'name'       => 'grp.models.website.autosave.header',
+                    'name' => 'grp.models.website.autosave.header',
                     'parameters' => [
-                        'website' => $website->id
-                    ]
+                        'website' => $website->id,
+                    ],
                 ],
 
-                'route_list'      => [
-                    'upload_image'         => [
-                        'name'       => 'grp.models.website.header.images.store',
+                'route_list' => [
+                    'upload_image' => [
+                        'name' => 'grp.models.website.header.images.store',
                         'parameters' => [
-                            'website' => $website->id
-                        ]
+                            'website' => $website->id,
+                        ],
                     ],
                     'uploaded_images_list' => [
-                        'name'       => 'grp.gallery.uploaded-images.index',
-                        'parameters' => []
+                        'name' => 'grp.gallery.uploaded-images.index',
+                        'parameters' => [],
                     ],
-                    'stock_images_list'    => [
-                        'name'       => 'grp.gallery.stock-images.index',
-                        'parameters' => []
+                    'stock_images_list' => [
+                        'name' => 'grp.gallery.stock-images.index',
+                        'parameters' => [],
                     ],
                 ],
-                'state'           => $isHeaderActive ?? true,
-                'domain'          => $website->domain,
-                'data'            => GetWebsiteWorkshopHeader::run($website),
+                'state' => $isHeaderActive ?? true,
+                'domain' => $website->domain,
+                'data' => GetWebsiteWorkshopHeader::run($website),
                 'web_block_types' => WebBlockTypesResource::collection(
                     $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'website')->orderBy('id')->get()
-                )->toArray($request)
+                )->toArray($request),
             ]
         );
     }
-
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
@@ -134,11 +132,11 @@ class ShowHeaderWorkshop extends OrgAction
         $headCrumb = function (array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Workshop')
+                            'label' => __('Workshop'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -146,11 +144,10 @@ class ShowHeaderWorkshop extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
-
 
         return match ($routeName) {
             'grp.org.shops.show.web.websites.workshop.header' => array_merge(
@@ -161,13 +158,13 @@ class ShowHeaderWorkshop extends OrgAction
                 $headCrumb(
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.web.websites.workshop',
-                            'parameters' => $routeParameters
+                            'name' => 'grp.org.shops.show.web.websites.workshop',
+                            'parameters' => $routeParameters,
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.web.websites.workshop.header',
-                            'parameters' => $routeParameters
-                        ]
+                            'name' => 'grp.org.shops.show.web.websites.workshop.header',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                     $suffix
                 )
@@ -175,5 +172,4 @@ class ShowHeaderWorkshop extends OrgAction
             default => []
         };
     }
-
 }

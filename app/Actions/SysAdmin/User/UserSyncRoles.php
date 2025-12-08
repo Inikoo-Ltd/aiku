@@ -39,14 +39,13 @@ class UserSyncRoles
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit");
+        return $request->user()->authTo('sysadmin.edit');
     }
-
 
     public function rules(): array
     {
         return [
-            'role_names' => ['present', 'array','min:0'],
+            'role_names' => ['present', 'array', 'min:0'],
 
         ];
     }
@@ -63,10 +62,8 @@ class UserSyncRoles
             }
         }
 
-
         $this->set('roles', $roles);
     }
-
 
     public function asController(User $user, ActionRequest $request): User
     {
@@ -78,16 +75,13 @@ class UserSyncRoles
         $this->trusted = true;
         $this->setRawAttributes(
             [
-                'role_names' => $role_names
+                'role_names' => $role_names,
             ]
         );
         $this->validateAttributes();
+
         return $this->handle($user, $this->get('roles'));
     }
 
     public string $commandSignature = 'user:sync-roles {user : User slug} {roles* : list of roles}';
-
-
-
-
 }

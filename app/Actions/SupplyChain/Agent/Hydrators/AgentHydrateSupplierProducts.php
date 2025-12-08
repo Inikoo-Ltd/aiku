@@ -28,6 +28,4 @@ class AgentHydrateSupplierProducts implements ShouldBeUnique
         $stats = $this->getSupplierProductsStats($agent);
         $agent->stats()->update($stats);
     }
-
-
 }

@@ -16,28 +16,28 @@ enum FulfilmentAssetsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case DASHBOARD                       = 'dashboard';
-    case HISTORY                         = 'history';
-    case ASSETS                          = 'assets';
+    case DASHBOARD = 'dashboard';
+    case HISTORY = 'history';
+    case ASSETS = 'assets';
 
     public function blueprint(): array
     {
         return match ($this) {
             FulfilmentAssetsTabsEnum::DASHBOARD => [
                 'title' => __('Dashboard'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
             FulfilmentAssetsTabsEnum::ASSETS => [
                 'title' => __('Assets list'),
-                'icon'  => 'fal fa-bars',
-                'type'  => 'icon',
+                'icon' => 'fal fa-bars',
+                'type' => 'icon',
                 'align' => 'right',
             ],
 
             FulfilmentAssetsTabsEnum::HISTORY => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
-                'type'  => 'icon',
+                'icon' => 'fal fa-clock',
+                'type' => 'icon',
                 'align' => 'right',
             ]
         };

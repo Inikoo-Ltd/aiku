@@ -57,27 +57,29 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read User|null $user
  * @property-read Warehouse|null $warehouse
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Feedback extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
+    use HasUniversalSearch;
     use InShop;
+    use SoftDeletes;
 
     protected $table = 'feedbacks';
 
     protected $casts = [
-        'data'               => 'array',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data' => 'array',
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -109,6 +111,4 @@ class Feedback extends Model implements Auditable
     {
         return $this->morphedByMany(Transaction::class, 'model', 'model_has_feedbacks');
     }
-
-
 }

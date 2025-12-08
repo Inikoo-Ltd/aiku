@@ -9,7 +9,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     private array $tables = [
         'order_stats',
         'invoice_stats',
@@ -18,7 +19,7 @@ return new class () extends Migration {
     public function up(): void
     {
         foreach ($this->tables as $table) {
-            if ($this->columnExists($table, 'number_offer_components') && !$this->columnExists($table, 'number_offer_allowances')) {
+            if ($this->columnExists($table, 'number_offer_components') && ! $this->columnExists($table, 'number_offer_allowances')) {
                 DB::statement("ALTER TABLE \"$table\" RENAME COLUMN \"number_offer_components\" TO \"number_offer_allowances\"");
             }
         }
@@ -27,7 +28,7 @@ return new class () extends Migration {
     public function down(): void
     {
         foreach ($this->tables as $table) {
-            if ($this->columnExists($table, 'number_offer_allowances') && !$this->columnExists($table, 'number_offer_components')) {
+            if ($this->columnExists($table, 'number_offer_allowances') && ! $this->columnExists($table, 'number_offer_components')) {
                 DB::statement("ALTER TABLE \"$table\" RENAME COLUMN \"number_offer_allowances\" TO \"number_offer_components\"");
             }
         }
@@ -47,6 +48,6 @@ return new class () extends Migration {
             [$table, $column]
         );
 
-        return (bool)$row;
+        return (bool) $row;
     }
 };

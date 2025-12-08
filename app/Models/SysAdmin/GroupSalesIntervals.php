@@ -132,9 +132,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $baskets_updated_grp_currency_pq4
  * @property string $baskets_updated_grp_currency_pq5
  * @property-read \App\Models\SysAdmin\Group $group
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class GroupSalesIntervals extends Model

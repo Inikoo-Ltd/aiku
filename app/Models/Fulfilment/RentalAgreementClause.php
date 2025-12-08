@@ -37,12 +37,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Fulfilment\RentalAgreement $rentalAgreement
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class RentalAgreementClause extends Model
@@ -53,10 +55,9 @@ class RentalAgreementClause extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'type'  => RentalAgreementClauseTypeEnum::class,
-        'state' => RentalAgreementCauseStateEnum::class
+        'type' => RentalAgreementClauseTypeEnum::class,
+        'state' => RentalAgreementCauseStateEnum::class,
     ];
-
 
     public function asset(): BelongsTo
     {
@@ -67,7 +68,4 @@ class RentalAgreementClause extends Model
     {
         return $this->belongsTo(RentalAgreement::class);
     }
-
-
-
 }

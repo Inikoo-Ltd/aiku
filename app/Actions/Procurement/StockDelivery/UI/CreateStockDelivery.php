@@ -25,41 +25,40 @@ class CreateStockDelivery extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New supplier delivery'),
-                'pageHead'    => [
-                    'title'        => __('New supplier delivery'),
+                'title' => __('New supplier delivery'),
+                'pageHead' => [
+                    'title' => __('New supplier delivery'),
                     'cancelCreate' => [
                         'route' => [
-                            'name'       => 'grp.org.procurement.stock_deliveries.index',
-                            'parameters' => array_values($request->route()->originalParameters())
+                            'name' => 'grp.org.procurement.stock_deliveries.index',
+                            'parameters' => array_values($request->route()->originalParameters()),
                         ],
-                    ]
+                    ],
 
                 ],
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Create supplier delivery'),
+                            'title' => __('Create supplier delivery'),
                             'fields' => [
 
                                 'number' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('number'),
-                                    'value' => ''
+                                    'value' => '',
                                 ],
                                 'date' => [
-                                    'type'  => 'date',
+                                    'type' => 'date',
                                     'label' => __('date'),
-                                    'value' => ''
+                                    'value' => '',
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
-                    'route'      => [
-                        'name'       => 'grp.models.supplier-delivery.store',
-                    ]
+                    'route' => [
+                        'name' => 'grp.models.supplier-delivery.store',
+                    ],
                 ],
-
 
             ]
         );
@@ -68,10 +67,10 @@ class CreateStockDelivery extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = true;
-        //TODO:Raul Need to think of this
+
+        // TODO:Raul Need to think of this
         return true;
     }
-
 
     public function asController(Organisation $organisation, ActionRequest $request): Response
     {
@@ -89,11 +88,11 @@ class CreateStockDelivery extends OrgAction
             ),
             [
                 [
-                    'type'         => 'creatingModel',
+                    'type' => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating stock delivery'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

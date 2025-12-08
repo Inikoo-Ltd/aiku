@@ -33,8 +33,7 @@ trait FetchSuppliersTrait
     {
         $supplierData = $this->fetch($organisationSource, $organisationSourceId);
 
-
-        if (!$supplierData) {
+        if (! $supplierData) {
             return null;
         }
 
@@ -82,13 +81,12 @@ trait FetchSuppliersTrait
                 return null;
             }
 
-
             foreach (Arr::get($supplierData, 'photo', []) as $photoData) {
                 if (isset($photoData['image_path']) and isset($photoData['filename'])) {
                     SaveModelImage::run(
                         $supplier,
                         [
-                            'path'         => $photoData['image_path'],
+                            'path' => $photoData['image_path'],
                             'originalName' => $photoData['filename'],
 
                         ],
@@ -99,31 +97,28 @@ trait FetchSuppliersTrait
         }
         $organisation = $organisationSource->getOrganisation();
 
-
         $effectiveSupplier = $supplier ?? $baseSupplier;
 
         $this->updateSupplierSources($effectiveSupplier, $supplierData['supplier']['source_id']);
         $this->createOrgSupplier($effectiveSupplier, $organisation, $supplierData, $organisationSource);
         $this->processFetchAttachments($effectiveSupplier, 'Supplier', $supplierData['supplier']['source_id']);
 
-
         return $effectiveSupplier;
     }
 
-    public function createOrgSupplier(Supplier $supplier, Organisation $organisation, $supplierData, $organisationSource): OrgSupplier|null
+    public function createOrgSupplier(Supplier $supplier, Organisation $organisation, $supplierData, $organisationSource): ?OrgSupplier
     {
         $orgSupplier = OrgSupplier::where('organisation_id', $organisation->id)->where('supplier_id', $supplier->id)->first();
         if ($orgSupplier) {
             return $orgSupplier;
         }
 
-
         try {
             StoreOrgSupplier::make()->action(
                 $organisation,
                 $supplier,
                 [
-                    'source_id' => $supplierData['supplier']['source_id']
+                    'source_id' => $supplierData['supplier']['source_id'],
                 ],
                 hydratorsDelay: $this->hydratorsDelay,
                 strict: false,
@@ -137,18 +132,16 @@ trait FetchSuppliersTrait
         return $orgSupplier;
     }
 
-
     public function updateSupplierSources(Supplier $supplier, string $source): void
     {
-        $sources   = Arr::get($supplier->sources, 'suppliers', []);
+        $sources = Arr::get($supplier->sources, 'suppliers', []);
         $sources[] = $source;
-        $sources   = array_unique($sources);
+        $sources = array_unique($sources);
 
         $supplier->updateQuietly([
             'sources' => [
                 'suppliers' => $sources,
-            ]
+            ],
         ]);
     }
-
 }

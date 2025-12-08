@@ -26,25 +26,24 @@ class Column implements Arrayable
         public ?string $align,
         public ?string $className,
         public bool $isInterval,
-    ) {
-    }
+    ) {}
 
     public function toArray(): array
     {
         return [
-            'key'           => $this->key,
-            'label'         => $this->label,
-            'shortLabel'    => $this->shortLabel,
-            'icon'          => $this->icon,
-            'tooltip'       => $this->tooltip,
+            'key' => $this->key,
+            'label' => $this->label,
+            'shortLabel' => $this->shortLabel,
+            'icon' => $this->icon,
+            'tooltip' => $this->tooltip,
             'can_be_hidden' => $this->canBeHidden,
-            'hidden'        => $this->hidden,
-            'sortable'      => $this->sortable,
-            'sorted'        => $this->sorted,
-            'type'          => $this->type,
-            'align'         => $this->align,
-            'className'     => $this->className,
-            'is_interval'   => $this->isInterval,
+            'hidden' => $this->hidden,
+            'sortable' => $this->sortable,
+            'sorted' => $this->sorted,
+            'type' => $this->type,
+            'align' => $this->align,
+            'className' => $this->className,
+            'is_interval' => $this->isInterval,
         ];
     }
 }

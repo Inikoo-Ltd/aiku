@@ -28,14 +28,11 @@ class GroupHydrateRawMaterials implements ShouldBeUnique
         return $group->id;
     }
 
-
     public function handle(Group $group): void
     {
         $stats = [
-            'number_raw_materials' => $group->rawMaterials()->count()
+            'number_raw_materials' => $group->rawMaterials()->count(),
         ];
-
-
 
         $stats = array_merge(
             $stats,

@@ -25,33 +25,31 @@ class GetDigitalAgencyOrganisationNavigation
         if ($user->hasAnyPermission(
             [
                 'org-supervisor.'.$organisation->id,
-                'shops-view.'.$organisation->id
+                'shops-view.'.$organisation->id,
             ]
         )) {
             $navigation['shops_index'] = [
-                'label'   => __('Shops'),
-                'scope'   => 'shops',
-                'icon'    => ['fal', 'fa-store-alt'],
-                'root'    => 'grp.org.shops.index',
-                'route'   => [
-                    'name'       => 'grp.org.shops.index',
+                'label' => __('Shops'),
+                'scope' => 'shops',
+                'icon' => ['fal', 'fa-store-alt'],
+                'root' => 'grp.org.shops.index',
+                'route' => [
+                    'name' => 'grp.org.shops.index',
                     'parameters' => [$organisation->slug],
                 ],
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label'   => __('dashboard'),
+                            'label' => __('dashboard'),
                             'tooltip' => __('Dashboard'),
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
 
             ];
         }
 
-
-        //todo shops nav
-
+        // todo shops nav
 
         $navigation = $this->getAccountingNavs($user, $organisation, $navigation);
         $navigation = $this->getHumanResourcesNavs($user, $organisation, $navigation);

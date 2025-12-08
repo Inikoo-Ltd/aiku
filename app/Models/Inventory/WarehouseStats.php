@@ -155,9 +155,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customers_status_pre_registration
  * @property int $number_org_stock_movements_type_audit
  * @property-read \App\Models\Inventory\Warehouse $warehouse
+ *
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()
  * @method static Builder<static>|WarehouseStats query()
+ *
  * @mixin Eloquent
  */
 class WarehouseStats extends Model
@@ -165,8 +167,6 @@ class WarehouseStats extends Model
     protected $table = 'warehouse_stats';
 
     protected $guarded = [];
-
-
 
     public function warehouse(): BelongsTo
     {

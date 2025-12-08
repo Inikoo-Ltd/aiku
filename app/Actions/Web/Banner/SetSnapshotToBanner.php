@@ -21,8 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetSnapshotToBanner extends OrgAction
 {
-    use WithWebEditAuthorisation;
     use WithActionUpdate;
+    use WithWebEditAuthorisation;
 
     public function handle(Snapshot $snapshot): void
     {
@@ -39,23 +39,23 @@ class SetSnapshotToBanner extends OrgAction
 
         $banner->update(
             [
-                'compiled_layout'   => $snapshot->compiledLayout(),
-                'state'             => BannerStateEnum::LIVE,
-                'switch_off_at'     => null,
-                ...$snapshotConditions
+                'compiled_layout' => $snapshot->compiledLayout(),
+                'state' => BannerStateEnum::LIVE,
+                'switch_off_at' => null,
+                ...$snapshotConditions,
 
             ]
         );
 
         foreach ($banner->snapshots()->where('state', SnapshotStateEnum::LIVE)->get() as $liveSnapshot) {
             UpdateSnapshot::run($liveSnapshot, [
-                'state'           => SnapshotStateEnum::HISTORIC,
-                'published_until' => now()
+                'state' => SnapshotStateEnum::HISTORIC,
+                'published_until' => now(),
             ]);
         }
 
         $this->update($snapshot, [
-            'state' => SnapshotStateEnum::LIVE
+            'state' => SnapshotStateEnum::LIVE,
         ]);
 
         UpdateBannerImage::run($banner);

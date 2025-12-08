@@ -42,16 +42,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Procurement\OrgAgentStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\StockDelivery> $stockDeliveries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgAgent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgAgent newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgAgent query()
+ *
  * @mixin \Eloquent
  */
 class OrgAgent extends Model
 {
-    use InOrganisation;
     use HasSlug;
     use HasUniversalSearch;
+    use InOrganisation;
 
     protected $guarded = [];
 
@@ -100,6 +102,4 @@ class OrgAgent extends Model
     {
         return $this->hasMany(OrgSupplierProduct::class);
     }
-
-
 }

@@ -45,10 +45,8 @@ Route::get('/', ShowAccountingDashboard::class)->name('dashboard');
 
 Route::get('/per-store', IndexInvoicesPerShop::class)->name('invoices-shop');
 
-
 Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}/payments/create', [IndexPayments::class, 'inPaymentAccountInPaymentServiceProvider'])->name('org_payment_service_providers.show.payment-accounts.show.payments.create');
 Route::get('/providers/{orgPaymentServiceProvider}/payments/create', [IndexPayments::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.create');
-
 
 Route::get('/providers', IndexOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
 Route::get('/providers/{orgPaymentServiceProvider}', ShowOrgPaymentServiceProvider::class)->name('org_payment_service_providers.show');
@@ -63,7 +61,6 @@ Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}/pay
 Route::get('/providers/{orgPaymentServiceProvider}/payments', [IndexPayments::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.index');
 Route::get('/providers/{orgPaymentServiceProvider}/payments/{payment}/edit', [EditPayment::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.edit');
 Route::get('/providers/{orgPaymentServiceProvider}/payments/{payment}', [ShowPayment::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.show');
-
 
 Route::get('/accounts/{paymentAccount}/edit', EditPaymentAccount::class)->name('payment-accounts.edit');
 
@@ -89,7 +86,6 @@ Route::get('/invoices/{invoice}/omega', OmegaInvoice::class)->name('invoices.sho
 
 Route::get('/invoices/export', ExportInvoices::class)->name('invoices.export');
 
-
 Route::get('/invoices', IndexInvoices::class)->name('invoices.index');
 Route::get('/invoices/omega', [OmegaManyInvoice::class, 'inOrganisation'])->name('invoices.index.omega');
 
@@ -98,10 +94,8 @@ Route::get('/invoices/{invoice}/edit', [EditInvoice::class, 'inOrganisation'])->
 Route::get('/invoices/{invoice}/refunds', [IndexRefunds::class, 'inInvoiceInOrganisation'])->name('invoices.show.refunds.index');
 Route::get('/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceInOrganisation'])->name('invoices.show.refunds.show');
 
-
 Route::get('/refunds', IndexRefunds::class)->name('refunds.index');
 Route::get('/refunds/{refund}', ShowRefund::class)->name('refunds.show');
-
 
 Route::get('/invoices-unpaid', [IndexInvoices::class, 'unpaid'])->name('unpaid_invoices.index');
 Route::get('/invoices-paid', [IndexInvoices::class, 'paid'])->name('paid_invoices.index');

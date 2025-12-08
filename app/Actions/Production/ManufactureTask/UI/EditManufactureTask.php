@@ -39,7 +39,7 @@ class EditManufactureTask extends OrgAction
             return $request->user()->authTo(
                 [
                     'productions-view.'.$this->organisation->id,
-                    'org-supervisor.'.$this->organisation->id
+                    'org-supervisor.'.$this->organisation->id,
                 ]
             );
         }
@@ -49,12 +49,10 @@ class EditManufactureTask extends OrgAction
         return $request->user()->authTo("productions_rd.{$this->production->id}.view");
     }
 
-
     public function jsonResponse(LengthAwarePaginator $storedItems): AnonymousResourceCollection
     {
         return PalletResource::collection($storedItems);
     }
-
 
     public function htmlResponse(ManufactureTask $manufactureTask, ActionRequest $request): Response
     {
@@ -64,9 +62,9 @@ class EditManufactureTask extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit manufacture task'),
-                'pageHead'    => [
-                    'title'     => __('Edit manufacture task'),
+                'title' => __('Edit manufacture task'),
+                'pageHead' => [
+                    'title' => __('Edit manufacture task'),
                     // 'actions'   => [
                     //     [
                     //         'type'  => 'button',
@@ -81,83 +79,83 @@ class EditManufactureTask extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Edit Manufacture Task'),
-                            'label'  => 'edit',
-                            'icon'   => ['fal', 'fa-narwhal'],
+                            'title' => __('Edit Manufacture Task'),
+                            'label' => 'edit',
+                            'icon' => ['fal', 'fa-narwhal'],
                             'fields' => [
                                 'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => $manufactureTask->code,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('code'),
+                                    'value' => $manufactureTask->code,
+                                    'required' => true,
                                 ],
                                 'name' => [
-                                    'type'     => 'input',
-                                    'label'    => __('name'),
-                                    'value'    => $manufactureTask->name,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('name'),
+                                    'value' => $manufactureTask->name,
+                                    'required' => true,
                                 ],
                                 'task_materials_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task materials cost'),
-                                    'value'    => $manufactureTask->task_materials_cost,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task materials cost'),
+                                    'value' => $manufactureTask->task_materials_cost,
+                                    'required' => true,
                                 ],
                                 'task_energy_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task energy cost'),
-                                    'value'    => $manufactureTask->task_energy_cost,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task energy cost'),
+                                    'value' => $manufactureTask->task_energy_cost,
+                                    'required' => true,
                                 ],
                                 'task_other_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task other cost'),
-                                    'value'    => $manufactureTask->task_other_cost,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task other cost'),
+                                    'value' => $manufactureTask->task_other_cost,
+                                    'required' => true,
                                 ],
                                 'task_work_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task work cost'),
-                                    'value'    => $manufactureTask->task_work_cost,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task work cost'),
+                                    'value' => $manufactureTask->task_work_cost,
+                                    'required' => true,
                                 ],
                                 'status' => [
-                                    'type'     => 'toggle',
-                                    'label'    => __('status'),
-                                    'value'    => $manufactureTask->status,
-                                    'required' => true
+                                    'type' => 'toggle',
+                                    'label' => __('status'),
+                                    'value' => $manufactureTask->status,
+                                    'required' => true,
                                 ],
                                 'task_lower_target' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task lower target'),
-                                    'value'    => $manufactureTask->task_lower_target,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task lower target'),
+                                    'value' => $manufactureTask->task_lower_target,
+                                    'required' => true,
                                 ],
                                 'task_upper_target' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task upper target'),
-                                    'value'    => $manufactureTask->task_upper_target,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('task upper target'),
+                                    'value' => $manufactureTask->task_upper_target,
+                                    'required' => true,
                                 ],
                                 'operative_reward_terms' => [
-                                    'type'      => 'select',
-                                    'options'   => ManufactureTaskOperativeRewardTermsEnum::values(),
-                                    'label'     => __('operative reward terms'),
-                                    'value'     => $manufactureTask->operative_reward_terms,
-                                    'required'  => true
+                                    'type' => 'select',
+                                    'options' => ManufactureTaskOperativeRewardTermsEnum::values(),
+                                    'label' => __('operative reward terms'),
+                                    'value' => $manufactureTask->operative_reward_terms,
+                                    'required' => true,
                                 ],
                                 'operative_reward_allowance_type' => [
-                                    'type'      => 'select',
-                                    'options'   => ManufactureTaskOperativeRewardAllowanceTypeEnum::values(),
-                                    'label'     => __('operative reward allowance type'),
-                                    'value'     => $manufactureTask->operative_reward_allowance_type,
-                                    'required'  => true
+                                    'type' => 'select',
+                                    'options' => ManufactureTaskOperativeRewardAllowanceTypeEnum::values(),
+                                    'label' => __('operative reward allowance type'),
+                                    'value' => $manufactureTask->operative_reward_allowance_type,
+                                    'required' => true,
                                 ],
                                 'operative_reward_amount' => [
-                                    'type'     => 'input',
-                                    'label'    => __('operative reward amount'),
-                                    'value'    => $manufactureTask->operative_reward_amount,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('operative reward amount'),
+                                    'value' => $manufactureTask->operative_reward_amount,
+                                    'required' => true,
                                 ],
                                 // 'type' => [
                                 //     'type'    => 'select',
@@ -173,15 +171,15 @@ class EditManufactureTask extends OrgAction
                                 //     'required' => true,
                                 //     'apiUrl'   => route('grp.json.locations') . '?filter[slug]=',
                                 // ]
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.production.manufacture_tasks.update',
-                            'parameters' => [$this->parent->id, $manufactureTask->id]
+                            'name' => 'grp.models.production.manufacture_tasks.update',
+                            'parameters' => [$this->parent->id, $manufactureTask->id],
                         ],
-                    ]
+                    ],
                 ],
             ]
         );
@@ -203,7 +201,6 @@ class EditManufactureTask extends OrgAction
         return $this->handle($manufactureTask);
     }
 
-
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
@@ -213,11 +210,11 @@ class EditManufactureTask extends OrgAction
             ),
             [
                 [
-                    'type'         => 'editingModel',
+                    'type' => 'editingModel',
                     'editingModel' => [
                         'label' => __('Editing raw material'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

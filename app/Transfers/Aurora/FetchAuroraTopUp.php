@@ -17,19 +17,17 @@ class FetchAuroraTopUp extends FetchAurora
 {
     protected function parseModel(): void
     {
-        if (!$this->auroraModelData->{'Top Up Payment Key'}) {
+        if (! $this->auroraModelData->{'Top Up Payment Key'}) {
             return;
         }
 
         $payment = $this->parsePayment($this->organisation->id.':'.$this->auroraModelData->{'Top Up Payment Key'});
 
-        if (!$payment) {
+        if (! $payment) {
             return;
         }
 
-
         $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Top Up Customer Key'});
-
 
         $currencyId = $this->parseCurrencyID($this->auroraModelData->{'Top Up Currency Code'});
         /** @var Currency $currency */
@@ -42,7 +40,6 @@ class FetchAuroraTopUp extends FetchAurora
         $orgExchange = GetHistoricCurrencyExchange::run($currency, $customer->organisation->currency, $date);
         $grpExchange = GetHistoricCurrencyExchange::run($currency, $customer->group->currency, $date);
 
-
         $status = match ($this->auroraModelData->{'Top Up Status'}) {
             'InProcess' => TopUpStatusEnum::IN_PROCESS,
             'Error' => TopUpStatusEnum::FAIL,
@@ -51,32 +48,29 @@ class FetchAuroraTopUp extends FetchAurora
 
         if ($payment->customer_id != $customer->id) {
             dd('error top up (customer)');
-            //$payment->customer_id = $customer->id;
-            //$payment->save();
+            // $payment->customer_id = $customer->id;
+            // $payment->save();
         }
-
 
         if ($payment->currency_id != $currency->id) {
             dd('error top up (currency)');
         }
 
-
         $this->parsedData['payment'] = $payment;
-        $this->parsedData['topUp']   = [
-            'reference'       => 'au-'.$this->organisation->slug.'-'.$this->auroraModelData->{'Top Up Key'},
-            'created_at'      => $date,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Top Up Key'},
-            'fetched_at'      => now(),
+        $this->parsedData['topUp'] = [
+            'reference' => 'au-'.$this->organisation->slug.'-'.$this->auroraModelData->{'Top Up Key'},
+            'created_at' => $date,
+            'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Top Up Key'},
+            'fetched_at' => now(),
             'last_fetched_at' => now(),
-            'status'          => $status,
-            'amount'          => $amount,
-            'org_amount'      => round($amount * $orgExchange, 2),
-            'grp_amount'      => round($amount * $grpExchange, 2),
+            'status' => $status,
+            'amount' => $amount,
+            'org_amount' => round($amount * $orgExchange, 2),
+            'grp_amount' => round($amount * $grpExchange, 2),
         ];
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Top Up Dimension')

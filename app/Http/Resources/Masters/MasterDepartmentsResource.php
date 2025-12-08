@@ -38,21 +38,21 @@ class MasterDepartmentsResource extends JsonResource
         $masterDepartment = $this;
 
         return [
-            'id'               => $this->id,
-            'slug'             => $this->slug,
-            'code'             => $this->code,
-            'name'             => $this->name,
-            'image'            => $masterDepartment->imageSources(720, 480),
-            'description'      => $this->description,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'image' => $masterDepartment->imageSources(720, 480),
+            'description' => $this->description,
             'master_shop_slug' => $this->master_shop_slug,
             'master_shop_code' => $this->master_shop_code,
             'master_shop_name' => $this->master_shop_name,
-            'used_in'          => $this->used_in,
-            'families'         => $this->families,
-            'products'         => $this->products,
-            'sub_departments'  => $this->sub_departments,
-            'collections'      => $this->collections,
-            'show_in_website'  => $this->show_in_website,
+            'used_in' => $this->used_in,
+            'families' => $this->families,
+            'products' => $this->products,
+            'sub_departments' => $this->sub_departments,
+            'collections' => $this->collections,
+            'show_in_website' => $this->show_in_website,
         ];
     }
 }

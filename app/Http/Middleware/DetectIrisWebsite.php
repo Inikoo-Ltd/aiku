@@ -24,7 +24,6 @@ class DetectIrisWebsite
             abort(404, 'Not found');
         }
 
-
         if (config('iris.cache.website.ttl') == 0) {
             $websiteData = $this->getWebsiteData($domain);
         } else {
@@ -38,7 +37,6 @@ class DetectIrisWebsite
             );
         }
 
-
         $request->merge($websiteData);
 
         return $next($request);
@@ -48,26 +46,24 @@ class DetectIrisWebsite
     {
         /** @var Website $website */
         $website = Website::where('domain', $domain)->where('status', true)->first();
-        $shop    = $website->shop;
+        $shop = $website->shop;
 
         return [
-            'domain'        => $website->domain,
-            'website'       => $website,
+            'domain' => $website->domain,
+            'website' => $website,
             'currency_data' => [
-                'code'   => $shop->currency->code,
+                'code' => $shop->currency->code,
                 'symbol' => $shop->currency->symbol,
-                'name'   => $shop->currency->name,
+                'name' => $shop->currency->name,
             ],
-            'shop_type'     => $shop->type->value,
-            'favicons'      => [
-                '16'  => $website->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png'),
-                '32'  => $website->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png'),
-                '48'  => $website->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico'),
-                '180' => $website->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png')
+            'shop_type' => $shop->type->value,
+            'favicons' => [
+                '16' => $website->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png'),
+                '32' => $website->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png'),
+                '48' => $website->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico'),
+                '180' => $website->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png'),
 
-            ]
+            ],
         ];
     }
-
-
 }

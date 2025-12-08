@@ -17,44 +17,44 @@ enum SupplierProductStateEnum: string
 {
     use EnumHelperTrait;
 
-    case IN_PROCESS    = 'in_process';
-    case ACTIVE        = 'active';
+    case IN_PROCESS = 'in_process';
+    case ACTIVE = 'active';
     case DISCONTINUING = 'discontinuing';
-    case DISCONTINUED  = 'discontinued';
+    case DISCONTINUED = 'discontinued';
 
     public static function labels(): array
     {
         return [
-            'in_process'    => __('In Process'),
-            'active'        => __('Active'),
+            'in_process' => __('In Process'),
+            'active' => __('Active'),
             'discontinuing' => __('Discontinuing'),
-            'discontinued'  => __('Discontinued'),
+            'discontinued' => __('Discontinued'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'in_process'    => [
+            'in_process' => [
                 'tooltip' => __('in process'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-indigo-500'
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-indigo-500',
             ],
-            'active'        => [
+            'active' => [
                 'tooltip' => __('contacted'),
-                'icon'    => 'fal fa-chair',
-                'class'   => 'text-green-500'
+                'icon' => 'fal fa-chair',
+                'class' => 'text-green-500',
             ],
             'discontinuing' => [
                 'tooltip' => __('discontinuing'),
-                'icon'    => 'fal fa-exclamation-triangle',
-                'class'   => 'text-orange-500'
+                'icon' => 'fal fa-exclamation-triangle',
+                'class' => 'text-orange-500',
             ],
-            'discontinued'  => [
+            'discontinued' => [
                 'tooltip' => __('discontinued'),
-                'icon'    => 'fal fa-laugh',
-                'class'   => 'text-red-500'
-            ]
+                'icon' => 'fal fa-laugh',
+                'class' => 'text-red-500',
+            ],
         ];
     }
 
@@ -67,12 +67,10 @@ enum SupplierProductStateEnum: string
         }
 
         return [
-            'in_process'    => $stats->number_supplier_products_state_in_process,
-            'active'        => $stats->number_supplier_products_state_active,
+            'in_process' => $stats->number_supplier_products_state_in_process,
+            'active' => $stats->number_supplier_products_state_active,
             'discontinuing' => $stats->number_supplier_products_state_discontinuing,
-            'discontinued'  => $stats->number_supplier_products_state_discontinued,
+            'discontinued' => $stats->number_supplier_products_state_discontinued,
         ];
     }
-
-
 }

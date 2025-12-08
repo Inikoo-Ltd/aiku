@@ -26,7 +26,7 @@ function setupDropshippingTest($testClass): void
     $testClass->user = createAdminGuest($testClass->group)->getUser();
 
     $shop = Shop::first();
-    if (!$shop) {
+    if (! $shop) {
         $storeData = Shop::factory()->definition();
         data_set($storeData, 'type', ShopTypeEnum::DROPSHIPPING);
 
@@ -41,10 +41,10 @@ function setupDropshippingTest($testClass): void
 
     $testClass->customer = createCustomer($testClass->shop);
 
-    list(
+    [
         $testClass->tradeUnit,
         $testClass->product
-    ) = createProduct($testClass->shop);
+    ] = createProduct($testClass->shop);
 
     Config::set(
         'inertia.testing.page_paths',

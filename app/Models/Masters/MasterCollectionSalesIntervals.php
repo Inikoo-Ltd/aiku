@@ -91,9 +91,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Masters\MasterCollection $masterCollection
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionSalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionSalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionSalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class MasterCollectionSalesIntervals extends Model

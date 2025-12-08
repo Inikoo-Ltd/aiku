@@ -18,7 +18,6 @@ class ModelHydrateSingleTradeUnits
 {
     use AsObject;
 
-
     public function handle(Product|MasterAsset|OrgStock|Stock $model): Product|MasterAsset|OrgStock|Stock
     {
         $model->update([
@@ -27,5 +26,4 @@ class ModelHydrateSingleTradeUnits
 
         return $model;
     }
-
 }

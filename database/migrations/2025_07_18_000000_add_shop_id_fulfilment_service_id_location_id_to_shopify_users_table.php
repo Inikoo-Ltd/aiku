@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('shopify_users', function (Blueprint $table) {
@@ -27,7 +28,7 @@ return new class () extends Migration {
                 [
                     'shopify_shop_id',
                     'shopify_fulfilment_service_id',
-                    'shopify_location_id'
+                    'shopify_location_id',
                 ]
             );
         });

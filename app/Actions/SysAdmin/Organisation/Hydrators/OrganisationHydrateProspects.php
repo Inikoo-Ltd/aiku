@@ -33,7 +33,7 @@ class OrganisationHydrateProspects implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_prospects'                 => $organisation->prospects()->count(),
+            'number_prospects' => $organisation->prospects()->count(),
             'number_prospects_dont_contact_me' => $organisation->prospects()->where('dont_contact_me', true)->count(),
 
         ];
@@ -89,7 +89,6 @@ class OrganisationHydrateProspects implements ShouldBeUnique
                 }
             )
         );
-
 
         $organisation->crmStats()->update($stats);
     }

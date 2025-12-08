@@ -28,9 +28,9 @@ class FetchAuroraCustomerNote extends FetchAurora
         }
 
         $newValues = [];
-        $event     = 'customer_note';
-        $tags      = ['customer_notes'];
-        $note      = $this->auroraModelData->{'History Abstract'};
+        $event = 'customer_note';
+        $tags = ['customer_notes'];
+        $note = $this->auroraModelData->{'History Abstract'};
         if ($note == 'Old Database Note (Attachment)') {
             return;
         } elseif ($note == 'Contact data imported from Act') {
@@ -43,12 +43,11 @@ class FetchAuroraCustomerNote extends FetchAurora
                 return;
             }
 
-            $event   = 'updated';
-            $tags    = ['crm'];
+            $event = 'updated';
+            $tags = ['crm'];
             $details = null;
 
             $note = '';
-
 
             $changedFields = preg_split('/;\n/', $historyDetails);
             foreach ($changedFields as $changedField) {
@@ -66,13 +65,13 @@ class FetchAuroraCustomerNote extends FetchAurora
                     continue;
                 }
 
-                if (!str_contains($changedField, ' - ')) {
+                if (! str_contains($changedField, ' - ')) {
                     $changedField = 'Legacy Note - '.$changedField;
                 }
 
-                list($fieldName, $fieldValue) = explode(' - ', $changedField, 2);
+                [$fieldName, $fieldValue] = explode(' - ', $changedField, 2);
 
-                $fieldName  = trim($fieldName);
+                $fieldName = trim($fieldName);
                 $fieldValue = trim(preg_replace('/;$/', '', $fieldValue));
 
                 if (in_array($fieldValue, ['.', ',', ':', ';'])) {
@@ -101,31 +100,27 @@ class FetchAuroraCustomerNote extends FetchAurora
             }
         }
 
-
         $customer = $this->parseCustomer(
             $this->organisation->id.':'.$this->auroraModelData->{'Indirect Object Key'}
         );
 
-        if (!$customer) {
+        if (! $customer) {
             return;
         }
 
         $this->parsedData['customer'] = $customer;
 
-
         $user = $this->parseUserFromHistory();
-
-
 
         $this->parsedData['customer_note'] =
             [
-                'note'            => $note,
-                'created_at'      => $this->auroraModelData->{'History Date'},
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'History Key'},
-                'fetched_at'      => now(),
+                'note' => $note,
+                'created_at' => $this->auroraModelData->{'History Date'},
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'History Key'},
+                'fetched_at' => now(),
                 'last_fetched_at' => now(),
-                'event'           => $event,
-                'tags'            => $tags
+                'event' => $event,
+                'tags' => $tags,
             ];
 
         if ($details) {
@@ -136,20 +131,17 @@ class FetchAuroraCustomerNote extends FetchAurora
             }
         }
 
-
         if (count($newValues) > 0) {
             $this->parsedData['customer_note']['new_values'] = $newValues;
         }
 
-
         if ($user) {
             $this->parsedData['customer_note']['user_type'] = 'User';
-            $this->parsedData['customer_note']['user_id']   = $user->id;
+            $this->parsedData['customer_note']['user_id'] = $user->id;
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('History Dimension')
@@ -160,5 +152,4 @@ class FetchAuroraCustomerNote extends FetchAurora
     {
         return $string != strip_tags($string);
     }
-
 }

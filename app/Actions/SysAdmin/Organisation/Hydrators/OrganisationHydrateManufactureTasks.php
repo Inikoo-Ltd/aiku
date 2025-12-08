@@ -26,13 +26,11 @@ class OrganisationHydrateManufactureTasks implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_manufacture_tasks' => $organisation->manufactureTasks()->count()
+            'number_manufacture_tasks' => $organisation->manufactureTasks()->count(),
         ];
-
 
         $stats = array_merge(
             $stats,

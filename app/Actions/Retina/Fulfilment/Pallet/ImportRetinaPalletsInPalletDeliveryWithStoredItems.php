@@ -20,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ImportRetinaPalletsInPalletDeliveryWithStoredItems extends RetinaAction
 {
     use WithImportModel;
+
     public function handle(PalletDelivery $palletDelivery, $file, array $modelData): Upload
     {
         return ImportPalletsInPalletDeliveryWithStoredItems::run($palletDelivery, $file, $modelData);
@@ -28,7 +29,7 @@ class ImportRetinaPalletsInPalletDeliveryWithStoredItems extends RetinaAction
     public function rules(): array
     {
         return [
-            'file'             => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
+            'file' => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
         ];
     }
 

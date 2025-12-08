@@ -37,9 +37,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read User|null $packer
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Packing newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Packing newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Packing query()
+ *
  * @mixin \Eloquent
  */
 class Packing extends Model
@@ -47,7 +49,7 @@ class Packing extends Model
     use InShop;
 
     protected $casts = [
-        'data'   => 'array',
+        'data' => 'array',
         'engine' => PackingEngineEnum::class,
     ];
 
@@ -71,6 +73,4 @@ class Packing extends Model
     {
         return $this->belongsTo(User::class, 'packer_user_id');
     }
-
-
 }

@@ -61,9 +61,8 @@ class IndexRetinaRecurringBillTransactions extends OrgAction
 
                 'recurring_bill_transactions.quantity',
                 'currencies.code as currency_code',
-                'rental_agreement_clauses.percentage_off as discount'
+                'rental_agreement_clauses.percentage_off as discount',
             ]);
-
 
         return $queryBuilder->allowedSorts(['id', 'asset_name'])
             ->withPaginator($prefix)
@@ -72,7 +71,7 @@ class IndexRetinaRecurringBillTransactions extends OrgAction
 
     public function tableStructure(RecurringBill $recurringBill, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
     {
-        return function (InertiaTable $table) use ($recurringBill, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($recurringBill, $modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -101,7 +100,6 @@ class IndexRetinaRecurringBillTransactions extends OrgAction
                 ->defaultSort('id');
         };
     }
-
 
     public function jsonResponse(LengthAwarePaginator $recurringBillTransactions): AnonymousResourceCollection
     {

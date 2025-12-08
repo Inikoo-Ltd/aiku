@@ -18,18 +18,17 @@ enum WebpageStateEnum: string
     use EnumHelperTrait;
 
     case IN_PROCESS = 'in_process';
-    case READY      = 'ready';
-    case LIVE   = 'live';
+    case READY = 'ready';
+    case LIVE = 'live';
     case CLOSED = 'closed';
-
 
     public static function labels(): array
     {
         return [
             'in_process' => __('In construction'),
-            'ready'      => __('Ready'),
-            'live'       => __('Live'),
-            'closed'     => __('Closed'),
+            'ready' => __('Ready'),
+            'live' => __('Live'),
+            'closed' => __('Closed'),
         ];
     }
 
@@ -37,15 +36,14 @@ enum WebpageStateEnum: string
     {
         $webStats = match (class_basename($parent)) {
             'Organisation','Website' => $parent->webStats,
-            'Webpage'                => $parent->stats
+            'Webpage' => $parent->stats
         };
-
 
         return [
             'in_process' => $webStats->number_webpages_state_in_process,
-            'ready'      => $webStats->number_webpages_state_ready,
-            'live'       => $webStats->number_webpages_state_live,
-            'closed'     => $webStats->number_webpages_state_closed,
+            'ready' => $webStats->number_webpages_state_ready,
+            'live' => $webStats->number_webpages_state_live,
+            'closed' => $webStats->number_webpages_state_closed,
         ];
     }
 
@@ -54,26 +52,24 @@ enum WebpageStateEnum: string
         return [
             'in_process' => [
                 'tooltip' => __('In construction'),
-                'icon'    => 'fal fa-hammer',
-                'class'   => 'text-amber-500'
+                'icon' => 'fal fa-hammer',
+                'class' => 'text-amber-500',
             ],
             'ready' => [
                 'tooltip' => __('Ready'),
-                'icon'    => 'fal fa-check-circle',
-                'class'   => 'text-blue-500'
+                'icon' => 'fal fa-check-circle',
+                'class' => 'text-blue-500',
             ],
             'live' => [
                 'tooltip' => __('Live'),
-                'icon'    => 'fal fa-broadcast-tower',
-                'class'   => 'text-green-600 animate-pulse'
+                'icon' => 'fal fa-broadcast-tower',
+                'class' => 'text-green-600 animate-pulse',
             ],
             'closed' => [
                 'tooltip' => __('Closed'),
-                'icon'    => 'fal fa-skull',
-                'class'   => 'text-red-500'
+                'icon' => 'fal fa-skull',
+                'class' => 'text-red-500',
             ],
         ];
     }
-
-
 }

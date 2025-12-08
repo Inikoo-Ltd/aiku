@@ -38,7 +38,7 @@ class EditArtefact extends OrgAction
             return $request->user()->authTo(
                 [
                     'productions-view.'.$this->organisation->id,
-                    'org-supervisor.'.$this->organisation->id
+                    'org-supervisor.'.$this->organisation->id,
                 ]
             );
         }
@@ -48,12 +48,10 @@ class EditArtefact extends OrgAction
         return $request->user()->authTo("productions_rd.{$this->production->id}.view");
     }
 
-
     public function jsonResponse(LengthAwarePaginator $storedItems): AnonymousResourceCollection
     {
         return PalletResource::collection($storedItems);
     }
-
 
     public function htmlResponse(Artefact $artefact, ActionRequest $request): Response
     {
@@ -63,9 +61,9 @@ class EditArtefact extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit manufacture task'),
-                'pageHead'    => [
-                    'title'     => __('Edit manufacture task'),
+                'title' => __('Edit manufacture task'),
+                'pageHead' => [
+                    'title' => __('Edit manufacture task'),
                     // 'actions'   => [
                     //     [
                     //         'type'  => 'button',
@@ -80,21 +78,21 @@ class EditArtefact extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Edit Manufacture Task'),
-                            'label'  => 'edit',
-                            'icon'   => ['fal', 'fa-narwhal'],
+                            'title' => __('Edit Manufacture Task'),
+                            'label' => 'edit',
+                            'icon' => ['fal', 'fa-narwhal'],
                             'fields' => [
                                 'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => $artefact->code,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('code'),
+                                    'value' => $artefact->code,
+                                    'required' => true,
                                 ],
                                 'name' => [
-                                    'type'     => 'input',
-                                    'label'    => __('name'),
-                                    'value'    => $artefact->name,
-                                    'required' => true
+                                    'type' => 'input',
+                                    'label' => __('name'),
+                                    'value' => $artefact->name,
+                                    'required' => true,
                                 ],
                                 // 'state' => [
                                 //     'type'     => 'select',
@@ -117,15 +115,15 @@ class EditArtefact extends OrgAction
                                 //     'required' => true,
                                 //     'apiUrl'   => route('grp.json.locations') . '?filter[slug]=',
                                 // ]
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.production.artefacts.update',
-                            'parameters' => [$this->parent->id, $artefact->id]
+                            'name' => 'grp.models.production.artefacts.update',
+                            'parameters' => [$this->parent->id, $artefact->id],
                         ],
-                    ]
+                    ],
                 ],
             ]
         );
@@ -147,7 +145,6 @@ class EditArtefact extends OrgAction
         return $this->handle($artefact);
     }
 
-
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
@@ -157,11 +154,11 @@ class EditArtefact extends OrgAction
             ),
             [
                 [
-                    'type'         => 'editingModel',
+                    'type' => 'editingModel',
                     'editingModel' => [
                         'label' => __('Editing raw material'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

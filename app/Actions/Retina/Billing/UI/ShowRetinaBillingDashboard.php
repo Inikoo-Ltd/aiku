@@ -19,7 +19,6 @@ class ShowRetinaBillingDashboard
 {
     use AsAction;
 
-
     public function asController(ActionRequest $request): Response
     {
 
@@ -33,14 +32,14 @@ class ShowRetinaBillingDashboard
         return Inertia::render(
             'Billing/RetinaBillingDashboard',
             [
-                'title'       => __('Billing'),
-                'breadcrumbs'    => $this->getBreadcrumbs(),
-                'pageHead'    => [
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-file-invoice-dollar'],
-                        'title' => __('Billing')
+                'title' => __('Billing'),
+                'breadcrumbs' => $this->getBreadcrumbs(),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-file-invoice-dollar'],
+                        'title' => __('Billing'),
                     ],
-                    'title'     => __('Billing'),
+                    'title' => __('Billing'),
                 ],
                 'dashboard_stats' => [
                     'settings' => auth()->user()->settings,
@@ -50,8 +49,8 @@ class ShowRetinaBillingDashboard
                                 [
                                     'type' => 'unpaid_invoices',
                                     'data' => GetDataTableRetinaBillingDashboard::run($customer),
-                                ]
-                            ]
+                                ],
+                            ],
                         ],
                         [
                             'widgets' => [
@@ -62,14 +61,14 @@ class ShowRetinaBillingDashboard
                                         [
                                             'label' => __('current total'),
                                             'route' => route('retina.fulfilment.billing.next_recurring_bill'),
-                                            'value' => $currentRecurringBill->total_amount,//<-- need to be currency
-                                            'type' => 'card_currency_success'
+                                            'value' => $currentRecurringBill->total_amount, // <-- need to be currency
+                                            'type' => 'card_currency_success',
                                         ],
                                         [
                                             'label' => __('To be invoiced at'),
-                                            'value' => $currentRecurringBill->end_date,// a date
-                                            'type' => 'date'
-                                        ]
+                                            'value' => $currentRecurringBill->end_date, // a date
+                                            'type' => 'date',
+                                        ],
                                     ],
                                     'type' => 'multi_card',
                                 ] : null,
@@ -96,14 +95,13 @@ class ShowRetinaBillingDashboard
                                     'value' => $amountUnpaidInvoices,
                                     'type' => 'card_number_attention',
                                 ] : null,
-                            ]
-                        ]
-                    ]
+                            ],
+                        ],
+                    ],
                 ],
             ]
         );
     }
-
 
     public function getBreadcrumbs(): array
     {
@@ -112,14 +110,14 @@ class ShowRetinaBillingDashboard
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.fulfilment.billing.dashboard'
+                                'name' => 'retina.fulfilment.billing.dashboard',
                             ],
-                            'label'  => __('Billing'),
-                        ]
-                    ]
+                            'label' => __('Billing'),
+                        ],
+                    ],
                 ]
             );
     }

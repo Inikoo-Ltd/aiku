@@ -44,16 +44,16 @@ class PayRetinaOrderWithBalance extends RetinaAction
         if ($order->payment_amount == $order->total_amount) {
             return [
                 'success' => false,
-                'reason'  => 'Order has been paid',
-                'order'   => $order,
+                'reason' => 'Order has been paid',
+                'order' => $order,
             ];
         }
 
         if ($order->customer->balance < $order->total_amount) {
             return [
                 'success' => false,
-                'reason'  => 'Insufficient balance',
-                'order'   => $order,
+                'reason' => 'Insufficient balance',
+                'order' => $order,
             ];
         }
 
@@ -61,35 +61,34 @@ class PayRetinaOrderWithBalance extends RetinaAction
 
         $paymentAccountShop = PaymentAccountShop::where('shop_id', $order->shop_id)->where('type', 'account')->where('state', 'active')->first();
 
-        if (!$paymentAccountShop) {
+        if (! $paymentAccountShop) {
             return [
                 'success' => false,
-                'reason'  => 'No payment account found',
-                'status'  => PaymentStatusEnum::SUCCESS,
-                'state'   => PaymentStateEnum::COMPLETED,
-                'type'    => PaymentTypeEnum::PAYMENT
+                'reason' => 'No payment account found',
+                'status' => PaymentStatusEnum::SUCCESS,
+                'state' => PaymentStateEnum::COMPLETED,
+                'type' => PaymentTypeEnum::PAYMENT,
 
             ];
         }
         $paymentData = [
-            'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
-            'amount'                  => $order->total_amount,
-            'status'                  => PaymentStatusEnum::SUCCESS,
-            'state'                   => PaymentStateEnum::COMPLETED,
-            'payment_account_shop_id' => $paymentAccountShop->id
+            'reference' => 'cu-'.$customer->id.'-bal-'.Str::random(10),
+            'amount' => $order->total_amount,
+            'status' => PaymentStatusEnum::SUCCESS,
+            'state' => PaymentStateEnum::COMPLETED,
+            'payment_account_shop_id' => $paymentAccountShop->id,
         ];
 
         $order = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData, $submitOrder) {
             $payment = StorePayment::make()->action($customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             AttachPaymentToOrder::make()->action($order, $payment, [
-                'amount' => $payment->amount
+                'amount' => $payment->amount,
             ]);
 
-
             $creditTransactionData = [
-                'amount'     => -$payment->amount,
-                'type'       => CreditTransactionTypeEnum::PAYMENT,
+                'amount' => -$payment->amount,
+                'type' => CreditTransactionTypeEnum::PAYMENT,
                 'payment_id' => $payment->id,
             ];
             $creditTransaction = StoreCreditTransaction::make()->action($customer, $creditTransactionData);
@@ -103,7 +102,6 @@ class PayRetinaOrderWithBalance extends RetinaAction
                 ' Payment amount:'.$paymentAmount.' Credit transaction amount:'.$creditTransactionAmount);
             }
 
-
             if ($submitOrder) {
                 return SubmitOrder::run($order);
             }
@@ -113,8 +111,8 @@ class PayRetinaOrderWithBalance extends RetinaAction
 
         return [
             'success' => true,
-            'reason'  => 'Order paid successfully',
-            'order'   => $order,
+            'reason' => 'Order paid successfully',
+            'order' => $order,
         ];
     }
 
@@ -137,6 +135,4 @@ class PayRetinaOrderWithBalance extends RetinaAction
 
         return $this->handle($order);
     }
-
-
 }

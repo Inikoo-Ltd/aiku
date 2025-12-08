@@ -51,7 +51,4 @@ class AttachRetinaPalletToReturn extends RetinaAction
 
         return $this->handle($palletReturn, $pallet);
     }
-
-
-
 }

@@ -22,7 +22,7 @@ class MasterProductProductsResource extends JsonResource
             'product_id' => $this->id,
             'name' => $this->name,
             'code' => $this->code,
-            'shop_id'   => $this->shop?->id,
+            'shop_id' => $this->shop?->id,
             'shop_name' => $this->shop?->name,
             'shop_code' => $this->shop?->code,
             'shop_currency' => $this->shop?->currency?->code,
@@ -30,9 +30,9 @@ class MasterProductProductsResource extends JsonResource
             'update_route' => [
                 'name' => 'grp.models.product.update',
                 'parameters' => [
-                    'product' => $this->id
-                ]
-            ]
+                    'product' => $this->id,
+                ],
+            ],
         ];
     }
 }

@@ -35,13 +35,13 @@ export const initialiseRetinaApp = () => {
         echoPersonal.subscribe(usePage().props?.auth?.user?.id)
 
     }
-    
+
     router.on('navigate', (event) => {
         // To see Vue filename in console (component.vue)
         if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
             window.component.vue = usePage().component
         }
-        
+
         layout.currentParams = route().routeParams  // current params
         layout.currentQuery = route().v().query  // current query
         layout.currentRoute = route().current()  // current route
@@ -77,7 +77,7 @@ export const initialiseRetinaApp = () => {
 
     watchEffect(() => {
         // Set currency to used by global
-        if (usePage().props.retina?.currency) {       
+        if (usePage().props.retina?.currency) {
             locale.currencyInertia = usePage().props.retina?.currency
         }
 
@@ -150,7 +150,7 @@ export const initialiseRetinaApp = () => {
     }, {
         immediate: true,
     })
-    
+
     layout.app.name = "retina"
 
     return layout

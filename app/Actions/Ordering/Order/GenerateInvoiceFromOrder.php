@@ -38,8 +38,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GenerateInvoiceFromOrder extends OrgAction
 {
-    use WithActionUpdate;
     use HasOrderHydrators;
+    use WithActionUpdate;
 
     /**
      * @throws \Throwable
@@ -48,47 +48,45 @@ class GenerateInvoiceFromOrder extends OrgAction
     {
         return DB::transaction(function () use ($order) {
             $billingAddress = $order->billingAddress;
-            $updatedData    = [];
+            $updatedData = [];
             if ($order->deliveryNotes) {
                 $updatedData = $this->recalculateTotals($order);
             }
 
             $order->update([
-                'net_amount'   => Arr::get($updatedData, 'net_amount', $order->net_amount),
+                'net_amount' => Arr::get($updatedData, 'net_amount', $order->net_amount),
                 'total_amount' => Arr::get($updatedData, 'total_amount', $order->total_amount),
                 'gross_amount' => Arr::get($updatedData, 'gross_amount', $order->gross_amount),
                 'goods_amount' => Arr::get($updatedData, 'goods_amount', $order->goods_amount),
             ]);
 
-
             $invoiceData = [
-                'in_process'                => false,
-                'currency_id'               => $order->currency_id,
-                'billing_address'           => new Address($billingAddress->getFields()),
-                'type'                      => InvoiceTypeEnum::INVOICE,
-                'net_amount'                => Arr::get($updatedData, 'net_amount', $order->net_amount),
-                'total_amount'              => Arr::get($updatedData, 'total_amount', $order->total_amount),
-                'gross_amount'              => Arr::get($updatedData, 'gross_amount', $order->gross_amount),
-                'rental_amount'             => 0,
-                'goods_amount'              => Arr::get($updatedData, 'goods_amount', $order->goods_amount),
-                'services_amount'           => $order->services_amount,
-                'charges_amount'            => $order->charges_amount,
-                'shipping_amount'           => $order->shipping_amount,
-                'insurance_amount'          => $order->insurance_amount,
-                'tax_amount'                => Arr::get($updatedData, 'tax_amount', $order->tax_amount),
+                'in_process' => false,
+                'currency_id' => $order->currency_id,
+                'billing_address' => new Address($billingAddress->getFields()),
+                'type' => InvoiceTypeEnum::INVOICE,
+                'net_amount' => Arr::get($updatedData, 'net_amount', $order->net_amount),
+                'total_amount' => Arr::get($updatedData, 'total_amount', $order->total_amount),
+                'gross_amount' => Arr::get($updatedData, 'gross_amount', $order->gross_amount),
+                'rental_amount' => 0,
+                'goods_amount' => Arr::get($updatedData, 'goods_amount', $order->goods_amount),
+                'services_amount' => $order->services_amount,
+                'charges_amount' => $order->charges_amount,
+                'shipping_amount' => $order->shipping_amount,
+                'insurance_amount' => $order->insurance_amount,
+                'tax_amount' => Arr::get($updatedData, 'tax_amount', $order->tax_amount),
                 'customer_sales_channel_id' => $order->customer_sales_channel_id,
-                'platform_id'               => $order->platform_id,
-                'footer'                    => $order->shop->invoice_footer ?? '',
-                'shipping_zone_schema_id'   => $order->shipping_zone_schema_id,
-                'shipping_zone_id'          => $order->shipping_zone_id,
-                'has_insurance'             => $order->has_insurance,
+                'platform_id' => $order->platform_id,
+                'footer' => $order->shop->invoice_footer ?? '',
+                'shipping_zone_schema_id' => $order->shipping_zone_schema_id,
+                'shipping_zone_id' => $order->shipping_zone_id,
+                'has_insurance' => $order->has_insurance,
             ];
 
             $shop = $order->shop;
-            if (!Arr::get($shop->settings, 'invoicing.stand_alone_invoice_numbers')) {
+            if (! Arr::get($shop->settings, 'invoicing.stand_alone_invoice_numbers')) {
                 $invoiceData['reference'] = $order->reference;
             }
-
 
             $invoice = StoreInvoice::make()->action(parent: $order, modelData: $invoiceData);
 
@@ -97,9 +95,9 @@ class GenerateInvoiceFromOrder extends OrgAction
             foreach ($transactions as $transaction) {
                 $data = [
                     'tax_category_id' => $transaction->order->tax_category_id,
-                    'quantity'        => $transaction->quantity_ordered,
-                    'gross_amount'    => $transaction->gross_amount,
-                    'net_amount'      => $transaction->net_amount,
+                    'quantity' => $transaction->quantity_ordered,
+                    'gross_amount' => $transaction->gross_amount,
+                    'net_amount' => $transaction->net_amount,
                 ];
 
                 if ($transaction->model_type == 'Adjustment') {
@@ -133,14 +131,13 @@ class GenerateInvoiceFromOrder extends OrgAction
             if ($amountToCredit > 0) {
                 /** @var \App\Models\Accounting\PaymentAccountShop $paymentAccountShop */
                 $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
-                $paymentData        = [
-                    'reference'               => 'cu-'.Str::ulid(),
-                    'amount'                  => -$amountToCredit,
-                    'status'                  => PaymentStatusEnum::SUCCESS,
-                    'type'                    => PaymentTypeEnum::REFUND,
-                    'payment_account_shop_id' => $paymentAccountShop->id
+                $paymentData = [
+                    'reference' => 'cu-'.Str::ulid(),
+                    'amount' => -$amountToCredit,
+                    'status' => PaymentStatusEnum::SUCCESS,
+                    'type' => PaymentTypeEnum::REFUND,
+                    'payment_account_shop_id' => $paymentAccountShop->id,
                 ];
-
 
                 $creditPayment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
                 AttachPaymentToOrder::run($order, $creditPayment, [
@@ -148,10 +145,10 @@ class GenerateInvoiceFromOrder extends OrgAction
                 ]);
 
                 StoreCreditTransaction::make()->action($invoice->customer, [
-                    'amount'     => $amountToCredit,
-                    'type'       => CreditTransactionTypeEnum::FROM_EXCESS,
+                    'amount' => $amountToCredit,
+                    'type' => CreditTransactionTypeEnum::FROM_EXCESS,
                     'payment_id' => $creditPayment->id,
-                    'date'       => now()
+                    'date' => now(),
                 ]);
             }
             $order->refresh();
@@ -165,7 +162,6 @@ class GenerateInvoiceFromOrder extends OrgAction
             }
             UpdateInvoicePaymentState::run($invoice);
 
-
             $invoice->refresh();
 
             return $invoice;
@@ -174,12 +170,12 @@ class GenerateInvoiceFromOrder extends OrgAction
 
     public function recalculateTotals(Order $order): array
     {
-        $itemsNet   = 0;
+        $itemsNet = 0;
         $itemsGross = 0;
 
         foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
-            $totals     = $this->recalculateTransactionTotals($transaction);
-            $itemsNet   += $totals['net_amount'];
+            $totals = $this->recalculateTransactionTotals($transaction);
+            $itemsNet += $totals['net_amount'];
             $itemsGross += $totals['gross_amount'];
         }
 
@@ -187,13 +183,13 @@ class GenerateInvoiceFromOrder extends OrgAction
 
         $netAmount = $itemsNet + $order->shipping_amount + $order->charges_amount;
 
-        $taxAmount   = $netAmount * $tax;
+        $taxAmount = $netAmount * $tax;
         $totalAmount = $netAmount + $taxAmount;
 
         return [
-            'net_amount'   => $netAmount,
+            'net_amount' => $netAmount,
             'total_amount' => $totalAmount,
-            'tax_amount'   => $taxAmount,
+            'tax_amount' => $taxAmount,
             'goods_amount' => $itemsNet,
             'gross_amount' => $itemsGross,
         ];
@@ -202,7 +198,6 @@ class GenerateInvoiceFromOrder extends OrgAction
     public function recalculateTransactionTotals(Transaction $transaction): array
     {
         $historicAsset = $transaction->historicAsset;
-
 
         $pickings = [];
         foreach ($transaction->deliveryNoteItems as $deliveryNoteItem) {
@@ -214,10 +209,10 @@ class GenerateInvoiceFromOrder extends OrgAction
             $pickings[] = $ratioOfPicking;
         }
         if (empty($pickings)) {
-            //todo: check this or I will reget
+            // todo: check this or I will reget
             $quantityPicked = $transaction->quantity_ordered;
         } else {
-            $sumOfPickings  = array_sum($pickings) / count($pickings);
+            $sumOfPickings = array_sum($pickings) / count($pickings);
             $quantityPicked = $transaction->quantity_ordered * $sumOfPickings;
         }
 
@@ -226,17 +221,16 @@ class GenerateInvoiceFromOrder extends OrgAction
             $discountsRatio = $transaction->net_amount / $transaction->gross_amount;
         }
 
-
         $gross = $historicAsset->price * $quantityPicked;
-        $net   = $historicAsset->price * $discountsRatio * $quantityPicked;
+        $net = $historicAsset->price * $discountsRatio * $quantityPicked;
 
         return [
             'tax_category_id' => $transaction->order->tax_category_id,
-            'quantity'        => $quantityPicked,
-            'gross_amount'    => $gross,
-            'net_amount'      => $net,
-            'org_net_amount'  => $net * $transaction->org_exchange,
-            'grp_net_amount'  => $net * $transaction->grp_exchange,
+            'quantity' => $quantityPicked,
+            'gross_amount' => $gross,
+            'net_amount' => $net,
+            'org_net_amount' => $net * $transaction->org_exchange,
+            'grp_net_amount' => $net * $transaction->grp_exchange,
         ];
     }
 
@@ -244,7 +238,7 @@ class GenerateInvoiceFromOrder extends OrgAction
     {
         return Redirect::route('grp.org.accounting.invoices.show', [
             'organisation' => $invoice->shop->organisation->slug,
-            'invoice'      => $invoice->slug
+            'invoice' => $invoice->slug,
         ]);
     }
 

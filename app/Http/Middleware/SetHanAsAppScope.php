@@ -19,9 +19,6 @@ class SetHanAsAppScope
             return 'han';
         });
 
-
-
-
         return $next($request);
     }
 }

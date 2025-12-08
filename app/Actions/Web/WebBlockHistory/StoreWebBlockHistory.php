@@ -30,13 +30,14 @@ class StoreWebBlockHistory
         data_set($modelData, 'web_block_id', $modelHasWebBlocks->web_block_id);
         data_set($modelData, 'web_block_type_id', $modelHasWebBlocks->webBlock->web_block_type_id);
         data_set($modelData, 'checksum', md5(json_encode(Arr::get($modelData, 'layout', []))));
+
         return $webpage->webBlockHistories()->create($modelData);
     }
 
     public function rules(): array
     {
         return [
-            'layout'     => ['sometimes', 'array'],
+            'layout' => ['sometimes', 'array'],
         ];
 
     }

@@ -18,7 +18,7 @@ class OfferCampaignFactory extends Factory
         return [
             'code' => fake()->lexify,
             'name' => fake()->name,
-            'type' => OfferCampaignTypeEnum::SHOP_OFFERS
+            'type' => OfferCampaignTypeEnum::SHOP_OFFERS,
         ];
     }
 }

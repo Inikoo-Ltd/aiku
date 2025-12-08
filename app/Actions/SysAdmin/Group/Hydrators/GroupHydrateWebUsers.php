@@ -64,6 +64,4 @@ class GroupHydrateWebUsers implements ShouldBeUnique
 
         $group->crmStats()->update($stats);
     }
-
-
 }

@@ -26,7 +26,7 @@ class GroupHydrateJobPositions implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_job_positions' => $group->jobPositions()->count()
+            'number_job_positions' => $group->jobPositions()->count(),
         ];
         $group->humanResourcesStats()->update($stats);
     }

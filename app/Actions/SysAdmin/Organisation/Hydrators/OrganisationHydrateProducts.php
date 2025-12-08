@@ -29,7 +29,7 @@ class OrganisationHydrateProducts implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_products' => $organisation->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count()
+            'number_products' => $organisation->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count(),
         ];
 
         $stats = array_merge(
@@ -51,5 +51,4 @@ class OrganisationHydrateProducts implements ShouldBeUnique
         $organisation->catalogueStats()->update($stats);
 
     }
-
 }

@@ -13,6 +13,7 @@ use Illuminate\Database\Schema\Blueprint;
 trait HasFulfilmentDelivery
 {
     use HasGroupOrganisationRelationship;
+
     public function getPalletIOFields(Blueprint $table): Blueprint
     {
 

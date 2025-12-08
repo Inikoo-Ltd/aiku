@@ -37,13 +37,13 @@ class UpdateTransaction extends OrgAction
 
             if ($transaction->model_type == 'Product') {
                 /** @var Product $product */
-                $product         = $transaction->model;
+                $product = $transaction->model;
                 $estimatedWeight = Arr::get($modelData, 'quantity_ordered') * $product->gross_weight;
                 data_set($modelData, 'estimated_weight', $estimatedWeight);
             }
 
             $historicAsset = $transaction->historicAsset;
-            $net           = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+            $net = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
             // here we are going to deal with discounts 15/09/24
             $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
 
@@ -52,13 +52,12 @@ class UpdateTransaction extends OrgAction
         }
 
         if ($this->strict && Arr::exists($modelData, 'net_amount')) {
-            $shop        = $transaction->shop;
+            $shop = $transaction->shop;
             $orgExchange = GetCurrencyExchange::run($shop->currency, $shop->organisation->currency);
             $grpExchange = GetCurrencyExchange::run($shop->currency, $shop->organisation->group->currency);
 
-
             $netAmount = Arr::get($modelData, 'net_amount');
-            if (!is_numeric($netAmount)) {
+            if (! is_numeric($netAmount)) {
                 $netAmount = 0;
             }
 
@@ -68,7 +67,6 @@ class UpdateTransaction extends OrgAction
             data_set($modelData, 'grp_exchange', $grpExchange);
             data_set($modelData, 'grp_net_amount', $grpExchange * $netAmount);
         }
-
 
         $this->update($transaction, $modelData, ['data']);
 
@@ -85,39 +83,39 @@ class UpdateTransaction extends OrgAction
 
     public function rules(): array
     {
-        $qtyRule     = ['sometimes', 'numeric', 'min:0'];
+        $qtyRule = ['sometimes', 'numeric', 'min:0'];
         $numericRule = ['sometimes', 'numeric'];
 
         $rules = [
-            'quantity_ordered'    => $qtyRule,
-            'quantity_picked'    => $qtyRule,
-            'quantity_bonus'      => $qtyRule,
+            'quantity_ordered' => $qtyRule,
+            'quantity_picked' => $qtyRule,
+            'quantity_bonus' => $qtyRule,
             'quantity_dispatched' => $qtyRule,
-            'quantity_fail'       => $qtyRule,
-            'quantity_cancelled'  => ['sometimes', 'sometimes', 'numeric', 'min:0'],
-            'state'               => ['sometimes', Rule::enum(TransactionStateEnum::class)],
-            'status'              => ['sometimes', Rule::enum(TransactionStatusEnum::class)],
-            'fail_status'         => ['sometimes', 'nullable', Rule::enum(TransactionFailStatusEnum::class)],
-            'gross_amount'        => $numericRule,
-            'net_amount'          => $numericRule,
-            'org_exchange'        => $numericRule,
-            'grp_exchange'        => $numericRule,
-            'org_net_amount'      => $numericRule,
-            'grp_net_amount'      => $numericRule,
-            'tax_category_id'     => ['sometimes', 'exists:tax_categories,id'],
-            'date'                => ['sometimes', 'date'],
-            'submitted_at'        => ['sometimes', 'date'],
+            'quantity_fail' => $qtyRule,
+            'quantity_cancelled' => ['sometimes', 'sometimes', 'numeric', 'min:0'],
+            'state' => ['sometimes', Rule::enum(TransactionStateEnum::class)],
+            'status' => ['sometimes', Rule::enum(TransactionStatusEnum::class)],
+            'fail_status' => ['sometimes', 'nullable', Rule::enum(TransactionFailStatusEnum::class)],
+            'gross_amount' => $numericRule,
+            'net_amount' => $numericRule,
+            'org_exchange' => $numericRule,
+            'grp_exchange' => $numericRule,
+            'org_net_amount' => $numericRule,
+            'grp_net_amount' => $numericRule,
+            'tax_category_id' => ['sometimes', 'exists:tax_categories,id'],
+            'date' => ['sometimes', 'date'],
+            'submitted_at' => ['sometimes', 'date'],
         ];
 
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictStoreRules($rules);
 
-            $rules['model_type']        = ['sometimes', 'required', 'string'];
-            $rules['model_id']          = ['sometimes', 'nullable', 'integer'];
-            $rules['asset_id']          = ['sometimes', 'nullable', 'integer'];
+            $rules['model_type'] = ['sometimes', 'required', 'string'];
+            $rules['model_id'] = ['sometimes', 'nullable', 'integer'];
+            $rules['asset_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['historic_asset_id'] = ['sometimes', 'nullable', 'integer'];
-            $rules['in_warehouse_at']   = ['sometimes', 'nullable', 'date'];
-            $rules                      = $this->noStrictStoreRules($rules);
+            $rules['in_warehouse_at'] = ['sometimes', 'nullable', 'date'];
+            $rules = $this->noStrictStoreRules($rules);
         }
 
         return $rules;

@@ -51,9 +51,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_customers Number distinct customer with successful payments
  * @property-read \App\Models\Accounting\PaymentAccountShop $paymentAccountShop
+ *
  * @method static Builder<static>|PaymentAccountShopStats newModelQuery()
  * @method static Builder<static>|PaymentAccountShopStats newQuery()
  * @method static Builder<static>|PaymentAccountShopStats query()
+ *
  * @mixin Eloquent
  */
 class PaymentAccountShopStats extends Model

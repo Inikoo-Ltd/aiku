@@ -38,12 +38,9 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-
         $queryBuilder = QueryBuilder::for(Invoice::class);
 
         $queryBuilder->where('invoices.customer_id', $customer->id);
-
-
 
         $queryBuilder->defaultSort('-invoices.date')
             ->select([
@@ -71,10 +68,7 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
             ->leftJoin('customer_sales_channels', 'customer_sales_channels.id', 'invoices.customer_sales_channel_id')
             ->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id');
 
-
-
-
-        return $queryBuilder->allowedSorts(['number', 'customer_sales_channel_name','total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
+        return $queryBuilder->allowedSorts(['number', 'customer_sales_channel_name', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -89,8 +83,7 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
                     ->pageName($prefix.'Page');
             }
 
-
-            $noResults = __("No invoices found");
+            $noResults = __('No invoices found');
 
             $table
                 ->withGlobalSearch()
@@ -108,58 +101,46 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
 
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
-
-
-
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('reference');
         };
     }
-
-
-
 
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
     {
         return DropshippingInvoicesResource::collection($invoices);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
 
-
         $afterTitle = null;
-        $iconRight  = null;
-        $model      = null;
-        $actions    = null;
+        $iconRight = null;
+        $model = null;
+        $actions = null;
 
-        $title      = __('Invoices');
+        $title = __('Invoices');
 
-        $icon  = [
-            'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            'title' => __('Invoices')
+        $icon = [
+            'icon' => ['fal', 'fa-file-invoice-dollar'],
+            'title' => __('Invoices'),
         ];
-
-
-
 
         return Inertia::render(
             'Billing/RetinaInvoices',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Invoices'),
-                'pageHead'    => [
+                'title' => __('Invoices'),
+                'pageHead' => [
 
-                    'title'         => $title,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'icon'          => $icon,
-                    'actions'       => $actions
+                    'title' => $title,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
+                    'icon' => $icon,
+                    'actions' => $actions,
                 ],
-                'data'        => DropshippingInvoicesResource::collection($invoices),
-
+                'data' => DropshippingInvoicesResource::collection($invoices),
 
             ]
         )->table($this->tableStructure($this->customer));
@@ -180,14 +161,14 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.invoices.index'
+                                'name' => 'retina.dropshipping.invoices.index',
                             ],
                             'label' => __('Invoice dashboard'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
 

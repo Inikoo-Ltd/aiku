@@ -36,7 +36,6 @@ class BlogWebpagesResource extends JsonResource
 {
     use HasSelfCall;
 
-
     public function toArray($request): array
     {
         $href = '';
@@ -57,32 +56,32 @@ class BlogWebpagesResource extends JsonResource
             }
         }
 
-        $href .= '/blog/' . $this->url;
+        $href .= '/blog/'.$this->url;
 
         $publishedLayout = is_array($this->published_layout)
         ? $this->published_layout
         : json_decode($this->published_layout);
 
         return [
-            "id"       => $this->id,
-            "slug"     => $this->slug,
-            "level"    => $this->level,
-            "code"     => $this->code,
-            "url"      => $this->url,
-            "title"    => $this->title,
-            "href"              => $href,
-            "type"              => $this->type,
-            "typeIcon"          => $this->type->stateIcon()[$this->type->value] ?? ["fal", "fa-browser"],
-            "sub_type"          => $this->sub_type,
-            "created_at"        => $this->created_at,
-            "updated_at"        => $this->updated_at,
-            "state"             => $this->state,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'level' => $this->level,
+            'code' => $this->code,
+            'url' => $this->url,
+            'title' => $this->title,
+            'href' => $href,
+            'type' => $this->type,
+            'typeIcon' => $this->type->stateIcon()[$this->type->value] ?? ['fal', 'fa-browser'],
+            'sub_type' => $this->sub_type,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'state' => $this->state,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
-            'shop_name'         => $this->shop_name,
-            'shop_slug'         => $this->shop_slug,
+            'shop_name' => $this->shop_name,
+            'shop_slug' => $this->shop_slug,
             'published_layout' => $publishedLayout,
-            'published_at'      => $this->snapshots()->latest()->first()->published_at,
+            'published_at' => $this->snapshots()->latest()->first()->published_at,
         ];
     }
 }

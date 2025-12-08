@@ -12,9 +12,10 @@ trait WithStore
 {
     public function postStore($res, $model)
     {
-        $res->model    = $model;
+        $res->model = $model;
         $res->model_id = $model->id;
-        $res->status   = $res->changes ? 'inserted' : 'unchanged';
+        $res->status = $res->changes ? 'inserted' : 'unchanged';
+
         return $res;
     }
 }

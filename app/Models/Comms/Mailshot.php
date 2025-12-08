@@ -74,6 +74,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Comms\MailshotRecipient> $recipients
  * @property-read Shop|null $shop
  * @property-read \App\Models\Comms\MailshotStats|null $stats
+ *
  * @method static \Database\Factories\Comms\MailshotFactory factory($count = null, $state = [])
  * @method static Builder<static>|Mailshot newModelQuery()
  * @method static Builder<static>|Mailshot newQuery()
@@ -81,42 +82,42 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Mailshot query()
  * @method static Builder<static>|Mailshot withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Mailshot withoutTrashed()
+ *
  * @mixin Eloquent
  */
 class Mailshot extends Model implements Auditable
 {
-    use SoftDeletes;
     use HasFactory;
-    use InShop;
     use HasHistory;
     use HasSlug;
+    use InShop;
+    use SoftDeletes;
 
     protected $casts = [
         'recipients_recipe' => 'array',
-        'data'              => 'array',
-        'type'              => MailshotTypeEnum::class,
-        'state'             => MailshotStateEnum::class,
-        'date'              => 'datetime',
-        'ready_at'          => 'datetime',
-        'scheduled_at'      => 'datetime',
-        'start_sending_at'  => 'datetime',
-        'sent_at'           => 'datetime',
-        'cancelled_at'      => 'datetime',
-        'stopped_at'        => 'datetime',
+        'data' => 'array',
+        'type' => MailshotTypeEnum::class,
+        'state' => MailshotStateEnum::class,
+        'date' => 'datetime',
+        'ready_at' => 'datetime',
+        'scheduled_at' => 'datetime',
+        'start_sending_at' => 'datetime',
+        'sent_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'stopped_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'data'              => '{}',
+        'data' => '{}',
         'recipients_recipe' => '{}',
     ];
-
 
     protected $guarded = [];
 
     public function generateTags(): array
     {
         return [
-            'marketing'
+            'marketing',
         ];
     }
 
@@ -178,7 +179,7 @@ class Mailshot extends Model implements Auditable
         if (app()->environment('production')) {
             /** @var Shop $parent */
             $parent = $this->parent;
-            //todo we need to set up sender and very SES etc
+            // todo we need to set up sender and very SES etc
             //   $sender = $parent->senderEmail->email_address;
             $sender = $parent->email;
         } else {
@@ -192,7 +193,4 @@ class Mailshot extends Model implements Auditable
     {
         return $this->morphMany(EmailDeliveryChannel::class, 'model');
     }
-
-
-
 }

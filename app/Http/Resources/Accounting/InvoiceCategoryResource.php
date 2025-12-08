@@ -16,11 +16,11 @@ class InvoiceCategoryResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'     => $this->id,
-            'slug'   => $this->slug,
-            'name'   => $this->name,
-            'state'  => $this->state,
-            'type'   => $this->type,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'state' => $this->state,
+            'type' => $this->type,
         ];
     }
 }

@@ -6,9 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
+use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Stubs\Migrations\HasFulfilmentStats;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use App\Stubs\Migrations\HasSoftDeletes;
@@ -16,14 +16,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
+    use HasFulfilmentStats;
     use HasGroupOrganisationRelationship;
     use HasSoftDeletes;
-    use HasFulfilmentStats;
 
     public function up(): void
     {
-        if (!Schema::hasTable('pallets')) {
+        if (! Schema::hasTable('pallets')) {
             Schema::create('pallets', function (Blueprint $table) {
                 $table->increments('id');
                 $table = $this->groupOrgRelationship($table);
@@ -40,7 +41,6 @@ return new class () extends Migration {
                 $table->foreign('warehouse_area_id')->references('id')->on('warehouse_areas');
                 $table->unsignedSmallInteger('rental_id')->nullable()->index();
                 $table->unsignedSmallInteger('rental_agreement_clause_id')->nullable()->index();
-
 
                 $table->unsignedInteger('location_id')->index()->nullable();
                 $table->foreign('location_id')->references('id')->on('locations');
@@ -67,7 +67,6 @@ return new class () extends Migration {
                 $table->jsonb('data');
                 $table->jsonb('incident_report');
 
-
                 $table->boolean('with_stored_items')->default(false);
                 $table = $this->storedItemsStatsFields($table);
 
@@ -81,7 +80,6 @@ return new class () extends Migration {
             });
         }
     }
-
 
     public function down(): void
     {

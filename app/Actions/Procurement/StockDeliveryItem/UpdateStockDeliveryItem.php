@@ -36,13 +36,14 @@ class UpdateStockDeliveryItem extends OrgAction
 
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
+
     public function rules(): array
     {
         $rules = [
             'unit_quantity' => ['sometimes', 'required', 'numeric', 'gte:0'],
         ];
-        if (!$this->strict) {
-            $rules['state'] = ['sometimes','required', Rule::enum(StockDeliveryItemStateEnum::class)];
+        if (! $this->strict) {
+            $rules['state'] = ['sometimes', 'required', Rule::enum(StockDeliveryItemStateEnum::class)];
             $rules['unit_quantity_checked'] = ['sometimes', 'numeric', 'gte:0'];
             $rules['unit_quantity_placed'] = ['sometimes', 'numeric', 'gte:0'];
             $rules = $this->noStrictUpdateRules($rules);
@@ -54,8 +55,8 @@ class UpdateStockDeliveryItem extends OrgAction
     public function action(StockDeliveryItem $stockDeliveryItem, array $modelData, int $hydratorsDelay = 0, bool $strict = true): StockDeliveryItem
     {
 
-        $this->asAction      = true;
-        $this->strict        = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
 
         $this->hydratorsDelay = $hydratorsDelay;
 
@@ -67,6 +68,7 @@ class UpdateStockDeliveryItem extends OrgAction
     public function asController(StockDeliveryItem $stockDeliveryItem, ActionRequest $request): StockDeliveryItem
     {
         $this->initialisation($stockDeliveryItem->organisation, $request);
+
         return $this->handle($stockDeliveryItem, $this->validatedData);
     }
 

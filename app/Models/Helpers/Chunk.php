@@ -30,10 +30,12 @@ use Pgvector\Laravel\Vector;
  * @property int|null $section_number
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Chunk nearestNeighbors(string $column, ?mixed $value, \Pgvector\Laravel\Distance $distance)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Chunk newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Chunk newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Chunk query()
+ *
  * @mixin \Eloquent
  */
 class Chunk extends Model

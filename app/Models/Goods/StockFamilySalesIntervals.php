@@ -1312,9 +1312,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customers_pq4
  * @property int $number_customers_pq5
  * @property-read \App\Models\Goods\StockFamily $stockFamily
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilySalesIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilySalesIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilySalesIntervals query()
+ *
  * @mixin \Eloquent
  */
 class StockFamilySalesIntervals extends Model
@@ -1322,7 +1324,6 @@ class StockFamilySalesIntervals extends Model
     protected $table = 'stock_family_sales_intervals';
 
     protected $guarded = [];
-
 
     public function stockFamily(): BelongsTo
     {

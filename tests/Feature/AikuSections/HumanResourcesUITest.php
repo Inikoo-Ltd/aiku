@@ -35,10 +35,10 @@ beforeAll(function () {
 beforeEach(function () {
 
     $this->organisation = createOrganisation();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
+    $this->adminGuest = createAdminGuest($this->organisation->group);
 
     $workplace = Workplace::first();
-    if (!$workplace) {
+    if (! $workplace) {
         data_set($storeData, 'name', 'workplace');
         data_set($storeData, 'type', WorkplaceTypeEnum::HQ->value);
 
@@ -50,7 +50,7 @@ beforeEach(function () {
     $this->workplace = $workplace;
 
     $clockingMachine = ClockingMachine::first();
-    if (!$clockingMachine) {
+    if (! $clockingMachine) {
         data_set($storeData, 'name', 'machine');
         data_set($storeData, 'type', ClockingMachineTypeEnum::BIOMETRIC->value);
 
@@ -62,7 +62,7 @@ beforeEach(function () {
     $this->clockingMachine = $clockingMachine;
 
     $employee = Employee::first();
-    if (!$employee) {
+    if (! $employee) {
         $storeData = Employee::factory()->definition();
 
         $employee = StoreEmployee::make()->action(
@@ -73,7 +73,7 @@ beforeEach(function () {
     $this->employee = $employee;
 
     $jobPosition = JobPosition::first();
-    if (!$jobPosition) {
+    if (! $jobPosition) {
         data_set($storeData, 'code', 'wp');
         data_set($storeData, 'name', 'Kirin');
         $jobPosition = StoreJobPosition::make()->action(
@@ -84,7 +84,7 @@ beforeEach(function () {
     $this->jobPosition = $jobPosition;
 
     $timesheet = Timesheet::first();
-    if (!$timesheet) {
+    if (! $timesheet) {
         data_set($storeData, 'date', '02-10-2002');
         $timesheet = StoreTimesheet::make()->action(
             $this->employee,
@@ -113,8 +113,8 @@ test('UI Index calendar', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Employees')
-                        ->etc()
+                    ->where('title', 'Employees')
+                    ->etc()
             )
             ->has('data');
     });
@@ -131,13 +131,13 @@ test('UI show calendar', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->employee->worker_number)
-                        ->etc()
+                    ->where('title', $this->employee->worker_number)
+                    ->etc()
             )
             ->has('tabs');
 
     });
-})->todo(); //authorization problem
+})->todo(); // authorization problem
 
 test('UI Index clockings', function () {
     $this->withoutExceptionHandling();
@@ -152,8 +152,8 @@ test('UI Index clockings', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Clockings')
-                        ->etc()
+                    ->where('title', 'Clockings')
+                    ->etc()
             )
             ->has('data');
     });
@@ -172,8 +172,8 @@ test('UI Index clocking machines', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Clocking machines')
-                        ->etc()
+                    ->where('title', 'Clocking machines')
+                    ->etc()
             )
             ->has('data');
     });
@@ -190,8 +190,8 @@ test('UI show clocking machine', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->clockingMachine->name)
-                        ->etc()
+                    ->where('title', $this->clockingMachine->name)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -218,8 +218,8 @@ test('UI edit clocking machine', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.clocking_machine..update')
-                        ->where('parameters', $this->clockingMachine->id)
+                    ->where('name', 'grp.models.clocking_machine..update')
+                    ->where('parameters', $this->clockingMachine->id)
             )
             ->has('breadcrumbs', 4);
     });
@@ -238,8 +238,8 @@ test('UI Index employees', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Employees')
-                        ->etc()
+                    ->where('title', 'Employees')
+                    ->etc()
             )
             ->has('data');
     });
@@ -266,8 +266,8 @@ test('UI show employee', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->employee->contact_name)
-                        ->etc()
+                    ->where('title', $this->employee->contact_name)
+                    ->etc()
             )
             ->has('tabs');
 
@@ -286,8 +286,8 @@ test('UI edit employee', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.employee.update')
-                        ->where('parameters', [$this->employee->id])
+                    ->where('name', 'grp.models.employee.update')
+                    ->where('parameters', [$this->employee->id])
             )
             ->has('breadcrumbs', 3);
     });
@@ -305,8 +305,8 @@ test('UI show job position', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->jobPosition->name)
-                        ->etc()
+                    ->where('title', $this->jobPosition->name)
+                    ->etc()
             )
             ->has('tabs');
     });
@@ -325,14 +325,12 @@ test('UI Index job positions', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Responsibilities')
-                        ->etc()
+                    ->where('title', 'Responsibilities')
+                    ->etc()
             )
             ->has('data');
     });
 });
-
-
 
 test('UI create workplace', function () {
     $response = get(route('grp.org.hr.workplaces.create', [$this->organisation->slug]));
@@ -354,8 +352,8 @@ test('UI edit workplace', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                        ->where('name', 'grp.models.workplace.update')
-                        ->where('parameters', $this->workplace->id)
+                    ->where('name', 'grp.models.workplace.update')
+                    ->where('parameters', $this->workplace->id)
             )
             ->has('breadcrumbs', 3);
     });
@@ -374,8 +372,8 @@ test('UI Index timesheets', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Timesheets')
-                        ->etc()
+                    ->where('title', 'Timesheets')
+                    ->etc()
             )
             ->has('data');
     });
@@ -393,8 +391,8 @@ test('UI show timesheet', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', $this->timesheet->date->format('l, j F Y'))
-                        ->etc()
+                    ->where('title', $this->timesheet->date->format('l, j F Y'))
+                    ->etc()
             )
             ->has('tabs');
     });
@@ -402,7 +400,7 @@ test('UI show timesheet', function () {
 
 test('UI get section route hr employee index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.hr.employees.index', [
-        'organisation' => $this->organisation->slug
+        'organisation' => $this->organisation->slug,
     ]);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::ORG_HR->value)

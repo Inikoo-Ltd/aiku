@@ -27,22 +27,23 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class StoreRetinaPlatformOrder extends RetinaAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
+    use WithAttributes;
 
     public function handle(Customer $customer, Platform $platform, array $modelData): Order
     {
         $order = DB::transaction(function () use ($customer, $platform, $modelData) {
             $order = StoreOrder::make()->action($customer, [
-                'platform_id' => $platform->id
+                'platform_id' => $platform->id,
             ]);
 
             foreach ($modelData['products'] as $product) {
                 $historicAsset = HistoricAsset::find($product['id']);
                 StoreTransaction::make()->action($order, $historicAsset, [
-                    'quantity_ordered' => $product['quantity']
+                    'quantity_ordered' => $product['quantity'],
                 ]);
             }
+
             return $order;
         });
 
@@ -58,7 +59,7 @@ class StoreRetinaPlatformOrder extends RetinaAction
     public function rules(): array
     {
         return [
-            'products' => ['required', 'array']
+            'products' => ['required', 'array'],
         ];
     }
 
@@ -71,7 +72,7 @@ class StoreRetinaPlatformOrder extends RetinaAction
     {
         return Redirect::route('retina.dropshipping.customer_sales_channels.orders.show', [
             $order->platform->slug,
-            $order->slug
+            $order->slug,
         ]);
     }
 

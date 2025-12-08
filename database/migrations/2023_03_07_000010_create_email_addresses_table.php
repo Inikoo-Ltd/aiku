@@ -10,7 +10,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('email_addresses', function (Blueprint $table) {
@@ -18,7 +19,7 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('group_id')->index();
             $table->foreign('group_id')->references('id')->on('groups')->onUpdate('cascade')->onDelete('cascade');
 
-            //https://stackoverflow.com/questions/1199190/what-is-the-optimal-length-for-an-email-address-in-a-database
+            // https://stackoverflow.com/questions/1199190/what-is-the-optimal-length-for-an-email-address-in-a-database
             $table->string('email', 254)->unique();
             $table->dateTimeTz('last_marketing_dispatch_at')->nullable()->index();
             $table->dateTimeTz('last_transactional_dispatch_at')->nullable()->index();
@@ -29,7 +30,6 @@ return new class () extends Migration {
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

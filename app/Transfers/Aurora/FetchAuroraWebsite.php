@@ -20,12 +20,10 @@ class FetchAuroraWebsite extends FetchAurora
     {
         $this->auroraModelData = $this->fetchData($id);
 
-
         $code = strtolower($this->auroraModelData->{'Website Code'});
         $code = preg_replace('/\.com$/', '', $code);
         $code = preg_replace('/\.eu$/', '', $code);
         $code = preg_replace('/\.biz$/', '', $code);
-
 
         $sourceId = $this->organisation->id.':'.$this->auroraModelData->{'Website Key'};
         if (Website::where('code', $code)->whereNot('source_id', $sourceId)->exists()) {
@@ -53,21 +51,19 @@ class FetchAuroraWebsite extends FetchAurora
             default => WebsiteStateEnum::IN_PROCESS,
         };
 
-
         $domain = preg_replace('/^www\./', '', strtolower($this->auroraModelData->{'Website URL'}));
-
 
         $this->parsedData['website'] =
             [
-                'name'            => $this->auroraModelData->{'Website Name'},
-                'code'            => $this->auroraModelData->code,
-                'domain'          => $domain,
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Website Key'},
-                'fetched_at'      => now(),
-                'last_fetched_at' => now()
+                'name' => $this->auroraModelData->{'Website Name'},
+                'code' => $this->auroraModelData->code,
+                'domain' => $domain,
+                'source_id' => $this->organisation->id.':'.$this->auroraModelData->{'Website Key'},
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
             ];
 
-        $this->parsedData['website']['state']  = $state;
+        $this->parsedData['website']['state'] = $state;
         $this->parsedData['website']['status'] = $this->auroraModelData->{'Website Status'} === 'Active';
 
         if ($launchedAt = $this->parseDatetime($this->auroraModelData->{'Website Launched'})) {
@@ -80,14 +76,12 @@ class FetchAuroraWebsite extends FetchAurora
             $this->parsedData['launch'] = true;
         }
 
-
         if ($createdAt = $this->parseDatetime($this->auroraModelData->{'Website From'})) {
             $this->parsedData['website']['created_at'] = $createdAt;
         }
     }
 
-
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('aurora')
             ->table('Website Dimension')

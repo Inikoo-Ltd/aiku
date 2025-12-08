@@ -7,11 +7,12 @@
  */
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         DB::transaction(function () {
@@ -22,11 +23,11 @@ return new class () extends Migration {
                 'product_categories',
                 'collections',
             ] as $table) {
-                if (!Schema::hasColumn($table, 'offers_data')) {
+                if (! Schema::hasColumn($table, 'offers_data')) {
                     Schema::table($table, function (Blueprint $table) {
                         $table->json('offers_data')
-                              ->nullable()
-                              ->default(DB::raw("'{}'::json"));
+                            ->nullable()
+                            ->default(DB::raw("'{}'::json"));
                     });
                 } else {
                     DB::statement("ALTER TABLE $table ALTER COLUMN offers_data SET DEFAULT '{}'::json");

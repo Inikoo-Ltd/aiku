@@ -38,7 +38,6 @@ class ShowOrgSupplierProduct extends OrgAction
         return $orgSupplierProduct;
     }
 
-
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
@@ -75,26 +74,25 @@ class ShowOrgSupplierProduct extends OrgAction
         return Inertia::render(
             'Procurement/OrgSupplierProduct',
             [
-                'title'                                              => __('supplier product'),
-                'breadcrumbs'                                        => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'title' => __('supplier product'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 // 'navigation'                                         => [
                 //     'previous' => $this->getPrevious($orgSupplierProduct, $request),
                 //     'next'     => $this->getNext($orgSupplierProduct, $request),
                 // ],
-                'pageHead'                                           => [
-                    'icon'  =>
-                        [
-                            'icon'  => ['fal', 'box-usd'],
-                            'title' => __('Agent')
-                        ],
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'box-usd'],
+                        'title' => __('Agent'),
+                    ],
                     'title' => $orgSupplierProduct->supplierProduct->name,
                 ],
-                'supplier'                                           => new SupplierProductResource($orgSupplierProduct),
-                'tabs'                                               => [
-                    'current'    => $this->tab,
-                    'navigation' => OrgSupplierProductTabsEnum::navigation()
+                'supplier' => new SupplierProductResource($orgSupplierProduct),
+                'tabs' => [
+                    'current' => $this->tab,
+                    'navigation' => OrgSupplierProductTabsEnum::navigation(),
                 ],
-                OrgSupplierProductTabsEnum::SHOWCASE->value          => $this->tab == OrgSupplierProductTabsEnum::SHOWCASE->value ?
+                OrgSupplierProductTabsEnum::SHOWCASE->value => $this->tab == OrgSupplierProductTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgSupplierProductShowcase::run($orgSupplierProduct)
                     : Inertia::lazy(fn () => GetOrgSupplierProductShowcase::run($orgSupplierProduct)),
                 // OrgSupplierProductTabsEnum::SUPPLIER_PRODUCTS->value => $this->tab == OrgSupplierProductTabsEnum::SUPPLIER_PRODUCTS->value ?
@@ -107,7 +105,7 @@ class ShowOrgSupplierProduct extends OrgAction
 
                 OrgSupplierProductTabsEnum::HISTORY->value => $this->tab == OrgSupplierProductTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct)))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct))),
 
             ]
         )
@@ -117,10 +115,9 @@ class ShowOrgSupplierProduct extends OrgAction
         //         prefix: OrgSupplierProductTabsEnum::SUPPLIER_PRODUCTS->value
         //     )
         // )
-            ->table(IndexPurchaseOrders::make()->tableStructure(parent:$orgSupplierProduct, prefix: OrgSupplierProductTabsEnum::PURCHASE_ORDERS->value))
+            ->table(IndexPurchaseOrders::make()->tableStructure(parent: $orgSupplierProduct, prefix: OrgSupplierProductTabsEnum::PURCHASE_ORDERS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: OrgSupplierProductTabsEnum::HISTORY->value));
     }
-
 
     public function jsonResponse(Supplier $supplier): SupplierResource
     {
@@ -132,11 +129,11 @@ class ShowOrgSupplierProduct extends OrgAction
         $headCrumb = function (OrgSupplierProduct $orgSupplierProduct, array $routeParameters, string $suffix) {
             return [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Supplier Products')
+                            'label' => __('Supplier Products'),
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -144,7 +141,7 @@ class ShowOrgSupplierProduct extends OrgAction
                         ],
 
                     ],
-                    'suffix'         => $suffix
+                    'suffix' => $suffix,
                 ],
             ];
         };
@@ -152,60 +149,57 @@ class ShowOrgSupplierProduct extends OrgAction
         $orgSupplierProduct = OrgSupplierProduct::where('slug', $routeParameters['orgSupplierProduct'])->firstOrFail();
 
         return match ($routeName) {
-            'grp.org.procurement.org_supplier_products.show' =>
-                array_merge(
-                    (new ShowProcurementDashboard())->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
-                    $headCrumb(
-                        $orgSupplierProduct,
-                        [
-                            'index' => [
-                                'name'       => 'grp.org.procurement.org_supplier_products.index',
-                                'parameters' => $routeParameters
-                            ],
-                            'model' => [
-                                'name'       => 'grp.org.procurement.org_supplier_products.show',
-                                'parameters' => $routeParameters
-                            ]
+            'grp.org.procurement.org_supplier_products.show' => array_merge(
+                (new ShowProcurementDashboard)->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
+                $headCrumb(
+                    $orgSupplierProduct,
+                    [
+                        'index' => [
+                            'name' => 'grp.org.procurement.org_supplier_products.index',
+                            'parameters' => $routeParameters,
                         ],
-                        $suffix
-                    )
-                ),
-            'grp.org.procurement.org_agents.show.supplier_products.show' =>
-                array_merge(
-                    (new ShowOrgAgent())->getBreadcrumbs($routeParameters),
-                    $headCrumb(
-                        $orgSupplierProduct,
-                        [
-                            'index' => [
-                                'name'       => 'grp.org.procurement.org_agents.show.supplier_products.index',
-                                'parameters' => $routeParameters
-                            ],
-                            'model' => [
-                                'name'       => 'grp.org.procurement.org_agents.show.supplier_products.show',
-                                'parameters' => $routeParameters
-                            ]
+                        'model' => [
+                            'name' => 'grp.org.procurement.org_supplier_products.show',
+                            'parameters' => $routeParameters,
                         ],
-                        $suffix
-                    )
-                ),
-            'grp.org.procurement.org_suppliers.show.supplier_products.show' =>
-                array_merge(
-                    (new ShowOrgSupplier())->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'orgSupplier'])),
-                    $headCrumb(
-                        $orgSupplierProduct,
-                        [
-                            'index' => [
-                                'name'       => 'grp.org.procurement.org_suppliers.show',
-                                'parameters' => $routeParameters
-                            ],
-                            'model' => [
-                                'name'       => 'grp.org.procurement.org_suppliers.show.supplier_products.show',
-                                'parameters' => $routeParameters
-                            ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.procurement.org_agents.show.supplier_products.show' => array_merge(
+                (new ShowOrgAgent)->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $orgSupplierProduct,
+                    [
+                        'index' => [
+                            'name' => 'grp.org.procurement.org_agents.show.supplier_products.index',
+                            'parameters' => $routeParameters,
                         ],
-                        $suffix
-                    )
-                ),
+                        'model' => [
+                            'name' => 'grp.org.procurement.org_agents.show.supplier_products.show',
+                            'parameters' => $routeParameters,
+                        ],
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.procurement.org_suppliers.show.supplier_products.show' => array_merge(
+                (new ShowOrgSupplier)->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'orgSupplier'])),
+                $headCrumb(
+                    $orgSupplierProduct,
+                    [
+                        'index' => [
+                            'name' => 'grp.org.procurement.org_suppliers.show',
+                            'parameters' => $routeParameters,
+                        ],
+                        'model' => [
+                            'name' => 'grp.org.procurement.org_suppliers.show.supplier_products.show',
+                            'parameters' => $routeParameters,
+                        ],
+                    ],
+                    $suffix
+                )
+            ),
             default => []
         };
     }
@@ -252,7 +246,6 @@ class ShowOrgSupplierProduct extends OrgAction
     //     if (!$orgSupplierProduct) {
     //         return null;
     //     }
-
 
     //     return match ($routeName) {
     //         'grp.org.procurement.org_supplier_products.show' => [

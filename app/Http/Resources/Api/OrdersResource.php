@@ -31,15 +31,15 @@ class OrdersResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'             => $this->id,
-            'reference'      => $this->reference,
-            'state'          => $this->state,
-            'net_amount'     => $this->net_amount,
-            'total_amount'   => $this->total_amount,
-            'date'           => $this->date,
+            'id' => $this->id,
+            'reference' => $this->reference,
+            'state' => $this->state,
+            'net_amount' => $this->net_amount,
+            'total_amount' => $this->total_amount,
+            'date' => $this->date,
             'payment_status' => $this->payment_status,
-            'payment_state'  => $this->payment_state,
-            'currency_code'  => $this->currency_code,
+            'payment_state' => $this->payment_state,
+            'currency_code' => $this->currency_code,
         ];
     }
 }

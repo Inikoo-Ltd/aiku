@@ -18,7 +18,6 @@ class GuestsAgentUniversalSearch
 
     public string $commandSignature = 'guests:search';
 
-
     public function handle(Guest $agent): void
     {
         GuestReindexSearch::run($agent);
@@ -29,6 +28,7 @@ class GuestsAgentUniversalSearch
         foreach (Guest::all() as $agent) {
             $this->handle($agent);
         }
+
         return 0;
     }
 }

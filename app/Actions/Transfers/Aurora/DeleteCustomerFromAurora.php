@@ -20,7 +20,7 @@ class DeleteCustomerFromAurora
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Customer
     {
         if ($customer = Customer::withTrashed()->where('source_id', $organisationSourceId)->first()) {
-            if (!$customer->trashed()) {
+            if (! $customer->trashed()) {
                 DeleteCustomer::run(
                     customer: $customer
                 );

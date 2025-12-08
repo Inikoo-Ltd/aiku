@@ -38,6 +38,7 @@ class FetchAuroraLocations extends FetchAuroraAction
                     $this->recordChange($organisationSource, $location->wasChanged());
                 } catch (Exception $e) {
                     $this->recordError($organisationSource, $e, $locationData['location'], 'Location', 'update');
+
                     return null;
                 }
             } else {
@@ -65,10 +66,10 @@ class FetchAuroraLocations extends FetchAuroraAction
                         ->update(['aiku_id' => $location->id]);
                 } catch (Exception|Throwable $e) {
                     $this->recordError($organisationSource, $e, $locationData['location'], 'Location', 'store');
+
                     return null;
                 }
             }
-
 
             return $location;
         }
@@ -83,9 +84,7 @@ class FetchAuroraLocations extends FetchAuroraAction
             ->select('Location Key as source_id')
             ->orderBy('source_id');
 
-
     }
-
 
     public function count(): ?int
     {

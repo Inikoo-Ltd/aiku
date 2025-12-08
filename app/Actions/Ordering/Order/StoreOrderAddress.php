@@ -20,10 +20,10 @@ use Illuminate\Validation\Rule;
 
 class StoreOrderAddress extends OrgAction
 {
+    use HasOrderHydrators;
     use WithActionUpdate;
     use WithFixedAddressActions;
     use WithModelAddressActions;
-    use HasOrderHydrators;
     use WithStoreModelAddress;
 
     public function handle(Order $order, array $modelData): Order
@@ -49,24 +49,22 @@ class StoreOrderAddress extends OrgAction
     {
         return [
 
-            'address' => ['required', new ValidAddress()],
-            'type'    => ['required', Rule::in(['billing', 'delivery'])],
+            'address' => ['required', new ValidAddress],
+            'type' => ['required', Rule::in(['billing', 'delivery'])],
 
         ];
     }
 
     public function action(Order $order, array $modelData, int $hydratorsDelay = 0, bool $audit = true): Order
     {
-        if (!$audit) {
+        if (! $audit) {
             Order::disableAuditing();
         }
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisationFromShop($order->shop, $modelData);
 
         return $this->handle($order, $this->validatedData);
     }
-
-
 }

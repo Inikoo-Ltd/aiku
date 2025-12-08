@@ -22,9 +22,9 @@ class ShowGroupOverviewHub extends GrpAction
     public function asController(ActionRequest $request): ActionRequest
     {
         $this->initialisation(app('group'), $request);
+
         return $request;
     }
-
 
     public function htmlResponse(ActionRequest $request): Response
     {
@@ -32,40 +32,40 @@ class ShowGroupOverviewHub extends GrpAction
             'Overview/OverviewHub',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Overview'),
-                'pageHead'    => [
-                    'icon'      => [
-                        'icon'  => ['fal', 'fa-mountains'],
-                        'title' => __('Overview')
+                'title' => __('Overview'),
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-mountains'],
+                        'title' => __('Overview'),
                     ],
-                    'title'     => __('Overview'),
+                    'title' => __('Overview'),
                 ],
                 'dashboard_stats' => [
                     'setting' => [
-                        "currency_chosen" => $this->group->currency->code
+                        'currency_chosen' => $this->group->currency->code,
                     ],
                     'widgets' => [
 
-                            'column_count' => 2,
-                            'components' => [
-                                [
-                                    'col_span' => 1,
-                                    'row_span' => 10,
-                                    'type' => 'overview_display',
-                                    'data' => GetGroupOverview::run($this->group)
-                                ],
-                                [
-                                    'col_span' => 1,
-                                    'type' => 'operation_display',
-
-                                ],
-                                [
-                                    'col_span' => 1,
-                                    'type' => 'operation_display',
-
-                                ]
+                        'column_count' => 2,
+                        'components' => [
+                            [
+                                'col_span' => 1,
+                                'row_span' => 10,
+                                'type' => 'overview_display',
+                                'data' => GetGroupOverview::run($this->group),
                             ],
-                    ]
+                            [
+                                'col_span' => 1,
+                                'type' => 'operation_display',
+
+                            ],
+                            [
+                                'col_span' => 1,
+                                'type' => 'operation_display',
+
+                            ],
+                        ],
+                    ],
                 ],
             ]
         );
@@ -78,14 +78,14 @@ class ShowGroupOverviewHub extends GrpAction
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.overview.hub'
+                                'name' => 'grp.overview.hub',
                             ],
-                            'label'  => __('Overview'),
-                        ]
-                    ]
+                            'label' => __('Overview'),
+                        ],
+                    ],
                 ]
             );
     }

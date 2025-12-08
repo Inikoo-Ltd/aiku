@@ -6,7 +6,6 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Dispatching\DeliveryNote\PdfDeliveryNote;
 use Illuminate\Support\Facades\Route;
 

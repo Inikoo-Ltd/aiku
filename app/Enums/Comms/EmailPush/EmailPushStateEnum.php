@@ -14,7 +14,6 @@ enum EmailPushStateEnum: string
 {
     use EnumHelperTrait;
 
-
     case SCHEDULED = 'scheduled';
     case SENDING = 'sending';
     case SENT = 'sent';
@@ -23,9 +22,9 @@ enum EmailPushStateEnum: string
     public static function labels(): array
     {
         return [
-            'scheduled'  => __('Scheduled'),
-            'sending'    => __('Sending'),
-            'sent'       => __('Sent'),
+            'scheduled' => __('Scheduled'),
+            'sending' => __('Sending'),
+            'sent' => __('Sent'),
             'terminated' => __('Terminated'),
         ];
     }
@@ -36,30 +35,29 @@ enum EmailPushStateEnum: string
             'scheduled' => [
 
                 'tooltip' => __('Scheduled'),
-                'icon'    => 'fal fa-seedling',
-                'class'   => 'text-indigo-500'
-
+                'icon' => 'fal fa-seedling',
+                'class' => 'text-indigo-500',
 
             ],
-            'sending'   => [
+            'sending' => [
 
                 'tooltip' => __('sending'),
-                'icon'    => 'fal fa-paper-plane',
-                'class'   => 'animate-pulse'
+                'icon' => 'fal fa-paper-plane',
+                'class' => 'animate-pulse',
 
             ],
-            'sent'      => [
+            'sent' => [
 
                 'tooltip' => __('sent'),
-                'icon'    => 'fal fa-paper-plane',
-                'class'   => 'text-green-600'
+                'icon' => 'fal fa-paper-plane',
+                'class' => 'text-green-600',
             ],
             'terminated' => [
 
                 'tooltip' => __('terminated'),
-                'icon'    => 'fal fa-paper-plane',
-                'class'   => 'text-red-600'
-            ]
+                'icon' => 'fal fa-paper-plane',
+                'class' => 'text-red-600',
+            ],
 
         ];
     }

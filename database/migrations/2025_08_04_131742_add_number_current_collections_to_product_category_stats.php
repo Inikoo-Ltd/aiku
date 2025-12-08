@@ -10,11 +10,12 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('master_product_category_stats', function (Blueprint $table) {
-            if (!Schema::hasColumn('master_product_category_stats', 'number_current_collections')) {
+            if (! Schema::hasColumn('master_product_category_stats', 'number_current_collections')) {
                 $table->unsignedSmallInteger('number_current_collections')->default(0)->comment('state=active+discontinuing');
             }
         });

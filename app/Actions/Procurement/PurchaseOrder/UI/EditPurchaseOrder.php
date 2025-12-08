@@ -24,7 +24,8 @@ class EditPurchaseOrder extends InertiaAction
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('procurement.edit');
-        return $request->user()->authTo("procurement.view");
+
+        return $request->user()->authTo('procurement.view');
     }
 
     public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
@@ -34,52 +35,49 @@ class EditPurchaseOrder extends InertiaAction
         return $this->handle($purchaseOrder);
     }
 
-
-
     public function htmlResponse(PurchaseOrder $purchaseOrder): Response
     {
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('purchase order'),
-                'pageHead'    => [
-                    'title'     => $purchaseOrder->reference,
-                    'actions'   => [
+                'title' => __('purchase order'),
+                'pageHead' => [
+                    'title' => $purchaseOrder->reference,
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
+                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
                     ],
-
 
                 ],
 
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('id'),
+                            'title' => __('id'),
                             'fields' => [
                                 'number' => [
-                                    'type'  => 'input',
+                                    'type' => 'input',
                                     'label' => __('number'),
-                                    'value' => $purchaseOrder->number
+                                    'value' => $purchaseOrder->number,
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
 
                     ],
                     'args' => [
                         'updateRoute' => [
-                            'name'      => 'grp.models.purchase-order.update',
-                            'parameters' => $purchaseOrder->slug
+                            'name' => 'grp.models.purchase-order.update',
+                            'parameters' => $purchaseOrder->slug,
 
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

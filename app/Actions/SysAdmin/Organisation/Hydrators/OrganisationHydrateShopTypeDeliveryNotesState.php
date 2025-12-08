@@ -19,12 +19,10 @@ class OrganisationHydrateShopTypeDeliveryNotesState implements ShouldBeUnique
 {
     use AsAction;
 
-
     public function getJobUniqueId(int $organisationID, ShopTypeEnum $shopTypeEnum, DeliveryNoteStateEnum $state): string
     {
         return $organisationID.'_'.$shopTypeEnum->value.'-'.$state->value;
     }
-
 
     public function handle(int $organisationID, ShopTypeEnum $shopTypeEnum, DeliveryNoteStateEnum $state): void
     {
@@ -32,7 +30,7 @@ class OrganisationHydrateShopTypeDeliveryNotesState implements ShouldBeUnique
             return;
         }
         $organisation = Organisation::find($organisationID);
-        if (!$organisation) {
+        if (! $organisation) {
             return;
         }
 
@@ -45,13 +43,10 @@ class OrganisationHydrateShopTypeDeliveryNotesState implements ShouldBeUnique
 
         $organisation->orderingStats()->update(
             [
-                "number_".$shopTypeEnum->snake()."_shop_delivery_notes_state_".$state->snake() => $count
+                'number_'.$shopTypeEnum->snake().'_shop_delivery_notes_state_'.$state->snake() => $count,
 
             ]
         );
 
-
     }
-
-
 }

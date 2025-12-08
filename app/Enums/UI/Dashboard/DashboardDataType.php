@@ -14,13 +14,11 @@ enum DashboardDataType: string
 {
     use EnumHelperTrait;
 
-
     case NUMBER = 'number';
     case NUMBER_MINIFIED = 'number_minified';
     case CURRENCY = 'currency';
     case CURRENCY_MINIFIED = 'currency_minified';
     case PERCENTAGE = 'percentage';
     case DELTA_LAST_YEAR = 'delta_last_year';
-
 
 }

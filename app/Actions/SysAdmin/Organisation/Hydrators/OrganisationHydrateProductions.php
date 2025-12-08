@@ -25,18 +25,15 @@ class OrganisationHydrateProductions implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
 
-
         $stats = [
-            'number_productions'                  => $organisation->productions()->count(),
+            'number_productions' => $organisation->productions()->count(),
         ];
 
-
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'productions',
+            model: 'productions',
             field: 'state',
             enum: ProductionStateEnum::class,
             models: Production::class,

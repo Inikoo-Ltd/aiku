@@ -18,16 +18,13 @@ enum CatalogueTabsEnum: string
 
     case DASHBOARD = 'dashboard';
 
-
-
     public function blueprint(): array
     {
         return match ($this) {
             CatalogueTabsEnum::DASHBOARD => [
                 'title' => __('Dashboard'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'icon' => 'fal fa-tachometer-alt-fast',
             ],
-
 
         };
     }

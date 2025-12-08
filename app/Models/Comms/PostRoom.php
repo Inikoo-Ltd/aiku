@@ -36,9 +36,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Comms\OrgPostRoom> $orgPostRooms
  * @property-read Collection<int, \App\Models\Comms\Outbox> $outboxes
  * @property-read \App\Models\Comms\PostRoomStats|null $stats
+ *
  * @method static Builder<static>|PostRoom newModelQuery()
  * @method static Builder<static>|PostRoom newQuery()
  * @method static Builder<static>|PostRoom query()
+ *
  * @mixin Eloquent
  */
 class PostRoom extends Model

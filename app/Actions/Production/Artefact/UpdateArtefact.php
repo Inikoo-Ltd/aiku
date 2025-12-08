@@ -23,12 +23,11 @@ class UpdateArtefact extends OrgAction
 {
     use WithActionUpdate;
 
-
     private Artefact $artefact;
 
     public function handle(Artefact $artefact, array $modelData): Artefact
     {
-        return  $this->update($artefact, $modelData, ['data', 'settings']);
+        return $this->update($artefact, $modelData, ['data', 'settings']);
 
     }
 
@@ -44,10 +43,10 @@ class UpdateArtefact extends OrgAction
     public function rules(): array
     {
         return [
-            'code'            => [
+            'code' => [
                 'sometimes',
                 'required',
-                new AlphaDashDot(),
+                new AlphaDashDot,
                 'max:32',
                 Rule::notIn(['export', 'create', 'upload']),
                 new IUnique(
@@ -55,27 +54,27 @@ class UpdateArtefact extends OrgAction
                     extraConditions: [
                         ['column' => 'organisation_id', 'value' => $this->organisation->id],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->artefact->id
+                            'value' => $this->artefact->id,
                         ],
 
                     ]
                 ),
             ],
-            'name'            => ['sometimes', 'required', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
             'stock_family_id' => ['sometimes', 'nullable', 'exists:stock_families,id'],
         ];
     }
 
-
     public function action(Artefact $artefact, array $modelData, int $hydratorsDelay = 0): Artefact
     {
-        $this->asAction       = true;
-        $this->artefact       = $artefact;
+        $this->asAction = true;
+        $this->artefact = $artefact;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisation($artefact->organisation, $modelData);
+
         return $this->handle($artefact, $this->validatedData);
     }
 
@@ -86,7 +85,6 @@ class UpdateArtefact extends OrgAction
 
         return $this->handle($artefact, $this->validatedData);
     }
-
 
     public function jsonResponse(Artefact $artefact): ArtefactResource
     {

@@ -9,8 +9,8 @@
 namespace App\Actions\Web\Website\UI;
 
 use App\Actions\OrgAction;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\Catalogue\Shop;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -30,10 +30,9 @@ class CreateWebsite extends OrgAction
         } elseif ($this->parent instanceof Shop) {
             return $request->user()->authTo("web.{$this->parent->id}.edit");
         }
+
         return false;
     }
-
-
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Response|RedirectResponse
     {
@@ -43,14 +42,12 @@ class CreateWebsite extends OrgAction
             return Redirect::route('grp.org.shops.show.web.websites.show', [
                 $organisation->slug,
                 $shop->slug,
-                $shop->website->slug
+                $shop->website->slug,
             ]);
         }
 
         return $this->handle($shop, $request);
     }
-
-
 
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): Response|RedirectResponse
     {
@@ -60,23 +57,22 @@ class CreateWebsite extends OrgAction
             return Redirect::route('grp.org.fulfilments.show.web.websites.show', [
                 $organisation->slug,
                 $fulfilment->slug,
-                $fulfilment->shop->website->slug
+                $fulfilment->shop->website->slug,
             ]);
         }
 
         return $this->handle($fulfilment, $request);
     }
 
-
     public function handle(Fulfilment|Shop $parent, ActionRequest $request): Response
     {
-        $scope     = $parent;
+        $scope = $parent;
         $container = null;
         if (class_basename($scope) == 'Shop') {
             $container = [
-                'icon'    => ['fal', 'fa-store-alt'],
+                'icon' => ['fal', 'fa-store-alt'],
                 'tooltip' => __('Shop'),
-                'label'   => Str::possessive($scope->name)
+                'label' => Str::possessive($scope->name),
             ];
         }
 
@@ -86,82 +82,76 @@ class CreateWebsite extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     routeParameters: $request->route()->originalParameters()
                 ),
-                'title'       => __('New website'),
-                'pageHead'    => [
-                    'title'        => __('website'),
-                    'container'    => $container,
+                'title' => __('New website'),
+                'pageHead' => [
+                    'title' => __('website'),
+                    'container' => $container,
                     'cancelCreate' => [
                         'route' => [
-                            'name'       => 'shops.show',
-                            'parameters' => array_values($request->route()->originalParameters())
+                            'name' => 'shops.show',
+                            'parameters' => array_values($request->route()->originalParameters()),
                         ],
-                    ]
+                    ],
 
                 ],
-                'formData'    => [
+                'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('domain'),
+                            'title' => __('domain'),
                             'fields' => [
 
                                 'domain' => [
-                                    'type'      => 'inputWithAddOn',
-                                    'label'     => __('domain'),
+                                    'type' => 'inputWithAddOn',
+                                    'label' => __('domain'),
                                     'leftAddOn' => [
-                                        'label' => 'https://'
+                                        'label' => 'https://',
                                     ],
                                     'placeholder' => 'example.com',
-                                    'required'    => true,
-                                    'value'       => ''
+                                    'required' => true,
+                                    'value' => '',
                                 ],
 
-
-                            ]
+                            ],
                         ],
                         [
-                            'title'  => __('ID/name'),
+                            'title' => __('ID/name'),
                             'fields' => [
 
                                 'code' => [
-                                    'type'        => 'input',
-                                    'label'       => __('code'),
-                                    'required'    => true,
+                                    'type' => 'input',
+                                    'label' => __('code'),
+                                    'required' => true,
                                     'placeholder' => 'Enter code',
-                                    'value'       => ''
+                                    'value' => '',
                                 ],
                                 'name' => [
-                                    'type'        => 'input',
-                                    'label'       => __('name'),
+                                    'type' => 'input',
+                                    'label' => __('name'),
                                     'placeholder' => 'Enter name',
-                                    'required'    => true,
-                                    'value'       => '',
+                                    'required' => true,
+                                    'value' => '',
                                 ],
 
-
-                            ]
+                            ],
                         ],
 
-
                     ],
-                    'route'     =>
-                        match (class_basename($scope)) {
-                            'Shop' => [
-                                'name'       => 'grp.models.shop.website.store',
-                                'parameters' => [$parent->id]
-                            ],
-                            'Fulfilment' => [
-                                'name'       => 'grp.models.fulfilment.website.store',
-                                'parameters' => [$parent->id]
-                            ],
-                        }
-
+                    'route' => match (class_basename($scope)) {
+                        'Shop' => [
+                            'name' => 'grp.models.shop.website.store',
+                            'parameters' => [$parent->id],
+                        ],
+                        'Fulfilment' => [
+                            'name' => 'grp.models.fulfilment.website.store',
+                            'parameters' => [$parent->id],
+                        ],
+                    },
 
                 ],
 
             ]
         );
     }
-
 
     public function getBreadcrumbs(array $routeParameters): array
     {
@@ -173,11 +163,11 @@ class CreateWebsite extends OrgAction
                 ),
                 [
                     [
-                        'type'          => 'creatingModel',
+                        'type' => 'creatingModel',
                         'creatingModel' => [
-                            'label' => __("creating website"),
-                        ]
-                    ]
+                            'label' => __('creating website'),
+                        ],
+                    ],
                 ]
             ),
             'Fulfilment' => array_merge(
@@ -187,15 +177,13 @@ class CreateWebsite extends OrgAction
                 ),
                 [
                     [
-                        'type'          => 'creatingModel',
+                        'type' => 'creatingModel',
                         'creatingModel' => [
-                            'label' => __("creating website"),
-                        ]
-                    ]
+                            'label' => __('creating website'),
+                        ],
+                    ],
                 ]
             ),
         };
     }
-
-
 }

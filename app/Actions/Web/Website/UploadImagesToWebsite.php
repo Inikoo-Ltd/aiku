@@ -20,8 +20,6 @@ class UploadImagesToWebsite extends OrgAction
 {
     use WithUploadWebImage;
 
-
-
     public function header(Website $website, ActionRequest $request): Collection
     {
         $this->scope = $website->organisation;
@@ -58,5 +56,4 @@ class UploadImagesToWebsite extends OrgAction
     {
         return ImageResource::collection($medias);
     }
-
 }

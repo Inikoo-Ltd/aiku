@@ -33,7 +33,7 @@ class IndexAgentSupplierProducts extends OrgAction
     {
         return [
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     SupplierProductStateEnum::labels(),
                     SupplierProductStateEnum::count($agent)
@@ -41,9 +41,8 @@ class IndexAgentSupplierProducts extends OrgAction
 
                 'engine' => function ($query, $elements) {
                     $query->whereIn('supplier_products.state', $elements);
-                }
+                },
             ],
-
 
         ];
     }
@@ -66,7 +65,6 @@ class IndexAgentSupplierProducts extends OrgAction
         $queryBuilder->addSelect('agents.slug as agent_slug');
         $queryBuilder->leftJoin('supplier_product_stats', 'supplier_product_stats.supplier_product_id', 'supplier_products.id');
 
-
         foreach ($this->getElementGroups($agent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
@@ -82,7 +80,7 @@ class IndexAgentSupplierProducts extends OrgAction
                 'supplier_products.id',
                 'supplier_products.code',
                 'supplier_products.slug',
-                'supplier_products.name'
+                'supplier_products.name',
             ])
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
@@ -90,7 +88,7 @@ class IndexAgentSupplierProducts extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Agent $agent, array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Agent $agent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $agent) {
             if ($prefix) {
@@ -106,7 +104,6 @@ class IndexAgentSupplierProducts extends OrgAction
                     elements: $elementGroup['elements']
                 );
             }
-
 
             $table
                 ->withModelOperations($modelOperations)
@@ -124,7 +121,6 @@ class IndexAgentSupplierProducts extends OrgAction
         return $this->handle($organisation->agent);
     }
 
-
     public function jsonResponse(LengthAwarePaginator $supplier_products): AnonymousResourceCollection
     {
         return SupplierProductsResource::collection($supplier_products);
@@ -133,76 +129,71 @@ class IndexAgentSupplierProducts extends OrgAction
     public function htmlResponse(LengthAwarePaginator $supplier_products, ActionRequest $request): Response
     {
         $organisation = $request->route()->parameters()['organisation'];
-        $agent        = $organisation->agent;
-
+        $agent = $organisation->agent;
 
         $subNavigation = null;
 
         $actions = null;
 
-
-        $title      = 'SKUs';
-        $model      = '';
-        $icon       = [
-            'icon'  => ['fal', 'fa-people-arrows'],
-            'title' => __('Supplier products')
+        $title = 'SKUs';
+        $model = '';
+        $icon = [
+            'icon' => ['fal', 'fa-people-arrows'],
+            'title' => __('Supplier products'),
         ];
-        $iconRight  = [
+        $iconRight = [
             'icon' => 'fal fa-box-usd',
         ];
         $afterTitle = [
 
-            'label' => __('Supplier Products')
+            'label' => __('Supplier Products'),
         ];
-
 
         return Inertia::render(
             'SupplyChain/SupplierProducts',
             [
-                'breadcrumbs'        => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'              => __('SKUs'),
-                'pageHead'           => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => __('SKUs'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $actions
+                    'actions' => $actions,
                 ],
                 'upload_spreadsheet' => null,
-                'data'               => SupplierProductsResource::collection($supplier_products),
+                'data' => SupplierProductsResource::collection($supplier_products),
             ]
         )->table($this->tableStructure($agent));
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('SKUs'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.agent_inventory.supplier_products.index' =>
-            array_merge(
+            'grp.org.warehouses.show.agent_inventory.supplier_products.index' => array_merge(
                 ShowAgentInventoryDashboard::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'warehouse'])),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                        'name' => $routeName,
+                        'parameters' => $routeParameters,
                     ]
                 )
             ),

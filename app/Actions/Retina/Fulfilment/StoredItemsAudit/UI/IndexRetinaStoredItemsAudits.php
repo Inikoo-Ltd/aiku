@@ -41,7 +41,6 @@ class IndexRetinaStoredItemsAudits extends RetinaAction
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -49,12 +48,9 @@ class IndexRetinaStoredItemsAudits extends RetinaAction
         $query = QueryBuilder::for(StoredItemAudit::class);
         $query->where('fulfilment_customer_id', $parent->id);
 
-
-
         $query->defaultSort('stored_item_audits.date');
 
-
-        return $query->allowedSorts(['state', 'reference','date','amount','tax_amount','total_amount','number_pallets','number_stored_items','number_added_stored_items','number_edited_stored_items','number_removed_stored_items'])
+        return $query->allowedSorts(['state', 'reference', 'date', 'amount', 'tax_amount', 'total_amount', 'number_pallets', 'number_stored_items', 'number_added_stored_items', 'number_edited_stored_items', 'number_removed_stored_items'])
             ->allowedFilters([$globalSearch,  'reference'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -66,23 +62,21 @@ class IndexRetinaStoredItemsAudits extends RetinaAction
         return Inertia::render(
             'Storage/RetinaStoredItemsAudits',
             [
-                'title'       => __('stored item audits'),
+                'title' => __('stored item audits'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'pageHead'    => [
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'fa-narwhal'],
-                            'title' => __('Stored item audit')
-                        ],
-                    'model'   => __('stored item'),
-                    'title'   => __('stored item audits')
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-narwhal'],
+                        'title' => __('Stored item audit'),
+                    ],
+                    'model' => __('stored item'),
+                    'title' => __('stored item audits'),
 
                 ],
-                'data'        => StoredItemAuditsResource::collection($storedItemAudits)
-
+                'data' => StoredItemAuditsResource::collection($storedItemAudits),
 
             ]
         )->table($this->tableStructure($this->parent));
@@ -93,11 +87,10 @@ class IndexRetinaStoredItemsAudits extends RetinaAction
         $prefix = null,
         $canEdit = false
     ): Closure {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
-
 
             $table
                 ->withGlobalSearch()
@@ -106,19 +99,18 @@ class IndexRetinaStoredItemsAudits extends RetinaAction
                 );
 
             $table
-            ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-            ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'number_audited_pallets', label: __('Audited'), icon: 'fal fa-pallet', tooltip: __('Audited Pallets'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'number_audited_stored_items', label: __('Audited'), icon: 'fal fa-narwhal', tooltip: __('Audited Stored Items'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'number_audited_stored_items_with_additions', label: __('Audited (additions)'), icon: 'fal fa-narwhal', tooltip: __('Audited Stored Items (with additions)'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'number_audited_stored_items_with_with_subtractions', label: __('Audited (subtractions)'), icon: 'fal fa-narwhal', tooltip: __('Audited Stored Items (with subtractions)'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'number_audited_stored_items_with_with_stock_checked', label: __('Audited (stock checked)'), icon: 'fal fa-narwhal', tooltip: __('Audited Stored Items (with stock checked)'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'number_associated_stored_items', label: __('Associated'), icon: 'fal fa-narwhal', tooltip: __('Associated Stored Items'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'number_created_stored_items', label: __('Created'), icon: 'fal fa-narwhal', tooltip: __('Created Stored Items'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'created_at', label: __('Created At'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_audited_pallets', label: __('Audited'), icon: 'fal fa-pallet', tooltip: __('Audited Pallets'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_audited_stored_items', label: __('Audited'), icon: 'fal fa-narwhal', tooltip: __('Audited Stored Items'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_audited_stored_items_with_additions', label: __('Audited (additions)'), icon: 'fal fa-narwhal', tooltip: __('Audited Stored Items (with additions)'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_audited_stored_items_with_with_subtractions', label: __('Audited (subtractions)'), icon: 'fal fa-narwhal', tooltip: __('Audited Stored Items (with subtractions)'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_audited_stored_items_with_with_stock_checked', label: __('Audited (stock checked)'), icon: 'fal fa-narwhal', tooltip: __('Audited Stored Items (with stock checked)'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_associated_stored_items', label: __('Associated'), icon: 'fal fa-narwhal', tooltip: __('Associated Stored Items'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_created_stored_items', label: __('Created'), icon: 'fal fa-narwhal', tooltip: __('Created Stored Items'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'created_at', label: __('Created At'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
-
 
     public function getBreadcrumbs(): array
     {
@@ -126,16 +118,16 @@ class IndexRetinaStoredItemsAudits extends RetinaAction
             ShowRetinaStorageDashboard::make()->getBreadcrumbs(),
             [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => 'retina.fulfilment.storage.stored-items-audits.index'
+                            'name' => 'retina.fulfilment.storage.stored-items-audits.index',
                         ],
-                        'label' => __("SKUs Audits"),
-                        'icon'  => 'fal fa-bars',
+                        'label' => __('SKUs Audits'),
+                        'icon' => 'fal fa-bars',
                     ],
 
-                ]
+                ],
             ]
         );
     }

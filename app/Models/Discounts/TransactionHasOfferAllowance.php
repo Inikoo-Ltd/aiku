@@ -39,9 +39,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Discounts\OfferAllowance $offerAllowance
  * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
  * @property-read Transaction|null $transaction
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionHasOfferAllowance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionHasOfferAllowance newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionHasOfferAllowance query()
+ *
  * @mixin \Eloquent
  */
 class TransactionHasOfferAllowance extends Model
@@ -49,9 +51,9 @@ class TransactionHasOfferAllowance extends Model
     protected $table = 'transaction_has_offer_allowances';
 
     protected $casts = [
-        'data'            => 'array',
-        'is_pinned'       => 'boolean',
-        'fetched_at'      => 'datetime',
+        'data' => 'array',
+        'is_pinned' => 'boolean',
+        'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 
@@ -80,5 +82,4 @@ class TransactionHasOfferAllowance extends Model
     {
         return $this->belongsTo(OfferAllowance::class);
     }
-
 }

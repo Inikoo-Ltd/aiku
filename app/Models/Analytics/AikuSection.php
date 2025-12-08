@@ -39,16 +39,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops
  * @property-read \App\Models\Analytics\AikuSectionStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Warehouse> $warehouses
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AikuSection dSections()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AikuSection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AikuSection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AikuSection query()
+ *
  * @mixin \Eloquent
  */
 class AikuSection extends Model
 {
-    use InGroup;
     use HasSlug;
+    use InGroup;
 
     protected $guarded = [
     ];
@@ -76,7 +78,6 @@ class AikuSection extends Model
     {
         return $this->hasMany(AikuScopedSection::class);
     }
-
 
     public function shops(): MorphToMany
     {

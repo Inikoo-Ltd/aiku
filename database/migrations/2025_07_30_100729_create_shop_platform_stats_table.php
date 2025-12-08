@@ -15,7 +15,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('shop_platform_stats', function (Blueprint $table) {
@@ -24,22 +25,22 @@ return new class () extends Migration {
             $table->foreign('shop_id')->references('id')->on('shops')->nullOnDelete();
             $table->unsignedSmallInteger('platform_id');
             $table->foreign('platform_id')->references('id')->on('platforms')->nullOnDelete();
-            $table->unsignedInteger("number_customers")->default(0);
+            $table->unsignedInteger('number_customers')->default(0);
             foreach (CustomerStateEnum::cases() as $customerState) {
                 $table->unsignedInteger("number_customers_state_{$customerState->snake()}")->default(0);
             }
 
-            $table->unsignedInteger("number_products")->default(0);
-            $table->unsignedInteger("number_current_products")->default(0)->comment('state: active+discontinuing');
+            $table->unsignedInteger('number_products')->default(0);
+            $table->unsignedInteger('number_current_products')->default(0)->comment('state: active+discontinuing');
 
             foreach (ProductStateEnum::cases() as $productState) {
                 $table->unsignedInteger("number_products_state_{$productState->snake()}")->default(0);
             }
 
-            $table->dateTimeTz("last_order_created_at")->nullable();
-            $table->dateTimeTz("last_order_submitted_at")->nullable();
-            $table->dateTimeTz("last_order_dispatched_at")->nullable();
-            $table->unsignedInteger("number_orders")->default(0);
+            $table->dateTimeTz('last_order_created_at')->nullable();
+            $table->dateTimeTz('last_order_submitted_at')->nullable();
+            $table->dateTimeTz('last_order_dispatched_at')->nullable();
+            $table->unsignedInteger('number_orders')->default(0);
 
             foreach (OrderStateEnum::cases() as $case) {
                 $table->unsignedInteger('number_orders_state_'.$case->snake())->default(0);
@@ -58,7 +59,6 @@ return new class () extends Migration {
             $table->timestampsTz();
         });
     }
-
 
     public function down(): void
     {

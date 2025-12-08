@@ -24,21 +24,22 @@ class UploadProductToEbayProgressEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
-
     public EbayUser $ebayUser;
+
     public Portfolio $portfolio;
 
     public function __construct(EbayUser $ebayUser, Portfolio $portfolio)
     {
-        $this->ebayUser     = $ebayUser;
-        $this->portfolio    = $portfolio;
+        $this->ebayUser = $ebayUser;
+        $this->portfolio = $portfolio;
     }
 
     public function broadcastOn(): array
     {
         Log::info('Broadcasting ebay upload progress', $this->portfolio->toArray());
+
         return [
-            new PrivateChannel("ebay.{$this->ebayUser->id}.upload-product.{$this->portfolio->id}")
+            new PrivateChannel("ebay.{$this->ebayUser->id}.upload-product.{$this->portfolio->id}"),
 
         ];
     }

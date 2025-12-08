@@ -16,11 +16,11 @@ class CustomerClientFactory extends Factory
     public function definition(): array
     {
         return [
-            'reference'    => fake()->lexify(),
+            'reference' => fake()->lexify(),
             'contact_name' => fake()->name,
             'company_name' => fake()->company,
-            'email'        => fake()->email,
-            'address'      => Address::factory()->definition(),
+            'email' => fake()->email,
+            'address' => Address::factory()->definition(),
         ];
     }
 }

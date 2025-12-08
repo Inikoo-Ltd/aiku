@@ -34,7 +34,6 @@ class CalculateOrderShipping
             return $order;
         }
 
-
         if ($order->stats->number_item_transactions == 0) {
             DB::table('transactions')->where('order_id', $order->id)
                 ->where('model_type', 'ShippingZone')
@@ -48,7 +47,6 @@ class CalculateOrderShipping
             return $order;
         }
 
-
         if ($order->collection_address_id) {
             DB::table('transactions')->where('order_id', $order->id)
                 ->where('model_type', 'ShippingZone')
@@ -58,7 +56,7 @@ class CalculateOrderShipping
                 $order,
                 [
                     'shipping_zone_schema_id' => null,
-                    'shipping_zone_id'        => null
+                    'shipping_zone_id' => null,
                 ]
             );
         } else {
@@ -68,15 +66,14 @@ class CalculateOrderShipping
                 $shippingZoneSchema = $order->shop->currentShippingZoneSchema;
             }
 
-
-            if (!$shippingZoneSchema) {
+            if (! $shippingZoneSchema) {
                 if ($order->shipping_engine == OrderShippingEngineEnum::AUTO) {
                     UpdateOrder::run(
                         $order,
                         [
-                            'shipping_engine'         => OrderShippingEngineEnum::MANUAL,
+                            'shipping_engine' => OrderShippingEngineEnum::MANUAL,
                             'shipping_zone_schema_id' => null,
-                            'shipping_zone_id'        => null,
+                            'shipping_zone_id' => null,
                         ]
                     );
                 }
@@ -84,13 +81,11 @@ class CalculateOrderShipping
                 return $order;
             }
 
+            [$shippingAmount, $shippingZone] = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
 
-            list($shippingAmount, $shippingZone) = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
-
-            if (!is_numeric($shippingAmount)) {
+            if (! is_numeric($shippingAmount)) {
                 $shippingAmount = 0;
             }
-
 
             $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
             if ($shippingTransaction) {
@@ -98,7 +93,6 @@ class CalculateOrderShipping
             } else {
                 $this->storeShippingTransaction($order, $shippingZone, $shippingAmount);
             }
-
 
             if ($this->toBeConfirmed) {
                 $order->update([
@@ -111,7 +105,6 @@ class CalculateOrderShipping
             }
         }
 
-
         return $order;
     }
 
@@ -122,8 +115,8 @@ class CalculateOrderShipping
             $shippingZone->historicAsset,
             [
                 'quantity_ordered' => 1,
-                'gross_amount'     => $shippingAmount,
-                'net_amount'       => $shippingAmount,
+                'gross_amount' => $shippingAmount,
+                'net_amount' => $shippingAmount,
 
             ],
             false
@@ -135,11 +128,11 @@ class CalculateOrderShipping
         return UpdateTransaction::run(
             $transaction,
             [
-                'model_id'          => $shippingZone->id,
-                'asset_id'          => $shippingZone->asset_id,
+                'model_id' => $shippingZone->id,
+                'asset_id' => $shippingZone->asset_id,
                 'historic_asset_id' => $shippingZone->historicAsset->id,
-                'gross_amount'      => $shippingAmount ?? 0,
-                'net_amount'        => $shippingAmount ?? 0,
+                'gross_amount' => $shippingAmount ?? 0,
+                'net_amount' => $shippingAmount ?? 0,
             ],
             false
         );
@@ -193,24 +186,21 @@ class CalculateOrderShipping
 
     private function matchTerritories(Order $order, ShippingZone $shippingZone): bool
     {
-        if (!$shippingZone->territories) {
+        if (! $shippingZone->territories) {
             // The rest of the world does not have territories defined
             return true;
         }
-        $helperZone      = new Zone([
-            'id'          => $shippingZone->slug,
-            'label'       => $shippingZone->name,
+        $helperZone = new Zone([
+            'id' => $shippingZone->slug,
+            'label' => $shippingZone->name,
             'territories' => $shippingZone->territories,
         ]);
         $deliveryAddress = $order->deliveryAddress;
-        $helperAddress   = new Address();
-        $helperAddress   = $helperAddress
+        $helperAddress = new Address;
+        $helperAddress = $helperAddress
             ->withCountryCode($deliveryAddress->country_code)
             ->withPostalCode($deliveryAddress->postal_code ?? '');
 
-
         return $helperZone->match($helperAddress);
     }
-
-
 }

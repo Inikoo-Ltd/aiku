@@ -33,21 +33,21 @@ enum SnapshotScopeEnum: string
     public static function labels(): array
     {
         return [
-            'webpage'          => __('Webpage'),
-            'header'           => __('Header'),
-            'footer'           => __('Footer'),
-            'menu'             => __('Menu'),
-            'sidebar'          => __('Sidebar'),
-            'theme'            => __('Theme'),
-            'banner'           => __('Banner'),
-            'email'            => __('Email'),
+            'webpage' => __('Webpage'),
+            'header' => __('Header'),
+            'footer' => __('Footer'),
+            'menu' => __('Menu'),
+            'sidebar' => __('Sidebar'),
+            'theme' => __('Theme'),
+            'banner' => __('Banner'),
+            'email' => __('Email'),
             'product_template' => __('Product template'),
-            'department'       => __('Department'),
-            'family'           => __('Family'),
-            'sub_department'   => __('Sub Department'),
-            'collection'       => __('Collection'),
-            'product'          => __('Product'),
-            'products'          => __('Products'),
+            'department' => __('Department'),
+            'family' => __('Family'),
+            'sub_department' => __('Sub Department'),
+            'collection' => __('Collection'),
+            'product' => __('Product'),
+            'products' => __('Products'),
         ];
     }
 }

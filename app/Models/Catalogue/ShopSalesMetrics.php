@@ -40,9 +40,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopSalesMetrics newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopSalesMetrics newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopSalesMetrics query()
+ *
  * @mixin \Eloquent
  */
 class ShopSalesMetrics extends Model
@@ -50,7 +52,7 @@ class ShopSalesMetrics extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'date' => 'datetime'
+        'date' => 'datetime',
     ];
 
     public function group(): BelongsTo

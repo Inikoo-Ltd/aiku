@@ -31,9 +31,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SupplyChain\SupplierUser $supplierUser
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUserStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUserStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUserStats query()
+ *
  * @mixin \Eloquent
  */
 class SupplierUserStats extends Model

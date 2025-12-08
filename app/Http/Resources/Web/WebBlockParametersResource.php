@@ -23,8 +23,8 @@ class WebBlockParametersResource extends JsonResource
         $webBlock = $this;
 
         return [
-            'id'     => $webBlock->id,
-            'products' => ProductResource::collection($webBlock->products)
+            'id' => $webBlock->id,
+            'products' => ProductResource::collection($webBlock->products),
         ];
     }
 }

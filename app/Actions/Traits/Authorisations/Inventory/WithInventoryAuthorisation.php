@@ -15,7 +15,7 @@ trait WithInventoryAuthorisation
     public function authorize(ActionRequest $request): bool
     {
         if (str_starts_with($request->route()->getName(), 'grp.overview')) {
-            return $request->user()->authTo("group-overview");
+            return $request->user()->authTo('group-overview');
         }
 
         $warehousesIDs = $this->organisation->warehouses()->pluck('id')->toArray();

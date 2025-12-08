@@ -29,14 +29,14 @@ class MasterShopsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'            => $this->slug,
-            'code'            => $this->code,
-            'name'            => $this->name,
-            'used_in'         => $this->used_in,
-            'departments'     => $this->departments,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'used_in' => $this->used_in,
+            'departments' => $this->departments,
             'sub_departments' => $this->sub_departments,
-            'families'        => $this->families,
-            'products'        => $this->products,
+            'families' => $this->families,
+            'products' => $this->products,
 
         ];
     }

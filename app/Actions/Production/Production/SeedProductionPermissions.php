@@ -26,13 +26,11 @@ class SeedProductionPermissions
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-
         $productionPermissions = collect(ProductionPermissionsEnum::getAllValues($production));
-
 
         $currentPermissions = Permission::where('scope_type', 'Production')->where('scope_id', $production->id)->pluck('name');
         $currentPermissions->diff($productionPermissions)
-            ->each(function ($permissionName) use ($production) {
+            ->each(function ($permissionName) {
                 Permission::where('name', $permissionName)->first()->delete();
             });
 
@@ -40,9 +38,9 @@ class SeedProductionPermissions
             try {
                 Permission::create(
                     [
-                        'name'       => $permissionName,
+                        'name' => $permissionName,
                         'scope_type' => 'Production',
-                        'scope_id'   => $production->id,
+                        'scope_id' => $production->id,
                     ]
                 );
             } catch (Exception) {
@@ -51,36 +49,33 @@ class SeedProductionPermissions
 
         $productionRoles = collect(RolesEnum::getRolesWithScope($production));
 
-
         $currentRoles = Role::where('scope_type', 'Production')->where('scope_id', $production->id)->pluck('name');
         $currentRoles->diff($productionRoles)
-            ->each(function ($roleName) use ($production) {
+            ->each(function ($roleName) {
                 Role::where(
                     'name',
                     $roleName
                 )->first()->delete();
             });
 
-
-
         foreach (RolesEnum::cases() as $case) {
             if ($case->scope() === 'Production') {
 
-                if (!$role = (new Role())->where('name', RolesEnum::getRoleName($case->value, $production))->first()) {
+                if (! $role = (new Role)->where('name', RolesEnum::getRoleName($case->value, $production))->first()) {
 
                     $role = Role::create(
                         [
-                            'name'       => RolesEnum::getRoleName($case->value, $production),
+                            'name' => RolesEnum::getRoleName($case->value, $production),
                             'scope_type' => 'Production',
-                            'scope_id'   => $production->id,
-                            'group_id'   => $production->group_id,
+                            'scope_id' => $production->id,
+                            'group_id' => $production->group_id,
                         ]
                     );
                 }
                 $productionPermissions = [];
 
                 foreach ($case->getPermissions() as $permissionName) {
-                    if ($permission = (new Permission())->where('name', ProductionPermissionsEnum::getPermissionName($permissionName->value, $production))->first()) {
+                    if ($permission = (new Permission)->where('name', ProductionPermissionsEnum::getPermissionName($permissionName->value, $production))->first()) {
                         $productionPermissions[] = $permission;
                     }
                 }
@@ -88,7 +83,6 @@ class SeedProductionPermissions
             }
         }
     }
-
 
     public string $commandSignature = 'production:seed-permissions';
 
@@ -103,5 +97,4 @@ class SeedProductionPermissions
 
         return 0;
     }
-
 }

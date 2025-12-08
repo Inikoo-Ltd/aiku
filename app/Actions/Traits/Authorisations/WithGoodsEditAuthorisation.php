@@ -18,6 +18,6 @@ trait WithGoodsEditAuthorisation
             return true;
         }
 
-        return $request->user()->authTo("goods.edit");
+        return $request->user()->authTo('goods.edit');
     }
 }

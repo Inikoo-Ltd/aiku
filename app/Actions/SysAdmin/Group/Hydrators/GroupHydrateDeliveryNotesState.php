@@ -29,7 +29,7 @@ class GroupHydrateDeliveryNotesState implements ShouldBeUnique
     public function handle(int $groupID, DeliveryNoteStateEnum $state): void
     {
         $group = Group::find($groupID);
-        if (!$group) {
+        if (! $group) {
             return;
         }
 
@@ -42,6 +42,4 @@ class GroupHydrateDeliveryNotesState implements ShouldBeUnique
 
         $group->orderHandlingStats()->update($stats);
     }
-
-
 }

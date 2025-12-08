@@ -177,9 +177,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $today_timeline_position
  * @property string|null $next_order_timeline_position
  * @property-read \App\Models\CRM\Customer $customer
+ *
  * @method static Builder<static>|CustomerStats newModelQuery()
  * @method static Builder<static>|CustomerStats newQuery()
  * @method static Builder<static>|CustomerStats query()
+ *
  * @mixin Eloquent
  */
 class CustomerStats extends Model

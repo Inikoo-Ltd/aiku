@@ -10,6 +10,4 @@ namespace App\Helpers\ImgProxy\Exceptions;
 
 use InvalidArgumentException;
 
-class MissingKey extends InvalidArgumentException
-{
-}
+class MissingKey extends InvalidArgumentException {}

@@ -19,14 +19,12 @@ class StoreExternalLink extends OrgAction
 {
     use WithWebAuthorisation;
 
-
     protected Group $group;
 
     public function handle(Group $group, array $modelData): ExternalLink
     {
 
-        return  $group->externalLinks()->create($modelData);
-
+        return $group->externalLinks()->create($modelData);
 
     }
 
@@ -41,17 +39,16 @@ class StoreExternalLink extends OrgAction
             'status' => [
                 'required',
                 'string',
-                'max:255'
+                'max:255',
             ],
 
         ];
     }
 
-
-    public function action(Group $group, array $modelData, int $hydratorsDelay = 0, bool $strict = true): ExternalLink|null
+    public function action(Group $group, array $modelData, int $hydratorsDelay = 0, bool $strict = true): ?ExternalLink
     {
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromGroup($group, $modelData);
 

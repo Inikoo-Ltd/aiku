@@ -9,9 +9,9 @@
 namespace App\Actions\Web\Banner;
 
 use App\Actions\OrgAction;
-use App\Actions\Web\Banner\UI\ParseBannerLayout;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Banner\Search\BannerRecordSearch;
+use App\Actions\Web\Banner\UI\ParseBannerLayout;
 use App\Actions\Web\Slide\StoreSlide;
 use App\Actions\Web\Slide\UpdateSlide;
 use App\Http\Resources\Web\BannerResource;
@@ -29,20 +29,16 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
     {
         $layout = Arr::pull($modelData, 'layout');
 
-
-
-        list($layout, $slides) = ParseBannerLayout::run($layout);
-
+        [$layout, $slides] = ParseBannerLayout::run($layout);
 
         data_set($modelData, 'layout', $layout);
-
 
         if ($slides) {
             $existingSlides = Slide::where('snapshot_id', $snapshot->id)->get()->pluck('ulid')->toArray();
             $newSlideUlids = array_keys($slides);
 
             foreach ($existingSlides as $ulid) {
-                if (!in_array($ulid, $newSlideUlids)) {
+                if (! in_array($ulid, $newSlideUlids)) {
                     Slide::where('ulid', $ulid)->where('snapshot_id', $snapshot->id)->delete();
                 }
             }
@@ -71,7 +67,7 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
 
         $banner->update(
             [
-                'compiled_layout' => $snapshot->compiledLayout()
+                'compiled_layout' => $snapshot->compiledLayout(),
             ]
         );
 
@@ -81,11 +77,10 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
         return $banner;
     }
 
-
     public function rules(): array
     {
         return [
-            'layout' => ['sometimes', 'required', 'array:type,delay,common,components,navigation']
+            'layout' => ['sometimes', 'required', 'array:type,delay,common,components,navigation'],
         ];
     }
 

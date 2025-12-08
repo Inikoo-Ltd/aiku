@@ -24,13 +24,13 @@ class AgentsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'                     => $this->slug,
-            'code'                     => $this->code,
-            'name'                     => $this->name,
-            'location'                 => json_decode($this->location),
-            'number_suppliers'         => $this->number_suppliers,
+            'slug' => $this->slug,
+            'code' => $this->code,
+            'name' => $this->name,
+            'location' => json_decode($this->location),
+            'number_suppliers' => $this->number_suppliers,
             'number_supplier_products' => $this->number_supplier_products,
-            'number_purchase_orders'   => $this->number_purchase_orders
+            'number_purchase_orders' => $this->number_purchase_orders,
         ];
     }
 }

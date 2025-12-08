@@ -20,14 +20,13 @@ enum DeliveryNoteTabsEnum: string
     case ITEMS = 'items';
     // case PICKINGS = 'pickings';
 
-
     public function blueprint(DeliveryNote $parent): array
     {
 
         return match ($this) {
             DeliveryNoteTabsEnum::ITEMS => [
                 'title' => __('Items'),
-                'icon'  => 'fal fa-bars',
+                'icon' => 'fal fa-bars',
             ],
             // DeliveryNoteTabsEnum::PICKINGS => [
             //     'title'     => __('pickings'),

@@ -6,25 +6,24 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Actions\CRM\WebUser\StoreWebUser;
-use App\Models\CRM\WebUser;
-use App\Models\Web\Website;
-use App\Models\CRM\Customer;
-use App\Models\SysAdmin\Group;
-use Illuminate\Validation\Rule;
-use Illuminate\Http\JsonResponse;
-use App\Models\SysAdmin\Organisation;
-use App\Models\CRM\Livechat\ChatEvent;
-use App\Models\CRM\Livechat\ChatSession;
-use App\Enums\CRM\WebUser\WebUserTypeEnum;
-use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
-use App\Actions\CRM\ChatSession\StoreChatSession;
+use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Enums\CRM\WebUser\WebUserTypeEnum;
+use App\Models\CRM\Customer;
+use App\Models\CRM\Livechat\ChatEvent;
+use App\Models\CRM\Livechat\ChatSession;
+use App\Models\CRM\WebUser;
+use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
+use App\Models\Web\Website;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\Rule;
 
 beforeAll(function () {
     loadDB();
@@ -33,33 +32,31 @@ beforeAll(function () {
 beforeEach(function () {
 
     $web = Website::first();
-    if (!$web) {
-        list(
+    if (! $web) {
+        [
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ] = createShop();
         $web = createWebsite($this->shop);
     } else {
         $this->organisation = $web->organisation;
-        $this->user         = createAdminGuest($this->organisation->group)->getUser();
-        $this->shop         = $web->shop;
+        $this->user = createAdminGuest($this->organisation->group)->getUser();
+        $this->shop = $web->shop;
     }
     $web->refresh();
-    $this->web       = $web;
+    $this->web = $web;
     $this->warehouse = createWarehouse();
 
     $customer = Customer::first();
 
-    if (!$customer) {
+    if (! $customer) {
         $customer = createCustomer($this->shop);
     }
 
     $this->customer = $customer;
 
-    $this->action = new StoreChatSession();
-
-
+    $this->action = new StoreChatSession;
 
 });
 
@@ -97,10 +94,7 @@ test('can create chat session for guest with custom guest identifier', function 
 
 test('can create chat session for authenticated web user', function () {
 
-
-
     $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
-
 
     $modelData = [
         'web_user_id' => $webUser->id,
@@ -116,7 +110,6 @@ test('can create chat session for authenticated web user', function () {
         ->and($chatSession->priority)->toBe(ChatPriorityEnum::HIGH)
         ->and($chatSession->ai_model_version)->toBe('gpt-4-turbo');
 });
-
 
 test('create chat event for guest session', function () {
     $modelData = [
@@ -138,14 +131,12 @@ test('create chat event for guest session', function () {
             'guest_identifier',
             'language_id',
             'priority',
-            'is_guest'
+            'is_guest',
         ])
         ->and($chatEvent->payload['is_guest'])->toBeTrue()
         ->and($chatEvent->payload['language_id'])->toBe(68)
         ->and($chatEvent->payload['priority'])->toBe(ChatPriorityEnum::NORMAL->value);
 });
-
-
 
 test('creates chat event for authenticated user session', function () {
     $organisation = Organisation::first() ?? Organisation::factory()->create();
@@ -181,7 +172,7 @@ test('validation rules are correct', function () {
 
     expect($rules)->toHaveKeys([
         'web_user_id', 'language_id', 'guest_identifier',
-        'ai_model_version', 'priority', 'ulid'
+        'ai_model_version', 'priority', 'ulid',
     ]);
 
     expect($rules['web_user_id'])->toEqual(['nullable', 'exists:web_users,id'])
@@ -191,7 +182,6 @@ test('validation rules are correct', function () {
         ->and($rules['ai_model_version'])->toEqual(['nullable', 'string', 'max:50'])
         ->and($rules['ulid'])->toEqual(['sometimes', 'string', 'size:26', 'unique:chat_sessions,ulid']);
 });
-
 
 test('json response structure is correct', function () {
     $modelData = [
@@ -214,7 +204,7 @@ test('json response structure is correct', function () {
             'status',
             'is_guest',
             'guest_identifier',
-            'created_at'
+            'created_at',
         ])
         ->and($responseData['data']['ulid'])->toBe($chatSession->ulid->toString())
         ->and($responseData['data']['status'])->toBe($chatSession->status->value)
@@ -236,7 +226,6 @@ test('html response returns json response', function () {
     expect($htmlResponse->getContent())->toBe($jsonResponse->getContent())
         ->and($htmlResponse->headers->get('Content-Type'))->toContain('application/json');
 });
-
 
 test('handles different priority levels correctly', function () {
     $priorities = [
@@ -279,7 +268,6 @@ test('guest identifier is generated when not provided for guest', function () {
 
     $chatSession1 = $this->action->handle($modelData);
     $chatSession2 = $this->action->handle($modelData);
-
 
     expect($chatSession1->guest_identifier)->not->toBeNull()
         ->and($chatSession2->guest_identifier)->not->toBeNull()

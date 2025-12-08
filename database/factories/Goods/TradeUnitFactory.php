@@ -23,11 +23,11 @@ class TradeUnitFactory extends Factory
     public function definition()
     {
         return [
-            'code'         => fake()->lexify,
-            'name'         => fake()->name,
+            'code' => fake()->lexify,
+            'name' => fake()->name,
             'gross_weight' => fake()->numberBetween(10, 100),
-            'net_weight'   => fake()->numberBetween(10, 100),
-            'description'  => fake()->sentence,
+            'net_weight' => fake()->numberBetween(10, 100),
+            'description' => fake()->sentence,
         ];
     }
 }

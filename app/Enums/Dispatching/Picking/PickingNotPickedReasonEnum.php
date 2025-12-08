@@ -22,9 +22,9 @@ enum PickingNotPickedReasonEnum: string
     public static function labels($forElements = false): array
     {
         return [
-            'not-applicable'         => __('Not Applicable'),
-            'out-of-stock'           => __('Out of Stock'),
-            'cancelled-by-customer'  => __('Cancelled by Customer'),
+            'not-applicable' => __('Not Applicable'),
+            'out-of-stock' => __('Out of Stock'),
+            'cancelled-by-customer' => __('Cancelled by Customer'),
             'cancelled-by-warehouse' => __('Cancelled by Warehouse'),
         ];
     }

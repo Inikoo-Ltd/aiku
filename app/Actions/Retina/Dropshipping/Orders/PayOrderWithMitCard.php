@@ -31,9 +31,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class PayOrderWithMitCard
 {
     use AsAction;
-    use WithCheckoutCom;
     use CalculatesPaymentWithBalance;
-
+    use WithCheckoutCom;
 
     /**
      * @throws \Checkout\CheckoutArgumentException
@@ -49,20 +48,16 @@ class PayOrderWithMitCard
             ->where('type', PaymentAccountTypeEnum::CHECKOUT)
             ->where('state', PaymentAccountShopStateEnum::ACTIVE)->first();
 
-
         $secretKey = $paymentAccountShop->getCredentials()[1];
-
 
         $paymentAmounts = $this->calculatePaymentWithBalance(
             $order->total_amount,
             $order->customer->balance
         );
 
-
         $toPay = $paymentAmounts['total'];
 
-        $toPay = (int)round((float)$toPay * 100);
-
+        $toPay = (int) round((float) $toPay * 100);
 
         if ($toPay == 0) {
             return [
@@ -77,28 +72,27 @@ class PayOrderWithMitCard
 
         $channelID = $paymentAccountShop->getCheckoutComChannel();
 
-
-        $request                        = new PaymentRequest();
-        $request->source                = [
+        $request = new PaymentRequest;
+        $request->source = [
             'type' => 'id',
-            'id'   => Arr::get($mitSavedCard->data, 'payment.source.id'),
+            'id' => Arr::get($mitSavedCard->data, 'payment.source.id'),
         ];
         $request->processing_channel_id = $channelID;
 
-        $request->amount              = $toPay;
-        $request->currency            = $order->currency->code;
-        $request->payment_type        = 'Unscheduled';
-        $request->merchant_initiated  = true;
+        $request->amount = $toPay;
+        $request->currency = $order->currency->code;
+        $request->payment_type = 'Unscheduled';
+        $request->merchant_initiated = true;
         $request->previous_payment_id = $mitSavedCard->token;
-        $request->processing          = [
-            'merchant_initiated_reason' => 'delayed_charge'
+        $request->processing = [
+            'merchant_initiated_reason' => 'delayed_charge',
         ];
 
         $request->metadata = [
-            'origin'      => 'aiku',
-            'operation'   => 'mit',
-            'order_id'    => $order->id,
-            'environment' => app()->environment()
+            'origin' => 'aiku',
+            'operation' => 'mit',
+            'order_id' => $order->id,
+            'environment' => app()->environment(),
         ];
 
         try {
@@ -106,32 +100,32 @@ class PayOrderWithMitCard
 
             $amount = Arr::get($response, 'amount', 0) / 100;
 
-            if (in_array(Arr::get($response, 'status'), ["Authorized", "Paid", "Captured"]) && Arr::get($response, 'approved')) {
+            if (in_array(Arr::get($response, 'status'), ['Authorized', 'Paid', 'Captured']) && Arr::get($response, 'approved')) {
                 $status = PaymentStatusEnum::SUCCESS;
-                $state  = PaymentStateEnum::COMPLETED;
+                $state = PaymentStateEnum::COMPLETED;
             } else {
                 $status = PaymentStatusEnum::FAIL;
-                $state  = PaymentStateEnum::DECLINED;
+                $state = PaymentStateEnum::DECLINED;
             }
 
             $paymentData = [
-                'reference'               => Arr::get($response, 'id'),
-                'amount'                  => $amount,
-                'status'                  => $status,
-                'state'                   => $state,
-                'type'                    => PaymentTypeEnum::PAYMENT,
-                'is_mit'                  => true,
-                'debug_mit_status'        => Arr::get($response, 'status'),
-                'debug_mit_is_approved'   => (bool)Arr::get($response, 'approved', false),
+                'reference' => Arr::get($response, 'id'),
+                'amount' => $amount,
+                'status' => $status,
+                'state' => $state,
+                'type' => PaymentTypeEnum::PAYMENT,
+                'is_mit' => true,
+                'debug_mit_status' => Arr::get($response, 'status'),
+                'debug_mit_is_approved' => (bool) Arr::get($response, 'approved', false),
                 'payment_account_shop_id' => $paymentAccountShop->id,
-                'data'                    => [
-                    'checkout_com' => $response
-                ]
+                'data' => [
+                    'checkout_com' => $response,
+                ],
             ];
-            $payment     = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
+            $payment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             AttachPaymentToOrder::make()->action($order, $payment, [
-                'amount' => $payment->amount
+                'amount' => $payment->amount,
             ]);
 
             $result = [
@@ -139,14 +133,14 @@ class PayOrderWithMitCard
             ];
         } catch (CheckoutApiException $e) {
             // API error
-            $error_details    = $e->error_details;
+            $error_details = $e->error_details;
             $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
 
             $result = [
-                'debug'            => 'PayOrderWithMitCard.php',
-                'status'           => 'error',
-                'message'          => $e->getMessage(),
-                'error_details'    => $error_details,
+                'debug' => 'PayOrderWithMitCard.php',
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'error_details' => $error_details,
                 'http_status_code' => $http_status_code,
             ];
         }
@@ -155,7 +149,6 @@ class PayOrderWithMitCard
     }
 
     public string $commandSignature = 'test_pay';
-
 
     /**
      * @throws \Checkout\CheckoutArgumentException
@@ -166,11 +159,8 @@ class PayOrderWithMitCard
 
         $mitSavedCard = MitSavedCard::where('customer_id', $order->customer_id)->first();
 
-
         $this->handle($order, $mitSavedCard);
-
 
         return 1;
     }
-
 }

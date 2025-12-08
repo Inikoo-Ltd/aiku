@@ -29,5 +29,4 @@ class StoreRetinaNewProductToCurrentWoo extends RetinaAction
         $this->initialisation($request);
         $this->handle($portfolio);
     }
-
 }

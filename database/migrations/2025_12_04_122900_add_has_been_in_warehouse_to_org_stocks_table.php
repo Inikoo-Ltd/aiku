@@ -10,14 +10,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
-        if (!Schema::hasTable('org_stocks')) {
+        if (! Schema::hasTable('org_stocks')) {
             return;
         }
 
-        if (!Schema::hasColumn('org_stocks', 'has_been_in_warehouse')) {
+        if (! Schema::hasColumn('org_stocks', 'has_been_in_warehouse')) {
             Schema::table('org_stocks', function (Blueprint $table) {
                 $table->boolean('has_been_in_warehouse')->default(false)->index();
             });
@@ -26,7 +27,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        if (!Schema::hasTable('org_stocks')) {
+        if (! Schema::hasTable('org_stocks')) {
             return;
         }
 

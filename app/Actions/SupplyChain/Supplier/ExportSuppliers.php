@@ -28,7 +28,7 @@ class ExportSuppliers
     {
         $type = $modelData['type'];
 
-        return $this->export(new SuppliersExport(), 'suppliers', $type);
+        return $this->export(new SuppliersExport, 'suppliers', $type);
     }
 
     /**

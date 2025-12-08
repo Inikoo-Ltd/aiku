@@ -13,10 +13,10 @@ use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemPallets;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInWarehouse;
 use App\Actions\Fulfilment\StoredItem\UI\ShowStoredItem;
 use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAuditFromPalletInWarehouse;
+use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
+use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
-use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
-use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {

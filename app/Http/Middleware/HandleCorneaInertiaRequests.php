@@ -20,7 +20,6 @@ class HandleCorneaInertiaRequests extends Middleware
 {
     protected $rootView = 'app-cornea';
 
-
     public function share(Request $request): array
     {
         /** @var SupplierUser $supplierUser */
@@ -28,9 +27,9 @@ class HandleCorneaInertiaRequests extends Middleware
 
         $firstLoadOnlyProps = [];
 
-        if (!$request->inertia() || Session::get('reloadLayout')) {
+        if (! $request->inertia() || Session::get('reloadLayout')) {
 
-            $firstLoadOnlyProps          = GetCorneaFirstLoadProps::run($request, $supplierUser);
+            $firstLoadOnlyProps = GetCorneaFirstLoadProps::run($request, $supplierUser);
             $firstLoadOnlyProps['ziggy'] = function () use ($request) {
                 return array_merge((new Ziggy('cornea'))->toArray(), [
                     'location' => $request->url(),
@@ -41,11 +40,11 @@ class HandleCorneaInertiaRequests extends Middleware
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'auth'  => [
+                'auth' => [
                     'user' => $request->user() ? LoggedShopifyUserResource::make($request->user())->getArray() : null,
                 ],
                 'flash' => [
-                    'notification' => fn () => $request->session()->get('notification')
+                    'notification' => fn () => $request->session()->get('notification'),
                 ],
                 'ziggy' => [
                     'location' => $request->url(),

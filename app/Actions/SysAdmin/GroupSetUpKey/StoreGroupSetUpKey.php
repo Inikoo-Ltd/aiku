@@ -28,12 +28,10 @@ class StoreGroupSetUpKey
 
         /** @var GroupSetUpKey $groupSetUpKey */
         $groupSetUpKey = GroupSetUpKey::create($modelData);
+
         return $groupSetUpKey;
 
     }
-
-
-
 
     public string $commandSignature = 'group:set-up-key {--O|organisations=2} {--S|shops=4} {--W|warehouses=2} {--M|manufactures=1} {--A|agents=3}';
 
@@ -43,17 +41,18 @@ class StoreGroupSetUpKey
         $modelData = [
             'limits' => [
                 'organisations' => $command->option('organisations'),
-                'shops'        => $command->option('shops'),
-                'warehouses'   => $command->option('warehouses'),
+                'shops' => $command->option('shops'),
+                'warehouses' => $command->option('warehouses'),
                 'manufactures' => $command->option('manufactures'),
-                'agents'       => $command->option('agents')
-            ]
+                'agents' => $command->option('agents'),
+            ],
         ];
 
         $groupSetUpKey = $this->handle($modelData);
 
         $command->info('Set up key created:  '.config('app.url').'/setup/'.$groupSetUpKey->key);
         $command->info('Expires at: '.$groupSetUpKey->expires_at);
+
         return 0;
     }
 }

@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('invoice_categories', function (Blueprint $table) {
@@ -32,7 +33,6 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('invoice_category_id')->change();
         });
     }
-
 
     public function down(): void
     {

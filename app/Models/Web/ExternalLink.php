@@ -29,9 +29,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\Webpage> $webpages
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\Website> $websites
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalLink newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalLink newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalLink query()
+ *
  * @mixin \Eloquent
  */
 class ExternalLink extends Model
@@ -49,21 +51,21 @@ class ExternalLink extends Model
     public function webBlocks()
     {
         return $this->belongsToMany(WebBlock::class, 'web_block_has_external_link')
-                    ->withPivot('website_id', 'webpage_id', 'show')
-                    ->withTimestamps();
+            ->withPivot('website_id', 'webpage_id', 'show')
+            ->withTimestamps();
     }
 
     public function webpages()
     {
         return $this->belongsToMany(Webpage::class, 'web_block_has_external_link')
-                    ->withPivot('website_id', 'web_block_id', 'show')
-                    ->withTimestamps();
+            ->withPivot('website_id', 'web_block_id', 'show')
+            ->withTimestamps();
     }
 
     public function websites()
     {
         return $this->belongsToMany(Website::class, 'web_block_has_external_link')
-                    ->withPivot('webpage_id', 'web_block_id', 'show')
-                    ->withTimestamps();
+            ->withPivot('webpage_id', 'web_block_id', 'show')
+            ->withTimestamps();
     }
 }

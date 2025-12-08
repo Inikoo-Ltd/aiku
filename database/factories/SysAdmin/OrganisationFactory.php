@@ -20,22 +20,21 @@ class OrganisationFactory extends Factory
 {
     public function definition(): array
     {
-        $country  = Country::where('code', 'US')->firstOrFail();
+        $country = Country::where('code', 'US')->firstOrFail();
         $language = Language::where('code', 'en')->firstOrFail();
         $timezone = Timezone::where('name', fake()->timezone('US'))->firstOrFail();
         $currency = Currency::where('code', 'USD')->firstOrFail();
 
-
         return [
-            'code'        => fake()->lexify(),
-            'name'        => fake()->company(),
-            'email'       => fake()->safeEmail(),
-            'country_id'  => $country->id,
+            'code' => fake()->lexify(),
+            'name' => fake()->company(),
+            'email' => fake()->safeEmail(),
+            'country_id' => $country->id,
             'language_id' => $language->id,
             'timezone_id' => $timezone->id,
             'currency_id' => $currency->id,
-            'type'        => OrganisationTypeEnum::SHOP->value,
-            'address'     => Address::factory()->definition()
+            'type' => OrganisationTypeEnum::SHOP->value,
+            'address' => Address::factory()->definition(),
         ];
     }
 }

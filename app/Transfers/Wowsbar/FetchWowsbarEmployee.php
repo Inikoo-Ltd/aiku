@@ -21,9 +21,8 @@ class FetchWowsbarEmployee extends FetchWowsbar
             $this->parseModel();
             $this->parseUserFromEmployee();
             // Do not parse job positions, use aiku UI instead
-            //$this->parseJobPositions();
+            // $this->parseJobPositions();
         }
-
 
         return $this->parsedData;
     }
@@ -31,15 +30,15 @@ class FetchWowsbarEmployee extends FetchWowsbar
     protected function parseModel(): void
     {
         $this->parsedData['employee'] = [
-            'alias'               => $this->wowModelData->alias,
-            'contact_name'        => $this->wowModelData->contact_name,
-            'worker_number'       => $this->wowModelData->worker_number,
+            'alias' => $this->wowModelData->alias,
+            'contact_name' => $this->wowModelData->contact_name,
+            'worker_number' => $this->wowModelData->worker_number,
             'employment_start_at' => $this->wowModelData->employment_start_at,
-            'job_title'           => $this->wowModelData->job_title,
-            'type'                => $this->wowModelData->type,
-            'state'               => $this->wowModelData->state,
-            'created_at'          => $this->wowModelData->created_at,
-            'source_id'           => $this->organisation->id.':'.$this->wowModelData->id
+            'job_title' => $this->wowModelData->job_title,
+            'type' => $this->wowModelData->type,
+            'state' => $this->wowModelData->state,
+            'created_at' => $this->wowModelData->created_at,
+            'source_id' => $this->organisation->id.':'.$this->wowModelData->id,
 
         ];
     }
@@ -52,7 +51,6 @@ class FetchWowsbarEmployee extends FetchWowsbar
             ->where('job_positionables.job_positionable_type', 'Employee')
             ->where('job_positionables.job_positionable_id', $this->wowModelData->id)
             ->get();
-
 
         foreach ($query as $jobPosition) {
             $this->parsedData['employee']['positions'][] = $this->parseJobPosition($jobPosition->slug);
@@ -67,25 +65,24 @@ class FetchWowsbarEmployee extends FetchWowsbar
             ->where('parent_id', $this->wowModelData->id)
             ->first();
 
-
         if ($wowsbarUserData) {
             $userData = [
-                'source_id'         => $this->organisation->id.':'.$wowsbarUserData->id,
-                'username'          => $wowsbarUserData->username,
-                'status'            => $wowsbarUserData->status,
+                'source_id' => $this->organisation->id.':'.$wowsbarUserData->id,
+                'username' => $wowsbarUserData->username,
+                'status' => $wowsbarUserData->status,
                 'user_model_status' => $wowsbarUserData->status,
-                'created_at'        => $wowsbarUserData->created_at,
-                'password'          => (app()->isLocal() ? 'hello' : wordwrap(Str::random(), 4, '-', true)),
-                'reset_password'    => false,
-                'fetched_at'        => now(),
-                'last_fetched_at'   => now()
+                'created_at' => $wowsbarUserData->created_at,
+                'password' => (app()->isLocal() ? 'hello' : wordwrap(Str::random(), 4, '-', true)),
+                'reset_password' => false,
+                'fetched_at' => now(),
+                'last_fetched_at' => now(),
             ];
 
             $this->parsedData['user'] = $userData;
         }
     }
 
-    protected function fetchData($id): object|null
+    protected function fetchData($id): ?object
     {
         return DB::connection('wowsbar')
             ->table('employees')

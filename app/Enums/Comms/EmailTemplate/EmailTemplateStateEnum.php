@@ -18,15 +18,12 @@ enum EmailTemplateStateEnum: string
     case ACTIVE = 'active';
     case SUSPENDED = 'suspended';
 
-
     public static function labels(): array
     {
         return [
             'in_process' => __('In construction'),
-            'live'       => __('Live'),
-            'suspended'  => __('Suspended')
+            'live' => __('Live'),
+            'suspended' => __('Suspended'),
         ];
     }
-
-
 }

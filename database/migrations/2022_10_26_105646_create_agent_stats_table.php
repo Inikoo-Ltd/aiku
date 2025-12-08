@@ -12,9 +12,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     use HasProcurementStats;
     use HasSupplyChainStats;
+
     public function up(): void
     {
         Schema::create('agent_stats', function (Blueprint $table) {

@@ -35,6 +35,7 @@ class IndexSupplierProducts extends GrpAction
 {
     use WithAgentSubNavigation;
     use WithSupplierSubNavigation;
+
     private Group|Agent|Supplier $scope;
 
     public function authorize(ActionRequest $request): bool
@@ -48,7 +49,7 @@ class IndexSupplierProducts extends GrpAction
     {
         return [
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     SupplierProductStateEnum::labels(),
                     SupplierProductStateEnum::count($parent)
@@ -56,9 +57,8 @@ class IndexSupplierProducts extends GrpAction
 
                 'engine' => function ($query, $elements) {
                     $query->whereIn('supplier_products.state', $elements);
-                }
+                },
             ],
-
 
         ];
     }
@@ -77,7 +77,6 @@ class IndexSupplierProducts extends GrpAction
 
         $queryBuilder = QueryBuilder::for(SupplierProduct::class);
 
-
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
@@ -92,7 +91,7 @@ class IndexSupplierProducts extends GrpAction
             ->select([
                 'supplier_products.code',
                 'supplier_products.slug',
-                'supplier_products.name'
+                'supplier_products.name',
             ])
             ->leftJoin('supplier_product_stats', 'supplier_product_stats.supplier_product_id', 'supplier_products.id')
             ->when($parent, function ($query) use ($parent) {
@@ -112,7 +111,7 @@ class IndexSupplierProducts extends GrpAction
             ->withQueryString();
     }
 
-    public function tableStructure(array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
@@ -180,9 +179,9 @@ class IndexSupplierProducts extends GrpAction
         $subNavigation = null;
         $title = __('Supplier products');
         $model = '';
-        $icon  = [
-            'icon'  => ['fal', 'fa-box-usd'],
-            'title' => __('Supplier products')
+        $icon = [
+            'icon' => ['fal', 'fa-box-usd'],
+            'title' => __('Supplier products'),
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -193,59 +192,60 @@ class IndexSupplierProducts extends GrpAction
             $subNavigation = $this->getAgentNavigation($this->scope);
             $title = $this->scope->organisation->name;
             $model = '';
-            $icon  = [
-                'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Supplier products')
+            $icon = [
+                'icon' => ['fal', 'fa-people-arrows'],
+                'title' => __('Supplier products'),
             ];
-            $iconRight    = [
+            $iconRight = [
                 'icon' => 'fal fa-box-usd',
             ];
             $afterTitle = [
 
-                'label'     => __('Supplier Products')
+                'label' => __('Supplier Products'),
             ];
         } elseif ($this->scope instanceof Supplier) {
             $subNavigation = $this->getSupplierNavigation($this->scope);
             $title = $this->scope->name;
             $model = '';
-            $icon  = [
-                'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('Supplier products')
+            $icon = [
+                'icon' => ['fal', 'fa-person-dolly'],
+                'title' => __('Supplier products'),
             ];
-            $iconRight    = [
+            $iconRight = [
                 'icon' => 'fal fa-box-usd',
             ];
             $afterTitle = [
 
-                'label'     => __('Supplier Products')
+                'label' => __('Supplier Products'),
             ];
             $actions = [
                 [
-                    'type'    =>    'button',
-                                    'style'   => 'create',
-                                    'tooltip' => __('New supplier product'),
-                                    'label'   => __('New supplier product'),
-                                    'route'   => [
-                                        'name'       => 'grp.supply-chain.suppliers.supplier_products.create',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ]
-                ]
+                    'type' => 'button',
+                    'style' => 'create',
+                    'tooltip' => __('New supplier product'),
+                    'label' => __('New supplier product'),
+                    'route' => [
+                        'name' => 'grp.supply-chain.suppliers.supplier_products.create',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                ],
             ];
-            //'grp.models.supplier.supplier-product.import' import route
+            // 'grp.models.supplier.supplier-product.import' import route
             $spreadsheetRoute = [
-                'event'           => 'action-progress',
-                'channel'         => 'grp.personal.'.$this->group->id,
-                'required_fields' => ["id:_supplier_part_key", "supplier's_product_code", "units_per_sko", "skos_per_carton", "carton_cbm", "unit_cost", "availability", "supplier's_unit_description"],
-                'route'           => [
-                    'upload'   => [
-                        'name'       => 'grp.models.supplier.supplier-product.import',
+                'event' => 'action-progress',
+                'channel' => 'grp.personal.'.$this->group->id,
+                'required_fields' => ['id:_supplier_part_key', "supplier's_product_code", 'units_per_sko', 'skos_per_carton', 'carton_cbm', 'unit_cost', 'availability', "supplier's_unit_description"],
+                'route' => [
+                    'upload' => [
+                        'name' => 'grp.models.supplier.supplier-product.import',
                         'parameters' => [
-                            'supplier' => $this->scope->id
-                        ]
+                            'supplier' => $this->scope->id,
+                        ],
                     ],
                 ],
             ];
         }
+
         return Inertia::render(
             'SupplyChain/SupplierProducts',
             [
@@ -254,77 +254,72 @@ class IndexSupplierProducts extends GrpAction
                     $request->route()->originalParameters(),
                     $this->scope
                 ),
-                'title'       => __('Supplier products'),
-                'pageHead'    => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                'title' => __('Supplier products'),
+                'pageHead' => [
+                    'title' => $title,
+                    'icon' => $icon,
+                    'model' => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $actions
+                    'actions' => $actions,
                 ],
                 'upload_spreadsheet' => $spreadsheetRoute ?? null,
-                'data'        => SupplierProductsResource::collection($supplier_products),
+                'data' => SupplierProductsResource::collection($supplier_products),
             ]
         )->table($this->tableStructure());
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, Group|Agent|Supplier $scope): array
     {
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Supplier products'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.supply-chain.supplier_products.index' =>
-            array_merge(
+            'grp.supply-chain.supplier_products.index' => array_merge(
                 ShowSupplyChainDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => 'grp.supply-chain.supplier_products.index',
-                        null
+                        null,
                     ]
                 ),
             ),
-            'grp.supply-chain.suppliers.supplier_products.index' =>
-            array_merge(
+            'grp.supply-chain.suppliers.supplier_products.index' => array_merge(
                 ShowSupplier::make()->getBreadcrumbs($scope, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name' => 'grp.supply-chain.suppliers.supplier_products.index',
-                        'parameters' => $routeParameters
+                        'parameters' => $routeParameters,
                     ]
                 ),
             ),
 
-            'grp.supply-chain.agents.show.supplier_products.index' =>
-            array_merge(
+            'grp.supply-chain.agents.show.supplier_products.index' => array_merge(
                 ShowAgent::make()->getBreadcrumbs($scope, $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.supply-chain.agents.show.supplier_products.index',
-                        'parameters' => $routeParameters
+                        'name' => 'grp.supply-chain.agents.show.supplier_products.index',
+                        'parameters' => $routeParameters,
                     ]
                 )
             ),
-            'grp.overview.procurement.supplier-products.index' =>
-            array_merge(
+            'grp.overview.procurement.supplier-products.index' => array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name' => $routeName,
-                        'parameters' => $routeParameters
+                        'parameters' => $routeParameters,
                     ]
                 )
             ),

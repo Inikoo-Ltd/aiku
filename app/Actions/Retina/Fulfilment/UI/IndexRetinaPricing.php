@@ -20,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 class IndexRetinaPricing extends RetinaAction
 {
     use WithRetinaPricingSubNavigation;
+
     public function asController(ActionRequest $request): FulfilmentCustomer
     {
         abort(401);
@@ -32,7 +33,6 @@ class IndexRetinaPricing extends RetinaAction
     {
         $shop = $this->shop;
 
-
         $assets = [];
         foreach ($shop->assets as $asset) {
             if ($asset->type->value == 'charge') {
@@ -40,8 +40,8 @@ class IndexRetinaPricing extends RetinaAction
             }
             $price = $asset->price;
             $assets[] = [
-                'name'  => $asset->name,
-                'type'  => $asset->type,
+                'name' => $asset->name,
+                'type' => $asset->type,
                 'price' => $price,
             ];
         }
@@ -49,21 +49,21 @@ class IndexRetinaPricing extends RetinaAction
         return Inertia::render(
             'Storage/RetinaStoragePricing',
             [
-                'title'                         => __('Pricing'),
-                'breadcrumbs'                   => $this->getBreadcrumbs(
+                'title' => __('Pricing'),
+                'breadcrumbs' => $this->getBreadcrumbs(
                     request()->route()->getName(),
                 ),
-                'pageHead'                      => [
-                    'icon'          => [
-                        'icon'    => ['fal', 'fa-usd-circle'],
-                        'tooltip' => __('Prices')
+                'pageHead' => [
+                    'icon' => [
+                        'icon' => ['fal', 'fa-usd-circle'],
+                        'tooltip' => __('Prices'),
                     ],
-                    'title'         => 'Prices',
+                    'title' => 'Prices',
                     'subNavigation' => $this->getPricingNavigation($fulfilmentCustomer->fulfilment),
                 ],
-                'currency'     => CurrencyResource::make($fulfilmentCustomer->fulfilment->shop->currency),
+                'currency' => CurrencyResource::make($fulfilmentCustomer->fulfilment->shop->currency),
 
-                'assets' => $assets
+                'assets' => $assets,
             ]
         );
     }
@@ -75,18 +75,16 @@ class IndexRetinaPricing extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.fulfilment.pricing.index',
+                                'name' => 'retina.fulfilment.pricing.index',
                             ],
                             'label' => __('Prices'),
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
-
-
 
     }
 }

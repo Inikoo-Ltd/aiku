@@ -47,18 +47,13 @@ enum OutboxCodeEnum: string
     case INVITE = 'invite';
     case TEST = 'test';
 
-
     public function type(): OutboxTypeEnum
     {
         return match ($this) {
             OutboxCodeEnum::NEWSLETTER => OutboxTypeEnum::NEWSLETTER,
             OutboxCodeEnum::MARKETING,
-            OutboxCodeEnum::ABANDONED_CART
-
-
-            => OutboxTypeEnum::MARKETING,
+            OutboxCodeEnum::ABANDONED_CART => OutboxTypeEnum::MARKETING,
             OutboxCodeEnum::INVITE => OutboxTypeEnum::COLD_EMAIL,
-
 
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
@@ -70,11 +65,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
-            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER
-            => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
+            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::BASKET_LOW_STOCK,
-
 
             OutboxCodeEnum::REORDER_REMINDER => OutboxTypeEnum::MARKETING_NOTIFICATION,
             OutboxCodeEnum::TEST => OutboxTypeEnum::TEST,
@@ -88,10 +81,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED,
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::INVOICE_DELETED,
-            OutboxCodeEnum::NEW_ORDER
-            => OutboxTypeEnum::USER_NOTIFICATION,
-            OutboxCodeEnum::BASKET_PUSH, OutboxCodeEnum::NEW_CUSTOMER_PUSH
-            => OutboxTypeEnum::PUSH,
+            OutboxCodeEnum::NEW_ORDER => OutboxTypeEnum::USER_NOTIFICATION,
+            OutboxCodeEnum::BASKET_PUSH, OutboxCodeEnum::NEW_CUSTOMER_PUSH => OutboxTypeEnum::PUSH,
         };
     }
 
@@ -130,7 +121,6 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_DELETED => 'Pallet deleted',
         };
     }
-
 
     public function layout(): string
     {
@@ -180,15 +170,13 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
-            OutboxCodeEnum::REGISTRATION_REJECTED,
-            => ['Website'],
+            OutboxCodeEnum::REGISTRATION_REJECTED, => ['Website'],
             OutboxCodeEnum::NEW_CUSTOMER,
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::INVITE,
-            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-            => ['Fulfilment', 'Shop'],
+            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER, => ['Fulfilment', 'Shop'],
 
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER,
             OutboxCodeEnum::NEW_PALLET_DELIVERY_FROM_CUSTOMER,
@@ -201,7 +189,6 @@ enum OutboxCodeEnum: string
             default => ['Shop']
         };
     }
-
 
     public function shopTypes(): array
     {
@@ -227,13 +214,11 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART,
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::BASKET_PUSH,
-            OutboxCodeEnum::NEW_CUSTOMER_PUSH
-            => ['b2b'],
+            OutboxCodeEnum::NEW_CUSTOMER_PUSH => ['b2b'],
 
             default => []
         };
     }
-
 
     public function defaultState(): OutboxStateEnum
     {
@@ -241,8 +226,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::INVITE,
-            OutboxCodeEnum::TEST,
-            => OutboxStateEnum::ACTIVE,
+            OutboxCodeEnum::TEST, => OutboxStateEnum::ACTIVE,
             default => OutboxStateEnum::IN_PROCESS
         };
     }
@@ -259,8 +243,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED,
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::INVOICE_DELETED,
-            OutboxCodeEnum::NEW_ORDER
-            => OutboxBuilderEnum::BLADE,
+            OutboxCodeEnum::NEW_ORDER => OutboxBuilderEnum::BLADE,
             default => null
         };
     }
@@ -292,14 +275,11 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::OOS_NOTIFICATION,
-            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER
-
-            => 'EmailOngoingRun',
+            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::INVITE,
-            OutboxCodeEnum::ABANDONED_CART,
-            => 'Mailshot',
+            OutboxCodeEnum::ABANDONED_CART, => 'Mailshot',
 
             default => null
         };
@@ -327,20 +307,16 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
-            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER
-            => EmailOngoingRunTypeEnum::TRANSACTIONAL,
+            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => EmailOngoingRunTypeEnum::TRANSACTIONAL,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::REORDER_REMINDER,
-            OutboxCodeEnum::OOS_NOTIFICATION,
-            => EmailOngoingRunTypeEnum::BULK,
+            OutboxCodeEnum::OOS_NOTIFICATION, => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
-            OutboxCodeEnum::NEW_CUSTOMER_PUSH,
-            => EmailOngoingRunTypeEnum::PUSH,
+            OutboxCodeEnum::NEW_CUSTOMER_PUSH, => EmailOngoingRunTypeEnum::PUSH,
 
             default => null
         };
     }
-
 
     public function postRoomCode(): PostRoomCodeEnum
     {
@@ -362,31 +338,24 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
-            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER
-            => PostRoomCodeEnum::CUSTOMER_NOTIFICATION,
+            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => PostRoomCodeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED,
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEW_ORDER,
-            OutboxCodeEnum::NEW_CUSTOMER
-            => PostRoomCodeEnum::USER_NOTIFICATION,
+            OutboxCodeEnum::NEW_CUSTOMER => PostRoomCodeEnum::USER_NOTIFICATION,
 
-            OutboxCodeEnum::INVITE
-            => PostRoomCodeEnum::COLD_EMAIL,
+            OutboxCodeEnum::INVITE => PostRoomCodeEnum::COLD_EMAIL,
 
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::ABANDONED_CART,
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::BASKET_PUSH,
-            OutboxCodeEnum::NEW_CUSTOMER_PUSH
-            => PostRoomCodeEnum::MARKETING,
+            OutboxCodeEnum::NEW_CUSTOMER_PUSH => PostRoomCodeEnum::MARKETING,
 
-            OutboxCodeEnum::TEST,
-            => PostRoomCodeEnum::TEST,
+            OutboxCodeEnum::TEST, => PostRoomCodeEnum::TEST,
         };
     }
-
-
 }

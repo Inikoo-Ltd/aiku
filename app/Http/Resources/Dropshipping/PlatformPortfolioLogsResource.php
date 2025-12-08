@@ -30,16 +30,16 @@ class PlatformPortfolioLogsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'            => $this->id,
-            'created_at'    => $this->created_at,
-            'type'          => $this->type,
-            'status'        => $this->status,
-            'response'      => $this->response ?? '-',
-            'platform_id'   => $this->platform_id,
+            'id' => $this->id,
+            'created_at' => $this->created_at,
+            'type' => $this->type,
+            'status' => $this->status,
+            'response' => $this->response ?? '-',
+            'platform_id' => $this->platform_id,
             'platform_type' => $this->platform_type,
             'platform_name' => $this->platform_name,
-            'portfolio_id'  => $this->portfolio_id,
-            'item_code'     => $this->item_code,
+            'portfolio_id' => $this->portfolio_id,
+            'item_code' => $this->item_code,
         ];
     }
 }

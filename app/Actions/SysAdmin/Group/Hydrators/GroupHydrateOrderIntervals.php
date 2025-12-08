@@ -35,7 +35,7 @@ class GroupHydrateOrderIntervals implements ShouldBeUnique
         $stats = [];
 
         $queryBase = Order::where('group_id', $group->id)->selectRaw(' count(*) as  sum_aggregate');
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
             statField: 'orders_',
@@ -44,5 +44,4 @@ class GroupHydrateOrderIntervals implements ShouldBeUnique
         );
         $group->orderingIntervals()->update($stats);
     }
-
 }

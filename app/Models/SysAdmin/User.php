@@ -106,6 +106,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserHasAuthorisedModels> $userAuthorisedModels
  * @property-read \Illuminate\Database\Eloquent\Collection<int, UserRequest> $userRequests
+ *
  * @method static \Database\Factories\SysAdmin\UserFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
@@ -117,16 +118,17 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutPermission($permissions)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutRole($roles, $guard = null)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
+ *
  * @mixin \Eloquent
  */
-class User extends Authenticatable implements HasMedia, Auditable
+class User extends Authenticatable implements Auditable, HasMedia
 {
-    use HasEmail;
-    use HasRoles;
-    use WithPushNotifications;
-    use IsUserable;
-    use HasImage;
     use HasApiTokens;
+    use HasEmail;
+    use HasImage;
+    use HasRoles;
+    use IsUserable;
+    use WithPushNotifications;
 
     protected $guarded = [
     ];
@@ -137,25 +139,24 @@ class User extends Authenticatable implements HasMedia, Auditable
     ];
 
     protected $casts = [
-        'data'      => 'array',
-        'settings'  => 'array',
-        'sources'   => 'array',
-        'status'    => 'boolean',
+        'data' => 'array',
+        'settings' => 'array',
+        'sources' => 'array',
+        'status' => 'boolean',
         'auth_type' => UserAuthTypeEnum::class,
-        'password'  => 'hashed',
+        'password' => 'hashed',
     ];
 
-
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
         'settings' => '{}',
-        'sources'  => '{}',
+        'sources' => '{}',
     ];
 
     public function generateTags(): array
     {
         return [
-            'sysadmin'
+            'sysadmin',
         ];
     }
 
@@ -168,7 +169,7 @@ class User extends Authenticatable implements HasMedia, Auditable
         'contact_name',
         'email',
         'about',
-        'language_id'
+        'language_id',
     ];
 
     protected array $attributeModifiers = [
@@ -185,7 +186,6 @@ class User extends Authenticatable implements HasMedia, Auditable
             ->slugsShouldBeNoLongerThan(128);
     }
 
-
     public function sendPasswordResetNotification($token): void
     {
         SendLinkResetPassword::run($token, $this);
@@ -195,7 +195,6 @@ class User extends Authenticatable implements HasMedia, Auditable
     {
         return $this->fcmTokens->pluck('fcm_token')->toArray();
     }
-
 
     public function employees(): MorphToMany
     {
@@ -207,12 +206,10 @@ class User extends Authenticatable implements HasMedia, Auditable
         return $this->morphedByMany(Guest::class, 'model', 'user_has_models')->withTimestamps();
     }
 
-
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
     }
-
 
     public function stats(): HasOne
     {
@@ -223,7 +220,6 @@ class User extends Authenticatable implements HasMedia, Auditable
     {
         return $this->hasMany(UserRequest::class);
     }
-
 
     public function userAuthorisedModels(): HasMany
     {
@@ -307,7 +303,6 @@ class User extends Authenticatable implements HasMedia, Auditable
         return $this->getOrganisations()->first();
     }
 
-
     public function timeSeries(): HasMany
     {
         return $this->hasMany(UserTimeSeries::class);
@@ -317,6 +312,4 @@ class User extends Authenticatable implements HasMedia, Auditable
     {
         return $this->hasMany(OutBoxHasSubscriber::class);
     }
-
-
 }

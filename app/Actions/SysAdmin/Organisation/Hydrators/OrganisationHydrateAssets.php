@@ -29,8 +29,8 @@ class OrganisationHydrateAssets implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
 
-        $stats         = [
-            'number_assets' => $organisation->assets()->where('is_main', true)->count()
+        $stats = [
+            'number_assets' => $organisation->assets()->where('is_main', true)->count(),
         ];
 
         $stats = array_merge(
@@ -59,8 +59,6 @@ class OrganisationHydrateAssets implements ShouldBeUnique
             )
         );
 
-
         $organisation->catalogueStats()->update($stats);
     }
-
 }

@@ -24,7 +24,7 @@ class UpdateRetinaOrderDeliveryAddress extends RetinaAction
     public function rules(): array
     {
         return [
-            'address'       => ['required', new ValidAddress()],
+            'address' => ['required', new ValidAddress],
             'update_parent' => ['sometimes', 'boolean'],
         ];
     }
@@ -45,6 +45,4 @@ class UpdateRetinaOrderDeliveryAddress extends RetinaAction
 
         $this->handle($order, $this->validatedData);
     }
-
-
 }

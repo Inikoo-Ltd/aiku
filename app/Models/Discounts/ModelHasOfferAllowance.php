@@ -20,9 +20,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \App\Models\Discounts\Offer|null $offer
  * @property-read \App\Models\Discounts\OfferAllowance|null $offerAllowance
  * @property-read \App\Models\Discounts\OfferCampaign|null $offerCampaign
+ *
  * @method static Builder<static>|ModelHasOfferAllowance newModelQuery()
  * @method static Builder<static>|ModelHasOfferAllowance newQuery()
  * @method static Builder<static>|ModelHasOfferAllowance query()
+ *
  * @mixin Eloquent
  */
 class ModelHasOfferAllowance extends Model
@@ -48,5 +50,4 @@ class ModelHasOfferAllowance extends Model
     {
         return $this->belongsTo(Offer::class);
     }
-
 }

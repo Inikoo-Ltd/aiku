@@ -29,8 +29,8 @@ class DashboardShopSalesInOrganisationResource extends JsonResource
     use WithDashboardIntervalValues;
 
     protected string $shopCurrencyCode;
-    protected string $organisationCurrencyCode;
 
+    protected string $organisationCurrencyCode;
 
     public function toArray($request): array
     {
@@ -39,7 +39,6 @@ class DashboardShopSalesInOrganisationResource extends JsonResource
             return Currency::find($currencyShopId)->code;
         });
         $this->shopCurrencyCode = $shopCurrencyCode;
-
 
         $currencyOrganisationId = $this->organisation_currency_id;
         $organisationCurrencyCode = Cache::remember('currency_code_'.$currencyOrganisationId, 3600 * 24 * 30, function () use ($currencyOrganisationId) {
@@ -92,17 +91,17 @@ class DashboardShopSalesInOrganisationResource extends JsonResource
             [
                 'label' => [
                     'formatted_value' => $this->name,
-                    'align'           => 'left',
-                    ...$routeTargets['shops']
-                ]
+                    'align' => 'left',
+                    ...$routeTargets['shops'],
+                ],
             ],
             [
                 'label_minified' => [
                     'formatted_value' => $this->code,
-                    'tooltip'         => $this->name,
-                    'align'           => 'left',
-                    ...$routeTargets['shops']
-                ]
+                    'tooltip' => $this->name,
+                    'align' => 'left',
+                    ...$routeTargets['shops'],
+                ],
             ],
             $this->getDashboardTableColumn($this, 'baskets_created_shop_currency', $routeTargets['inBasket']),
             $this->getDashboardTableColumn($this, 'baskets_created_shop_currency_minified', $routeTargets['inBasket']),
@@ -123,10 +122,10 @@ class DashboardShopSalesInOrganisationResource extends JsonResource
         );
 
         return [
-            'slug'    => $this->slug,
-            'state'   => $this->state == ShopStateEnum::OPEN ? 'active' : 'inactive',
+            'slug' => $this->slug,
+            'state' => $this->state == ShopStateEnum::OPEN ? 'active' : 'inactive',
             'columns' => $columns,
-            'colour'  => $this?->colour,
+            'colour' => $this?->colour,
 
         ];
     }

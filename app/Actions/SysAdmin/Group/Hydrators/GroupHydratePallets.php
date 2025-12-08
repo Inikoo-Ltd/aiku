@@ -32,11 +32,11 @@ class GroupHydratePallets implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_pallets' => Pallet::where('group_id', $group->id)->count()
+            'number_pallets' => Pallet::where('group_id', $group->id)->count(),
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'pallets',
+            model: 'pallets',
             field: 'state',
             enum: PalletStateEnum::class,
             models: Pallet::class,
@@ -46,7 +46,7 @@ class GroupHydratePallets implements ShouldBeUnique
         ));
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'pallets',
+            model: 'pallets',
             field: 'status',
             enum: PalletStatusEnum::class,
             models: Pallet::class,
@@ -56,7 +56,7 @@ class GroupHydratePallets implements ShouldBeUnique
         ));
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'pallets',
+            model: 'pallets',
             field: 'type',
             enum: PalletTypeEnum::class,
             models: Pallet::class,

@@ -35,7 +35,7 @@ class ScheduleGetRetinaOrders extends RetinaAction
         CustomerSalesChannel::whereIn('platform_user_type', [
             class_basename(WooCommerceUser::class),
             class_basename(EbayUser::class),
-            class_basename(MagentoUser::class)
+            class_basename(MagentoUser::class),
         ])->orderBy('customer_sales_channels.id')
             ->chunk(100, function ($channels) {
                 foreach ($channels as $channel) {

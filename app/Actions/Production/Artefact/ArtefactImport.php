@@ -20,15 +20,16 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class ArtefactImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class ArtefactImport implements SkipsOnFailure, ToCollection, WithEvents, WithHeadingRow, WithValidation
 {
     use WithImport;
 
     protected Production $scope;
+
     public function __construct(Production $production, Upload $upload)
     {
         $this->upload = $upload;
-        $this->scope  = $production;
+        $this->scope = $production;
     }
 
     public function storeModel($row, $uploadRecord): void
@@ -43,7 +44,7 @@ class ArtefactImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         $modelData = $row->only($fields)->all();
 
         data_set($modelData, 'data.bulk_import', [
-            'id'   => $this->upload->id,
+            'id' => $this->upload->id,
             'type' => 'Upload',
         ]);
 
@@ -64,14 +65,14 @@ class ArtefactImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
     public function rules(): array
     {
         return [
-            'code'      => [
+            'code' => [
                 'required',
-                'max:64'
+                'max:64',
             ],
-            'name'        => ['required', 'string', 'max:255'],
-            'state'       => ['sometimes', 'nullable', Rule::enum(ArtefactStateEnum::class)],
-            'source_id'   => ['sometimes', 'nullable', 'string'],
-            'created_at'  => ['sometimes', 'nullable', 'date'],
+            'name' => ['required', 'string', 'max:255'],
+            'state' => ['sometimes', 'nullable', Rule::enum(ArtefactStateEnum::class)],
+            'source_id' => ['sometimes', 'nullable', 'string'],
+            'created_at' => ['sometimes', 'nullable', 'date'],
         ];
     }
 }

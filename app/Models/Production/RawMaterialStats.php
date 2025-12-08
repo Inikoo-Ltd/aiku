@@ -15,11 +15,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $raw_material_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterialStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterialStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterialStats query()
+ *
  * @mixin \Eloquent
  */
-class RawMaterialStats extends Model
-{
-}
+class RawMaterialStats extends Model {}

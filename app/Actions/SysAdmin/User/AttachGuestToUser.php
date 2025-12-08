@@ -20,8 +20,7 @@ class AttachGuestToUser extends GrpAction
         data_set($modelData, 'group_id', $guest->group_id);
 
         $user->guests()->syncWithoutDetaching([
-            $guest->id =>
-                $modelData
+            $guest->id => $modelData,
         ]);
         SyncRolesFromJobPositions::run($user);
         UserHydrateModels::dispatch($user);
@@ -33,14 +32,14 @@ class AttachGuestToUser extends GrpAction
     {
         return [
             'source_id' => ['sometimes', 'nullable', 'string'],
-            'status'    => ['required', 'bool']
+            'status' => ['required', 'bool'],
         ];
     }
 
     public function action(User $user, Guest $guest, array $modelData): User
     {
         $this->initialisation($guest->group, $modelData);
+
         return $this->handle($user, $guest, $modelData);
     }
-
 }
