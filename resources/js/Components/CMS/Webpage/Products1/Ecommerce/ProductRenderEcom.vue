@@ -3,8 +3,6 @@ import Image from '@/Components/Image.vue'
 import { useLocaleStore } from "@/Stores/locale"
 import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { router } from '@inertiajs/vue3'
-import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faEnvelope, faHeart } from '@far'
@@ -17,12 +15,12 @@ import { faQuestionCircle } from "@fal"
 import { faStarHalfAlt } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ProductResource } from '@/types/Iris/Products'
-import NewAddToCartButton from '@/Components/CMS/Webpage/Products1/NewAddToCartButton.vue' 
+import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue' 
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
-import { routeType } from '@/types/route'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
-import BestsellerBadge from '@/Components/CMS/Webpage/Products1/BestsellerBadge.vue'
+import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
+import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
@@ -36,17 +34,14 @@ const props = withDefaults(defineProps<{
     product: ProductResource
     hasInBasket?: any
     basketButton?: boolean
-    attachToFavouriteRoute?: routeType
-    dettachToFavouriteRoute?: routeType
-    attachBackInStockRoute?: routeType
-    detachBackInStockRoute?: routeType
-    addToBasketRoute?: routeType
-    updateBasketQuantityRoute?: routeType
     bestSeller?: any
     buttonStyleHover?: any
     buttonStyle?: object | undefined
     buttonStyleLogin?: object | undefined
-
+    addToBasketRoute:routeType
+    updateBasketQuantityRoute?:routeType
+    isLoadingFavourite:boolean
+    isLoadingRemindBackInStock:boolean
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -55,142 +50,31 @@ const props = withDefaults(defineProps<{
     updateBasketQuantityRoute: {
         name: 'iris.models.transaction.update',
     },
-    attachToFavouriteRoute: {
-        name: 'iris.models.favourites.store',
-    },
-    dettachToFavouriteRoute: {
-        name: 'iris.models.favourites.delete',
-    },
-    attachBackInStockRoute: {
-        name: 'iris.models.remind_back_in_stock.store',
-    },
-    detachBackInStockRoute: {
-        name: 'iris.models.remind_back_in_stock.delete',
-    },
 })
 
 const emits = defineEmits<{
-    (e: 'afterOnAddFavourite', value: any[]): void
-    (e: 'afterOnUnselectFavourite', value: any[]): void
-    (e: 'afterOnAddBackInStock', value: any[]): void
-    (e: 'afterOnUnselectBackInStock', value: any[]): void
+    (e: 'setFavorite', value: any[]): void
+    (e: 'unsetFavorite', value: any[]): void
+    (e: 'setBackInStock', value: any[]): void
+    (e: 'unsetBackInStock', value: any[]): void
 }>()
 
 
-const isLoadingRemindBackInStock = ref(false)
 const currency = layout?.iris?.currency
 
-// Section: Add to Favourites
-const isLoadingFavourite = ref(false)
-const onAddFavourite = (product: ProductResource) => {
 
-    // Section: Submit
-    router.post(
-        route(props.attachToFavouriteRoute.name, {
-            product: product.id
-        }),
-        {
-            // item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            only: ['iris'],
-            preserveState: true,
-            onStart: () => {
-                isLoadingFavourite.value = true
-            },
-            onSuccess: () => {
-                product.is_favourite = true
-                layout.reload_handle()
-            },
-            onError: errors => {
-                console.error(errors)
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to favourites"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-                emits('afterOnAddFavourite', product)
-            },
-        }
-    )
+const onAddFavourite = (product: ProductResource) => {
+     emits('setFavorite', product)
 }
 const onUnselectFavourite = (product: ProductResource) => {
-
-    // Section: Submit
-    router.delete(
-        route(props.dettachToFavouriteRoute.name, {
-            product: product.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ['iris'],
-            onStart: () => {
-                isLoadingFavourite.value = true
-            },
-            onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
-                layout.reload_handle()
-                product.is_favourite = false
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from favourites"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-                emits('afterOnUnselectFavourite', product)
-            },
-        }
-    )
+    emits('unsetFavorite', product)
 }
 
 
 const onAddBackInStock = (product: ProductResource) => {
-
-    // Section: Submit
-    router.post(
-        route(props.attachBackInStockRoute.name, {
-            product: product.id
-        }),
-        {
-            // item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            only: ['iris'],
-            preserveState: true,
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                product.is_back_in_stock = true
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingRemindBackInStock.value = false
-                emits('afterOnAddBackInStock', product)
-            },
-        }
-    )
+     emits('setBackInStock', product)
 }
+
 const onUnselectBackInStock = (product: ProductResource) => {
     router.delete(
         route(props.detachBackInStockRoute.name, {
@@ -227,6 +111,8 @@ const onUnselectBackInStock = (product: ProductResource) => {
 }
 
 
+
+
 const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
@@ -261,7 +147,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 </slot>
 
                 <template v-if="layout?.iris?.is_logged_in">
-                    <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl z-10">
+                    <div v-if="isLoadingFavourite" class="absolute bottom-2 left-2 text-gray-500 text-xl z-10">
                         <LoadingIcon />
                     </div>
                     <div v-else
@@ -281,9 +167,16 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
-                    <NewAddToCartButton v-if="product.stock > 0 && basketButton" :hasInBasket :product="product"
-                        :key="product" :addToBasketRoute="addToBasketRoute" :buttonStyleHover="buttonStyleHover"
-                        :updateBasketQuantityRoute="updateBasketQuantityRoute" :buttonStyle="buttonStyle" />
+                    <NewAddToCartButton 
+                        v-if="product.stock > 0 && basketButton" 
+                        :hasInBasket 
+                        :product="product"
+                        :key="product" 
+                        :addToBasketRoute="addToBasketRoute" 
+                        :buttonStyleHover="buttonStyleHover"
+                        :updateBasketQuantityRoute="updateBasketQuantityRoute" 
+                        :buttonStyle="buttonStyle" 
+                    />
                     <button v-else-if="layout?.app?.environment === 'local' && product.stock < 1"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
@@ -305,8 +198,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     </template>
                 </LinkIris>
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
-                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{
-                    product.name}}
+                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name}}
                 </div>
 
                 <!-- Price Card -->
@@ -345,17 +237,13 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
         <!-- Login Button for Non-Logged In Users -->
         <div v-if="!layout?.iris?.is_logged_in" class="px-3">
-            <!--  <a :href="urlLoginWithRedirect()"
-                class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-                {{ trans("Login or Register for Wholesale Prices") }}
-            </a> -->
             <a :href="urlLoginWithRedirect()" class="w-full">
-                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full
-                    :injectStyle="buttonStyleLogin" />
+                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />
             </a>
         </div>
 
-        <div v-if="idxSlideLoading"
+        <div 
+            v-if="idxSlideLoading"
             class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
             <LoadingIcon />
         </div>

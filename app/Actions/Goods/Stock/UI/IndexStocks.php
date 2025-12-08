@@ -164,6 +164,7 @@ class IndexStocks extends OrgAction
                 'stocks.code',
                 'stocks.slug',
                 'stocks.name',
+                'stocks.state',
                 'stocks.unit_value',
                 'stock_sales_intervals.*',
                 'stock_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency',

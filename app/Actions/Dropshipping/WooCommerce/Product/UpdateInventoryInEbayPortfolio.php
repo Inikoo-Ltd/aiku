@@ -25,10 +25,17 @@ class UpdateInventoryInEbayPortfolio
     public string $commandSignature = 'ebay:update-inventory';
 
 
-    public function handle(): void
+    public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
         $platform              = Platform::where('type', PlatformTypeEnum::EBAY)->first();
-        $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)->get();
+
+        if ($customerSalesChannel === null) {
+            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)->get();
+        } else {
+            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
+                ->where('id', $customerSalesChannel->id)
+                ->get();
+        }
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
