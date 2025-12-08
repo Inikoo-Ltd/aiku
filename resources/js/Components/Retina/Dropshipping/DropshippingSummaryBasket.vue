@@ -209,7 +209,7 @@ onMounted(() => {
                 <div class="grow text-sm text-gray-500">    
                     <div class="flex align-center items-center min-h-6">    
                         {{summary?.customer.tax_number.number }} 
-                        <FontAwesomeIcon v-if="summary?.customer.tax_number.valid" :icon="faCheckCircle" v-tooltip="trans('Tax number is verified')"  class='text-green-400 ms-1' fixed-width aria-hidden='true'/>
+                        <FontAwesomeIcon v-if="summary?.customer.tax_number.valid" :icon="faCheckCircle" v-tooltip="trans('Tax number is valid')"  class='text-green-400 ms-1' fixed-width aria-hidden='true'/>
                         <FontAwesomeIcon v-else :icon="faExclamationCircle" v-tooltip="trans('Tax number is invalid')" class='text-red-400 ms-1' fixed-width aria-hidden='true'/>
                     </div>
                     <div v-if="!summary?.customer.tax_number.valid" class="w-full text-xs text-gray-500 hover:text-gray-700 hover:cursor-pointer">
