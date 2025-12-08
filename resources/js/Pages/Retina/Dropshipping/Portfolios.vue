@@ -221,7 +221,7 @@ const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | num
                 selectedData.products = [];
                 router.reload({only: ["pageHead", "products"]});
                 props.step.current = 1;
-                isCloneModalOpen.value = true;
+                isCloneModalOpen.value = true; // <- added this
             },
 
             onFinish: () => {

@@ -17,42 +17,74 @@ const emit = defineEmits(['close']);
 
 const echoPersonal = useEchoGrpPersonal();
 
-const uploads = computed(() => {
-    return echoPersonal.progressBars?.Upload || {};
+const activeJobs = computed(() => {
+    return echoPersonal.progressBars?.['clone_portfolio'] || {};
 });
 
-const hasUploads = computed(() => Object.keys(uploads.value).length > 0);
+const hasActiveJobs = computed(() => Object.keys(activeJobs.value).length > 0);
 
+const getPercent = (done: number, total: number) => {
+    if (!total) return 0;
+    return Math.round((done / total) * 100);
+};
+
+const getWidth = (count: number, total: number) => {
+    if (!total) return '0%';
+    return (count / total) * 100 + '%';
+};
 </script>
 
 <template>
     <Modal :isOpen="isOpen" @onClose="$emit('close')" width="w-full max-w-lg">
         <div class="p-6">
             <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
-                {{ trans('Cloning Portfolios') }}
+                {{ trans('Cloning Your Portfolio') }}
             </h3>
 
-            <div v-if="hasUploads" class="space-y-4">
-                <div v-for="(upload, key) in uploads" :key="key" class="border-b pb-4 last:border-b-0 last:pb-0">
-                    <div class="mb-2 flex justify-between text-sm text-gray-600">
-                        <span>{{ trans('Progress') }}</span>
-                        <span>{{ Math.round((upload.done / upload.total) * 100) }}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div class="bg-lime-600 h-2.5 rounded-full transition-all duration-300" :style="{ width: (upload.done / upload.total) * 100 + '%' }"></div>
-                    </div>
-                    <div class="mt-2 text-sm text-gray-500 flex justify-between">
-                        <span>{{ upload.done }} / {{ upload.total }} {{ trans('items') }}</span>
-                        <span class="text-xs text-gray-400">
-                            {{ trans('Success') }}: <span class="text-lime-600">{{ upload.data.number_success }}</span> |
-                            {{ trans('Failed') }}: <span class="text-red-500">{{ upload.data.number_fails }}</span>
+            <div v-if="hasActiveJobs" class="space-y-6">
+                <div v-for="(job, key) in activeJobs" :key="key" class="border-b pb-6 last:border-b-0 last:pb-0">
+
+                    <div class="mb-2 flex justify-between items-end">
+                        <span class="text-sm font-medium text-gray-700">{{ trans('Progress') }}</span>
+                        <span class="text-2xl font-bold text-gray-900 tabular-nums">
+                            {{ getPercent(job.done, job.total) }}%
                         </span>
+                    </div>
+
+                    <div class="w-full bg-gray-200 rounded-full h-3 flex overflow-hidden">
+                        <div
+                            class="bg-lime-600 h-full transition-all duration-300 ease-out"
+                            :style="{ width: getWidth(job.data.number_success, job.total) }"
+                        ></div>
+                        <div
+                            class="bg-red-500 h-full transition-all duration-300 ease-out"
+                            :style="{ width: getWidth(job.data.number_fails, job.total) }"
+                        ></div>
+                    </div>
+
+                    <div class="mt-2 text-sm flex justify-between items-start text-gray-500">
+                        <div>
+                            {{ job.done }} / {{ job.total }} {{ trans('items') }}
+                        </div>
+
+                        <div class="text-xs text-right space-x-3">
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-lime-600 inline-block"></span>
+                                {{ trans('Success') }}: <span class="font-medium text-gray-700">{{ job.data.number_success }}</span>
+                            </span>
+                            <span class="border-r border-gray-300 mx-1"></span>
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+                                {{ trans('Failed') }}: <span class="font-medium text-gray-700">{{ job.data.number_fails }}</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div v-else class="flex flex-col justify-center items-center py-8 text-gray-500 gap-y-2">
-                <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-2xl' aria-hidden='true' />
-                <span>{{ trans('Please Wait For A Moment...') }}</span>
+
+            <div v-else class="flex flex-col justify-center items-center py-8 text-gray-500 gap-y-3">
+                <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-3xl text-indigo-500' aria-hidden='true' />
+                <span class="text-sm font-medium">{{ trans('Please Wait For A Moment...') }}</span>
             </div>
 
             <div class="mt-6 flex justify-end">
