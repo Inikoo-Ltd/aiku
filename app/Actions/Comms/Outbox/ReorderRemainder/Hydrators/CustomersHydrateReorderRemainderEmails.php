@@ -37,58 +37,86 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
         $queryOutbox->where('code', OutboxCodeEnum::REORDER_REMINDER);
         $queryOutbox->whereNotNull('shop_id');
         $queryOutbox->leftJoin('outbox_settings', 'outboxes.id', '=', 'outbox_settings.outbox_id');
+        $queryOutbox->where('outbox_settings.outbox_id', 843);// for testing bulgaria outbox
         $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outbox_settings.days_after', 'outbox_settings.send_time');
         $outboxes = $queryOutbox->get();
+
+        $currentDateTime = Carbon::now()->utc();
 
         // NOTE: get all user related each outbox
         foreach ($outboxes as $outbox) {
 
-            $startDate = Carbon::now()->subDays($outbox->days_after)->startOfDay();
-            $endDate = $startDate->copy()->endOfDay();
-            $currentDate = Carbon::now()->utc();
-
-            $queryUser = QueryBuilder::for(Customer::class);
-            $queryUser->leftJoin('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
-            $queryUser->where('customer_comms.is_subscribed_to_reorder_reminder', true); // check if customer subscribed to reorder reminder
-            $queryUser->where('customers.shop_id', $outbox->shop_id);
-            $queryUser->where('customers.state', CustomerStateEnum::ACTIVE->value);
-            $queryUser->where('customers.status', CustomerStatusEnum::APPROVED->value);
-            $queryUser->whereBetween('customers.last_invoiced_at', [
-                $startDate,
-                $endDate
-            ]);
-            $queryUser->whereNotNull('customers.email');
-            $queryUser->where('customers.email', '!=', '');
-            $queryUser->select('customers.id', 'customers.shop_id');
-            $queryUser->orderBy('customers.shop_id');
-            $queryUser->orderBy('customers.id');
+            \Log::info("original outbox setting: ".$outbox->setting?->send_time);
+            // convert to utc
+            $outboxSendTimeUTC = Carbon::parse($outbox->setting?->send_time)->utc()->format('H:i');
+            \Log::info("Outbox Send Time UTC: ".$outboxSendTimeUTC);
 
 
-            $LastBulkRun = null;
-            $lastSentTime = null;
-            foreach ($queryUser->cursor() as $customer) {
+            \Log::info("current date time: ".$currentDateTime);
+            $currentTime = $currentDateTime->copy()->format('H:i');
+            \Log::info("current time utc : ".$currentTime);
 
-                $bulkRun = $this->generateEmailBulkRuns(
-                    $customer,
-                    OutboxCodeEnum::REORDER_REMINDER,
-                    Carbon::now()->toDateString()
-                );
+            // now compare  $outboxSendTimeUTC and $currentTime
+            if($outboxSendTimeUTC == $currentTime){
+                \Log::info(" currentSendTimeUtc same with the currentTime");
 
 
-                //Make sure if TimeZone - like -2,-1, etc
-                $timeInUTC = Carbon::parse($outbox->send_time)->utc();
-                // merge current date with sending time
-                $sendTime = $currentDate->copy()->setTimeFrom($timeInUTC);
+                // $startDate = Carbon::now()->subDays($outbox->days_after)->startOfDay();
+            // $endDate = $startDate->copy()->endOfDay();
+            // $currentDate = Carbon::now()->utc();
 
-                $LastBulkRun = $bulkRun;
-                $lastSentTime = $sendTime;
+            // \Log::info("startDate ".$startDate);
+            // \Log::info("endDate ".$endDate);
 
-                // Delay SendReOrderRemainderToCustomerEmail to specific date and time for scheduled sending
-                SendReOrderRemainderToCustomerEmail::dispatch($customer, $bulkRun)->delay($sendTime);
-            }
+            // $queryUser = QueryBuilder::for(Customer::class);
+            // $queryUser->leftJoin('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
+            // $queryUser->where('customer_comms.is_subscribed_to_reorder_reminder', true); // check if customer subscribed to reorder reminder
+            // $queryUser->where('customers.shop_id', $outbox->shop_id);
+            // $queryUser->where('customers.state', CustomerStateEnum::ACTIVE->value);
+            // $queryUser->where('customers.status', CustomerStatusEnum::APPROVED->value);
+            // $queryUser->where('customers.shop_id', 42); // test for bulgaria
+            // $queryUser->whereBetween('customers.last_invoiced_at', [
+            //     $startDate,
+            //     $endDate
+            // ]);
+            // $queryUser->whereNotNull('customers.email');
+            // $queryUser->where('customers.email', '!=', '');
+            // $queryUser->select('customers.id', 'customers.shop_id');
+            // $queryUser->orderBy('customers.shop_id');
+            // $queryUser->orderBy('customers.id');
 
-            if ($LastBulkRun && $lastSentTime) {
-                EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun)->delay($lastSentTime);
+
+            // $LastBulkRun = null;
+            // $lastSentTime = null;
+            // foreach ($queryUser->cursor() as $customer) {
+            //     $bulkRun = $this->generateEmailBulkRuns(
+            //         $customer,
+            //         OutboxCodeEnum::REORDER_REMINDER,
+            //         Carbon::now()->toDateString() // carbon date string harus sesuai date kirim email
+            //     );
+
+
+            //     //Make sure if TimeZone - like -2,-1, etc
+            //     $timeInUTC = Carbon::parse($outbox->send_time)->utc();
+
+            //     \Log::info("time in UTC : ".  $timeInUTC);
+
+            //     // merge current date with sending time
+            //     $sendTime = $currentDate->copy()->setTimeFrom($timeInUTC);
+            //     \Log::info("full send time : ".$sendTime);
+
+            //     $LastBulkRun = $bulkRun;
+            //     $lastSentTime = $sendTime;
+
+            //     // Delay SendReOrderRemainderToCustomerEmail to specific date and time for scheduled sending
+            //     SendReOrderRemainderToCustomerEmail::dispatch($customer, $bulkRun)->delay($sendTime);
+            // }
+
+            // if ($LastBulkRun && $lastSentTime) {
+            //     EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun)->delay($lastSentTime);
+            // }
+
+
             }
         }
     }
