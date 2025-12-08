@@ -29,14 +29,20 @@ trait HasIrisUserData
     {
         $webUser = $this->webUser;
 
-        $cartCount  = 0;
-        $cartAmount = 0;
-        $customerSalesChannels = [];
+        $cartCount                    = 0;
+        $cartAmount                   = 0;
+        $cardItemsAmountAfterDiscount = 0;
+        $customerSalesChannels        = [];
+        $offerMeters                  = null;
 
         if ($this->shop->type == ShopTypeEnum::B2B) {
             $orderInBasket = $this->customer->orderInBasket;
-            $cartCount     = $orderInBasket ? $orderInBasket->number_item_transactions : 0;
-            $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
+            if ($orderInBasket) {
+                $cartCount                    = $orderInBasket->number_item_transactions;
+                $cartAmount                   = $orderInBasket->total_amount;
+                $cardItemsAmountAfterDiscount = $orderInBasket->goods_amount;
+                $offerMeters                  = $orderInBasket->offer_meters;
+            }
         }
 
 
@@ -62,23 +68,25 @@ trait HasIrisUserData
         }
 
         return [
-            'is_logged_in'           => true,
-            'auth'                   => [
+            'is_logged_in' => true,
+            'auth'         => [
                 'user'                  => LoggedWebUserResource::make($webUser)->getArray(),
                 'customerSalesChannels' => $customerSalesChannels
             ],
-            'customer'               => $this->customer,
-            'variables'              => [
-                'reference'           => $this->customer->reference,
-                'name'                => $this->webUser->contact_name,
-                'username'            => $this->webUser->username,
-                'email'               => $this->webUser->email,
-                'favourites_count'    => $this->customer->stats->number_favourites,
-                'back_in_stock_count' => $this->customer->backInStockReminder->count(),
-                'cart_count'          => $cartCount,
-                'cart_amount'         => $cartAmount,
+            'customer'     => $this->customer,
+            'variables'    => [
+                'reference'            => $this->customer->reference,
+                'name'                 => $this->webUser->contact_name,
+                'username'             => $this->webUser->username,
+                'email'                => $this->webUser->email,
+                'favourites_count'     => $this->customer->stats->number_favourites,
+                'back_in_stock_count'  => $this->customer->backInStockReminder->count(),
+                'cart_count'           => $cartCount, // products in the basket count
+                'cart_amount'          => $cartAmount, // order total amount (including shipping, tax, etc.)
+                'cart_products_amount' => $cardItemsAmountAfterDiscount,  // order total items amount after discount
             ],
-            'traffic_source_cookies' => CaptureTrafficSource::run(),
+            // 'traffic_source_cookies' => CaptureTrafficSource::run(),
+            'offer_meters' => $offerMeters
 
         ];
     }

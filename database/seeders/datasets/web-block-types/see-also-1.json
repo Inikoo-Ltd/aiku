@@ -3,8 +3,9 @@
 	"slug": "see-also-1",
 	"code": "see-also-1",
 	"name": "See Also (recommendations)",
-	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
+	"website_type" : ["b2b","b2c","dropshipping"],
 	"category": "block",
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
 			"settings": null,

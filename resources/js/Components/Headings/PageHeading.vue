@@ -135,7 +135,7 @@ const setError = (e) => {
                             <span class="inline-block">{{ useTruncate(data.title, 30) }}</span>
                         </div>
                         <!-- Section: After Title -->
-                        <slot name="afterTitle">
+                        <slot name="afterTitle" :data="data">
                             <component
                                     v-if="data.iconRight || data.titleRight || data.afterTitle"
                                     :is="data?.iconRight?.url ? 'a' : 'div'"
@@ -166,6 +166,22 @@ const setError = (e) => {
                         </slot>
 
                         <slot name="afterTitle2" />
+
+                        <!-- Section: Icon Links (to show master Octopus icon) -->
+                        <template v-if="data.iconLinks?.length">
+                            <Link v-for="(iconLink, idxLink) in data.iconLinks" :key="`iconLink-${idxLink}`"
+                                :href="iconLink.route?.name ? route(iconLink.route.name, iconLink.route.parameters) : '#'" v-tooltip="iconLink.tooltip || ''">
+                                <FontAwesomeIcon
+                                    :icon="iconLink.icon"
+                                    class="text-gray-400 hover:text-gray-600"
+                                    :style="{
+                                        color: iconLink.color
+                                    }"
+                                    fixed-width
+                                    aria-hidden="true"
+                                />
+                            </Link>
+                        </template>
                     </div>
                 </div>
             </div>

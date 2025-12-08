@@ -26,9 +26,7 @@ class GetGroupNavigation
             'route'   => [
                 'name' => 'grp.dashboard.show'
             ],
-            'topMenu' => [
-            ]
-
+            'topMenu' => []
         ];
 
         if ($user->hasAnyPermission(['goods.view','masters.view'])) {
@@ -62,6 +60,120 @@ class GetGroupNavigation
         return $groupNavigation;
     }
 
+    private function getTradeUnitsNavs(): array
+    {
+        return [
+            'label'   => __('Trade Units'),
+            'icon'    => ['fal', 'fa-atom'],
+            'root'    => 'grp.trade_units.',
+            'route'   => [
+                'name' => 'grp.trade_units.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => 'Trade Units',
+                        'icon'  => ['fal', 'fa-atom'],
+                        'root'  => 'grp.trade_units.units.',
+                        'route' => [
+                            'name'       => 'grp.trade_units.units.active',
+                            'parameters' => []
+                        ]
+                    ],
+                    [
+                        'label' => 'Trade Unit Families',
+                        'icon'  => ['fal', 'fa-atom-alt'],
+                        'root'  => 'grp.trade_units.families.',
+                        'route' => [
+                            'name'       => 'grp.trade_units.families.index',
+                            'parameters' => []
+                        ]
+                    ],
+                ]
+            ]
+        ];
+    }
+
+    private function getMastersNavs(): array
+    {
+        return [
+            'label'   => __('Masters'),
+            'icon'    => ['fab', 'fa-octopus-deploy'],
+            'root'    => 'grp.masters.',
+            'route'   => [
+                'name' => 'grp.masters.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        "tooltip" => __("Master Catalogue"),
+                        "icon"    => ["fal", "fa-books"],
+                        'root'    => 'grp.masters.dashboard',
+                        "route"   => [
+                            "name"       => 'grp.masters.dashboard',
+                            "parameters" => [],
+                        ],
+                    ],
+                    [
+                        'label' => __('Master Shops'),
+                        'tooltip' => __('Master shops'),
+                        'icon'  => ['fal', 'fa-store-alt'],
+                        'root'  => 'grp.masters.master_shops.',
+                        'route' => [
+                            'name'       => 'grp.masters.master_shops.index',
+                            'parameters' => []
+                        ]
+                    ],
+                ]
+            ]
+
+        ];
+    }
+
+    private function getMGoodsNavs(): array
+    {
+        return [
+            'label'   => __('Goods'),
+            'icon'    => ['fal', 'fa-cloud-rainbow'],
+            'root'    => 'grp.goods.',
+            'route'   => [
+                'name' => 'grp.goods.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('Master SKUs families'),
+                        'icon'  => ['fal', 'fa-boxes-alt'],
+                        'root'  => 'grp.goods.stock-families.',
+                        'route' => [
+                            'name'       => 'grp.goods.stock-families.index',
+                            'parameters' => []
+                        ]
+                    ],
+                    [
+                        'label' => __('Master SKUs'),
+                        'icon'  => ['fal', 'fa-box'],
+                        'root'  => 'grp.goods.stocks.',
+                        'route' => [
+                            'name'       => 'grp.goods.stocks.active_stocks.index',
+                            'parameters' => []
+                        ]
+                    ],
+                    [
+                        'label' => 'Ingredients',
+                        'icon'  => ['fal', 'fa-apple-crate'],
+                        'root'  => 'grp.goods.ingredients.',
+                        'route' => [
+                            'name'       => 'grp.goods.ingredients.index',
+                            'parameters' => []
+                        ]
+                    ],
+                ]
+            ]
+
+        ];
+    }
+
     private function getSupplyChainNavs(): array
     {
         return [
@@ -86,7 +198,6 @@ class GetGroupNavigation
                         'root'  => 'grp.supply-chain.agents.',
                         'route' => [
                             'name' => 'grp.supply-chain.agents.index',
-
                         ]
                     ],
                     [
@@ -95,7 +206,6 @@ class GetGroupNavigation
                         'root'  => 'grp.supply-chain.suppliers.',
                         'route' => [
                             'name' => 'grp.supply-chain.suppliers.index',
-
                         ]
                     ],
                     [
@@ -104,7 +214,6 @@ class GetGroupNavigation
                         'root'  => 'grp.supply-chain.supplier_products.',
                         'route' => [
                             'name' => 'grp.supply-chain.supplier_products.index',
-
                         ]
                     ],
 
@@ -156,7 +265,6 @@ class GetGroupNavigation
                         'root'  => 'grp.sysadmin.users.',
                         'route' => [
                             'name' => 'grp.sysadmin.users.index',
-
                         ]
                     ],
                     [
@@ -165,7 +273,6 @@ class GetGroupNavigation
                         'root'  => 'grp.sysadmin.guests.',
                         'route' => [
                             'name' => 'grp.sysadmin.guests.index',
-
                         ]
                     ],
                     [
@@ -174,144 +281,26 @@ class GetGroupNavigation
                         'root'  => 'grp.sysadmin.analytics.',
                         'route' => [
                             'name' => 'grp.sysadmin.analytics.dashboard',
-
                         ]
                     ],
                     [
-                        'label' => __('System settings'),
+                        'label' => __('Scheduled Tasks'),
+                        'icon'  => ['fal', 'fa-clock'],
+                        'root'  => 'grp.sysadmin.scheduled-tasks.',
+                        'route' => [
+                            'name' => 'grp.sysadmin.scheduled-tasks.index',
+                        ]
+                    ],
+                    [
+                        'label' => __('System Settings'),
                         'icon'  => ['fal', 'fa-cog'],
                         'root'  => 'grp.sysadmin.settings.',
                         'route' => [
                             'name' => 'grp.sysadmin.settings.edit',
-
                         ]
                     ],
                 ]
             ]
-        ];
-    }
-
-
-    private function getMGoodsNavs(): array
-    {
-        return [
-            'label'   => __('Goods'),
-            'icon'    => ['fal', 'fa-cloud-rainbow'],
-            'root'    => 'grp.goods.',
-            'route'   => [
-                'name' => 'grp.goods.dashboard'
-            ],
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        'label' => __('Master SKUs families'),
-                        'icon'  => ['fal', 'fa-boxes-alt'],
-                        'root'  => 'grp.goods.stock-families.',
-                        'route' => [
-                            'name'       => 'grp.goods.stock-families.index',
-                            'parameters' => []
-
-                        ]
-                    ],
-                    [
-                        'label' => __('Master SKUs'),
-                        'icon'  => ['fal', 'fa-box'],
-                        'root'  => 'grp.goods.stocks.',
-                        'route' => [
-                            'name'       => 'grp.goods.stocks.active_stocks.index',
-                            'parameters' => []
-
-                        ]
-                    ],
-                    [
-                        'label' => 'Ingredients',
-                        'icon'  => ['fal', 'fa-apple-crate'],
-                        'root'  => 'grp.goods.ingredients.',
-                        'route' => [
-                            'name'       => 'grp.goods.ingredients.index',
-                            'parameters' => []
-
-                        ]
-                    ],
-                ]
-            ]
-
-        ];
-    }
-
-    private function getTradeUnitsNavs(): array
-    {
-        return [
-            'label'   => __('Trade Units'),
-            'icon'    => ['fal', 'fa-atom'],
-            'root'    => 'grp.trade_units.',
-            'route'   => [
-                'name' => 'grp.trade_units.dashboard'
-            ],
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        'label' => 'Trade Units',
-                        'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.trade_units.units.',
-                        'route' => [
-                            'name'       => 'grp.trade_units.units.active',
-                            'parameters' => []
-
-                        ]
-                    ],
-                    [
-                        'label' => 'Trade Unit Families',
-                        'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.trade_units.families.',
-                        'route' => [
-                            'name'       => 'grp.trade_units.families.index',
-                            'parameters' => []
-
-                        ]
-                    ],
-
-
-                ]
-            ]
-
-        ];
-    }
-
-    private function getMastersNavs(): array
-    {
-        return [
-            'label'   => __('Masters'),
-            'icon'    => ['fab', 'fa-octopus-deploy'],
-            'root'    => 'grp.masters.',
-            'route'   => [
-                'name' => 'grp.masters.dashboard'
-            ],
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        "tooltip" => __("Master Catalogue"),
-                        "icon"    => ["fal", "fa-books"],
-                        'root'    => 'grp.masters.dashboard',
-                        "route"   => [
-                            "name"       => 'grp.masters.dashboard',
-                            "parameters" => [],
-                        ],
-                    ],
-                    [
-                        'label' => __('Master Shops'),
-                        'tooltip' => __('Master shops'),
-                        'icon'  => ['fal', 'fa-store-alt'],
-                        'root'  => 'grp.masters.master_shops.',
-                        'route' => [
-                            'name'       => 'grp.masters.master_shops.index',
-                            'parameters' => []
-
-                        ]
-                    ],
-                ]
-            ]
-
         ];
     }
 }

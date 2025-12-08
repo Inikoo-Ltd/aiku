@@ -67,9 +67,12 @@ class DecreaseCreditTransactionCustomer extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if (blank($request->input('type'))) {
+
+
             $type = match ($request->input('reason')) {
                 CreditTransactionReasonEnum::MONEY_BACK->value => CreditTransactionTypeEnum::MONEY_BACK,
                 CreditTransactionReasonEnum::OTHER->value => CreditTransactionTypeEnum::REMOVE_FUNDS_OTHER,
+                CreditTransactionReasonEnum::TRANSFER->value => CreditTransactionTypeEnum::TRANSFER_OUT,
             };
 
             $this->set('type', $type->value);

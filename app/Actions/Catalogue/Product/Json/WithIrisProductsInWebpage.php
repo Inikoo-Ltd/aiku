@@ -58,8 +58,8 @@ trait WithIrisProductsInWebpage
     {
         return AllowedFilter::callback('brands', function ($query, $value) {
             $query->join('model_has_brands', function ($join) {
-                $join->on('trade_units.id', '=', 'model_has_brands.model_id')
-                        ->where('model_has_brands.model_type', 'TradeUnit');
+                $join->on('products.id', '=', 'model_has_brands.model_id')
+                        ->where('model_has_brands.model_type', 'Product');
             });
 
             $query->join('brands', 'brands.id', 'model_has_brands.brand_id');
@@ -72,8 +72,8 @@ trait WithIrisProductsInWebpage
     {
         return AllowedFilter::callback('tags', function ($query, $value) {
             $query->join('model_has_tags', function ($join) {
-                $join->on('trade_units.id', '=', 'model_has_tags.model_id')
-                        ->where('model_has_tags.model_type', 'TradeUnit');
+                $join->on('products.id', '=', 'model_has_tags.model_id')
+                        ->where('model_has_tags.model_type', 'Product');
             });
 
             $query->join('tags', 'tags.id', 'model_has_tags.tag_id');
@@ -98,12 +98,6 @@ trait WithIrisProductsInWebpage
         if ($topSeller) {
             $queryBuilder->whereNotNull('products.top_seller');
         }
-
-        $queryBuilder->join('model_has_trade_units', function ($join) {
-            $join->on('products.id', '=', 'model_has_trade_units.model_id')
-                ->where('model_has_trade_units.model_type', 'Product');
-        });
-        $queryBuilder->join('trade_units', 'trade_units.id', 'model_has_trade_units.trade_unit_id');
 
         if ($customer) {
             $basket = $customer->orderInBasket;

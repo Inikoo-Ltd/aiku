@@ -14,6 +14,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
+import { toInteger } from 'lodash-es'
+import LabelComingSoon from './LabelComingSoon.vue'
 
 
 interface ProductResource {
@@ -40,6 +42,7 @@ const props = withDefaults(defineProps<{
     routeToAllPortfolios?: routeType
     routeToSpecificChannel?: routeType
     buttonStyle?: object
+    buttonStyleLogin?:object | undefined
 
 }>(), {
     productHasPortfolio: () => [],
@@ -59,7 +62,7 @@ const emits = defineEmits<{
 
 const productHasPortfolioList = ref(toRaw(props.productHasPortfolio))
 const layout = inject('layout', retinaLayoutStructure)
-const channelList = layout?.user?.customerSalesChannels || []
+const channelList = ref(layout?.user?.customerSalesChannels || [])
 // Section: Add to all Portfolios
 const isLoadingAllPortfolios = ref(false)
 const onAddToAllPortfolios = (product: ProductResource) => {
@@ -90,7 +93,7 @@ const onAddToAllPortfolios = (product: ProductResource) => {
                 })
             },
             onSuccess: () => {
-                const keys = Object.keys(channelList).map(key => Number(key))
+                const keys = Object.keys(channelList.value).map(key => Number(key))
                 productHasPortfolioList.value = keys
 
                 notify({
@@ -184,13 +187,13 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) 
 const _popover = ref()
 
 const isInAllChannels = computed(() => {
-  const allChannelIds = Object.keys(channelList).map(Number)
-  return allChannelIds.some(id => productHasPortfolioList.value?.includes(id))
+  const allChannelIds = Object.keys(channelList.value).map(Number)
+  return allChannelIds.some(id => productHasPortfolioList.value?.includes(toInteger(id)))
 })
 
 const CheckChannels = computed(() => {
-  const allChannelIds = Object.keys(channelList).map(Number)
-  return allChannelIds.every(id => productHasPortfolioList.value?.includes(id))
+  const allChannelIds = Object.keys(channelList.value).map(Number)
+  return allChannelIds.every(id => productHasPortfolioList.value?.includes(toInteger(id)))
 })
 
 
@@ -202,21 +205,42 @@ watch(() => props.productHasPortfolio, (newVal) => {
   } 
 })
 
+watch(
+  () => layout.iris,
+  newVal => {
+    channelList.value = layout?.user?.customerSalesChannels || []
+  },
+  { deep: true }
+)
+
 </script>
 
 <template>
+
+   <!--  <pre>{{ layout?.user?.customerSalesChannels }}</pre> -->
     <!-- Bottom Section (fixed position in layout) -->
     <div v-if="layout?.iris?.is_logged_in" class="w-full">
-        <div v-if="product.stock > 0" class="flex items-center gap-2 xmt-2">
+        <div v-if="product.is_coming_soon">
+            <LabelComingSoon v-if="product.is_coming_soon" :product="product" class="w-full inline-block text-center" />
+
+        </div>
+
+        <div v-else-if="product.stock > 0" class="flex items-center gap-2 xmt-2">
             <div class="flex gap-2  w-full">
                 <div class="w-full flex flex-nowrap relative">
 
                     <Button v-if="isInAllChannels"
-                        :label="CheckChannels ? trans('Exist on all channels') : trans('Exist on some channels')" type="tertiary" disabled
-                        class="border-none border-transparent" :class="!CheckChannels ? 'rounded-r-none' : ''" full  />
+                        :label="CheckChannels ? trans('Exist on all channels') : trans('Exist on some channels')"
+                        type="tertiary"
+                        disabled
+                        class="border-none border-transparent"
+                        :class="!CheckChannels ? 'rounded-r-none' : ''"
+                        full
+                        :iconRight="CheckChannels ? 'fal fa-check-double' : ''"
+                    />
                     <Button v-else @click="() => onAddToAllPortfolios(product)" :label="trans('Add to all channels')"
                         :loading="isLoadingAllPortfolios" :icon="faPlus" :class="!CheckChannels ? 'rounded-r-none' : ''"
-                        class="border-none border-transparent" full xsize="l" xstyle="border: 0px"  :injectStyle="buttonStyle"/>
+                        class="border-none border-transparent" full   :injectStyle="buttonStyle"/>
 
                     <Button v-if="!CheckChannels"
                         @click="(e) => (_popover?.toggle(e), Object.keys(channelList).length ? null : emits('refreshChannels'))"
@@ -254,25 +278,18 @@ watch(() => props.productHasPortfolio, (newVal) => {
                                     </template>
                                 </Button>
                             </div>
-
                         </div>
                     </Popover>
-
                 </div>
-
-
             </div>
         </div>
+
         <div v-else>
             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
         </div>
     </div>
 
-   <!--  <a v-else :href="urlLoginWithRedirect()" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-    {{ trans("Login / Register to Start") }}
-    </a> -->
-
     <a  v-else  :href="urlLoginWithRedirect()" class="w-full">
-        <Button label="Login / Register to Start" full :injectStyle="buttonStyle"/>
+        <Button label="Login / Register to Start" full :injectStyle="buttonStyleLogin"/>
     </a>
 </template>

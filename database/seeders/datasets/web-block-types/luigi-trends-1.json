@@ -3,9 +3,10 @@
 	"slug": "luigi-trends-1",
 	"code": "luigi-trends-1",
 	"name": "Luigi: Trends",
-	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : false,
 	"category": "block",
-	"fixed": true,
+	"fixed": false,
 	"data": {
 		"fieldValue": {
 			"settings": null,

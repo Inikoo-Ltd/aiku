@@ -5,7 +5,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { Links, Meta, Table } from '@/types/Table'
-import { inject, onMounted, onUnmounted, ref, difine } from "vue"
+import { inject, onMounted, onUnmounted, ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
@@ -59,7 +59,8 @@ const getUrlFetch = (additionalParams: {}) => {
 const optionsList = ref<any[]>([])
 const optionsMeta = ref<Meta | null>(null)
 const optionsLinks = ref<Links | null>(null)
-const fetchProductList = async (url?: string) => {
+const fetchProductList = async (url?: string, ccc) => {
+    // console.log('ewqewqewq', ccc)
     isComponentLoading.value = 'fetchProduct'
 
     const urlToFetch = url || route(props.fetchRoute.name, props.fetchRoute.parameters)
@@ -67,16 +68,21 @@ const fetchProductList = async (url?: string) => {
     try {
         const xxx = await axios.get(urlToFetch)
         
-        optionsList.value = [...optionsList.value, ...xxx?.data?.data]
-        optionsMeta.value = xxx?.data.meta || null
-        optionsLinks.value = xxx?.data.links || null
+        
+        if (xxx?.data?.data) {
+            optionsList.value = [...optionsList.value, ...xxx?.data?.data]
+            optionsMeta.value = xxx?.data.meta || null
+            optionsLinks.value = xxx?.data.links || null
+        } else {
+            optionsList.value = xxx?.data
+        }
 
         emits('optionsList', optionsList.value)
     } catch (error) {
-        // console.log(error)
+        console.log(error)
         notify({
             title: trans('Something went wrong.'),
-            text: trans('Failed to fetch product list'),
+            text: trans('Failed to get the options list'),
             type: 'error',
         })
     }
@@ -85,7 +91,7 @@ const fetchProductList = async (url?: string) => {
     
 const onSearchQuery = debounce(async (query: string) => {
     optionsList.value = []
-    fetchProductList(getUrlFetch({'filter[global]': query}))
+    fetchProductList(getUrlFetch({'filter[global]': query}), 'qqqqqq')
 }, 500)
 
 
@@ -97,12 +103,12 @@ const onFetchNext = () => {
     const bottomReached = (dropdown?.scrollTop || 0) + (dropdown?.clientHeight || 0) >= (dropdown?.scrollHeight || 10) - 10
     if (bottomReached && optionsLinks.value?.next && isComponentLoading.value != 'fetchProduct') {
         // console.log(dropdown?.scrollTop, dropdown?.clientHeight, dropdown?.scrollHeight)
-        fetchProductList(optionsLinks.value.next)
+        fetchProductList(optionsLinks.value.next, 'www')
     }
 }
 
 onMounted(() => {
-    fetchProductList(getUrlFetch({'filter[global]': ''}))
+    // fetchProductList(getUrlFetch({'filter[global]': ''}), 'eee')
     const dropdown = document.querySelector('.multiselect-dropdown')
     // console.log('bb', dropdown, dropdown?.scrollTop)
     if (dropdown) {
@@ -166,7 +172,8 @@ defineExpose({
         clearOnSearch autofocus :caret="isComponentLoading ? false : true"
         :loading="isLoading || isComponentLoading === 'fetchProduct'"
         :placeholder="placeholder || trans('Select option')" :resolve-on-load="true" :min-chars="1"
-        @open="() => onOpen()" @search-change="(ee) => onSearchQuery(ee)"
+        @open="() => onOpen()"
+        @search-change="(val: string) => val ? onSearchQuery(val) : (onSearchQuery.cancel(), fetchProductList(getUrlFetch({'filter[global]': ''}), 'search')) "
     >
 
         <template #singlelabel="{ value }">
@@ -218,7 +225,6 @@ defineExpose({
             <slot name="afterlist" />
         </template>
     </Multiselect>
-
 </template>
 
 <style src="@vueform/multiselect/themes/default.css"></style>

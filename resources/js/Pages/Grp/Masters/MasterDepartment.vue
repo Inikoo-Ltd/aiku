@@ -10,8 +10,9 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faBullhorn,
     faCameraRetro, faClock,
-    faCube, faCubes,
-    faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling
+    faCube, faCubes, faQuoteLeft,
+    faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling,
+    faTrashAlt
 } from "@fal";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -37,6 +38,8 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons";
 import TableDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableDepartments.vue";
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
 import Breadcrumb from 'primevue/breadcrumb'
+import axios from "axios"
+import MasterContentProductCategory from "@/Components/Master/MasterContentProductCategory.vue"
 
 library.add(
     faFolder,
@@ -50,7 +53,8 @@ library.add(
     faMoneyBillWave,
     faDiagramNext,
     faCubes,
-    faFolders, faBrowser, faSeedling
+    faFolders, faBrowser, faSeedling, faQuoteLeft,
+    faTrashAlt
 );
 
 
@@ -68,13 +72,20 @@ const props = defineProps<{
     history?: object;
     departments?: object
     showcase?: object
+    content?: object
     url_master?:routeType
     images?:object
     mini_breadcrumbs?: any[]
+
+    delete_route?: routeType;
+    delete_condition?: {
+        can_delete: boolean;
+        master_shop_slug: string;
+    };
 }>();
 
 let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
     const components = {
@@ -86,7 +97,8 @@ const component = computed(() => {
         customers: TableCustomers,
         details: ModelDetails,
         history: TableHistories,
-        images: ImagesManagement
+        images: ImagesManagement,
+        content : MasterContentProductCategory,
     };
     return components[currentTab.value];
 
@@ -104,23 +116,47 @@ function masterDepartmentRoute(department: Department) {
 }
 
 
+  async function deleteItem() {
+      try {
+         const response: any = await axios.delete(
+            route(props.delete_route?.name, props.delete_route?.parameters),
+         );
+
+         if (response.status !== 200) {
+             throw new Error('Failed to delete department');
+         }
+
+        window.location.href = route('grp.masters.master_shops.show.master_departments.index', {
+            masterShop: props.delete_condition?.master_shop_slug
+        });
+         return true
+      } catch (error: any) {
+          console.error('Error deleting department:', error);
+          return false
+      }
+  }
+
+
 </script>
 
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-delete="propx">
-            <ModalConfirmationDelete :routeDelete="{
-                    name: propx.action.route.name,
-                    parameters: propx.action.route.parameters,
-                }" :title="trans('Are you sure you want to delete department') + '?'" isFullLoading>
+          <template #other>
+            <ModalConfirmationDelete
+            @onYes="deleteItem"
+                :title="trans('Are you sure you want to delete this department?')"
+                isFullLoading
+            >
                 <template #default="{ isOpenModal, changeModel }">
-                    <div @click="changeModel"
-                        class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
-                        <Button type="delete" />
-                    </div>
+                    <Button
+                        :disabled="!props.delete_condition?.can_delete"
+                        icon="fal fa-trash-alt"
+                        type="negative"
+                        @click="changeModel"
+                        :tooltip="props.delete_condition?.can_delete ? 'Delete' : 'Cannot delete this department due to existing children'"
+                    />
                 </template>
             </ModalConfirmationDelete>
         </template>

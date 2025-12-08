@@ -9,7 +9,9 @@
 
 namespace App\Actions\Helpers\Tag;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
 use App\Actions\Helpers\Tag\Hydrators\TagHydrateModels;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateTagsFromTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
@@ -43,8 +45,17 @@ class DetachTagFromModel extends OrgAction
     {
         $model->tags()->detach([$tag->id]);
 
+        if ($model instanceof TradeUnit) {
+            foreach ($model->products as $product) {
+                ProductHydrateTagsFromTradeUnits::run($product);
+            }
+            foreach ($model->masterAssets as $masterAsset) {
+                MasterAssetHydrateTagsFromTradeUnits::run($masterAsset);
+            }
+        }
+
         $tag->refresh();
 
-        TagHydrateModels::dispatch($tag);
+        TagHydrateModels::dispatch($tag->id)->delay(300);
     }
 }

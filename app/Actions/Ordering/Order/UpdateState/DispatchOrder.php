@@ -15,8 +15,10 @@ use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
 use App\Actions\Dropshipping\WooCommerce\Orders\FulfillOrderToWooCommerce;
 use App\Actions\Ordering\Order\HasOrderHydrators;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -36,7 +38,7 @@ class DispatchOrder extends OrgAction
     public function handle(Order $order): Order
     {
         $oldState = $order->state;
-        $data = [
+        $data     = [
             'state'         => OrderStateEnum::DISPATCHED,
             'dispatched_at' => now()
         ];
@@ -64,15 +66,21 @@ class DispatchOrder extends OrgAction
             $order->refresh();
 
 
-            if ($order->customerSalesChannel) {
-                match ($order->customerSalesChannel->platform->type) {
-                    PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
-                    PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
-                    PlatformTypeEnum::MAGENTO => FulfillOrderToMagento::run($order),
-                    //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
-                    PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order),
-                    default => null,
-                };
+            if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+                if ($order->customerSalesChannel?->user && app()->isProduction()) {
+                    match ($order->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
+                        PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
+                        PlatformTypeEnum::MAGENTO => FulfillOrderToMagento::run($order),
+                        //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
+                        PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order),
+                        default => null,
+                    };
+                } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {
+                    UpdateOrder::run($order, [
+                        'shipping_notes' => __('We\'re unable update shipping to customer\'s sales channel due to their sales channel are not found or already deleted.')
+                    ]);
+                }
             }
 
             return $order;

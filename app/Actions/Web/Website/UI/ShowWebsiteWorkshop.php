@@ -60,7 +60,8 @@ class ShowWebsiteWorkshop extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-        $product = $website->shop->products()->first();
+
+        $product = $website->shop->productsInStock()->first();
 
 
         $navigation = WebsiteWorkshopTabsEnum::navigation();
@@ -119,7 +120,7 @@ class ShowWebsiteWorkshop extends OrgAction
             ]
         ];
 
-        if ($this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value) {
+       /*  if ($this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value) {
             $publishRoute = [
                 'method'     => 'post',
                 'name'       => 'grp.models.website.publish.sub_department',
@@ -151,7 +152,7 @@ class ShowWebsiteWorkshop extends OrgAction
                     'website' => $website->id
                 ]
             ];
-        }
+        } */
 
         return Inertia::render(
             'Org/Web/Workshop/WebsiteWorkshop',
@@ -198,6 +199,43 @@ class ShowWebsiteWorkshop extends OrgAction
                 ],
                 'currency'  => $this->parent instanceof Shop ? CurrencyResource::make($this->parent->currency)->resolve() : null,
                 'settings' => $website->settings,
+                'publishRoute' => [
+                    'website_layout' =>  [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.website.update',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
+                    'sub_department' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.website.publish.sub_department',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
+                    'families' =>  [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.website.publish.family',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
+                    'product' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.website.publish.product',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
+                    'products' =>  [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.website.publish.products',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
+                ],
                 ...$tabs
             ]
         );

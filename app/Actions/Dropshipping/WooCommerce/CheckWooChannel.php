@@ -27,11 +27,16 @@ class CheckWooChannel
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
         $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
+        $connection = $wooCommerceUser->checkConnection();
 
-        if (Arr::has($wooCommerceUser->checkConnection(), 'environment') && !blank($webhooks)) {
+        if (Arr::has($connection, 'environment') && !blank($webhooks)) {
             $platformStatus       = true;
             $canConnectToPlatform = true;
             $existInPlatform      = true;
+        } else {
+            $this->update($wooCommerceUser, [
+                'data' => $connection ?? []
+            ]);
         }
 
         $this->update($wooCommerceUser, [
@@ -40,14 +45,21 @@ class CheckWooChannel
             ])
         ]);
 
-        return UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, [
+
+        $data = [
             'state'                   => CustomerSalesChannelStateEnum::AUTHENTICATED,
             'name'                    => $wooCommerceUser->name,
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform
-        ]);
+        ];
+        if ($platformStatus) {
+            $data['ban_stock_update_util'] = null;
+        }
+
+        return UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, $data);
     }
+
 
     public function getCommandSignature(): string
     {
@@ -64,18 +76,10 @@ class CheckWooChannel
             ['Customer Sales Channel', $customerSalesChannel->slug],
             ['Platform Status', $customerSalesChannel->platform_status ? 'Yes' : 'No'],
             ['Can Connect to Platform', $customerSalesChannel->can_connect_to_platform ? 'Yes' : 'No'],
-            ['Exist in Platform', $customerSalesChannel->exist_in_platform ? 'Yes' : 'No']
+            ['Exist in Platform', $customerSalesChannel->exist_in_platform ? 'Yes' : 'No'],
+            ['Ban', $customerSalesChannel->ban_stock_update_util ?? '-']
         ];
 
-
-        $shopData = $customerSalesChannel->user->data['shop'] ?? [];
-
-
-        if (empty($shopData)) {
-            $command->info("No shop data found.");
-
-            return;
-        }
 
         $command->info("\nCustomer Sales Channel Status:");
         $command->table(['Field', 'Value'], $statusData);

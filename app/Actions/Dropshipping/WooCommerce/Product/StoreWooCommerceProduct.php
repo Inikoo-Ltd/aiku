@@ -33,10 +33,6 @@ class StoreWooCommerceProduct extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
     {
-        if ($wooCommerceUser->customerSalesChannel->ban_stock_update_util && $wooCommerceUser->customerSalesChannel->ban_stock_update_util->gt(now())) {
-            return null;
-        }
-
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
         ]);
@@ -71,6 +67,17 @@ class StoreWooCommerceProduct extends RetinaAction
                 'weight'            => (string)($product->gross_weight / 100),
                 'status'            => $this->mapProductStateToWooCommerce($product->status->value)
             ];
+
+            $isOnDemand = false;
+            foreach ($product->orgStocks as $orgStock) {
+                if ($orgStock->is_on_demand) {
+                    $isOnDemand = true;
+                }
+            }
+
+            if ($isOnDemand) {
+                data_set($wooCommerceProduct, 'backorders', 'yes');
+            }
 
             $availableSku = $wooCommerceUser->getWooCommerceProducts([
                 'sku' => $portfolio->sku
@@ -124,7 +131,8 @@ class StoreWooCommerceProduct extends RetinaAction
             ProductStatusEnum::FOR_SALE->value     => 'publish',
             ProductStatusEnum::DISCONTINUED->value => 'pending',
             ProductStatusEnum::IN_PROCESS->value   => 'draft',
-            ProductStatusEnum::OUT_OF_STOCK->value => 'draft'
+            ProductStatusEnum::OUT_OF_STOCK->value => 'draft',
+            ProductStatusEnum::COMING_SOON->value => 'draft'
         ];
 
         return $stateMap[$status] ?? 'draft';

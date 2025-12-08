@@ -59,6 +59,10 @@ class UpdateWebsite extends OrgAction
             UpdateShop::run($shop, $shopUpdateData);
         }
 
+        if (Arr::has($modelData, "jira_help_desk_widget")) {
+            data_set($modelData, "settings.jira_help_desk_widget", Arr::pull($modelData, "jira_help_desk_widget"));
+        }
+
         if (Arr::has($modelData, "google_tag_id")) {
             data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
         }
@@ -197,6 +201,7 @@ class UpdateWebsite extends OrgAction
             ],
             'luigisbox_private_key'    => ['sometimes', 'nullable', 'string'],
             'last_reindex_at'          => ['sometimes', 'nullable', 'string'],
+            'jira_help_desk_widget'    => ['sometimes', 'nullable', 'string'],
             'return_policy'            => ['sometimes', 'string'],
             'image'                    => [
                 'sometimes',

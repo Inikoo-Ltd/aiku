@@ -93,6 +93,10 @@ trait IsDeliveryNotesIndex
             abort(419);
         }
 
+        // Todo: this hacks has to be deleted after we migrate from aurora
+        if ($shopType != 'all') {
+            $query->where('shops.is_aiku', true);
+        }
 
         // Subquery to count the number of picking sessions for each delivery note
         // Using a correlated subquery to ensure we only get one row per delivery note
@@ -221,7 +225,7 @@ trait IsDeliveryNotesIndex
 
 
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if (!$parent instanceof Customer) {
                 $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
             }

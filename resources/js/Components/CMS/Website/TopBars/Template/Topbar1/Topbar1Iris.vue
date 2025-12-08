@@ -148,7 +148,7 @@ watch(
                     v-tooltip="trans('Profile')"
                     icon="fal fa-user"
                     type="transparent"
-                    class="button"
+                    class="button min-w-max"
                 >
                     <template #icon>
                         <FontAwesomeIcon  class="button" icon="fal fa-user" fixed-width aria-hidden="true" />
@@ -209,7 +209,7 @@ watch(
                     v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b')"
                     v-tooltip="trans('Cart count and amount')"  
                     type="transparent"
-                    class="button"
+                    class="button min-w-max"
                 >
                     <template #loading>
                         <span v-show="false" class="button"></span>
@@ -222,7 +222,7 @@ watch(
                         <FontAwesomeIcon v-else icon="fal fa-shopping-cart" class="button" fixed-width
                             aria-hidden="true" />
                         <span class="button" 
-                            v-html="textReplaceVariables(`{{ cart_amount }}`, layout.iris_variables)">
+                            v-html="textReplaceVariables(`{{ cart_amount }} <span class='opacity-70'>({{ cart_products_amount }})</span>`, layout.iris_variables)">
                         </span>
                     </template>
                 </Button>

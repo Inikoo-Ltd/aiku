@@ -59,7 +59,7 @@ class ShowPupilDashboard
             ];
         }
 
-        $query = Shop::where('slug', 'awd')
+        $query = Shop::where('type', ShopTypeEnum::DROPSHIPPING)
             ->where('state', ShopStateEnum::OPEN)
             ->get();
 
@@ -91,7 +91,7 @@ class ShowPupilDashboard
             'shops'   => $query->map(function (Shop $shop) {
                 return [
                     'id'   => $shop->id,
-                    'name' => $shop->name,
+                    'name' => $shop->website?->domain,
                     'domain' => 'https://' . $shop->website?->domain . '/app/login?ref=/app/dropshipping/sale-channels/create&modal=shopify'
                 ];
             }),

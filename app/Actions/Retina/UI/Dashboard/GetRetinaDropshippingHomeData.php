@@ -49,12 +49,13 @@ class GetRetinaDropshippingHomeData
             ];
         }
 
-        $manuals = $customer->customerSalesChannels()->where('platform_id', $manualPlatform->id)->get();
-        $isOrderButton = false;
-        $manualPlatformData = null;
+        $manuals = $customer->customerSalesChannels()
+            ->where('platform_id', $manualPlatform->id)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->get();
+        $manualSinglePlatformData = null;
         if ($manuals->count() == 1) {
-            $isOrderButton = true;
-            $manualPlatformData = CustomerSalesChannelsResourceTOFIX::make($manuals->first())->resolve();
+            $manualSinglePlatformData = CustomerSalesChannelsResourceTOFIX::make($manuals->first())->resolve();
         }
 
         return [
@@ -81,15 +82,7 @@ class GetRetinaDropshippingHomeData
             'last_visited_channels' => $latestChannel,
             'shortcut'              => [
                 'order'                 => [
-                    'is_show_button' => $isOrderButton,
-                    // 'route_create_order'    => [
-                    //     'name'       => 'retina.models.customer-client.order.store',
-                    //     'parameters' => [
-                    //         'customerClient' => $customer->id,
-                    //     ],
-                    //     'method'     => 'post'
-                    // ],
-                    'manual_data' => $manualPlatformData
+                    'manual_data' => $manualSinglePlatformData
                 ],
                 'create_customer_sales_channel' => [
                     'route_create' => [

@@ -18,14 +18,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class BreakWebsiteCache extends OrgAction
 {
-    public function handle(Website $website): Website
+    public function handle(Website $website, Command $command = null): Website
     {
         $key = config('iris.cache.website.prefix')."_$website->domain";
         Cache::forget($key);
 
-        ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*');
-        ClearCacheByWildcard::run(config('iris.cache.webpage.prefix').'_'.$website->id.'_*');
-        ClearCacheByWildcard::run("iris:nav:product_categories:website:$website->id:*");
+        ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*', $command);
+        ClearCacheByWildcard::run(config('iris.cache.webpage.prefix').'_'.$website->id.'_*', $command);
+        ClearCacheByWildcard::run("irisData:website:$website->id:*", $command);
 
         BreakWebsiteVarnishCache::run($website);
 
@@ -53,7 +53,7 @@ class BreakWebsiteCache extends OrgAction
     public function asCommand(Command $command): int
     {
         $website = Website::where('slug', $command->argument('slug'))->first();
-        $this->handle($website);
+        $this->handle($website, $command);
 
         return 0;
     }

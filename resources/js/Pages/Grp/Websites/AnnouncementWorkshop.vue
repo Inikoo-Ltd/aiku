@@ -5,8 +5,8 @@
   * Copyright: 2025
 -->
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { inject, nextTick, onMounted, provide, reactive, ref, toRaw, watch } from 'vue'
+import { Head, router, usePage } from '@inertiajs/vue3'
+import { inject, onMounted, provide, ref, watch } from 'vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from 'laravel-vue-i18n'
@@ -21,22 +21,17 @@ import { faStop } from '@fad'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import AnnouncementSideEditor from '@/Components/Websites/Announcement/AnnouncementSideEditor.vue'
 import { notify } from '@kyvg/vue3-notification'
-import ScreenView from '@/Components/ScreenView.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { debounce, remove, set } from 'lodash-es'
+import { debounce } from 'lodash-es'
 import Modal from '@/Components/Utils/Modal.vue'
 import { getAnnouncementComponent } from '@/Composables/useAnnouncement'
-// import { propertiesToHTMLStyle } from '@/Composables/usePropertyWorkshop'
 import { getStyles } from "@/Composables/styles"
 
 import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
-import VueDatePicker from '@vuepic/vue-datepicker';
 import { useFormatTime } from '@/Composables/useFormatTime'
-import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-import Icon from '@/Components/Icon.vue'
 import { onBeforeUnmount } from 'vue'
 
 library.add(faStop, faGlobe, faImage, faExternalLink, faRocketLaunch, faSave, faUndoAlt, faInfoCircle, faChevronDown, faCircle, faHandPointer, faStopwatch20, faSquare, faThLarge, faCheckCircle)
@@ -290,20 +285,6 @@ const onClickToggleActivate = async (newVal: string) => {
 const openFieldWorkshop = ref<number | null>(null)
 provide('openFieldWorkshop', openFieldWorkshop)
 
-// Delivery url
-const getDeliveryUrlXx = () => {
-    console.log('envi', usePage().props.environment)
-    if (usePage().props.environment === 'local') {
-        return `http://delivery.wowsbar.test/announcement?logged_in=true&domain=${new URL(props.website.url).hostname}`
-    } else if (usePage().props.environment === 'staging') {
-        return `https://delivery-staging.wowsbar.com/announcement?logged_in=true&domain=${new URL(props.website.url).hostname}`
-    } else if (usePage().props.environment === 'production') {
-        return `https://delivery.wowsbar.com/announcement?logged_in=true&domain=${new URL(props.website.url).hostname}`
-    }
-
-    return '#'
-}
-const deliveryUrl = getDeliveryUrlXx()
 
 const _component_template_Announcement = ref(null)
 

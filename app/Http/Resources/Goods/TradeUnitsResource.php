@@ -8,8 +8,6 @@
 
 namespace App\Http\Resources\Goods;
 
-use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -21,16 +19,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $number_current_stocks
  * @property mixed $number_current_products
  * @property mixed $id
+ * @property mixed $status
  */
 class TradeUnitsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $media = null;
-        if ($this->image_id) {
-            $media = Media::find($this->image_id);
-        }
-
         return [
             'slug'                    => $this->slug,
             'code'                    => $this->code,
@@ -40,7 +34,10 @@ class TradeUnitsResource extends JsonResource
             'number_current_stocks'   => $this->number_current_stocks,
             'number_current_products' => $this->number_current_products,
             'id'                      => $this->id,
-            'image'                   => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'quantity'                => $this->quantity ?? null,
+            'status'                  => $this->status,
+            'status_icon'             => $this->status ? $this->status->icon()[$this->status->value] : null,
+            'media'                   => null
         ];
     }
 }

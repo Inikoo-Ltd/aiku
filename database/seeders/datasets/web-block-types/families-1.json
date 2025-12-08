@@ -6,7 +6,8 @@
 	"category": "family",
 	"fixed": true,
 	"icon": ["fal", "folder"],
-	"website_type" : ["info","b2b","b2","dropshipping","digital_agency"],
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {}
 	}

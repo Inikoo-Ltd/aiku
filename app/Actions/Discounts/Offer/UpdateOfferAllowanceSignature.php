@@ -9,9 +9,9 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\OrgAction;
-use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferAllowance;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 
@@ -24,16 +24,25 @@ class UpdateOfferAllowanceSignature extends OrgAction
     {
         $allowanceSignature = '';
 
-        /** @var \App\Models\Discounts\OfferAllowance $offerAllowance */
-        foreach ($offer->offerAllowances()->where('status', true)->get() as $offerAllowance) {
+        /** @var OfferAllowance $offerAllowance */
+        foreach (
+            $offer->offerAllowances()
+                ->where('status', true)
+                ->orderBy('id')->get() as $offerAllowance
+        ) {
             if ($allowanceSignature != '') {
                 $allowanceSignature .= '|';
             }
 
-            if($offerAllowance->target_type){
+            if ($offerAllowance->target_type) {
                 $allowanceSignature .= $offerAllowance->target_type->value.':';
             }
-            if($offerAllowance->type){
+
+            if ($offerAllowance->target_id) {
+                $allowanceSignature .= $offerAllowance->target_id.':';
+            }
+
+            if ($offerAllowance->type) {
                 $allowanceSignature .= $offerAllowance->type->value.':';
             }
 
@@ -41,6 +50,7 @@ class UpdateOfferAllowanceSignature extends OrgAction
                 $allowanceSignature .= Arr::get($offerAllowance->data, 'percentage_off', 'error');
             }
         }
+
 
         $offer->update(['allowance_signature' => $allowanceSignature]);
 
@@ -65,7 +75,7 @@ class UpdateOfferAllowanceSignature extends OrgAction
             return 0;
         }
 
-        foreach (Offer::all() as $offer) {
+        foreach (Offer::orderBy('id', 'desc')->get() as $offer) {
             $this->handle($offer);
         }
 

@@ -10,10 +10,12 @@ namespace App\Actions\Dropshipping\Ebay\Traits;
 
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
 use App\Exceptions\Dropshipping\Ebay\EbayApiException;
+use App\Models\Catalogue\Product;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 trait WithEbayApiRequest
 {
@@ -57,15 +59,15 @@ trait WithEbayApiRequest
     {
         // Remove or replace problematic keywords
         $problematic = [
-            'includes' => 'contains',
-            'include' => 'contain',
+            'includes'   => 'contains',
+            'include'    => 'contain',
             'javascript' => '',
-            '.cookie' => '',
-            'cookie(' => '',
-            'replace(' => '',
-            'IFRAME' => '',
-            'META' => '',
-            'base href' => '',
+            '.cookie'    => '',
+            'cookie('    => '',
+            'replace('   => '',
+            'IFRAME'     => '',
+            'META'       => '',
+            'base href'  => '',
         ];
 
         $text = str_ireplace(array_keys($problematic), array_values($problematic), $text);
@@ -74,7 +76,7 @@ trait WithEbayApiRequest
     }
 
     /**
-     * Check if error requires user action
+     * Check if an error requires user action
      */
     public static function isActionableError($errorResponse): bool
     {
@@ -89,7 +91,7 @@ trait WithEbayApiRequest
         }
 
         foreach ($errors['errors'] as $error) {
-            // Check if error has parameters with field names
+            // Check if the error has parameters with field names
             if (isset($error['parameters']) && is_array($error['parameters'])) {
                 foreach ($error['parameters'] as $param) {
                     if (isset($param['name']) && in_array($param['name'], self::ACTIONABLE_FIELDS)) {
@@ -109,9 +111,9 @@ trait WithEbayApiRequest
                 }
             }
 
-            // Check error category - REQUEST errors often need user action
+            // Check error-category-REQUEST errors often need user action
             if (isset($error['category']) && $error['category'] === 'REQUEST') {
-                // Check if message mentions any actionable fields
+                // Check if a message mentions any actionable fields
                 $message = strtolower($error['message'] ?? '');
                 foreach (self::ACTIONABLE_FIELDS as $field) {
                     if (str_contains($message, strtolower($field))) {
@@ -133,11 +135,11 @@ trait WithEbayApiRequest
             return null;
         }
 
-        $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
+        $errors        = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
         $displayErrors = [];
 
         foreach ($errors['errors'] as $error) {
-            $fieldName = null;
+            $fieldName    = null;
             $errorMessage = $error['message'] ?? 'Unknown error';
 
             // Extract field name from parameters
@@ -164,7 +166,7 @@ trait WithEbayApiRequest
                 }
             }
 
-            // Try to extract field from error message
+            // Try to extract a field from an error message
             if (!$fieldName) {
                 foreach (self::ACTIONABLE_FIELDS as $field) {
                     if (stripos($errorMessage, $field) !== false) {
@@ -185,11 +187,12 @@ trait WithEbayApiRequest
         return !empty($displayErrors) ? $displayErrors : null;
     }
 
-    public function extractProductAttributes($product, $categoryAspects)
+    public function extractProductAttributes(Product $product, $categoryAspects)
     {
         $attributes = [];
+        $brand = $product->getBrand();
 
-        // Get required aspects from category
+        // Get required aspects from a category
         $requiredAspects = collect($categoryAspects['aspects'] ?? [])
             ->filter(fn ($aspect) => $aspect['aspectConstraint']['aspectRequired'] ?? false);
 
@@ -205,10 +208,13 @@ trait WithEbayApiRequest
                         ['Not Specified'];
                     break;
                 case 'Brand':
-                    $attributes['Brand'] = [$product->shop?->name ?? 'Unbranded'];
+                    $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
                     break;
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
+                    break;
+                case 'EAN':
+                    $attributes['EAN'] = [$product->barcode];
                     break;
                     // Add more mappings as needed
                 default:
@@ -217,64 +223,309 @@ trait WithEbayApiRequest
             }
         }
 
+        // Use this as default value and always included
+        if ($product->country_of_origin) {
+            $attributes['Country/Region of Manufacture'] = [$product->country_of_origin];
+        }
+
+        if ($product->marketing_ingredients) {
+            $attributes['Material'] = [Str::substr($product->marketing_ingredients, 0, 60)];
+        }
+
         return $attributes;
     }
 
     public function getDefaultValueForAspect($aspect)
     {
-        // Return first recommended value or "Not Specified"
+        // Return the first recommended value or "Not Specified"
         return $aspect['aspectValues'][0]['localizedValue'] ?? ['Not Specified'];
     }
 
     public function parseMissingAspects($errorMessage)
     {
-        // Extract aspect name from error message
+        // Extract the aspect name from an error message
         preg_match('/item specific (\w+)/', $errorMessage, $matches);
+
         return $matches[1] ?? null;
     }
 
     public function getItemAspectsForCategory($categoryId)
     {
+        $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        $categoryTree = match ($marketplace) {
+            'EBAY_ES' => 186,
+            'EBAY_DE' => 77,
+            default => 3
+        };
+
         try {
-            $endpoint = "/commerce/taxonomy/v1/category_tree/3/get_item_aspects_for_category";
+            $endpoint = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_item_aspects_for_category";
+
             return $this->makeEbayRequest('get', $endpoint, [
                 'category_id' => $categoryId
             ]);
         } catch (\Exception $e) {
             \Log::error('Failed to get eBay category aspects', [
                 'category_id' => $categoryId,
-                'error' => $e->getMessage()
+                'error'       => $e->getMessage()
             ]);
 
             return ['aspects' => []]; // Return empty aspects on failure
         }
     }
 
+    public function getRequiredItemAspectsForCategory($categoryId)
+    {
+        return collect(Arr::get($this->getItemAspectsForCategory($categoryId), 'aspects', []))->filter(function ($aspect, $key) {
+            return $aspect['aspectConstraint']['aspectRequired'] === true;
+        })->map(function ($aspect) {
+            return [
+                'name' => $aspect['localizedAspectName'],
+                'dataType' => $aspect['aspectConstraint']['aspectDataType'],
+                'mode' => $aspect['aspectConstraint']['aspectMode'],
+                'cardinality' => $aspect['aspectConstraint']['itemToAspectCardinality']
+            ];
+        })->values();
+    }
+
+    public function getServicesWithCarrierInfo(): array
+    {
+        $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        $services = [
+            'EBAY_GB' => [
+                'UK_OtherCourier'     => [
+                    'service_code' => 'UK_OtherCourier',
+                    'service_name' => 'Yodel',
+                    'carrier_code' => 'Yodel',
+                    'carrier_name' => 'Yodel',
+                ],
+                'UK_RoyalMailNextDay' => [
+                    'service_code' => 'UK_RoyalMailNextDay',
+                    'service_name' => 'Royal Mail',
+                    'carrier_code' => 'RoyalMail',
+                    'carrier_name' => 'Royal Mail',
+                ]
+            ],
+            'EBAY_DE' => [
+                'DE_DHLPaket'              => [
+                    'service_code' => 'DE_DHLPaket',
+                    'service_name' => 'DHL Paket',
+                    'carrier_code' => 'DHL',
+                    'carrier_name' => 'DHL',
+                ],
+                'DE_DHLPaketTracked'       => [
+                    'service_code' => 'DE_DHLPaketTracked',
+                    'service_name' => 'DHL Paket mit Sendungsverfolgung',
+                    'carrier_code' => 'DHL',
+                    'carrier_name' => 'DHL',
+                ],
+                'DE_DHLPaketInsured'       => [
+                    'service_code' => 'DE_DHLPaketInsured',
+                    'service_name' => 'DHL Paket versichert',
+                    'carrier_code' => 'DHL',
+                    'carrier_name' => 'DHL',
+                ],
+                'DE_DHLPackchen'           => [
+                    'service_code' => 'DE_DHLPackchen',
+                    'service_name' => 'DHL Päckchen',
+                    'carrier_code' => 'DHL',
+                    'carrier_name' => 'DHL',
+                ],
+                'DE_HermesPackchen'        => [
+                    'service_code' => 'DE_HermesPackchen',
+                    'service_name' => 'Hermes Päckchen',
+                    'carrier_code' => 'HERMES',
+                    'carrier_name' => 'Hermes',
+                ],
+                'DE_HermesPaket'           => [
+                    'service_code' => 'DE_HermesPaket',
+                    'service_name' => 'Hermes Paket',
+                    'carrier_code' => 'HERMES',
+                    'carrier_name' => 'Hermes',
+                ],
+                'DE_HermesPaketVersichert' => [
+                    'service_code' => 'DE_HermesPaketVersichert',
+                    'service_name' => 'Hermes Paket versichert',
+                    'carrier_code' => 'HERMES',
+                    'carrier_name' => 'Hermes',
+                ],
+                'DE_HermesSperrgut'        => [
+                    'service_code' => 'DE_HermesSperrgut',
+                    'service_name' => 'Hermes Sperrgut',
+                    'carrier_code' => 'HERMES',
+                    'carrier_name' => 'Hermes',
+                ],
+                'DE_DPD'                   => [
+                    'service_code' => 'DE_DPD',
+                    'service_name' => 'DPD',
+                    'carrier_code' => 'DPD',
+                    'carrier_name' => 'DPD',
+                ],
+                'DE_DPDExpress'            => [
+                    'service_code' => 'DE_DPDExpress',
+                    'service_name' => 'DPD Express',
+                    'carrier_code' => 'DPD',
+                    'carrier_name' => 'DPD',
+                ],
+                'DE_GLS'                   => [
+                    'service_code' => 'DE_GLS',
+                    'service_name' => 'GLS',
+                    'carrier_code' => 'GLS',
+                    'carrier_name' => 'GLS',
+                ],
+                'DE_GLSExpress'            => [
+                    'service_code' => 'DE_GLSExpress',
+                    'service_name' => 'GLS Express',
+                    'carrier_code' => 'GLS',
+                    'carrier_name' => 'GLS',
+                ],
+                'DE_UPS'                   => [
+                    'service_code' => 'DE_UPS',
+                    'service_name' => 'UPS',
+                    'carrier_code' => 'UPS',
+                    'carrier_name' => 'UPS',
+                ],
+                'DE_FedEx'                 => [
+                    'service_code' => 'DE_FedEx',
+                    'service_name' => 'FedEx',
+                    'carrier_code' => 'FEDEX',
+                    'carrier_name' => 'FedEx',
+                ],
+                'DE_DeutschePost'          => [
+                    'service_code' => 'DE_DeutschePost',
+                    'service_name' => 'Deutsche Post',
+                    'carrier_code' => 'DEUTSCHEPOST',
+                    'carrier_name' => 'Deutsche Post',
+                ],
+                'DE_DeutschePostBrief'     => [
+                    'service_code' => 'DE_DeutschePostBrief',
+                    'service_name' => 'Deutsche Post Brief',
+                    'carrier_code' => 'DEUTSCHEPOST',
+                    'carrier_name' => 'Deutsche Post',
+                ],
+                'DE_Abholung'              => [
+                    'service_code' => 'DE_Abholung',
+                    'service_name' => 'Abholung (Collection)',
+                    'carrier_code' => 'OTHER',
+                    'carrier_name' => 'Sonstige (Other)',
+                ],
+                'DE_Sonstige'              => [
+                    'service_code' => 'DE_Sonstige',
+                    'service_name' => 'Sonstige (Other)',
+                    'carrier_code' => 'OTHER',
+                    'carrier_name' => 'Sonstige (Other)',
+                ],
+            ],
+            'EBAY_ES' => [
+                'ES_Correos'            => [
+                    'service_code' => 'ES_Correos',
+                    'service_name' => 'Correos',
+                    'carrier_code' => 'CORREOS',
+                    'carrier_name' => 'Correos',
+                ],
+                'ES_CorreosPaqueteAzul' => [
+                    'service_code' => 'ES_CorreosPaqueteAzul',
+                    'service_name' => 'Correos Paquete Azul',
+                    'carrier_code' => 'CORREOS',
+                    'carrier_name' => 'Correos',
+                ],
+                'ES_CorreosExpress'     => [
+                    'service_code' => 'ES_CorreosExpress',
+                    'service_name' => 'Correos Express',
+                    'carrier_code' => 'CORREOSEXPRESS',
+                    'carrier_name' => 'Correos Express',
+                ],
+                'ES_SEUR'               => [
+                    'service_code' => 'ES_SEUR',
+                    'service_name' => 'SEUR',
+                    'carrier_code' => 'SEUR',
+                    'carrier_name' => 'SEUR',
+                ],
+                'ES_Other'              => [
+                    'service_code' => 'ES_Other',
+                    'service_name' => 'Otro (Other)',
+                    'carrier_code' => 'OTHER',
+                    'carrier_name' => 'Otro (Other)',
+                ],
+            ],
+        ];
+
+        return $services[$marketplace] ?? $services['EBAY_GB'];
+    }
+
+    public function defaultCarrier(): array
+    {
+        return [
+            'EBAY_GB' => [
+                'service_code' => 'UK_RoyalMailNextDay',
+                'service_name' => 'UK Royal Mail Next Day',
+                'carrier_code' => 'RoyalMail',
+                'carrier_name' => 'Royal Mail',
+            ],
+            'EBAY_DE' => [
+                'service_code' => 'DE_Sonstige',
+                'service_name' => 'Sonstige (Other)',
+                'carrier_code' => 'Other',
+                'carrier_name' => 'Other',
+            ],
+            'EBAY_ES' => [
+                'service_code' => 'ES_Other',
+                'service_name' => 'Otro (Other)',
+                'carrier_code' => 'Other',
+                'carrier_name' => 'Otro (Other)',
+            ]
+        ];
+    }
+
+    public function getServicesForOptions(): array
+    {
+        return array_map(function ($service) {
+            return $service['service_name'];
+        }, $this->getServicesWithCarrierInfo());
+    }
+
     /**
      * eBay API configuration
+     *
+     * @throws \Exception
      */
     protected function getEbayConfig(): array
     {
-        $shop = $this->shop ?? $this->customer?->shop ?? $this->customerSalesChannel->shop;
+        $shop = $this->shop ?? $this->customer?->shop ?? $this->customerSalesChannel?->shop;
+
+        if ($shop === null) {
+            throw new Exception('Shop not found');
+        }
+
+        $marketplace = $this->marketplace ?? Arr::get($shop->settings, 'ebay.marketplace_id');
 
         return [
-            'client_id' => config('services.ebay.client_id'),
-            'client_secret' => config('services.ebay.client_secret'),
-            'redirect_uri' => Arr::get($shop->settings, 'ebay.redirect_key'),
-            'sandbox' => config('services.ebay.sandbox'),
-            'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
-            'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token'),
-            'marketplace_id' => Arr::get($shop->settings, 'ebay.marketplace_id'),
-            'currency' => $shop->currency?->code ?? 'GBP'
+            'client_id'      => config('services.ebay.client_id'),
+            'client_secret'  => config('services.ebay.client_secret'),
+            'redirect_uri'   => Arr::get($shop->settings, 'ebay.redirect_key'),
+            'sandbox'        => config('services.ebay.sandbox'),
+            'access_token'   => Arr::get($this->settings, 'credentials.ebay_access_token'),
+            'refresh_token'  => Arr::get($this->settings, 'credentials.ebay_refresh_token'),
+            'marketplace_id' => $marketplace,
+            'currency'       => match ($marketplace) {
+                'EBAY_ES', 'EBAY_DE' => 'EUR',
+                'EBAY_GB' => 'GBP',
+                default => $shop->currency?->code
+            }
         ];
     }
 
     /**
      * Get eBay OAuth token endpoint URL
+     *
+     * @throws \Exception
      */
     protected function getEbayTokenUrl(): string
     {
         $config = $this->getEbayConfig();
+
         return $config['sandbox']
             ? 'https://api.sandbox.ebay.com/identity/v1/oauth2/token'
             : 'https://api.ebay.com/identity/v1/oauth2/token';
@@ -282,10 +533,13 @@ trait WithEbayApiRequest
 
     /**
      * Get eBay API base URL
+     *
+     * @throws \Exception
      */
     protected function getEbayBaseUrl(): string
     {
         $config = $this->getEbayConfig();
+
         return $config['sandbox']
             ? 'https://api.sandbox.ebay.com'
             : 'https://api.ebay.com';
@@ -293,10 +547,13 @@ trait WithEbayApiRequest
 
     /**
      * Get eBay OAuth base URL
+     *
+     * @throws \Exception
      */
     protected function getEbayOAuthUrl(): string
     {
         $config = $this->getEbayConfig();
+
         return $config['sandbox']
             ? 'https://auth.sandbox.ebay.com'
             : 'https://auth.ebay.com';
@@ -304,10 +561,11 @@ trait WithEbayApiRequest
 
     /**
      * Generate eBay OAuth authorization URL
+     *
+     * @throws \Exception
      */
     public function getEbayAuthUrl($state = null): string
     {
-
         $config = $this->getEbayConfig();
 
         $scopes = [
@@ -327,10 +585,10 @@ trait WithEbayApiRequest
         ];
 
         $params = [
-            'client_id' => $config['client_id'],
-            'redirect_uri' => $config['redirect_uri'],
+            'client_id'     => $config['client_id'],
+            'redirect_uri'  => $config['redirect_uri'],
             'response_type' => 'code',
-            'scope' => implode(' ', $scopes),
+            'scope'         => implode(' ', $scopes),
         ];
 
         if ($state) {
@@ -340,7 +598,7 @@ trait WithEbayApiRequest
         $queryString = http_build_query($params);
 
 
-        return $this->getEbayOAuthUrl() . "/oauth2/authorize?$queryString";
+        return $this->getEbayOAuthUrl()."/oauth2/authorize?$queryString";
     }
 
     /**
@@ -374,12 +632,12 @@ trait WithEbayApiRequest
 
         try {
             $response = Http::asForm()->withHeaders([
-                'Content-Type' => 'application/x-www-form-urlencoded',
-                'Authorization' => 'Basic ' . base64_encode($config['client_id'] . ':' . $config['client_secret'])
+                'Content-Type'  => 'application/x-www-form-urlencoded',
+                'Authorization' => 'Basic '.base64_encode($config['client_id'].':'.$config['client_secret'])
             ])->post($this->getEbayTokenUrl(), [
-                'grant_type' => 'refresh_token',
+                'grant_type'    => 'refresh_token',
                 'refresh_token' => $config['refresh_token'],
-                'scope' => implode(' ', $scopes),
+                'scope'         => implode(' ', $scopes),
             ]);
 
             if ($response->successful()) {
@@ -389,8 +647,8 @@ trait WithEbayApiRequest
                 UpdateEbayUser::run($this, [
                     'settings' => [
                         'credentials' => [
-                            'ebay_access_token' => $tokenData['access_token'],
-                            'ebay_refresh_token' => $config['refresh_token'],
+                            'ebay_access_token'     => $tokenData['access_token'],
+                            'ebay_refresh_token'    => $config['refresh_token'],
                             'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
                         ]
                     ]
@@ -398,10 +656,11 @@ trait WithEbayApiRequest
 
                 return $tokenData;
             }
-
         } catch (Exception $e) {
-            Log::error('eBay Token Refresh Error: ' . $e->getMessage());
+            Log::error('eBay Token Refresh Error: '.$e->getMessage());
         }
+
+        return null;
     }
 
     /**
@@ -421,8 +680,11 @@ trait WithEbayApiRequest
         // Try to refresh the token if we have a refresh token
         if ($config['refresh_token']) {
             $tokenData = $this->refreshEbayToken();
+
             return $tokenData['access_token'];
         }
+
+        return null;
     }
 
     /**
@@ -443,8 +705,8 @@ trait WithEbayApiRequest
 
             if ($config['access_token']) {
                 Http::withHeaders([
-                    'Authorization' => 'Basic ' . base64_encode($config['client_id'] . ':' . $config['client_secret'])
-                ])->post($this->getEbayOAuthUrl() . '/identity/v1/oauth2/revoke', [
+                    'Authorization' => 'Basic '.base64_encode($config['client_id'].':'.$config['client_secret'])
+                ])->post($this->getEbayOAuthUrl().'/identity/v1/oauth2/revoke', [
                     'token' => $config['access_token']
                 ]);
             }
@@ -458,7 +720,8 @@ trait WithEbayApiRequest
 
             return true;
         } catch (Exception $e) {
-            Log::error('eBay Token Revocation Error: ' . $e->getMessage());
+            Log::error('eBay Token Revocation Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -472,15 +735,25 @@ trait WithEbayApiRequest
     {
         try {
             $token = $this->getEbayAccessToken();
-            $url = $this->getEbayBaseUrl() . $endpoint;
+            $url   = $this->getEbayBaseUrl().$endpoint;
+            $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+            $contentLanguage = match ($marketplaceId) {
+                'EBAY_DE' => 'de-DE',
+                'EBAY_ES' => 'es-ES',
+                default => 'en-GB'
+            };
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $token,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'Content-Language' => 'en-GB'
+                'Authorization'    => 'Bearer '.$token,
+                'Content-Type'     => 'application/json',
+                'Accept'           => 'application/json',
+                'Content-Language' => $contentLanguage
             ])->withQueryParameters($queryParams)
-                ->$method($url, $data);
+                ->$method(
+                    $url,
+                    $data
+                );
 
             if ($response->successful()) {
                 return $response->json();
@@ -488,13 +761,16 @@ trait WithEbayApiRequest
 
             // If unauthorized, try to refresh the token once
             if ($response->status() === 401) {
-                $token = $this->refreshEbayToken()['access_token'];
+                $token    = $this->refreshEbayToken()['access_token'];
                 $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $token,
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
+                    'Authorization'    => 'Bearer '.$token,
+                    'Content-Type'     => 'application/json',
+                    'Accept'           => 'application/json',
                     'Content-Language' => 'en-GB'
-                ])->$method($url, $data);
+                ])->$method(
+                    $url,
+                    $data
+                );
 
                 if ($response->successful()) {
                     return $response->json();
@@ -502,11 +778,13 @@ trait WithEbayApiRequest
             } else {
                 return $response->json();
             }
-
         } catch (Exception $e) {
-            Log::error('eBay Token Error: ' . $e->getMessage());
+            Log::error('eBay Token Error: '.$e->getMessage());
+
             return [$e->getMessage()];
         }
+
+        return [];
     }
 
     /**
@@ -516,16 +794,17 @@ trait WithEbayApiRequest
     {
         try {
             $params = [
-                'limit' => $limit,
+                'limit'  => $limit,
                 'offset' => $offset
             ];
 
             $queryString = http_build_query($params);
-            $endpoint = "/sell/inventory/v1/inventory_item?$queryString";
+            $endpoint    = "/sell/inventory/v1/inventory_item?$queryString";
 
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Get eBay Products Error: ' . $e->getMessage());
+            Log::error('Get eBay Products Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -537,7 +816,7 @@ trait WithEbayApiRequest
     {
         try {
             $params = [
-                'limit' => $limit,
+                'limit'  => $limit,
                 'offset' => $offset
             ];
 
@@ -550,11 +829,12 @@ trait WithEbayApiRequest
             }
 
             $queryString = http_build_query($params);
-            $endpoint = "/sell/inventory/v1/inventory_item?$queryString";
+            $endpoint    = "/sell/inventory/v1/inventory_item?$queryString";
 
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Search eBay Products Error: ' . $e->getMessage());
+            Log::error('Search eBay Products Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -566,9 +846,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/inventory_item/$sku";
+
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Get eBay Product Error: ' . $e->getMessage());
+            Log::error('Get eBay Product Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -580,12 +862,13 @@ trait WithEbayApiRequest
     public function storeProduct($productData)
     {
         try {
-            $sku = Arr::pull($productData, 'sku');
+            $sku      = Arr::pull($productData, 'sku');
             $endpoint = "/sell/inventory/v1/inventory_item/$sku";
 
             return $this->makeEbayRequest('put', $endpoint, $productData);
         } catch (Exception $e) {
-            Log::error('Store eBay Product Error: ' . $e->getMessage());
+            Log::error('Store eBay Product Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -597,9 +880,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/inventory_item/$sku";
+
             return $this->makeEbayRequest('put', $endpoint, $productData);
         } catch (Exception $e) {
-            Log::error('Update eBay Product Error: ' . $e->getMessage());
+            Log::error('Update eBay Product Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -611,47 +896,53 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/bulk_update_price_quantity";
+
             return $this->makeEbayRequest('put', $endpoint, $productData);
         } catch (Exception $e) {
-            Log::error('Update eBay Product Price and Quantity Error: ' . $e->getMessage());
+            Log::error('Update eBay Product Price and Quantity Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
 
     /**
      * Store offer on eBay
+     *
+     * @throws \Exception
      */
     public function storeOffer($offerData)
     {
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
-        $currency = Arr::get($this->getEbayConfig(), 'currency');
+        $currency      = Arr::get($this->getEbayConfig(), 'currency');
 
         $data = [
-            "sku" => Arr::get($offerData, 'sku'),
-            "marketplaceId" => $marketplaceId,
-            "format" => "FIXED_PRICE",
-            "listingDescription" => Arr::get($offerData, 'description'),
-            "availableQuantity" => Arr::get($offerData, 'quantity', 1),
-            "pricingSummary" => [
+            "sku"                 => Arr::get($offerData, 'sku'),
+            "marketplaceId"       => $marketplaceId,
+            "format"              => "FIXED_PRICE",
+            "listingDescription"  => Arr::get($offerData, 'description'),
+            "availableQuantity"   => Arr::get($offerData, 'quantity', 1),
+            "pricingSummary"      => [
                 "price" => [
-                    "value" => Arr::get($offerData, 'price', 0),
+                    "value"    => Arr::get($offerData, 'price', 0),
                     "currency" => $currency
                 ]
             ],
-            "listingPolicies" => [
-                "fulfillmentPolicyId" => Arr::get($this->settings, 'defaults.main_fulfilment_policy_id'),
-                "paymentPolicyId" => Arr::get($this->settings, 'defaults.main_payment_policy_id'),
-                "returnPolicyId" => Arr::get($this->settings, 'defaults.main_return_policy_id'),
+            "listingPolicies"     => [
+                "fulfillmentPolicyId" => $this->fulfillment_policy_id,
+                "paymentPolicyId"     => $this->payment_policy_id,
+                "returnPolicyId"      => $this->return_policy_id,
             ],
-            "categoryId" => Arr::get($offerData, 'category_id'),
-            "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
+            "categoryId"          => Arr::get($offerData, 'category_id'),
+            "merchantLocationKey" => $this->location_key,
         ];
 
         try {
             $endpoint = "/sell/inventory/v1/offer";
+
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
-            Log::error('Create eBay Product Offer: ' . $e->getMessage());
+            Log::error('Create eBay Product Offer: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -663,9 +954,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/listing/$sku";
+
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Get eBay Listing Error: ' . $e->getMessage());
+            Log::error('Get eBay Listing Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -674,12 +967,14 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/listing";
+
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'limit' => $limit,
+                'limit'  => $limit,
                 'offset' => $offset
             ]);
         } catch (Exception $e) {
-            Log::error('Get eBay Listings Error: ' . $e->getMessage());
+            Log::error('Get eBay Listings Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -691,9 +986,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/offer";
+
             return $this->makeEbayRequest('get', $endpoint, [], $fields);
         } catch (Exception $e) {
-            Log::error('Get eBay Offers Error: ' . $e->getMessage());
+            Log::error('Get eBay Offers Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -705,17 +1002,20 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/offer/$offerId";
+
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Get eBay Offer Error: ' . $e->getMessage());
+            Log::error('Get eBay Offer Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
 
 
-
     /**
      * Update offer by offer ID
+     *
+     * @throws \Exception
      */
     public function updateOffer($offerId, array $offerData)
     {
@@ -723,28 +1023,30 @@ trait WithEbayApiRequest
 
         try {
             $data = [
-                "format" => "FIXED_PRICE",
-                "listingDescription" => Arr::get($offerData, 'description'),
-                "availableQuantity" => Arr::get($offerData, 'quantity', 1),
-                "pricingSummary" => [
+                "format"              => "FIXED_PRICE",
+                "listingDescription"  => Arr::get($offerData, 'description'),
+                "availableQuantity"   => Arr::get($offerData, 'quantity', 1),
+                "pricingSummary"      => [
                     "price" => [
-                        "value" => Arr::get($offerData, 'price', 0),
+                        "value"    => Arr::get($offerData, 'price', 0),
                         "currency" => $currency
                     ]
                 ],
-                "listingPolicies" => [
-                    "fulfillmentPolicyId" => Arr::get($this->settings, 'defaults.main_fulfilment_policy_id'),
-                    "paymentPolicyId" => Arr::get($this->settings, 'defaults.main_payment_policy_id'),
-                    "returnPolicyId" => Arr::get($this->settings, 'defaults.main_return_policy_id'),
+                "listingPolicies"     => [
+                    "fulfillmentPolicyId" => $this->fulfillment_policy_id,
+                    "paymentPolicyId"     => $this->payment_policy_id,
+                    "returnPolicyId"      => $this->return_policy_id,
                 ],
-                "categoryId" => Arr::get($offerData, 'category_id'),
-                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
+                "categoryId"          => Arr::get($offerData, 'category_id'),
+                "merchantLocationKey" => $this->location_key,
             ];
 
             $endpoint = "/sell/inventory/v1/offer/$offerId";
+
             return $this->makeEbayRequest('put', $endpoint, $data);
         } catch (Exception $e) {
-            Log::error('Get eBay Offer Error: ' . $e->getMessage());
+            Log::error('Get eBay Offer Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -761,9 +1063,11 @@ trait WithEbayApiRequest
             ];
 
             $endpoint = "/sell/inventory/v1/offer/$offerId";
+
             return $this->makeEbayRequest('put', $endpoint, $data);
         } catch (Exception $e) {
-            Log::error('Get eBay Offer Error: ' . $e->getMessage());
+            Log::error('Get eBay Offer Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -775,9 +1079,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/inventory_item/$sku";
+
             return $this->makeEbayRequest('delete', $endpoint);
         } catch (Exception $e) {
-            Log::error('Delete eBay Product Error: ' . $e->getMessage());
+            Log::error('Delete eBay Product Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -789,9 +1095,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/offer/$offerId/withdraw";
+
             return $this->makeEbayRequest('post', $endpoint);
         } catch (Exception $e) {
-            Log::error('Delete eBay Offer Error: ' . $e->getMessage());
+            Log::error('Delete eBay Offer Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -803,7 +1111,7 @@ trait WithEbayApiRequest
     {
         try {
             $params = [
-                'limit' => $limit,
+                'limit'  => $limit,
                 'offset' => $offset
             ];
 
@@ -813,16 +1121,16 @@ trait WithEbayApiRequest
 
             if ($filter) {
                 $params['filter'] = $filter;
-
             }
 
 
             $queryString = http_build_query($params);
-            $endpoint = "/sell/fulfillment/v1/order?$queryString";
+            $endpoint    = "/sell/fulfillment/v1/order?$queryString";
 
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Get eBay Orders Error: ' . $e->getMessage());
+            Log::error('Get eBay Orders Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -834,9 +1142,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/fulfillment/v1/order/$orderId";
+
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Get eBay Order Error: ' . $e->getMessage());
+            Log::error('Get eBay Order Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -850,17 +1160,18 @@ trait WithEbayApiRequest
             $endpoint = "/sell/fulfillment/v1/order/$orderId/shipping_fulfillment";
 
             $fulfillment = [
-                'lineItems' => $fulfillmentData['line_items'],
-                'shippedDate' => now()->toISOString(),
+                'lineItems'           => $fulfillmentData['line_items'],
+                'shippedDate'         => now()->toISOString(),
                 'shippingCarrierCode' => $fulfillmentData['carrier_code'] ?? 'USPS',
-                'trackingNumber' => $fulfillmentData['tracking_number'] ?? null
+                'trackingNumber'      => $fulfillmentData['tracking_number'] ?? null
             ];
 
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
-            $errMsg = 'Fulfill eBay Order Error: ' . $e->getMessage();
+            $errMsg = 'Fulfill eBay Order Error: '.$e->getMessage();
             Log::error($errMsg);
             \Sentry::captureMessage($errMsg);
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -880,18 +1191,20 @@ trait WithEbayApiRequest
                     if (isset($order['buyer'])) {
                         $customers[] = [
                             'username' => $order['buyer']['username'],
-                            'email' => $order['buyer']['buyerRegistrationAddress']['email'] ?? null,
-                            'name' => $order['buyer']['buyerRegistrationAddress']['fullName'] ?? null,
-                            'address' => $order['fulfillmentStartInstructions'][0]['shippingStep']['shipTo'] ?? null
+                            'email'    => $order['buyer']['buyerRegistrationAddress']['email'] ?? null,
+                            'name'     => $order['buyer']['buyerRegistrationAddress']['fullName'] ?? null,
+                            'address'  => $order['fulfillmentStartInstructions'][0]['shippingStep']['shipTo'] ?? null
                         ];
                     }
                 }
+
                 return array_unique($customers, SORT_REGULAR);
             }
 
             return $orders;
         } catch (Exception $e) {
-            Log::error('Get eBay Customers Error: ' . $e->getMessage());
+            Log::error('Get eBay Customers Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -903,9 +1216,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/offer/$offerId/publish";
+
             return $this->makeEbayRequest('post', $endpoint);
         } catch (Exception $e) {
-            Log::error('Publish eBay Listing Error: ' . $e->getMessage());
+            Log::error('Publish eBay Listing Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -917,9 +1232,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/stores/v1/store";
+
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Get eBay Account Info Error: ' . $e->getMessage());
+            Log::error('Get eBay Account Info Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -935,9 +1252,11 @@ trait WithEbayApiRequest
 
         try {
             $endpoint = "/sell/account/v1/program/opt_in";
+
             return $this->makeEbayRequest('post', $endpoint, $optInProgram);
         } catch (Exception $e) {
-            Log::error('Opt in Program Error: ' . $e->getMessage());
+            Log::error('Opt in Program Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -949,42 +1268,53 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/account/v1/program/get_opted_in_programs";
+
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Get Opt in Program Error: ' . $e->getMessage());
+            Log::error('Get Opt in Program Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
 
     /**
      * Create a user's eBay fulfilment policy
+     *
+     * @throws \Exception
      */
-    public function createFulfilmentPolicy()
+    public function createFulfilmentPolicy($attributes)
     {
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+        $currency      = Arr::get($this->getEbayConfig(), 'currency');
+
+        $default = $this->defaultCarrier()[$marketplaceId];
 
         $data = [
-            "categoryTypes" => [
+            "categoryTypes"   => [
                 [
                     "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
                 ]
             ],
-            "marketplaceId" => $marketplaceId,
-            "name" => "Domestic shipping",
-            "handlingTime" => [
+            "marketplaceId"   => $marketplaceId,
+            "name"            => "Shipping-".$this->customerSalesChannel?->slug,
+            "handlingTime"    => [
                 "unit"  => "DAY",
-                "value"  => "1"
+                "value" => Arr::get($attributes, 'max_dispatch_time', 1)
             ],
             "shippingOptions" => [
                 [
-                    "costType" => "FLAT_RATE",
-                    "optionType" => "DOMESTIC",
+                    "costType"         => "FLAT_RATE",
+                    "optionType"       => "DOMESTIC",
                     "shippingServices" => [
                         [
                             "buyerResponsibleForShipping" => "false",
-                            "freeShipping" => "true",
-                            "shippingCarrierCode" => $marketplaceId === "EBAY_ES" ? "Correos" : "RoyalMail",
-                            "shippingServiceCode" => $marketplaceId === "EBAY_ES" ? "ES_CartasNacionalesDeMas20" : "UK_RoyalMailNextDay"
+                            "freeShipping"                => "false",
+                            "shippingCost"                => [
+                                'currency' => $currency,
+                                'value'    => Arr::get($attributes, 'price', 1)
+                            ],
+                            "shippingCarrierCode"         => Arr::get($attributes, 'carrier_code', $default['carrier_code']),
+                            "shippingServiceCode"         => Arr::get($attributes, 'service_code', $default['service_code'])
                         ]
                     ]
                 ]
@@ -993,15 +1323,74 @@ trait WithEbayApiRequest
 
         try {
             $endpoint = "/sell/account/v1/fulfillment_policy";
+
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
-            Log::error('Create Fulfilment Policy Error: ' . $e->getMessage());
+            Log::error('Create Fulfilment Policy Error: '.$e->getMessage());
+
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function updateFulfilmentPolicy($fulfillmentPolicyId, $attributes)
+    {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+        $currency      = Arr::get($this->getEbayConfig(), 'currency');
+
+        $defaults   = Arr::get($this->settings, 'shipping');
+        $attributes = Arr::get($attributes, 'settings.shipping');
+
+        $data = [
+            "categoryTypes"   => [
+                [
+                    "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
+                ]
+            ],
+            "marketplaceId"   => $marketplaceId,
+            "name"            => "Shipping",
+            "globalShipping"  => false,
+            "handlingTime"    => [
+                "unit"  => "DAY",
+                "value" => Arr::get($attributes, 'max_dispatch_time', Arr::get($defaults, 'max_dispatch_time'))
+            ],
+            "shippingOptions" => [
+                [
+                    "costType"         => "FLAT_RATE",
+                    "optionType"       => "DOMESTIC",
+                    "shippingServices" => [
+                        [
+                            "buyerResponsibleForShipping" => "false",
+                            "freeShipping"                => "false",
+                            "shippingCost"                => [
+                                'currency' => $currency,
+                                'value'    => Arr::get($attributes, 'price', Arr::get($defaults, 'price'))
+                            ],
+                            "shippingCarrierCode"         => Arr::get($attributes, 'carrier_code', Arr::get($defaults, 'carrier_code')),
+                            "shippingServiceCode"         => Arr::get($attributes, 'service_code', Arr::get($defaults, 'service_code'))
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        try {
+            $endpoint = "/sell/account/v1/fulfillment_policy/$fulfillmentPolicyId";
+
+            return $this->makeEbayRequest('put', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Edit Fulfilment Policy Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
 
     /**
      * Get user's eBay Fulfillment Policies
+     *
+     * @throws \Exception
      */
     public function getFulfilmentPolicies()
     {
@@ -1009,24 +1398,28 @@ trait WithEbayApiRequest
 
         try {
             $endpoint = "/sell/account/v1/fulfillment_policy";
+
             return $this->makeEbayRequest('get', $endpoint, [], [
                 'marketplace_id' => $marketplaceId
             ]);
         } catch (Exception $e) {
-            Log::error('Get Fulfilment Policy Error: ' . $e->getMessage());
+            Log::error('Get Fulfilment Policy Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
 
     /**
      * Create a user's eBay payment policy
+     *
+     * @throws \Exception
      */
     public function createPaymentPolicy()
     {
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
 
         $data = [
-            "name" => "minimal Payment Policy",
+            "name"          => "Payment Policy-".$this->customerSalesChannel?->slug,
             "marketplaceId" => $marketplaceId,
             "categoryTypes" => [
                 [
@@ -1037,15 +1430,19 @@ trait WithEbayApiRequest
 
         try {
             $endpoint = "/sell/account/v1/payment_policy";
+
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
-            Log::error('Create Payment Policy Error: ' . $e->getMessage());
+            Log::error('Create Payment Policy Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
 
     /**
      * Get user's eBay Payment Policies
+     *
+     * @throws \Exception
      */
     public function getPaymentPolicies()
     {
@@ -1053,45 +1450,91 @@ trait WithEbayApiRequest
 
         try {
             $endpoint = "/sell/account/v1/payment_policy";
+
             return $this->makeEbayRequest('get', $endpoint, [], [
                 'marketplace_id' => $marketplaceId
             ]);
         } catch (Exception $e) {
-            Log::error('Get Payment Policy Error: ' . $e->getMessage());
+            Log::error('Get Payment Policy Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
 
     /**
      * Create a user's eBay return policy
+     *
+     * @throws \Exception
      */
     public function createReturnPolicy()
     {
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
 
         $data = [
-            "name" => "minimal return policy",
-            "marketplaceId" => $marketplaceId,
-            "refundMethod" => "MONEY_BACK",
-            "returnsAccepted" => true,
+            "name"                    => "Return Policy-".$this->customerSalesChannel?->slug,
+            "marketplaceId"           => $marketplaceId,
+            "refundMethod"            => "MONEY_BACK",
+            "returnsAccepted"         => true,
             "returnShippingCostPayer" => "SELLER",
-            "returnPeriod" => [
+            "returnPeriod"            => [
                 "value" => 30,
-                "unit" => "DAY"
+                "unit"  => "DAY"
             ]
         ];
 
         try {
             $endpoint = "/sell/account/v1/return_policy";
+
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
-            Log::error('Create Return Policy Error: ' . $e->getMessage());
+            Log::error('Create Return Policy Error: '.$e->getMessage());
+
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function updateReturnPolicy($returnId, $returnData)
+    {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        $defaults   = Arr::get($this->settings, 'return');
+        $attributes = Arr::get($returnData, 'settings.return');
+
+        $data = [
+            "name"                    => "minimal return policy",
+            "categoryTypes"           => [
+                [
+                    "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
+                ]
+            ],
+            "marketplaceId"           => $marketplaceId,
+            "description"             => Arr::get($attributes, 'description', Arr::get($defaults, 'description')),
+            "returnsAccepted"         => Arr::get($attributes, 'accepted', Arr::get($defaults, 'accepted')),
+            "returnShippingCostPayer" => Arr::get($attributes, 'payer', Arr::get($defaults, 'payer')),
+            "returnPeriod"            => [
+                "value" => Arr::get($attributes, 'within', Arr::get($defaults, 'within')),
+                "unit"  => "DAY"
+            ]
+        ];
+
+        try {
+            $endpoint = "/sell/account/v1/return_policy/$returnId";
+
+            return $this->makeEbayRequest('put', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Update Return Policy Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
 
     /**
      * Get user's eBay Return Policies
+     *
+     * @throws \Exception
      */
     public function getReturnPolicies()
     {
@@ -1099,11 +1542,13 @@ trait WithEbayApiRequest
 
         try {
             $endpoint = "/sell/account/v1/return_policy";
+
             return $this->makeEbayRequest('get', $endpoint, [], [
                 'marketplace_id' => $marketplaceId
             ]);
         } catch (Exception $e) {
-            Log::error('Get Return Policy Error: ' . $e->getMessage());
+            Log::error('Get Return Policy Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -1115,9 +1560,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/inventory/v1/location?limit=20&offset=0";
+
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Get Inventory Location Error: ' . $e->getMessage());
+            Log::error('Get Inventory Location Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -1128,26 +1575,28 @@ trait WithEbayApiRequest
     public function createInventoryLocation($locationData)
     {
         $data = [
-            "location" => [
+            "location"               => [
                 "address" => [
-                    "city" => Arr::get($locationData, 'city'),
+                    "city"            => Arr::get($locationData, 'city'),
                     "stateOrProvince" => Arr::get($locationData, 'state'),
-                    "country" => Arr::get($locationData, 'country'),
+                    "country"         => Arr::get($locationData, 'country'),
                 ]
             ],
-            "name" => Arr::get($locationData, 'name', 'Default Location'),
+            "name"                   => Arr::get($locationData, 'name', 'Default Location'),
             "merchantLocationStatus" => "ENABLED",
-            "locationTypes" => [
+            "locationTypes"          => [
                 "WAREHOUSE"
             ]
         ];
 
         try {
             $locationKey = Arr::get($locationData, 'locationKey');
-            $endpoint = "/sell/inventory/v1/location/$locationKey";
+            $endpoint    = "/sell/inventory/v1/location/$locationKey";
+
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
-            Log::error('Create Inventory Location Error: ' . $e->getMessage());
+            Log::error('Create Inventory Location Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -1159,12 +1608,14 @@ trait WithEbayApiRequest
     {
         try {
             $encodedKeyword = urlencode($keyword);
-            $endpoint = "/commerce/taxonomy/v1/category_tree/3/get_category_suggestions";
+            $endpoint       = "/commerce/taxonomy/v1/category_tree/3/get_category_suggestions";
+
             return $this->makeEbayRequest('get', $endpoint, [], [
                 'q' => $encodedKeyword
             ]);
         } catch (Exception $e) {
-            Log::error('Get Category Suggestions Error: ' . $e->getMessage());
+            Log::error('Get Category Suggestions Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -1176,12 +1627,14 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/buy/browse/v1/item_summary/search";
+
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'q' => $keyword,
+                'q'     => $keyword,
                 'limit' => 10
             ]);
         } catch (Exception $e) {
-            Log::error('Get Category Suggestions Error: ' . $e->getMessage());
+            Log::error('Get Category Suggestions Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -1193,9 +1646,11 @@ trait WithEbayApiRequest
     {
         try {
             $endpoint = "/sell/account/v1/privilege";
+
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
-            Log::error('Get Privilege Error: ' . $e->getMessage());
+            Log::error('Get Privilege Error: '.$e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -1208,12 +1663,12 @@ trait WithEbayApiRequest
     {
         try {
             $token = $this->getEbayAccessToken();
-            $url = "https://apiz.ebay.com/commerce/identity/v1/user/";
+            $url   = "https://apiz.ebay.com/commerce/identity/v1/user/";
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $token,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
+                'Authorization'    => 'Bearer '.$token,
+                'Content-Type'     => 'application/json',
+                'Accept'           => 'application/json',
                 'Content-Language' => 'en-GB'
             ])->withQueryParameters($queryParams)
                 ->get($url, $data);
@@ -1226,14 +1681,14 @@ trait WithEbayApiRequest
             if ($response->status() === 401) {
                 $token = Arr::get($this->refreshEbayToken(), 'access_token');
 
-                if (! $token) {
+                if (!$token) {
                     return [];
                 }
 
                 $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $token,
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
+                    'Authorization'    => 'Bearer '.$token,
+                    'Content-Type'     => 'application/json',
+                    'Accept'           => 'application/json',
                     'Content-Language' => 'en-GB'
                 ])->get($url, $data);
 
@@ -1241,9 +1696,10 @@ trait WithEbayApiRequest
                     return $response->json();
                 }
             }
-
         } catch (Exception $e) {
-            Log::error('eBay API Request Error: ' . $e->getMessage());
+            Log::error('eBay API Request Error: '.$e->getMessage());
         }
+
+        return null;
     }
 }

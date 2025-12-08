@@ -2,7 +2,7 @@
 import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {computed, reactive, ref} from "vue";
+import {computed, reactive, ref,watch, onMounted, onBeforeUnmount} from "vue";
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
@@ -18,7 +18,11 @@ import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faSyncAlt, faHandPointer, faBan} from "@fas";
-import { useFormatTime } from "@/Composables/useFormatTime";
+import { useFormatTime, useTimeCountdown} from "@/Composables/useFormatTime";
+import Icon from '@/Components/Icon.vue'
+import LoadingText from "@/Components/Utils/LoadingText.vue"
+import { differenceInHours, differenceInMinutes, differenceInSeconds, addDays } from 'date-fns';
+
 
 import {
     faBracketsCurly, faPawClaws,
@@ -29,8 +33,9 @@ import {
     faUpload,
     faBox,
     faEllipsisV,
-    faDownload,
+    faDownload
 } from "@fal";
+import {faCheck} from "@fas";
 import axios from "axios"
 import {Table as TableTS} from "@/types/Table"
 import {CustomerSalesChannel} from "@/types/customer-sales-channel"
@@ -46,7 +51,7 @@ import { useTabChange } from "@/Composables/tab-change";
 import TableRetinaPlatformPortfolioLogs from "@/Components/Tables/Retina/TableRetinaPlatformPortfolioLogs.vue";
 
 
-library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
+library.add(faFileExcel, faCheck, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
 const props = defineProps<{
@@ -99,12 +104,16 @@ const props = defineProps<{
 
     // inactive: {}
     product_count: number
+    download_portfolio_customer_sales_channel_url: string | null
+    last_created_at_download_portfolio_customer_sales_channel: string | null
 }>();
 
 const step = ref(props.step);
 const isPlatformManual = computed(() => props.platform_data.type === 'manual');
 const isOpenModalPortfolios = ref(false);
 const isOpenModalDownloadImages = ref(false);
+const isOpenModalSuspended = ref(false);
+const isTestConnectionSuccess = ref(false);
 
 
 const isLoadingUpload = ref(false);
@@ -324,6 +333,175 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const key = ulid()
 
+// ========= handle upload to R2 and get download link
+const codeString = ref<string | null>(null)
+const isSocketActive = ref(false)
+
+let channel: any = null
+const isModalReadyDownloadImages = ref(false)
+const isModalDownloadImages = ref(false)
+const stateDownloadImagesReady = ref<string | null>(null)
+const linkDownloadImages = ref(null)
+const initSocketListener = () => {
+    if (!window.Echo || !codeString.value) return
+
+    isSocketActive.value = true
+    stateDownloadImagesReady.value = 'loading'
+    isModalDownloadImages.value = true
+
+    const socketEvent = `upload-portfolio-to-r2.${codeString.value}`
+    const socketAction = ".upload-portfolio-to-r2"
+
+    if (channel) {
+        channel.stopListening(socketAction)
+    }
+
+    channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
+        stateDownloadImagesReady.value = 'success'
+        linkDownloadImages.value = 'https://' + eventData.download_url
+        isModalDownloadImages.value = false
+        isModalReadyDownloadImages.value = true
+
+        notify({
+            title: "Your download images is ready",
+            text: "Click download button to get your files.",
+            type: "success",
+        })
+
+        sessionStorage.removeItem('download_code')
+        codeString.value = null
+        // stop listening after this event
+        channel.stopListening(socketAction)
+        isSocketActive.value = false
+    })
+}
+
+watch(() => props.download_portfolio_customer_sales_channel_url, () => {
+    if(props.download_portfolio_customer_sales_channel_url){
+        sessionStorage.removeItem('download_code')
+        linkDownloadImages.value ='https://'+ props.download_portfolio_customer_sales_channel_url
+    } else {
+        linkDownloadImages.value = null
+    }
+}, {
+    immediate: true
+})
+
+// === STORAGE & SOCKET SYNC ===
+onMounted(() => {
+    const storedCode = sessionStorage.getItem('download_code')
+    if (storedCode) {
+        codeString.value = storedCode
+        initSocketListener()
+    }
+
+    watch(codeString, (newCode) => {
+        if (newCode) {
+            sessionStorage.setItem('download_code', newCode)
+            initSocketListener()
+        }
+    })
+
+    onBeforeUnmount(() => {
+        if (channel) channel.stopListening(".upload-portfolio-to-r2")
+        linkDownloadImages.value = null
+    })
+})
+
+const handleDownloadClick = async (type: string, event: Event) => {
+    event.preventDefault();
+    const url = downloadUrl(type);
+
+    if (!url) {
+        console.error('No valid URL found for download');
+        return;
+    }
+    // Convert URL to string if it's a Router object
+    const urlString = typeof url === 'string' ? url : url.toString();
+
+    try {
+        const response = await axios.get(urlString, {});
+        if (response.status !== 200) {
+            notify({
+                title: "Something went wrong.",
+                text: "An error occurred.",
+                type: "error",
+            })
+            return;
+        }
+
+        if(response.data) {
+            codeString.value = response.data
+            initSocketListener()
+        }
+    } catch (error) {
+        console.error('Download failed:', error);
+        notify({
+            title: "Something went wrong.",
+            text: "An error occurred.",
+            type: "error",
+        })
+    }
+}
+
+// Time countdown for download link expiration
+const timeCountdown = ref('');
+const countdownInterval = ref<number | null>(null);
+
+// Set countdown for download link expiration
+const setCountdown = (expiryDate: Date) => {
+    clearInterval(countdownInterval.value!);
+    console.log('Setting countdown for:', expiryDate, 'Current time:', new Date());
+
+    // Initial update
+    timeCountdown.value = useTimeCountdown(expiryDate.toISOString(), { human: true });
+
+    // Update every second
+    countdownInterval.value = window.setInterval(() => {
+        const countdown = useTimeCountdown(expiryDate.toISOString(), { human: true });
+        timeCountdown.value = countdown;
+
+        // Clear interval when countdown is done
+        if (!countdown) {
+            if (countdownInterval.value !== null) {
+                clearInterval(countdownInterval.value);
+            }
+            timeCountdown.value = 'Expired';
+        }
+    }, 1000);
+};
+
+// Update the time left
+const updateTimeLeft = () => {
+    if (!props.last_created_at_download_portfolio_customer_sales_channel) {
+        timeCountdown.value = 'Download link is ready';
+        return;
+    }
+
+    const expiryDate = addDays(new Date(props.last_created_at_download_portfolio_customer_sales_channel), 1);
+    const now = new Date();
+    console.log('Now:', now, 'Expiry:', expiryDate)
+
+    if (now > expiryDate) {
+        timeCountdown.value = 'Expired';
+        return;
+    }
+
+    setCountdown(expiryDate);
+};
+
+// Watch for changes to the creation date
+watch(() => props.last_created_at_download_portfolio_customer_sales_channel, updateTimeLeft, { immediate: true });
+
+// Clean up interval when component is unmounted
+onBeforeUnmount(() => {
+    if (countdownInterval.value) {
+        clearInterval(countdownInterval.value);
+    }
+});
+
+
+
 </script>
 
 <template>
@@ -342,10 +520,28 @@ const key = ulid()
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
-                <a v-if="props.product_count <= 200" :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
+                <a v-if="!linkDownloadImages" href="#" @click.prevent="!isSocketActive && handleDownloadClick('images', $event)">
+                    <Button :icon="faImage" type="tertiary" class="border-l-0 rounded-l-none" :disabled="isSocketActive">
+                        <template #label>
+                            <LoadingIcon v-if="stateDownloadImagesReady === 'loading'" />
+                            <span v-else>
+                                {{ trans('Images') }}
+                            </span>
+                        </template>
+                    </Button>
                 </a>
-                <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
+
+                <VTooltip v-else class="w-fit inline">
+                    <a :href="linkDownloadImages" target="_blank" rel="noopener" download>
+                        <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive" >
+                        </Button>
+                    </a>
+                    <template #popper>
+                        <div class="text-xs tabular-nums">
+                            {{ trans(":timeCountdown left before link expires", { timeCountdown: timeCountdown}) }}.
+                        </div>
+                    </template>
+                </VTooltip>
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
@@ -369,7 +565,7 @@ const key = ulid()
                             >
                                 <template #default="{ loading }">
                                     <div class="flex gap-x-2 justify-start items-center w-full">
-                                        <LoadingIcon v-if="loading" class="h-5"/>
+                                        <LoadingIcon v-if="loading" class="h-5"  v-tooltip="trans('Processing...')"/>
                                         <img
                                             v-else
                                             :src="`/assets/channel_logo/${manual_channel.platform_code}.svg`"
@@ -391,25 +587,6 @@ const key = ulid()
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <!-- Section: Alert if platform not connected yet -->
-    <Message v-if="customer_sales_channel.ban_stock_update_until" severity="error" class="m-4 flex items-center gap-2">
-            <div :class="'flex justify-between gap-3'">
-                <div :class="'flex gap-3 items-center'">
-                    <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
-                    <div>
-                        {{trans("Sorry, your account is temporarily restricted until")}}
-                        <span class="font-semibold">
-                            {{ useFormatTime(customer_sales_channel.ban_stock_update_until, { formatTime: 'MMM dd, yyyy' }) }}
-                        </span>
-                    </div>
-                </div>
-                <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.unsuspend',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch'
-                        }" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
-            </div>
-    </Message>
 
 
     <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
@@ -448,20 +625,12 @@ const key = ulid()
 
 
                 <div v-if="selectedProducts.length > 0" class="space-x-2 border-r border-gray-400 pr-2">
-                    <!--   <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
-                          :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
-                          :loading="loadingAction.includes('bulk-match')" @click="() => submitPortfolioAction({
-                              label : 'bulk-match',
-                              name : 'retina.models.dropshipping.shopify.batch_match',
-                              parameters: { customerSalesChannel: customer_sales_channel.id },
-                              method: 'post',
-                          })" size="xs" /> -->
 
                     <Button
                         v-if="selectedProducts.length > 0"
                         v-tooltip="trans('Unlink & Delete Product :platform', { platform: props.platform_data?.name })"
                         :type="'delete'"
-                        :label="trans('Unlink & Delete Product (:count)', { count: selectedProducts?.length })"
+                        :label="trans('Unlink & Delete Product (:_count)', { _count: selectedProducts?.length })"
                         :loading="loadingAction.includes('bulk-unlink')"
                         @click="() => submitPortfolioAction({
                             label : 'bulk-unlink',
@@ -476,7 +645,7 @@ const key = ulid()
                         v-if="selectedProducts.length > 0"
                         v-tooltip="trans('Upload as new product to the :platform', { platform: props.platform_data?.name })"
                         :type="'create'"
-                        :label="trans('Create New Product (:count)', { count: selectedProducts?.length })"
+                        :label="trans('Create New Product (:_count)', { _count: selectedProducts?.length })"
                         :loading="loadingAction.includes('bulk-create')"
                         @click="() => submitPortfolioAction({
                             label : 'bulk-create',
@@ -564,18 +733,72 @@ const key = ulid()
                                  :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
     </Modal>
 
-    <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
-           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
-        <div class="mb-8">
-            <h3 class="text-center font-semibold">{{ trans('Images grouped by first letter from product code')}}</h3>
-        </div>
-        <div class="flex flex-col gap-2">
-            <div v-for="grouped in grouped_portfolios" class="flex justify-between gap-2">
-                <div class="my-auto">
-                    <span><b>{{grouped.char}}</b>: ({{grouped.count}}) images</span>
+
+    <Modal :isOpen="isModalDownloadImages" @onClose="isModalDownloadImages = false" width="w-full max-w-lg">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full"
+                xclass="getTextColorDependsOnStatus(selectedModal?.status)"
+            >
+                <div>
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100"
+                        xclass="getBgColorDependsOnStatus(selectedModal?.status)"
+                    >
+                        <FontAwesomeIcon icon='fas fa-spinner' class="text-gray-500 text-2xl animate-spin" fixed-width aria-hidden='true' />
+                    </div>
+
+                    <div class="mt-3 text-center sm:mt-5">
+                        <div as="h3" class="font-semibold text-2xl">
+                            Your download images request is being processed.
+                        </div>
+
+                        <div xv-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
+                            This may take around 10 seconds. You'll receive a notification once it's ready.
+                        </div>
+
+                    </div>
                 </div>
-                <a v-if="grouped.count > 0" :href="downloadUrl('images', grouped.ids) as string" rel="noopener">
-                    <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
+
+
+                <a v-if="linkDownloadImages" :href="linkDownloadImages" class="mt-5 sm:mt-6">
+                    <Button
+                        :label="trans('Download')"
+                        full
+                    />
+                </a>
+            </div>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isModalReadyDownloadImages" @onClose="isModalReadyDownloadImages = false" width="w-full max-w-lg">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full"
+                xclass="getTextColorDependsOnStatus(selectedModal?.status)"
+            >
+                <div>
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100"
+                        xclass="getBgColorDependsOnStatus(selectedModal?.status)"
+                    >
+                        <FontAwesomeIcon icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
+                    </div>
+
+                    <div class="mt-3 text-center sm:mt-5">
+                        <div as="h3" class="font-semibold text-2xl">
+                           Your images are ready for download.
+                        </div>
+
+                        <div xv-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
+                            Click the button below to retrieve your files.
+                        </div>
+
+                    </div>
+                </div>
+
+
+                <a v-if="linkDownloadImages" :href="linkDownloadImages" target="_blank" download class="mt-5 sm:mt-6 block">
+                    <Button
+                        :label="trans('Download')"
+                        full
+                    />
                 </a>
             </div>
         </div>

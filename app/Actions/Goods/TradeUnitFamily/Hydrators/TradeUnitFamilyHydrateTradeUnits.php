@@ -9,6 +9,8 @@
 namespace App\Actions\Goods\TradeUnitFamily\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
+use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +32,19 @@ class TradeUnitFamilyHydrateTradeUnits implements ShouldBeUnique
         $stats = [
             'number_trade_units' => $count
         ];
+
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'trade_units',
+                field: 'status',
+                enum: TradeUnitStatusEnum::class,
+                models: TradeUnit::class,
+                where: function ($q) use ($tradeUnitFamily) {
+                    $q->where('trade_unit_family_id', $tradeUnitFamily->id);
+                }
+            )
+        );
 
         $tradeUnitFamily->stats()->update(
             $stats

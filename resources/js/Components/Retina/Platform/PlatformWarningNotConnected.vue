@@ -11,6 +11,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { ref } from "vue";
 
 const props = defineProps<{
+    platform: any
     customer_sales_channel: CustomerSalesChannel
     error_captcha: any
 }>()
@@ -29,7 +30,11 @@ const onClickReconnect = async () => {
         if (response.status !== 200) {
             throw new Error('Something went wrong. Try again later.')
         } else {
-            window.open(response.data, '_blank');
+            if(! response.data.id) {
+                window.open(response.data, '_blank');
+            } else {
+                window.location.href = ''
+            }
         }
     } catch (error: any) {
         notify({
@@ -75,6 +80,18 @@ const ipAddresses = [
 </script>
 
 <template>
+    <Message severity="error" class="mt-8" v-if="customer_sales_channel.user_data?.length > 0">
+        <span>{{ trans('Error meesage from your woocommerce store when we access the API: ') }}</span>
+        <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
+            <div>
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
+                <div class="inline items-center gap-x-2">
+                    {{ JSON.parse(customer_sales_channel.user_data)?.code }} : {{ JSON.parse(customer_sales_channel.user_data)?.message }}
+                </div>
+            </div>
+        </div>
+    </Message>
+
     <Message severity="error" class="mt-8 ">
         <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
             <div>
@@ -85,7 +102,6 @@ const ipAddresses = [
                     }}
                 </div>
             </div>
-
             <div class="w-full sm:w-fit h-fit">
                 <Button v-if="customer_sales_channel?.reconnect_route?.name"
                     @click="() => onClickReconnect()" iconRight="fal fa-external-link"
@@ -114,14 +130,14 @@ const ipAddresses = [
                 />
             </div>
         </div>
-        <div class="ml-2">
+<!--        <div class="ml-2">
             <div>
-                <small>{{ trans('Please add this IP Address to whitelist: ')}}</small>
+                <small>{{ trans('Please add this IP Address to whitelist:')}}</small>
             </div>
             <div v-for="(ip, i) in ipAddresses" :key="i">
                 <blockquote>{{ ip }}</blockquote>
             </div>
-        </div>
+        </div>-->
         <div v-if="errorCaptcha" class="ml-2">
             <small class="text-red-500">{{errorCaptcha}}</small>
         </div>

@@ -120,6 +120,8 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $origin_country_id
  * @property string|null $ufi_number
  * @property string|null $scpn_number
+ * @property bool $is_for_sale
+ * @property string|null $not_for_sale_since
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

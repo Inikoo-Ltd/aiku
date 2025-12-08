@@ -2,6 +2,7 @@
 import DashboardSettings from "./DashboardSettings.vue"
 import DashboardTable from "./DashboardTable.vue"
 import DashboardWidget from "./DashboardWidget.vue"
+import ShopIntervalStats from "./ShopIntervalStats.vue"
 import { ref, provide } from "vue"
 import {
     faBox,
@@ -17,22 +18,20 @@ import {
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { set } from 'lodash-es'
 import { Dashboard } from "@/types/Components/Dashboard"
-import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardShopWidget.vue";
-import { useTabChange } from "@/Composables/tab-change";
-import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue";
+import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardShopWidget.vue"
+import { useTabChange } from "@/Composables/tab-change"
+import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faTriangle)
 
 const props = defineProps<{
 	dashboard?: Dashboard
 }>()
 
-console.log(props.dashboard?.super_blocks?.[0]?.stats_box);
-
 const dashboardTabActive = ref('')
 provide("dashboardTabActive", dashboardTabActive)
 
 const currentTab = ref(props.dashboard?.super_blocks?.[0]?.tabs_box?.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 </script>
 
 <template>
@@ -41,28 +40,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
             <TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
         </KeepAlive>
 
-        <div v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pt-4">
-            <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
-                <div>
-                    {{ props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.visitors?.['all'].formatted_value ?? 0 }}
-                    <span>Visitors</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
-                <div>
-                    {{ props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.registrations?.['1w'].formatted_value ?? 0 }}
-                    <span>New Customers</span>
-                    <span class="ml-1 text-gray-500 text-sm italic">(1w)</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
-                <div>
-                    {{ props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.orders?.['1w'].formatted_value ?? 0 }}
-                    <span>Last Orders</span>
-                    <span class="ml-1 text-gray-500 text-sm italic">(1w)</span>
-                </div>
-            </div>
-        </div>
+        <ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
 
 		<DashboardSettings
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"

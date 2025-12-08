@@ -18,10 +18,12 @@ enum TradeUnitTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case IMAGES = 'images';
+    case MASTER_PRODUCTS = 'master_products';
     case PRODUCTS = 'products';
     case STOCKS = 'stocks';
+    case ORG_STOCKS = 'org_stocks';
     case HISTORY = 'history';
-    case IMAGES = 'images';
     case ATTACHMENTS = 'attachments';
     case FEEDBACKS = 'feedbacks';
 
@@ -43,12 +45,6 @@ enum TradeUnitTabsEnum: string
                 'icon'  => 'fal fa-paperclip',
 
             ],
-            TradeUnitTabsEnum::IMAGES => [
-                'type'  => 'icon',
-                'align' => 'right',
-                'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
-            ],
             TradeUnitTabsEnum::HISTORY => [
                 'type'  => 'icon',
                 'align' => 'right',
@@ -60,15 +56,26 @@ enum TradeUnitTabsEnum: string
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
+            TradeUnitTabsEnum::MASTER_PRODUCTS => [
+                'title' => __('Master Products'),
+                'icon'  => 'fab fa-octopus-deploy',
+            ],
             TradeUnitTabsEnum::PRODUCTS => [
                 'title' => __('Products'),
                 'icon'  => 'fal fa-cube',
             ],
+            TradeUnitTabsEnum::IMAGES => [
+                'title' => __('Media'),
+                'icon'  => 'fal fa-camera-retro',
+            ],
             TradeUnitTabsEnum::STOCKS => [
-                'title' => __('SKUs'),
+                'title' => __('Master SKUs'),
+                'icon'  => 'fal fa-cloud-rainbow',
+            ],
+            TradeUnitTabsEnum::ORG_STOCKS => [
+                'title' => __('Org SKUs'),
                 'icon'  => 'fal fa-box',
             ],
-
         };
     }
 }

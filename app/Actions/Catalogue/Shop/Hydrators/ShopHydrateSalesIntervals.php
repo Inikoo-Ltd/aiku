@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
@@ -35,8 +36,8 @@ class ShopHydrateSalesIntervals implements ShouldBeUnique
     public function asCommand(Command $command): void
     {
         $shop = Shop::where('slug', $command->argument('shop'))->first();
-
-        $this->handle($shop);
+        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+        $this->handle($shop, $intervalsExceptHistorical, []);
     }
 
     public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
@@ -50,6 +51,7 @@ class ShopHydrateSalesIntervals implements ShouldBeUnique
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );
+
 
         $queryBase = Invoice::where('in_process', false)->where('shop_id', $shop->id)->selectRaw('sum(grp_net_amount) as  sum_aggregate');
         $stats     = $this->getIntervalsData(

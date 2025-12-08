@@ -77,6 +77,9 @@ class UpdateEbayPortfolio implements ShouldBeUnique
 
         $availableQuantity = $product->available_quantity ?? 0;
 
+        if ($availableQuantity >= 50) {
+            $availableQuantity = 50; // Based on discuss with tomas we agree to limit 50 only
+        }
 
         $ebayUser->setTimeout(45);
         try {
@@ -124,7 +127,7 @@ class UpdateEbayPortfolio implements ShouldBeUnique
 
                 if ($ban) {
                     $customerSalesChannel->update([
-                        'ban_stock_update_util' => now()->addHours(3),
+                        'ban_stock_update_util' => now()->addSeconds(10)
                     ]);
                 }
 
@@ -141,7 +144,7 @@ class UpdateEbayPortfolio implements ShouldBeUnique
                 'stock_last_fail_updated_at' => now()
             ]);
             $customerSalesChannel->update([
-                'ban_stock_update_util' => now()->addHours(3),
+                'ban_stock_update_util' => now()->addSeconds(10)
             ]);
         }
     }

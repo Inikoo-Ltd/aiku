@@ -3,9 +3,10 @@
 	"slug": "collections-1",
 	"code": "collections-1",
 	"name": "Collections-1",
-	"website_type" : ["info","b2b","b2","dropshipping","digital_agency"],
+	"website_type" : ["b2b","b2c","dropshipping"],
 	"fixed": true,
 	"category": "collection",
+	"is_in_test" : false,
 	"icon": ["fal", "bars"],
 	"data": {
 		"fieldValue": {}

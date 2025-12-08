@@ -10,14 +10,11 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
 use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
-use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
+use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -37,9 +34,9 @@ class UpdateWebpage extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithImageSeo;
+    use WithWebpageHydrators;
 
     private Webpage $webpage;
-
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
@@ -116,12 +113,7 @@ class UpdateWebpage extends OrgAction
         }
 
         if (Arr::has($changes, 'state')) {
-            GroupHydrateWebpages::dispatch($webpage->group)->delay($this->hydratorsDelay);
-            OrganisationHydrateWebpages::dispatch($webpage->organisation)->delay($this->hydratorsDelay);
-            WebsiteHydrateWebpages::dispatch($webpage->website)->delay($this->hydratorsDelay);
-            if ($webpage->parent_id) {
-                WebpageHydrateChildWebpages::dispatch($webpage->parent)->delay($this->hydratorsDelay);
-            }
+            $this->dispatchWebpageHydrators($webpage);
         }
 
         if (Arr::hasAny($changes, [

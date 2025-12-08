@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { inject } from "vue";
-import WidgetOrganisations from "./Widget/WidgetOrganisations.vue"
-import WidgetShops from "./Widget/WidgetShops.vue"
-import CustomerClv from "@/Components/CustomerCLV.vue";
-import Sales from "@/Components/DataDisplay/Dashboard/Widget/Sales.vue";
-import Invoices from "@/Components/DataDisplay/Dashboard/Widget/Invoices.vue";
+import { inject, computed } from "vue";
+import WidgetShops from "./Widget/WidgetShops.vue";
+import WidgetOrganisations from "./Widget/WidgetOrganisations.vue";
+import RegistrationsWithOrders from "@/Components/DataDisplay/Dashboard/Widget/RegistrationsWithOrders.vue";
+import RegistrationsWithoutOrders from "@/Components/DataDisplay/Dashboard/Widget/RegistrationsWithoutOrders.vue";
 
 const props = defineProps<{
 	intervals: {
@@ -15,12 +14,33 @@ const props = defineProps<{
 		}[]
 		value: string
 	}
-    tableData: {
-
-    }
+    tableData: {}
 }>()
 
 const layout = inject('layout')
+
+const totalsColumns = computed(() => {
+    if (props.tableData?.tables?.organisations?.totals?.columns) {
+        return props.tableData.tables.organisations.totals.columns
+    }
+    if (props.tableData?.tables?.shops?.totals?.columns) {
+        return props.tableData.tables.shops.totals.columns
+    }
+    if (props.tableData?.tables?.master_shops?.totals?.columns) {
+        return props.tableData.tables.master_shops.totals.columns
+    }
+    return null
+})
+
+const hasRegistrationsWithOrders = computed(() => {
+    const value = totalsColumns.value?.registrations_with_orders?.[props.intervals.value]?.raw_value
+    return value && Number(value) > 0
+})
+
+const hasRegistrationsWithoutOrders = computed(() => {
+    const value = totalsColumns.value?.registrations_without_orders?.[props.intervals.value]?.raw_value
+    return value && Number(value) > 0
+})
 </script>
 
 <template>
@@ -35,16 +55,13 @@ const layout = inject('layout')
             :tableData="props.tableData"
             :intervals="props.intervals"
         />
-<!--        <CustomerClv v-if="layout?.app?.environment === 'local'" />-->
-        <Sales
-            v-if="props.tableData?.tables?.invoice_categories"
-            :scope="props.tableData?.tables?.organisations ? 'group' : 'organisation'"
+        <RegistrationsWithOrders
+            v-if="hasRegistrationsWithOrders"
             :tableData="props.tableData"
             :intervals="props.intervals"
         />
-        <Invoices
-            v-if="props.tableData?.tables?.invoice_categories"
-            :scope="props.tableData?.tables?.organisations ? 'group' : 'organisation'"
+        <RegistrationsWithoutOrders
+            v-if="hasRegistrationsWithoutOrders"
             :tableData="props.tableData"
             :intervals="props.intervals"
         />

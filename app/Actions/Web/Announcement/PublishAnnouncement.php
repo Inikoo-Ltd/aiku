@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Announcement;
 
+use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreAnnouncementSnapshot;
 use App\Actions\OrgAction;
@@ -34,9 +35,11 @@ class PublishAnnouncement extends OrgAction
 
     public function handle(Announcement $announcement, array $modelData): void
     {
+        $position = $announcement->settings['position'] ?? null;
         Announcement::where('website_id', $announcement->website_id)
-            ->whereNot('id', $announcement->id)
+            ->where('id', '!=', $announcement->id)
             ->where('status', AnnouncementStatusEnum::ACTIVE)
+            ->whereRaw("settings->>'position' = ?", [$position])
             ->update([
                 'status' => AnnouncementStatusEnum::INACTIVE
             ]);
@@ -128,6 +131,10 @@ class PublishAnnouncement extends OrgAction
         }
 
         $this->update($announcement, $updateData);
+        ClearCacheByWildcard::run("irisData:website:$announcement->website_id:*");
+
+
+
     }
 
     public function authorize(ActionRequest $request): bool

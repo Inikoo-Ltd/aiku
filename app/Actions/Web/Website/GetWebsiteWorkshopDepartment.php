@@ -25,7 +25,7 @@ class GetWebsiteWorkshopDepartment
 
     public function handle(Website $website): array
     {
-        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::SUB_DEPARTMENT->value)->get();
+        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::SUB_DEPARTMENT->value)->whereJsonContains('website_type', $website->shop->type)->get();;
 
         // $webBlockTypes->each(function ($blockType) use ($website, $department) {
         //     $data = $blockType->data ?? [];

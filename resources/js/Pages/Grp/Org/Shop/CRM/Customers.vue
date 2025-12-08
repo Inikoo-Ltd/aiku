@@ -12,7 +12,6 @@ import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { computed, ref } from "vue"
-import CustomerDashboard from '@/Pages/Grp/Dashboard/CustomerDashboard.vue'
 import { faCircleNotch, faDownload } from "@fal"
 import { faExclamationCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -42,8 +41,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: any = {
-        customers: TableCustomers,
-        dashboard: CustomerDashboard
+        customers: TableCustomers
     }
 
     return components[currentTab.value]

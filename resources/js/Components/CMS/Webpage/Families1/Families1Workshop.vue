@@ -61,7 +61,6 @@ const selectedSubDepartment = ref<null | {
 }>(null)
 
 /* const showDialog = ref(false) */
-console.log('ssss',props)
 const layout: any = inject("layout", {})
 const visibleDrawer = inject('visibleDrawer', undefined)
 

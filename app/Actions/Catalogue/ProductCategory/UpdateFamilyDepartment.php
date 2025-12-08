@@ -88,7 +88,7 @@ class UpdateFamilyDepartment extends OrgAction
         }
 
         if ($family->webpage) {
-            ClearCacheByWildcard::run("iris:nav:product_categories:website:{$family->webpage->website_id}:*");
+            ClearCacheByWildcard::run("irisData:website:{$family->webpage->website_id}:*");
         }
 
 

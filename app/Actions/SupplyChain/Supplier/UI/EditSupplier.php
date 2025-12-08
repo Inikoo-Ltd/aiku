@@ -21,15 +21,13 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditSupplier extends GrpAction
 {
+    // todo: authorisation
+
     public function handle(Supplier $supplier): Supplier
     {
         return $supplier;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo('supply-chain.edit');
-    }
 
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
@@ -85,7 +83,7 @@ class EditSupplier extends GrpAction
 
                                 'code'         => [
                                     'type'     => 'input',
-                                    'label'    => __('code '),
+                                    'label'    => __('code'),
                                     'value'    => $supplier->code,
                                     'required' => true,
                                 ],

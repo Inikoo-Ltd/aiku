@@ -1,6 +1,6 @@
 import { useColorTheme } from '@/Composables/useStockList'
 
-import { OrganisationsData, Group, OrganisationState, StackedComponent} from '@/types/LayoutRules'
+import { OrganisationsData, Group, OrganisationState, StackedComponent, Shop } from '@/types/LayoutRules'
 import { Colors } from "@/types/Color"
 import { Navigation, grpNavigation, orgNavigation } from "@/types/Navigation"
 import { Image } from "@/types/Image"
@@ -37,6 +37,7 @@ export const layoutStructure = {
         data: {} as OrganisationsData[]
     },
     organisationsState: {} as {[key: string]: OrganisationState},
+    shopState: {} as Shop,
     rightSidebar: {
         activeUsers: {
             users: [],
@@ -44,6 +45,9 @@ export const layoutStructure = {
             show: false
         },
         language: {
+            show: false
+        },
+        message: {
             show: false
         }
     },
@@ -53,6 +57,9 @@ export const layoutStructure = {
         id: number,
         email: string,
         username: string,
+        settings: {
+            timezones: string[]
+        }
     },
     notifications: [] as Notification[],
     avatar_thumbnail: null as Image | null,

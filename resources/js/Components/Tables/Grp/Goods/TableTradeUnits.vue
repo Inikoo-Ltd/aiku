@@ -8,6 +8,14 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { TradeUnit } from "@/types/trade-unit"
+import Icon from "@/Components/Icon.vue"
+import {faSeedling, faScarecrow } from "@fal"
+import { faCheckCircle,faSkull } from "@fas"
+
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+library.add(faCheckCircle, faSeedling, faSkull, faScarecrow)
+
 
 defineProps<{
     data: {}
@@ -24,6 +32,9 @@ function tradeUnitRoute(tradeUnit: TradeUnit) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(status)="{ item: tradeUnit }">
+            <Icon :data="tradeUnit.status_icon" />
+        </template>
         <template #cell(code)="{ item: tradeUnit }">
             <Link :href="tradeUnitRoute(tradeUnit) as string" class="primaryLink">
                 {{ tradeUnit["code"] }}
@@ -37,6 +48,9 @@ function tradeUnitRoute(tradeUnit: TradeUnit) {
         </template>
         <template #cell(type)="{ item: tradeUnit }">
             {{ tradeUnit["type"] }}
+        </template>
+        <template #cell(units)="{ item: tradeUnit }">
+            {{ tradeUnit["units"] }}
         </template>
     </Table>
 </template>

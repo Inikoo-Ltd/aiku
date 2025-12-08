@@ -34,6 +34,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
+use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
 
 class IndexRetinaPortfolios extends RetinaAction
 {
@@ -138,7 +139,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $channels = $this->customer->customerSalesChannels()
             ->whereNot('id', $this->customerSalesChannel->id)
-            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->whereNot('number_portfolios', 0)
             ->get();
 
         /** @var ShopifyUser|WooCommerceUser|AmazonUser|MagentoUser $platformUser */
@@ -243,6 +244,9 @@ class IndexRetinaPortfolios extends RetinaAction
             ];
         })->sortKeys();
 
+        $downloadPortfolioCustomerSalesChannel = DownloadPortfolioCustomerSalesChannel::where('customer_sales_channel_id', $this->customerSalesChannel->id)->whereNotNull('download_url')->orderBy('created_at', 'desc')->first();
+        $last_active_download_portfolio_customer_sales_channel_url = $downloadPortfolioCustomerSalesChannel?->download_url;
+        $last_created_at_download_portfolio_customer_sales_channel = $downloadPortfolioCustomerSalesChannel?->created_at;
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -370,7 +374,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         ]
                     ],
                     'images' => [
-                        'name'       => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
+                        'name'       => 'retina.json.dropshipping.customer_sales_channel.upload_portfolio_zip_images',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id,
                         ]
@@ -408,7 +412,9 @@ class IndexRetinaPortfolios extends RetinaAction
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
                 'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
-                'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels)//  Do now use the resource. Use an array of necessary data
+                'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels), //  Do now use the resource. Use an array of necessary data
+                'download_portfolio_customer_sales_channel_url' => $last_active_download_portfolio_customer_sales_channel_url,
+                'last_created_at_download_portfolio_customer_sales_channel' => $last_created_at_download_portfolio_customer_sales_channel
             ]
         )->table($this->tableStructure(prefix: 'products'))
             ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));
@@ -440,6 +446,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
                 $table->column(key: 'status', label: __('Status'));
+                $table->column(key: 'message', label: '', canBeHidden: false);
 
                 $matchesLabel = __($this->customerSalesChannel->platform->name . ' product');
 
@@ -449,7 +456,6 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
             $table->column(key: 'delete', label: '', canBeHidden: false);
-            $table->column(key: 'message', label: 'Response', canBeHidden: false);
         };
     }
 

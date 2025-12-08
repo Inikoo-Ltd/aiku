@@ -15,13 +15,13 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Helpers\SendSlackNotification;
-use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
@@ -34,6 +34,7 @@ class StoreMasterAsset extends OrgAction
 {
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
+    use WithMasterAssetTradeUnits;
 
     /**
      * @var \App\Models\Masters\MasterProductCategory
@@ -48,9 +49,19 @@ class StoreMasterAsset extends OrgAction
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
-        $units = Arr::get($modelData, 'units', 1);
 
-        data_set($modelData, 'units', $units);
+        $numberOfTradeUnits = count($tradeUnits);
+        if ($numberOfTradeUnits > 1) {
+            data_set($modelData, 'units', 1);
+            data_set($modelData, 'unit', 'bundle');
+        } elseif ($numberOfTradeUnits === 1) {
+            $single = Arr::first($tradeUnits);
+            data_set($modelData, 'units', $single['quantity'] ?? 1);
+        } else {
+            data_set($modelData, 'units', '1');
+        }
+
+
 
 
         data_set($modelData, 'group_id', $masterFamily->group_id);
@@ -106,29 +117,6 @@ class StoreMasterAsset extends OrgAction
         return $masterAsset;
     }
 
-    public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnitsRaw): void
-    {
-        $stocks = [];
-        $tradeUnits = [];
-        foreach ($tradeUnitsRaw as $item) {
-            $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
-            $tradeUnits[$tradeUnit->id] = [
-                'quantity' => Arr::get($item, 'quantity')
-            ];
-
-
-            foreach ($tradeUnit->stocks as $stock) {
-                $stocks[$stock->id] = [
-                    'quantity' =>  Arr::get($item, 'quantity') / $stock->pivot->quantity ,
-                ];
-            }
-        }
-
-        $masterAsset->tradeUnits()->sync($tradeUnits);
-        $masterAsset->stocks()->sync($stocks);
-        $masterAsset->refresh();
-
-    }
 
 
     public function rules(): array

@@ -4,7 +4,8 @@
 	"code": "top-bar-1",
 	"name": "Topbar Simple",
 	"component": "topbar",
-	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
 			"key": "Topheader",

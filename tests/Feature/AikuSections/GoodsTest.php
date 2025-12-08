@@ -222,6 +222,7 @@ test("UI Show Stock Family", function () {
 });
 
 test("UI Index Stocks", function () {
+    $this->withoutExceptionHandling();
     $response = get(
         route("grp.goods.stocks.index")
     );

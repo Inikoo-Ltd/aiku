@@ -48,6 +48,7 @@ class IndexInvoices extends OrgAction
             ->defaultSort('-date')
             ->allowedSorts(['number', 'pay_status', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -61,6 +62,7 @@ class IndexInvoices extends OrgAction
                     ->pageName($prefix.'Page');
             }
             $table
+                ->betweenDates(['date'])
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)

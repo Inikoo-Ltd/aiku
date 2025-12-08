@@ -12,6 +12,7 @@ import { trans } from 'laravel-vue-i18n'
 import Image from '@/Components/Image.vue'
 import { Select } from 'primevue'
 import { isFutureDatePassed } from '@/Composables/useFormatTime'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 
 interface Product {
     id: number
@@ -255,11 +256,13 @@ const is_luigi_value = (value: string) => {
 const listType = [
     {
         label: trans('Custom'),
-        value: 'custom'
+        value: 'custom',
+        information: trans('Choose specific products to display.')
     },
     {
         label: trans('Best Seller'),
-        value: 'best-seller'
+        value: 'best-seller',
+        information: trans('Displays the top-selling products from the current family (:_family)', { _family: props.family?.name || '' })
     },
     {
         label: trans('Other Family'),
@@ -267,7 +270,8 @@ const listType = [
     },
     {
         label: trans('Current Family'),
-        value: 'current-family'
+        value: 'current-family',
+        information: trans('Displays random products from the current family (:_family)', { _family: props.family?.name || '' })
     },
     {
         label: trans('Luigi: Top Trending'),
@@ -332,7 +336,10 @@ const listType = [
         >
             <template #option="slotProps">
                 <div class="flex items-center">
-                    <div>{{ slotProps.option.label }}</div>
+                    <div>
+                        {{ slotProps.option.label }}
+                        <InformationIcon v-if="slotProps.option.information" :information="slotProps.option.information" />
+                    </div>
                     <div v-if="slotProps.option.show_new_until && !isFutureDatePassed(slotProps.option.show_new_until)"
                         class="ml-2 inline bg-yellow-100 border border-yellow-300 text-yellow-600 whitespace-nowrap items-center gap-x-1 rounded select-none pl-0.5 pr-1 py-0.5 text-xs w-fit font-medium"
                     >
@@ -413,7 +420,7 @@ const listType = [
             </div>
         </div>
 
-        <template v-if="normalizedModelValue.top_sellers?.length">
+        <template v-if="!normalizedModelValue.top_sellers?.length">
             <div
                 v-for="(product, index) in normalizedModelValue.top_sellers"
                 :key="product.id || index"
@@ -443,7 +450,7 @@ const listType = [
         </template>
 
         <div v-else class="text-gray-500 text-sm text-center py-2 bg-gray-200">
-            {{ trans("No products found for best seller.") }}
+            {{ trans("No best seller products in family :_family", { _family: modelValue?.current_family?.name }) }}
         </div>
     </div>
 

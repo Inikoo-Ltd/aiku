@@ -33,7 +33,9 @@ class SeedWebBlockTypes
                     'name',
                     'category',
                     'fixed',
-                    'data'
+                    'data',
+                    'website_type',
+                    'is_in_test'
                 ]
             );
 

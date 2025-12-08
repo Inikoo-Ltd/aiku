@@ -8,6 +8,8 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInTradeUnit;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
 use App\Actions\Goods\Stock\UI\IndexStocksInTradeUnit;
 use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
@@ -16,6 +18,8 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Inventory\OrgStocksResource;
+use App\Http\Resources\Masters\MasterProductsResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
 use App\Models\Goods\TradeUnit;
@@ -46,26 +50,27 @@ class ShowTradeUnit extends GrpAction
         return Inertia::render(
             'Goods/TradeUnit',
             [
-                'title'            => __('Trade Unit'),
-                'breadcrumbs'      => $this->getBreadcrumbs(
+                'title'       => __('Trade Unit'),
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $tradeUnit,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'       => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($tradeUnit, $request),
                     'next'     => $this->getNext($tradeUnit, $request),
                 ],
-                'pageHead'         => [
-                    'icon'    => [
+                'pageHead'    => [
+                    'icon'       => [
                         'title' => __('Trade unit'),
                         'icon'  => 'fal fa-atom'
                     ],
-                    'title'   => $tradeUnit->code,
+                    'model'      => __('Trade unit'),
+                    'title'      => $tradeUnit->code,
                     'afterTitle' => [
-                      'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
+                        'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
                     ],
-                    'actions' => [
+                    'actions'    => [
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -76,7 +81,7 @@ class ShowTradeUnit extends GrpAction
                         ] : false,
                     ]
                 ],
-                'tabs' => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => TradeUnitTabsEnum::navigation()
                 ],
@@ -86,12 +91,16 @@ class ShowTradeUnit extends GrpAction
                     : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
 
                 TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
-                    fn () =>  GetTradeUnitAttachment::run($tradeUnit)
+                    fn () => GetTradeUnitAttachment::run($tradeUnit)
                     : Inertia::lazy(fn () => GetTradeUnitAttachment::run($tradeUnit)),
 
                 TradeUnitTabsEnum::IMAGES->value => $this->tab == TradeUnitTabsEnum::IMAGES->value ?
-                    fn () =>  GetTradeUnitImages::run($tradeUnit)
+                    fn () => GetTradeUnitImages::run($tradeUnit)
                     : Inertia::lazy(fn () => GetTradeUnitImages::run($tradeUnit)),
+
+                TradeUnitTabsEnum::MASTER_PRODUCTS->value => $this->tab == TradeUnitTabsEnum::MASTER_PRODUCTS->value ?
+                    fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))
+                    : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))),
 
                 TradeUnitTabsEnum::PRODUCTS->value => $this->tab == TradeUnitTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))
@@ -101,10 +110,16 @@ class ShowTradeUnit extends GrpAction
                     fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))
                     : Inertia::lazy(fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))),
 
+                TradeUnitTabsEnum::ORG_STOCKS->value => $this->tab == TradeUnitTabsEnum::ORG_STOCKS->value ?
+                    fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))
+                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))),
+
             ]
         )
+            ->table(IndexMasterProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::MASTER_PRODUCTS->value))
             ->table(IndexProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::PRODUCTS->value))
             ->table(IndexStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::STOCKS->value))
+            ->table(IndexOrgStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::ORG_STOCKS->value))
             ->table(IndexAttachments::make()->tableStructure(TradeUnitTabsEnum::ATTACHMENTS->value))
             ->table(IndexTradeUnitImages::make()->tableStructure($tradeUnit, TradeUnitTabsEnum::IMAGES->value));
     }
@@ -181,7 +196,6 @@ class ShowTradeUnit extends GrpAction
         }
 
         return match ($routeName) {
-
             'grp.trade_units.units.show' => [
                 'label' => $tradeUnit->name,
                 'route' => [

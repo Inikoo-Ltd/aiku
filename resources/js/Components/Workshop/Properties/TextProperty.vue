@@ -10,6 +10,7 @@ import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 import { useFontFamilyList } from '@/Composables/useFont'
 import { set, get } from 'lodash-es'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 
 library.add(faExclamation, faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter, faLink, faUnlink)
 
@@ -47,13 +48,18 @@ const fontFamilies = [...useFontFamilyList];
 const fontStyleOptions = [
 	{ label: 'Normal', value: 'normal' },
 	{ label: 'Italic', value: 'italic' },
-	{ label: 'Bold', value: 'bold' },
-	{ label: 'Bold Italic', value: 'bold italic' },
+    { label: 'Oblique', value: 'oblique', information: trans('Similar to italic but with a slanting effect') },
+]
+
+const textDecorationOptions = [
 	{ label: 'Underline', value: 'underline' },
 	{ label: 'Line Through', value: 'line-through' },
-	{ label: 'Uppercase', value: 'uppercase' },
-	{ label: 'Lowercase', value: 'lowercase' },
-	{ label: 'Capitalize', value: 'capitalize' },
+]
+
+const textTransformOptions = [
+	{ label: 'Uppercase', value: 'uppercase', information: trans('Transforms all characters to uppercase') },
+	{ label: 'Lowercase', value: 'lowercase', information: trans('Transforms all characters to lowercase') },
+	{ label: 'Capitalize', value: 'capitalize', information: trans('Transforms the first character of each word to uppercase') },
 ]
 
 </script>
@@ -113,35 +119,88 @@ const fontStyleOptions = [
             </div>
 
 
-            <div class="px-3 items-center mb-2">
-                <div class="text-xs mb-2">{{ trans('Font Style') }}</div>
+            <!-- Section: Font style (normal, italic, oblique) -->
+            <div class="px-3 items-center mb-3">
+                <div class="text-xs mb-1">{{ trans('Font Style') }}</div>
                 <div class="col-span-4">
-                    <PureMultiselect v-model="localModel.fontStyle"
+                    <PureMultiselect
+                        v-model="localModel.fontStyle"
                         @update:modelValue="(e) => (set(localModel, 'fontStyle', e), emits('update:modelValue', localModel))"
-                        :options="fontStyleOptions">
+                        :options="fontStyleOptions"
+                    >
                         <template #option="{ option, isSelected, isPointed, search }">
-                            <span :style="{
-                                fontFamily: option.value
-                            }">
-                                {{ option.label }}
+                            <span>
+                                {{ option.label }} <span class="opacity-50" :style="{ fontStyle: option.value }">(Example)</span>
+                                <InformationIcon v-if="option.information" :information="option.information" class="ml-1" />
                             </span>
                         </template>
-                        <template #label="{ value }">
-                            <div class="multiselect-single-label" :style="{
-                                fontFamily: value.value
-                            }">
-                                {{ value.label }}
+                        <template #label="{ value: option }">
+                            <div class="multiselect-single-label">
+                                {{ option.label }} <span class="ml-1 opacity-50" :style="{ fontStyle: option.value }">(Example)</span>
                             </div>
                         </template>
                     </PureMultiselect>
                 </div>
             </div>
 
-
-            <div class="px-3 items-center">
-                <div class="text-xs mb-2">{{ trans('Fontsize') }}</div>
+            <!-- Section: Font Decoration (underline, line-through) -->
+            <div class="px-3 items-center mb-3">
+                <div class="text-xs mb-1">{{ trans('Text Decoration') }}</div>
                 <div class="col-span-4">
-                    <PureInputNumber v-model="localModel.fontSize"
+                    <PureMultiselect
+                        v-model="localModel.textDecoration"
+                        @update:modelValue="(e) => (set(localModel, 'textDecoration', e), emits('update:modelValue', localModel))"
+                        :options="textDecorationOptions"
+                    >
+                        <template #option="{ option, isSelected, isPointed, search }">
+                            <span>
+                                {{ option.label }} <span class="opacity-50" :style="{ textDecoration: option.value }">(Example)</span>
+                                <InformationIcon v-if="option.information" :information="option.information" class="ml-1" />
+                            </span>
+                        </template>
+                        <template #label="{ value: option }">
+                            <div class="multiselect-single-label">
+                                <span>
+                                    {{ option.label }} <span class="opacity-50" :style="{ textDecoration: option.value }">(Example)</span>
+                                </span>
+                            </div>
+                        </template>
+                    </PureMultiselect>
+                </div>
+            </div>
+
+            <!-- Section: Font Transform (uppercase, lowercase, capitalize) -->
+            <div class="px-3 items-center mb-3">
+                <div class="text-xs mb-1">{{ trans('Text Transform') }}</div>
+                <div class="col-span-4">
+                    <PureMultiselect
+                        v-model="localModel.textTransform"
+                        @update:modelValue="(e) => (set(localModel, 'textTransform', e), emits('update:modelValue', localModel))"
+                        :options="textTransformOptions"
+                    >
+                        <template #option="{ option, isSelected, isPointed, search }">
+                            <span>
+                                {{ option.label }} <span class="opacity-50" :style="{ textTransform: option.value }">(Example)</span>
+                                <InformationIcon v-if="option.information" :information="option.information" class="ml-1" />
+                            </span>
+                        </template>
+                        <template #label="{ value: option }">
+                            <div class="multiselect-single-label">
+                                <span>
+                                    {{ option.label }} <span class="opacity-50" :style="{ textTransform: option.value }">(Example)</span>
+                                </span>
+                            </div>
+                        </template>
+                    </PureMultiselect>
+                </div>
+            </div>
+
+            <!-- Section: Font size -->
+            <div class="px-3 items-center">
+                <div class="text-xs mb-2">{{ trans('Font size') }}</div>
+                <div class="col-span-4">
+                    <PureInputNumber
+                        v-model="localModel.fontSize"
                         @update:modelValue="(e) => (set(localModel, 'fontSize', e), emits('update:modelValue', localModel))"
                         suffix="px" />
                 </div>

@@ -4,10 +4,17 @@
 	"name": "Sub-Departments-1",
 	"scope": "webpage",
 	"category": "sub_department",
-	"website_type" : ["info","b2b","b2","dropshipping","digital_agency"],
+	"website_type" : ["b2b","b2c","dropshipping"],
 	"icon": ["fal", "building"],
 	"fixed" : true,
+	"is_in_test" : false,
 	"data": {
-		"fieldValue": {}
+		"fieldValue": {
+			"card": {
+				"container": {
+					"properties": {}
+				}
+			}
+		}
 	}
 }

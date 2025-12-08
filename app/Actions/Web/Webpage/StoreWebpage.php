@@ -13,12 +13,8 @@ use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Helpers\Snapshot\StoreWebpageSnapshot;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
-use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
-use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
+use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
@@ -44,6 +40,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreWebpage extends OrgAction
 {
+    use WithWebpageHydrators;
     use AsAction;
     use WithNoStrictRules;
     use WithStoreWebpage;
@@ -165,13 +162,8 @@ class StoreWebpage extends OrgAction
             return $webpage;
         });
 
-        WebpageRecordSearch::dispatch($webpage);
-        GroupHydrateWebpages::dispatch($webpage->group)->delay($this->hydratorsDelay);
-        OrganisationHydrateWebpages::dispatch($webpage->organisation)->delay($this->hydratorsDelay);
-        WebsiteHydrateWebpages::dispatch($webpage->website)->delay($this->hydratorsDelay);
-        if ($webpage->parent_id) {
-            WebpageHydrateChildWebpages::dispatch($webpage->parent)->delay($this->hydratorsDelay);
-        }
+        $this->refreshWebpageSearch($webpage);
+        $this->dispatchWebpageHydrators($webpage);
 
         return $webpage;
     }

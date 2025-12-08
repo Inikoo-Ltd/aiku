@@ -70,6 +70,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $quantity_in_submitted_orders
  * @property string $quantity_to_be_picked
  * @property string $quantity_available
+ * @property string $source_quantity_in_submitted_orders
+ * @property string $source_quantity_to_be_picked
+ * @property bool $is_on_demand
+ * @property bool $has_been_in_warehouse
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
@@ -114,6 +118,7 @@ class OrgStock extends Model implements Auditable
         'quantity_status'                  => OrgStockQuantityStatusEnum::class,
         'fetched_at'                       => 'datetime',
         'last_fetched_at'                  => 'datetime',
+        'has_been_in_warehouse'            => 'boolean',
     ];
 
     protected $attributes = [

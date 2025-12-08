@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Inventory;
 
-use App\Models\Inventory\OrgStock;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -27,21 +26,27 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
  * @property mixed $warehouse_slug
+ * @property mixed $packed_in
+ * @property mixed $quantity_available
+ * @property mixed $id
  */
 class OrgStocksResource extends JsonResource
 {
     public function toArray($request): array
     {
-        /** @var OrgStock $orgStock */
-        $orgStock = $this;
+        $quantityAvailable = $this->quantity_available;
+        if ($quantityAvailable) {
+            $quantityAvailable = trimDecimalZeros($quantityAvailable);
+        }
 
         return [
-            'id'                              => $orgStock->id,
-            'slug'                            => $orgStock->slug,
+            'id'                              => $this->id,
+            'slug'                            => $this->slug,
             'code'                            => $this->code,
             'state'                           => $this->state->stateIcon()[$this->state->value],
             'name'                            => $this->name,
             'quantity'                        => $this->quantity,
+            'quantity_available'              => $quantityAvailable,
             'unit_value'                      => $this->unit_value,
             'number_locations'                => $this->number_location,
             'quantity_locations'              => $this->quantity_in_locations,
@@ -51,6 +56,7 @@ class OrgStocksResource extends JsonResource
             'organisation_name'               => $this->organisation_name,
             'organisation_slug'               => $this->organisation_slug,
             'warehouse_slug'                  => $this->warehouse_slug,
+            'pick_fractional'                 => ($this->quantity && $this->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity)), $this->packed_in) : [],
         ];
     }
 }

@@ -15,6 +15,7 @@ use App\Actions\Fulfilment\RecurringBillTransaction\CalculateRecurringBillTransa
 use App\Actions\Fulfilment\RecurringBillTransaction\CalculateRecurringBillTransactionCurrencyExchangeRates;
 use App\Actions\Fulfilment\RecurringBillTransaction\CalculateRecurringBillTransactionDiscountPercentage;
 use App\Actions\Fulfilment\RecurringBillTransaction\CalculateRecurringBillTransactionTemporalQuantity;
+use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
 use App\Actions\Fulfilment\RecurringBillTransaction\StoreRecurringBillTransaction;
 use App\Actions\Fulfilment\RecurringBillTransaction\UpdateRecurringBillTransaction;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -211,6 +212,9 @@ class RepairPalletDeliveriesAndReturns
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function palletsStartDate(): void
     {
         /** @var RecurringBill $recurringBill */
@@ -225,16 +229,18 @@ class RepairPalletDeliveriesAndReturns
                 $pallet = $transaction->item;
 
                 if (!$pallet) {
-                    dd($transaction);
-                }
+                    print "Delete transaction $transaction->id\n";
 
-                if ($pallet->received_at &&  $pallet->received_at->startOfDay()->isAfter($currentStartDay)) {
-                    $currentStartDay = $pallet->received_at->startOfDay();
-                }
+                    DeleteRecurringBillTransaction::make()->action($transaction);
+                } else {
+                    if ($pallet->received_at && $pallet->received_at->startOfDay()->isAfter($currentStartDay)) {
+                        $currentStartDay = $pallet->received_at->startOfDay();
+                    }
 
-                if ($originalStartDate->ne($currentStartDay)) {
-                    print 'PSD: '.$transaction->id.'  '.$originalStartDate->format('Y-m-d').' -> '.$currentStartDay->format('Y-m-d')."\n";
-                    //$transaction->update(['start_date' => $currentStartDay]);
+                    if ($originalStartDate->ne($currentStartDay)) {
+                        print 'PSD: '.$transaction->id.'  '.$originalStartDate->format('Y-m-d').' -> '.$currentStartDay->format('Y-m-d')."\n";
+                        //$transaction->update(['start_date' => $currentStartDay]);
+                    }
                 }
             }
         }

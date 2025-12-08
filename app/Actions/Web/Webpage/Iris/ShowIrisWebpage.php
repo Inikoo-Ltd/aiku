@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage\Iris;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -41,24 +42,19 @@ class ShowIrisWebpage
             ];
         }
 
-
-        $webPageLayout = $webpage->published_layout;
-
-
-        $webBlocks  = $this->getIrisWebBlocks(
+        $webBlocks = $this->getIrisWebBlocks(
             webpage: $webpage,
-            webBlocks: Arr::get($webPageLayout, 'web_blocks', []),
+            webBlocks: Arr::get($webpage->published_layout, 'web_blocks', []),
             isLoggedIn: $loggedIn
         );
+
+
         $webpageImg = [];
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
 
-
-        return [
-            'status'       => 'ok',
-            'webpage_id'   => $webpage->id,
+        $baseWebpageData = [
             'breadcrumbs'  => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
@@ -71,8 +67,13 @@ class ShowIrisWebpage
 
             ],
             'webpage_img'  => $webpageImg,
-            'web_blocks'   => $webBlocks,
         ];
+
+        return array_merge($baseWebpageData, [
+            'status'     => 'ok',
+            'webpage_id' => $webpageID,
+            'web_blocks' => $webBlocks,
+        ]);
     }
 
 
@@ -127,8 +128,7 @@ class ShowIrisWebpage
         if (config('iris.cache.webpage.ttl') == 0) {
             $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
         } else {
-            $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
-
+            $key         = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
             $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths, $loggedIn) {
                 return $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
             });
@@ -145,7 +145,7 @@ class ShowIrisWebpage
     public function getEnvironmentUrl($url)
     {
         $environment = app()->environment();
-        $website = request()->website ?? null;
+        $website     = request()->website ?? null;
 
         if ($environment === 'local') {
             $shopType = $website?->shop?->type ?? null;
@@ -203,7 +203,7 @@ class ShowIrisWebpage
             $queryString     = http_build_query($queryParameters);
 
             if ($queryString) {
-                $webpageData = $webpageData . '?' . $queryString;
+                $webpageData = $webpageData.'?'.$queryString;
             }
 
             return redirect()->to($webpageData, 301)
@@ -212,11 +212,14 @@ class ShowIrisWebpage
                 ]);
         }
 
+        $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
 
         $response = Inertia::render(
             'IrisWebpage',
             $webpageData
-        )->toResponse(request());
+        )->withViewData([
+            'browserTitle' => $browserTitle,
+        ])->toResponse(request());
 
         $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
         if (isset($webpageData['webpage_id'])) {
@@ -233,7 +236,7 @@ class ShowIrisWebpage
             $webpageID = $website->storefront_id;
         } else {
             $webpageID = DB::table('webpages')->where('website_id', $website->id)
-                ->whereRaw("lower(url) = lower(?)", [$path])
+                ->where('url', strtolower($path))
                 ->where('state', '=', WebpageStateEnum::LIVE)
                 ->whereNull('deleted_at')
                 ->value('id');
@@ -279,7 +282,7 @@ class ShowIrisWebpage
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'label' => $parentWebpage->breadcrumb_label ?? $webpage->title ?? $webpage->code,
+                            'label' => $this->getBreadcrumbLabel($parentWebpage),
                             'url'   => $this->getEnvironmentUrl($parentWebpage->canonical_url)
                         ]
 
@@ -291,7 +294,7 @@ class ShowIrisWebpage
             $breadcrumbs[] = [
                 'type'   => 'simple',
                 'simple' => [
-                    'label' => $webpage->breadcrumb_label ?? $webpage->title ?? $webpage->code,
+                    'label' => $this->getBreadcrumbLabel($webpage),
                     'url'   => $this->getEnvironmentUrl($webpage->canonical_url)
                 ]
 
@@ -302,7 +305,30 @@ class ShowIrisWebpage
             return [];
         }
 
-
         return $breadcrumbs;
     }
+
+    public function getBreadcrumbLabel(Webpage $webpage): string
+    {
+        if ($webpage->model_type == 'Product') {
+            /** @var Product $product */
+            $product = $webpage->model;
+            if ($product) {
+                return $product->code;
+            }
+        }
+
+        $label = $webpage->breadcrumb_label;
+
+
+        if (!$label) {
+            $label = $webpage->title;
+        }
+        if (!$label) {
+            $label = $webpage->code;
+        }
+
+        return $label ?? '';
+    }
+
 }

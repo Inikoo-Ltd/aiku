@@ -11,7 +11,9 @@ namespace App\Http\Resources\CRM;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Helpers\TaxCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $type
@@ -27,6 +29,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $total_amount
  * @property mixed $platform_code
  * @property mixed $platform_name
+ * @property mixed $ban_stock_update_util
+ * @property mixed $settings
  */
 class RetinaCustomerSalesChannelResource extends JsonResource
 {
@@ -38,7 +42,8 @@ class RetinaCustomerSalesChannelResource extends JsonResource
         $customerSalesChannels = $this;
 
         $reconnectRoute = null;
-        $testRoute = null;
+        $testRoute      = null;
+        $siteUrl      = null;
 
         if (in_array($customerSalesChannels->platform->type, [
             PlatformTypeEnum::SHOPIFY,
@@ -54,7 +59,6 @@ class RetinaCustomerSalesChannelResource extends JsonResource
                 ],
                 'method'     => 'get',
             ];
-
         }
 
         if ($customerSalesChannels->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
@@ -65,6 +69,18 @@ class RetinaCustomerSalesChannelResource extends JsonResource
                 ],
                 'method'     => 'post',
             ];
+
+            /** @var \App\Models\Dropshipping\WooCommerceUser $wooUser */
+            $wooUser = $customerSalesChannels->user;
+
+            if ($wooUser) {
+                $siteUrl = Arr::get($wooUser->settings, 'credentials.store_url');
+            }
+        }
+
+        $taxCategory = null;
+        if (Arr::get($this->settings, 'tax_category.checked')) {
+            $taxCategory = TaxCategory::find(Arr::get($this->settings, 'tax_category.id'));
         }
 
         return [
@@ -80,13 +96,16 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'amount'                  => $this->total_amount,
             'platform_code'           => $this->platform_code,
             'platform_name'           => $this->platform_name,
+            'user_data'               => $this->user?->data,
             'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
 
-            'ban_stock_update_until'   => $this->ban_stock_update_util,
-
+            'ban_stock_update_until' => $this->ban_stock_update_util,
+            'include_vat'            => Arr::get($this->settings, 'tax_category.checked'),
+            'vat_rate'               => $taxCategory?->rate,
+            'store_url' => $siteUrl,
             'reconnect_route' => $reconnectRoute,
-            'test_route' => $testRoute,
-            'delete_route' => [
+            'test_route'      => $testRoute,
+            'delete_route'    => [
                 'method'     => 'delete',
                 'name'       => 'retina.models.customer_sales_channel.delete',
                 'parameters' => [

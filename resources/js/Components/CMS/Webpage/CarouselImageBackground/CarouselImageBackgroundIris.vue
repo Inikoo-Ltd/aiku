@@ -12,6 +12,7 @@ import { getStyles } from "@/Composables/styles"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronCircleLeft, faChevronCircleRight } from "@fas"
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 
 const props = defineProps<{
@@ -101,7 +102,7 @@ watch(
 )
 
 const responsiveBreakpoints = computed(() => {
-  const settings = props.modelValue?.carousel_data?.carousel_setting || {}
+  const settings = props.fieldValue?.carousel_data?.carousel_setting || {}
   return {
     0: {
       slidesPerView: settings.slidesPerView?.mobile || 1,
@@ -128,75 +129,71 @@ onMounted(async () => {
   await nextTick()
   swiperInstance.value?.update()
 })
+
+const idxSlideLoading = ref<null | number>(null)
 </script>
 
 <template>
-   <div id="carousel-background-image" class="relative w-full">
-    <div
-      :data-refresh="refreshTrigger"
-      :style="{
+  <div id="carousel-background-image" class="relative w-full">
+    <div :data-refresh="refreshTrigger" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
         ...getStyles(fieldValue?.container?.properties, props.screenType),
-      }"
-    >
-      <Swiper
-        v-if="hasCards && navigation"
-        :modules="[Navigation, Autoplay, Thumbs]"
-        :slides-per-view="slidesPerView"
-        :loop="isLooping"
-        :breakpoints="responsiveBreakpoints"
-        :navigation="navigation"
-        :pagination="{ clickable: true }"
-        :autoplay="fieldValue.carousel_data.carousel_setting.autoplay ? { delay: 1000, disableOnInteraction: false } : false"
-        :thumbs="{ swiper: thumbsSwiper }"
-        :key="refreshTrigger"
-        class="w-full"
-        @swiper="(s) => (swiperInstance = s)"
-      >
-        <SwiperSlide
-          v-for="(data, index) in fieldValue.carousel_data.cards"
-          :key="index"
-        >
+      }">
+      <Swiper v-if="hasCards && navigation" :modules="[Navigation, Autoplay, Thumbs]" :slides-per-view="slidesPerView"
+        :loop="isLooping" :breakpoints="responsiveBreakpoints" :navigation="navigation"
+        :pagination="{ clickable: true }" :autoplay="fieldValue.carousel_data.carousel_setting.autoplay
+            ? {
+              delay: (fieldValue.carousel_data.carousel_setting.duration || 100) * 1000,
+              disableOnInteraction: false
+            }
+            : false
+          " :thumbs="{ swiper: thumbsSwiper }" :key="refreshTrigger" class="w-full" @swiper="(s) => (swiperInstance = s)">
+        <SwiperSlide v-for="(data, index) in fieldValue.carousel_data.cards" :key="index">
           <div class="px-1 md:px-1 lg:px-1 space-card">
             <component :is="getHref(data) ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
               :href="data?.link?.href" :target="data?.link?.target"
-              class="card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
+              class="card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300"
+              @start="() => (idxSlideLoading = index)"
+              @finish="() => (idxSlideLoading = null)"
+            >
               <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
                 class="absolute inset-0 -z-10 w-full h-full object-cover" />
               <div class="absolute inset-0 flex flex-col justify-start items-start p-6">
                 <div v-html="data.text" class="w-full"></div>
-                <div v-if="fieldValue?.carousel_data?.carousel_setting.button"  class="flex mt-auto w-full" :style="{...getStyles(fieldValue?.button?.container_button?.properties, screenType),...getStyles(data?.button?.container_button?.properties, screenType)}" >
-                  <LinkIris :href="data?.button?.link?.href" :canonical_url="data?.button?.link?.canonical_url" 
-                    :target="data?.button?.link?.taget" typeof="button" :type="data?.button?.link?.type" >
-                    <Button :injectStyle="{...getStyles(fieldValue?.button?.container?.properties, screenType),...getStyles(data?.button?.container?.properties, screenType)}"
+                <div v-if="fieldValue?.carousel_data?.carousel_setting.button" class="flex mt-auto w-full"
+                  :style="{...getStyles(fieldValue?.button?.container_button?.properties, screenType),...getStyles(data?.button?.container_button?.properties, screenType)}">
+                  <LinkIris
+                    :href="data?.button?.link?.href"
+                    :canonical_url="data?.button?.link?.canonical_url"
+                    :target="data?.button?.link?.taget"
+                    typeof="button"
+                    :type="data?.button?.link?.type"
+               >
+                    <Button
+                      :injectStyle="{...getStyles(fieldValue?.button?.container?.properties, screenType),...getStyles(data?.button?.container?.properties, screenType)}"
                       :label="data?.button?.text" />
                   </LinkIris>
                 </div>
               </div>
+              <div v-if="idxSlideLoading == index" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
+                <LoadingIcon />
+              </div>
             </component>
           </div>
         </SwiperSlide>
-
-        <!-- Navigation Buttons -->
-        <div class="absolute inset-0 pointer-events-none z-50">
-          <div
-            v-if="isLooping"
-            ref="prevEl"
-            @click="swiperInstance?.slidePrev()"
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto"
-          >
-            <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft" :style="getStyles(props.fieldValue?.carousel_data?.buttonStyle, screenType)" />
-          </div>
-          <div
-            v-if="isLooping"
-            ref="nextEl"
-            @click="swiperInstance?.slideNext()"
-            class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto"
-          >
-            <FontAwesomeIcon fixed-width :icon="faChevronCircleRight"  :style="getStyles(props.fieldValue?.carousel_data?.buttonStyle, screenType)"/>
-          </div>
-        </div>
       </Swiper>
+    </div>
+          <div class="absolute inset-0 pointer-events-none z-50">
+      <div v-if="isLooping" ref="prevEl" @click="swiperInstance?.slidePrev()"
+        class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+        <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft"
+          :style="getStyles(props.fieldValue?.carousel_data?.buttonStyle, screenType)" />
+      </div>
+      <div v-if="isLooping" ref="nextEl" @click="swiperInstance?.slideNext()"
+        class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+        <FontAwesomeIcon fixed-width :icon="faChevronCircleRight"
+          :style="getStyles(props.fieldValue?.carousel_data?.buttonStyle, screenType)" />
+      </div>
     </div>
   </div>
 </template>

@@ -87,6 +87,18 @@ class MasterShopResource extends JsonResource
                          'value' => $masterShop->stats->number_current_master_collections,
                      ],
                      [
+                         'label' => __('Orphan Master Products'),
+                         'is_negative'   => true,
+                         'route' => [
+                             'name'       => 'grp.masters.master_shops.show.master_products_orphan',
+                             'parameters' => [$masterShop->slug]
+                         ],
+                         'icon'            => 'fal fa-cube',
+                         'backgroundColor' => '#ff000011',
+                         'color' => '#df1c1cff',
+                         'value' => $masterShop->stats->number_master_products_no_master_family,
+                     ],
+                     [
                          'label' => __('Pending Master Families'),
                          'route' => [
                              'name'       => 'grp.masters.master_shops.show.master_collections.index',

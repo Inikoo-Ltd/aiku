@@ -51,7 +51,7 @@ class DispatchedEmailsResource extends JsonResource
                 ] : [],
             'number_email_tracking_events' => $this->number_email_tracking_events,
             'shop_code'                    => $this->shop_code,
-            'shop_name'                    => $this->shop_name,
+            'shop_slug'                    => $this->shop_slug,
             'organisation_name'            => $this->organisation_name,
             'organisation_slug'            => $this->organisation_slug,
         );

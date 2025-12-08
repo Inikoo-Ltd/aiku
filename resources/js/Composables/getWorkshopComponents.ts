@@ -35,10 +35,12 @@ import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Workshop.vue'
 import Department1Iris from '@/Components/CMS/Webpage/Department1/Department1Iris.vue'
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
-import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop.vue'
-import SubDepartmentWorkshop from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'
+import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Dropshipping/Product1Workshop.vue'
+import SubDepartmentWorkshop1 from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
-import Products1Workshop from '@/Components/CMS/Webpage/Products1/Products1Workshop.vue'
+import Families2Workshop from '@/Components/CMS/Webpage/Families2/Families2Workshop.vue'
+
+
 import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
 import CTAVideo1Workshop from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue'
 import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
@@ -49,8 +51,7 @@ import BlogWorkshop from '@/Components/CMS/Webpage/Blog/BlogWorkshop.vue'
 import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme1/EditFooter1Translation.vue'
 import CarouselCtaWorkshop from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaWorkshop.vue'
 import CarouselImageBackground from '@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundWorkshop.vue'
-
-
+import SubDepartmentWorkshop2 from '@/Components/CMS/Webpage/SubDepartment2/SubDepartmentWorkshop.vue'
 
 import LuigiTrends1Workshop from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'
 import LuigiLastSeen1Workshop from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'
@@ -58,9 +59,16 @@ import LuigiItemAlternatives1Workshop from '@/Components/CMS/Webpage/LuigiItemAl
 
 import RecommendationCustomerRecentlyBought1Workshop from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Workshop.vue'
 import CtaImageBackroundWorkshop from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'
+import TimelineWorkshop2 from '@/Components/CMS/Webpage/Step2/Step2Workshop.vue'
+import ListProductWorkshop from '@/Components/CMS/Webpage/Products/Dropshipping/ListProductsWorkshop.vue'
+import ListProductsEcomWorkshop from '@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomWorkshop.vue'
+import RenderDropshippingProductWorkshop from '@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductWorkshop.vue'
+import Product1WorkshopEcom from '@/Components/CMS/Webpage/Product1/Ecommerce/Product1WorkshopEcom.vue'
+import Product2WorkshopEcom from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
+import ProductWorkshop2 from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
 
-export const getComponent = (componentName: string) => {
-    const components: Component = {
+const components = (shop_type?: string): Record<string, Component> => {
+    return {
         //topbar
         'top-bar-1': Topbar1,
         'top-bar-2': Topbar2,
@@ -83,18 +91,21 @@ export const getComponent = (componentName: string) => {
         'department' : Department1Iris,
 
         //sub-department
-        'sub-departments-1' : SubDepartmentWorkshop,
+        'sub-departments-1' : SubDepartmentWorkshop1,
+        'sub-departments-2' : SubDepartmentWorkshop2,
 
         //family
         'families-1' : Families1Workshop,
+        'families-2' : Families2Workshop,
         'family-1': FamilyIris1,
 
         //product
-        'product-1': ProductWorkshop1,
-        'product': ProductWorkshop1,
+        'product-1': shop_type == 'b2b' ? RenderDropshippingProductWorkshop : RenderDropshippingProductWorkshop,
+        'product-2': RenderDropshippingProductWorkshop,
 
         //product list
-        'products-1' : Products1Workshop,
+        'products-1' : shop_type == 'b2b' ? ListProductsEcomWorkshop : ListProductWorkshop,
+        'products-2' : ListProductsEcomWorkshop,
 
         //see-also
         'see-also-1' : SeeAlso1Workshop,
@@ -134,13 +145,16 @@ export const getComponent = (componentName: string) => {
         'cta4' :Cta4,
         'blog' : BlogWorkshop,
         'carousel-cta' : CarouselCtaWorkshop,
-        'carousel-image-background' : CarouselImageBackground
+        'carousel-image-background' : CarouselImageBackground,
+        'step-2' : TimelineWorkshop2
     }
-
-    return components[componentName] ?? NotFoundComponents
 }
 
-
+export const getComponent = (componentName: string, options?: {
+    shop_type?: string // 'b2b' | 'dropshipping'
+}) => {
+    return components(options?.shop_type)[componentName] ?? NotFoundComponents
+}
 
 export const getTranslationComponent = (componentName: string) => {
     const components: Component = {
@@ -148,4 +162,27 @@ export const getTranslationComponent = (componentName: string) => {
     }
 
     return components[componentName] ?? NotFoundComponents
+}
+export const getProductRenderB2bComponent = (
+    componentName: string,
+    options: Record<string, any> = {}
+) => {
+    const components: Record<string, any> = {
+        "product-1": Product1WorkshopEcom,
+        "product-2": Product2WorkshopEcom,
+    }
+
+    return components[componentName] ?? null
+}
+
+
+export const getProductRenderDropshippingComponentWorkshop  = (
+    componentName: string,
+    options: Record<string, any> = {}
+) => {
+    const components: Record<string, any> = {
+        "product-1": ProductWorkshop1,
+    }
+
+    return components[componentName] ?? null
 }

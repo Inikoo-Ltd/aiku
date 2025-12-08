@@ -9,7 +9,6 @@ import laravel from "laravel-vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
 import { fileURLToPath, URL } from "node:url";
-import { codecovVitePlugin } from "@codecov/vite-plugin";
 import path from "node:path";
 import tailwindcss from 'tailwindcss';
 import { analyzer } from 'vite-bundle-analyzer'
@@ -42,14 +41,8 @@ export default defineConfig(
               }
             }
           }),
-      i18n(),
-      codecovVitePlugin({
-                          enableBundleAnalysis: process.env.CODECOV_TOKEN !==
-                            undefined,
-                          bundleName          : "iris",
-                          uploadToken         : process.env.CODECOV_TOKEN
-                        })
-      //, analyzer()
+      i18n()
+     // , analyzer()
     ],
     ssr    : {
       noExternal: ["@inertiajs/server", "vue-countup-v3", "floating-vue", "tailwindcss", "@fortawesome/*"]
@@ -79,8 +72,10 @@ export default defineConfig(
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes('node_modules')) {
-              return 'vendor'; // This will create a single chunk named 'vendor.js' (with a hash)
+            if (id.includes("node_modules")) {
+              return id.toString().
+                split("node_modules/")[1].split(
+                "/")[0].toString();
             }
           }
         }

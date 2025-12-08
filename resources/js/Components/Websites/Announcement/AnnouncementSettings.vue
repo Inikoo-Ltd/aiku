@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { inject, nextTick, onMounted, ref, toRaw, toRef } from 'vue'
+import { computed, inject, nextTick, onMounted, ref, toRaw, toRef } from 'vue'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import InputGroup from 'primevue/inputgroup'
@@ -19,6 +19,7 @@ import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import ListItem from '@tiptap/extension-list-item'
 library.add(faLink, faExternalLinkAlt, faExclamationTriangle)
 
 const props = defineProps<{
@@ -97,6 +98,10 @@ onMounted(async () => {
         })
     }
 
+    if(!get(announcementDataSettings.value, 'position', false)) {
+        set(announcementDataSettings.value, 'position', 'top-bar')
+    }
+
     // // Set default value publish_start
     // if(!get(announcementDataSettings.value, 'publish_start.type', false)) {
     //     set(announcementDataSettings.value, 'publish_start', {
@@ -126,6 +131,14 @@ const publishMessage = ref('')
 
 const listActiveAnnouncements = ref([])
 const isLoadingCheckingActiveAnnouncements = ref(false)
+
+const canPublish = computed(() => {
+  const result = listActiveAnnouncements.value.find((item) => {
+    return item.position === announcementDataSettings.value.position
+  })
+  return result
+})
+
 const onCheckActiveAnnouncements = async () => {
     isLoadingCheckingActiveAnnouncements.value = true
     try {
@@ -143,7 +156,7 @@ const onCheckActiveAnnouncements = async () => {
             (item: any) => item.ulid !== announcementData.ulid
         )
 
-        if (listActiveAnnouncements.value.length) {
+        if (listActiveAnnouncements.value.find((item) =>  item.position === announcementDataSettings.value.position)) {
             notify({
                 title: trans("Something went wrong"),
                 text: trans("Unable to publish, you have active announcements running."),
@@ -323,6 +336,60 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
         </div>
     </fieldset>
 
+
+    <fieldset class="mb-6 bg-white px-7 pt-4 pb-7 border border-gray-200 rounded-xl">
+        <div class="text-xl font-semibold">{{ trans("Position") }}</div>
+        <p class="text-sm/6 text-gray-600">
+            {{ trans("Select position where the Announcement will be displayed") }}
+        </p>
+       <div class="mt-2">
+            <div class="flex items-center gap-x-3">
+                <input
+                    value="top-bar"
+                    @input="e => set(announcementDataSettings, 'position', e.target.value)"
+                    :checked="get(announcementDataSettings, 'position') === 'top-bar'"
+                    id="top-bar"
+                    name="position"
+                    type="radio"
+                    class="h-4 w-4 border-gray-300 focus:ring-indigo-600"
+                />
+                <label for="top-bar" class="cursor-pointer block font-medium">
+                    {{ trans('Top bar') }}
+                </label>
+            </div>
+
+            <div class="flex items-center gap-x-3">
+                <input
+                    value="bottom-menu"
+                    @input="e => set(announcementDataSettings, 'position', e.target.value)"
+                    :checked="get(announcementDataSettings, 'position') === 'bottom-menu'"
+                    id="bottom-menu"
+                    name="position"
+                    type="radio"
+                    class="h-4 w-4 border-gray-300 focus:ring-indigo-600"
+                />
+                <label for="bottom-menu" class="cursor-pointer block font-medium">
+                    {{ trans('Bottom Menu') }}
+                </label>
+            </div>
+
+            <div class="flex items-center gap-x-3">
+                <input
+                    value="top-footer"
+                    @input="e => set(announcementDataSettings, 'position', e.target.value)"
+                    :checked="get(announcementDataSettings, 'position') === 'top-footer'"
+                    id="top-footer"
+                    name="position"
+                    type="radio"
+                    class="h-4 w-4 border-gray-300 focus:ring-indigo-600"
+                />
+                <label for="top-footer" class="cursor-pointer block font-medium">
+                    {{ trans('Top footer') }}
+                </label>
+            </div>
+        </div>
+    </fieldset>
+
     <!-- Section: target_users -->
     <fieldset class="mb-6 bg-white px-7 pt-4 pb-7 border border-gray-200 rounded-xl">
         <div class="text-xl font-semibold">User</div>
@@ -402,7 +469,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                         <label for="inp-publish-now" class="block text-sm/6 cursor-pointer ">Publish now</label>
                     </div>
                     
-                    <div v-if="false" class="flex items-center gap-x-3">
+                    <div  class="flex items-center gap-x-3">
                         <input
                             value="scheduled"
                             @input="(val: string) => announcementData.schedule_at = new Date(nexterday)"
@@ -449,7 +516,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                         <label for="inp-finish-unlimited" class="block text-sm/6 font-medium cursor-pointer ">{{ trans("Until deactivated") }}</label>
                     </div>
                     
-                    <div v-if="false" class="flex items-center gap-x-3">
+                    <div class="flex items-center gap-x-3">
                         <input
                             value="scheduled"
                             @input="(val: string) => announcementData.schedule_finish_at = new Date(nexterday)"
@@ -490,17 +557,17 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
             </fieldset>
 
             <!-- Section: List active announcements -->
-            <div v-if="listActiveAnnouncements.length" class="relative text-sm text-amber-700 bg-amber-50 border border-amber-300 rounded px-3 py-2">
+            <div v-if="canPublish" class="relative text-sm text-amber-700 bg-amber-50 border border-amber-300 rounded px-3 py-2">
                 <FontAwesomeIcon v-tooltip="trans('Warning')" icon="fas fa-exclamation-triangle" class="text-amber-700/50 absolute top-3 right-3 text-lg" fixed-width aria-hidden="true" />
 
                 <div class="font-medium">
-                    {{ trans("You have current :count active announcements:", { count: listActiveAnnouncements.length }) }}
+                    {{ trans("You have current :_count active announcements:", { _count: listActiveAnnouncements.length }) }}
                 </div>
 
                 <ul class="list-disc list-inside">
-                    <li class="group w-fit " v-for="announcement in listActiveAnnouncements" :key="announcement.id">
-                        <Link :href="routeAnnouncement(announcement)">
-                            <span class="underline cursor-pointer">{{ announcement.name }}</span>
+                    <li class="group w-fit ">
+                        <Link :href="routeAnnouncement(canPublish)">
+                            <span class="underline cursor-pointer">{{ canPublish.name }}</span>
                             <FontAwesomeIcon icon="fal fa-external-link-alt" class="ml-1 opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
                         </Link>
                     </li>
@@ -522,7 +589,6 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                 v-tooltip="!get(announcementData, 'template_code', false) ? trans('Select template to publish') : !publishMessage ? trans('Enter the description') : ''"
             />
             
-            <!-- <pre>{{announcementData.schedule_at}}</pre> -->
         </div>
     </fieldset>
 </template>

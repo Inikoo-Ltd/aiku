@@ -46,7 +46,7 @@ class StoreSpace extends OrgAction
         $dateWithoutTime = Carbon::parse($startAt)->startOfDay();
         $today           = Carbon::today();
 
-        if ($dateWithoutTime->isBefore($today)) {
+        if ($dateWithoutTime->lte($today)) {
             $state = SpaceStateEnum::RENTING;
         }
 

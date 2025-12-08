@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Helpers\Avatars\GetDiceBearAvatar;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
@@ -23,7 +24,6 @@ use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
@@ -35,6 +35,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Goods\Stock;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
@@ -47,6 +48,7 @@ use App\Models\Web\Website;
 use Illuminate\Foundation\Testing\TestCase;
 
 uses(TestCase::class)->in('Feature');
+uses(TestCase::class)->in('Unit');
 uses(TestCase::class)->group('integration')->in('Integration');
 
 function loadDB(): void
@@ -223,6 +225,21 @@ function createCustomer(Shop $shop): Customer
     return $customer;
 }
 
+function createTradeUnits(Group $group): array
+{
+    $tradeUnits = $group->tradeUnits()->get();
+    if ($tradeUnits->isEmpty()) {
+        $tradeUnit1 = StoreTradeUnit::make()->action($group, TradeUnit::factory()->definition());
+        $tradeUnit2 = StoreTradeUnit::make()->action($group, TradeUnit::factory()->definition());
+        $tradeUnit3 = StoreTradeUnit::make()->action($group, TradeUnit::factory()->definition());
+    } else {
+        $tradeUnit1 = $tradeUnits->first();
+        $tradeUnit2 = $tradeUnits->skip(1)->first();
+        $tradeUnit3 = $tradeUnits->skip(2)->first();
+    }
+
+    return [$tradeUnit1, $tradeUnit2, $tradeUnit3];
+}
 
 /**
  * @throws \Throwable
@@ -286,8 +303,9 @@ function createOrgStocks(Organisation $organisation, array $stocks): array
  */
 function createProduct(Shop $shop): array
 {
-    $stocks    = createStocks($shop->group);
-    $orgStocks = createOrgStocks($shop->organisation, $stocks);
+    $tradeUnits = createTradeUnits($shop->group);
+    $stocks     = createStocks($shop->group);
+    $orgStocks  = createOrgStocks($shop->organisation, $stocks);
 
     $department = $shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
     if (!$department) {
@@ -315,21 +333,24 @@ function createProduct(Shop $shop): array
         $productData = array_merge(
             Product::factory()->definition(),
             [
-                'org_stocks' => [
-                    $orgStocks[0]->id => ['quantity' => 1]
+                'trade_units' => [
+                    [
+                        'id'       => $tradeUnits[0]->id,
+                        'quantity' => 1
+                    ]
                 ],
-                'price'      => 100,
+                'price'       => 100,
             ]
         );
         $product     = StoreProduct::make()->action(
             $family,
             $productData
         );
+
         $product     = UpdateProduct::make()->action(
             $product,
             [
                 'state'  => ProductStateEnum::ACTIVE,
-                'status' => ProductStatusEnum::FOR_SALE,
             ]
         );
     }

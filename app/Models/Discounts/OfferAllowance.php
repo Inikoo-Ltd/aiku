@@ -61,6 +61,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $target_data For complex target policies
  * @property OfferAllowanceTargetTypeEnum|null $target_type
  * @property OfferDurationEnum|null $duration
+ * @property string|null $bracket
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions

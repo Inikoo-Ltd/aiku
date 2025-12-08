@@ -33,7 +33,7 @@ class DeleteEbayUser extends OrgAction
             ]);
         }
 
-        $ebayUser->forceDelete();
+        $ebayUser->delete();
     }
 
     public function authorize(ActionRequest $request): bool

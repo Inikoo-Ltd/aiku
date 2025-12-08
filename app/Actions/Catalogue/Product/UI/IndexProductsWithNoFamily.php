@@ -165,7 +165,6 @@ class IndexProductsWithNoFamily extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
-
                 'routes' => [
                     'families_route' => [
                         'name' => 'grp.json.shop.families',

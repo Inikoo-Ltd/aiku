@@ -140,6 +140,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'weight'                => $weight,
             'marketing_weight'      => $marketing_weight,
             'price'                 => $price,
+            'price_include_vat'     => $price,
             'selling_price'         => $this->selling_price,
             'customer_price'        => $this->customer_price,
             'status'                => $this->status,
@@ -158,6 +159,8 @@ class DropshippingPortfoliosResource extends JsonResource
                 PlatformTypeEnum::EBAY => Arr::get($this->data, 'ebay_product', []),
                 default => [],
             },
+
+            'portfolio_data' => $this->data,
 
             'has_valid_platform_product_id'          => $this->has_valid_platform_product_id,
             'exist_in_platform'                      => $this->exist_in_platform,

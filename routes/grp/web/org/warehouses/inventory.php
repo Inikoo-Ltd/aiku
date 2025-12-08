@@ -18,13 +18,14 @@ use App\Actions\Fulfilment\StoredItem\UI\ShowStoredItem;
 use App\Actions\Fulfilment\StoredItemAudit\UI\CreateStoredItemAuditFromPalletInWarehouse;
 use App\Actions\Fulfilment\StoredItemAudit\UI\ShowStoredItemAuditForPallet;
 use App\Actions\Goods\Stock\UI\CreateStock;
-use App\Actions\Goods\Stock\UI\ShowStock;
 use App\Actions\Goods\StockFamily\ExportStockFamilies;
 use App\Actions\Goods\StockFamily\UI\CreateStockFamily;
 use App\Actions\Goods\StockFamily\UI\EditStockFamily;
 use App\Actions\Inventory\OrgStock\ExportOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
+use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
+use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
@@ -34,12 +35,16 @@ Route::get('/', ShowInventoryDashboard::class)->name('dashboard');
 
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
+
+    Route::patch('{orgStock}/update', UpdateOrgStock::class)->name('update');
+
     Route::prefix('all')->as('all_org_stocks.')->group(function () {
         Route::get('/', IndexOrgStocks::class)->name('index');
         Route::get('/export', ExportOrgStocks::class)->name('export');
 
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
+            Route::get('/edit', EditOrgStock::class)->name('edit');
         });
     });
 
@@ -47,6 +52,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'current'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
+            Route::get('/edit', EditOrgStock::class)->name('edit');
         });
     });
 
@@ -54,6 +60,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'active'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
+            Route::get('/edit', EditOrgStock::class)->name('edit');
         });
     });
 
@@ -61,6 +68,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'inProcess'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
+            Route::get('/edit', EditOrgStock::class)->name('edit');
         });
     });
 
@@ -68,6 +76,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'discontinuing'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
+            Route::get('/edit', EditOrgStock::class)->name('edit');
         });
     });
 
@@ -75,6 +84,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'discontinued'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
+            Route::get('/edit', EditOrgStock::class)->name('edit');
         });
     });
 
@@ -82,6 +92,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'abnormality'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
+            Route::get('/edit', EditOrgStock::class)->name('edit');
         });
     });
 });
@@ -106,7 +117,7 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
                 Route::get('/create', [CreateStock::class, 'inStockFamily'])->name('create');
 
                 Route::prefix('{orgStock}')->group(function () {
-                    Route::get('', [ShowStock::class, 'inStockFamily'])->name('show');
+                    Route::get('', [ShowOrgStock::class, 'inStockFamily'])->name('show');
                 });
             });
         });

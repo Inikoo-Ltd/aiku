@@ -151,7 +151,7 @@ class UpdateProductCategory extends OrgAction
             $this->productCategoryHydrators($productCategory);
             if ($productCategory->webpage_id) {
                 ReindexWebpageLuigiData::dispatch($productCategory->webpage)->delay(60 * 15);
-                ClearCacheByWildcard::run("iris:nav:product_categories:website:{$productCategory->webpage->website_id}:*");
+                ClearCacheByWildcard::run("irisData:website:{$productCategory->webpage->website_id}:*");
             }
         }
         $productCategory->refresh();
@@ -170,6 +170,11 @@ class UpdateProductCategory extends OrgAction
 
     public function prepareForValidation(): void
     {
+        if ($this->has('vol_gr')) {
+            $offersData = $this->productCategory->offers_data ?? [];
+            $offersData['vol_gr'] = $this->attributes['vol_gr'][0];
+            $this->set('offers_data', $offersData);
+        }
         if ($this->has('department_or_sub_department_id')) {
             $parent = ProductCategory::find($this->get('department_or_sub_department_id'));
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -220,7 +225,7 @@ class UpdateProductCategory extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
-
+            'offers_data'                => ['sometimes', 'array'],
             'follow_master'              => ['sometimes', 'boolean'],
             'image'                      => [
                 'sometimes',
@@ -237,6 +242,10 @@ class UpdateProductCategory extends OrgAction
             'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n' => ['sometimes', 'array'],
             'description_extra_i8n' => ['sometimes', 'array'],
+            'is_name_reviewed' => ['sometimes', 'boolean'],
+            'is_description_title_reviewed' => ['sometimes', 'boolean'],
+            'is_description_reviewed' => ['sometimes', 'boolean'],
+            'is_description_extra_reviewed' => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

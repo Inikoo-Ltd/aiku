@@ -1,0 +1,121 @@
+<script setup lang="ts">
+import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import { getStyles } from "@/Composables/styles"
+import { library } from "@fortawesome/fontawesome-svg-core";
+import Blueprint from "./Blueprint";
+import { faGalaxy, faTimesCircle } from "@fas";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { sendMessageToParent } from "@/Composables/Workshop"
+import { faBaby, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faInfoCircle } from "@fal";
+import { inject } from "vue";
+
+import {
+	faBackpack,
+	faTruckLoading,
+	faTruckMoving,
+	faTruckContainer,
+	faUser as faUserRegular,
+	faWarehouse,
+	faWarehouseAlt,
+	faShippingFast,
+	faInventory,
+	faDollyFlatbedAlt,
+	faBoxes,
+	faShoppingCart,
+	faBadgePercent,
+	faChevronRight,
+	faCaretRight,
+	faPhoneAlt,
+	faGlobe,
+	faPercent,
+	faPoundSign,
+	faClock
+} from "@far";
+import { faLambda } from "@fad";
+import TextRender from "./TextRender.vue";
+
+library.add(
+	faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,
+	faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faInfoCircle,
+	faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock
+);
+
+
+const props = defineProps<{
+	modelValue: any
+	webpageData?: any
+	blockData?: Object
+	indexBlock: Number
+	screenType: 'mobile' | 'tablet' | 'desktop'
+}>()
+
+const emits = defineEmits<{
+	(e: "update:modelValue", value: any): void
+	(e: "autoSave"): void
+}>()
+
+
+const layout: any = inject("layout", {})
+const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
+</script>
+
+<template>
+	<div id="step-2">
+		<div @click="
+			() =>
+				sendMessageToParent(
+					'activeChildBlock',
+					Blueprint?.blueprint?.[0]?.key?.join('-')
+				)
+		" :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			...getStyles(modelValue.container?.properties, screenType),
+			width: 'auto'
+		}">
+			<div class="relative py-8">
+				<!-- Vertical line -->
+				<div :style="getStyles(modelValue?.timeline?.line.properties, screenType)"
+					class="hidden md:block absolute left-1/2 top-0 transform -translate-x-1/2 h-full w-1 bg-gray-200 rounded-full z-0">
+				</div>
+
+
+				<div v-for="(step, idx) in modelValue.timeline.timeline_data" :key="idx" @click.stop="
+					sendMessageToParent('activeBlock', indexBlock);
+				sendMessageToParent('activeChildBlock', bKeys[1]);
+				" class="relative mb-16 grid grid-cols-1 md:grid-cols-9 md:items-center">
+					<!-- Left Text -->
+					<div class="order-2 md:order-1 md:col-span-4 md:pr-8 px-4 text-left md:text-right">
+						<TextRender :webpageData="webpageData" v-model="step.text_left"
+							@update:modelValue="() => emits('autoSave')" :screenType :blockData />
+					</div>
+
+					<!-- Bullet -->
+					<div class="order-1 md:order-2 md:col-span-1 flex justify-center mb-6 md:mb-0 relative z-10">
+						<div :style="getStyles(modelValue.timeline.bullet.properties, screenType)"
+							class="w-14 h-14 flex items-center justify-center rounded-full bg-blue-600 text-white font-bold">
+							<span v-if="modelValue.timeline.bullet.type === 'number'">
+								{{ idx + 1 }}
+							</span>
+
+							<FontAwesomeIcon v-if="modelValue.timeline.bullet.type === 'icon'" :icon="step.icon" />
+							<span v-if="modelValue.timeline.bullet.type === 'text'">
+								<Editor v-model="step.text_bullet" @update:modelValue="() => emits('autoSave')" />
+							</span>
+						</div>
+					</div>
+
+					<!-- Right Text -->
+					<div class="order-3 md:order-3 md:col-span-4 md:pl-8 px-4 text-left">
+						<TextRender :webpageData="webpageData" v-model="step.text_right"
+							@update:modelValue="() => emits('autoSave')" :screenType :blockData />
+					</div>
+				</div>
+
+			</div>
+		</div>
+
+	</div>
+
+</template>
+
+<style scoped></style>

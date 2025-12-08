@@ -16,10 +16,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class BreakAllWebsitesCache extends OrgAction
 {
-    public function handle(): void
+    public function handle(Command $command = null): void
     {
         foreach (Website::all() as $website) {
-            BreakWebsiteCache::run($website);
+            BreakWebsiteCache::run($website, $command);
         }
     }
 
@@ -42,7 +42,7 @@ class BreakAllWebsitesCache extends OrgAction
 
     public function asCommand(Command $command): int
     {
-        $this->handle();
+        $this->handle($command);
         $command->info("All websites cache cleared");
 
         return 0;

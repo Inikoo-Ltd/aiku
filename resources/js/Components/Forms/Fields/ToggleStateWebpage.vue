@@ -21,8 +21,14 @@ const props = defineProps<{
         init_options?: {}[]
         default_storefront?: {}
         options?: Array<{ value: string, label: string }>
+        fetch_params?: string[]
     }
 }>()
+
+const fetch_paramsExist = props.fieldData && props.fieldData.fetch_params;
+let paramOrg = fetch_paramsExist ? props.fieldData.fetch_params["organisation"] : route().params.organisation;
+let paramShop = fetch_paramsExist ? props.fieldData.fetch_params["shop"] : route().params.shop;
+let paramWeb = fetch_paramsExist ? props.fieldData.fetch_params["website"] : route().params.website;
 
 // const compareObjects = (objA, objB) => {
 //     // Get the keys of objA and objB
@@ -117,9 +123,9 @@ const xxx = ref('')
                     :fetchRoute="{
                         name: 'grp.org.shops.show.web.webpages.index',
                         parameters: {
-                            organisation: route().params.organisation,
-                            shop: route().params.shop,
-                            website: route().params.website,
+                            organisation: paramOrg,
+                            shop: paramShop,
+                            website: paramWeb,
                         }
                     }"
                 >
@@ -140,7 +146,7 @@ const xxx = ref('')
                 </PureMultiselectInfiniteScroll>
 
                 <div v-if="fieldData?.default_storefront?.id" @click="form[fieldName].redirect_webpage_id = fieldData?.default_storefront?.id" class="text-xs text-gray-400 hover:text-gray-700 cursor-pointer mt-2 underline w-fit">
-                    {{ trans("Click to set redirect to ") }} 
+                    {{ trans("Click to set redirect to") + " " }} 
                     <Icon :data="fieldData?.default_storefront?.typeIcon" />
                     {{ fieldData?.default_storefront?.code }}
                     <span class="text-gray-400">({{ fieldData?.default_storefront?.href }})</span>

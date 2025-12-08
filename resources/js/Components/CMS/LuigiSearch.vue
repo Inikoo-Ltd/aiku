@@ -57,6 +57,8 @@ const LBInitAutocompleteNew = async () => {
                 prefixed: true,
                 symbol: locale.currencySymbol(layout.iris?.currency?.code)
             },
+            Width: '100vw',
+            CloseWhenQueryIsEmpty: false,
             Translations: LuigiTranslation,
             RemoveFields: layout.iris.is_logged_in ? [] : ['formatted_price', 'price_amount', 'price'],
             Types: [
@@ -64,7 +66,7 @@ const LBInitAutocompleteNew = async () => {
                     name: trans("Products"),
                     heroName: trans("Top product"),
                     type: "item",
-                    size: 7,
+                    size: 10,
                     defaultFilters: {
                         availability: 1,  // Filter out of stock products
                     },
@@ -185,6 +187,7 @@ const visitSearchPage = () => {
         <input
             :value="inputValue"
             @input="(q) => (inputValue = q?.target?.value)"
+            afocus="(q) => getTopItemsSuggestions()"
             xdisabled
             class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
             :id="id || 'inputLuigi'"
@@ -218,6 +221,13 @@ const visitSearchPage = () => {
   /*  padding-left: 0px !important; */
     padding-bottom: 2px !important;
 }
+
+@media (max-width: 1020px) {
+    .luigi-ac-button-block--show-all .luigi-ac-button {
+        padding-bottom: 18px !important;
+    }
+}
+
 .luigi-ac-others {
     background: #F3F7FA !important;
     overflow-y: auto !important;
@@ -358,6 +368,37 @@ const visitSearchPage = () => {
 
 .luigi-ac-heromobile-action-for-mobile  {
     @apply md:!hidden;
+}
+
+@media (min-width: 1021px) {
+    .luigi-ac-heromobile .luigi-ac-others {
+        width: 27%;
+        max-width: 400px;
+    }
+}
+
+.luigi-ac-heromobile .luigi-ac-action-primary {
+    @apply left-1/2 -translate-x-1/2 !important;
+}
+
+.luigi-ac-heromobile .luigi-ac-main .luigi-ac-first-main {
+    @apply max-w-md !important;
+}
+
+@media (min-width: 1021px) {
+    .luigi-ac-heromobile .luigi-ac-main, .luigi-ac-heromobile .luigi-ac-products {
+        @apply flex-grow !important;
+    }
+}
+
+.luigi-ac-heromobile .luigi-ac-main .luigi-ac-rest-main {
+    @apply flex-grow !important;
+}
+
+@media (min-width: 1021px) {
+    .luigi-ac-heromobile .luigi-ac-rest-main .luigi-ac-other, .luigi-ac-heromobile .luigi-ac-rest-main .luigi-ac-product {
+        @apply w-[33%]  !important;
+    }
 }
 
 /* Button: Shop Today */

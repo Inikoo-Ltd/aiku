@@ -139,8 +139,8 @@ sub vcl_recv {
     }
 
     # Log the stripped parameters to a new header, e.g., X-Stripped-Query
-    # The 'keep' mode in extract() ensures the original values are preserved
-    set req.http.X-Stripped-Query = tracking_params_filter.extract(req.url, mode = keep);
+    # Use the 'keep' mode in extract() to preserve original values (correct vmod call syntax)
+    set req.http.X-Stripped-Query = tracking_params_filter.extract(req.url, keep);
 
     # Apply the filtering, which modifies req.url by removing the specified parameters
     set req.url = tracking_params_filter.apply(req.url);
@@ -163,8 +163,16 @@ sub vcl_recv {
     # Sort query string for better cache hit ratio; keeps semantics
     set req.url = std.querysort(req.url);
 
-    # Derive login header from cookie (used by app and cache key)
-    call set_login_flag_from_cookie;
+    # Determine login header (used by app and cache key)
+    # If the warm-up header is present, trust it and bypass cookie derivation
+    if (req.http.X-Warm-Logged-Status) {
+        set req.http.X-Logged-Status = req.http.X-Warm-Logged-Status;
+    } else {
+        # Otherwise derive from cookie
+        call set_login_flag_from_cookie;
+    }
+
+
 
     # Do not cache static files: always pass through Varnish
     if (req.url ~ "\.(pdf|csv|css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$") {
@@ -178,16 +186,26 @@ sub vcl_hash {
     hash_data(req.http.host);
     hash_data(req.url);
 
-    # Inertia-specific headers to prevent mixing HTML vs JSON/partials
-    if (req.http.X-Inertia) { hash_data(req.http.X-Inertia); }
-    if (req.http.X-Inertia-Version) { hash_data(req.http.X-Inertia-Version); }
-    if (req.http.X-Inertia-Partial-Component) { hash_data(req.http.X-Inertia-Partial-Component); }
-    if (req.http.X-Inertia-Partial-Data) { hash_data(req.http.X-Inertia-Partial-Data); }
-
     # Separate cache buckets by login status
     if (req.http.X-Logged-Status) {
         hash_data(req.http.X-Logged-Status);
     }
+
+    # Categorize requests into two hash buckets based on X-Inertia header
+    # If X-Inertia exists and equals "true" (case-insensitive) → bucket "Inertia"
+    # otherwise → bucket "Direct"
+    if (req.http.X-Inertia) {
+        hash_data("Inertia");
+    } else {
+        hash_data("Direct");
+    }
+
+    # Inertia-specific headers to prevent mixing JSON partials/versioned payloads
+    if (req.http.X-Inertia-Version) { hash_data(req.http.X-Inertia-Version); }
+    if (req.http.X-Inertia-Partial-Component) { hash_data(req.http.X-Inertia-Partial-Component); }
+    if (req.http.X-Inertia-Partial-Data) { hash_data(req.http.X-Inertia-Partial-Data); }
+
+
     return (lookup);
 }
 

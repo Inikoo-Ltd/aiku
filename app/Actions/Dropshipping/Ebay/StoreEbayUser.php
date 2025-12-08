@@ -12,10 +12,12 @@ namespace App\Actions\Dropshipping\Ebay;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\EbayUserStepEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Platform;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -29,11 +31,11 @@ class StoreEbayUser extends OrgAction
     {
         $platform = Platform::where('type', PlatformTypeEnum::EBAY->value)->first();
 
-
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'name', 'ebay-'. $customer->reference); // For store only, later will updated in callback
         data_set($modelData, 'platform_id', $platform->id);
+        data_set($modelData, 'marketplace', Arr::get($customer->shop->settings, 'ebay.marketplace_id'));
+        data_set($modelData, 'step', EbayUserStepEnum::MARKETPLACE);
 
         /** @var EbayUser $ebayUser */
         $ebayUser = $customer->ebayUser()->create($modelData);
@@ -42,7 +44,7 @@ class StoreEbayUser extends OrgAction
             'platform_user_type' => class_basename($ebayUser),
             'platform_user_id' => $ebayUser->id,
             'reference' => 'ebay-'. $customer->reference,
-            'name' => 'ebay-'. $customer->reference
+            'name' => Arr::get($modelData, 'name')
         ]);
 
         $ebayUser->update([

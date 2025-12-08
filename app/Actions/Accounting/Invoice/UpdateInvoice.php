@@ -57,7 +57,10 @@ class UpdateInvoice extends OrgAction
         $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
 
 
+
         $invoice = $this->update($invoice, $modelData, ['data']);
+
+
 
         if ($billingAddressData) {
             $this->updateFixedAddress(
@@ -91,6 +94,10 @@ class UpdateInvoice extends OrgAction
 
 
         $changes = Arr::except($invoice->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if (Arr::has($modelData, 'date')) {
+            $invoice->invoiceTransactions()->update(['date' => $invoice->date]);
+        }
 
 
         if (count($changes) > 0) {
@@ -136,7 +143,7 @@ class UpdateInvoice extends OrgAction
 
 
         if (Arr::hasAny($changes, ['in_process', 'net_amount', 'org_net_amount', 'grp_net_amount'])) {
-            CustomerHydrateClv::dispatch($invoice->customer)->delay($this->hydratorsDelay);
+            CustomerHydrateClv::dispatch($invoice->customer_id)->delay($this->hydratorsDelay);
         }
 
         if (Arr::hasAny($changes, ['billing_country_id', 'sales_channel_id', 'is_vip', 'external_invoicer_id'])) {

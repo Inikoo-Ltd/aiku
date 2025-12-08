@@ -9,7 +9,7 @@ import type { Language } from "@/types/Locale"
 import { ref } from "vue"
 
 
-
+// Pinia Store
 export const useLocaleStore = defineStore("locale", () => {
 	const language = ref<Language>({
 		id: 68,
@@ -24,20 +24,23 @@ export const useLocaleStore = defineStore("locale", () => {
 		return new Intl.NumberFormat(language.value.code).format(number)
 	}
 
-const currencyFormat = (currencyCode: string, amount: number | string): string => {
-  if (amount == null) return "";
+	const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
+		if (typeof amount === "undefined" || amount === null) return 0
+		if (!currencyCode) {
+			return amount || 0
+		}
 
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+		const num = typeof amount === "string" ? parseFloat(amount) : (amount || 0)
 
-  const formatter = new Intl.NumberFormat(language.value.code, {
-    style: currencyCode || currencyInertia.value?.code ? "currency" : "decimal",
-    currency: currencyInertia.value?.code || currencyCode || undefined,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+		const formatter = new Intl.NumberFormat(language.value.code, {
+			style: (currencyCode || currencyInertia.value?.code) ? "currency" : "decimal",
+			currency: currencyInertia.value?.code || currencyCode || '',
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		})
 
-  return formatter.format(num);
-};
+		return formatter.format(num);
+	};
 
 
 	const currencySymbol = (currencyCode: string) => {

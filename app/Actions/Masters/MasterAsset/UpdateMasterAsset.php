@@ -8,6 +8,9 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Catalogue\Product\SyncProductTradeUnits;
+use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -16,12 +19,15 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -30,29 +36,40 @@ class UpdateMasterAsset extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
+    use WithMasterAssetTradeUnits;
 
 
     private MasterAsset $masterAsset;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(MasterAsset $masterAsset, array $modelData): MasterAsset
     {
-
         if (Arr::has($modelData, 'master_family_id')) {
-
             $masterFamily = null;
             if ($modelData['master_family_id']) {
                 $masterFamily = MasterProductCategory::where('id', $modelData['master_family_id'])->first();
             }
-
-            $masterDepartmentID = $masterFamily?->master_department_id;
-            data_set($modelData, 'master_department_id', $masterDepartmentID);
+            if ($masterFamily) {
+                data_set($modelData, 'master_department_id', $masterFamily->master_department_id);
+                data_set($modelData, 'master_sub_department_id', $masterFamily->master_sub_department_id);
+            } else {
+                data_set($modelData, 'master_department_id', null);
+                data_set($modelData, 'master_sub_department_id', null);
+            }
         }
+
         if (Arr::has($modelData, 'name_i8n')) {
             UpdateMasterProductTranslationsFromUpdate::make()->action($masterAsset, [
                 'translations' => [
                     'name' => Arr::pull($modelData, 'name_i8n')
                 ]
             ]);
+        }
+
+        if (Arr::has($modelData, 'is_for_sale')) {
+            data_set($modelData, 'not_for_sale_since', Arr::get($modelData, 'is_for_sale') ? now() : null);
         }
 
         if (Arr::has($modelData, 'description_title_i8n')) {
@@ -78,7 +95,59 @@ class UpdateMasterAsset extends OrgAction
                 ]
             ]);
         }
-        $masterAsset = $this->update($masterAsset, $modelData);
+
+        $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+
+        $masterAsset = DB::transaction(function () use ($masterAsset, $modelData, $tradeUnits) {
+            /** @var MasterAsset $masterAsset */
+            if (!empty($tradeUnits)) {
+                $this->processTradeUnits($masterAsset, $tradeUnits);
+                if (count($tradeUnits) == 1) {
+                    data_set($modelData, 'units', $tradeUnits[0]['quantity']);
+                    data_set($modelData, 'unit', $tradeUnits[0]['type']);
+                } else {
+                    data_set($modelData, 'units', 1);
+                    data_set($modelData, 'unit', 'bundle');
+                }
+
+                foreach ($masterAsset->products as $product) {
+                    SyncProductTradeUnits::run($product, $tradeUnits);
+                }
+            }
+
+            $this->update($masterAsset, $modelData);
+
+            return ModelHydrateSingleTradeUnits::run($masterAsset);
+        });
+
+        CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+
+        if ($masterAsset->wasChanged('is_for_sale')) {
+            foreach ($masterAsset->products as $product) {
+                UpdateProduct::run($product, [
+                    'is_for_sale'              => $masterAsset->is_for_sale,
+                    'not_for_sale_from_master' => !$masterAsset->is_for_sale
+                ]);
+            }
+        }
+
+
+        if ($masterAsset->wasChanged('master_family_id')) {
+            if ($masterAsset->masterFamily) {
+                foreach ($masterAsset->products as $product) {
+                    $family = $masterAsset->masterFamily->productCategories()->where('shop_id', $product->shop_id)->first();
+                    UpdateProductFamily::run($product, [
+                        'family_id' => $family ? $family->id : null
+                    ]);
+                }
+            } else {
+                foreach ($masterAsset->products as $product) {
+                    UpdateProductFamily::run($product, [
+                        'family_id' => null
+                    ]);
+                }
+            }
+        }
 
         if ($masterAsset->wasChanged('status')) {
             GroupHydrateMasterAssets::dispatch($masterAsset->group)->delay($this->hydratorsDelay);
@@ -94,10 +163,11 @@ class UpdateMasterAsset extends OrgAction
         return $masterAsset;
     }
 
+
     public function rules(): array
     {
         $rules = [
-            'code'             => [
+            'code'                         => [
                 'sometimes',
                 'required',
                 'max:32',
@@ -111,26 +181,29 @@ class UpdateMasterAsset extends OrgAction
                     ]
                 ),
             ],
-            'name'             => ['sometimes', 'required', 'max:250', 'string'],
-            'price'            => ['sometimes', 'required', 'numeric', 'min:0'],
-            'description'      => ['sometimes', 'required', 'max:1500'],
-            'description_title' => ['sometimes', 'nullable', 'max:255'],
-            'description_extra' => ['sometimes', 'nullable', 'max:65500'],
-            'rrp'              => ['sometimes', 'required', 'numeric'],
-            'unit'             => ['sometimes', 'string'],
-            'data'             => ['sometimes', 'array'],
-            'status'           => ['sometimes', 'required', 'boolean'],
-            'master_family_id' => [
+            'trade_units'                  => ['sometimes', 'array', 'nullable'],
+            'name'                         => ['sometimes', 'required', 'max:250', 'string'],
+            'price'                        => ['sometimes', 'required', 'numeric', 'min:0'],
+            'description'                  => ['sometimes', 'required', 'max:1500'],
+            'description_title'            => ['sometimes', 'nullable', 'max:255'],
+            'description_extra'            => ['sometimes', 'nullable', 'max:65500'],
+            'rrp'                          => ['sometimes', 'required', 'numeric'],
+            'unit'                         => ['sometimes', 'string'],
+            'data'                         => ['sometimes', 'array'],
+            'status'                       => ['sometimes', 'required', 'boolean'],
+            'master_family_id'             => [
                 'sometimes',
                 'nullable',
                 Rule::exists('master_product_categories', 'id')
                     ->where('master_shop_id', $this->masterAsset->master_shop_id)
                     ->where('type', MasterProductCategoryTypeEnum::FAMILY)
             ],
-            'name_i8n' => ['sometimes', 'array'],
-            'description_title_i8n' => ['sometimes', 'array'],
-            'description_i8n' => ['sometimes', 'array'],
-            'description_extra_i8n' => ['sometimes', 'array'],
+            'name_i8n'                     => ['sometimes', 'array'],
+            'description_title_i8n'        => ['sometimes', 'array'],
+            'description_i8n'              => ['sometimes', 'array'],
+            'description_extra_i8n'        => ['sometimes', 'array'],
+            'is_for_sale'                  => ['sometimes', 'boolean'],
+            'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {
@@ -159,6 +232,9 @@ class UpdateMasterAsset extends OrgAction
         return $this->handle($masterAsset, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(MasterAsset $masterAsset, ActionRequest $request): MasterAsset
     {
         $this->masterAsset = $masterAsset;

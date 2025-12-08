@@ -8,76 +8,77 @@
 
 namespace App\Helpers;
 
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class DimensionsFormatter
 {
     use AsObject;
 
-    public function dimensions($dimensionsData)
+    public function dimensions(string $dimensionsData)
     {
         $data = json_decode($dimensionsData, true);
         if ($data) {
             return match ($data['type']) {
                 'rectangular' => number(
                     convertUnits(
-                        $data['l'],
+                        $data['l'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
                 ).'x'.number(
                     convertUnits(
-                        $data['w'],
+                        $data['w'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
                 ).'x'.number(
                     convertUnits(
-                        $data['h'],
+                        $data['h'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
-                ).' ('.$data['units'].')',
+                ).' ('.Arr::get($data, 'units', 'm').')',
                 'sheet' => number(
                     convertUnits(
-                        $data['l'],
+                        $data['l'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
                 ).'x'.number(
                     convertUnits(
-                        $data['w'],
+                        $data['w'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
-                ).' ('.$data['units'].')',
+                ).' ('.Arr::get($data, 'units', 'm').')',
                 'cilinder' => number(
                     convertUnits(
-                        $data['h'],
+                        $data['h'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
                 ).'x'.number(
                     convertUnits(
-                        $data['w'],
+                        $data['w'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
-                ).' ('.$data['units'].')',
+                ).' ('.Arr::get($data, 'units', 'm').')',
                 'sphere' => 'D:'.number(
                     convertUnits(
-                        $data['h'],
+                        $data['h'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
-                ).' ('.$data['units'].')',
+                ).' ('.Arr::get($data, 'units', 'm').')',
                 'string' => 'L.'.number(
                     convertUnits(
-                        $data['l'],
+                        $data['l'] ?? 0,
                         'm',
-                        $data['units']
+                        Arr::get($data, 'units', 'm')
                     )
-                ).' ('.$data['units'].')',
+                ).' ('.Arr::get($data, 'units', 'm').')',
                 default => '',
             };
         }

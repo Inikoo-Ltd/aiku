@@ -71,6 +71,7 @@ use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Masters\MasterAsset\Json\GetAllTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
+use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
 use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;
@@ -84,6 +85,7 @@ use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
+use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use Illuminate\Support\Facades\Route;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
@@ -214,6 +216,10 @@ Route::get('master-product-category/{masterProductCategory}/recommended-trade-un
 Route::get('master-product-category/{masterProductCategory}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory}/all-trade-units', GetAllTradeUnits::class)->name('master-product-category.all-trade-units')->withoutScopedBindings();
 
+Route::get('master-families/{masterShop}/all-master-family', GetMasterFamilies::class)->name('master-family.all-master-family')->withoutScopedBindings();
+
+Route::get('get-pick-fractional', GetPickFractional::class)->name('product.get-pick-fractional')->withoutScopedBindings();
+
 Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();
 
 Route::get('dashboard-custom-dates/masters-shops-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.masters_shops_sales');
@@ -223,3 +229,5 @@ Route::get('dashboard-custom-dates/group/invoice-categories-sales', GetMasterSho
 
 Route::get('dashboard-custom-dates/organisation/{organisation:id}/shops-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.organisation.shops_sales');
 Route::get('dashboard-custom-dates/organisation/{organisation:id}/invoice-categories-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.organisation.invoice_categories_sales');
+
+Route::get('timezones', IndexTimeZones::class)->name('timezones');

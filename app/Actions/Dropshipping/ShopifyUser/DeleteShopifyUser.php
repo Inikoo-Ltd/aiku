@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\ShopifyUser;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\DeleteFulfilmentService;
 use App\Actions\Dropshipping\Shopify\Webhook\DeleteWebhooksFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -16,19 +17,12 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
-use Random\RandomException;
 
 class DeleteShopifyUser extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
-    /**
-     * @throws RandomException
-     */
+
     public function handle(ShopifyUser $shopifyUser): void
     {
         if ($shopifyUser->trashed()) {
@@ -37,9 +31,9 @@ class DeleteShopifyUser extends OrgAction
 
         DeleteWebhooksFromShopify::run($shopifyUser);
 
-
-        $randomNumber  = random_int(00, 99);
-        $deletedSuffix = 'deleted-'.$randomNumber;
+        if ($shopifyUser->customerSalesChannel && $shopifyUser->shopify_fulfilment_service_id) {
+            DeleteFulfilmentService::run($shopifyUser->customerSalesChannel, $shopifyUser->shopify_fulfilment_service_id);
+        }
 
         $data = $shopifyUser->data;
 
@@ -62,7 +56,7 @@ class DeleteShopifyUser extends OrgAction
             'status' => false
         ]);
 
-        if ($shopifyUser->customerSalesChannel->status != CustomerSalesChannelStatusEnum::CLOSED) {
+        if ($shopifyUser->customerSalesChannel && $shopifyUser->customerSalesChannel->status != CustomerSalesChannelStatusEnum::CLOSED) {
             UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
                 'status' => CustomerSalesChannelStatusEnum::CLOSED
             ]);
@@ -72,9 +66,6 @@ class DeleteShopifyUser extends OrgAction
     }
 
 
-    /**
-     * @throws \Random\RandomException
-     */
     public function asController(ActionRequest $request): void
     {
         /** @var \App\Models\CRM\Customer $customer */
@@ -85,9 +76,7 @@ class DeleteShopifyUser extends OrgAction
         $this->handle($customer->shopifyUser);
     }
 
-    /**
-     * @throws \Random\RandomException
-     */
+
     public function inWebhook(ShopifyUser $shopifyUser): void
     {
         $this->handle($shopifyUser);

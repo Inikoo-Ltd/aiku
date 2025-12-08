@@ -201,6 +201,10 @@ const responsiveOptions = computed(() => {
 }
 
 .card {
+  display: flex;
+  flex-direction: column;
+  height: v-bind('cardStyle?.height || "100%"') !important;
+  width: v-bind('cardStyle?.width || "95%"') !important;
   background: v-bind('cardStyle?.background || "transparent"') !important;
 
   padding-top: v-bind('cardStyle?.paddingTop || "0px"') !important;

@@ -80,7 +80,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="w-full max-w-md py-4">
+    <div class="w-full max-w-md ">
 
         <!-- Tags list (sync with form value) -->
         <div v-if="formSelectedTags.length" class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
@@ -101,7 +101,18 @@ onMounted(() => {
 
         <!-- Multiselect tags -->
         <div v-if="props.fieldData?.tag_routes?.index_tag?.name" class="w-full max-w-64">
-            <MultiSelect ref="_multiselect_tags" v-model="formSelectedTags" :options="optionsList.length ? optionsList : props.fieldData?.tags" optionLabel="name" optionValue="id" placeholder="Select Tags" :maxSelectedLabels="3" filter class="w-full md:w-80">
+            <MultiSelect
+                ref="_multiselect_tags"
+                v-model="formSelectedTags"
+                :options="optionsList.length ? optionsList : props.fieldData?.tags"
+                optionLabel="name"
+                optionValue="id"
+                :placeholder="trans('Select tags')"
+                :maxSelectedLabels="3"
+                filter
+                class="w-full md:w-80"
+                :emptyMessage="trans('No available options')"
+            >
                 <template #footer="{ value, options }">
                     <div v-if="isLoadingMultiselect" class="absolute inset-0 bg-black/30 rounded flex justify-center items-center text-white text-4xl">
                         <LoadingIcon></LoadingIcon>

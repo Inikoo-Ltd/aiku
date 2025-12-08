@@ -63,9 +63,10 @@ export const useIrisLayoutStore = defineStore('irisLayout', () => {
         is_logged_in : getLocalStorage().is_logged_in || false
     }
     const iris_variables = getLocalStorage().iris_variables || {}
+    const offer_meters = getLocalStorage().offer_meters || {}
     const currentRoute = ref<string | undefined>("iris.login") // Define value to avoid route null at the first load
     const currentParams = ref<{[key: string]: string}>({})
     const currentQuery = ref<{[key: string]: string}>({})
 
-    return { user, app, currentRoute, currentParams, currentQuery, iris_varnish, iris_variables, iris }
+    return { user, app, currentRoute, currentParams, currentQuery, iris_varnish, iris_variables, offer_meters, iris }
 })
