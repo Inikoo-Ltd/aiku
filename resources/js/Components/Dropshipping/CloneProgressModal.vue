@@ -52,7 +52,7 @@ const hasUploads = computed(() => Object.keys(uploads.value).length > 0);
             </div>
             <div v-else class="flex flex-col justify-center items-center py-8 text-gray-500 gap-y-2">
                 <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-2xl' aria-hidden='true' />
-                <span>{{ trans('Waiting for progress...') }}</span>
+                <span>{{ trans('Please Wait For A Moment...') }}</span>
             </div>
 
             <div class="mt-6 flex justify-end">
