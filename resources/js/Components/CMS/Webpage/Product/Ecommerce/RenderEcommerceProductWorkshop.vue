@@ -3,7 +3,7 @@ import { faCube, faLink } from "@fal"
 import { faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Image as ImageTS } from "@/types/Image"
-import { getProductRenderB2bComponent } from "@/Composables/getIrisComponents"
+import { getProductRenderB2bComponent } from "@/Composables/getWorkshopComponents"
 import { ref, inject, onMounted, computed, watch, onUnmounted } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -36,7 +36,7 @@ interface ProductResource {
 }
 
 const props = withDefaults(defineProps<{
-    fieldValue: any
+    modelValue: any
     webpageData?: any
     blockData?: object
     code: string
@@ -44,7 +44,7 @@ const props = withDefaults(defineProps<{
 }>(), {})
 
 const layout = inject("layout", {})
-const product = ref(props.fieldValue.product)
+const product = ref(props.modelValue.product)
 const isLoadingRemindBackInStock = ref(false)
 const customerData = ref(null)
 const keyCustomer = ref(ulid())
@@ -52,36 +52,6 @@ const isLoadingFavourite = ref(false)
 
 
 const onAddFavourite = (product: ProductResource) => {
-    router.post(
-        route("iris.models.favourites.store", {
-            product: product.id
-        }),
-        {
-            // item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ["iris"],
-            onStart: () => {
-                isLoadingFavourite.value = true
-            },
-            onSuccess: () => {
-                set(customerData.value, "is_favourite", true)
-                layout.reload_handle()
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to favourites"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-            }
-        }
-    )
 }
 
 const onUnselectFavourite = (product: ProductResource) => {
@@ -115,90 +85,14 @@ const onUnselectFavourite = (product: ProductResource) => {
 }
 
 const onAddBackInStock = (productData: ProductResource) => {
-    router.post(
-        route("iris.models.remind_back_in_stock.store", {
-            product: productData.id
-        }),
-        {
-            // item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ["iris"],
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                set(product.value, "is_back_in_stock", true)
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingRemindBackInStock.value = false
-            }
-        }
-    )
+
 }
 
 const onUnselectBackInStock = (productData: ProductResource) => {
-    router.delete(
-        route("iris.models.remind_back_in_stock.delete", {
-            product: productData.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ["iris"],
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                set(product.value, "is_back_in_stock", false)
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingRemindBackInStock.value = false
-            }
-        }
-    )
+   
 }
 
-const getOrderingProduct = async () => {
-    isLoadingRemindBackInStock.value = true
-
-    try {
-        const url = route("iris.json.product.ecom_ordering_data", { product: product.value.id })
-        const response = await axios.get(url, {
-            params: {},
-        })
-
-        // Update the local state
-        keyCustomer.value = ulid()
-        customerData.value = response.data
-    } catch (error: any) {
-        notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to remove the product from remind back in stock"),
-            type: "error",
-        })
-        console.error(error)
-        return null
-    } finally {
-        isLoadingRemindBackInStock.value = false
-    }
-}
+const getOrderingProduct = async () => {}
 
 
 const imagesSetup = ref(isArray(product.value.images) ? product.value.images :
@@ -258,7 +152,7 @@ watch(() => layout?.iris?.is_logged_in, (newVal) => {
 })
 
 watch(
-  () => props.fieldValue.product,
+  () => props.modelValue.product,
   newVal => {
     product.value = { ...newVal }
   },
@@ -267,13 +161,13 @@ watch(
 
 onMounted(() => {
     set(layout, "temp.fetchIrisProductCustomerData", getOrderingProduct)
-    if (props.fieldValue?.product?.luigi_identity) {
+    if (props.modelValue?.product?.luigi_identity) {
         window?.dataLayer?.push({
             event: "view_item",
             ecommerce: {
                 items: [
                     {
-                        item_id: props.fieldValue?.product?.luigi_identity
+                        item_id: props.modelValue?.product?.luigi_identity
                     }
                 ]
             }
@@ -296,7 +190,7 @@ onUnmounted(() => {
 <template>
     <component 
         :is="getProductRenderB2bComponent(code)" 
-        :fieldValue 
+        :modelValue 
         :webpageData 
         :blockData 
         :isLoadingFavourite

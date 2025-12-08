@@ -10,11 +10,14 @@ import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import Icon from "@/Components/Icon.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faFilePdf, faIdCardAlt, faTruck, faWeight, faMapPin } from "@fal"
+import { faFilePdf, faIdCardAlt, faTruck, faWeight, faMapPin, faReceipt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ToggleSwitch from 'primevue/toggleswitch';
 import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
+import { faCheckCircle, faExclamationCircle } from "@fas"
+import axios from "axios"
+import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 
 library.add(faIdCardAlt, faWeight, faMapPin)
 
@@ -82,6 +85,8 @@ const isModalShippingAddress = ref(false)
 // Collection feature reactive variables
 const isCollection = ref(false)
 
+const isLoading = ref(false);
+
 // Collection feature methods
 const updateCollection = async (e: Event) => {
     const target = e.target as HTMLInputElement
@@ -105,6 +110,27 @@ const updateCollection = async (e: Event) => {
     }
 }
 
+const validateTaxNum = async () => {
+    // Todo add loading indicator on page
+    isLoading.value = true;
+    await axios.patch(route("retina.dropshipping.customer_sales_channels.basket.vatCheck", route().params))
+        .then((orderSummary: any) => {
+            // Todo finish loading indicator on page
+            isLoading.value = false;
+            router.visit(route(route().current(), route().params))
+            let text;
+            if(orderSummary.data.data.customer.tax_number.valid) {
+                text = trans('Your tax number is valid. Order Tax Category has been updated');
+            }else{
+                text = trans('Failed to validate your tax number (Please make sure to use your correct tax number)');
+            }
+            notify({
+                text: text,
+                type: orderSummary.data.data.customer.tax_number.valid ? "success" : "error",
+            })
+        })
+}
+
 
 onMounted(() => {
     isCollection.value = props.isCollection
@@ -113,7 +139,7 @@ onMounted(() => {
 </script>
 
 <template>
-
+    <LoadingOverlay :is-loading="isLoading"/>
     <div class="py-4 grid grid-cols-2 md:grid-cols-7 px-4 gap-x-4 divide-y divide-gray-200 md:divide-y-0 md:divide-x">
         <div class="col-span-2 mb-4 md:mb-0">
             <!-- Field: Platform -->
@@ -174,6 +200,24 @@ onMounted(() => {
                 </div>
                 <a :href="`tel:${summary?.customer_client.phone}`" v-tooltip="'Click to make a phone call'"
                     class="text-sm text-gray-500 hover:text-gray-700">{{ summary?.customer_client.phone }}</a>
+            </div>
+
+            <div v-if="summary?.customer.tax_number.number" class="pl-1 flex flex-wrap items-center w-full flex-none gap-x-2">
+                <div v-tooltip="trans('Tax Number')" class="flex-none mb-auto mt-0">
+                    <FontAwesomeIcon :icon="faReceipt" class='text-gray-400' fixed-width aria-hidden='true'/>
+                </div>
+                <div class="grow text-sm text-gray-500">    
+                    <div class="flex align-center items-center min-h-6">    
+                        {{summary?.customer.tax_number.number }} 
+                        <FontAwesomeIcon v-if="summary?.customer.tax_number.valid" :icon="faCheckCircle" v-tooltip="trans('Tax number is valid')"  class='text-green-400 ms-1' fixed-width aria-hidden='true'/>
+                        <FontAwesomeIcon v-else :icon="faExclamationCircle" v-tooltip="trans('Tax number is invalid')" class='text-red-400 ms-1' fixed-width aria-hidden='true'/>
+                    </div>
+                    <div v-if="!summary?.customer.tax_number.valid" class="w-full text-xs text-gray-500 hover:text-gray-700 hover:cursor-pointer">
+                        <span v-tooltip="trans('Click here to revalidate your tax number.')" v-on:click="validateTaxNum">
+                            ({{ trans('Click to revalidate') }})
+                        </span>
+                    </div>
+                </div>
             </div>
 
             <!-- Collection Toggle -->

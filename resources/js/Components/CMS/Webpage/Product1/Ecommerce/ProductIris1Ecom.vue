@@ -21,6 +21,7 @@ import { trans } from "laravel-vue-i18n"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
+import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 
 // Register icons
 library.add(faCube, faLink, faPlus, faMinus)
@@ -133,44 +134,31 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
 
                         <!-- STOCK SECTION -->
                         <div v-if="layout?.iris?.is_logged_in" class="flex justify-between items-center">
-                            <div class="flex items-center gap-2 text-sm">
-                                <FontAwesomeIcon
-                                    :icon="faCircle"
-                                    class="text-[10px]"
-                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'"
-                                />
+                            <!-- Stock info -->
+                            <LabelComingSoon v-if="product.status === 'coming-soon'" :product="product" />
+                            <div v-else class="flex items-center gap-2 text-sm">
+                                <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                                 <span>
                                     {{
-                                        product.stock > 0
-                                            ? `${trans("In stock")} (${customerData?.stock} ${trans("available")})`
-                                            : trans("Out Of Stock")
+                                        customerData?.stock > 0
+                                        ? trans("In stock :productStock available", { productStock: customerData?.stock })
+                                        : product.status_label ?? trans("Out of stock")
                                     }}
                                 </span>
                             </div>
 
                             <!-- REMIND ME -->
-                            <button
-                                v-if="product.stock <= 0 && layout?.app?.environment === 'local'"
-                                @click="
-                                    product.is_back_in_stock
-                                        ? onUnselectBackInStock(product)
-                                        : onAddBackInStock(product)
-                                "
-                                class="absolute right-0 bottom-2 flex items-center gap-2 px-3 py-1.5 text-sm rounded-full border bg-gray-100 hover:bg-gray-200"
-                            >
+                            <button v-if="product.stock <= 0 && layout?.app?.environment === 'local'"
+                                v-tooltip="product.is_back_in_stock ? trans('You will be notify via email when the product back in stock') : trans('Click to be notified via email when the product back in stock')"
+                                @click="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                                class="absolute right-0 bottom-0 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                                <FontAwesomeIcon
-                                    v-else
+                                <FontAwesomeIcon v-else
                                     :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'"
+                                    :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']"
                                 />
-                                <span>
-                                    {{
-                                        product.is_back_in_stock
-                                            ? trans("will be notified when in Stock")
-                                            : trans("Remind me")
-                                    }}
-                                </span>
+                                <span>{{ product.is_back_in_stock ? trans("Notified") : trans("Remind me") }}</span>
                             </button>
                         </div>
                     </div>
@@ -214,13 +202,10 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
                             :key="keyCustomer"
                             :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
                         />
-                        <Button
-                            v-else
-                            :label="trans('Out of stock')"
-                            type="tertiary"
-                            disabled
-                            full
-                        />
+                        
+                        <div v-else>
+                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled full />
+                        </div>
                     </div>
 
                     <LinkIris
@@ -299,8 +284,26 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
         </h1>
 
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
+        
+        <!-- Section: Stock info, coming soon label -->
+        <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between mt-4">
+            <!-- Stock info -->
+            <LabelComingSoon v-if="product.status === 'coming-soon'" :product="product" class="w-full text-center" />
+            <div v-else class="flex items-center gap-2 text-sm">
+                <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                <span>
+                    {{
+                        customerData?.stock > 0
+                        ? trans("In stock :productStock available", { productStock: customerData?.stock })
+                        : product.status_label ?? trans("Out of stock")
+                    }}
+                </span>
+            </div>
+        </div>
 
-        <div class="flex justify-between items-start gap-4 mt-4">
+        <!-- Section: Price, unit info, favourite icon -->
+        <div class="flex justify-between items-start gap-4 mt-2">
             <ProductPrices v-if="layout?.iris?.is_logged_in" :field-value="fieldValue" />
 
             <FontAwesomeIcon
@@ -316,7 +319,7 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
             />
         </div>
 
-        <!-- TAGS -->
+        <!-- Section: Mobile Tags -->
         <div class="flex flex-wrap gap-2 mt-4">
             <div
                 class="text-xs flex items-center gap-1 text-gray-500"
@@ -345,7 +348,7 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
 
             <Button
                 v-else-if="layout?.iris?.is_logged_in"
-                :label="trans('Out of stock')"
+                :label="product.status_label ?? trans('Out of stock')"
                 type="tertiary"
                 disabled
                 full

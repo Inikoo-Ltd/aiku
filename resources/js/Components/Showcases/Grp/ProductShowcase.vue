@@ -207,10 +207,10 @@ const getTooltips = () => {
 				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
 					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview
 						class="min-h-60" />
-					<div class="text-sm italic text-gray-500">
+					<!-- <div class="text-sm italic text-gray-500">
 						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
 							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div>
+					</div> -->
 				</div>
 				<div v-else>
 					<div
@@ -218,10 +218,10 @@ const getTooltips = () => {
 						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
 						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 					</div>
-					<div class="mt-2 text-sm italic text-gray-500">
+					<!-- <div class="mt-2 text-sm italic text-gray-500">
 						Manage images in tab <span @click="() => handleTabUpdate('images')"
 							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div>
+					</div> -->
 				</div>
 			</div>
 		</div>
@@ -233,6 +233,7 @@ const getTooltips = () => {
 			 :parts="data.parts"
 			 :public-attachment="data.attachment_box.public" 
 			 :gpsr="data.gpsr"
+			 :attachments="data.attachment_box"
 		/>
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
@@ -248,9 +249,9 @@ const getTooltips = () => {
 			</div>
 			<!-- Section: Price -->
 			<ProductPriceGrp :product="data?.product?.data" :currency_code="data.product.data?.currency_code" />
-			<div>
+			<!-- <div>
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
-			</div>
+			</div> -->
 
 		</div>
 

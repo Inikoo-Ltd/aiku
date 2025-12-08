@@ -122,10 +122,10 @@ console.log
 				<div class="bg-white   p-4 lg:p-5">
 				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
 					<ImagePrime :src="props.data.main_image.webp" :alt="props?.data?.tradeUnit?.data?.name" preview />
-					<div class="text-sm italic text-gray-500">
+					<!-- <div class="text-sm italic text-gray-500">
 						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
 							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">images</span>
-					</div>
+					</div> -->
 				</div>
 				<div v-else>
 					<div
@@ -133,10 +133,10 @@ console.log
 						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
 						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 					</div>
-					<div class="mt-2 text-sm italic text-gray-500">
+					<!-- <div class="mt-2 text-sm italic text-gray-500">
 						Manage images in tab <span @click="() => handleTabUpdate('images')"
 							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div>
+					</div> -->
 				</div>
 			</div>
 			</div>
@@ -144,6 +144,7 @@ console.log
 
 		<!-- Trade Unit Summary -->
 		<TradeUnitMasterProductSummary 
+			:attachments="data.attachment_box"
 			:publicAttachment="data.attachment_box?.public" 
 			:data="data.tradeUnit" 
 			:gpsr="data.gpsr"
@@ -151,8 +152,8 @@ console.log
 		/>
 
 		<!-- Attachments -->
-		<div>
+		<!-- <div>
 			<AttachmentCard :private="data.attachment_box?.private" />
-		</div>
+		</div> -->
 	</div>
 </template>

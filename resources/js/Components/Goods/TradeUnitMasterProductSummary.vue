@@ -83,7 +83,12 @@ const props = withDefaults(
 		data: PropsData
 		gpsr?: Gpsr
 		hide?: string[]
-		publicAttachment: array<any>
+		// publicAttachment: array<any>
+		// privateAttachment: {}[]
+		attachments: {
+			public: {}[]
+			private: {}[]
+		}
 		properties?: {
 			country_of_origin?: { code: string; name: string }
 			tariff_code?: string
@@ -177,12 +182,12 @@ library.add(
 				</div>
 
 
-			  <ProductResource 
-				:publicAttachment 
-				:data
-				:gpsr
-				:properties
-			  />
+				<ProductResource 
+					:attachments
+					:data
+					:gpsr
+					:properties
+				/>
 			</dl>
 		</div>
 	</div>

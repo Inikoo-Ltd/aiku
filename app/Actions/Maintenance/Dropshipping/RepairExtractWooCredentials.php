@@ -27,12 +27,16 @@ class RepairExtractWooCredentials
         // Normalize error message
         $normalizedError = $wooCommerceUser->normalizeErrorMessage($errorData);
 
-        $wooCommerceUser->update([
+        $data = [
             'consumer_key' => Arr::get($wooCommerceUser->settings, 'credentials.consumer_key'),
             'consumer_secret' => Arr::get($wooCommerceUser->settings, 'credentials.consumer_secret'),
             'store_url' => Arr::get($wooCommerceUser->settings, 'credentials.store_url'),
             'error_response' => $normalizedError
-        ]);
+        ];
+
+        $wooCommerceUser->update(array_filter($data, function ($value) {
+            return !is_null($value);
+        }));
 
         echo $wooCommerceUser->name . " ✅\n";
     }
