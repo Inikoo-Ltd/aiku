@@ -26,9 +26,7 @@ import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
-
 const locale = useLocaleStore()
-
 
 const props = withDefaults(defineProps<{
     product: ProductResource
@@ -76,38 +74,7 @@ const onAddBackInStock = (product: ProductResource) => {
 }
 
 const onUnselectBackInStock = (product: ProductResource) => {
-    router.delete(
-        route(props.detachBackInStockRoute.name, {
-            product: product.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ['iris'],
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
-                product.is_back_in_stock = false
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingRemindBackInStock.value = false
-                emits('afterOnUnselectBackInStock', product)
-            },
-        }
-    )
+    emits('unsetBackInStock', product)
 }
 
 
@@ -124,16 +91,6 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate">
-            <!-- <div v-if="product?.top_seller"
-                class="z-10 absolute top-2 left-2 border text-xs font-bold px-2 py-0.5 rounded" :class="{
-                    'text-[#FFD700] bg-[#584b015] border-[#FFD700]': product.top_seller == 1, // Gold
-                    'text-[#C0C0C0] bg-[#C0C0C033] border-[#C0C0C0]': product.top_seller === 2, // Silver
-                    'text-[#CD7F32] bg-[#CD7F3222] border-[#CD7F32]': product.top_seller === 3  // Bronze
-                }">
-                <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2" fixed-width s />
-
-                <span class="hidden md:inline">{{ trans("BESTSELLER") }}</span>
-            </div> -->
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
 
             <!-- Product Image -->

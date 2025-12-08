@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Accounting\CreditTransaction\DecreaseCreditTransactionCustomer;
+use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Mailshot\StoreMailshot;
@@ -19,7 +21,6 @@ use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
 use App\Actions\CRM\Customer\StoreCustomer;
-use App\Actions\CRM\Customer\UpdateBalanceCustomer;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
 use App\Actions\CRM\Favourite\StoreFavourite;
@@ -1109,7 +1110,7 @@ test('inventory  hydrator', function () {
 
 // update balance
 test('add balance customer', function (Customer $customer) {
-    $creditTransaction = UpdateBalanceCustomer::make()->action(
+    $creditTransaction = IncreaseCreditTransactionCustomer::make()->action(
         $customer,
         [
             'amount' => 100,
@@ -1130,7 +1131,7 @@ test('add balance customer', function (Customer $customer) {
 })->depends('create customer');
 
 test('withdraw balance customer', function (Customer $customer) {
-    $creditTransaction = UpdateBalanceCustomer::make()->action(
+    $creditTransaction = DecreaseCreditTransactionCustomer::make()->action(
         $customer,
         [
             'amount' => 100,

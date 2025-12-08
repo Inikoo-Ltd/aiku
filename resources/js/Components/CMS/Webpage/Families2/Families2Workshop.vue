@@ -1,127 +1,144 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted, onBeforeUnmount } from 'vue'
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCube, faLink } from "@fal"
-import { faStar, faCircle } from "@fas"
-import { faChevronCircleLeft, faChevronCircleRight } from '@far'
+import { inject, ref, watch, computed, nextTick, onMounted } from "vue"
+
+// FontAwesome - correct imports
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faCube, faLink } from '@fortawesome/free-solid-svg-icons'
+import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
+import { faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
+// Swiper (Vue 8+ / modules API)
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { Navigation, Pagination, Autoplay, Thumbs, FreeMode } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/navigation'
+import 'swiper/css/pagination'
+import 'swiper/css/free-mode'
 
 import Family2Render from './Families2Render.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { getStyles } from "@/Composables/styles"
-import { sendMessageToParent } from "@/Composables/Workshop"
-import Blueprint from './Blueprint'
-import { routeType } from '@/types/route'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { getStyles } from '@/Composables/styles'
+import { sendMessageToParent } from '@/Composables/Workshop'
 
-library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
+library.add(
+  faCube,
+  faLink,
+  faStar,
+  faCircle,
+  faChevronCircleLeft,
+  faChevronCircleRight
+)
+
 
 const props = defineProps<{
   modelValue: {
     families: any[]
     collections?: any[]
     container?: { properties?: any }
-    settings?: any
+    chip?: { container?: { properties?: any } }
   }
-  routeEditfamily?: routeType
-  webpageData?: any
-  blockData?: Object
-  indexBlock?: number
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock?: number
 }>()
 
-const layout: any = inject("layout", {})
+
+const layout: any = inject('layout', {})
 const visibleDrawer = inject('visibleDrawer', undefined)
+const prevEl = ref<HTMLElement | null>(null)
+const nextEl = ref<HTMLElement | null>(null)
+const navigation = ref<any>(null)
+const refreshTrigger = ref(0)
+
+const refreshCarousel = async (delay = 100) => {
+  await new Promise((r) => setTimeout(r, delay))
+  refreshTrigger.value++
+  await nextTick()
+}
+
+
 
 const allItems = computed(() => [
   ...(props.modelValue?.families || []),
   ...(props.modelValue?.collections || [])
 ])
 
-const scrollRef = ref<HTMLElement | null>(null)
+
+const swiperInstance = ref<any>(null)
+
+
+const spaceBetween = computed(() => (props.screenType === 'mobile' ? 8 : 24))
 
 function scrollLeft() {
-  scrollRef.value?.scrollBy({ left: -300, behavior: "smooth" })
+  if (swiperInstance.value?.slidePrev) swiperInstance.value.slidePrev()
 }
 
 function scrollRight() {
-  scrollRef.value?.scrollBy({ left: 300, behavior: "smooth" })
+  if (swiperInstance.value?.slideNext) swiperInstance.value.slideNext()
 }
 
 function activateBlock() {
   sendMessageToParent('activeBlock', props.indexBlock)
 }
 
-/* ----------------------------------------
-   TOUCH SWIPE HANDLER
----------------------------------------- */
-let startX = 0
-let deltaX = 0
 
-function onTouchStart(e: TouchEvent) {
-  startX = e.touches[0].clientX
-}
-
-function onTouchMove(e: TouchEvent) {
-  deltaX = e.touches[0].clientX - startX
-}
-
-function onTouchEnd() {
-  if (Math.abs(deltaX) > 80) {
-    if (deltaX < 0) scrollRight()
-    else scrollLeft()
+function onArrowKeyLeft(evt: KeyboardEvent) {
+  if (evt.key === 'Enter' || evt.key === ' ' || evt.key === 'Spacebar') {
+    evt.preventDefault()
+    scrollLeft()
   }
-  startX = 0
-  deltaX = 0
 }
 
-onMounted(() => {
-  if (scrollRef.value) {
-    scrollRef.value.addEventListener("touchstart", onTouchStart, { passive: true })
-    scrollRef.value.addEventListener("touchmove", onTouchMove, { passive: true })
-    scrollRef.value.addEventListener("touchend", onTouchEnd)
+function onArrowKeyRight(evt: KeyboardEvent) {
+  if (evt.key === 'Enter' || evt.key === ' ' || evt.key === 'Spacebar') {
+    evt.preventDefault()
+    scrollRight()
   }
+}
+
+watch(()=>props.screenType, async () => {
+  await refreshCarousel(200)
 })
 
-onBeforeUnmount(() => {
-  if (scrollRef.value) {
-    scrollRef.value.removeEventListener("touchstart", onTouchStart)
-    scrollRef.value.removeEventListener("touchmove", onTouchMove)
-    scrollRef.value.removeEventListener("touchend", onTouchEnd)
+
+onMounted(async () => {
+  await nextTick()
+  navigation.value = {
+    prevEl: prevEl.value,
+    nextEl: nextEl.value,
   }
+  await nextTick()
+  swiperInstance.value?.update()
 })
+
 </script>
 
 <template>
-  <div id="families-1">
-    <div
-      v-if="allItems.length"
-      class="px-4 py-10 mx-[30px]"
-      :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-        ...getStyles(props.modelValue.container?.properties, props.screenType)
-      }"
-      @click="activateBlock"
-    >
+  <div id="families-1" :key="refreshTrigger">
+    <div v-if="allItems.length" class="px-4 py-10" :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+      ...getStyles(props.modelValue.container?.properties, props.screenType)
+    }" @click="activateBlock">
       <div class="flex items-center gap-4 w-full">
 
         <!-- LEFT BUTTON -->
-        <button class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollLeft">
+        <button class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollLeft" @keydown="onArrowKeyLeft"
+          aria-label="Scroll left" type="button">
           <FontAwesomeIcon :icon="faChevronCircleLeft" />
         </button>
 
-        <!-- CONTENT SCROLLER WITH SWIPE -->
-        <div
-          ref="scrollRef"
-          class="overflow-x-auto flex gap-6 scrollbar-none py-2 flex-1"
-        >
-          <div v-for="(item, index) in allItems" :key="`item-${index}`" class="shrink-0">
-            <Family2Render :data="item"  :style="getStyles(props.modelValue?.chip?.container?.properties, props.screenType)"/>
-          </div>
-        </div>
+        <!-- SWIPER -->
+        <Swiper @swiper="(s) => (swiperInstance = s)"  :key="refreshTrigger" :modules="[Navigation, Pagination, Autoplay, Thumbs, FreeMode]"  :loop="true"
+          slides-per-view="auto" :space-between="spaceBetween" :freeMode="true" class="flex-1" :navigation="navigation">
+          <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="!w-auto">
+            <Family2Render :data="item" :style="getStyles(props.modelValue?.chip?.container?.properties, props.screenType)"  :screenType/>
+          </SwiperSlide>
+        </Swiper>
 
         <!-- RIGHT BUTTON -->
-        <button class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollRight">
+        <button class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollRight" @keydown="onArrowKeyRight"
+          aria-label="Scroll right" type="button">
           <FontAwesomeIcon :icon="faChevronCircleRight" />
         </button>
 
@@ -136,10 +153,11 @@ onBeforeUnmount(() => {
   </div>
 </template>
 
-<style>
+<style scoped>
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
