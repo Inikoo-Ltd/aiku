@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -264,11 +265,7 @@ class EditMasterProduct extends GrpAction
                         'type'       => 'select_infinite',
                         'label'      => __('Master Family'),
                         'options'    => [
-                            [
-                                'code'                    => $masterProduct->masterFamily->code ?? null,
-                                'name'                    => $masterProduct->masterFamily->name ?? null,
-                                'number_current_products' => $masterProduct->masterFamily->stats->number_current_master_assets ?? 0
-                            ]
+                            MasterFamiliesResource::make($masterProduct->masterFamily)->toArray(request())
                         ],
                         'fetchRoute' => [
                             'name'       => 'grp.json.master-family.all-master-family',

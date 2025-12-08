@@ -63,8 +63,10 @@ import TimelineWorkshop2 from '@/Components/CMS/Webpage/Step2/Step2Workshop.vue'
 import ListProductWorkshop from '@/Components/CMS/Webpage/Products/Dropshipping/ListProductsWorkshop.vue'
 import ListProductsEcomWorkshop from '@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomWorkshop.vue'
 import RenderDropshippingProductWorkshop from '@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductWorkshop.vue'
+import RenderEcommerceProductWorkshop from '@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductWorkshop.vue'
 import Product1WorkshopEcom from '@/Components/CMS/Webpage/Product1/Ecommerce/Product1WorkshopEcom.vue'
 import Product2WorkshopEcom from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
+import ProductWorkshop2 from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -99,7 +101,8 @@ const components = (shop_type?: string): Record<string, Component> => {
         'family-1': FamilyIris1,
 
         //product
-        'product-1': shop_type == 'b2b' ? RenderDropshippingProductWorkshop : RenderDropshippingProductWorkshop,
+        'product-1': shop_type == 'b2b' ? RenderEcommerceProductWorkshop : RenderDropshippingProductWorkshop,
+        'product-2': RenderDropshippingProductWorkshop,
 
         //product list
         'products-1' : shop_type == 'b2b' ? ListProductsEcomWorkshop : ListProductWorkshop,
@@ -161,8 +164,7 @@ export const getTranslationComponent = (componentName: string) => {
 
     return components[componentName] ?? NotFoundComponents
 }
-
-export const getProductRenderB2bComponentWorkshop = (
+export const getProductRenderB2bComponent = (
     componentName: string,
     options: Record<string, any> = {}
 ) => {

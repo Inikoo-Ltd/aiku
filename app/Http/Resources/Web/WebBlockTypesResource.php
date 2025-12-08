@@ -36,6 +36,7 @@ class WebBlockTypesResource extends JsonResource
             'screenshot'  => $webBlockType->imageSources(),
             'visibility'  => ['in' => true, 'out' => true],
             'show'        => true,
+            'is_in_test'  => $webBlockType->is_in_test,
             'component'   => Arr::get($webBlockType->data, 'component'),
             'icon'        => Arr::get($webBlockType->data, 'icon')
 

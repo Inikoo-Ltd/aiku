@@ -151,6 +151,7 @@ const isModalUploadFileOpen = ref(false);
     :data="props[currentTab]"
     :tab="currentTab"
     :detachRoute="attachmentRoutes.detachRoute"
+    :handleTabUpdate
   >
     <template #button-empty-state-attachments="{ action }">
       <Button

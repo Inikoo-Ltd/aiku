@@ -31,7 +31,7 @@ class CustomerBalanceTransactionsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'type' => CreditTransactionTypeEnum::from($this->type)->label(),
+            'type' => $this->type ? $this->type->label() : null,
             'notes' => $this->notes,
             'date' => $this->date,
             'amount' => $this->amount,

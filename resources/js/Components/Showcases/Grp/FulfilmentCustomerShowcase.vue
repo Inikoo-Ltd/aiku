@@ -21,6 +21,10 @@ import { get } from "lodash-es";
 import ButtonPrimeVue from "primevue/button";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faLink, faLongArrowRight } from "@far";
+
+import CustomerDSBalanceIncrease from "@/Components/Dropshipping/CustomerDSBalanceIncrease.vue"
+import CustomerDSBalanceDecrease from "@/Components/Dropshipping/CustomerDSBalanceDecrease.vue"
+
 import {
   faArrowAltFromBottom, faArrowAltFromTop, faWallet,
   faSync,
@@ -64,8 +68,13 @@ const props = defineProps<{
     addresses: AddressManagement
     address_update_route: routeType
     balance: {
-      current: number
-      credit_transactions: number
+        current: number
+        credit_transactions: number
+        route_decrease: routeType
+        route_increase: routeType
+        increase_reasons_options: {}[]
+        decrease_reasons_options: {}[]
+        // type_options: {}[]
     }
     currency_code: string
     fulfilment_customer: {
@@ -127,6 +136,7 @@ const props = defineProps<{
     approveRoute: routeType
   }
   tab: string
+  handleTabUpdate?: Function
 }>();
 
 console.log(props);
@@ -193,6 +203,10 @@ function openRejectedModal(customer: any) {
 
 const isModalAddress = ref(false);
 
+
+// Section: Balance increase and decrease
+const isModalBalanceDecrease = ref(false)
+const isModalBalanceIncrease = ref(false)
 </script>
 
 <template>
@@ -395,54 +409,43 @@ const isModalAddress = ref(false);
 
     <!-- Section: RadioBox, Recurring bills balance, Rental agreement-->
     <div v-if="data.status == 'approved'" class="w-full max-w-lg space-y-4 justify-self-end">
-      <div
-        class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
-        <div class="w-full flex justify-between items-center">
-          <div>
-            <div class="text-base">
-              {{ trans("Balance") }}
+        <div class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
+            <div class="w-full flex justify-between items-center">
+                <div>
+                    <div class="text-base">
+                        {{ trans("Balance") }}
+                    </div>
+                </div>
+                <div class="flex flex-col items-end">
+                    <div class="text-2xl font-bold">
+                        <CountUp :endVal="data.balance.current" :decimalPlaces="2" :duration="1.5"
+                            :scrollSpyOnce="true"
+                            :options="{
+                                formattingFn: (value) => locale.currencyFormat(data.currency_code, value),
+                            }"
+                        />
+                    </div>
+                    <div class="flex items-center">
+                        <div @click="() => isModalBalanceIncrease = true"
+                            v-tooltip="trans('Increase customer balance')"
+                            class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                            <FontAwesomeIcon :icon="faArrowAltFromBottom" class="text-base" tooltip="Increase Balance" fixed-width aria-hidden="true" />
+                        </div>
+                        <span class="mx-2 text-gray-400">|</span>
+                        <div @click="() => isModalBalanceDecrease = true"
+                            v-tooltip="trans('Decrease customer balance')"
+                            class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                            <FontAwesomeIcon :icon="faArrowAltFromTop" class="text-base" tooltip="Decrease Balance" fixed-width aria-hidden="true" />
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="text-gray-700/60 text-sm leading-4 font-normal">
-              {{ data.balance.credit_transactions }} credit transactions
+
+            <div v-if="handleTabUpdate" @click="() => handleTabUpdate('balance')"
+                class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
+                {{ trans("See all :translist transactions list", { translist: data?.balance?.credit_transactions ?? 0 }) }}
             </div>
-          </div>
-          <div class="flex flex-col items-end">
-            <!-- Amount Display -->
-            <div class="text-2xl font-bold">
-              <CountUp
-                :endVal="data.balance.current"
-                :duration="1.5"
-                :scrollSpyOnce="true"
-                :options="{
-									formattingFn: (value) =>
-										locale.currencyFormat(data.currency_code, value),
-								}" />
-            </div>
-            <!-- Icon Row -->
-            <div class="flex items-center">
-              <button aria-label="Increase Balance" class="focus:outline-none">
-                <FontAwesomeIcon
-                  @click="openModalBalance('increase')"
-                  :icon="faArrowAltFromBottom"
-                  class="text-base"
-                  tooltip="Increase Balance"
-                  fixed-width
-                  aria-hidden="true" />
-              </button>
-              <span class="mx-2 text-gray-400">|</span>
-              <button aria-label="Decrease Balance" class="focus:outline-none">
-                <FontAwesomeIcon
-                  @click="openModalBalance('decrease')"
-                  :icon="faArrowAltFromTop"
-                  class="text-base"
-                  tooltip="Decrease Balance"
-                  fixed-width
-                  aria-hidden="true" />
-              </button>
-            </div>
-          </div>
         </div>
-      </div>
 
       <TabSelector
         :optionRadio="optionRadio"
@@ -600,17 +603,44 @@ const isModalAddress = ref(false);
       <Button label="save" type="save" @click="() => sendUpdateInformation()" />
     </div>
   </Dialog>
-
   <ModalRejected
     v-model="isModalUploadOpen"
     :customerID="customerID"
     :customerName="customerName" />
 
-  <ModalBalance
-    v-model="isModalBalanceOpen"
-    :type="balanceModalType"
-    :updateBalanceRoute="data.updateBalanceRoute"
-  />
+    <!-- TODO: Delete this component -->
+    <!-- <ModalBalance
+        v-model="isModalBalanceOpen"
+        :type="balanceModalType"
+        :updateBalanceRoute="data.updateBalanceRoute"
+    /> -->
+
+    <!-- Section: Balance increase and decrease -->
+    <!-- Modal: Increase balance -->
+    <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
+        <CustomerDSBalanceIncrease
+            v-model="isModalBalanceIncrease"
+            :routeSubmit="data.balance.route_increase"
+            :currency="{
+                code: data.currency_code
+            }"
+            :options="data.balance.increase_reasons_options"
+            :balance="data.balance.current"
+        />
+    </Modal>
+
+    <!-- Modal: Decrease balance -->
+    <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
+        <CustomerDSBalanceDecrease
+            v-model="isModalBalanceDecrease"
+            :routeSubmit="data.balance.route_decrease"
+            :currency="{
+                code: data.currency_code
+            }"
+            :options="data.balance.decrease_reasons_options"
+            :balance="data.balance.current"
+        />
+    </Modal>
 
   <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
     <CustomerAddressManagementModal

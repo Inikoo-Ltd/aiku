@@ -6,6 +6,7 @@
 	"component": "topbar",
 	"fixed": true,
 	"website_type" : ["fulfilment"],
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
 			"key": "Topheader",

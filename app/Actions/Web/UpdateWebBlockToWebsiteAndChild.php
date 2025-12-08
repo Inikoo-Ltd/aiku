@@ -22,7 +22,7 @@ class UpdateWebBlockToWebsiteAndChild extends OrgAction
 
     public function handle(WebBlockType $newWebBlock, Website $website, string $marginal, array $fieldValue): WebBlockType
     {
-        $type  = $marginal === 'products' ? 'list_product' : $marginal;
+        $type  = $marginal === 'products' ? 'list_products' : $marginal;
         $names = WebBlockType::where('category', $type)->pluck('name')->toArray();
 
         $webpages = $website->webpages()
@@ -51,12 +51,12 @@ class UpdateWebBlockToWebsiteAndChild extends OrgAction
                         ]);
                     }
 
-                    if ($live = $webpage->liveSnapshot) {
+                    if (($live = $webpage->liveSnapshot) && $targetWebBlock?->layout) {
                         $liveLayout = $this->applyIndexChange($live->layout, $modified['index'], $newWebBlock->slug, $targetWebBlock->layout);
                         $live->updateQuietly(['layout' => $liveLayout]);
                     }
 
-                    if ($unpublished = $webpage->unpublishedSnapshot) {
+                    if (($unpublished = $webpage->unpublishedSnapshot) && $targetWebBlock?->layout) {
                         $unLayout = $this->applyIndexChange($unpublished->layout, $modified['index'], $newWebBlock->slug, $targetWebBlock->layout);
                         $unpublished->updateQuietly(['layout' => $unLayout]);
                     }
