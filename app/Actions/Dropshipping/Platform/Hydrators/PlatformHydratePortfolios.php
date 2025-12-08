@@ -32,10 +32,10 @@ class PlatformHydratePortfolios implements ShouldBeUnique
             ->where('item_type', class_basename(Product::class))
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
             ->where('platform_id', $platform->id)
+            ->where('portfolios.status', true)
             ->distinct('item_id');
         $stats = [
             'number_products' => $query->count('product_id')
-
         ];
 
         foreach (ProductStateEnum::cases() as $state) {
