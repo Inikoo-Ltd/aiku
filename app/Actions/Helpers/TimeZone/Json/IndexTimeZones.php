@@ -60,11 +60,11 @@ class IndexTimeZones
             $label  = $this->formatLabel($tz, $offset);
 
             return [
-            'value'        => $tz,
-            'label'        => $label,
-            'offset'       => $offset, // seconds from UTC
-            'offset_label' => $this->formatGmtOffset($offset),
-            ];
+                'value'        => $tz,
+                'label'        => $label,
+                'offset'       => $offset, // seconds from UTC
+                'offset_label' => $this->formatGmtOffset($offset),
+                ];
         }, $timezones);
 
         usort($data, function (array $a, array $b): int {
