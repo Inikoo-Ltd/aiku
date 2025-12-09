@@ -20,7 +20,7 @@ class RepairExtractWooCredentials
     use AsAction;
     use WithActionUpdate;
 
-    public function handle(WooCommerceUser $wooCommerceUser): void
+    public function handle(WooCommerceUser $wooCommerceUser, Command $command): bool
     {
         $errorData = Arr::get($wooCommerceUser, key: 'data', default: []);
 
@@ -38,7 +38,16 @@ class RepairExtractWooCredentials
             return !is_null($value);
         }));
 
-        echo $wooCommerceUser->name . " ✅\n";
+        // Update platform_status in customer sales channel if credentials are empty
+        if (empty($data['consumer_key']) || empty($data['consumer_secret'])) {
+            $wooCommerceUser->customerSalesChannel->update([
+                'platform_status' => false
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 
     public function getCommandSignature(): string
@@ -48,13 +57,27 @@ class RepairExtractWooCredentials
 
     public function asCommand(Command $command): void
     {
+        $ok = 0;
+        $no = 0;
+
         if ($command->argument('slug')) {
             $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('slug'))->first();
-            $this->handle($customerSalesChannel->user);
+            $this->handle($customerSalesChannel->user, $command);
         } else {
             foreach (WooCommerceUser::all() as $wooUser) {
-                $this->handle($wooUser);
+                $result = $this->handle($wooUser, $command);
+
+                if($result) {
+                    $ok++;
+                } else {
+                    $no++;
+                }
             }
+
+            $command->table(
+                ['Total OK', 'Total No', 'Total Channels'],
+                [[$ok, $no, $ok + $no]]
+            );
         }
     }
 }
