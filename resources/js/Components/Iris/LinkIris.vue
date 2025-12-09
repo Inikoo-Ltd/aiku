@@ -19,7 +19,7 @@ const props = withDefaults(
     target?: string
     type?: "internal" | "external"
     canonical_url?: string
-    id?:number
+    id?: number | string
   }>(),
   {
     header: () => ({}),

@@ -19,6 +19,7 @@ use App\Actions\CRM\Customer\UI\IndexCustomersInOverview;
 use App\Actions\CRM\WebUser\IndexWebUsersInOrganisation;
 use App\Actions\Ordering\Order\UI\IndexOrdersInBasketInOrganisation;
 use App\Actions\Ordering\Order\UI\IndexOrdersInOrganisation;
+use App\Actions\Ordering\UI\ShowOrdersBacklog;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
 use App\Actions\SysAdmin\Organisation\UI\IndexHistoryInOrganisation;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +31,7 @@ Route::get('/invoices', IndexInvoicesInOrganisation::class)->name('invoices.inde
 Route::get('/refunds', [IndexRefunds::class, 'inOrganisation'])->name('refunds.index');
 Route::get('/orders', IndexOrdersInOrganisation::class)->name('orders.index');
 Route::get('/orders-in-basket', IndexOrdersInBasketInOrganisation::class)->name('orders_in_basket.index');
+Route::get('/orders-backlog', [ShowOrdersBacklog::class, 'inOrganisation'])->name('ordering.backlog');
 
 Route::get('/shops', IndexShopsInOrganisation::class)->name('shops.index');
 Route::get('/departments', IndexDepartmentsInOrganisation::class)->name('departments.index');
