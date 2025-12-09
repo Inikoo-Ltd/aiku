@@ -68,7 +68,7 @@ Broadcast::channel('retina.{customerID}.customer', function (Webuser $webUser, i
 });
 
 Broadcast::channel('retina.personal.{webUserID}', function (Webuser $webUser, int|string $webUserID) {
-    return $webUserID === $webUser->id;
+    return $webUserID == $webUser->id;
 });
 
 Broadcast::channel('webpage.{webpage}.preview', function (User $user) {

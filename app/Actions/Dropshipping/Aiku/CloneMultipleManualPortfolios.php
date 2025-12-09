@@ -27,8 +27,8 @@ class CloneMultipleManualPortfolios extends OrgAction
      */
     public function handle(CustomerSalesChannel $sourceCustomerSalesChannel, CustomerSalesChannel $targetCustomerSalesChannel): void
     {
-        CloneFromChannelToChannel::dispatch($sourceCustomerSalesChannel, $targetCustomerSalesChannel, \Illuminate\Support\Facades\Auth::id());
-
+        // CloneFromChannelToChannel::dispatch($sourceCustomerSalesChannel, $targetCustomerSalesChannel, \Illuminate\Support\Facades\Auth::id());
+        ClonePortfolioJob::dispatch($sourceCustomerSalesChannel, \Illuminate\Support\Facades\Auth::user());
     }
 
     /**

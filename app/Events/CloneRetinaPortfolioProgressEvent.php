@@ -55,7 +55,7 @@ class CloneRetinaPortfolioProgressEvent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('grp.personal.' . $this->userId),
+            new PrivateChannel('retina.personal.' . $this->userId),
         ];
     }
 }
