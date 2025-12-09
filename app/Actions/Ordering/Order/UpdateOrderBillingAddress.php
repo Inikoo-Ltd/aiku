@@ -8,21 +8,15 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\CRM\Customer\UpdateCustomer;
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteFixedAddress;
-use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateCustomerOrderTaxCategory;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderBillingAddress extends OrgAction
 {
@@ -43,7 +37,7 @@ class UpdateOrderBillingAddress extends OrgAction
 
         $order = UpdateOrderFixedAddress::make()->action($order, $modelData);
 
-        $order=UpdateCustomerOrderTaxCategory::run($order);
+        $order = UpdateCustomerOrderTaxCategory::run($order);
         CalculateOrderTotalAmounts::run($order, true);
 
         $order->refresh();

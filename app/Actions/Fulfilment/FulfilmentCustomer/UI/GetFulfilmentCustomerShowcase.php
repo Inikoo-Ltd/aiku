@@ -10,7 +10,6 @@ namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
 use App\Actions\CRM\Customer\UI\GetCustomerAddressManagement;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
-use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;

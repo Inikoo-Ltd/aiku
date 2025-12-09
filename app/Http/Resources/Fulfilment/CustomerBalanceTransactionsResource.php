@@ -10,7 +10,6 @@
 
 namespace App\Http\Resources\Fulfilment;
 
-use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 

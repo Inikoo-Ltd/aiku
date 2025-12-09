@@ -35,14 +35,14 @@ class CheckTemporaryWooUserApiKeys extends RetinaAction
         $secret = Arr::get($currentWooUser, 'consumer_secret');
         $storeUrl = Arr::get($currentWooUser, 'url');
 
-        if($key && $secret && $storeUrl && $name) {
+        if ($key && $secret && $storeUrl && $name) {
             $this->woocommerceApiUrl = $storeUrl;
             $this->woocommerceConsumerKey = $key;
             $this->woocommerceConsumerSecret = $secret;
 
             $response = $this->checkConnection();
 
-            if(! Arr::get($response, 'environment')) {
+            if (! Arr::get($response, 'environment')) {
                 throw ValidationException::withMessages(['url' => __('We can\'t access your store, make sure you already put correct store url.')]);
             }
 
