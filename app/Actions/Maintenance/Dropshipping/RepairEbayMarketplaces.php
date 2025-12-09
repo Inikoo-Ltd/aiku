@@ -25,7 +25,7 @@ class RepairEbayMarketplaces
 
     public function handle(EbayUser $ebayUser): void
     {
-        if(! $ebayUser->marketplace) {
+        if (! $ebayUser->marketplace) {
             $this->update($ebayUser, [
                 'marketplace' => Arr::get($ebayUser->customer?->shop?->settings, 'ebay.marketplace_id'),
             ]);

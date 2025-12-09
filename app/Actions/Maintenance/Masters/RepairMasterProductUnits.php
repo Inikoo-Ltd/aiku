@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 09 Dec 2025 16:04:59 Malaysia Time, Kuala Lumpur, Malaysia
@@ -56,8 +57,8 @@ class RepairMasterProductUnits extends OrgAction
     public function asCommand(Command $command): int
     {
 
-        if($command->argument('masterAsset')){
-            $masterAsset = MasterAsset::where('slug',$command->argument('masterAsset'))->firstOrFail();
+        if ($command->argument('masterAsset')) {
+            $masterAsset = MasterAsset::where('slug', $command->argument('masterAsset'))->firstOrFail();
             $command->info("Fixing units value from trade units for $masterAsset->code");
             $this->handle($masterAsset);
             return 0;
