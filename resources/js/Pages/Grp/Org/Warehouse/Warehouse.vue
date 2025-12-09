@@ -19,7 +19,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import TableWarehouseAreas from "@/Components/Tables/Grp/Org/Inventory/TableWarehouseAreas.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))

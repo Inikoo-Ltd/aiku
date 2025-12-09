@@ -10,7 +10,7 @@
   import TableCollections from "@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue"
   import TablePolls from '@/Components/Tables/Grp/Org/CRM/TablePolls.vue'
   import { capitalize } from "@/Composables/capitalize"
-  import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+  import { PageHeadingTypes } from "@/types/PageHeading"
   
   
   const props = defineProps<{

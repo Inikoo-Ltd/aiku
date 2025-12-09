@@ -3,7 +3,7 @@ import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
 import {computed, reactive, ref,watch, onMounted, onBeforeUnmount} from "vue";
-import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import {PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";

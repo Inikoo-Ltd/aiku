@@ -13,7 +13,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import TableUserRequestLogs from "@/Components/Tables/Grp/SysAdmin/TableUserRequestLogs.vue"
 
 import StartEndDate from '@/Components/Utils/StartEndDate.vue'
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { BoxStats } from '@/types/Pallet'
 

@@ -11,7 +11,7 @@ import TableOutboxes from "@/Components/Tables/TableOutboxes.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars, faSeedling, faTimes } from "@fal"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
 library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars, faSeedling, faTimes)
 

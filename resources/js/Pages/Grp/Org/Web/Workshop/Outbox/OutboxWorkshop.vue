@@ -14,7 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import 'v-calendar/style.css'
 import Multiselect from "@vueform/multiselect"
 import Tag from '@/Components/Tag.vue'
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane } from '@fal'
 import { faUserCog } from '@fas'

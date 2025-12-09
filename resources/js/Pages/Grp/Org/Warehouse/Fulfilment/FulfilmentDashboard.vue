@@ -19,7 +19,7 @@ import { trans } from 'laravel-vue-i18n'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from 'chart.js'
 import Image from '@/Components/Image.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue'
 
 const props = defineProps<{

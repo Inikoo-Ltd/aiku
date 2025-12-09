@@ -15,7 +15,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import {
   faFileMinus
 } from "@fal";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { faOmega } from '@fas'
 
 library.add(faFileMinus, faOmega);

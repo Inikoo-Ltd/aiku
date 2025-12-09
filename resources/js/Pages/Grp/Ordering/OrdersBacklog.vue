@@ -8,7 +8,7 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TabsBox from "@/Components/Navigation/TabsBox.vue"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping } from '@fal'

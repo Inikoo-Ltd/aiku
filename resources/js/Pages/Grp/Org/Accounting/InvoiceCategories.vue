@@ -9,7 +9,7 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableInvoiceCategories from '@/Components/Tables/Grp/Org/Accounting/TableInvoiceCategories.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Shop } from "@/types/shop"
 import { faBox, faHandHoldingBox, faPallet, faPencil, faSitemap } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'

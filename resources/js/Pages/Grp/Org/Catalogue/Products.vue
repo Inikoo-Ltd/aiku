@@ -7,7 +7,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
 import { computed, inject, ref } from "vue"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
 import { faMinus, faPencil, faPlus } from '@fal'
