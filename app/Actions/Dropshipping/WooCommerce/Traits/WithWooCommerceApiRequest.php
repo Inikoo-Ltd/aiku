@@ -2,7 +2,6 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Traits;
 
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
