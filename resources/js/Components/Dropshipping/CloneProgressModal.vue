@@ -89,8 +89,10 @@ const getWidth = (count: number, total: number) => {
                         </span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-3 flex overflow-hidden">
-                        <div class="bg-lime-600 h-full transition-all duration-300 ease-out" :style="{ width: getWidth(job.data.number_success, job.total) }"></div>
-                        <div class="bg-red-500 h-full transition-all duration-300 ease-out" :style="{ width: getWidth(job.data.number_fails, job.total) }"></div>
+                        <div class="bg-lime-600 h-full transition-all duration-300 ease-out"
+                            :style="{ width: getWidth(job.data.number_success, job.total) }"></div>
+                        <div class="bg-red-500 h-full transition-all duration-300 ease-out"
+                            :style="{ width: getWidth(job.data.number_fails, job.total) }"></div>
                     </div>
                     <div class="mt-2 text-sm flex justify-between items-start text-gray-500">
                         <div>{{ job.done }} / {{ job.total }} {{ trans('items') }}</div>
@@ -111,8 +113,10 @@ const getWidth = (count: number, total: number) => {
             <div v-else class="py-6 space-y-6">
                 <div class="mb-2 flex justify-between items-end">
                     <div class="flex items-center gap-2">
-                         <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-indigo-500' aria-hidden='true' />
-                         <span class="text-sm font-medium text-gray-700">{{ trans('Please Wait For A Moment...') }}</span>
+                        <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-indigo-500'
+                            aria-hidden='true' />
+                        <span class="text-sm font-medium text-gray-700">{{ trans('Please Wait For A Moment...')
+                            }}</span>
                     </div>
                     <span class="text-2xl font-bold text-gray-300 tabular-nums">0%</span>
                 </div>
@@ -123,7 +127,8 @@ const getWidth = (count: number, total: number) => {
             </div>
 
             <div class="mt-6 flex justify-end">
-                <button @click="$emit('close')" type="button" class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:text-sm">
+                <button @click="$emit('close')" type="button"
+                    class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:text-sm">
                     {{ trans('Close') }}
                 </button>
             </div>
