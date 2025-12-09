@@ -4,7 +4,6 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
 import Textarea from "primevue/textarea";
 import Select from "primevue/select";
-import { PageHeading as TSPageHeading } from "@/types/PageHeading";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import { trans } from "laravel-vue-i18n";
@@ -17,13 +16,14 @@ import type { Component } from "vue";
 import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import Tabs from "@/Components/Navigation/Tabs.vue";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 
 library.add(faTrashAlt);
 
 
 const props = defineProps<{
     title: string
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
         navigation: {}

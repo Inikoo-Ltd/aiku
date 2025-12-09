@@ -2,17 +2,12 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import DummyComponent from "@/Components/DummyComponent.vue"
-
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { Component } from 'vue'
-
-import { PageHeading as TSPageHeading } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
-
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMoneyBill } from "@fal"
 import { faStop } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -20,11 +15,10 @@ import AnnouncementShowcase from './AnnouncementShowcase.vue'
 import TableSnapshots from '@/Components/Tables/TableSnapshots.vue'
 library.add(faMoneyBill, faStop)
 
-// import FileShowcase from '@/xxxxxxxxxxxx'
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     showcase: {}
     snapshots: {}

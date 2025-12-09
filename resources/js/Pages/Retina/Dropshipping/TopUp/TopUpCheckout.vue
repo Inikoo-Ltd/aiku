@@ -2,7 +2,6 @@
 import { Head, usePage, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as TSPageHeading } from "@/types/PageHeading"
 import { CheckoutComFlow } from "@/types/CheckoutComFlow"
 import { FlashNotification as FlashNotificationType } from "@/types/FlashNotification"
 import { onMounted, ref } from "vue"
@@ -15,10 +14,11 @@ import { faSpinner } from "@fal"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { CheckoutTranslations } from "@/Composables/Unique/CheckoutFlowTranslation"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 
 const props = defineProps<{
     title: string,
-    pageHead: TSPageHeading
+    pageHead: PageHeadingTypes
     checkout_com_data: CheckoutComFlow
     top_up_payment_api_point_ulid: string
 }>()
@@ -32,10 +32,7 @@ interface PagePropsWithFlash extends InertiaPageProps {
 const isLoading = ref(true)
 const page = usePage<PagePropsWithFlash>()
 console.log(props)
-/* const { isLoading, initializeCheckout } = useCheckoutCom(props.checkout_com_data) */
-/* onMounted(() => {
-    initializeCheckout("flow-container")
-}) */
+
 
 
 const MAX_RETRIES = 5
