@@ -182,9 +182,10 @@ const layout = inject('layout', layoutStructure)
                 </div>
 
                 <div v-if="route().params?.['customerSalesChannel'] && platform_status">
-                    <Link :href="route('retina.dropshipping.customer_sales_channels.edit', route().params)">
-                        <FontAwesomeIcon icon="fal fa-pencil" />
-                    </Link>
+                    <ButtonWithLink :url="route('retina.dropshipping.customer_sales_channels.edit', route().params)"
+									type="edit"
+									:label="trans('Manage Sales Channel')">
+                    </ButtonWithLink>
                 </div>
             </div>
 

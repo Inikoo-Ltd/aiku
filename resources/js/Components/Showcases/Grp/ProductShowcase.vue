@@ -233,6 +233,7 @@ const getTooltips = () => {
 			 :parts="data.parts"
 			 :public-attachment="data.attachment_box.public" 
 			 :gpsr="data.gpsr"
+			 :attachments="data.attachment_box"
 		/>
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
@@ -248,9 +249,9 @@ const getTooltips = () => {
 			</div>
 			<!-- Section: Price -->
 			<ProductPriceGrp :product="data?.product?.data" :currency_code="data.product.data?.currency_code" />
-			<div>
+			<!-- <div>
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
-			</div>
+			</div> -->
 
 		</div>
 

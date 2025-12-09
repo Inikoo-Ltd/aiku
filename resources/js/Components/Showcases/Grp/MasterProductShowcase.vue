@@ -215,7 +215,7 @@ console.log(props);
 		</div>
 		<div v-if="data.availability_status || data.trade_units.length > 0" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center items-center flex">
 			<div v-tooltip="data.trade_units.length > 1 ? trans('Click to view all trade units detail') : ''" class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer me-2 flex border-green-600" v-on:click="isModalSKUDetail = true">
-				<div v-if="data.trade_units.length !== 1" class="text-teal-600 whitespace-nowrap w-full">
+				<div v-if="data.trade_units.length == 1" class="text-teal-600 whitespace-nowrap w-full">
 					<span class=""> &#8623; SKU </span>
 					<span class="font-bold">
 						<FractionDisplay v-if="data.trade_units[0].pick_fractional" :fractionData="data.trade_units[0].pick_fractional" />
@@ -285,12 +285,14 @@ console.log(props);
 			:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}" 
 			:gpsr="data.gpsr" 
 			:properties="data.properties"
-			:public-attachment="[]" 
+			xpublic-attachment="[]"
+			:attachments="data.attachment_box"
 		/>
 
-		<div>
+		<!-- <div>
+			<pre>{{ data.attachment_box }}</pre>
 			<AttachmentCard :private="data.attachment_box?.private" />
-		</div>
+		</div> -->
 	</div>
 
 	<Modal :isOpen="isModalProductForSale" @onClose="isModalProductForSale = false" width="w-full max-w-lg">

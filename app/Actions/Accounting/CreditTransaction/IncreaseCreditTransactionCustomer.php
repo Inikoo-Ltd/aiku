@@ -37,7 +37,7 @@ class IncreaseCreditTransactionCustomer extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (blank($request->input('type'))) {
+        if (blank($this->get('type'))) {
             $type = match ($request->input('reason')) {
                 CreditTransactionReasonEnum::PAY_FOR_SHIPPING->value,
                 CreditTransactionReasonEnum::PAY_FOR_PRODUCT->value,
@@ -45,8 +45,8 @@ class IncreaseCreditTransactionCustomer extends OrgAction
                 CreditTransactionReasonEnum::OTHER->value, CreditTransactionReasonEnum::TRANSFER->value => CreditTransactionTypeEnum::ADD_FUNDS_OTHER
             };
 
-            if (in_array($request->input('reason'), [CreditTransactionReasonEnum::PAY_FOR_SHIPPING->value, CreditTransactionReasonEnum::PAY_FOR_PRODUCT->value]) && !blank($request->input('notes'))) {
-                $this->set('notes', CreditTransactionReasonEnum::getStaticLabel($request->input('reason')) . '. '. $request->input('notes'));
+            if (in_array($this->get('reason'), [CreditTransactionReasonEnum::PAY_FOR_SHIPPING->value, CreditTransactionReasonEnum::PAY_FOR_PRODUCT->value]) && !blank($this->get('notes'))) {
+                $this->set('notes', CreditTransactionReasonEnum::getStaticLabel($this->get('reason')) . '. '. $this->get('notes'));
             }
             $this->set('type', $type->value);
         }
