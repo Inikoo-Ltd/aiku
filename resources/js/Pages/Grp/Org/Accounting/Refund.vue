@@ -48,7 +48,7 @@ import {
 import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft, faOmega, faHockeyPuck, faExclamationCircle, faCheckCircle } from "@fas";
 import { faCheck, faTrashAlt } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import TableInvoiceRefundsInProcessTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceRefundsInProcessTransactions.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";

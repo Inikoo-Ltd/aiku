@@ -10,7 +10,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 import {library} from '@fortawesome/fontawesome-svg-core';
 import { capitalize } from "@/Composables/capitalize"
 import { faShoppingCart,faStoreAlt } from '@fal';
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { computed, ref } from "vue";
 import CustomersDashboard from "@/Pages/Grp/Org/Shop/CRM/CustomerDashboard.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";

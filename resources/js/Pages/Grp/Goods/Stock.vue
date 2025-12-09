@@ -29,6 +29,9 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import TableLocations from "@/Components/Tables/Grp/Org/Inventory/TableLocations.vue";
 import StockShowcase from "@/Components/Showcases/Grp/StockShowcase.vue";
 import { capitalize } from "@/Composables/capitalize"
+import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { Tabs as TSTabs } from "@/types/Tabs"
 library.add(
     faInventory,
     faBox,
@@ -44,19 +47,15 @@ library.add(
 
 );
 
-const locale = useLocaleStore();
-
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 const props = defineProps<{
     title: string,
-    pageHead: object,
-    tabs: {
-        current: string;
-        navigation: object;
-    }
+    pageHead: PageHeadingTypes
+    tabs: TSTabs
     showcase?: object,
     supplier_products?: object
+    org_stocks?: object
 
 }>()
 
@@ -68,6 +67,7 @@ const component = computed(() => {
     const components = {
         showcase: StockShowcase,
         supplier_products: TableSupplierProducts,
+        org_stocks: TableOrgStocks,
         history: ModelChangelog,
     };
     return components[currentTab.value];

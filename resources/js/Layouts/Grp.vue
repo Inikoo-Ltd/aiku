@@ -22,7 +22,7 @@ import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { faStackOverflow, faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import {
-    faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear,
+    faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faRainbow,
     faParking, faSeedling, faBoxCheck,
     faUsers, faShoppingBasket, faLayerGroup, faInboxOut,
     faTachometerAltFast,
@@ -51,7 +51,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
 
-library.add(faAtomAlt, faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faCheckCircle, faTimesCircle, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faArrowRight, faShippingFast, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faBan, faSnooze, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faFolderDownload, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk, faMailBulk)
+library.add(faRainbow, faAtomAlt, faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faCheckCircle, faTimesCircle, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faArrowRight, faShippingFast, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faBan, faSnooze, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faFolderDownload, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk, faMailBulk)
 
 provide("layout", useLayoutStore())
 provide("locale", useLocaleStore())

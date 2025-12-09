@@ -6,7 +6,7 @@ import { computed, ref } from "vue"
 import type { Component } from 'vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 
-import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faEnvelopeOpenText, faStopwatch } from '@fal'
 import DummyComponent from '@/Components/DummyComponent.vue'
@@ -19,7 +19,7 @@ library.add(
 
 const props = defineProps<{
     title: string
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
         navigation: {}

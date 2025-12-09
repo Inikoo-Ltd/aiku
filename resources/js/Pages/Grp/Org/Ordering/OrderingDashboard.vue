@@ -11,7 +11,7 @@ import { faCheckCircle, faTimesCircle } from "@fas"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { routeType } from '@/types/route'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 
@@ -19,7 +19,7 @@ import StatsBox from '@/Components/Stats/StatsBox.vue'
 library.add(faCheckCircle, faTimesCircle )
 
 defineProps<{
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
         navigation: {}

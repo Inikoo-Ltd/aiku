@@ -38,7 +38,7 @@ import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.v
 import TableTimesheets from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheets.vue";
 import TableJobPositions from "@/Components/Tables/Grp/Org/HumanResources/TableJobPositions.vue";
 import type { Table } from "@/types/Table.ts"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import type { Navigation } from "@/types/Tabs";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Popover from '@/Components/Popover.vue'

@@ -6,7 +6,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 import { computed, ref } from 'vue'
 import type { Component } from 'vue'
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { faMoneyBill } from "@fal"
 import { faStop } from "@fal"

@@ -7,7 +7,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { computed, defineAsyncComponent, inject, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"

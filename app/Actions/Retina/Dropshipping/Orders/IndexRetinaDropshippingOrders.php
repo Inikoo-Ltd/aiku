@@ -46,7 +46,7 @@ class IndexRetinaDropshippingOrders extends RetinaAction
 
         $query = QueryBuilder::for(Order::class);
         $query->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
-        $query->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED]);
+        $query->whereNotIn('orders.state', [OrderStateEnum::CREATING]);
 
         $query->leftJoin('order_stats', 'orders.id', '=', 'order_stats.order_id');
         $query->leftJoin('customer_clients', 'customer_clients.id', '=', 'orders.customer_client_id');

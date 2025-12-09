@@ -4,7 +4,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
 import { inject, ref, watch, onMounted, provide } from "vue";
 
-import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import {PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import {routeType} from "@/types/route";

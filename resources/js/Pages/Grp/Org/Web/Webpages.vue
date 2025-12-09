@@ -11,7 +11,7 @@ import TableWebpages from "@/Components/Tables/Grp/Org/Web/TableWebpages.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { faShapes, faSortAmountDownAlt, faSortAmountDown, faHome, faSignInAlt, faBooks, faColumns, faInfoCircle, faNewspaper, faFolderDownload } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Popover from '@/Components/Popover.vue'
 import { trans } from 'laravel-vue-i18n'

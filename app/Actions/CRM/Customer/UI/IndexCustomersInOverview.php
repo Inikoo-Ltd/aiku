@@ -169,7 +169,6 @@ class IndexCustomersInOverview extends OrgAction
     public function htmlResponse(LengthAwarePaginator $customers, ActionRequest $request): Response
     {
         $navigation = CustomersTabsEnum::navigation();
-        unset($navigation[CustomersTabsEnum::DASHBOARD->value]);
 
         $this->tab = $request->get('tab', array_key_first($navigation));
 

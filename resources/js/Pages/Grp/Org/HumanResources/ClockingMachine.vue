@@ -20,7 +20,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 
 import { capitalize } from "@/Composables/capitalize"
 import {faCheckCircle} from '@fas';
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 library.add(
     faIdCard,
     faUser,
