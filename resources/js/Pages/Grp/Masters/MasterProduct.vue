@@ -46,6 +46,7 @@ const props = defineProps<{
     products?: {}
     trade_units?: {}
     sales: {}
+    salesData?: {}
     images?: {}
     mini_breadcrumbs?: any[]
     attachments?: {}
@@ -200,7 +201,7 @@ onMounted(() => {
         </Breadcrumb>
     </div>
 
-    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :handleTabUpdate />
+    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :handleTabUpdate :currency="currency" />
 
     <!-- ✅ PrimeVue Dialog -->
     <Dialog v-model:visible="showDialog" modal header="Add Item to Other Shop" :style="{ width: '60vw' }">
