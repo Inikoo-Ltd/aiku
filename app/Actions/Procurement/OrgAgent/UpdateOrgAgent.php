@@ -48,6 +48,13 @@ class UpdateOrgAgent extends OrgAction
         ];
     }
 
+    public function asController(OrgAgent $orgAgent, ActionRequest $request): OrgAgent
+    {
+        $this->initialisation($orgAgent->organisation, $request);
+
+        return $this->handle($orgAgent, $this->validatedData);
+    }
+
     public function action(OrgAgent $orgAgent, $modelData, $hydratorsDelay = 0): OrgAgent
     {
         $this->asAction       = true;
