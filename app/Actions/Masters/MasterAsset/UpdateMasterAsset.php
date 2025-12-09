@@ -22,6 +22,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Models\Helpers\Language;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
@@ -121,6 +122,19 @@ class UpdateMasterAsset extends OrgAction
         });
 
         CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+
+
+        if ($masterAsset->wasChanged('unit')) {
+            $english = Language::where('code', 'en')->first();
+
+            foreach ($masterAsset->products as $product) {
+                if ($product->is_single_trade_unit && $product->shop->language_id == $english->id) {
+                    UpdateProduct::run($product, [
+                        'unit' => $masterAsset->unit,
+                    ]);
+                }
+            }
+        }
 
         if ($masterAsset->wasChanged('is_for_sale')) {
             foreach ($masterAsset->products as $product) {

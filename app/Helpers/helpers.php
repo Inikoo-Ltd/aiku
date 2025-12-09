@@ -253,7 +253,7 @@ if (!function_exists('trimDecimalZeros')) {
     function trimDecimalZeros(int|float|string|null $value): string
     {
 
-        if($value === null){
+        if ($value === null) {
             return '';
         }
 

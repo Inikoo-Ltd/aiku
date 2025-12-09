@@ -11,7 +11,7 @@ import TableLocations from "@/Components/Tables/Grp/Org/Inventory/Fulfilment/Tab
 import { capitalize } from "@/Composables/capitalize"
 import { faWarehouse, faMapSigns } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 library.add(faWarehouse, faMapSigns)
 
 defineProps<{

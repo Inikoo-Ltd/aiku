@@ -85,7 +85,7 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
                     'parameters' => [$customerSalesChannel->slug]
                 ],
                 'right_label' => [
-                    'number'        => $customerSalesChannel->number_orders - $customerSalesChannel->number_orders_state_creating - $customerSalesChannel->number_orders_state_cancelled,
+                    'number'        => $customerSalesChannel->number_orders - $customerSalesChannel->number_orders_state_creating,
                     'class'        => 'text-white',
                 ],
             ];

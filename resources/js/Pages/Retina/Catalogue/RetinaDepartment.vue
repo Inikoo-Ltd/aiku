@@ -23,7 +23,7 @@ import { faDiagramNext } from "@fortawesome/free-solid-svg-icons";
 import RetinaTableProducts from "@/Components/Tables/Retina/RetinaTableProducts.vue";
 import RetinaTableFamilies from "@/Components/Tables/Retina/RetinaTableFamilies.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import RetinaTableCollections from "@/Components/Tables/Retina/RetinaTableCollections.vue";
 import TableSubDepartments from "@/Components/Tables/Retina/RetinaTableSubDepartments.vue";
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue";

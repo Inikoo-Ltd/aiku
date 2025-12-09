@@ -18,7 +18,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import TableEmployees from "@/Components/Tables/Grp/Org/HumanResources/TableEmployees.vue";
 import TableGuests from "@/Components/Tables/Grp/SysAdmin/TableGuests.vue";
 import type { Navigation } from "@/types/Tabs";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(
   faUserHardHat,

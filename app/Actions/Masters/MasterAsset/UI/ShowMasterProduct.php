@@ -36,7 +36,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 
-class  ShowMasterProduct extends GrpAction
+class ShowMasterProduct extends GrpAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
@@ -100,7 +100,7 @@ class  ShowMasterProduct extends GrpAction
         return Inertia::render(
             'Masters/MasterProduct',
             [
-                'title'            => __('product'),
+                'title'            => __('Master product').' '.$masterAsset->code,
                 'breadcrumbs'      => $this->getBreadcrumbs(
                     $masterAsset,
                     $request->route()->getName(),
@@ -225,6 +225,8 @@ class  ShowMasterProduct extends GrpAction
                 'currency'         => $masterAsset->group->currency,
                 'shopsData'        => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
                 'tradeUnits'       => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset)),
+                'is_single_trade_unit'  => $masterAsset->is_single_trade_unit,
+                'trade_unit_slug'       => $masterAsset->tradeUnits?->first->slug,
                 'salesData'        => GetMasterProductSalesData::run($masterAsset),
                 'tabs'             => [
                     'current'    => $this->tab,

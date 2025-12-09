@@ -29,15 +29,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $packed_in
  * @property mixed $quantity_available
  * @property mixed $id
+ * @property mixed $organisation_code
  */
 class OrgStocksResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $quantityAvailable = $this->quantity_available;
-        if ($quantityAvailable) {
-            $quantityAvailable = trimDecimalZeros($quantityAvailable);
-        }
+
 
         return [
             'id'                              => $this->id,
@@ -46,7 +44,8 @@ class OrgStocksResource extends JsonResource
             'state'                           => $this->state->stateIcon()[$this->state->value],
             'name'                            => $this->name,
             'quantity'                        => $this->quantity,
-            'quantity_available'              => $quantityAvailable,
+            'quantity_available'              => trimDecimalZeros($this->quantity_available),
+            'quantity_in_locations'           => trimDecimalZeros($this->quantity_in_locations),
             'unit_value'                      => $this->unit_value,
             'number_locations'                => $this->number_location,
             'quantity_locations'              => $this->quantity_in_locations,
@@ -54,9 +53,13 @@ class OrgStocksResource extends JsonResource
             'family_code'                     => $this->family_code,
             'discontinued_in_organisation_at' => $this->discontinued_in_organisation_at,
             'organisation_name'               => $this->organisation_name,
+            'organisation_code'               => $this->organisation_code,
             'organisation_slug'               => $this->organisation_slug,
             'warehouse_slug'                  => $this->warehouse_slug,
-            'pick_fractional'                 => ($this->quantity && $this->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity)), $this->packed_in) : [],
+            'packed_in'                       => trimDecimalZeros($this->packed_in),
+
+
+            'pick_fractional' => ($this->quantity && $this->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity)), $this->packed_in) : [],
         ];
     }
 }

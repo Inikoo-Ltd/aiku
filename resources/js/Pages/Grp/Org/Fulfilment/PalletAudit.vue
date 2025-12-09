@@ -2,7 +2,7 @@
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
 import { faStickyNote, faCheck, faCheckCircle as falCheckCircle, faUndo, faArrowToLeft, faTrashAlt, faUndoAlt, faArrowAltToLeft } from '@fal'

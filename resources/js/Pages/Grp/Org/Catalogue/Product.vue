@@ -16,7 +16,7 @@ import Tabs from '@/Components/Navigation/Tabs.vue'
 import Breadcrumb from 'primevue/breadcrumb'
 import Message from 'primevue/message'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import type { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import type { PageHeadingTypes } from '@/types/PageHeading'
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
 import TableMailshots from "@/Components/Tables/TableMailshots.vue"

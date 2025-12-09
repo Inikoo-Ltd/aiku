@@ -321,13 +321,13 @@ export const resolveResponsiveValue = (
 		)
 
 
-		console.log(getVal(properties?.padding, ["right", "value"]) &&
-				getVal(properties.padding, ["unit"])
-					? `${getVal(properties.padding, ["right", "value"])}${getVal(
-							properties.padding,
-							["unit"]
-					  )}`
-					: null)
+		// console.log(getVal(properties?.padding, ["right", "value"]) &&
+		// 		getVal(properties.padding, ["unit"])
+		// 			? `${getVal(properties.padding, ["right", "value"])}${getVal(
+		// 					properties.padding,
+		// 					["unit"]
+		// 			  )}`
+		// 			: null)
 		return data
   }
 

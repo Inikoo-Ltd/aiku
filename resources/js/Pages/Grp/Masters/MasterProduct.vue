@@ -15,7 +15,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import MasterProductShowcase from "@/Components/Showcases/Grp/MasterProductShowcase.vue"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from "primevue/breadcrumb"
@@ -53,6 +53,8 @@ const props = defineProps<{
     shopsData: any[]
     masterAsset: {}
     tradeUnits : {}
+    is_single_trade_unit?: boolean
+    trade_unit_slug?: string
 }>()
 console.log('sdsjkh',props.trade_units)
 const layout = inject('layout', {});
@@ -173,9 +175,12 @@ onMounted(() => {
                     </div>
                 </div>
             </component>
-          <!--   <Link :href="route('grp.trade_units.units.show',[])" class="flex gap-x-2 items-center">
-                <FontAwesomeIcon v-tooltip="'trade unit'" :icon="faAtom" class="align-top" :class="'text-gray-300'"  aria-hidden="true" />
-            </Link> -->
+
+            <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
+                <FontAwesomeIcon
+                    icon="fal fa-atom"
+                />
+            </Link>
         </template>
 
         <template #button-assign="{ action }">

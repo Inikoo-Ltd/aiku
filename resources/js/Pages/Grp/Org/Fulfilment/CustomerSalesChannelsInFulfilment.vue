@@ -4,7 +4,7 @@ import TableFulfilmentCustomerSalesChannels from "@/Components/Tables/Grp/Org/Fu
 import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import { Table } from "@/types/Table";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 
 
 defineProps<{

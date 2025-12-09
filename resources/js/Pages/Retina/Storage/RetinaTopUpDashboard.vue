@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {  faCheckCircle, faInfoCircle, faExclamationTriangle,faSeedling, faShare, faSpellCheck, faCheck, faTimes, faSignOutAlt, faTruck, faCheckDouble, faCross } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import CountUp from 'vue-countup-v3'
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { routeType } from '@/types/route'
 import { inject, ref } from 'vue'

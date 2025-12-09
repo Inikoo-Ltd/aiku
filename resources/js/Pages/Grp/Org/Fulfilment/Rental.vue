@@ -15,7 +15,7 @@
   import Tabs from "@/Components/Navigation/Tabs.vue"
   
   import { capitalize } from "@/Composables/capitalize"
-  import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+  import { PageHeadingTypes } from '@/types/PageHeading'
 import RentalShowcase from '@/Components/Fulfilment/RentalShowcase.vue'
   
   library.add(
