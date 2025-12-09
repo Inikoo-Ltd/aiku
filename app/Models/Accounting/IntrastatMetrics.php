@@ -21,15 +21,15 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $organisation_id
  * @property Carbon $date
- * @property string $tariff_code
+ * @property string $tariff_code Tariff code (HS code), may contain spaces
  * @property int $country_id
  * @property int|null $tax_category_id
  * @property string $quantity
  * @property string $value_org_currency
- * @property int $weight
+ * @property int $weight Weight in grams
  * @property int $delivery_notes_count
  * @property int $products_count
- * @property array|null $data
+ * @property array<array-key, mixed>|null $data Warnings, metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Country $country

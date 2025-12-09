@@ -67,7 +67,7 @@ class RepairExtractWooCredentials
             foreach (WooCommerceUser::all() as $wooUser) {
                 $result = $this->handle($wooUser, $command);
 
-                if($result) {
+                if ($result) {
                     $ok++;
                 } else {
                     $no++;
