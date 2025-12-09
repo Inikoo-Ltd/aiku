@@ -15,6 +15,7 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterAsset\GetMasterProductSalesData;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
@@ -35,7 +36,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 
-class ShowMasterProduct extends GrpAction
+class  ShowMasterProduct extends GrpAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
@@ -224,6 +225,7 @@ class ShowMasterProduct extends GrpAction
                 'currency'         => $masterAsset->group->currency,
                 'shopsData'        => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
                 'tradeUnits'       => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset)),
+                'salesData'        => GetMasterProductSalesData::run($masterAsset),
                 'tabs'             => [
                     'current'    => $this->tab,
                     'navigation' => MasterAssetTabsEnum::navigation()
