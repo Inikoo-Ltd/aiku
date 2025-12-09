@@ -9,12 +9,7 @@
 namespace App\Actions\Maintenance\Dropshipping;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
-use App\Models\Dropshipping\Platform;
-use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairEbayDeletedUsers
@@ -24,8 +19,8 @@ class RepairEbayDeletedUsers
 
     public function handle(EbayUser $ebayUser): void
     {
-        if(!$ebayUser->customerSalesChannel) {
-             $ebayUser->delete();
+        if (!$ebayUser->customerSalesChannel) {
+            $ebayUser->delete();
 
             echo $ebayUser->name . "-" . $ebayUser->step->value . "\n";
         }
@@ -36,7 +31,7 @@ class RepairEbayDeletedUsers
         return 'repair:ebay_deleted_users_corrupt';
     }
 
-    public function asCommand(Command $command): void
+    public function asCommand(): void
     {
         $ebayUsers = EbayUser::all();
 
