@@ -320,7 +320,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(CustomersHydrateReorderRemainderEmails::makeJob())->dailyAt('00:00')->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            $schedule->job(CustomersHydrateReorderRemainderEmails::makeJob())->hourly()->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'CustomersHydrateReorderRemainderEmails',
             ),
             name: 'CustomersHydrateReorderRemainderEmails',
