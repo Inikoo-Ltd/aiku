@@ -68,7 +68,7 @@ const _iframe = ref<IframeHTMLAttributes | null>(null)
 const iframeSrc = ref(route("grp.websites.header.preview", [route().params["website"]]))
 const layout = inject('layout', layoutStructure)
 
-const onPublish = async (action: routeType, popover: Funcition) => {
+const onPublish = async (action: routeType, popover: Function) => {
 	try {
 		// Ensure action is defined and has necessary properties
 		if (!action || !action.method || !action.name || !action.parameters) {
