@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref } from "vue"
-import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
+import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
@@ -84,7 +84,11 @@ const props = withDefaults(
         data: PropsData
         gpsr?: Gpsr
         hide?: string[]
-        publicAttachment: array<any>
+        // publicAttachment: array<any>
+        attachments: {
+            public: {}[]
+            private: {}[]
+        }
         properties?: {
             country_of_origin?: { code: string; name: string }
             tariff_code?: string
@@ -320,40 +324,6 @@ const getIcon = (type?: string) => {
                                 {{ data?.hazard_identification_number }}
                             </dd>
                         </div>
-                        <div class="">
-                            <dt class="text-gray-500 pb-2">{{ trans("Public Documents") }}</dt>
-                            <div>
-                                <ul v-if="publicAttachment.some(i => i.attachment)"
-                                    class="divide-y divide-gray-100 text-sm">
-                                    <li v-for="(item, index) in publicAttachment.filter(i => i.attachment)"
-                                        :key="'public-' + index"
-                                        class="flex items-center justify-between px-1 py-2 hover:bg-blue-50 transition">
-                                        <div class="flex items-center gap-1.5">
-                                            <FontAwesomeIcon :icon="getIcon(item.attachment?.type)" :class="[
-                                                item.attachment ? 'text-green-500' : 'text-gray-400',
-                                                'text-xs'
-                                            ]" />
-                                            <span class="text-gray-700 truncate">{{ item.label }}</span>
-                                        </div>
-
-                                        <div class="flex items-center gap-1 text-xs">
-                                            <template v-if="item.attachment">
-                                                <a :href="route(item?.download_route?.name, item?.download_route?.parameters)"
-                                                    target="_blank"
-                                                    class="text-green-600 flex items-center gap-1 hover:underline truncate max-w-[150px]">
-                                                    <FontAwesomeIcon :icon="faCheckCircle"
-                                                        class="text-green-500 text-[10px]" />
-                                                    {{ item.attachment.name }}
-                                                </a>
-                                            </template>
-
-                                            <span v-else class="italic text-gray-400">Not Uploaded</span>
-                                        </div>
-                                    </li>
-                                </ul>
-                            </div>
-
-                        </div>
                     </div>
                 </AccordionContent>
             </AccordionPanel>
@@ -490,6 +460,104 @@ const getIcon = (type?: string) => {
                                 {{ trans("No instructions specified") }}
                             </div>
                         </div>
+                    </div>
+                </AccordionContent>
+            </AccordionPanel>
+
+            <!-- Panel: Attachments (private) -->
+            <AccordionPanel value="7">
+                <AccordionHeader>
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-base">Attachments (Private) ({{ props.attachments?.private?.filter(i => i.attachment)?.length ?? 0}})</span>
+                        <FontAwesomeIcon icon="fal fa-lock" class="text-red-500" />
+                    </div>
+                </AccordionHeader>
+                <AccordionContent>
+                    <div class="space-y-4 pt-2">
+                        <ul v-if="props.attachments?.private?.filter(i => i.attachment)?.length" class="divide-y divide-gray-100">
+                            <li
+                            v-for="(item, index) in props.attachments.private.filter(i => i.attachment)"
+                            :key="'private-' + index"
+                            class="flex items-center justify-between px-4 py-3 text-sm hover:bg-red-50 transition"
+                            >
+                            <div class="flex items-center gap-2">
+                                <!-- Dynamic icon color -->
+                                <FontAwesomeIcon
+                                :icon="getIcon(item.attachment?.type)"
+                                :class="[
+                                    item.attachment ? 'text-green-500' : 'text-gray-400',
+                                    'transition'
+                                ]"
+                                />
+                                <span class="text-gray-700">{{ item.label }}</span>
+                            </div>
+
+                            <div class="flex items-center gap-1">
+                                <template v-if="item.attachment">
+                                <a
+                                    :href="route(item?.download_route?.name, item?.download_route?.parameters)"
+                                    target="_blank"
+                                    class="text-xs text-green-600 flex items-center gap-1 hover:underline"
+                                >
+                                    <FontAwesomeIcon :icon="faCheckCircle" class="text-green-500 text-xs" />
+                                    {{ item.attachment.name }}
+                                </a>
+                                </template>
+                                <span v-else class="text-xs italic text-gray-400">Not Uploaded</span>
+                            </div>
+                            </li>
+                        </ul>
+
+                        <p v-else class="text-xs text-gray-400 italic px-4 py-3">No private attachments available</p>
+                    </div>
+                </AccordionContent>
+            </AccordionPanel>
+
+            <!-- Panel: Attachments (public) -->
+            <AccordionPanel value="8">
+                <AccordionHeader>
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-base">Attachments (Public) ({{ props.attachments?.public?.filter(i => i.attachment)?.length ?? 0 }})</span>
+                        <FontAwesomeIcon icon="fal fa-lock" class="text-blue-500" />
+                    </div>
+                </AccordionHeader>
+                <AccordionContent>
+                    <div class="space-y-4 pt-2">
+                        <ul v-if="props?.attachments?.private?.filter(i => i.attachment)?.length" class="divide-y divide-gray-100">
+                            <li
+                            v-for="(item, index) in props.attachments.private.filter(i => i.attachment)"
+                            :key="'private-' + index"
+                            class="flex items-center justify-between px-4 py-3 text-sm hover:bg-red-50 transition"
+                            >
+                            <div class="flex items-center gap-2">
+                                <!-- Dynamic icon color -->
+                                <FontAwesomeIcon
+                                :icon="getIcon(item.attachment?.type)"
+                                :class="[
+                                    item.attachment ? 'text-green-500' : 'text-gray-400',
+                                    'transition'
+                                ]"
+                                />
+                                <span class="text-gray-700">{{ item.label }}</span>
+                            </div>
+
+                            <div class="flex items-center gap-1">
+                                <template v-if="item.attachment">
+                                <a
+                                    :href="route(item?.download_route?.name, item?.download_route?.parameters)"
+                                    target="_blank"
+                                    class="text-xs text-green-600 flex items-center gap-1 hover:underline"
+                                >
+                                    <FontAwesomeIcon :icon="faCheckCircle" class="text-green-500 text-xs" />
+                                    {{ item.attachment.name }}
+                                </a>
+                                </template>
+                                <span v-else class="text-xs italic text-gray-400">Not Uploaded</span>
+                            </div>
+                            </li>
+                        </ul>
+
+                        <p v-else class="text-xs text-gray-400 italic px-4 py-3">No private attachments available</p>
                     </div>
                 </AccordionContent>
             </AccordionPanel>

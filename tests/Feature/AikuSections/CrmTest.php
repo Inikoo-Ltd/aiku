@@ -46,6 +46,7 @@ use App\Actions\CRM\WebUser\HydrateWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -1115,6 +1116,7 @@ test('add balance customer', function (Customer $customer) {
         [
             'amount' => 100,
             'type'   => CreditTransactionTypeEnum::ADD_FUNDS_OTHER->value,
+            'reason' => CreditTransactionReasonEnum::COMPENSATE_CUSTOMER,
             'notes'  => 'test',
         ]
     );
@@ -1134,8 +1136,9 @@ test('withdraw balance customer', function (Customer $customer) {
     $creditTransaction = DecreaseCreditTransactionCustomer::make()->action(
         $customer,
         [
-            'amount' => 100,
+            'amount' => -100,
             'type'   => CreditTransactionTypeEnum::MONEY_BACK->value,
+            'reason' => CreditTransactionReasonEnum::OTHER
         ]
     );
     $customer->refresh();

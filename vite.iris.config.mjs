@@ -18,6 +18,7 @@ export default defineConfig(
     server : {
       cors : true,
       watch: {
+        usePolling: false,
         ignored: ["**/storage/media/**"]
       }
     },

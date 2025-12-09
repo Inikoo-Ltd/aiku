@@ -130,16 +130,6 @@ const validImages = computed(() => {
 })
 
 const fetchData = async () => {
-  try {
-    const response = await axios.get(
-      route("iris.catalogue.product.resource", {
-        product: product.value.slug
-      })
-    )
-    product.value = {...product.value, ...response.data}
-  } catch (error: any) {
-    console.error("cannot break cached cuz", error)
-  }
 }
 
 
@@ -172,9 +162,6 @@ onMounted(() => {
                 ]
             }
         })
-    }
-    if (layout?.iris?.is_logged_in) {
-        fetchData()
     }
 })
 
