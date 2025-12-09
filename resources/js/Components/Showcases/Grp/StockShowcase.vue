@@ -107,7 +107,7 @@ const compSelectedTradeUnit = computed(() => {
 
 
 <template>
-    <Message severity="error" class="mt-8 mx-4 md:mx-10 ">
+    <!-- <Message severity="error" class="mt-8 mx-4 md:mx-10 ">
         <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-center w-full mx-auto">
             <div class="">
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
@@ -118,7 +118,7 @@ const compSelectedTradeUnit = computed(() => {
                 </div>
             </div>
         </div>
-    </Message>
+    </Message> -->
     
     <div class="grid md:grid-cols-4 gap-x-1 gap-y-4 p-6">
         <!-- Sidebar -->

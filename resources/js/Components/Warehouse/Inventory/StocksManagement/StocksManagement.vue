@@ -20,6 +20,7 @@ import Icon from '@/Components/Icon.vue'
 import { routeType } from '@/types/route'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { StockLocation, StocksManagementTS } from '@/types/Inventory/StocksManagement'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faShoppingBasket, faStickyNote, faShoppingCart)
 
 const props = defineProps<{
@@ -28,6 +29,7 @@ const props = defineProps<{
 
 console.log('stocks_management', props.stocks_management)
 
+const layout = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
 // Active picking location state
@@ -415,7 +417,7 @@ const getQuestionTooltip = (locationId: number) => {
             <Button @click="() => isStockCheck = !isStockCheck" iconRight="fal fa-clipboard-check"
                 :label="trans('Stock check')" size="sm" type="tertiary" />
 
-            <Button @click="() => isMoveStock = !isMoveStock" iconRight="fal fa-forklift" :label="trans('Move stock')"
+            <Button v-if="layout.app.environment === 'local'" @click="() => isMoveStock = !isMoveStock" iconRight="fal fa-forklift" :label="trans('Move stock')"
                 size="sm" type="tertiary" />
 
             <Button @click="() => isEditLocations = !isEditLocations" iconRight="fal fa-edit"
