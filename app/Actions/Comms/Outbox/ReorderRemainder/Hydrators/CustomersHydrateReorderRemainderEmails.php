@@ -34,12 +34,12 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
     {
 
         $queryOutbox = QueryBuilder::for(Outbox::class);
-        $queryOutbox->where('code', OutboxCodeEnum::REORDER_REMINDER);
+        $queryOutbox->whereIn('code', [OutboxCodeEnum::REORDER_REMINDER,OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->whereNotNull('shop_id');
         $queryOutbox->leftJoin('outbox_settings', 'outboxes.id', '=', 'outbox_settings.outbox_id');
         // $queryOutbox->where('outbox_settings.outbox_id', 843);// for testing bulgaria outbox
-        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outbox_settings.days_after', 'outbox_settings.send_time');
+        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outbox_settings.days_after', 'outbox_settings.send_time');
         $outboxes = $queryOutbox->get();
 
         $currentDateTime = Carbon::now()->utc();
@@ -79,19 +79,19 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
                 foreach ($queryUser->cursor() as $customer) {
                     $bulkRun = $this->generateEmailBulkRuns(
                         $customer,
-                        OutboxCodeEnum::REORDER_REMINDER,
+                        $outbox->code,
                         $currentDateTime->copy()->toDateString()
                     );
 
                     $LastBulkRun = $bulkRun;
 
                     // Dispatch SendReOrderRemainderToCustomerEmail immediately
-                    SendReOrderRemainderToCustomerEmail::dispatch($customer, $bulkRun);
+                    SendReOrderRemainderToCustomerEmail::dispatch($customer, $outbox->code, $bulkRun);
                 }
 
                 if ($LastBulkRun) {
                     // No delay needed since we're dispatching immediately
-                    EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun);
+                    EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun); // note: make sure to call this function
                 }
 
 

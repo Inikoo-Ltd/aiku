@@ -23,8 +23,8 @@ class SendReOrderRemainderToCustomerEmail implements ShouldQueue
 
     public string $jobQueue = 'low-priority';
 
-    public function handle(Customer $customer, EmailBulkRun $emailBulkRun): DispatchedEmail
+    public function handle(Customer $customer, OutboxCodeEnum $outboxCodeEnum, EmailBulkRun $emailBulkRun): DispatchedEmail
     {
-        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::REORDER_REMINDER, [], '', null, null, $emailBulkRun);
+        return $this->sendCustomerOutboxEmail($customer, $outboxCodeEnum, [], '', null, null, $emailBulkRun);
     }
 }

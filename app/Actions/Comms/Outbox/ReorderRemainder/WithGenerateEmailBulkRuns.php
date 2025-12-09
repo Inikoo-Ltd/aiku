@@ -10,7 +10,6 @@ namespace App\Actions\Comms\Outbox\ReorderRemainder;
 
 use App\Actions\Comms\EmailBulkRun\StoreEmailBulkRun;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
-use App\Enums\Comms\EmailBulkRun\EmailBulkRunTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
@@ -42,7 +41,7 @@ trait WithGenerateEmailBulkRuns
         $emailBulkRun = StoreEmailBulkRun::run($outbox->emailOngoingRun, [
             'scheduled_at' => $date,
             'subject'      => now()->format('Y.m.d'),
-            'state'        => EmailBulkRunStateEnum::SENDING,
+            'state'        => EmailBulkRunStateEnum::SENDING, // note: make sure this conditions
         ]);
 
         return $emailBulkRun;
