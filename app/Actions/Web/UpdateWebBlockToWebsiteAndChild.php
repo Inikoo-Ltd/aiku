@@ -15,7 +15,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Events\BroadcastUpdateWeblocks;
 use App\Models\Web\Website;
 use App\Models\Web\WebBlockType;
-use Illuminate\Support\Facades\Log;
 
 class UpdateWebBlockToWebsiteAndChild extends OrgAction
 {
@@ -35,9 +34,9 @@ class UpdateWebBlockToWebsiteAndChild extends OrgAction
             })->orderBy('id');
 
         $lastPercent = 0;
-        $total = $webpages->count();
+        $total = (clone $webpages)->count();
 
-        $webpages->chunkById(500, function ($webpages) use ($names, $newWebBlock, $fieldValue, $website, &$progress, &$total, &$lastPercent) {
+        $webpages->chunk(500, function ($webpages) use ($names, $newWebBlock, $fieldValue, $website, &$progress, &$total, &$lastPercent) {
             foreach ($webpages as $webpage) {
                 $modified = $this->modifyLayout($webpage->published_layout, $names, $newWebBlock->slug, $fieldValue);
                 if (empty($modified)) {
@@ -49,8 +48,7 @@ class UpdateWebBlockToWebsiteAndChild extends OrgAction
                 $blockId = data_get($modified['layout'], "web_blocks.{$modified['index']}.web_block.id");
 
                 $targetWebBlock = $webpage->webBlocks()->find($blockId);
-                if ($targetWebBlock) {
-                    $layout = $targetWebBlock->layout;
+                if ($layout = $targetWebBlock?->layout) {
                     data_set($layout, 'data.fieldValue', $fieldValue);
                     $targetWebBlock->updateQuietly([
                         'web_block_type_id' => $newWebBlock->id,
@@ -70,10 +68,8 @@ class UpdateWebBlockToWebsiteAndChild extends OrgAction
 
                 $progress++;
                 $percent = intval(($progress / $total) * 100);
-                Log::info("Progress: $progress / $total ($percent%)");
                 if ($percent >= $lastPercent + 10) {
                     $lastPercent = $percent;
-
                     BroadcastUpdateWeblocks::dispatch($percent,$website);
                 }
             }

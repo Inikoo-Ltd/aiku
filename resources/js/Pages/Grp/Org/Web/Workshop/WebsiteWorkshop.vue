@@ -110,9 +110,7 @@ const initSocketListener = () => {
       progress.value = eventData.percent
       if (eventData.percent == 100) {
         loadingPublish.value = false
-        progress.value = 0
       }
-
     }
     if (eventData.percent >= 100) stopSocketListener();
   });
@@ -121,6 +119,7 @@ const initSocketListener = () => {
 
 
 const stopSocketListener = () => {
+  progress.value = 0 // Moved it here.
   /*   if (channel.value) {
       channel.value.stopListening()
       channel.value = null
