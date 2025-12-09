@@ -12,7 +12,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faTerminal } from '@fal'
 import { faClock } from '@far'
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 library.add(faTerminal, faClock)
 
 

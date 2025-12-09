@@ -7,7 +7,7 @@
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { useTabChange } from "@/Composables/tab-change"
 import { ref, computed, watch } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"

@@ -11,7 +11,7 @@
   import { capitalize } from "@/Composables/capitalize"
   import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faFolderDownload } from '@fal'
   import { library } from "@fortawesome/fontawesome-svg-core"
-  import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+  import { PageHeadingTypes } from '@/types/PageHeading'
   library.add( faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown ,faHome, faFolderDownload)
 
   defineProps<{

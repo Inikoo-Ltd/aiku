@@ -40,7 +40,7 @@ import {
   faWallet
 } from "@fal";
 import { notify } from "@kyvg/vue3-notification";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import type { Navigation } from "@/types/Tabs";
 import Modal from "@/Components/Utils/Modal.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";

@@ -335,7 +335,7 @@ class ShowProduct extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Product',
             [
-                'title'            => __('Product'),
+                'title'            => $product->code,
                 'breadcrumbs'      => $this->getBreadcrumbs(
                     $this->parent,
                     $product,

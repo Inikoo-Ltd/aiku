@@ -43,7 +43,7 @@ import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck, faOmega, fa
 import {faCheck} from "@far";
 import {faSpinnerThird} from "@fad";
 import {useFormatTime} from "@/Composables/useFormatTime";
-import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import {PageHeadingTypes} from "@/types/PageHeading";
 import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue";
 
 import Modal from "@/Components/Utils/Modal.vue";

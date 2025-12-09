@@ -8,7 +8,7 @@ import { Head, Link} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Table from "@/Components/Table/Table.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import Icon from "@/Components/Icon.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChair, faHandPaper, faBoxCheck} from "@fal";

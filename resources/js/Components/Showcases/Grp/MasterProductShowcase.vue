@@ -32,6 +32,7 @@ import { Link, router } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/layout"
 import { provide } from "vue"
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
+import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
 
 
 library.add(
@@ -59,6 +60,7 @@ console.log(layout.app.theme);
 const props = defineProps<{
 	currency: string,
 	handleTabUpdate: Function
+	salesData?: any
 	data: {
 		availability_status: {
 			is_for_sale: boolean
@@ -213,6 +215,7 @@ console.log(props);
 				{{ data.masterProduct.name }}
 			</span>
 		</div>
+		
 		<div v-if="data.availability_status || data.trade_units.length > 0" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center items-center flex">
 			<div v-tooltip="data.trade_units.length > 1 ? trans('Click to view all trade units detail') : ''" class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer me-2 flex border-green-600" v-on:click="isModalSKUDetail = true">
 				<div v-if="data.trade_units.length == 1" class="text-teal-600 whitespace-nowrap w-full">
@@ -225,15 +228,17 @@ console.log(props);
 					<span class=""> Multi Trade Units</span>
 				</div>
 				<div class="border-s border-green-600 text-gray-700 whitespace-nowrap font-bold ms-2 ps-2">
-					{{ data.masterProduct.units + " " + data.masterProduct.unit }} 
+					{{ data.masterProduct.units + " " + data.masterProduct.unit }}
 				</div>
 			</div>
+			
 			<span v-if="data.availability_status"
-			v-on:click="isModalProductForSale = true"
-			v-tooltip="getTooltips()"
-			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
-			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
-				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
+				v-on:click="isModalProductForSale = true"
+				v-tooltip="getTooltips()"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+				:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'"
+			>
+				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
 				(<span class="font-semibold" :class='data.availability_status.total_product_for_sale != data.availability_status.product.length ? "opacity-80" : ""'>
 					{{ `${data.availability_status.total_product_for_sale}/${data.availability_status.product.length}` }}
 				</span>)
@@ -248,7 +253,7 @@ console.log(props);
 		</div>
 	</div>
 
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
+	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Master Product Tags -->
@@ -281,13 +286,21 @@ console.log(props);
 			</div>
 		</div>
 
-		<TradeUnitMasterProductSummary
-			:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}" 
-			:gpsr="data.gpsr" 
-			:properties="data.properties"
-			xpublic-attachment="[]"
-			:attachments="data.attachment_box"
-		/>
+		<!-- Product Summary - spans 2 columns -->
+		<div class="lg:col-span-2">
+			<TradeUnitMasterProductSummary
+				:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
+				:gpsr="data.gpsr"
+				:properties="data.properties"
+				xpublic-attachment="[]"
+				:attachments="data.attachment_box"
+			/>
+		</div>
+
+        <!-- Sales Analytics - right sidebar -->
+        <div v-if="salesData">
+            <SalesAnalyticsCompact :salesData="salesData" class="mr-2" />
+        </div>
 
 		<!-- <div>
 			<pre>{{ data.attachment_box }}</pre>

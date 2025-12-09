@@ -22,7 +22,7 @@ import OverviewCard from "../../../../Components/DataDisplay/OverviewCard.vue"
 import { computed } from "vue"
 import { capitalize } from "@/Composables/capitalize";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faArrowUp, faArrowDown, faHandSparkles, faEnvelope, faUser, faHdd, faCloudDownload)
 

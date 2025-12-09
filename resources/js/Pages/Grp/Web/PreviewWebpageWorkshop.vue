@@ -162,9 +162,18 @@ watch(filterBlock, () => {
                 </div>
 
                 <!-- Dynamic Block -->
-                <component :code="block.type" :is="getComponent(block.type,  { shop_type: layout?.retina?.type })" class="w-full" :webpageData="data" :blockData="block"
-                  :index-block="idx" :key="key" v-model="block.web_block.layout.data.fieldValue"
-                  :screenType="screenType" @autoSave="() => updateData(block)"/>
+                <component 
+                  :code="block.type" 
+                  :is="getComponent(block.type,{shop_type: layout?.retina?.type})" 
+                  class="w-full" 
+                  :webpageData="data" 
+                  :blockData="block"
+                  :index-block="idx" 
+                  :key="key" 
+                  v-model="block.web_block.layout.data.fieldValue"
+                  :screenType="screenType"
+                  @autoSave="() => updateData(block)"
+                />
               </section>
             </template>
           </TransitionGroup>

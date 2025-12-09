@@ -13,7 +13,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from '@/Components/Utils/Modal.vue'
 import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faPencil, faMinus  } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route";
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue";
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'

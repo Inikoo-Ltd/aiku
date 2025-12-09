@@ -13,6 +13,7 @@ import { useConfirm } from "primevue/useconfirm"
 import ConfirmPopup from "primevue/confirmpopup"
 import { faCopy, faExclamationTriangle } from "@far";
 import { faEye, faEyeSlash } from "@fal";
+import { trans } from "laravel-vue-i18n"
 
 const props = defineProps<{
     data: {
@@ -119,7 +120,9 @@ const autoSave = async (event) => {
     >
         <template #item="{ element, index }">
             <div @click="() => SetMenuActive(index)"
-                class="group flex items-center bg-white border border-gray-200 rounded shadow-sm overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
+                class="group flex items-center bg-white border border-gray-200 rounded shadow-sm overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400"
+                :class="element.hidden ? 'opacity-50 hover:opacity-100' : ''"
+            >
                 <!-- Drag Handle -->
                 <div class="drag-handle cursor-move px-3 py-2 text-gray-500 hover:text-indigo-600"
                     title="Drag to reorder" @click.stop>
@@ -134,23 +137,25 @@ const autoSave = async (event) => {
                     <div class="text-sm font-semibold text-gray-700">{{ element.label }}</div>
                 </div>
 
-                <button  @click.stop="() => hiddenNavigation(index)"
-                    class="px-3 py-2 transition duration-150"
-                    :title="element.hidden ? 'hide menu' : 'show menu'">
-                    <FontAwesomeIcon :icon="element.hidden ?  faEyeSlash : faEye" />
+                <button @click.stop="() => hiddenNavigation(index)"
+                    class="px-2 py-1"
+                    v-tooltip="element.hidden ? trans('Hide menu') : trans('Show menu')">
+                    <FontAwesomeIcon v-if="element.hidden" :icon="faEyeSlash" class="text-red-400 hover:text-red-700" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else :icon="faEye" class="text-gray-400 hover:text-gray-700" fixed-width aria-hidden="true" />
                 </button>
 
-                 <button  @click.stop="() => copyNavigation(index)"
-                    class="px-3 py-2 transition duration-150"
-                    title="hidden menu">
-                    <FontAwesomeIcon :icon="faCopy" />
+                <button @click.stop="() => copyNavigation(index)"
+                    class="px-2 py-1 text-gray-400 hover:text-gray-700"
+                    v-tooltip="trans('Duplicate menu')"
+                >
+                    <FontAwesomeIcon :icon="faCopy" class="" fixed-width aria-hidden="true" />
                 </button>
 
                 <!-- Delete Button -->
                 <button :ref="el => deleteButtonRefs[index] = el" @click.stop="() => deleteNavigation(index)"
-                    class="px-3 py-2 text-red-500 hover:text-red-700 transition duration-150"
-                    title="Delete menu">
-                    <FontAwesomeIcon :icon="faTrash" />
+                    class="px-2 py-1 text-red-400 hover:text-red-700"
+                    v-tooltip="trans('Delete menu')">
+                    <FontAwesomeIcon icon="fal fa-trash-alt" class="" fixed-width aria-hidden="true" />
                 </button>
             </div>
         </template>

@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $number_current_products
  * @property mixed $id
  * @property mixed $status
+ * @property mixed $quantity
  */
 class TradeUnitsResource extends JsonResource
 {
@@ -34,7 +35,7 @@ class TradeUnitsResource extends JsonResource
             'number_current_stocks'   => $this->number_current_stocks,
             'number_current_products' => $this->number_current_products,
             'id'                      => $this->id,
-            'quantity'                => $this->quantity ?? null,
+            'quantity'                => trimDecimalZeros($this->quantity),
             'status'                  => $this->status,
             'status_icon'             => $this->status ? $this->status->icon()[$this->status->value] : null,
             'media'                   => null

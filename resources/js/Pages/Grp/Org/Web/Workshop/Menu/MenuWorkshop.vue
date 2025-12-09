@@ -10,7 +10,7 @@ import ScreenView from "@/Components/ScreenView.vue"
 import { setIframeView } from "@/Composables/Workshop"
 import ProgressSpinner from "primevue/progressspinner"
 import { routeType } from "@/types/route"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import SideMenuWorkshop from "./SideMenuWorkshop.vue"
 import {
@@ -68,7 +68,7 @@ const _iframe = ref<IframeHTMLAttributes | null>(null)
 const iframeSrc = ref(route("grp.websites.header.preview", [route().params["website"]]))
 const layout = inject('layout', layoutStructure)
 
-const onPublish = async (action: routeType, popover: Funcition) => {
+const onPublish = async (action: routeType, popover: Function) => {
 	try {
 		// Ensure action is defined and has necessary properties
 		if (!action || !action.method || !action.name || !action.parameters) {

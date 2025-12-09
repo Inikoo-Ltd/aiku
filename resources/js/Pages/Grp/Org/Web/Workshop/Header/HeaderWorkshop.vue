@@ -17,7 +17,7 @@ import { useColorTheme } from '@/Composables/useStockList'
 import { set, get, debounce } from 'lodash-es'
 
 import { routeType } from "@/types/route"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 
 import { faPresentation, faSearch, faCube, faText, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, faHeart as falHeart, faExternalLink, faBrowser, faMobile, faSignIn as falSignIn, faSignOut } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"

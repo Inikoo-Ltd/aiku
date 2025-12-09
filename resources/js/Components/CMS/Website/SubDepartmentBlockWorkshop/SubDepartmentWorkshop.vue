@@ -150,8 +150,8 @@ console.log("LAYOUT STATE:", layoutState);
             <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
           </div>
           <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
-            <span v-if="layoutState.data.fieldValue.department?.name">
-              Preview: <strong>{{ layoutState.data.fieldValue.department.name }}</strong>
+            <span v-if="layoutState?.data?.fieldValue?.department?.name">
+              Preview: <strong>{{ layoutState?.data?.fieldValue?.department?.name }}</strong>
             </span>
             <span v-else>Pick The department</span>
           </div>
@@ -160,7 +160,7 @@ console.log("LAYOUT STATE:", layoutState);
           <component class="flex-1 overflow-auto active-block"
             :is="getComponent(props.data.layout.code, { shop_type: layout?.shopState?.type })" :screenType="currentView"
             :modelValue="{
-              ...layoutState.data.fieldValue,
+              ...layoutState?.data?.fieldValue,
               department: dataPicked.department,
               sub_departments: dataPicked.sub_departments
             }" :routeEditSubDepartment="props.data.update_sub_department_route" />

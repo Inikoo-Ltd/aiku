@@ -15,7 +15,7 @@ import type { Component } from 'vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 
 import CampaignOverview from "@/Components/Shop/Offers/CampaignOverview.vue"
-import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 
 
@@ -26,7 +26,7 @@ library.add( faCommentDollar, faInfoCircle )
 
 const props = defineProps<{
     title: string
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
         navigation: {}

@@ -21,12 +21,13 @@ import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import { router } from "@inertiajs/vue3"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import Modal from "@/Components/Utils/Modal.vue"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
 
 const props = defineProps<{
-	taxonomy: any
 	data: {
 		stockImagesRoute: routeType
 		uploadImageRoute: routeType
@@ -147,6 +148,7 @@ const getTooltips = () => {
 }
 
 
+const isModalSKUDetail = ref(false)
 </script>
 
 <template>
@@ -165,18 +167,39 @@ const getTooltips = () => {
 				{{ data.product.data.name }}
 			</span>
 		</div>
-		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center">
+		
+		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center flex gap-y-2 flex-wrap justify-end">
+			<div v-tooltip="data.trade_units.length > 1 ? trans('Click to view all trade units detail') : ''"
+				class="w-fit border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer me-2 flex border-green-600"
+				@click="isModalSKUDetail = true"
+			>
+				<div v-if="data.trade_units.length == 1" class="text-teal-600 whitespace-nowrap w-full">
+					<span class=""> &#8623; SKU </span>
+					<span class="font-bold">
+						<FractionDisplay v-if="data.trade_units[0].pick_fractional" :fractionData="data.trade_units[0].pick_fractional" />
+					</span>
+				</div>
+				<div v-else class="text-teal-600 whitespace-nowrap w-full">
+					<span class=""> Multi Trade Units</span>
+				</div>
+				<div class="border-s border-green-600 text-gray-700 whitespace-nowrap font-bold ms-2 ps-2">
+					{{ data.product.data.units + " " + data.product.data.unit }}
+				</div>
+			</div>
+
 			<span
-			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help me-2"
-			:class="data.availability_status.product_state_icon['class'].replace('text', 'border').replace('500', '300')">
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
+				:class="data.availability_status.product_state_icon['class'].replace('text', 'border').replace('500', '300')">
                 <span class="opacity-50"> {{trans('Procurement')}}:</span>	 {{ data.availability_status.product_state}}
 				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']"/>
 			</span>
+
 			<span 
-			v-tooltip="getTooltips()"
-			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
-			v-on:click="editIsForSale"
-			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
+				v-tooltip="getTooltips()"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+				v-on:click="editIsForSale"
+				:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'"
+			>
 			{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
 				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
 				<FontAwesomeIcon
@@ -193,6 +216,7 @@ const getTooltips = () => {
 			</span>
 		</div>
 	</div>
+	
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
@@ -256,6 +280,44 @@ const getTooltips = () => {
 		</div>
 
 
+		<Modal :isOpen="isModalSKUDetail" @onClose="isModalSKUDetail = false" width="max-w-3xl w-full">
+			<div class="grid grid-cols-2 font-bold mb-4">
+				<div class="text-left text-lg">
+					{{ trans('Trade Unit SKU Details') }}
+				</div>
+			</div>
+			<div class="grid grid-cols-5 mt-3 text-sm font-bold">
+				<div class="text-left">
+					Code
+				</div>
+				<div class="text-left col-span-3">
+					Name
+				</div>
+				<div class="text-right">
+					SKU
+				</div>	
+			</div>
+			<div v-for="tUnit in data.trade_units" :key="tUnit.tradeUnit.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
+				<div class="text-left flex items-center">
+					<!-- <Link :href="tradeUnitRoute(tUnit.tradeUnit)" class="primaryLinkxx">
+						{{ tUnit.tradeUnit.code }}
+					</Link> -->
+					{{ tUnit.tradeUnit.code }}
+				</div>
+				<div class="text-left col-span-3 flex items-center">
+					{{ tUnit.tradeUnit.name }}
+				</div>
+				
+				<div class="justify-items-end text-teal-600 whitespace-nowrap flex justify-end">
+					<span class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer flex border-green-600 w-fit">
+						<span> &#8623; SKU </span>
+						<span class="font-bold ms-2">
+							<FractionDisplay v-if="tUnit.pick_fractional" :fractionData="tUnit.pick_fractional" />
+						</span>
+					</span>
+				</div>
+			</div>
+		</Modal>
 	</div>
 </template>
 

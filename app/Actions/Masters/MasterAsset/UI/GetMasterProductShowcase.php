@@ -18,7 +18,7 @@ use App\Actions\Traits\HasBucketAttachment;
 use App\Helpers\NaturalLanguage;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Models\Goods\TradeUnit;
-use Illuminate\Support\Facades\DB;  
+use Illuminate\Support\Facades\DB;
 
 class GetMasterProductShowcase
 {
@@ -99,7 +99,7 @@ class GetMasterProductShowcase
     }
 
     private function getDataTradeUnit($tradeUnits): array
-    {   
+    {
         $packedIn = DB::table('model_has_trade_units')
             ->where('model_type', 'Stock')
             ->whereIn('trade_unit_id', $tradeUnits->pluck('id'))
