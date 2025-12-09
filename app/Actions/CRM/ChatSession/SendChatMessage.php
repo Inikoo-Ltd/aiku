@@ -2,13 +2,14 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use App\Events\BroadcastChatListEvent;
-use App\Events\BroadcastRealtimeChat;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use App\Events\BroadcastRealtimeChat;
+use App\Events\BroadcastChatListEvent;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatMessage;
 use App\Models\CRM\Livechat\ChatSession;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
+use phpDocumentor\Reflection\Types\String_;
 
 class SendChatMessage
 {
@@ -123,7 +125,7 @@ class SendChatMessage
         ];
     }
 
-    public function asController(Request $request, $ulid): ChatMessage
+    public function asController(Request $request, string $ulid, ?string $organisation = null): ChatMessage
     {
         $this->validateUlid($ulid);
 
@@ -131,6 +133,7 @@ class SendChatMessage
 
         $chatSession = ChatSession::where('ulid', $ulid)->first();
         $senderData = $this->determineSenderData();
+
         $validated = array_merge($validated, $senderData);
 
         return $this->handle($chatSession, $validated);
@@ -161,30 +164,13 @@ class SendChatMessage
 
     protected function determineSenderData(): array
     {
-        if (auth()->check()) {
-            $user = auth()->user();
-            if ($user instanceof User) {
-                $agent = ChatAgent::where('user_id', $user->id)->first();
-                if ($agent) {
-                    return [
-                        'sender_type' => ChatSenderTypeEnum::AGENT->value,
-                        'sender_id' => $agent->id,
-                    ];
-                }
-            }
-        }
+        $user = Auth::user();
 
-        $webUserGuards = ['retina', 'web'];
-        foreach ($webUserGuards as $guard) {
-            if (auth()->guard($guard)->check()) {
-                $webUser = auth()->guard($guard)->user();
-                if ($webUser instanceof WebUser) {
-                    return [
-                        'sender_type' => ChatSenderTypeEnum::USER->value,
-                        'sender_id' => $webUser->id,
-                    ];
-                }
-            }
+        if ($user && ($agent = ChatAgent::where('user_id', $user->id)->first())) {
+            return [
+                'sender_type' => ChatSenderTypeEnum::AGENT->value,
+                'sender_id' => $agent->id,
+            ];
         }
 
         return [

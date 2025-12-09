@@ -8,6 +8,8 @@ use App\Actions\CRM\Agent\UpdateAgent;
 use App\Actions\CRM\Agent\UI\EditAgent;
 use App\Actions\CRM\Agent\UI\ShowAgent;
 use App\Actions\CRM\Agent\UI\CreateAgent;
+use App\Actions\CRM\ChatSession\SendChatMessage;
+use App\Actions\CRM\ChatSession\CloseChatSession;
 use App\Actions\CRM\ChatSession\AssignChatToAgent;
 
 Route::name('agents.')->prefix('agents')->group(function () {
@@ -19,4 +21,6 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::delete('/delete/{agent:id}', DeleteAgent::class)->name('delete')->withoutScopedBindings();
     Route::post('/{ulid}/assign-to-self', [AssignChatToAgent::class, 'assignToSelf'])
         ->name('assign.self');
+    Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
+    Route::patch('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
 });

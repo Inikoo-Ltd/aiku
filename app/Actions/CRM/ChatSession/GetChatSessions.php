@@ -27,6 +27,7 @@ class GetChatSessions
                 'string',
                 'in:' . implode(',', array_column(ChatSessionStatusEnum::cases(), 'value'))
             ],
+            'assigned_to_me' => ['sometimes', 'integer'],
             'limit' => ['sometimes', 'integer', 'min:1', 'max:50'],
         ];
     }
@@ -40,6 +41,7 @@ class GetChatSessions
 
     public function handle(array $filters = [])
     {
+
         $query = ChatSession::with([
             'messages' => function ($q) {
                 $q->latest()->limit(1);
@@ -47,9 +49,9 @@ class GetChatSessions
             'webUser',
             'assignments.chatAgent.user'
         ])
-        ->whereHas('messages')
-        ->withLastMessageTime()
-        ->orderBy('last_message_at', 'desc');
+            ->whereHas('messages')
+            ->withLastMessageTime()
+            ->orderBy('last_message_at', 'desc');
 
 
         if (isset($filters['status'])) {
@@ -59,12 +61,17 @@ class GetChatSessions
         if (isset($filters['statuses'])) {
             $query->whereIn('status', $filters['statuses']);
         }
-
         if (!empty($filters['assigned_to_me'])) {
-            if ($currentAgent = $this->getCurrentAgent()) {
+
+            $userId = (int) $filters['assigned_to_me'];
+
+            $currentAgent = $this->getCurrentAgent($userId);
+
+
+            if ($currentAgent) {
                 $query->whereHas('assignments', function ($q) use ($currentAgent) {
                     $q->where('chat_agent_id', $currentAgent->id)
-                      ->where('status', 'active');
+                        ->where('status', 'active');
                 });
             }
         }
@@ -72,12 +79,9 @@ class GetChatSessions
         return $query->paginate($filters['limit'] ?? 20);
     }
 
-    protected function getCurrentAgent()
+    protected function getCurrentAgent(int $userId): ?ChatAgent
     {
-        if (auth()->check()) {
-            return ChatAgent::where('user_id', auth()->id())->first();
-        }
-        return null;
+        return ChatAgent::where('user_id', $userId)->first();
     }
 
     public function jsonResponse($sessions): JsonResponse

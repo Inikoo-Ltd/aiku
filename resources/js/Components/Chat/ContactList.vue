@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { ref, inject, computed, watch, onMounted, nextTick } from "vue"
-import Button from "../Elements/Buttons/Button.vue"
-import { faPaperPlane } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
@@ -18,13 +16,19 @@ const messages = ref<ChatMessage[]>([])
 
 const activeTab = ref("waiting")
 const isAssigning = ref<Record<string, boolean>>({})
-const errorMessage = ref<string | null>(null)
+const errorPerContact = ref<Record<string, string>>({})
 
 const reloadContacts = async () => {
 	try {
-		const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, {
-			params: { statuses: [activeTab.value] },
-		})
+		let params: any = {}
+
+		params.statuses = [activeTab.value]
+
+		if (["active", "resolved"].includes(activeTab.value)) {
+			params.assigned_to_me = layout?.user?.id
+		}
+
+		const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params })
 
 		contacts.value = res.data.data.sessions.map(
 			(s: SessionAPI): Contact => ({
@@ -51,7 +55,6 @@ onMounted(() => {
 		console.log("🔥 chat-list update:", e)
 		reloadContacts()
 	})
-
 	reloadContacts()
 })
 
@@ -82,43 +85,84 @@ const back = () => {
 	selectedSession.value = null
 }
 
-const handleSendMessage = (text: string) => {
-	messages.value.push({
-		sender_type: "agent",
-		message_text: text,
-	} as ChatMessage)
+const handleSendMessage = async (text: string) => {
+	if (!selectedSession.value?.ulid) return
+
+	try {
+		const organisation = route().params?.organisation ?? "aw"
+
+		const payload = {
+			message_text: text,
+			message_type: "text",
+		}
+
+		const assignRoute: routeType = {
+			name: "grp.org.crm.agents.messages.send",
+			parameters: [selectedSession.value.ulid, organisation],
+			method: "post",
+		}
+
+		await axios.post(route(assignRoute.name, assignRoute.parameters), payload, {
+			withCredentials: true,
+		})
+	} catch (error) {
+		console.error("Error sending message:", error)
+	}
 }
 
 const assignToSelf = async (ulid: string) => {
-	if (isAssigning.value[ulid]) return
+	if (isAssigning.value[ulid]) return { success: false }
+
 	isAssigning.value[ulid] = true
-	errorMessage.value = null
 
 	try {
+		const organisation = route().params?.organisation ?? "aw"
+
 		const assignRoute: routeType = {
 			name: "grp.org.crm.agents.assign.self",
-			parameters: [route().params.organisation, ulid],
+			parameters: [organisation, ulid],
 			method: "post",
 		}
-		await axios.post(
+
+		const response = await axios.post(
 			route(assignRoute.name, assignRoute.parameters),
 			{},
 			{ withCredentials: true }
 		)
+
+		return { success: true, data: response.data }
 	} catch (error: any) {
-		errorMessage.value = error?.response?.data?.message ?? trans("Failed to assign chat")
+		return {
+			success: false,
+			error: error?.response?.data?.message ?? trans("Failed to assign chat"),
+		}
 	} finally {
 		isAssigning.value[ulid] = false
 	}
 }
 
 const handleClickContact = async (c: Contact) => {
-	openChat(c)
+	errorPerContact.value[c.ulid] = ""
+
 	if (activeTab.value === "waiting") {
-		await assignToSelf(String(c.ulid))
+		const result = await assignToSelf(String(c.ulid))
+
+		if (!result.success) {
+			errorPerContact.value[c.ulid] = result.error
+			return
+		}
+
+		openChat(c)
 		await nextTick()
 		reloadContacts()
+	} else {
+		openChat(c)
 	}
+}
+
+const formatLastMessage = (msg) => {
+	if (!msg) return ""
+	return msg.length > 10 ? msg.substring(0, 10) + "..." : msg
 }
 </script>
 
@@ -161,23 +205,32 @@ const handleClickContact = async (c: Contact) => {
 			</div>
 		</div>
 
-		<div class="flex-1 overflow-y-auto">
+		<div class="flex-1">
 			<div v-if="!selectedSession">
-				<div
-					v-for="c in filteredContacts"
-					:key="c.id"
-					class="flex items-center gap-4 px-4 py-3 border-b hover:bg-gray-50 cursor-pointer"
-					@click="handleClickContact(c)">
-					<img :src="c.avatar" class="w-12 h-12 rounded-full object-cover" />
-					<div class="flex-1">
-						<div class="font-semibold text-gray-800">{{ capitalize(c.name) }}</div>
-						<div class="text-sm text-gray-500 truncate">{{ c.lastMessage }}</div>
-					</div>
-					<span class="text-xs text-gray-400">{{ c.lastMessageTime }}</span>
+				<div v-for="c in filteredContacts" :key="c.id">
 					<div
-						v-if="c.unread"
-						class="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
-						{{ c.unread }}
+						class="flex items-center gap-4 px-4 py-3 border-b hover:bg-gray-50 cursor-pointer"
+						@click="handleClickContact(c)">
+						<img :src="c.avatar" class="w-12 h-12 rounded-full object-cover" />
+						<div class="flex-1">
+							<div class="font-semibold text-gray-800">{{ capitalize(c.name) }}</div>
+							<div class="text-sm text-gray-500 truncate">
+								{{ formatLastMessage(c.lastMessage) }}
+							</div>
+						</div>
+						<span class="text-xs text-gray-400">{{ c.lastMessageTime }}</span>
+
+						<div
+							v-if="c.unread"
+							class="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+							{{ c.unread }}
+						</div>
+					</div>
+
+					<div
+						v-if="errorPerContact[c.ulid]"
+						class="px-4 py-2 text-xs text-red-600 border-b bg-red-50">
+						{{ errorPerContact[c.ulid] }}
 					</div>
 				</div>
 			</div>
@@ -187,8 +240,14 @@ const handleClickContact = async (c: Contact) => {
 				:messages="messages"
 				:session="selectedSession"
 				@back="back"
-				@send-message="handleSendMessage" />
+				@send-message="handleSendMessage"
+				@close-session="
+					() => {
+						selectedSession = null
+						activeTab = 'resolved'
+						reloadContacts()
+					}
+				" />
 		</div>
-		<div v-if="errorMessage" class="px-4 py-2 text-xs text-red-600">{{ errorMessage }}</div>
 	</div>
 </template>

@@ -8,9 +8,15 @@ import {
 	faPaperclip,
 	faArrowLeft,
 	faEllipsisVertical,
+	faTimesCircle,
+	faHistory,
+	faAddressCard,
+	faExchange,
+	faTags,
 } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
+import ChatCloseConfirm from "@/Components/Chat/ChatCloseConfirm.vue"
 
 const props = defineProps<{
 	messages: ChatMessage[]
@@ -20,6 +26,11 @@ const props = defineProps<{
 const emit = defineEmits<{
 	(e: "send-message", message: string): void
 	(e: "back"): void
+	(e: "close-session"): void
+	(e: "view-history"): void
+	(e: "view-user-profile"): void
+	(e: "transfer-chat"): void
+	(e: "update-priority"): void
 }>()
 
 const newMessage = ref("")
@@ -33,6 +44,12 @@ const isLoadingMore = ref(false)
 const canLoadMore = ref(false)
 const nextCursor = ref<string | null>(null)
 const chatSession = computed(() => props.session)
+const isMenuOpen = ref(false)
+const ellipsisBtn = ref<HTMLElement | null>(null)
+const menuRef = ref<HTMLElement | null>(null)
+const toggleMenu = () => {
+	isMenuOpen.value = !isMenuOpen.value
+}
 
 const sendMessage = () => {
 	if (!newMessage.value.trim()) return
@@ -152,13 +169,42 @@ const stopChatWebSocket = () => {
 	}
 }
 
+const handleClickOutside = (e: MouseEvent) => {
+	if (!isMenuOpen.value) return
+	const target = e.target as Node
+	if (
+		menuRef.value &&
+		!menuRef.value.contains(target) &&
+		ellipsisBtn.value &&
+		!ellipsisBtn.value.contains(target)
+	) {
+		isMenuOpen.value = false
+	}
+}
+
+const onViewHistory = () => {
+	isMenuOpen.value = false
+	emit("view-history")
+}
+const onViewUserProfile = () => {
+	isMenuOpen.value = false
+	emit("view-user-profile")
+}
+const onTransferChat = () => {
+	isMenuOpen.value = false
+	emit("transfer-chat")
+}
+const onUpdatePriority = () => {
+	isMenuOpen.value = false
+	emit("update-priority")
+}
+
 const initWebSocket = () => {
 	if (!chatSession.value?.ulid) return
 	if (!window.Echo) return
 	stopChatWebSocket()
 	const channelName = `chat-session.${chatSession.value.ulid}`
-	console.log("channelName", channelName)
-
+	chatChannel = window.Echo.channel(channelName)
 	chatChannel.listen(".message", (eventData: { message: any }) => {
 		const msg = eventData.message
 		if (msg) {
@@ -202,10 +248,12 @@ onMounted(async () => {
 	await getMessages(false)
 	initWebSocket()
 	scrollBottom()
+	document.addEventListener("mousedown", handleClickOutside)
 })
 
 onUnmounted(() => {
 	stopChatWebSocket()
+	document.removeEventListener("mousedown", handleClickOutside)
 })
 </script>
 
@@ -225,12 +273,94 @@ onUnmounted(() => {
 					class="w-10 h-10 rounded-full object-cover" />
 				<span class="font-semibold">{{ capitalize(props.session?.guest_identifier) }}</span>
 			</div>
+			<div class="relative">
+				<button ref="ellipsisBtn" class="p-1" @click="toggleMenu">
+					<FontAwesomeIcon
+						:icon="faEllipsisVertical"
+						class="text-base text-gray-400 hover:text-blue-600" />
+				</button>
 
-			<button class="p-1">
-				<FontAwesomeIcon
-					:icon="faEllipsisVertical"
-					class="text-base text-gray-400 hover:text-blue-600" />
-			</button>
+				<div
+					v-if="isMenuOpen"
+					ref="menuRef"
+					class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow-lg z-50">
+					<ChatCloseConfirm
+						:sessionUlid="props.session?.ulid || ''"
+						@success="
+							() => {
+								$emit('close-session')
+								isMenuOpen = false
+							}
+						"
+						@onNo="
+							() => {
+								isMenuOpen = false
+							}
+						"
+						@onYes="
+							() => {
+								console.log('on-yes kebab-case triggered')
+								isMenuOpen = false
+							}
+						"
+						:title="trans('Close chat session')"
+						:yesLabel="trans('Yes')"
+						:noLabel="trans('Cancel')">
+						<template #default="{ changeModel }">
+							<div
+								@click="changeModel"
+								class="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-100 group">
+								<FontAwesomeIcon
+									:icon="faTimesCircle"
+									class="text-base text-gray-400 group-hover:text-red-500" />
+								<span class="w-full text-left">
+									{{ trans("Close chat session") }}
+								</span>
+							</div>
+						</template>
+					</ChatCloseConfirm>
+
+					<div
+						class="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-100 group">
+						<FontAwesomeIcon
+							:icon="faHistory"
+							class="text-base text-gray-400 group-hover:text-blue-500" />
+						<button @click="onViewHistory" class="w-full text-left">
+							{{ trans("History chat") }}
+						</button>
+					</div>
+
+					<div
+						class="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-100 group">
+						<FontAwesomeIcon
+							:icon="faAddressCard"
+							class="text-base text-gray-400 group-hover:text-blue-500" />
+						<button @click="onViewUserProfile" class="w-full text-left">
+							{{ trans("Detail User Profile") }}
+						</button>
+					</div>
+
+					<div
+						class="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-100 group">
+						<FontAwesomeIcon
+							:icon="faExchange"
+							class="text-base text-gray-400 group-hover:text-blue-500" />
+						<button @click="onTransferChat" class="w-full text-left">
+							{{ trans("Transfer Chat To Another Agent") }}
+						</button>
+					</div>
+
+					<div
+						class="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-100 group">
+						<FontAwesomeIcon
+							:icon="faTags"
+							class="text-base text-gray-400 group-hover:text-blue-500" />
+						<button @click="onUpdatePriority" class="w-full text-left">
+							{{ trans("Update Label Priority") }}
+						</button>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<!-- Messages Area -->
@@ -267,7 +397,11 @@ onUnmounted(() => {
 							'bg-gray-200 text-gray-900': msg.sender_type !== 'agent',
 						}">
 						<div class="text-sm">{{ msg.message_text }}</div>
-						<span class="text-xs text-gray-400 block mt-1">
+						<span
+							class="text-xs text-gray-400 block mt-1"
+							:class="{
+								'text-white': msg.sender_type === 'agent',
+							}">
 							{{ formatTime(msg.created_at) }}
 						</span>
 					</div>
@@ -286,7 +420,7 @@ onUnmounted(() => {
 				type="text"
 				v-model="newMessage"
 				placeholder="Type a message..."
-				class="flex-1 px-3 py-2 rounded-full border focus:outline-none focus:ring"
+				class="flex-1 px-3 py-2 rounded-full border focus:border-blue-500 focus:ring-0"
 				@keydown.enter.prevent="sendMessage" />
 
 			<button

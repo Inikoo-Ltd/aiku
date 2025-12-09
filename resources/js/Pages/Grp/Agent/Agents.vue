@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Head, usePage } from "@inertiajs/vue3"
+import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTrash, faPencil } from "@fal"
+import { faTrash, faPencil } from "@fortawesome/free-solid-svg-icons"
 
 library.add(faTrash, faPencil)
 
@@ -78,7 +78,7 @@ function editRoute(id: number) {
 					<Button
 						v-tooltip="trans('Edit Agent')"
 						type="secondary"
-						icon="fal fa-pencil"
+						icon="fa-pencil"
 						size="s" />
 				</a>
 				<ModalConfirmationDelete
@@ -94,7 +94,7 @@ function editRoute(id: number) {
 							v-tooltip="trans('Delete Agent')"
 							@click="() => changeModel()"
 							type="negative"
-							icon="fal fa-trash"
+							icon="fa-trash"
 							size="s" />
 					</template>
 				</ModalConfirmationDelete>

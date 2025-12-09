@@ -24,8 +24,6 @@ Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('
 Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
     ->name('sessions.update');
 
-Route::put('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
-
 Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages');
 
 Route::post('/sessions/{chatSession:ulid}/assign', AssignChatToAgent::class)

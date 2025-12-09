@@ -41,7 +41,6 @@ class BroadcastRealtimeChat implements ShouldBroadcastNow
         return [
             new Channel("chat-session.{$this->ulid}"),
         ];
-
     }
 
     public function broadcastAs(): string
@@ -55,5 +54,4 @@ class BroadcastRealtimeChat implements ShouldBroadcastNow
             'message' => $this->message,
         ];
     }
-
 }

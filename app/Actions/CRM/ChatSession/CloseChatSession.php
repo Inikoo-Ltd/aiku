@@ -5,6 +5,7 @@ namespace App\Actions\CRM\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatEvent;
@@ -21,7 +22,7 @@ class CloseChatSession
 {
     use AsAction;
 
-     public function handle(ChatSession $chatSession, int $agentId, array $additionalData = []): ChatSession
+    public function handle(ChatSession $chatSession, int $agentId, array $additionalData = []): ChatSession
     {
         return DB::transaction(function () use ($chatSession, $agentId, $additionalData) {
 
@@ -53,7 +54,7 @@ class CloseChatSession
     }
 
 
-    public function asController(ActionRequest $request, ChatSession $chatSession): ChatSession
+    public function asController(ActionRequest $request, ChatSession $chatSession, ?String $organisation): ChatSession
     {
         $agent = $this->getCurrentAgent();
         if (!$agent) {
@@ -65,7 +66,6 @@ class CloseChatSession
 
         try {
             return  $this->handle($chatSession, $agent->id);
-
         } catch (Exception $e) {
             throw new HttpResponseException(response()->json([
                 'success' => false,
@@ -76,11 +76,14 @@ class CloseChatSession
 
     public function getCurrentAgent(): ?ChatAgent
     {
-        if (auth()->check()) {
-            $user = auth()->user();
-            return ChatAgent::where('user_id', $user->id)->first();
+        $user = Auth::user();
+
+        if ($user) {
+            if (!$user->chatAgent) {
+                return null;
+            }
         }
-        return ChatAgent::where('user_id', "1")->first();
+        return $user->chatAgent;
     }
 
     protected function logCloseEvent(ChatSession $chatSession, int $agentId, $assignments, array $additionalData = []): void
