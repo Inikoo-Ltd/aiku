@@ -49,9 +49,10 @@ function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
     // console.log(deliveryNoteItem.org_stock_slug)
     switch (route().current()) {
         case "grp.org.warehouses.show.dispatching.delivery_notes.show":
-            return route(
+            return deliveryNoteItem.org_stock_slug ? route(
                 "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
                 [route().params["organisation"], route().params["warehouse"], deliveryNoteItem.org_stock_slug])
+                : ''
         case "grp.org.shops.show.ordering.orders.show.delivery-note":
         if (deliveryNoteItem.org_stock_slug) {
             return route(

@@ -50,14 +50,18 @@ const modalDetail = ref(false)
 
 
 function showOrgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
-    return route(
-        "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
-        [
-            (route().params as RouteParams).organisation,
-            (route().params as RouteParams).warehouse,
-            deliveryNoteItem.org_stock_slug
-        ]
-    )
+    if (deliveryNoteItem.org_stock_slug) {
+        return route(
+            "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).warehouse,
+                deliveryNoteItem.org_stock_slug
+            ]
+        )
+    } else {
+        return ''
+    }
 }
 
 function showDeliveryNoteRoute(deliveryNoteItem: DeliveryNoteItem) {
@@ -489,7 +493,7 @@ onMounted(() => {
                                         class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />
-                                        {{ findLocation(itemValue.locations, proxyItem.hehe).quantity }}
+                                        {{ Number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity ?? 0) }}
                                     </span>
 
                                     <span v-if="itemValue.locations?.length > 1" @click="() => {
@@ -504,8 +508,6 @@ onMounted(() => {
                                     </span>
                                 </div>
                             </Transition>
-
-
                         </div>
 
                         <div>
@@ -652,7 +654,7 @@ onMounted(() => {
                     <span v-tooltip="trans('Total stock in this location')"
                         class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
-                        {{ location.quantity }}
+                        {{ Number(location.quantity ?? 0) }}
                     </span>
                 </label>
 
