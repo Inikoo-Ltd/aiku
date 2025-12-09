@@ -63,8 +63,7 @@ export default {
 				{
 					key: ['show'],
                     label : "Show button",
-                    type: "switch",
-                    useIn : ["desktop", "tablet", "mobile"],
+                    type: "switch"
 				},
 				{
 					key: ['box',"container", "properties","justifyContent"],

@@ -120,39 +120,39 @@ class ShowWebsiteWorkshop extends OrgAction
             ]
         ];
 
-       /*  if ($this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value) {
-            $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.sub_department',
-                'parameters' => [
-                    'website' => $website->id
-                ]
-            ];
-        } elseif ($this->tab == WebsiteWorkshopTabsEnum::FAMILY->value) {
-            $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.family',
-                'parameters' => [
-                    'website' => $website->id
-                ]
-            ];
-        } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCT->value) {
-            $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.product',
-                'parameters' => [
-                    'website' => $website->id
-                ]
-            ];
-        } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value) {
-            $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.products',
-                'parameters' => [
-                    'website' => $website->id
-                ]
-            ];
-        } */
+        /*  if ($this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value) {
+             $publishRoute = [
+                 'method'     => 'post',
+                 'name'       => 'grp.models.website.publish.sub_department',
+                 'parameters' => [
+                     'website' => $website->id
+                 ]
+             ];
+         } elseif ($this->tab == WebsiteWorkshopTabsEnum::FAMILY->value) {
+             $publishRoute = [
+                 'method'     => 'post',
+                 'name'       => 'grp.models.website.publish.family',
+                 'parameters' => [
+                     'website' => $website->id
+                 ]
+             ];
+         } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCT->value) {
+             $publishRoute = [
+                 'method'     => 'post',
+                 'name'       => 'grp.models.website.publish.product',
+                 'parameters' => [
+                     'website' => $website->id
+                 ]
+             ];
+         } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value) {
+             $publishRoute = [
+                 'method'     => 'post',
+                 'name'       => 'grp.models.website.publish.products',
+                 'parameters' => [
+                     'website' => $website->id
+                 ]
+             ];
+         } */
 
         return Inertia::render(
             'Org/Web/Workshop/WebsiteWorkshop',

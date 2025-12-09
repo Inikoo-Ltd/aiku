@@ -15,6 +15,7 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterAsset\GetMasterProductSalesData;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
@@ -99,7 +100,7 @@ class ShowMasterProduct extends GrpAction
         return Inertia::render(
             'Masters/MasterProduct',
             [
-                'title'            => __('product'),
+                'title'            => __('Master product').' '.$masterAsset->code,
                 'breadcrumbs'      => $this->getBreadcrumbs(
                     $masterAsset,
                     $request->route()->getName(),
@@ -224,6 +225,9 @@ class ShowMasterProduct extends GrpAction
                 'currency'         => $masterAsset->group->currency,
                 'shopsData'        => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
                 'tradeUnits'       => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset)),
+                'is_single_trade_unit'  => $masterAsset->is_single_trade_unit,
+                'trade_unit_slug'       => $masterAsset->tradeUnits?->first->slug,
+                'salesData'        => GetMasterProductSalesData::run($masterAsset),
                 'tabs'             => [
                     'current'    => $this->tab,
                     'navigation' => MasterAssetTabsEnum::navigation()

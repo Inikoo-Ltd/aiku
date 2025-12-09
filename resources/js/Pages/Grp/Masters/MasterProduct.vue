@@ -46,12 +46,15 @@ const props = defineProps<{
     products?: {}
     trade_units?: {}
     sales: {}
+    salesData?: {}
     images?: {}
     mini_breadcrumbs?: any[]
     attachments?: {}
     shopsData: any[]
     masterAsset: {}
     tradeUnits : {}
+    is_single_trade_unit?: boolean
+    trade_unit_slug?: string
 }>()
 console.log('sdsjkh',props.trade_units)
 const layout = inject('layout', {});
@@ -172,9 +175,12 @@ onMounted(() => {
                     </div>
                 </div>
             </component>
-          <!--   <Link :href="route('grp.trade_units.units.show',[])" class="flex gap-x-2 items-center">
-                <FontAwesomeIcon v-tooltip="'trade unit'" :icon="faAtom" class="align-top" :class="'text-gray-300'"  aria-hidden="true" />
-            </Link> -->
+
+            <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
+                <FontAwesomeIcon
+                    icon="fal fa-atom"
+                />
+            </Link>
         </template>
 
         <template #button-assign="{ action }">
@@ -200,7 +206,7 @@ onMounted(() => {
         </Breadcrumb>
     </div>
 
-    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :handleTabUpdate />
+    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :handleTabUpdate :currency="currency" />
 
     <!-- ✅ PrimeVue Dialog -->
     <Dialog v-model:visible="showDialog" modal header="Add Item to Other Shop" :style="{ width: '60vw' }">

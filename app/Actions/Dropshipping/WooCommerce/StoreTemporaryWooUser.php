@@ -13,7 +13,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -31,10 +30,10 @@ class StoreTemporaryWooUser extends RetinaAction
         $name = Arr::get($currentWooUser, 'name');
         $storeUrl = Arr::get($currentWooUser, 'url');
 
-        if($name && ! Arr::has($modelData, 'name')) {
+        if ($name && ! Arr::has($modelData, 'name')) {
             data_set($modelData, 'name', $name);
         }
-        if($storeUrl && ! Arr::has($modelData, 'url')) {
+        if ($storeUrl && ! Arr::has($modelData, 'url')) {
             data_set($modelData, 'url', $storeUrl);
         }
 

@@ -468,7 +468,7 @@ const getIcon = (type?: string) => {
             <AccordionPanel value="7">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="font-medium text-base">Attachments (Private) ({{ props.attachments.private.filter(i => i.attachment).length }})</span>
+                        <span class="font-medium text-base">Attachments (Private) ({{ props.attachments?.private?.filter(i => i.attachment)?.length ?? 0}})</span>
                         <FontAwesomeIcon icon="fal fa-lock" class="text-red-500" />
                     </div>
                 </AccordionHeader>
@@ -517,7 +517,7 @@ const getIcon = (type?: string) => {
             <AccordionPanel value="8">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="font-medium text-base">Attachments (Public) ({{ props.attachments.public.filter(i => i.attachment).length }})</span>
+                        <span class="font-medium text-base">Attachments (Public) ({{ props.attachments?.public?.filter(i => i.attachment)?.length ?? 0 }})</span>
                         <FontAwesomeIcon icon="fal fa-lock" class="text-blue-500" />
                     </div>
                 </AccordionHeader>

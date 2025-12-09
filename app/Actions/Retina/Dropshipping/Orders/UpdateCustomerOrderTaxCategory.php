@@ -23,7 +23,6 @@ use Sentry;
 
 class UpdateCustomerOrderTaxCategory extends RetinaAction
 {
-
     public function handle(Order $order): Order
     {
         $taxCategory = null;

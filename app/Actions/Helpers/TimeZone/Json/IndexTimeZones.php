@@ -64,8 +64,12 @@ class IndexTimeZones
                 'label'        => $label,
                 'offset'       => $offset, // seconds from UTC
                 'offset_label' => $this->formatGmtOffset($offset),
-            ];
+                ];
         }, $timezones);
+
+        usort($data, function (array $a, array $b): int {
+            return $a['offset'] <=> $b['offset'];
+        });
 
         if ($q !== null && $q !== '') {
             $needle = Str::lower($q);
@@ -81,7 +85,8 @@ class IndexTimeZones
 
     public function asController(): JsonResponse
     {
-        $q = request()->string('q')->toString();
+        // $q = request()->string('q')->toString();
+        $q = request()->input('filter.global');  // from parameter ?filter[global]=
 
         return response()->json($this->handle($q));
     }

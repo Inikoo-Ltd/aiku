@@ -27,13 +27,13 @@ class RepairProductOrgStocks
     public function handle(Shop|Product $subject, Command $command = null): void
     {
 
-        if($subject instanceof Product){
+        if ($subject instanceof Product) {
             SyncProductOrgStocksFromTradeUnits::run($subject);
             ProductHydrateAvailableQuantity::run($subject);
             return;
         }
 
-        $shop=$subject;
+        $shop = $subject;
 
         $baseQuery = DB::table('products')
             ->select('id')
@@ -114,9 +114,9 @@ class RepairProductOrgStocks
      */
     public function asCommand(Command $command): int
     {
-        if($command->argument('type')=='Product'){
+        if ($command->argument('type') == 'Product') {
             $subject = Product::where('slug', $command->argument('slug'))->firstOrFail();
-        }else{
+        } else {
             $subject = Shop::where('slug', $command->argument('shop'))->firstOrFail();
         }
 

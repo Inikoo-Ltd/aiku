@@ -49,7 +49,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             }
 
             if ($orgStock->is_on_demand) {
-                $quantityInStock = 10000;
+                $quantityInStock = 250;
             } else {
                 $quantityInStock = $orgStock->quantity_available;
             }
