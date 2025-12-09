@@ -136,6 +136,14 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        if ($masterAsset->wasChanged('units')) {
+            foreach ($masterAsset->products as $product) {
+                UpdateProduct::run($product, [
+                    'units' => $masterAsset->units,
+                ]);
+            }
+        }
+
         if ($masterAsset->wasChanged('is_for_sale')) {
             foreach ($masterAsset->products as $product) {
                 UpdateProduct::run($product, [
@@ -205,6 +213,7 @@ class UpdateMasterAsset extends OrgAction
             'unit'                         => ['sometimes', 'string'],
             'data'                         => ['sometimes', 'array'],
             'status'                       => ['sometimes', 'required', 'boolean'],
+            'units'                        => ['sometimes', 'numeric', 'min:0'],
             'master_family_id'             => [
                 'sometimes',
                 'nullable',
