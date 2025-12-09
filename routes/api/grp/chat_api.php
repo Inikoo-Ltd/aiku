@@ -9,7 +9,6 @@ use App\Actions\CRM\ChatSession\GetChatMessages;
 use App\Actions\CRM\ChatSession\GetChatSessions;
 use App\Actions\CRM\ChatSession\SendChatMessage;
 use App\Actions\CRM\ChatSession\UpdateChatAgent;
-use App\Actions\CRM\ChatSession\CloseChatSession;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Actions\CRM\ChatSession\AssignChatToAgent;
 use App\Actions\CRM\ChatSession\UpdateChatSession;

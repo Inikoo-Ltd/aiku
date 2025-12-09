@@ -2,9 +2,7 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
-use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +15,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
-use phpDocumentor\Reflection\Types\String_;
 
 class SendChatMessage
 {
