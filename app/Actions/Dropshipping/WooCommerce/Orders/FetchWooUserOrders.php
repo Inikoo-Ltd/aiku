@@ -73,7 +73,7 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
                 $country = Country::where('code', Arr::get($wooOrder, 'shipping.country'))->first();
 
                 if ($country) {
-                    if (in_array($country->id, $wooCommerceUser->customerSalesChannel->shop->forbidden_dispatch_countries)) {
+                    if (in_array($country->id, $wooCommerceUser->customerSalesChannel->shop->forbidden_dispatch_countries ?? [])) {
                         continue;
                     }
                 }

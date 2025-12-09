@@ -50,7 +50,7 @@ class ShowTradeUnit extends GrpAction
         return Inertia::render(
             'Goods/TradeUnit',
             [
-                'title'       => __('Trade Unit'),
+                'title'       => __('Trade Unit').' '.$tradeUnit->code,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $tradeUnit,
                     $request->route()->getName(),

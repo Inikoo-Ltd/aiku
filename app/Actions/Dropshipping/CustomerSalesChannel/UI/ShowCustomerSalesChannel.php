@@ -77,9 +77,8 @@ class ShowCustomerSalesChannel extends OrgAction
         if ($customerSalesChannel->platform->type === PlatformTypeEnum::EBAY) {
             /** @var \App\Models\Dropshipping\EbayUser $ebay */
             $ebay = $customerSalesChannel->user;
-            $fulfilmentPolicies = $ebay->getFulfilmentPolicies();
+            $fulfilmentPolicies = $ebay?->getFulfilmentPolicies();
         }
-
 
         return Inertia::render(
             'Org/Dropshipping/CustomerSalesChannel',

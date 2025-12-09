@@ -44,7 +44,7 @@ library.add(faHeart, faComputerClassic, faDiscord)
                     </span>
                 </div>
                 
-                <div v-if="layout.app.environment === 'local'">
+                <div>
                     <TimezoneDisplay />
                 </div>
             </div>

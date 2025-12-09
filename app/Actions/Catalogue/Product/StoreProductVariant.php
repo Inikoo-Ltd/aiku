@@ -31,6 +31,7 @@ class StoreProductVariant extends OrgAction
         foreach ($product->tradeUnits as $tradeUnit) {
             $tradeUnitsData[$tradeUnit->id] =
                 [
+                    'id'       => $tradeUnit->id,
                     'quantity' => $tradeUnit->pivot->units * $modelData['ratio'],
                     'notes'    => Arr::get($modelData, 'is_main') ? $tradeUnit->pivot->notes : null
                 ];

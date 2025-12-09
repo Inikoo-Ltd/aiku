@@ -9,7 +9,6 @@ import laravel from "laravel-vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
 import { fileURLToPath, URL } from "node:url";
-import { codecovVitePlugin } from "@codecov/vite-plugin";
 import path from "node:path";
 import tailwindcss from 'tailwindcss';
 import { analyzer } from 'vite-bundle-analyzer'
@@ -19,6 +18,7 @@ export default defineConfig(
     server : {
       cors : true,
       watch: {
+        usePolling: false,
         ignored: ["**/storage/media/**"]
       }
     },
@@ -42,13 +42,7 @@ export default defineConfig(
               }
             }
           }),
-      i18n(),
-      codecovVitePlugin({
-                          enableBundleAnalysis: process.env.CODECOV_TOKEN !==
-                            undefined,
-                          bundleName          : "iris",
-                          uploadToken         : process.env.CODECOV_TOKEN
-                        })
+      i18n()
      // , analyzer()
     ],
     ssr    : {

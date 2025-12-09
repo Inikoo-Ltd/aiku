@@ -17,7 +17,7 @@ import { capitalize } from "@/Composables/capitalize"
 import LocationShowcase from "@/Components/Showcases/Org/LocationShowcase.vue"
 import TablePallets from "@/Components/Tables/Grp/Org/Inventory/Fulfilment/TablePallets.vue"
 import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue"
-import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 
 
@@ -26,7 +26,7 @@ library.add(faInventory, faExchange, faBox, faWarehouse, faMapSigns, faPallet)
 
 const props = defineProps<{
     title: string
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
     tabs: TSTabs
     details?: {}
     history?: {}

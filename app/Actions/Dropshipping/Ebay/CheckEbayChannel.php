@@ -34,7 +34,8 @@ class CheckEbayChannel
             $ebayUser->refresh();
         }
 
-        $step = EbayUserStepEnum::NAME;
+        $step = EbayUserStepEnum::MARKETPLACE;
+
         if (! blank($ebayUser->getUser())) {
             $canConnectToPlatform = true;
             $existInPlatform = true;

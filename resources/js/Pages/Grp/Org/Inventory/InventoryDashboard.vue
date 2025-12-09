@@ -18,7 +18,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
 
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import AccuracyDashboardWidget from "@/Components/DataDisplay/AccuracyDashboardWidget.vue"
 import StatProgressCard from "@/Components/DataDisplay/StatProgressCard.vue"
 

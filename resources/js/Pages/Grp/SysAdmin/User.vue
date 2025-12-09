@@ -21,7 +21,7 @@ import { capitalize } from "@/Composables/capitalize";
 import SysadminUserShowcase from "@/Components/Showcases/Grp/SysadminUserShowcase.vue";
 import UserPermissions from "@/Components/Sysadmin/UserPermissions.vue";
 import UserRoles from "@/Components/Sysadmin/UserRoles.vue";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import type { Component } from "vue";
 import UserApiTokens from "@/Components/Sysadmin/UserApiTokens.vue";

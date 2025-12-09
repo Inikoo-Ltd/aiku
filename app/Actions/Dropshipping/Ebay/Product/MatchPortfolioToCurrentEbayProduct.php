@@ -53,9 +53,15 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
             }
         }
 
+        $availableQuantity = $product->available_quantity;
+
+        if ($availableQuantity >= 50) {
+            $availableQuantity = 50; // Based on discuss with tomas we agree to limit 50 only
+        }
+
         $ebayUser->updateOffer($offerId, [
             'category_id' => $categoryId,
-            'quantity' => $product->available_quantity,
+            'quantity' => $availableQuantity,
             'price' => $portfolio->customer_price,
             'currency' => $portfolio->shop->currency->code
         ]);

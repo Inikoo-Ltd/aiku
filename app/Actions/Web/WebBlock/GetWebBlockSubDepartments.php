@@ -39,10 +39,9 @@ class GetWebBlockSubDepartments
                     'product_categories.name',
                     'product_categories.web_images',
                     'product_categories.image_id',
-                    'webpages.url as url'
+                    'webpages.canonical_url'
                 ]
             )
-            ->selectRaw('\''.$department->url.'\' as parent_url')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->where('product_categories.show_in_website', true)
             ->whereNotNull('webpages.id')

@@ -27,9 +27,9 @@ export const resolveResponsiveValue = (
   if (!base || typeof base !== 'object') return base;
 
   const getValue = (obj: any) => {
-    if (!obj || typeof obj !== 'object') return undefined;
-    return path ? path.reduce((acc, key) => acc?.[key], obj) : obj;
-  };
+		if (!obj || typeof obj !== "object") return undefined
+		return path ? path.reduce((acc, key) => acc?.[key], obj) : obj
+  }
 
   // ✅ NEW: If path is undefined and base has direct responsive keys (e.g., { mobile: '...', desktop: '...' }), just return base[screen]
   const isResponsiveObject =
@@ -61,7 +61,12 @@ export const resolveResponsiveValue = (
   ) => {
 		if (!properties || typeof properties !== "object") return null
 
-		const getVal = (base: any, path?: string[]) => resolveResponsiveValue(base, screen, path)
+		const getVal = (base: any, path?: string[]) => {
+			const v = resolveResponsiveValue(base, screen, path)
+			return v == undefined || v == null ? null : v
+		}
+
+		const isValid = (v: any) => v !== null && v !== undefined;
 
 		const styles: Record<string, string | null> = {
 			height:
@@ -94,16 +99,16 @@ export const resolveResponsiveValue = (
 			objectPosition: getVal(properties?.object_position),
 
 			paddingTop:
-				getVal(properties?.padding, ["top", "value"]) &&
-				getVal(properties.padding, ["unit"])
+				isValid(getVal(properties?.padding, ["top", "value"])) &&
+				isValid(getVal(properties.padding, ["unit"]))
 					? `${getVal(properties.padding, ["top", "value"])}${getVal(properties.padding, [
 							"unit",
 					  ])}`
 					: null,
 
 			paddingBottom:
-				getVal(properties?.padding, ["bottom", "value"]) &&
-				getVal(properties.padding, ["unit"])
+				isValid(getVal(properties?.padding, ["bottom", "value"])) &&
+				isValid(getVal(properties.padding, ["unit"]))
 					? `${getVal(properties.padding, ["bottom", "value"])}${getVal(
 							properties.padding,
 							["unit"]
@@ -111,8 +116,8 @@ export const resolveResponsiveValue = (
 					: null,
 
 			paddingLeft:
-				getVal(properties?.padding, ["left", "value"]) &&
-				getVal(properties.padding, ["unit"])
+				isValid(getVal(properties?.padding, ["left", "value"])) &&
+				isValid(getVal(properties.padding, ["unit"]))
 					? `${getVal(properties.padding, ["left", "value"])}${getVal(
 							properties.padding,
 							["unit"]
@@ -120,8 +125,8 @@ export const resolveResponsiveValue = (
 					: null,
 
 			paddingRight:
-				getVal(properties?.padding, ["right", "value"]) &&
-				getVal(properties.padding, ["unit"])
+				isValid(getVal(properties?.padding, ["right", "value"])) &&
+				isValid(getVal(properties.padding, ["unit"]))
 					? `${getVal(properties.padding, ["right", "value"])}${getVal(
 							properties.padding,
 							["unit"]
@@ -129,15 +134,16 @@ export const resolveResponsiveValue = (
 					: null,
 
 			marginTop:
-				getVal(properties?.margin, ["top", "value"]) && getVal(properties.margin, ["unit"])
+				isValid(getVal(properties?.margin, ["top", "value"])) &&
+				isValid(getVal(properties.margin, ["unit"]))
 					? `${getVal(properties.margin, ["top", "value"])}${getVal(properties.margin, [
 							"unit",
 					  ])}`
 					: null,
 
 			marginBottom:
-				getVal(properties?.margin, ["bottom", "value"]) &&
-				getVal(properties.margin, ["unit"])
+				isValid(getVal(properties?.margin, ["bottom", "value"])) &&
+				isValid(getVal(properties.margin, ["unit"]))
 					? `${getVal(properties.margin, ["bottom", "value"])}${getVal(
 							properties.margin,
 							["unit"]
@@ -145,15 +151,16 @@ export const resolveResponsiveValue = (
 					: null,
 
 			marginLeft:
-				getVal(properties?.margin, ["left", "value"]) && getVal(properties.margin, ["unit"])
+				isValid(getVal(properties?.margin, ["left", "value"])) &&
+				isValid(getVal(properties.margin, ["unit"]))
 					? `${getVal(properties.margin, ["left", "value"])}${getVal(properties.margin, [
 							"unit",
 					  ])}`
 					: null,
 
 			marginRight:
-				getVal(properties?.margin, ["right", "value"]) &&
-				getVal(properties.margin, ["unit"])
+				isValid(getVal(properties?.margin, ["right", "value"])) &&
+				isValid(getVal(properties.margin, ["unit"]))
 					? `${getVal(properties.margin, ["right", "value"])}${getVal(properties.margin, [
 							"unit",
 					  ])}`
@@ -180,36 +187,34 @@ export const resolveResponsiveValue = (
 			backgroundSize: (() => {
 				const backgroundBase = properties?.background?.[screen] ?? properties?.background
 				const backgroundType = getVal(backgroundBase, ["type"])
-				const size =  getVal(backgroundBase, ["size"])
-				if (backgroundType == 'image' ) return `${size}%`
+				const size = getVal(backgroundBase, ["size"])
+				if (backgroundType == "image") return `${size}%`
 				return null
 			})(),
 
 			backgroundRepeat: (() => {
 				const backgroundBase = properties?.background?.[screen] ?? properties?.background
 				const backgroundType = getVal(backgroundBase, ["type"])
-				const repeat =  getVal(backgroundBase, ["repeat"])
-				if (backgroundType == 'image' ) return repeat 
+				const repeat = getVal(backgroundBase, ["repeat"])
+				if (backgroundType == "image") return repeat
 				return null
 			})(),
 
-			backgroundPositionX:(() => {
+			backgroundPositionX: (() => {
 				const backgroundBase = properties?.background?.[screen] ?? properties?.background
 				const backgroundType = getVal(backgroundBase, ["type"])
-				const positionX =  getVal(backgroundBase, ["positionX"])
-				if (backgroundType == 'image' ) return `${positionX}%`
+				const positionX = getVal(backgroundBase, ["positionX"])
+				if (backgroundType == "image") return `${positionX}%`
 				return null
 			})(),
 
-			backgroundPositionY:(() => {
+			backgroundPositionY: (() => {
 				const backgroundBase = properties?.background?.[screen] ?? properties?.background
 				const backgroundType = getVal(backgroundBase, ["type"])
-				const positionY =  getVal(backgroundBase, ["positionY"])
-				if (backgroundType == 'image' ) return `${positionY}%`
+				const positionY = getVal(backgroundBase, ["positionY"])
+				if (backgroundType == "image") return `${positionY}%`
 				return null
 			})(),
-
-
 
 			borderTop:
 				getVal(properties?.border, ["top", "value"]) &&
@@ -304,7 +309,7 @@ export const resolveResponsiveValue = (
 					? `${getVal(properties.gap, ["value"])}${properties.gap.unit}`
 					: null,
 
-			display: getVal(properties?.visibility) == 'hidden' ? 'none' : null,
+			display: getVal(properties?.visibility) == "hidden" ? "none" : null,
 			justifyContent: getVal(properties.justifyContent),
 			boxShadow: getBoxShadowFromParts(properties?.shadow, properties?.shadowColor),
 		}
@@ -314,6 +319,15 @@ export const resolveResponsiveValue = (
 				.filter(([_, val]) => val !== null && val !== undefined && val !== "undefined")
 				.map(([key, val]) => [key, useImportant ? `${val} !important` : `${val}`])
 		)
+
+
+		// console.log(getVal(properties?.padding, ["right", "value"]) &&
+		// 		getVal(properties.padding, ["unit"])
+		// 			? `${getVal(properties.padding, ["right", "value"])}${getVal(
+		// 					properties.padding,
+		// 					["unit"]
+		// 			  )}`
+		// 			: null)
 		return data
   }
 

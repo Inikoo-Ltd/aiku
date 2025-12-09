@@ -83,7 +83,12 @@ const props = withDefaults(
 		data: PropsData
 		gpsr?: Gpsr
 		hide?: string[]
-		publicAttachment: array<any>
+		// publicAttachment: array<any>
+		// privateAttachment: {}[]
+		attachments: {
+			public: {}[]
+			private: {}[]
+		}
 		properties?: {
 			country_of_origin?: { code: string; name: string }
 			tariff_code?: string
@@ -135,7 +140,7 @@ library.add(
 
 
 					<div class="flex justify-between flex-wrap gap-1" v-else>
-						<dt class="text-gray-500">{{ trans("Units label") }}</dt>
+						<dt class="text-gray-500">{{ trans("Unit label") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }} </dd>
 					</div>
 
@@ -177,12 +182,12 @@ library.add(
 				</div>
 
 
-			  <ProductResource 
-				:publicAttachment 
-				:data
-				:gpsr
-				:properties
-			  />
+				<ProductResource 
+					:attachments
+					:data
+					:gpsr
+					:properties
+				/>
 			</dl>
 		</div>
 	</div>

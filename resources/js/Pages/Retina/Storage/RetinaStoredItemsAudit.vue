@@ -11,7 +11,7 @@ import { capitalize } from "@/Composables/capitalize"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import BoxAuditStoredItems from '@/Components/Box/BoxAuditStoredItems.vue'
 
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableStoredItemsAudits from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemsAudits.vue"
 

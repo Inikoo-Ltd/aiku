@@ -98,6 +98,9 @@ const props = withDefaults(
 		video?: string
 		hide?: string[]
 		gpsr?:object
+		attachments: {
+
+		}
 		publicAttachment: array<any>
 		properties?: {
 			country_of_origin?: { code: string; name: string }
@@ -211,7 +214,7 @@ library.add(
 						</dd>
 					</div>
 				</div>
-				<ProductResource :publicAttachment :data :gpsr :properties />
+				<ProductResource :attachments="attachments" :publicAttachment :data :gpsr :properties />
 			</dl>
 		</div>
 	</div>

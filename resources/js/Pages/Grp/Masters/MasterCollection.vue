@@ -12,7 +12,7 @@ import { notify } from '@kyvg/vue3-notification'
 import MasterCollectionShowcase from '@/Components/Navigation/MasterCollectionShowcase.vue'
 
 import {
-    PageHeading as PageHeadingTypes
+    PageHeadingTypes
 } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { routeType } from '@/types/route'

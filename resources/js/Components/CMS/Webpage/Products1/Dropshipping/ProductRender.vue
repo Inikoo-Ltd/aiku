@@ -11,7 +11,7 @@ import { faCircle, faHeart as fasHeart, faMedal } from "@fas"
 import { Image as ImageTS } from "@/types/Image"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
-import BestsellerBadge from "@/Components/CMS/Webpage/Products1/BestsellerBadge.vue"
+import BestsellerBadge from "@/Components/CMS/Webpage/Products/BestsellerBadge.vue"
 import Prices from "@/Components/CMS/Webpage/Products1/Prices.vue"
 
 const layout = inject("layout", retinaLayoutStructure)
@@ -197,18 +197,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
     )
 }
 
-const profitMargin = computed(() => {
-    const price = props.product?.price
-    const rrp = props.product?.rrp
-    if (!price || !rrp) return 0
-    return Math.floor(((rrp - price) / rrp) * 100)
-})
-
-
 </script>
 
 <template>
-    <div class="relative flex flex-col justify-between h-full">
+    <div class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
@@ -226,12 +218,12 @@ const profitMargin = computed(() => {
             <LinkIris v-if="product.url" :href="product.url" type="internal"
                 class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 <template #default>
-                    <span class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
+                    <span class="">{{ product.units }}x</span> {{ product.name }}
                 </template>
             </LinkIris>
 
             <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-                <span class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
+                <span class="">{{ product.units }}x</span> {{ product.name }}
             </div>
 
             <!-- code and stock -->
@@ -242,14 +234,12 @@ const profitMargin = computed(() => {
                 </div>
 
                 <!-- Stock Info -->
-                <div v-if="!product.is_coming_soon" class="flex items-center md:justify-end justify-start">
-                    <div v-if="layout?.iris?.is_logged_in"
+                <div v-if="layout?.iris?.is_logged_in && !product.is_coming_soon" class="flex items-center md:justify-end justify-start">
+                    <div
                         class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
                         :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
-
-                        <FontAwesomeIcon :icon="faCircle" class="text-[6px] mt-[6px]" />
-
                         <span class="text-xs">
+                            <FontAwesomeIcon :icon="faCircle" class="text-[6px] mt-[6px]" />
                             {{ product.stock > 10000
                                 ? trans("Unlimited quantity available")
                                 : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' + trans('available'))

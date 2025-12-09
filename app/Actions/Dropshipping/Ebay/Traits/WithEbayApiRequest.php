@@ -471,7 +471,7 @@ trait WithEbayApiRequest
                 'carrier_name' => 'Other',
             ],
             'EBAY_ES' => [
-                'service_code' => 'ES_Other',
+                'service_code' => 'ES_Otros',
                 'service_name' => 'Otro (Other)',
                 'carrier_code' => 'Other',
                 'carrier_name' => 'Otro (Other)',

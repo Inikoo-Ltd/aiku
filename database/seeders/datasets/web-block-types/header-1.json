@@ -4,6 +4,7 @@
 	"code": "header-1",
 	"name": "Header 1",
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
+	"is_in_test" : false,
 	"component": "header",
 	"fixed" : true,
 	"data": {
