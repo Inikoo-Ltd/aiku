@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Table } from '@/types/Table'
 import Toggle from "@/Components/Pure/Toggle.vue"
 import RetinaTableCustomerSalesChannels from "@/Components/Tables/Retina/RetinaTableCustomerSalesChannels.vue"

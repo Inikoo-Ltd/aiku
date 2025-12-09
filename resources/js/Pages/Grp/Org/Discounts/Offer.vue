@@ -9,12 +9,12 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 
 const props = defineProps<{
     data: {}
     title: string
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
 }>()
 
 // console.log('offer', props);

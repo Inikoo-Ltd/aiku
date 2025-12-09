@@ -2,7 +2,7 @@
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Table } from '@/types/Table'
 import RetinaTableFulfilmentCustomerSalesChannels from "@/Components/Tables/Retina/RetinaTableFulfilmentCustomerSalesChannels.vue"
 import {library} from "@fortawesome/fontawesome-svg-core";

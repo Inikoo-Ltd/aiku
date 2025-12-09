@@ -14,7 +14,7 @@ import { faSpinner } from "@fal"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { CheckoutTranslations } from "@/Composables/Unique/CheckoutFlowTranslation"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
 const props = defineProps<{
     title: string,

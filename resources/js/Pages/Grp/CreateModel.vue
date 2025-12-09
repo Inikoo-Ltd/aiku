@@ -17,7 +17,7 @@ import { isArray } from 'lodash-es'
 import { ref, onMounted } from 'vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Fieldform list
 

@@ -12,7 +12,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { ref } from "vue"
 import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue"
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
