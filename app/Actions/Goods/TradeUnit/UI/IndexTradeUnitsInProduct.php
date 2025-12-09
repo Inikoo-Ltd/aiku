@@ -74,7 +74,7 @@ class IndexTradeUnitsInProduct extends OrgAction
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
-                ->withLabelRecord([__('Trade unit'),__('Tade units')])
+                ->withLabelRecord([__('Trade unit'),__('Trade units')])
                 ->withEmptyState(
                     [
                     'title' => __("No trade units found"),

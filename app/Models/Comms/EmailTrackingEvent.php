@@ -31,9 +31,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $source_id
  * @property string|null $ip
  * @property string|null $device
- * @property-read \App\Models\Comms\DispatchedEmail|null $dispatchedEmail
- * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\SysAdmin\Organisation|null $organisation
+ * @property-read \App\Models\Comms\DispatchedEmail $dispatchedEmail
+ * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|EmailTrackingEvent newModelQuery()
  * @method static Builder<static>|EmailTrackingEvent newQuery()
  * @method static Builder<static>|EmailTrackingEvent query()

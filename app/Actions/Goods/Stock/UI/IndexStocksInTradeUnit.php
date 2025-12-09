@@ -70,6 +70,7 @@ class IndexStocksInTradeUnit extends OrgAction
             }
 
             $table
+                ->withLabelRecord([__('Master SKU'),__('Master SKUs')])
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->dateInterval($this->dateInterval)
@@ -79,6 +80,8 @@ class IndexStocksInTradeUnit extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'packed_in', label: __('Packed in'), canBeHidden: false, sortable: true, searchable: true);
+
             $table->column(key: 'number_number_org_stocks_state_active', label: __('Org SKUs'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
