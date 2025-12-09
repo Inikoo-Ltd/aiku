@@ -215,6 +215,7 @@ console.log(props);
 				{{ data.masterProduct.name }}
 			</span>
 		</div>
+		
 		<div v-if="data.availability_status || data.trade_units.length > 0" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center items-center flex">
 			<div v-tooltip="data.trade_units.length > 1 ? trans('Click to view all trade units detail') : ''" class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer me-2 flex border-green-600" v-on:click="isModalSKUDetail = true">
 				<div v-if="data.trade_units.length == 1" class="text-teal-600 whitespace-nowrap w-full">
@@ -230,11 +231,13 @@ console.log(props);
 					{{ data.masterProduct.units + " " + data.masterProduct.unit }}
 				</div>
 			</div>
+			
 			<span v-if="data.availability_status"
-			v-on:click="isModalProductForSale = true"
-			v-tooltip="getTooltips()"
-			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
-			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
+				v-on:click="isModalProductForSale = true"
+				v-tooltip="getTooltips()"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+				:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'"
+			>
 				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
 				(<span class="font-semibold" :class='data.availability_status.total_product_for_sale != data.availability_status.product.length ? "opacity-80" : ""'>
 					{{ `${data.availability_status.total_product_for_sale}/${data.availability_status.product.length}` }}
