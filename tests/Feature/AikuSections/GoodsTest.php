@@ -248,7 +248,7 @@ test("UI Show Stocks", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $stock->slug)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $stock->name)->etc()
             )
             ->has("tabs");
     });

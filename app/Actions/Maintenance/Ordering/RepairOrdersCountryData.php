@@ -40,7 +40,7 @@ class RepairOrdersCountryData
     }
 
 
-    public string $commandSignature = 'orders:repair_address';
+    public string $commandSignature = 'orders:order_country_data';
 
     public function asCommand(Command $command): void
     {
