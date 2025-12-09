@@ -30,7 +30,7 @@ class EditOutboxInShop extends OrgAction
     {
 
         $fields = [];
-        if ($outbox->code === OutboxCodeEnum::REORDER_REMINDER) {
+        if (in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD])) {
             $fields[] = [
                 'title' => '',
                 'fields' => [

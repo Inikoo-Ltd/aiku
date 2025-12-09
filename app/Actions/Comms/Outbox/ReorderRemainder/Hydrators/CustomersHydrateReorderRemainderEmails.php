@@ -13,6 +13,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\Customer;
 use App\Actions\Comms\Email\SendReOrderRemainderToCustomerEmail;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Actions\Comms\Outbox\ReorderRemainder\WithGenerateEmailBulkRuns;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
 use App\Enums\CRM\Customer\CustomerStateEnum;
@@ -34,6 +35,7 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
 
         $queryOutbox = QueryBuilder::for(Outbox::class);
         $queryOutbox->where('code', OutboxCodeEnum::REORDER_REMINDER);
+        $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->whereNotNull('shop_id');
         $queryOutbox->leftJoin('outbox_settings', 'outboxes.id', '=', 'outbox_settings.outbox_id');
         // $queryOutbox->where('outbox_settings.outbox_id', 843);// for testing bulgaria outbox
