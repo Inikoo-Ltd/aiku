@@ -116,7 +116,6 @@ class CloneFromChannelToChannel implements ShouldBeUnique
                 $numberFails
             );
         } catch (\Throwable $e) {
-            // Silently ignore broadcast errors - don't fail the job
             Log::warning('Clone progress broadcast failed: ' . $e->getMessage());
         }
     }
