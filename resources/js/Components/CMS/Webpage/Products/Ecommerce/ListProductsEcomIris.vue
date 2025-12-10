@@ -531,6 +531,7 @@ watch(
                                 :hasInBasket="productInBasket.list[product.id]" 
                                 :bestSeller="fieldValue.bestseller" 
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
+                                :button="fieldValue?.button"
                             />
                         </div>
                     </template>

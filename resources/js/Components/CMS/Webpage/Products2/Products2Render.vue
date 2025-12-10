@@ -39,6 +39,7 @@ const props = withDefaults(
         updateBasketQuantityRoute?: routeType
         isLoadingFavourite?: boolean
         isLoadingRemindBackInStock?: boolean
+        button: any
     }>(),
     {
         isLoadingFavourite: false,
@@ -169,7 +170,7 @@ const toggleBackInStock = () =>
                         <NewAddToCartButton v-if="product.stock > 0 && basketButton" :hasInBasket="hasInBasket"
                             :product="product" :addToBasketRoute="addToBasketRoute"
                             :updateBasketQuantityRoute="updateBasketQuantityRoute" :buttonStyleHover="buttonStyleHover"
-                            :buttonStyle="buttonStyle" />
+                            :buttonStyle="buttonStyle" :icon="button?.icon"/>
 
                         <!-- Back in stock notify -->
                         <button v-else-if="layout?.app?.environment === 'local'" @click.prevent="toggleBackInStock"
