@@ -201,7 +201,7 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('', [IndexMasterProducts::class, 'inMasterShop'])->name('index');
                 Route::get('{masterProduct}', ShowMasterProduct::class)->name('show');
                 Route::get('{masterProduct}/edit', EditMasterProduct::class)->name('edit');
-                Route::get('{masterProduct}/create-variant', CreateVariant::class)->name('createVariant');
+                Route::get('{masterProduct}/create-variant', ShowCreateVariant::class)->name('createVariant');
             });
 
             Route::get('/master-products-orphan', [IndexMasterProductsWithNoFamily::class, 'inMasterShop'])->name('.master_products_orphan');
