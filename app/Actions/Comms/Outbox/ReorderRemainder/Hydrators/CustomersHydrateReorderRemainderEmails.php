@@ -44,7 +44,6 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
 
         $currentDateTime = Carbon::now()->utc();
 
-        // NOTE: get all user related each outbox
         foreach ($outboxes as $outbox) {
             // convert to utc
             $outboxSendTimeUTC = Carbon::parse($outbox->setting?->send_time)->utc()->format('H:i');
@@ -57,26 +56,26 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
                 $startDate = Carbon::now()->subDays($outbox->days_after)->startOfDay();
                 $endDate = $startDate->copy()->endOfDay();
 
-                $queryUser = QueryBuilder::for(Customer::class);
-                $queryUser->leftJoin('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
-                $queryUser->where('customer_comms.is_subscribed_to_reorder_reminder', true); // check if customer subscribed to reorder reminder
-                $queryUser->where('customers.shop_id', $outbox->shop_id);
-                $queryUser->where('customers.state', CustomerStateEnum::ACTIVE->value);
-                $queryUser->where('customers.status', CustomerStatusEnum::APPROVED->value);
+                $queryCustomer = QueryBuilder::for(Customer::class);
+                $queryCustomer->leftJoin('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
+                $queryCustomer->where('customer_comms.is_subscribed_to_reorder_reminder', true); // check if customer subscribed to reorder reminder
+                $queryCustomer->where('customers.shop_id', $outbox->shop_id);
+                $queryCustomer->where('customers.state', CustomerStateEnum::ACTIVE->value);
+                $queryCustomer->where('customers.status', CustomerStatusEnum::APPROVED->value);
                 // $queryUser->where('customers.shop_id', 42); // test for bulgaria
-                $queryUser->whereBetween('customers.last_invoiced_at', [
+                $queryCustomer->whereBetween('customers.last_invoiced_at', [
                     $startDate,
                     $endDate
                 ]);
-                $queryUser->whereNotNull('customers.email');
-                $queryUser->where('customers.email', '!=', '');
-                $queryUser->select('customers.id', 'customers.shop_id');
-                $queryUser->orderBy('customers.shop_id');
-                $queryUser->orderBy('customers.id');
+                $queryCustomer->whereNotNull('customers.email');
+                $queryCustomer->where('customers.email', '!=', '');
+                $queryCustomer->select('customers.id', 'customers.shop_id');
+                $queryCustomer->orderBy('customers.shop_id');
+                $queryCustomer->orderBy('customers.id');
 
 
                 $LastBulkRun = null;
-                foreach ($queryUser->cursor() as $customer) {
+                foreach ($queryCustomer->cursor() as $customer) {
                     $bulkRun = $this->generateEmailBulkRuns(
                         $customer,
                         $outbox->code,
@@ -91,7 +90,7 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
 
                 if ($LastBulkRun) {
                     // No delay needed since we're dispatching immediately
-                    EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun); // note: make sure to call this function
+                    EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun);
                 }
 
 

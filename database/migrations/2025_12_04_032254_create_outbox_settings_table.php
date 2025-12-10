@@ -12,7 +12,7 @@ return new class () extends Migration {
             $table->unsignedBigInteger('outbox_id')->unique();
             $table->foreign('outbox_id')->references('id')->on('outboxes');
             $table->unsignedInteger('days_after')->default(0);
-            $table->timeTz('send_time')->default('15:00:00')->timezone('UTC');
+            $table->timeTz('send_time')->default('15:00:00');
             $table->timestampsTz();
         });
     }

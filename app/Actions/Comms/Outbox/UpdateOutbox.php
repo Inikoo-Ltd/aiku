@@ -42,7 +42,11 @@ class UpdateOutbox extends OrgAction
         if ($send_time = Arr::pull($modelData, 'send_time')) {
 
             $timezone = $outbox->shop->timezone;
-            $timezoneOffset = str_replace('GMT', '', $timezone->formatOffset());
+            $timezoneOffset = trim(str_replace('GMT', '', $timezone->formatOffset()));
+
+            if ($timezoneOffset == '00:00') {
+                $timezoneOffset = '+00:00';
+            }
             $sendTimeWithTimezone = $send_time . $timezoneOffset;
 
             $this->update($outbox->setting, [

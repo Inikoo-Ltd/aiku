@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\Seeders;
 use App\Models\Comms\Outbox;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Console\Command;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 
 class SeedShopOutBoxSettings
 {
@@ -25,10 +26,31 @@ class SeedShopOutBoxSettings
             if ($outbox->setting()->exists()) {
                 continue;
             }
+            $timezone = $outbox->shop->timezone;
+            $timezoneOffset = trim(str_replace('GMT', '', $timezone->formatOffset()));
 
-            $outbox->setting()->create([
-                'days_after' => 20, // default value
-            ]);
+            if ($timezoneOffset == '00:00') {
+                $timezoneOffset = '+00:00';
+            }
+            $sendTimeWithTimezone = '15:00:00' . $timezoneOffset; // default value
+
+
+            if ($outbox->code == OutboxCodeEnum::REORDER_REMINDER_2ND) {
+                $outbox->setting()->create([
+                    'days_after' => 30, // default value
+                    'send_time' => $sendTimeWithTimezone
+                ]);
+            } elseif ($outbox->code == OutboxCodeEnum::REORDER_REMINDER_3RD) {
+                $outbox->setting()->create([
+                    'days_after' => 60, // default value
+                    'send_time' => $sendTimeWithTimezone
+                ]);
+            } else {
+                $outbox->setting()->create([
+                    'days_after' => 20, // default value
+                    'send_time' => $sendTimeWithTimezone
+                ]);
+            }
         }
     }
 
