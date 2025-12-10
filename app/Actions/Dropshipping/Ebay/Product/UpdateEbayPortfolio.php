@@ -77,8 +77,8 @@ class UpdateEbayPortfolio implements ShouldBeUnique
 
         $availableQuantity = $product->available_quantity ?? 0;
 
-        if ($availableQuantity >= 50) {
-            $availableQuantity = 50; // Based on discuss with tomas we agree to limit 50 only
+        if ($customerSalesChannel->max_quantity_advertise > 0) {
+            $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
         }
 
         $ebayUser->setTimeout(45);

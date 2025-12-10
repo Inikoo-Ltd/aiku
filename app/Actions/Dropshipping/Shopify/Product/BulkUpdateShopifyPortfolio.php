@@ -54,12 +54,19 @@ class BulkUpdateShopifyPortfolio
 
                 // Get inventory item ID from variant
                 $inventoryItemId = $this->getInventoryItemId($shopifyUser, $variantId);
+                $availableQuantity = $product->available_quantity;
+
+                $maxQtyAd = $shopifyUser->customerSalesChannel?->max_quantity_advertise;
+
+                if ($maxQtyAd > 0) {
+                    $availableQuantity = min($availableQuantity, $maxQtyAd);
+                }
 
                 if ($inventoryItemId) {
                     $inventoryItems[] = [
                         'inventoryItemId' => $inventoryItemId,
                         'locationId' => $shopifyUser->shopify_location_id,
-                        'quantity' => $product->available_quantity,
+                        'quantity' => $availableQuantity,
                     ];
                 }
             }
