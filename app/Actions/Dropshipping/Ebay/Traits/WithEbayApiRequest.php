@@ -213,9 +213,6 @@ trait WithEbayApiRequest
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
-                case 'EAN':
-                    $attributes['EAN'] = [$product->barcode];
-                    break;
                     // Add more mappings as needed
                 default:
                     // Use generic mapping or default value
@@ -230,6 +227,10 @@ trait WithEbayApiRequest
 
         if ($product->marketing_ingredients) {
             $attributes['Material'] = [Str::substr($product->marketing_ingredients, 0, 60)];
+        }
+
+        if($product->barcode) {
+            $attributes['EAN'] = [$product->barcode];
         }
 
         return $attributes;
