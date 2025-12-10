@@ -85,9 +85,9 @@ class IndexCustomers extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request)->withTab(CustomersTabsEnum::values());
+        $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, CustomersTabsEnum::CUSTOMERS->value);
+        return $this->handle($shop);
     }
 
     public function handle(Group|Organisation|Shop|TrafficSource $parent, $prefix = null): LengthAwarePaginator
@@ -265,17 +265,17 @@ class IndexCustomers extends OrgAction
                         default => null
                     }
                 )
-                ->column(key: 'reference', label: __('ref'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'reference', label: __('Ref'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             } else {
-                $table->column(key: 'location', label: __('location'), canBeHidden: false, searchable: true);
+                $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
 
             if ($isDropshipping) {
                 $table->column(
@@ -306,13 +306,13 @@ class IndexCustomers extends OrgAction
             }
 
             $table
-                ->column(key: 'last_invoiced_at', label: __('last invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
-                ->column(key: 'number_invoices_type_invoice', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'last_invoiced_at', label: __('Last Invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
+                ->column(key: 'number_invoices_type_invoice', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'sales_all', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(
                 key: 'tags',
-                label: __('tags'),
+                label: __('Tags'),
                 canBeHidden: false
             );
 
@@ -327,12 +327,6 @@ class IndexCustomers extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $customers, ActionRequest $request): Response
     {
-        $navigation = CustomersTabsEnum::navigation();
-
-        if ($this->parent instanceof Group) {
-            $this->tab = $request->get('tab', array_key_first($navigation));
-        }
-
         $subNavigation = [];
 
         if ($this->parent instanceof Shop) {
@@ -378,11 +372,6 @@ class IndexCustomers extends OrgAction
                     'subNavigation' => $subNavigation,
                 ]),
                 'data' => CustomersResource::collection($customers),
-                'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => $navigation
-                ],
-
                 'download_route' => [
                     'xlsx' => [
                         'name'       => 'grp.org.shops.show.crm.customers.export',
@@ -401,18 +390,9 @@ class IndexCustomers extends OrgAction
                         ]
                     ]
                 ],
-
-                CustomersTabsEnum::CUSTOMERS->value =>
-                    $this->tab == CustomersTabsEnum::CUSTOMERS->value
-                        ? fn () => CustomersResource::collection($customers)
-                        : Inertia::lazy(fn () => CustomersResource::collection($customers))
+                'customers' => CustomersResource::collection($customers)
             ]
-        )->table(
-            $this->tableStructure(
-                parent: $this->parent,
-                prefix: CustomersTabsEnum::CUSTOMERS->value
-            )
-        );
+        )->table($this->tableStructure(parent: $this->parent));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

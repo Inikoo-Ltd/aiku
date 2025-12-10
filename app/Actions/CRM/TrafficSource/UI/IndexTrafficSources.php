@@ -129,7 +129,7 @@ class IndexTrafficSources extends OrgAction
 
         if ($this->parent instanceof Shop) {
             $title      = $this->parent->name;
-            $model      = __('traffic source');
+            $model      = __('Traffic Source');
             $icon       = [
                 'icon'  => ['fal', 'fa-route'],
                 'title' => __('Traffic source')
