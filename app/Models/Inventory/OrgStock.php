@@ -102,23 +102,22 @@ use Spatie\Sluggable\SlugOptions;
  */
 class OrgStock extends Model implements Auditable
 {
-    use SoftDeletes;
+    use HasFactory;
+    use HasHistory;
     use HasSlug;
     use HasUniversalSearch;
-    use HasFactory;
     use InOrganisation;
-    use HasHistory;
+    use SoftDeletes;
 
     protected $casts = [
-        'data'                             => 'array',
-        'activated_in_organisation_at'     => 'datetime',
+        'data' => 'array',
+        'activated_in_organisation_at' => 'datetime',
         'discontinuing_in_organisation_at' => 'datetime',
         'discontinued_in_organisation_at'  => 'datetime',
         'state'                            => OrgStockStateEnum::class,
         'quantity_status'                  => OrgStockQuantityStatusEnum::class,
         'fetched_at'                       => 'datetime',
         'last_fetched_at'                  => 'datetime',
-        'has_been_in_warehouse'            => 'boolean',
     ];
 
     protected $attributes = [
@@ -135,7 +134,7 @@ class OrgStock extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'goods'
+            'goods',
         ];
     }
 
@@ -145,12 +144,11 @@ class OrgStock extends Model implements Auditable
         'state',
     ];
 
-
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code . ' ' . $this->organisation->code;
+                return $this->code.' '.$this->organisation->code;
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');

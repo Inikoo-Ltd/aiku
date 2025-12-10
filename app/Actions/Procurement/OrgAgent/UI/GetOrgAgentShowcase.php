@@ -31,20 +31,20 @@ class GetOrgAgentShowcase
             ],
             'stats'       => [
                 [
-                    'label' => __('purchase orders'),
+                    'label' => __('Purchase Orders'),
                     'count' => $orgAgent->stats->number_purchase_orders,
                     'full'  => true
                 ],
                 [
-                    'label' => __('suppliers'),
+                    'label' => __('Suppliers'),
                     'count' => $orgAgent->stats->number_org_suppliers
                 ],
                 [
-                    'label' => __('products'),
+                    'label' => __('Products'),
                     'count' => $orgAgent->stats->number_org_supplier_products
                 ],
                 [
-                    'label' => __('deliveries'),
+                    'label' => __('Deliveries'),
                     'count' => $orgAgent->stats->number_stock_deliveries,
                     'full'  => true
                 ],

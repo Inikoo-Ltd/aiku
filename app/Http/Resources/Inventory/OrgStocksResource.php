@@ -30,6 +30,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_available
  * @property mixed $id
  * @property mixed $organisation_code
+ * @property mixed $value_in_locations
+ * @property mixed $revenue
+ * @property mixed $dispatched
  */
 class OrgStocksResource extends JsonResource
 {
@@ -57,9 +60,11 @@ class OrgStocksResource extends JsonResource
             'organisation_slug'               => $this->organisation_slug,
             'warehouse_slug'                  => $this->warehouse_slug,
             'packed_in'                       => trimDecimalZeros($this->packed_in),
-
-
             'pick_fractional' => ($this->quantity && $this->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity)), $this->packed_in) : [],
+            'value_in_locations' => $this->value_in_locations,
+            'revenue' => $this->revenue,
+            'dispatched' => $this->dispatched,
+
         ];
     }
 }
