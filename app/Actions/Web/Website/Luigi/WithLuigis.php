@@ -96,6 +96,18 @@ trait WithLuigis
                 'https://live.luigisbox.com/'.$endPoint
             );
 
+        // TODO: Below is correct code for ReindexWebpageLuigiData to work
+        // if ($compressed) {
+        //     $header['Content-Encoding'] = 'gzip';
+        //     $body                       = gzencode(json_encode($body), 9);
+        // }
+
+        // $response = Http::withHeaders($header)
+        //     ->retry(3, 100)
+        //     ->{strtolower($method)}(
+        //         'https://live.luigisbox.com/'.$endPoint,
+        //         $body
+        //     );
 
         
         if ((isset($response['errors_count']) && $response['errors_count'] > 0)) {
