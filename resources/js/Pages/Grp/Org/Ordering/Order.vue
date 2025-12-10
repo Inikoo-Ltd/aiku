@@ -31,12 +31,10 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import { Timeline as TSTimeline } from "@/types/Timeline"
 import axios from "axios"
-import { Action } from "@/types/Action"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import { notify } from "@kyvg/vue3-notification"
 import OrderProductTable from "@/Components/Dropshipping/Orders/OrderProductTable.vue"
 import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatchedEmailsInOrder.vue"
-import NeedToPay from "@/Components/Utils/NeedToPay.vue"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -83,7 +81,6 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
 
 library.add(faParachuteBox, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
@@ -1038,9 +1035,9 @@ const labelToBePaid = (toBePaidValue: string) => {
                             </div>
                         </div>
 
-                        <div v-else-if="data.data?.state !== 'created' && box_stats.products.payment.pay_status != 'no_need'" class="w-full">
+                        <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need'" class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
-                            <div class="w-full xflex xgap-x-2 xborder rounded-md shadow pxb-2 isolate border"
+                            <div class="w-full rounded-md shadow pxb-2 isolate border"
                                 :class="[
                                     Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
                                 ]"
