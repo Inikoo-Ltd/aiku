@@ -748,6 +748,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::name('outboxes.')->prefix('outboxes/{outbox:id}')->group(function () {
         Route::patch('toggle', ToggleOutbox::class)->name('toggle')->withoutScopedBindings();
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
+        Route::patch('update', [UpdateOutbox::class,'inShop'])->name('update')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
     });

@@ -54,6 +54,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property array<array-key, mixed> $sources
  * @property bool $is_applicable
+ * @property int|null $days_after Days after last invoice to send reorder reminder mail
+ * @property string|null $send_time Time to send reorder reminder mail
  * @property-read Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read Collection<int, \App\Models\Comms\EmailBulkRun> $emailBulkRuns
  * @property-read \App\Models\Comms\EmailOngoingRun|null $emailOngoingRun

@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Outbox;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Mail\OutboxesResource;
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use Illuminate\Support\Arr;
@@ -30,6 +31,19 @@ class UpdateOutbox extends OrgAction
             ]);
         }
 
+        if ($send_time = Arr::pull($modelData, 'send_time')) {
+
+            $timezone = $outbox->shop->timezone;
+            $timezoneOffset = trim(str_replace('GMT', '', $timezone->formatOffset()));
+
+            if ($timezoneOffset == '00:00') {
+                $timezoneOffset = '+00:00';
+            }
+            $sendTimeWithTimezone = $send_time . $timezoneOffset;
+            $modelData['send_time'] = $sendTimeWithTimezone;
+
+        }
+
         return $this->update($outbox, $modelData, ['data']);
     }
 
@@ -37,8 +51,17 @@ class UpdateOutbox extends OrgAction
     {
         return [
             'name'    => ['sometimes', 'required', 'string'],
-            'subject' => ['sometimes', 'required', 'string']
+            'subject' => ['sometimes', 'required', 'string'],
+            'days_after' => ['sometimes', 'required', 'integer','gt:0'],
+            'send_time' => ['sometimes', 'required', 'date_format:H:i:s']
         ];
+    }
+
+    public function inShop(Shop $shop, Outbox $outbox, ActionRequest $request): Outbox
+    {
+        $this->initialisation($outbox->organisation, $request);
+
+        return $this->handle($outbox, $this->validatedData);
     }
 
     public function action(Outbox $outbox, array $modelData): Outbox
