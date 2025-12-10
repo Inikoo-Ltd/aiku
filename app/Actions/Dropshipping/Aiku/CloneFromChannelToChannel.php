@@ -55,9 +55,12 @@ class CloneFromChannelToChannel implements ShouldBeUnique
         $numberSuccess = 0;
         $numberFails = 0;
 
+        $percentileStep = 10; //<-- I changed to 10% every processes, is it ok?
+        $lastBroadcastedPercentage = -1;
+
         $this->broadcastProgress($userId, $actionId, $total, $done, $numberSuccess, $numberFails);
 
-        foreach ($items as $itemID) {
+        foreach ($items as $index => $itemID) {
             try {
                 $itemID = (int)$itemID;
 
@@ -72,13 +75,16 @@ class CloneFromChannelToChannel implements ShouldBeUnique
                 if (!$item) {
                     $numberFails++;
                     $done++;
-                    $this->broadcastProgress($userId, $actionId, $total, $done, $numberSuccess, $numberFails);
                     continue;
                 }
 
-                if ($item->portfolios()->where('customer_sales_channel_id', $toChannel->id)->exists()) {
-                    if ($portfolio = $item->portfolios()->where('customer_sales_channel_id', $toChannel->id)->where('status', false)->first()) {
-                        UpdatePortfolio::make()->action($portfolio, [
+                $existingPortfolio = $item->portfolios()
+                    ->where('customer_sales_channel_id', $toChannel->id)
+                    ->first();
+
+                if ($existingPortfolio) {
+                    if (!$existingPortfolio->status) {
+                        UpdatePortfolio::make()->action($existingPortfolio, [
                             'status' => true
                         ]);
                     }
@@ -97,7 +103,16 @@ class CloneFromChannelToChannel implements ShouldBeUnique
 
             $done++;
 
-            $this->broadcastProgress($userId, $actionId, $total, $done, $numberSuccess, $numberFails);
+            $currentPercentage = (int)(($done / $total) * 100);
+            $shouldBroadcast = (
+                (int)($currentPercentage / $percentileStep) > (int)($lastBroadcastedPercentage / $percentileStep)
+                || $done === $total
+            );
+
+            if ($shouldBroadcast) {
+                $this->broadcastProgress($userId, $actionId, $total, $done, $numberSuccess, $numberFails);
+                $lastBroadcastedPercentage = $currentPercentage;
+            }
         }
 
         CustomerSalesChannelsHydratePortfolios::run($toChannel);
