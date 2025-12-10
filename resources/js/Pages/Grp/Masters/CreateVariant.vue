@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue"
-import { Head } from "@inertiajs/vue3"
+import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
@@ -8,21 +8,25 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTrashAlt } from "@far"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
+import { trans } from "laravel-vue-i18n"
+import { routeType } from "@/types/route"
+
+type Variant = { label: string; options: string[]; active?: boolean }
+type Node = {
+    key: Record<string, string>
+    label: string
+    product: string | null
+    children?: Node[]
+}
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
     master_asset: {}
+    master_assets_route: routeType
+    save_route: routeType
 }>()
-
-type Variant = { label: string; options: string[]; active?: boolean }
-type Node = {
-    key: string[]
-    label: string
-    text: string
-    product: string | null
-    children?: Node[]
-}
 
 const state = ref({
     variants: [
@@ -32,64 +36,81 @@ const state = ref({
     groupBy: "Color",
 })
 
-// Expand/collapse state for grouped rows
-const expanded = ref<Record<string, boolean>>({})
 
+const expanded = ref<Record<string, boolean>>({})
 const toggleExpand = (k: string) => {
     expanded.value[k] = !expanded.value[k]
 }
 
-// Helpers
+
 const validVariants = computed(() =>
     state.value.variants
-        .filter((v) => v.label.trim())
-        .map((v) => ({ label: v.label, options: v.options.filter((o) => o.trim()) }))
+        .filter(v => v.label.trim())
+        .map(v => ({
+            label: v.label,
+            options: v.options.filter(o => o.trim())
+        }))
 )
+
 
 const getCombinations = (list: { label: string; options: string[] }[]) => {
     const recur = (i: number, cur: any) =>
         i === list.length
             ? [cur]
-            : list[i].options.flatMap((o: string) => recur(i + 1, { ...cur, [list[i].label]: o }))
+            : list[i].options.flatMap(o =>
+                recur(i + 1, { ...cur, [list[i].label]: o })
+            )
     return recur(0, {})
 }
+
+
+const productMap = ref<Record<string, string | null>>({})
 
 const buildNodes = computed<Node[]>(() => {
     const variants = validVariants.value
     if (!variants.length) return []
 
+    const getProduct = (keyObj: Record<string, string>) => {
+        const key = JSON.stringify(keyObj)
+        return Object.keys(productMap.value).find(pid => productMap.value[pid] === key) || null
+    }
+
+
     if (variants.length === 1) {
         const v = variants[0]
-        return v.options.map((opt) => ({
+        return v.options.map(opt => ({
             key: { [v.label]: opt },
             label: opt,
+            product: getProduct({ [v.label]: opt })
         }))
     }
 
     if (!state.value.groupBy) {
-        return getCombinations(variants).map((row) => {
+        return getCombinations(variants).map(row => {
             const keyObj = variants.reduce((acc, v) => {
                 acc[v.label] = row[v.label]
                 return acc
             }, {} as Record<string, string>)
-            const label = Object.values(keyObj).join(" — ")
             return {
                 key: keyObj,
-                label,
+                label: Object.values(keyObj).join(" — "),
+                product: getProduct(keyObj)
             }
         })
     }
 
-    const base = variants.find((v) => v.label === state.value.groupBy)
-    const others = variants.filter((v) => v.label !== state.value.groupBy)
+    const base = variants.find(v => v.label === state.value.groupBy)
+    const others = variants.filter(v => v.label !== state.value.groupBy)
     if (!base) return []
 
-    return base.options.map((opt) => {
+    return base.options.map(opt => {
+        const parentKey = { [base.label]: opt }
         const parent: Node = {
-            key: { [base.label]: opt },
+            key: parentKey,
             label: opt,
-            children: getCombinations([{ label: base.label, options: [opt] }, ...others]).map(
-                (c: any) => {
+            product: getProduct(parentKey),
+            children: getCombinations([{ label: base.label, options: [opt] }, ...others])
+                .map(c => {
                     const keyObj = variants.reduce((acc, v) => {
                         acc[v.label] = c[v.label]
                         return acc
@@ -97,63 +118,94 @@ const buildNodes = computed<Node[]>(() => {
                     return {
                         key: keyObj,
                         label: Object.values(keyObj).join(" — "),
+                        product: getProduct(keyObj)
                     }
-                }
-            ),
+                })
         }
         return parent
     })
 })
 
+const setProduct = (node: Node, val: string | null) => {
+    if (!val) return
 
-// Variant controls
+    const key = JSON.stringify(node.key)
+
+    // Reverse mapping: productId → key JSON
+    productMap.value[val] = key
+}
+
+
 const toggleActive = (i: number) =>
     state.value.variants.forEach((v, idx) => (v.active = idx === i ? !v.active : false))
+
 const addVariant = () => {
-    state.value.variants.forEach((v) => (v.active = false))
+    state.value.variants.forEach(v => (v.active = false))
     state.value.variants.push({ label: "", options: [""], active: true })
 }
+
 const addOption = (i: number) => state.value.variants[i].options.push("")
 const removeOption = (vi: number, oi: number) => state.value.variants[vi].options.splice(oi, 1)
+
 const deleteVariant = (index: number) => {
     const removed = state.value.variants.splice(index, 1)
     if (removed[0]?.label === state.value.groupBy) {
-        if (state.value.variants.length > 0) {
-            state.value.groupBy = state.value.variants[0].label
-        } else {
-            state.value.groupBy = ""
-        }
+        state.value.groupBy = state.value.variants[0]?.label ?? ""
     }
 }
 
-const setProduct = (node: Node, val: string) => (node.product = val || null)
-const keyToString = (k: string[] | string) => (Array.isArray(k) ? k.join("::") : String(k))
+const keyToString = (k: Record<string, string>) => JSON.stringify(k)
 
+const saving = ref(false)
+
+const buildPayload = () => ({
+    variants: validVariants.value,
+    groupBy: state.value.groupBy,
+    products: productMap.value
+})
+
+const save = () => {
+    saving.value = true
+    router.post(
+        route(props.save_route.name, props.save_route.parameters),
+        {
+            data: buildPayload(),
+        },
+        {
+            onFinish: () => (saving.value = false)
+        }
+    )
+}
 
 </script>
+
+
 
 <template>
 
     <Head :title="capitalize(props.title)" />
     <PageHeading :data="props.pageHead" />
-    <pre>{{ buildNodes }}</pre>
 
     <div class="flex justify-center mt-6">
         <div class="w-full max-w-2xl p-4 rounded-lg shadow bg-white space-y-2">
-            <!-- Variants editor -->
+
+            <!-- Variants section -->
             <h2 class="text-sm font-semibold">Create Variant</h2>
+
             <div v-for="(v, vi) in state.variants" :key="vi" class="border rounded">
                 <div v-if="!v.active" class="p-2 cursor-pointer" @click="toggleActive(vi)">
                     <div class="text-sm font-medium">{{ v.label || "Untitled Variant" }}</div>
                     <div class="text-xs text-gray-500">
-                        {{v.options.filter((o) => o).join(", ") || "No options"}}
+                        {{v.options.filter(o => o).join(", ") || "No options"}}
                     </div>
                 </div>
-                <div v-else class="p-3 space-y-1 bg-gray-50 relative">
+
+                <div v-else class="p-3 space-y-1 bg-gray-50">
                     <div>
                         <label class="text-xs">Name</label>
                         <PureInput v-model="v.label" placeholder="Color, Size" />
                     </div>
+
                     <div>
                         <label class="text-xs">Options</label>
                         <div v-for="(opt, oi) in v.options" :key="oi" class="flex gap-2 mt-2">
@@ -162,6 +214,7 @@ const keyToString = (k: string[] | string) => (Array.isArray(k) ? k.join("::") :
                                 <FontAwesomeIcon :icon="faTrashAlt" />
                             </button>
                         </div>
+
                         <div class="flex justify-between mt-3">
                             <Button type="dashed" @click="addOption(vi)" label="+ Add" size="xs" />
                             <div class="flex gap-2">
@@ -174,77 +227,86 @@ const keyToString = (k: string[] | string) => (Array.isArray(k) ? k.join("::") :
                 </div>
             </div>
 
-            <!-- Add variant -->
+            <!-- Add Variant -->
             <Button full class="text-white bg-green-600" @click="addVariant">+ Add Variant</Button>
 
+            <!-- Grouping -->
             <div class="border-t mt-6">
-                 <div v-if="validVariants.length" class="flex items-center gap-2 mt-3">
-                <span class="text-sm">Group by</span>
-                <select v-model="state.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
-                    <option v-for="v in validVariants" :key="v.label" :value="v.label">
-                        {{ v.label }}
-                    </option>
-                </select>
-            </div>
-            
-             <div class="overflow-x-auto border rounded mt-4">
-                <table class="min-w-full divide-y">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-2 text-left text-sm">Variant</th>
-                            <th class="px-4 py-2 text-left text-sm">Product</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y">
-                        <!-- Grouped -->
-                        <template v-if="state.groupBy">
-                            <template v-for="node in buildNodes" :key="keyToString(node.key)">
-                                <tr class="hover:bg-gray-50">
+                <div v-if="validVariants.length" class="flex items-center gap-2 mt-3">
+                    <span class="text-sm">Group by</span>
+                    <select v-model="state.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
+                        <option v-for="v in validVariants" :key="v.label" :value="v.label">
+                            {{ v.label }}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto border rounded mt-4" :style="{ overflow: 'visible' }">
+                    <table class="min-w-full divide-y">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-sm">Variant</th>
+                                <th class="px-4 py-2 text-left text-sm">Product</th>
+                            </tr>
+                        </thead>
+
+                        <tbody class="bg-white divide-y">
+                            <template v-if="state.groupBy">
+                                <template v-for="node in buildNodes" :key="keyToString(node.key)">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-2">
+                                            <button class="mr-2 text-sm" @click="toggleExpand(keyToString(node.key))">
+                                                <span v-if="node.children?.length">
+                                                    <span v-if="expanded[keyToString(node.key)]">−</span>
+                                                    <span v-else>+</span>
+                                                </span>
+                                            </button>
+                                            {{ node.label }}
+                                        </td>
+                                        <td class="px-4 py-2"></td>
+                                    </tr>
+
+                                    <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]"
+                                        :key="keyToString(child.key)" class="bg-white hover:bg-gray-50">
+
+                                        <td class="px-8 py-2 text-sm text-gray-700">
+                                            ↳ {{ child.label }}
+                                        </td>
+
+                                        <td class="px-4 py-2">
+                                            <PureMultiselectInfiniteScroll :model-value="child.product"
+                                                @update:model-value="(val) => setProduct(child, val)"
+                                                :fetchRoute="props.master_assets_route"
+                                                :placeholder="trans('Select Product')" valueProp="id"
+                                                label-prop="name" />
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+
+                            <!-- Flat mode -->
+                            <template v-else>
+                                <tr v-for="node in buildNodes" :key="keyToString(node.key)" class="hover:bg-gray-50">
+                                    <td class="px-4 py-2">{{ node.label }}</td>
                                     <td class="px-4 py-2">
-                                        <button class="mr-2 text-sm" @click="toggleExpand(keyToString(node.key))">
-                                            <span v-if="node.children && node.children.length">
-                                                <span v-if="expanded[keyToString(node.key)]">−</span>
-                                                <span v-else>+</span>
-                                            </span>
-                                        </button>
-                                        {{ node.label }}
-                                    </td>
-                                    <td class="px-4 py-2">
-                                        <div v-if="state.variants.length == 1">
-                                            <input class="border rounded px-2 py-1 text-sm w-full"
-                                                :value="child?.product ?? ''"
-                                                @input="(e) => setProduct(child, e.target.value)" />
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]"
-                                    :key="keyToString(child.key)" class="bg-white hover:bg-gray-50">
-                                    <td class="px-8 py-2 text-sm text-gray-700">
-                                        ↳ {{ child.label }}
-                                    </td>
-                                    <td class="px-4 py-2">
-                                        <input class="border rounded px-2 py-1 text-sm w-full"
-                                            :value="child.product ?? ''"
-                                            @input="(e) => setProduct(child, e.target.value)" />
+                                        <PureMultiselectInfiniteScroll :model-value="node.product"
+                                            @update:model-value="(val) => setProduct(node, val)"
+                                            :fetchRoute="props.master_assets_route"
+                                            :placeholder="trans('Select Product')" valueProp="id" label-prop="name" />
                                     </td>
                                 </tr>
                             </template>
-                        </template>
-                        <!-- Flat -->
-                        <template v-else>
-                            <tr v-for="node in buildNodes" :key="keyToString(node.key)" class="hover:bg-gray-50">
-                                <td class="px-4 py-2">{{ node.label }}</td>
-                                <td class="px-4 py-2">
-                                    <input class="border rounded px-2 py-1 text-sm w-full" :value="node.product ?? ''"
-                                        @input="(e) => setProduct(node, e.target.value)" />
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-
+            <!-- SAVE BUTTON -->
+            <div class="pt-5">
+                <Button full class="bg-blue-600 text-white" :loading="saving" @click="save">
+                    Save Variants
+                </Button>
             </div>
         </div>
     </div>
