@@ -85,7 +85,7 @@ console.log("layoutStore", layoutStore)
         <Button
         v-if="selectedDeliveryNotes.length > 0"
         type="create"
-        label="picking session"
+        :label="trans('Picking session')"
         :loading="loading"
         @click="createPickingSession"
       />

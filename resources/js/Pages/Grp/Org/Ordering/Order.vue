@@ -581,32 +581,7 @@ const compSelectedDeck = computed(() => {
 
     return route(props.proforma_invoice.route_download_pdf.name, {...props.proforma_invoice.route_download_pdf.parameters, ...xxx})
 })
-// const onClickProforma = async () => {
-//     const aaa = ;
 
-//     // Section: Submit
-//     const url = route(props.proforma_invoice.route_download_pdf.name, {...props.proforma_invoice.route_download_pdf.parameters, ...aaa})
-//     console.log('url', url)
-
-//     try {
-//         const response = await axios.get(url, aaa)
-//         const blob = new Blob([response.data], { type: response.headers['content-type'] })
-//         const link = document.createElement('a')
-//         link.href = window.URL.createObjectURL(blob)
-//         link.download = 'proforma-invoice.pdf'
-//         document.body.appendChild(link)
-//         link.click()
-//         document.body.removeChild(link)
-//     } catch (e) {
-//         notify({
-//             title: trans("Something went wrong"),
-//             text: trans("Failed to download proforma invoice"),
-//             type: "error"
-//         })
-//     }
-
-
-// }
 
 const isShowProforma = computed(() => {
     return props.proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)
@@ -678,18 +653,6 @@ const labelToBePaid = (toBePaidValue: string) => {
         </template>
 
 
-       <!-- <template #otherBefore v-if="!props.readonly && layout?.app?.environment === 'local'">
-           <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents"
-               class="flex gap-2">
-               <Button :style="'secondary'" :icon="faPlus" :label="trans('Product')" :tooltip="trans('Add a product')"
-                   @click="(e) => { if (_refComponents) _refComponents.openModal() }" />
-               <Button v-if="
-                    Object.keys(_refComponents.createNewQty).length > 0 ||
-                    _refComponents.rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
-                " type="save" label="Save all changes" :loading="_refComponents.loadingsaveModify"
-                   @click="() => _refComponents.onSave()" />
-            </div>
-        </template> -->
 
         <template #other>
 
