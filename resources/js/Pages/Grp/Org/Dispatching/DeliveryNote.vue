@@ -144,6 +144,9 @@ const selectedPicker = ref(props.box_stats.picker);
 const disable = ref(props.box_stats.state);
 const isLoading = ref<{ [key: string]: boolean }>({});
 const isLoadingToQueue = ref(false);
+
+// ActionButton${button.label}${button.style}
+
 const onUpdatePicker = () => {
     const isUnassigned = props.delivery_note.state == 'unassigned';
 
@@ -331,7 +334,6 @@ onMounted(() => {
                     <span class="text-sm text-gray-700 font-medium mx-2">
                         {{trans('Picking View')}}
                     </span>
-
                     <ToggleSwitch v-model="pickingView">
                         <template #handle="{ checked }">
                             <FontAwesomeIcon 
@@ -352,8 +354,6 @@ onMounted(() => {
                 v-tooltip="trans('Download PDF of this Delivery Note')">
                 <Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
             </a>
-
-
         </template>
 
         <template #button-to-queue="{ action }">
@@ -366,8 +366,8 @@ onMounted(() => {
                 class="border-transparent rounded-l-none" />
         </template>
 
-        <template #button-change-picker="{ action }">
-            <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary" />
+        <template #wrapped-change-picker="{ action }">
+            <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="primary" />
         </template>
 
         <template #button-cancel="{ action}">
