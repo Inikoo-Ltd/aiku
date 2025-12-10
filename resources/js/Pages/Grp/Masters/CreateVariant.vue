@@ -69,9 +69,13 @@ const buildNodes = computed<Node[]>(() => {
     if (!variants.length) return []
 
     const getProduct = (keyObj: Record<string, string>) => {
-        const key = JSON.stringify(keyObj)
-        return Object.keys(productMap.value).find(pid => productMap.value[pid] === key) || null
+        const key = keyObj
+        const found = Object.entries(productMap.value)
+            .find(([pid, storedKey]) => storedKey === key)
+
+        return found?.[0] ?? null
     }
+
 
 
     if (variants.length === 1) {
@@ -128,7 +132,13 @@ const setProduct = (node: Node, val: string | null) => {
     console.log("Set product", val)
     if (!val.id) return
 
-    const key = { ...node.key, product: val }
+    const key = { ...node.key, product: {
+            id: val.id,
+            name: val.name,
+            code: val.code,
+            image: val.image_thumbnail,
+            slug: val.slug
+    } }
 
     // Reverse mapping: productId → key JSON
     productMap.value[val.id] = key
