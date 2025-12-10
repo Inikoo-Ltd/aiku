@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Masters\MasterProductCategory\UI;
+namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\OrgAction;
 use App\Models\Masters\MasterProductCategory;
@@ -18,11 +18,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Masters\MasterAsset; 
-use App\Models\Masters\MasterAssets; 
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
-use App\Http\Resources\Masters\MasterProductsResource;
 
-class CreateVariant extends OrgAction
+class ShowCreateVariant extends OrgAction
 {
     private MasterShop|MasterProductCategory|Group $parent;
 
@@ -51,7 +49,13 @@ class CreateVariant extends OrgAction
                 'master_asset' => $masterAsset,
                 'master_assets_route' => [
                     'name' => 'grp.masters.master_products.index'
-                ]  
+                ],
+                'save_route' => [
+                    'name' => 'grp.models.master_asset.create-variant',
+                    'parameters' => [
+                        'masterAsset'    => $masterAsset->id
+                    ]
+                ]
             ]
         );
     }
