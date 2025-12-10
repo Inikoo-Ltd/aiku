@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 01 Aug 2025 12:48:39 Central European Summer Time, Trnava, Slovakia
+ * Created: Wed, 10 Dec 2025 13:17:34 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -11,7 +11,6 @@ namespace App\Actions\Maintenance;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
-use App\Models\Helpers\Currency;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -39,22 +38,22 @@ class RepairGrpOrgAmounts
 
 
 
-            foreach(DB::table($table)->select(['date','id','grp_exchange','shop_id','source_id'])->whereNull('grp_exchange')->get() as $row){
-                $shop=Shop::find($row->shop_id);
-                $date=Carbon::parse($row->date);
-                $grpExchange = GetHistoricCurrencyExchange::run($shop->currency,$shop->group->currency,$date);
+            foreach (DB::table($table)->select(['date','id','grp_exchange','shop_id','source_id'])->whereNull('grp_exchange')->get() as $row) {
+                $shop = Shop::find($row->shop_id);
+                $date = Carbon::parse($row->date);
+                $grpExchange = GetHistoricCurrencyExchange::run($shop->currency, $shop->group->currency, $date);
 
-                DB::table($table)->where('id',$row->id)->update(['grp_exchange'=>$grpExchange]);
+                DB::table($table)->where('id', $row->id)->update(['grp_exchange' => $grpExchange]);
                 $command->info("$table $row->id (".$shop->currency->code.")  Grp Exchange added $grpExchange");
 
             }
 
-            foreach(DB::table($table)->select(['date','id','org_exchange','shop_id','source_id'])->whereNull('org_exchange')->get() as $row){
-                $shop=Shop::find($row->shop_id);
-                $date=Carbon::parse($row->date);
-                $orgExchange = GetHistoricCurrencyExchange::run($shop->currency,$shop->organisation->currency,$date);
+            foreach (DB::table($table)->select(['date','id','org_exchange','shop_id','source_id'])->whereNull('org_exchange')->get() as $row) {
+                $shop = Shop::find($row->shop_id);
+                $date = Carbon::parse($row->date);
+                $orgExchange = GetHistoricCurrencyExchange::run($shop->currency, $shop->organisation->currency, $date);
 
-                DB::table($table)->where('id',$row->id)->update(['org_exchange'=>$orgExchange]);
+                DB::table($table)->where('id', $row->id)->update(['org_exchange' => $orgExchange]);
                 $command->info("$table $row->id (".$shop->currency->code.")  Org Exchange added $orgExchange");
 
             }

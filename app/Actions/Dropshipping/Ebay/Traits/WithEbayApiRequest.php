@@ -229,7 +229,7 @@ trait WithEbayApiRequest
             $attributes['Material'] = [Str::substr($product->marketing_ingredients, 0, 60)];
         }
 
-        if($product->barcode) {
+        if ($product->barcode) {
             $attributes['EAN'] = [$product->barcode];
         }
 
