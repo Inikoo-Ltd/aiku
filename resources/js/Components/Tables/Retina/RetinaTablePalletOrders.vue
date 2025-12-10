@@ -18,6 +18,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
 
 library.add(faPlus);
 
@@ -67,6 +68,7 @@ function clientRoute(order) {
             customerClient: order.client_ulid
         });
 }
+
 </script>
 
 <template>
@@ -115,8 +117,12 @@ function clientRoute(order) {
 
       <!-- Column: State -->
       <template #cell(state)="{ item: order }">
-        <Icon :data="order['type_icon']" class="px-1" />
-        <TagPallet :stateIcon="order.state_icon" />
+        <div class="flex items-center">
+          <Icon :data="order['type_icon']" class="px-1" />
+          <TagPallet :stateIcon="order.state_icon" /> 
+          <!-- To display if order have missing items / items that are not picked -->
+          <FontAwesomeIcon v-if="order.has_modified" :icon="faCircleExclamation" class="ms-2 text-yellow-500 text-lg" v-tooltip="trans('Some items in the order are not being dispatched/picked. Excessive payments have already been automatically refunded')"/>
+        </div>
       </template>
 
 

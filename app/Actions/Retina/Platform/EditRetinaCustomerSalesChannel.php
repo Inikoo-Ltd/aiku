@@ -171,6 +171,11 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                 'icon'    => 'fa-light fa-box',
                                 'title'  => __('manage stock'),
                                 'fields' => [
+                                    'max_quantity_advertise' => [
+                                        'type'  => 'input',
+                                        'label' => __('Max Quantity To Advertise'),
+                                        'value' => $customerSalesChannel->max_quantity_advertise
+                                    ],
                                     'stock_update' => [
                                         'type'  => 'toggle',
                                         'label' => __('Stock Update'),

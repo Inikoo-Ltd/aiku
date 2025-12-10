@@ -39,6 +39,7 @@ class UpdateInventoryInShopifyPortfolio
         foreach ($customerSalesChannels as $customerSalesChannel) {
             $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
                 ->whereNotNull('platform_product_variant_id')
+                ->where('stock_update', true)
                 ->get();
 
             if ($customerSalesChannel->user) {

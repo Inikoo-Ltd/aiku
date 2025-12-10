@@ -97,6 +97,11 @@ trait WithLuigis
             );
 
 
+        if ((isset($response['errors_count']) && $response['errors_count'] > 0)) {
+            print('Found some errors: ');
+            print_r($response->body());
+        }
+
         if ($response->failed()) {
             throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
         }
@@ -382,7 +387,7 @@ trait WithLuigis
                 "slug"            => $this->getIdentity($webpage),
                 "title"           => $webpage->title,
                 "web_url"         => $webpage->getCanonicalUrl(),
-                "availability"    => intval($product->state == ProductStateEnum::ACTIVE) && $product->available_quantity > 0,
+                "availability"    => intval($product->state == ProductStateEnum::ACTIVE && $product->available_quantity > 0),
                 "stock_qty"       => $product->available_quantity ?? 0,
                 "price"           => (float)$product->price ?? 0,
                 "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,

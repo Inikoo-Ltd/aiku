@@ -32,6 +32,8 @@ import Toggle from "@/Components/Pure/Toggle.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(
 	faChevronRight,
@@ -126,22 +128,34 @@ const urlToSidebar = computed(() => {
 	})
 })
 
+// Section: Save (auto)
+const statusSave = ref<null | 'loading' | 'success' | 'error'>(null)
+let statusTimeout: ReturnType<typeof setTimeout> | null = null
+const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
+    statusSave.value = newStatus
+    if (statusTimeout) clearTimeout(statusTimeout)
+    if (newStatus === 'success' || newStatus === 'error') {
+        statusTimeout = setTimeout(() => {
+            statusSave.value = null
+        }, 3000)
+    }
+}
 let controller: AbortController | null = null
-const loadingAutoSave = ref(false)
 const autoSave = async (value: any) => {
 	if (controller) {
 		controller.abort()
 	}
 
 	controller = new AbortController()
-	loadingAutoSave.value = true
 
+	setStatus('loading')
 	try {
 		const response = await axios.patch(
 			route(props.autosaveRoute.name, props.autosaveRoute.parameters),
 			{ layout: value },
 			{ signal: controller.signal }
 		)
+		setStatus('success')
 		sendToIframe({ key: "reload", value: {} })
 	} catch (error: any) {
 		if (
@@ -158,9 +172,9 @@ const autoSave = async (value: any) => {
 			text: error.message,
 			type: "error",
 		})
+		setStatus('error')
 	} finally {
 		if (controller && !controller.signal.aborted) {
-			loadingAutoSave.value = false
 			controller = null
 		}
 	}
@@ -175,9 +189,19 @@ const autoSave = async (value: any) => {
 			<Publish :isLoading="isLoading" :is_dirty="true" v-model="comment"
 				@onPublish="(popover) => onPublish(action.route, popover)" />
 		</template>
-		<template #afterTitle>
-			<LoadingIcon v-if="loadingAutoSave" v-tooltip="trans('Saving..')" />
-		</template>
+
+		<template #afterTitle2>
+            <ConditionIcon v-if="statusSave" :state="statusSave" class="text-xl" />
+            <Button
+                v-else
+                @click="() => autoSave(data?.menu)"
+                type="tertiary"
+                :label="trans('Save')"
+                icon="fas fa-save"
+                size="xs"
+                :loading="statusSave === 'loading'"
+            />
+        </template>
 	</PageHeading>
 
 	<div class="h-[85vh] grid grid-cols-12 gap-4 p-3">

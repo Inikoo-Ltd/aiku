@@ -81,6 +81,7 @@ class UpdateCustomerSalesChannel extends OrgAction
 
             'stock_update' => ['sometimes', 'boolean'],
             'stock_threshold' => ['sometimes', 'numeric'],
+            'max_quantity_advertise' => ['sometimes', 'numeric'],
 
             'closed_at'         => ['sometimes', 'date']
         ];

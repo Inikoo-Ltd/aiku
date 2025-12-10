@@ -126,19 +126,24 @@ export default {
         },
         {
             name: "Button add to basket",
-            key: ["button", "properties"],
+            key: ["button"],
             replaceForm: [
                     {
-                        key: ["background"],
+                        key: ["properties","background"],
                         label : "Background",
                         type: "background",
                     },
                     {
-                        key: ["text"],
+                        key: ["icon"],
+                        label : "Icon",
+                        type: "icon-picker",
+                    },
+                    {
+                        key: ["properties","text"],
                         type: "textProperty",
                     },
                     {
-                        key: ["border"],
+                        key: ["properties","border"],
                         label : "Border",
                         type: "border",
                     },
