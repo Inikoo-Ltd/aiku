@@ -23,6 +23,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Illuminate\Support\Facades\DB;
 use Closure;
 
 class IndexRetinaDropshippingOrders extends RetinaAction
@@ -66,6 +67,19 @@ class IndexRetinaDropshippingOrders extends RetinaAction
             'orders.payment_amount',
             'customer_clients.name as client_name',
             'customer_clients.ulid as client_ulid',
+            // To display if order have missing items / items that are not picked
+            DB::raw("
+                CASE
+                    WHEN orders.state = 'dispatched'
+                        AND EXISTS (
+                            SELECT 1 FROM transactions t
+                            WHERE t.order_id = orders.id
+                            AND t.state = 'dispatched'
+                            AND t.quantity_ordered <> t.quantity_dispatched
+                        )
+                    THEN 1 ELSE 0
+                END AS has_modified
+            "),
         );
 
         return $query->defaultSort('-orders.date')
