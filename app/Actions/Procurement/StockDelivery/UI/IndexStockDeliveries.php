@@ -82,7 +82,7 @@ class IndexStockDeliveries extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('reference');
         };
     }
@@ -156,7 +156,7 @@ class IndexStockDeliveries extends OrgAction
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-truck-container'],
-            'title' => __('Stock deliveries')
+            'title' => __('Stock Deliveries')
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -167,7 +167,7 @@ class IndexStockDeliveries extends OrgAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Stock deliveries')
+                'title' => __('Stock Deliveries')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-truck-container',
@@ -182,7 +182,7 @@ class IndexStockDeliveries extends OrgAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-users-class'],
-                'title' => __('Stock deliveries')
+                'title' => __('Stock Deliveries')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-truck-container',
@@ -197,7 +197,7 @@ class IndexStockDeliveries extends OrgAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('Stock deliveries')
+                'title' => __('Stock Deliveries')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-truck-container',
@@ -213,7 +213,7 @@ class IndexStockDeliveries extends OrgAction
             'Procurement/StockDeliveries',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('Stock deliveries'),
+                'title'       => __('Stock Deliveries'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -225,7 +225,7 @@ class IndexStockDeliveries extends OrgAction
                             'name'       => 'grp.org.procurement.stock_deliveries.create',
                             'parameters' => array_values($request->route()->originalParameters())
                         ],
-                        'label' => __('Stock deliveries')
+                        'label' => __('Stock Deliveries')
                     ] : false,
                     'subNavigation' => $subNavigation,
                 ],
