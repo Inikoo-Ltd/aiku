@@ -11,6 +11,7 @@ import { faTrashAlt } from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
+import { faPlus } from "@fal"
 
 type Variant = { label: string; options: string[]; active?: boolean }
 type Node = {
@@ -127,12 +128,13 @@ const buildNodes = computed<Node[]>(() => {
 })
 
 const setProduct = (node: Node, val: string | null) => {
-    if (!val) return
+    console.log("Set product", val)
+    if (!val.id) return
 
-    const key = JSON.stringify(node.key)
+    const key = { ...node.key, product: val }
 
     // Reverse mapping: productId → key JSON
-    productMap.value[val] = key
+    productMap.value[val.id] = key
 }
 
 
@@ -228,7 +230,7 @@ const save = () => {
             </div>
 
             <!-- Add Variant -->
-            <Button full class="text-white bg-green-600" @click="addVariant">+ Add Variant</Button>
+            <Button type="dashed" @click="addVariant" size="xs" :icon="faPlus" label="Add Variant"></Button>
 
             <!-- Grouping -->
             <div class="border-t mt-6">
@@ -246,16 +248,16 @@ const save = () => {
                     <table class="min-w-full divide-y">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-2 text-left text-sm">Variant</th>
-                                <th class="px-4 py-2 text-left text-sm">Product</th>
+                                <th class="px-4 py-2 text-left text-sm w-1/2">Variant</th>
+                                <th class="px-4 py-2 text-left text-sm w-1/2">Product</th>
                             </tr>
                         </thead>
 
                         <tbody class="bg-white divide-y">
-                            <template v-if="state.groupBy">
+                            <template v-if="state.variants.length > 1 && state.groupBy">
                                 <template v-for="node in buildNodes" :key="keyToString(node.key)">
                                     <tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-2">
+                                        <td class="px-4 py-2 w-1/2">
                                             <button class="mr-2 text-sm" @click="toggleExpand(keyToString(node.key))">
                                                 <span v-if="node.children?.length">
                                                     <span v-if="expanded[keyToString(node.key)]">−</span>
@@ -264,35 +266,35 @@ const save = () => {
                                             </button>
                                             {{ node.label }}
                                         </td>
-                                        <td class="px-4 py-2"></td>
+                                        <td class="px-4 py-2 w-1/2"></td>
                                     </tr>
 
                                     <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]"
                                         :key="keyToString(child.key)" class="bg-white hover:bg-gray-50">
 
-                                        <td class="px-8 py-2 text-sm text-gray-700">
+                                        <td class="px-8 py-2 text-sm text-gray-700 w-1/2">
                                             ↳ {{ child.label }}
                                         </td>
 
-                                        <td class="px-4 py-2">
+                                        <td class="px-4 py-2 w-1/2">
                                             <PureMultiselectInfiniteScroll :model-value="child.product"
                                                 @update:model-value="(val) => setProduct(child, val)"
-                                                :fetchRoute="props.master_assets_route"
-                                                :placeholder="trans('Select Product')" valueProp="id"
-                                                label-prop="name" />
+                                                :fetchRoute="props.master_assets_route" :classes="'w-full'"
+                                                :placeholder="trans('Select Product')" valueProp="id" label-prop="name"
+                                                :object="true" />
                                         </td>
                                     </tr>
                                 </template>
                             </template>
 
-                            <!-- Flat mode -->
+                            <!-- Flat Mode -->
                             <template v-else>
                                 <tr v-for="node in buildNodes" :key="keyToString(node.key)" class="hover:bg-gray-50">
-                                    <td class="px-4 py-2">{{ node.label }}</td>
-                                    <td class="px-4 py-2">
+                                    <td class="px-4 py-2 w-1/2">{{ node.label }}</td>
+                                    <td class="px-4 py-2 w-1/2">
                                         <PureMultiselectInfiniteScroll :model-value="node.product"
                                             @update:model-value="(val) => setProduct(node, val)"
-                                            :fetchRoute="props.master_assets_route"
+                                            :fetchRoute="props.master_assets_route" :object="true"
                                             :placeholder="trans('Select Product')" valueProp="id" label-prop="name" />
                                     </td>
                                 </tr>
@@ -300,6 +302,7 @@ const save = () => {
                         </tbody>
                     </table>
                 </div>
+
             </div>
 
             <!-- SAVE BUTTON -->
