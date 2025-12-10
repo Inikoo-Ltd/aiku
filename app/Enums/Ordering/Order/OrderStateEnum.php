@@ -130,10 +130,10 @@ enum OrderStateEnum: string
             ],
             'cancelled' => [
                 'tooltip' => __('Cancelled'),
-                'icon' => 'fal fa-times-circle',
-                'class' => 'text-red-500',
-                'color' => 'purple',
-                'app' => [
+                'icon'    => 'fal fa-times-circle',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
+                'app'     => [
                     'name' => 'check-double',
                     'type' => 'font-awesome-5',
                 ],

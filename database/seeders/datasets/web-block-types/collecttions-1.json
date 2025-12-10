@@ -6,6 +6,7 @@
 	"website_type" : ["b2b","b2c","dropshipping"],
 	"fixed": true,
 	"category": "collection",
+	"is_in_test" : false,
 	"icon": ["fal", "bars"],
 	"data": {
 		"fieldValue": {}

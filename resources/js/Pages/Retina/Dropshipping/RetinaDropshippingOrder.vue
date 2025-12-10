@@ -15,7 +15,7 @@ import type {Component} from 'vue'
 import {useTabChange} from "@/Composables/tab-change"
 import {trans} from "laravel-vue-i18n"
 import {routeType} from '@/types/route'
-import {PageHeading as PageHeadingTypes} from '@/types/PageHeading'
+import {PageHeadingTypes} from '@/types/PageHeading'
 import {Tabs as TSTabs} from '@/types/Tabs'
 import '@vuepic/vue-datepicker/dist/main.css'
 import '@/Composables/Icon/PalletDeliveryStateEnum'
@@ -209,6 +209,12 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
     <Head :title="capitalize(title)"/>
 
     <PageHeading :data="pageHead">
+        <template #other>
+            <span v-if="order?.data.state == 'cancelled'" :class="order?.data.state_icon.class" class="py-2 px-3 border border-solid border-red-500 rounded-md cursor-default font-medium" v-tooltip="trans('Order is cancelled')">
+                <FontAwesomeIcon :icon="order?.data.state_icon.icon"/>
+                {{ order?.data.state_label }}
+            </span>
+        </template>
     </PageHeading>
 
     <div v-if="order?.data?.has_insurance || order?.data?.is_premium_dispatch || order?.data?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">

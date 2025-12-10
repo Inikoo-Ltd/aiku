@@ -5,8 +5,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, onMounted, computed, watch } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import ProductContentsIris from "./ProductContentIris.vue"
-import InformationSideProduct from "./InformationSideProduct.vue"
+import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
+import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { trans } from "laravel-vue-i18n"
@@ -14,7 +14,7 @@ import { Image as ImageTS } from "@/types/Image"
 import { isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import axios from "axios"
-import ProductPrices from "./ProductPrices.vue"
+import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -43,138 +43,23 @@ const props = withDefaults(defineProps<{
     fieldValue: any
     webpageData?: any
     blockData?: object
-    // screenType: "mobile" | "tablet" | "desktop"
+    validImages : object
+    videoSetup : {
+        url : string
+    }
+    product : ProductResource
+    productExistenceInChannels : Number[]
 }>(), {})
 
 const layout = inject("layout", {})
 const screenType = inject("screenType", ref('desktop'))
 const contentRef = ref(null)
 const expanded = ref(false)
-const product = ref(props.fieldValue.product)
-const isLoadingFetchExistenceChannels = ref(false)
-const productExistenceInChannels = ref<number[]>([])
-const fetchProductExistInChannel = async () => {
-    
-    if(layout.iris?.customer?.id){
-        try {
-            isLoadingFetchExistenceChannels.value = true
-            const response = await axios.get(
-                route(
-                    "iris.json.customer.product.channel_ids.index",
-                    {
-                        customer: layout.iris?.customer?.id,
-                        product: product.value.id
-                    }
-                )
-            )
 
-            if (response.status !== 200) {
-                throw new Error("Failed to fetch product existence in channel")
-            }
-
-            // console.log('Product exist in channel response:', response.data)
-            productExistenceInChannels.value = response.data || []
-        } catch (error: any) {
-            console.error('Error fetching product existence in channel:', error.message)
-        } finally {
-            isLoadingFetchExistenceChannels.value = false
-        }
-    }
-
-
-}
 
 const toggleExpanded = () => {
     expanded.value = !expanded.value
 }
-
-const imagesSetup = ref(isArray(product.value.images) ? product.value.images :
-    product.value.images
-        .filter(item => item.type == "image")
-        .map(item => ({
-            label: item.label,
-            column: item.column_in_db,
-            images: item.images
-        }))
-)
-
-const videoSetup = ref(
-    product.value.images.find(item => item.type === "video") || null
-)
-
-
-const validImages = computed(() => {
-    if (!imagesSetup.value) return []
-
-    const hasType = imagesSetup.value.some(item => "type" in item)
-
-    if (hasType) {
-        return imagesSetup.value
-            .filter(item => item.images)
-            .flatMap(item => {
-                const images = Array.isArray(item.images) ? item.images : [item.images]
-                return images.map(img => ({
-                    source: img,
-                    thumbnail: img
-                }))
-            })
-    }
-    return imagesSetup.value
-})
- 
-const fetchData = async () => {
-  try {
-    const response = await axios.get(
-      route("iris.catalogue.product.resource", {
-        product: product.value.slug
-      })
-    )
-    product.value = {...product.value, ...response.data}
-  } catch (error: any) {
-    console.error("cannot break cached cuz", error)
-  }
-}
-
-
-
-onMounted(() => {
-    if (layout.iris?.customer && layout?.iris?.is_logged_in) {
-        fetchProductExistInChannel()
-        fetchData() // break chaced
-    }
-    if (props.fieldValue?.product?.luigi_identity) {
-        window?.dataLayer?.push({
-            event: "view_item",
-            ecommerce: {
-                items: [
-                    {
-                        item_id: props.fieldValue?.product?.luigi_identity
-                    }
-                ]
-            }
-        })
-    }
-})
-
-
-
-watch(
-  () => props.fieldValue.product,
-  newVal => {
-    product.value = { ...newVal }
-  },
-  { deep: true }
-)
-
-watch(
-  () => layout.iris.customer,
-  newVal => {
-    fetchProductExistInChannel()
-    fetchData()
-  },
-  { deep: true }
-)
-
 
 </script>
 
@@ -217,8 +102,7 @@ watch(
                             <div class="flex items-center gap-[1px]"></div>
                         </div>
 
-                        <div v-if="layout?.iris?.is_logged_in"
-                            class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                        <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                 :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
@@ -286,6 +170,8 @@ watch(
     <div v-else class="block px-4 py-6 text-gray-800">
         <h1 class="text-xl font-bold mb-2">{{ product.name }}</h1>
         <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
+
+
 
         <div class="items-start gap-4 mt-4">
             <ProductPrices :field-value="fieldValue" />

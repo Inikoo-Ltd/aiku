@@ -287,8 +287,8 @@ trait WithLuigis
         $webpage = $product->webpage;
 
         $familyData = [];
-        if ($product->family && $product->family->webpage && $product->family->webpage->state != WebpageStateEnum::LIVE) {
-            $family = $product->family;
+        if ($product->family && $product->family->webpage && $product->family->webpage->state == WebpageStateEnum::LIVE) {
+            $family     = $product->family;
             $familyData = [
                 'type' => 'category',
                 'identity' => $this->getWebpageUrl($family->webpage),
@@ -303,8 +303,8 @@ trait WithLuigis
         }
 
         $departmentData = [];
-        if ($product->department && $product->department->webpage && $product->department->webpage->state != WebpageStateEnum::LIVE) {
-            $department = $product->department;
+        if ($product->department && $product->department->webpage && $product->department->webpage->state == WebpageStateEnum::LIVE) {
+            $department     = $product->department;
             $departmentData = [
                 'type' => 'department',
                 'identity' => $this->getWebpageUrl($department->webpage),
@@ -319,8 +319,8 @@ trait WithLuigis
         }
 
         $subDepartmentData = [];
-        if ($product->subDepartment && $product->subDepartment->webpage && $product->subDepartment->webpage->state != WebpageStateEnum::LIVE) {
-            $subDepartment = $product->subDepartment;
+        if ($product->subDepartment && $product->subDepartment->webpage && $product->subDepartment->webpage->state == WebpageStateEnum::LIVE) {
+            $subDepartment     = $product->subDepartment;
             $subDepartmentData = [
                 'type' => 'sub_department',
                 'identity' => $this->getWebpageUrl($subDepartment->webpage),

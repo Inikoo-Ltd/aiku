@@ -38,7 +38,6 @@ use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -179,12 +178,18 @@ class StoreOrder extends OrgAction
             }
 
             if ($order->billing_locked) {
-                $this->createFixedAddress(
+                $address = $this->createFixedAddress(
                     $order,
                     $billingAddress,
                     'Ordering',
                     'billing',
                     'billing_address_id'
+                );
+
+                $order->update(
+                    [
+                        'billing_country_id' => $address->country_id
+                    ]
                 );
             } else {
                 StoreOrderAddress::make()->action(
@@ -198,12 +203,17 @@ class StoreOrder extends OrgAction
 
             if ($order->handing_type == OrderHandingTypeEnum::SHIPPING) {
                 if ($order->delivery_locked) {
-                    $this->createFixedAddress(
+                    $address = $this->createFixedAddress(
                         $order,
                         $deliveryAddress,
                         'Ordering',
                         'delivery',
                         'delivery_address_id'
+                    );
+                    $order->updateQuietly(
+                        [
+                            'delivery_country_id' => $address->country_id
+                        ]
                     );
                 } else {
                     StoreOrderAddress::make()->action(
@@ -395,30 +405,6 @@ class StoreOrder extends OrgAction
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function inPlatformCustomer(Customer $customer, Platform $platform, ActionRequest $request): Order
-    {
-        $this->parent = $customer;
-        $this->set('platform_id', $platform->id);
-        $this->initialisationFromShop($customer->shop, $request);
-
-        return $this->handle($customer, $this->validatedData);
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function inPlatformCustomerClient(CustomerClient $customerClient, Platform $platform, ActionRequest $request): Order
-    {
-        $this->parent = $customerClient;
-        $this->set('platform_id', $platform->id);
-        $this->initialisationFromShop($customerClient->shop, $request);
-
-        return $this->handle($customerClient, $this->validatedData);
     }
 
     /**

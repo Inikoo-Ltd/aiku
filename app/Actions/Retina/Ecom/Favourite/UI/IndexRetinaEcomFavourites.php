@@ -16,6 +16,7 @@ use App\Actions\RetinaAction;
 use App\Http\Resources\CRM\CustomerFavouritesResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -52,8 +53,9 @@ class IndexRetinaEcomFavourites extends RetinaAction
             ->get();
 
         $basketTransactions = [];
+        /** @var Transaction $transaction */
         foreach ($transactions as $transaction) {
-            // Use product ID as key to match with favorites data (products.id)
+            // Use product ID as a key to match with favorites data (products.id)
             $productId = $transaction->asset?->product?->id;
 
             if ($productId) {
@@ -102,15 +104,7 @@ class IndexRetinaEcomFavourites extends RetinaAction
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
-                    // [
-                    //     'type'   => 'simple',
-                    //     'simple' => [
-                    //         'route' => [
-                    //             'name' => 'retina.dropshipping.favourites.index'
-                    //         ],
-                    //         'label'  => __('Favourites'),
-                    //     ]
-                    // ]
+
                 ]
             );
     }

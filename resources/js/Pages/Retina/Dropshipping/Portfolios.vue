@@ -3,7 +3,7 @@ import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
 import {computed, reactive, ref,watch, onMounted, onBeforeUnmount} from "vue";
-import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import {PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -587,18 +587,6 @@ onBeforeUnmount(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <!-- Section: Alert if platform not connected yet -->
-    <Message v-if="customer_sales_channel.ban_stock_update_until" severity="error" class="m-4 flex items-center gap-2">
-            <div :class="'flex justify-between gap-3'">
-                <div :class="'flex gap-3 items-center'">
-                    <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
-                    <div>
-                        {{ trans("We're having trouble connecting to your site. Could you please confirm whether the site URL is correct? The URL we tried to access is ")}} <span class="underline">{{ customer_sales_channel?.store_url }}</span> {{ trans(". If correct, please feel free to ignore this message and we will try again shortly.") }}
-                    </div>
-                </div>
-                    <ButtonWithLink type="tertiary" @click="isOpenModalSuspended = true" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
-            </div>
-    </Message>
 
 
     <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">

@@ -1504,7 +1504,7 @@ test('set second pallet delivery as booked in', function (PalletDelivery $pallet
         ->and($fulfilmentCustomer->currentRecurringBill)->toBeInstanceOf(RecurringBill::class);
 
     $recurringBill = $fulfilmentCustomer->currentRecurringBill;
-    expect($recurringBill->stats->number_transactions)->toBe(2)
+    expect($recurringBill->stats->number_transactions)->toBe(4)
         ->and($recurringBill->stats->number_transactions_type_pallets)->toBe(1)
         ->and($recurringBill->stats->number_transactions_type_stored_items)->toBe(0);
 

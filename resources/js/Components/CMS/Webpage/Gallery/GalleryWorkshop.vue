@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/Editor.vue"
 import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue";
 import Image from "@/Components/Image.vue"
 import { ref } from 'vue'

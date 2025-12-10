@@ -17,7 +17,7 @@ import { faExclamationCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 library.add(faCircleNotch, faExclamationCircle)
 
 const props = defineProps<{

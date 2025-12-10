@@ -21,12 +21,14 @@ import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import { router } from "@inertiajs/vue3"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
 
 const props = defineProps<{
-	taxonomy: any
 	data: {
 		stockImagesRoute: routeType
 		uploadImageRoute: routeType
@@ -146,7 +148,6 @@ const getTooltips = () => {
 	return tooltipText;
 }
 
-
 </script>
 
 <template>
@@ -165,18 +166,27 @@ const getTooltips = () => {
 				{{ data.product.data.name }}
 			</span>
 		</div>
-		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center">
+		
+		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center flex gap-y-2 flex-wrap justify-end">
+			<LabelSKU
+				:product="data.product.data"
+				:trade_units="data.trade_units"
+				xrouteFunction="tradeUnitRoute"
+			/>
+
 			<span
-			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help me-2"
-			:class="data.availability_status.product_state_icon['class'].replace('text', 'border').replace('500', '300')">
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
+				:class="data.availability_status.product_state_icon['class'].replace('text', 'border').replace('500', '300')">
                 <span class="opacity-50"> {{trans('Procurement')}}:</span>	 {{ data.availability_status.product_state}}
 				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']"/>
 			</span>
+
 			<span 
-			v-tooltip="getTooltips()"
-			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
-			v-on:click="editIsForSale"
-			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
+				v-tooltip="getTooltips()"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+				v-on:click="editIsForSale"
+				:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'"
+			>
 			{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
 				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
 				<FontAwesomeIcon
@@ -193,6 +203,7 @@ const getTooltips = () => {
 			</span>
 		</div>
 	</div>
+	
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
@@ -207,10 +218,10 @@ const getTooltips = () => {
 				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
 					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview
 						class="min-h-60" />
-					<div class="text-sm italic text-gray-500">
+					<!-- <div class="text-sm italic text-gray-500">
 						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
 							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div>
+					</div> -->
 				</div>
 				<div v-else>
 					<div
@@ -218,10 +229,10 @@ const getTooltips = () => {
 						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
 						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 					</div>
-					<div class="mt-2 text-sm italic text-gray-500">
+					<!-- <div class="mt-2 text-sm italic text-gray-500">
 						Manage images in tab <span @click="() => handleTabUpdate('images')"
 							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div>
+					</div> -->
 				</div>
 			</div>
 		</div>
@@ -233,6 +244,7 @@ const getTooltips = () => {
 			 :parts="data.parts"
 			 :public-attachment="data.attachment_box.public" 
 			 :gpsr="data.gpsr"
+			 :attachments="data.attachment_box"
 		/>
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
@@ -248,12 +260,11 @@ const getTooltips = () => {
 			</div>
 			<!-- Section: Price -->
 			<ProductPriceGrp :product="data?.product?.data" :currency_code="data.product.data?.currency_code" />
-			<div>
+			<!-- <div>
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
-			</div>
+			</div> -->
 
 		</div>
-
 
 	</div>
 </template>

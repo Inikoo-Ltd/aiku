@@ -69,10 +69,10 @@ class StocksResource extends JsonResource
             'revenue_grp_currency_lw' => $this->revenue_grp_currency_1w,
             'revenue_grp_currency_ld' => $this->revenue_grp_currency_ld,
             'number_number_org_stocks_state_active' => $this->number_number_org_stocks_state_active,
-            'number_org_stocks' => $this->number_org_stocks,
-            'grp_currency' => $this->grp_currency_code,
-            'state' => $this->state,
-            'state_icon' => $this->state->stateIcon()[$this->state->value],
+            'number_org_stocks'                     => $this->number_org_stocks,
+            'grp_currency'                          => $this->grp_currency_code,
+            'state'                                 => $this->state,
+            'state_icon'                            => $this->state ? $this->state->stateIcon()[$this->state->value] : null,
         ];
     }
 }

@@ -30,7 +30,7 @@ import WebsiteShowcase from "@/Components/Showcases/Org/WebsiteShowcase.vue"
 import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
 import WebsiteAnalytics from "@/Pages/Grp/Org/Web/WebsiteAnalytics.vue"
 import TableRedirects from "@/Components/Tables/Grp/Org/Web/TableRedirects.vue"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"

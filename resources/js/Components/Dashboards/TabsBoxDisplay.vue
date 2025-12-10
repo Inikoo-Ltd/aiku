@@ -82,6 +82,16 @@ const getRoute = (tabSlug) => {
                 ...currentParams,
                 tab: tabSlug
             });
+        case 'grp.org.dashboard.show':
+            return route('grp.org.overview.ordering.backlog', {
+                ...currentParams,
+                tab: tabSlug
+            });
+        case 'grp.dashboard.show':
+            return route('grp.overview.ordering.backlog', {
+                ...currentParams,
+                tab: tabSlug
+            });
         default:
             return route(currentRoute, currentParams);
     }
@@ -107,7 +117,7 @@ const getRoute = (tabSlug) => {
                         v-for="tab in box.tabs"
                         :key="tab.tab_slug"
                         class="w-full flex flex-col items-center"
-                        @click="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? null : router.get(getRoute(tab.tab_slug))"
+                        @click="['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? router.get(getRoute(tab.tab_slug)) : null"
                     >
                         <div class="group flex items-center gap-1 tabular-nums relative text-xl px-2 mb-1 cursor-default">
                             <div class="mx-auto text-center">
@@ -116,7 +126,7 @@ const getRoute = (tabSlug) => {
                                         v-if="tab.icon_data"
                                         :data="tab.icon_data"
                                         class="text-xl"
-                                        :class="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? 'cursor-not-allowed' : 'group-hover:cursor-pointer'"
+                                        :class="!['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? 'cursor-not-allowed' : 'group-hover:cursor-pointer'"
                                     />
                                     <FontAwesomeIcon v-else :icon="tab.icon" class="text-xl" fixed-width aria-hidden="true" />
                                 </template>
@@ -125,7 +135,7 @@ const getRoute = (tabSlug) => {
                             <div class="relative text-center">
                                 <span
                                     class="inline opacity-80 group-hover:opacity-100 transition-all"
-                                    :class="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? 'cursor-not-allowed' : 'group-hover:cursor-pointer group-hover:underline'"
+                                    :class="!['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? 'cursor-not-allowed' : 'group-hover:cursor-pointer group-hover:underline'"
                                 >
                                   {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
                                 </span>
@@ -175,13 +185,13 @@ const getRoute = (tabSlug) => {
                                 tab.tab_slug === props.current
                                     ? 'ring-2 shadow-sm'
                                     : 'bg-gray-50 hover:bg-gray-100',
-                                layoutStore.currentRoute === 'grp.org.shops.show.dashboard.show' ? 'cursor-pointer active:scale-95' : 'cursor-default'
+                                ['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? 'cursor-pointer active:scale-95' : 'cursor-default'
                             ]"
                             :style="tab.tab_slug === props.current ? {
                                 backgroundColor: layoutStore.app.theme[4] + '22',
                                 ringColor: layoutStore.app.theme[4]
                             } : {}"
-                            @click="layoutStore.currentRoute !== 'grp.org.shops.show.dashboard.show' ? null : router.get(getRoute(tab.tab_slug))"
+                            @click="['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? router.get(getRoute(tab.tab_slug)) : null"
                         >
                             <!-- Tab Icon (if exists) -->
                             <div v-if="tab.icon || tab.icon_data" class="flex justify-center mb-2">

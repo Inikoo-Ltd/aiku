@@ -44,6 +44,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $rrp
  * @property mixed $gross_weight
  * @property mixed $images
+ * @property mixed $unit
  *
  * @method imageSources(int $int, int $int1)
  */
@@ -52,28 +53,28 @@ class ProductsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id' => $this->id,
-            'slug' => $this->slug,
-            'code' => $this->code,
-            'name' => $this->name,
-            'state' => $this->state->stateIcon()[$this->state->value],
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'shop_slug' => $this->shop_slug,
-            'shop_code' => $this->shop_code,
-            'shop_name' => $this->shop_name,
-            'organisation_name' => $this->organisation_name,
-            'organisation_code' => $this->organisation_code,
-            'organisation_slug' => $this->organisation_slug,
-            'department_slug' => $this->department_slug,
-            'department_code' => $this->department_code,
-            'department_name' => $this->department_name,
-            'family_slug' => $this->family_slug,
-            'family_code' => $this->family_code,
-            'family_name' => $this->family_name,
-            'price' => $this->price,
-            'units' => $this->units,
-            'unit' => $this->unit,
+            'id'                        => $this->id,
+            'slug'                      => $this->slug,
+            'code'                      => $this->code,
+            'name'                      => $this->name,
+            'state'                     => $this->state->stateIcon()[$this->state->value],
+            'created_at'                => $this->created_at,
+            'updated_at'                => $this->updated_at,
+            'shop_slug'                 => $this->shop_slug,
+            'shop_code'                 => $this->shop_code,
+            'shop_name'                 => $this->shop_name,
+            'organisation_name'         => $this->organisation_name,
+            'organisation_code'         => $this->organisation_code,
+            'organisation_slug'         => $this->organisation_slug,
+            'department_slug'           => $this->department_slug,
+            'department_code'           => $this->department_code,
+            'department_name'           => $this->department_name,
+            'family_slug'               => $this->family_slug,
+            'family_code'               => $this->family_code,
+            'family_name'               => $this->family_name,
+            'price'                     => $this->price,
+            'units'                     => trimDecimalZeros($this->units),
+            'unit'                      => $this->unit,
             'current_historic_asset_id' => $this->current_historic_asset_id,
             'asset_id' => $this->asset_id,
             'available_quantity' => $this->available_quantity,

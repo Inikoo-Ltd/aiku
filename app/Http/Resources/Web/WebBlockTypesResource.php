@@ -29,15 +29,16 @@ class WebBlockTypesResource extends JsonResource
             'scope' => $webBlockType->scope,
             'name' => $webBlockType->name,
             'description' => $webBlockType->description,
-            'blueprint' => $webBlockType->blueprint,
-            'data' => $webBlockType->data,
-            'created_at' => $webBlockType->created_at,
-            'updated_at' => $webBlockType->updated_at,
-            'screenshot' => $webBlockType->imageSources(),
-            'visibility' => ['in' => true, 'out' => true],
-            'show' => true,
-            'component' => Arr::get($webBlockType->data, 'component'),
-            'icon' => Arr::get($webBlockType->data, 'icon'),
+            'blueprint'   => $webBlockType->blueprint,
+            'data'        => $webBlockType->data,
+            'created_at'  => $webBlockType->created_at,
+            'updated_at'  => $webBlockType->updated_at,
+            'screenshot'  => $webBlockType->imageSources(),
+            'visibility'  => ['in' => true, 'out' => true],
+            'show'        => true,
+            'is_in_test'  => $webBlockType->is_in_test,
+            'component'   => Arr::get($webBlockType->data, 'component'),
+            'icon'        => Arr::get($webBlockType->data, 'icon')
 
         ];
     }

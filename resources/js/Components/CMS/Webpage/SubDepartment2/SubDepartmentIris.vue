@@ -91,7 +91,7 @@ const idxSlideLoading = ref<number | null>(null)
     <div>
       <div class="grid gap-4" :class="gridColsClass">
         <LinkIris v-for="(item, index) in mergedItems" :key="item?.code" :href="`${item?.url}`"
-          class="relative flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
+          class="relative flex items-center gap-3  rounded px-4 py-3 text-sm font-medium text-gray-800   transition-all w-full"
           :aria-label="`Go to ${item?.name}`" type="internal" @start="() => idxSlideLoading = index"
           @finish="() => idxSlideLoading = null">
           <button :key="item?.code" :style="getStyles(fieldValue?.card?.container?.properties, screenType)"

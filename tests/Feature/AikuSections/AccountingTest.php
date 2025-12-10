@@ -91,7 +91,7 @@ beforeEach(function () {
     //    $this->orgStock1 = $orgStocks[0];
     //    $this->orgStock2 = $orgStocks[1];
 
-    $tradeUnits = createTradeUnits($this->group);
+    $tradeUnits       = createTradeUnits($this->group);
     $this->tradeUnit1 = $tradeUnits[0];
     $this->tradeUnit2 = $tradeUnits[1];
 
@@ -1375,8 +1375,10 @@ test('Store invoice refund', function () {
     $shop = $this->shop;
     $customer = createCustomer($shop);
 
+
     $tradeUnits = [
-        $this->tradeUnit1->id => [
+        [
+            'id'       => $this->tradeUnit1->id,
             'quantity' => 1,
         ],
     ];
@@ -1385,8 +1387,8 @@ test('Store invoice refund', function () {
         Product::factory()->definition(),
         [
             'trade_units' => $tradeUnits,
-            'price' => 100,
-            'unit' => 'unit',
+            'price'       => 100,
+            'unit'        => 'unit'
         ]
     );
     $product = StoreProduct::make()->action($shop, $productData);

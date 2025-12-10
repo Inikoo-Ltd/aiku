@@ -35,6 +35,7 @@ class SeedWebBlockTypes
                     'fixed',
                     'data',
                     'website_type',
+                    'is_in_test'
                 ]
             );
 

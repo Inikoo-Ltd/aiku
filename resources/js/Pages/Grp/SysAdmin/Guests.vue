@@ -10,7 +10,7 @@ import TableGuests from "@/Components/Tables/Grp/SysAdmin/TableGuests.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { faUserSlash } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faUserSlash);
 

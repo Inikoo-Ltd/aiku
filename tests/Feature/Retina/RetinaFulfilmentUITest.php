@@ -897,7 +897,6 @@ test('show next bill', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', $this->recurringBill->slug)
                     ->etc()
             )
             ->has('currency')

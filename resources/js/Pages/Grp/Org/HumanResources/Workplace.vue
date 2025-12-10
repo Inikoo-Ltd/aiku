@@ -42,7 +42,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import TableClockingMachine from "@/Components/Tables/Grp/Org/HumanResources/TableClockingMachines.vue";
 import TableClockings from "@/Components/Tables/Grp/Org/HumanResources/TableClockings.vue";
 import type { Navigation } from "@/types/Tabs";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import WorkplaceShowcase from "@/Components/HumanResources/WorkplaceShowcase.vue"
 
 

@@ -9,10 +9,10 @@ import {Head} from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import TableSpaces from "@/Components/Tables/Grp/Org/Fulfilment/TableSpaces.vue";
 import {capitalize} from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 
 defineProps<{
-  pageHead: PageHeadingTS
+  pageHead: PageHeadingTypes
   title: string
   data: {}
 }>()

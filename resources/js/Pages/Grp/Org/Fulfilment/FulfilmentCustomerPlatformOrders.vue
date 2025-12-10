@@ -2,7 +2,7 @@
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableFulfilmentCustomerPlatformOrders from "@/Components/Tables/Grp/Org/Fulfilment/TableFulfilmentCustomerPlatformOrders.vue"
 import { Head, router } from "@inertiajs/vue3"
-import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { capitalize } from "@/Composables/capitalize"
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"

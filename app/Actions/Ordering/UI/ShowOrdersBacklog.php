@@ -11,11 +11,13 @@ namespace App\Actions\Ordering\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
+use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -36,12 +38,19 @@ class ShowOrdersBacklog extends OrgAction
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): Organisation
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(OrdersBacklogTabsEnum::values());
 
         return $organisation;
     }
 
-    public function htmlResponse(Organisation|Shop $parent, ActionRequest $request): Response
+    public function inGroup(ActionRequest $request): Group
+    {
+        $this->initialisationFromGroup(group(), $request)->withTab(OrdersBacklogTabsEnum::values());
+
+        return group();
+    }
+
+    public function htmlResponse(Group|Organisation|Shop $parent, ActionRequest $request): Response
     {
         $tabsBox = $this->getTabsBox($parent);
 
@@ -105,7 +114,7 @@ class ShowOrdersBacklog extends OrgAction
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value));
     }
 
-    public function getBreadcrumbs(Organisation|Shop $parent, array $routeParameters): array
+    public function getBreadcrumbs(Group|Organisation|Shop $parent, array $routeParameters): array
     {
         return match (class_basename($parent)) {
             'Shop' => array_merge(
@@ -123,19 +132,36 @@ class ShowOrdersBacklog extends OrgAction
                     ],
                 ]
             ),
-            default => array_merge(
+            'Organisation' =>
+            array_merge(
                 ShowOrganisationDashboard::make()->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
                 [
                     [
                         'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.org.ordering.backlog',
-                                'parameters' => $routeParameters,
+                                'name'       => 'grp.org.overview.ordering.backlog',
+                                'parameters' => $routeParameters
                             ],
                             'label' => __('Orders backlog').' ('.__('all shops').')',
                         ],
                     ],
+                ]
+            ),
+            'Group' =>
+            array_merge(
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.overview.ordering.backlog',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Orders backlog').' ('.__('all organisations').')',
+                        ]
+                    ]
                 ]
             )
         };

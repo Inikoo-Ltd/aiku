@@ -48,7 +48,7 @@ library.add(
 // Types
 import { Root as WebBlockTypes } from "@/types/webBlockTypes";
 import { Root as WebpageType } from "@/types/webpageTypes";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route";
 
 // Props

@@ -11,6 +11,7 @@
 		"out": true
 	},
 	"icon": ["fal", "code"],
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
 			"value": "hello world",
