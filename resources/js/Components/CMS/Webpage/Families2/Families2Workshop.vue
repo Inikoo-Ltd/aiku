@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { inject, ref, computed, nextTick, onMounted, watch } from "vue"
+import { inject, ref, computed, nextTick, onMounted, watch, onBeforeUnmount } from "vue"
 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-
-
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Pagination, Autoplay, Thumbs, FreeMode } from 'swiper/modules'
@@ -20,7 +18,6 @@ import Family2Render from './Families2Render.vue'
 import { getStyles } from '@/Composables/styles'
 import { sendMessageToParent } from '@/Composables/Workshop'
 import LinkIris from "@/Components/Iris/LinkIris.vue"
-
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -55,11 +52,16 @@ const navigation = ref<any>(null)
 const refreshTrigger = ref(0)
 const idxSlideLoading = ref<string | null>(null)
 const swiperInstance = ref<any>(null)
+const maxHeight = ref(0)
+const containerRef = ref<HTMLElement | null>(null)
 
 const refreshCarousel = async (delay = 100) => {
   await new Promise((r) => setTimeout(r, delay))
   refreshTrigger.value++
   await nextTick()
+  if (swiperInstance.value && typeof swiperInstance.value.update === 'function') {
+    swiperInstance.value.update()
+  }
 }
 
 const allItems = computed(() => [
@@ -126,8 +128,32 @@ const tryInitNavigation = async () => {
   }
 }
 
-
 watch([prevEl, nextEl, swiperInstance], tryInitNavigation, { immediate: true })
+
+async function computeMaxHeight() {
+  await nextTick()
+  if (!containerRef.value) return
+  const nodes = containerRef.value.querySelectorAll<HTMLElement>(".family-item")
+  if (!nodes || nodes.length === 0) {
+    maxHeight.value = 0
+    return
+  }
+  const heights = [...nodes].map(n => {
+    return Math.ceil(n.getBoundingClientRect().height)
+  })
+  maxHeight.value = Math.max(...heights)
+  if (swiperInstance.value && typeof swiperInstance.value.update === 'function') {
+    swiperInstance.value.update()
+  }
+}
+
+let resizeHandler = () => {
+  // small debounce
+  clearTimeout((resizeHandler as any)._t)
+  ;(resizeHandler as any)._t = setTimeout(() => {
+    computeMaxHeight()
+  }, 120)
+}
 
 onMounted(async () => {
   await nextTick()
@@ -140,11 +166,28 @@ onMounted(async () => {
     swiperInstance.value.update()
     await tryInitNavigation()
   }
+
+  // initial compute
+  await computeMaxHeight()
+
+  // watch resize
+  window.addEventListener('resize', resizeHandler)
 })
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resizeHandler)
+})
+
+// recompute when items change or chip/container styles change or refreshTrigger toggles
+watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container, refreshTrigger], async () => {
+  await nextTick()
+  await computeMaxHeight()
+}, { deep: true })
+
 </script>
 
 <template>
-  <div id="families-2" :key="refreshTrigger">
+  <div id="families-2" :key="refreshTrigger" ref="containerRef">
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(props.modelValue.container?.properties, props.screenType)
@@ -156,11 +199,32 @@ onMounted(async () => {
           <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
         </button>
 
-        <Swiper @swiper="(s) => (swiperInstance = s)" :modules="[Autoplay, Thumbs, FreeMode]"
-          :loop="true" slides-per-view="auto" :space-between="spaceBetween" :freeMode="true" navigation class="flex-1">
-          <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="!w-auto">
-              <Family2Render :data="item"
-                :style="getStyles(props.modelValue?.chip?.container?.properties, props.screenType)" :screenType/>
+        <Swiper
+          @swiper="(s) => (swiperInstance = s)"
+          :modules="[Autoplay, Thumbs, FreeMode, Navigation]"
+          :loop="true"
+          slides-per-view="auto"
+          :space-between="spaceBetween"
+          :freeMode="true"
+          navigation
+          class="flex-1"
+        >
+          <SwiperSlide
+            v-for="(item, index) in allItems"
+            :key="'item-' + index"
+            class="!w-auto flex"
+          >
+            <div class="h-full flex">
+              <Family2Render
+                class="family-item h-full flex items-center"
+                :data="item"
+                :style="{
+                  height: maxHeight && maxHeight > 0 ? maxHeight + 'px' : 'auto',
+                  ...getStyles(props.modelValue?.chip?.container?.properties, props.screenType)
+                }"
+                :screenType="props.screenType"
+              />
+            </div>
           </SwiperSlide>
         </Swiper>
 
@@ -172,11 +236,10 @@ onMounted(async () => {
       </div>
     </div>
 
-       <EmptyState v-else :data="{ title: 'Empty Families' }">
+    <EmptyState v-else :data="{ title: 'Empty Families' }">
     </EmptyState>
   </div>
 </template>
-
 
 <style scoped>
 .scrollbar-none::-webkit-scrollbar {
@@ -192,5 +255,4 @@ onMounted(async () => {
 :deep(.swiper-button-next) {
   display: none !important;
 }
-
 </style>
