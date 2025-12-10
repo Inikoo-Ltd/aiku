@@ -147,10 +147,10 @@ onMounted(async () => {
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(props.fieldValue.container?.properties, props.screenType)
-    }" @click="activateBlock">
+    }" @click="activateBlock" >
       <div class="flex items-center gap-4 w-full">
 
-        <button ref="prevEl" class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollLeft"
+        <button  v-if="swiperInstance?.allowSlidePrev" ref="prevEl" class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollLeft"
           @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
           <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
         </button>
@@ -165,9 +165,9 @@ onMounted(async () => {
           </SwiperSlide>
         </Swiper>
 
-        <button ref="nextEl" class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollRight"
+        <button v-if="swiperInstance?.allowSlideNext" ref="nextEl" class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollRight"
           @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" />
+          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']"  />
         </button>
 
       </div>
