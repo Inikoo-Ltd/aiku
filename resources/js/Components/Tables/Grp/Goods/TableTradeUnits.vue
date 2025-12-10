@@ -47,7 +47,7 @@ function tradeUnitRoute(tradeUnit: TradeUnit) {
             {{ tradeUnit["weight"] }}
         </template>
         <template #cell(type)="{ item: tradeUnit }">
-            {{ tradeUnit["type"] }}
+            <div class="capitalize">{{ tradeUnit["type"] }}</div>
         </template>
         <template #cell(units)="{ item: tradeUnit }">
             {{ tradeUnit["units"] }}

@@ -29,7 +29,7 @@ import { faX } from "@fortawesome/free-solid-svg-icons";
 import { capitalize } from "@/Composables/capitalize"
 import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 
 library.add(

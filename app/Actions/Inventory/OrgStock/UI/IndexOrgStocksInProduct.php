@@ -69,6 +69,7 @@ class IndexOrgStocksInProduct extends OrgAction
             }
 
             $table
+                ->withLabelRecord([__('SKU'),__('SKUs')])
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations);
@@ -77,7 +78,7 @@ class IndexOrgStocksInProduct extends OrgAction
             $table->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity', label: __('Quantity to pick'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 }

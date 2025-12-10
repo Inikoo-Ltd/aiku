@@ -9,7 +9,7 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableSheets from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheets.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { startOfWeek, startOfMonth, startOfQuarter, startOfYear, addDays, addWeeks } from 'date-fns'
 
 import { format, parse, getYear, getMonth, getDate } from 'date-fns'

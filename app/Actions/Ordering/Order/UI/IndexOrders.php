@@ -30,6 +30,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Carbon\Carbon;
@@ -47,12 +48,12 @@ class IndexOrders extends OrgAction
     use WithCustomerSubNavigation;
     use WithOrdersSubNavigation;
 
-    private Shop|Customer|CustomerClient $parent;
+    private Group|Organisation|Shop|Customer|CustomerClient $parent;
     private CustomerSalesChannel $customerSalesChannel;
 
     private string $bucket;
 
-    protected function getElementGroups(Shop|Customer|CustomerClient $parent): array
+    protected function getElementGroups(Group|Organisation|Shop|Customer|CustomerClient $parent): array
     {
         return [
             'state' => [
@@ -71,7 +72,7 @@ class IndexOrders extends OrgAction
         ];
     }
 
-    public function handle(Shop|Customer|CustomerClient $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Group|Organisation|Shop|Customer|CustomerClient $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
         if ($bucket) {
             $this->bucket = $bucket;
@@ -92,6 +93,10 @@ class IndexOrders extends OrgAction
 
         if (class_basename($parent) == 'Shop') {
             $query->where('orders.shop_id', $parent->id);
+        } elseif (class_basename($parent) == 'Organisation') {
+            $query->where('orders.organisation_id', $parent->id);
+        } elseif (class_basename($parent) == 'Group') {
+            $query->where('orders.group_id', $parent->id);
         } elseif (class_basename($parent) == 'Customer') {
             $query->where('orders.customer_id', $parent->id);
         } else {
@@ -217,7 +222,7 @@ class IndexOrders extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Shop|Customer|CustomerClient $parent, $prefix = null, $bucket = null): Closure
+    public function tableStructure(Group|Organisation|Shop|Customer|CustomerClient $parent, $prefix = null, $bucket = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix, $bucket) {
             if ($prefix) {
@@ -238,6 +243,12 @@ class IndexOrders extends OrgAction
             } elseif ($parent instanceof CustomerClient) {
                 $stats     = $parent->stats;
                 $noResults = __("This customer client hasn't place any orders");
+            } elseif ($parent instanceof Group) {
+                $stats     = $parent->orderingStats;
+                $noResults = __("No orders found in group");
+            } elseif ($parent instanceof Organisation) {
+                $stats     = $parent->orderingStats;
+                $noResults = __("No orders found in organisation");
             } else {
                 $stats = $parent->orderingStats;
             }
@@ -266,8 +277,14 @@ class IndexOrders extends OrgAction
             $table->column(key: 'state', label: '', type: 'icon');
             $table->column(key: 'reference', label: __('reference'), sortable: true);
             $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
-            if ($parent instanceof Shop) {
+            if ($parent instanceof Shop || $parent instanceof Organisation || $parent instanceof Group) {
                 $table->column(key: 'customer_name', label: __('customer'), sortable: true);
+            }
+            if ($parent instanceof Organisation || $parent instanceof Group) {
+                $table->column(key: 'shop_name', label: __('shop'), sortable: true);
+            }
+            if ($parent instanceof Group) {
+                $table->column(key: 'organisation_name', label: __('organisation'), sortable: true);
             }
             $table->column(key: 'pay_detailed_status', label: __('payment'), sortable: true);
             $table->column(key: 'net_amount', label: __('net'), sortable: true, type: 'currency');

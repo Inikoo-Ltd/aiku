@@ -20,7 +20,7 @@ import {
 	faGripLines,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { ref } from "vue"
 import { faCaretDown, faCaretRight } from "@fas"
 library.add(

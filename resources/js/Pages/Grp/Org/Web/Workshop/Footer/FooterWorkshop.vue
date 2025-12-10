@@ -24,7 +24,7 @@ import Drawer from 'primevue/drawer';
 import { getTranslationComponent } from '@/Composables/getWorkshopComponents'
 
 import { routeType } from "@/types/route"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIcons, faMoneyBill, faUpload, faThLarge } from '@fas';

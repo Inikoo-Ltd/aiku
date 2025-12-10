@@ -140,7 +140,7 @@ library.add(
 
 
 					<div class="flex justify-between flex-wrap gap-1" v-else>
-						<dt class="text-gray-500">{{ trans("Units label") }}</dt>
+						<dt class="text-gray-500">{{ trans("Unit label") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }} </dd>
 					</div>
 

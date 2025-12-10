@@ -10,13 +10,13 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Table as TableTS} from '@/types/Table'
 
 const props = defineProps<{
     data: TableTS
     title: string
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
 }>()
 
 </script>

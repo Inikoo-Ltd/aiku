@@ -320,6 +320,14 @@ export const resolveResponsiveValue = (
 				.map(([key, val]) => [key, useImportant ? `${val} !important` : `${val}`])
 		)
 
+
+		// console.log(getVal(properties?.padding, ["right", "value"]) &&
+		// 		getVal(properties.padding, ["unit"])
+		// 			? `${getVal(properties.padding, ["right", "value"])}${getVal(
+		// 					properties.padding,
+		// 					["unit"]
+		// 			  )}`
+		// 			: null)
 		return data
   }
 

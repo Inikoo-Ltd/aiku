@@ -70,6 +70,8 @@ class ShowOrgStock extends OrgAction
 
     public function htmlResponse(OrgStock $orgStock, ActionRequest $request): Response
     {
+        $hasMaster = $orgStock->stock;
+
         return Inertia::render(
             'Org/Inventory/OrgStock',
             [
@@ -105,8 +107,17 @@ class ShowOrgStock extends OrgAction
                 'tabs'                            => [
                     'current'    => $this->tab,
                     'navigation' => OrgStockTabsEnum::navigation()
-
                 ],
+
+                'master'      => $hasMaster,
+                'masterRoute' => $hasMaster ? [
+                    'name'       => 'grp.goods.stocks.show',
+                    'parameters' => [
+                        'stock' => $orgStock->stock->slug
+                    ]
+                ] : null,
+
+
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)
                     : Inertia::lazy(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),
