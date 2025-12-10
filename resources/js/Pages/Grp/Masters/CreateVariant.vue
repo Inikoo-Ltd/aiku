@@ -30,11 +30,8 @@ const props = defineProps<{
 }>()
 
 const state = ref({
-    variants: [
-        { label: "Color", options: ["Red", "Blue", "Green"], active: false },
-        { label: "Size", options: ["L", "XL", "XXL"], active: false },
-    ] as Variant[],
-    groupBy: "Color",
+    variants: [] as Variant[],
+    groupBy: null,
 })
 
 
@@ -230,7 +227,7 @@ const save = () => {
             </div>
 
             <!-- Add Variant -->
-            <Button type="dashed" @click="addVariant" size="xs" :icon="faPlus" label="Add Variant"></Button>
+            <Button v-if="state.variants.length < 2" type="dashed" @click="addVariant" size="xs" :icon="faPlus" label="Add Variant"></Button>
 
             <!-- Grouping -->
             <div class="border-t mt-6">
@@ -281,9 +278,9 @@ const save = () => {
                                                 @update:model-value="(val) => setProduct(child, val)"
                                                 :fetchRoute="props.master_assets_route" :classes="'w-full'"
                                                 :placeholder="trans('Select Product')" valueProp="id" label-prop="name"
-                                                :object="true">
+                                                :object="true" :caret="false">
                                                 <template #singlelabel="{ value }">
-                                                    <div class="flex items-center gap-3 p-2 rounded-lg transition border border-transparent hover:border-gray-200 hover:bg-gray-50">
+                                                    <div class="flex  gap-3 p-2 rounded-lg transition border border-transparent hover:border-gray-200 hover:bg-gray-50 justify-between">
                                                         <!-- Image wrapper -->
                                                         <div
                                                             class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
@@ -294,13 +291,13 @@ const save = () => {
                                                                 class="text-gray-400 text-lg" />
                                                         </div>
                                                         <!-- Text content -->
-                                                        <div class="flex flex-col flex-1 min-w-0">
+                                                        <div class="min-w-0">
                                                             <div
-                                                                class="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                                                                <span class="truncate">{{ value?.name }}</span>
-                                                                <span class="text-gray-500 font-mono truncate">
+                                                                class="text-sm font-semibold text-gray-800  items-center gap-2">
+                                                                <div class="truncate">{{ value?.name }}</div>
+                                                                <div class="text-gray-500 font-mono truncate">
                                                                     ({{ value?.code || '-' }})
-                                                                </span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -319,8 +316,33 @@ const save = () => {
                                     <td class="px-4 py-2 w-1/2">
                                         <PureMultiselectInfiniteScroll :model-value="node.product"
                                             @update:model-value="(val) => setProduct(node, val)"
-                                            :fetchRoute="props.master_assets_route" :object="true"
-                                            :placeholder="trans('Select Product')" valueProp="id" label-prop="name" />
+                                            :fetchRoute="props.master_assets_route" :object="true"  :caret="false"
+                                            :placeholder="trans('Select Product')" valueProp="id" label-prop="name" >
+                                             <template #singlelabel="{ value }">
+                                                    <div class="flex  gap-3 p-2 rounded-lg transition border border-transparent hover:border-gray-200 hover:bg-gray-50 justify-between">
+                                                        <!-- Image wrapper -->
+                                                        <div
+                                                            class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+                                                            <Image v-if="value?.image" :src="value.image.thumbnail"
+                                                                alt="Product image"
+                                                                class="w-full h-full object-cover" />
+                                                            <FontAwesomeIcon v-else icon="fal fa-image"
+                                                                class="text-gray-400 text-lg" />
+                                                        </div>
+                                                        <!-- Text content -->
+                                                        <div class="min-w-0">
+                                                            <div
+                                                                class="text-sm font-semibold text-gray-800  items-center gap-2">
+                                                                <div class="truncate">{{ value?.name }}</div>
+                                                                <div class="text-gray-500 font-mono truncate">
+                                                                    ({{ value?.code || '-' }})
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                                
+                                        </PureMultiselectInfiniteScroll>
                                     </td>
                                 </tr>
                             </template>
@@ -339,3 +361,10 @@ const save = () => {
         </div>
     </div>
 </template>
+
+<style scoped>
+:deep(.multiselect-wrapper) {
+    justify-content: space-between;
+}
+</style>
+
