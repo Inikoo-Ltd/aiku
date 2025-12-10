@@ -95,7 +95,7 @@ class StorePickingSession extends OrgAction
             $numberDeliveryNotes = 0;
             foreach ($deliveryNotes as $deliveryNote) {
 
-                if($deliveryNote->state == DeliveryNoteStateEnum::CANCELLED){
+                if ($deliveryNote->state == DeliveryNoteStateEnum::CANCELLED) {
                     continue;
                 }
 

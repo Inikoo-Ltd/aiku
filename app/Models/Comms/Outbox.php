@@ -56,6 +56,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_applicable
  * @property int|null $days_after Days after last invoice to send reorder reminder mail
  * @property string|null $send_time Time to send reorder reminder mail
+ * @property string|null $sub_type Grouping outbox example: reorder-reminder
  * @property-read Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read Collection<int, \App\Models\Comms\EmailBulkRun> $emailBulkRuns
  * @property-read \App\Models\Comms\EmailOngoingRun|null $emailOngoingRun

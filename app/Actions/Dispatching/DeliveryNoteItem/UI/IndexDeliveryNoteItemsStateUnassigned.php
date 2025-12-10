@@ -75,7 +75,7 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
 
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_required', label: __('Quantity required'), canBeHidden: false, sortable: true, searchable: true, type: 'number',align: 'right');
+            $table->column(key: 'quantity_required', label: __('Quantity required'), canBeHidden: false, sortable: true, searchable: true, type: 'number', align: 'right');
         };
     }
 

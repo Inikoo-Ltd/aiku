@@ -38,7 +38,7 @@ trait WithFetchStock
 
         /** @var OrgStock $orgStock */
         if ($orgStock) {
-            $orgStockDataToUpdate=Arr::only($stockData['org_stock'],[
+            $orgStockDataToUpdate = Arr::only($stockData['org_stock'], [
                 'state',
                 'discontinued_in_organisation_at',
                 'quantity_status',
@@ -106,7 +106,7 @@ trait WithFetchStock
         /** @var OrgStock $orgStock */
         if ($orgStock = $organisation->orgStocks()->where('source_id', $stockData['stock']['source_id'])->first()) {
 
-            $orgStockDataToUpdate2=Arr::only($orgStockData,[
+            $orgStockDataToUpdate2 = Arr::only($orgStockData, [
                 'state',
                 'discontinued_in_organisation_at',
                 'quantity_status',
