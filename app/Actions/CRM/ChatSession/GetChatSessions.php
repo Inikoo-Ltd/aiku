@@ -67,11 +67,9 @@ class GetChatSessions
 
             $currentAgent = $this->getCurrentAgent($userId);
 
-
             if ($currentAgent) {
                 $query->whereHas('assignments', function ($q) use ($currentAgent) {
-                    $q->where('chat_agent_id', $currentAgent->id)
-                        ->where('status', 'active');
+                    $q->where('chat_agent_id', $currentAgent->id);
                 });
             }
         }

@@ -49,6 +49,10 @@ const chatSession = ref<{
 } | null>(null)
 
 const messages = ref<ChatMessage[]>([])
+const isRating = ref(false)
+let chatChannel: any = null
+let currentChannelName: string | null = null
+let websocketInitialized = false
 
 /**
  * Save chat session into localStorage
@@ -239,38 +243,36 @@ const sendMessage = async (messageText: string): Promise<any> => {
 /**
  * Initialize WebSocket connection for realtime chat
  */
-let chatChannel: any = null
 
 const stopChatWebSocket = () => {
+	if (currentChannelName && window.Echo) {
+		window.Echo.leave(currentChannelName)
+	}
 	if (chatChannel) {
-		console.log("🔌 Disconnecting from chat WebSocket...")
-
-		chatChannel.stopListening("message")
-
+		chatChannel.stopListening(".message")
 		chatChannel = null
 	}
+	websocketInitialized = false
 }
 
 const initWebSocket = () => {
-	if (!chatSession.value?.ulid) {
-		console.warn("⚠️ Cannot init WebSocket: No session data")
+	if (!chatSession.value?.ulid || !window.Echo) return
+
+	const newChannelName = `chat-session.${chatSession.value.ulid}`
+
+	if (currentChannelName === newChannelName && websocketInitialized && chatChannel) {
 		return
 	}
 
-	const channelName = `chat-session.${chatSession.value.ulid}`
-	console.log(`🔌 Subscribing with Echo to: ${channelName}`)
-
-	if (!window.Echo) {
-		console.error("❌ Echo is not initialized")
-		return
+	if (currentChannelName && currentChannelName !== newChannelName) {
+		stopChatWebSocket()
 	}
 
-	stopChatWebSocket()
+	chatChannel = window.Echo.channel(newChannelName)
+	currentChannelName = newChannelName
+	websocketInitialized = true
 
-	// Subscribe with Echo
-	chatChannel = window.Echo.channel(channelName)
-
-	chatChannel.listen(".message", (eventData: { message: any }) => {
+	chatChannel.listen(".message", (eventData: { message: any; session_status?: string }) => {
 		const msg = eventData.message
 		if (msg) {
 			messages.value.push({
@@ -279,9 +281,11 @@ const initWebSocket = () => {
 			})
 			forceScrollBottom()
 		}
+		if (eventData.session_status === "closed") {
+			isRating.value = true
+			forceScrollBottom()
+		}
 	})
-
-	console.log("✅ Livechat WebSocket Ready")
 }
 
 /**
@@ -321,6 +325,20 @@ const forceScrollBottom = () => {
 	}, 150)
 }
 
+const startNewSession = async () => {
+	localStorage.removeItem("chat")
+	stopChatWebSocket()
+	messages.value = []
+	isRating.value = false
+
+	const session = await createSession()
+	if (!session) return
+
+	await getMessages()
+	initWebSocket()
+	forceScrollBottom()
+}
+
 defineExpose({
 	messages,
 	sendMessage,
@@ -355,9 +373,11 @@ defineExpose({
 					:messages="messages"
 					:session="chatSession"
 					:loading="loading"
+					:isRating="isRating"
 					@send-message="sendMessage"
 					@reload="(loadMore: any) => getMessages(loadMore)"
-					@mounted="forceScrollBottom" />
+					@mounted="forceScrollBottom"
+					@new-session="startNewSession" />
 			</div>
 		</transition>
 	</div>

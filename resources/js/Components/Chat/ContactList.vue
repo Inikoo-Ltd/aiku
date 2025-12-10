@@ -6,6 +6,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { Contact, SessionAPI, ChatMessage } from "@/types/Chat/chat"
 import MessageAreaAgent from "@/Components/Chat/MessageAreaAgent.vue"
 import { routeType } from "@/types/route"
+import { notify } from "@kyvg/vue3-notification"
 
 const layout: any = inject("layout", {})
 
@@ -24,7 +25,7 @@ const reloadContacts = async () => {
 
 		params.statuses = [activeTab.value]
 
-		if (["active", "resolved"].includes(activeTab.value)) {
+		if (["active", "closed"].includes(activeTab.value)) {
 			params.assigned_to_me = layout?.user?.id
 		}
 
@@ -77,6 +78,7 @@ const openChat = (c: Contact) => {
 	selectedSession.value = {
 		ulid: String(c.ulid),
 		guest_identifier: c.name,
+		status: c.status,
 	} as SessionAPI
 	messages.value = c.messages ?? []
 }
@@ -160,14 +162,25 @@ const handleClickContact = async (c: Contact) => {
 	}
 }
 
-const formatLastMessage = (msg) => {
+const closeSession = async () => {
+	selectedSession.value = null
+	activeTab.value = "closed"
+	await reloadContacts()
+	notify({
+		title: trans("Success"),
+		text: trans("Chat session closed"),
+		type: "success",
+	})
+}
+
+const formatLastMessage = (msg: string) => {
 	if (!msg) return ""
 	return msg.length > 10 ? msg.substring(0, 10) + "..." : msg
 }
 </script>
 
 <template>
-	<div class="w-full h-full flex flex-col border bg-white">
+	<div class="w-full h-full flex flex-col bg-white">
 		<div class="px-4 py-3 border-b font-semibold text-gray-700">Contacts</div>
 
 		<div class="flex border-b text-sm">
@@ -196,12 +209,12 @@ const formatLastMessage = (msg) => {
 			<div
 				class="px-4 py-2 cursor-pointer"
 				:class="[
-					activeTab === 'resolved'
+					activeTab === 'closed'
 						? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
 						: 'text-gray-600',
 				]"
-				@click="activeTab = 'resolved'">
-				Resolved
+				@click="activeTab = 'closed'">
+				Closed
 			</div>
 		</div>
 
@@ -221,7 +234,7 @@ const formatLastMessage = (msg) => {
 						<span class="text-xs text-gray-400">{{ c.lastMessageTime }}</span>
 
 						<div
-							v-if="c.unread"
+							v-if="c.unread && activeTab !== 'closed'"
 							class="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
 							{{ c.unread }}
 						</div>
@@ -241,13 +254,7 @@ const formatLastMessage = (msg) => {
 				:session="selectedSession"
 				@back="back"
 				@send-message="handleSendMessage"
-				@close-session="
-					() => {
-						selectedSession = null
-						activeTab = 'resolved'
-						reloadContacts()
-					}
-				" />
+				@close-session="closeSession" />
 		</div>
 	</div>
 </template>

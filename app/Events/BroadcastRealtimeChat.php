@@ -28,7 +28,6 @@ class BroadcastRealtimeChat implements ShouldBroadcastNow
     {
         $this->message = $message;
         $this->ulid = $message->chatSession->ulid;
-        // logger('🔥 BroadcastRealtimeChat fired for ULID: ' . $this->ulid);
     }
 
     /**
@@ -52,6 +51,7 @@ class BroadcastRealtimeChat implements ShouldBroadcastNow
     {
         return [
             'message' => $this->message,
+            'session_status' => $this->message->chatSession->status,
         ];
     }
 }

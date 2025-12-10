@@ -16,7 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
-import ChatCloseConfirm from "@/Components/Chat/ChatCloseConfirm.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 const props = defineProps<{
 	messages: ChatMessage[]
@@ -50,11 +50,48 @@ const menuRef = ref<HTMLElement | null>(null)
 const toggleMenu = () => {
 	isMenuOpen.value = !isMenuOpen.value
 }
+const isClosed = computed(() => chatSession.value?.status === "closed")
+const textareaHeight = ref(50)
+const messageInput = ref(null)
+
+const handleKeydown = (event: KeyboardEvent) => {
+	if (event.key === "Enter" && !event.shiftKey) {
+		event.preventDefault()
+		sendMessage()
+		messageInput.value.style.height = "auto"
+		return
+	}
+
+	if (event.key === "Enter" && event.ctrlKey) {
+		event.preventDefault()
+		messageInput.value.style.height = "auto"
+		sendMessage()
+	}
+}
+
+const autoResize = () => {
+	nextTick(() => {
+		if (messageInput.value) {
+			messageInput.value.style.height = "auto"
+
+			const scrollHeight = messageInput.value.scrollHeight
+			const minHeight = 50
+			const maxHeight = 120
+
+			let newHeight = Math.max(scrollHeight, minHeight)
+			newHeight = Math.min(newHeight, maxHeight)
+
+			messageInput.value.style.height = newHeight + "px"
+			messageInput.value.style.overflowY = newHeight >= maxHeight ? "auto" : "hidden"
+		}
+	})
+}
 
 const sendMessage = () => {
 	if (!newMessage.value.trim()) return
 	emit("send-message", newMessage.value)
 	newMessage.value = ""
+	messageInput.value.style.height = "auto"
 }
 
 const sendFile = () => {
@@ -171,6 +208,8 @@ const stopChatWebSocket = () => {
 
 const handleClickOutside = (e: MouseEvent) => {
 	if (!isMenuOpen.value) return
+	if (document.querySelector('[role="dialog"]')) return
+
 	const target = e.target as Node
 	if (
 		menuRef.value &&
@@ -259,8 +298,8 @@ onUnmounted(() => {
 
 <template>
 	<div
-		class="flex flex-col max-h-[85vh] sm:max-h-[80vh] md:max-h-[75vh] lg:max-h-[70vh] h-[clamp(420px,70vh,900px)] border rounded-md overflow-hidden bg-white">
-		<div class="flex-none flex items-center justify-between px-4 py-2 border-b bg-gray-100">
+		class="flex flex-col max-h-[85vh] sm:max-h-[80vh] md:max-h-[75vh] lg:max-h-[100vh] h-[clamp(420px,70vh,900px)] overflow-hidden bg-white">
+		<div class="flex-none flex items-center justify-between border px-4 py-2 bg-gray-100">
 			<button @click="$emit('back')" class="p-1">
 				<FontAwesomeIcon
 					:icon="faArrowLeft"
@@ -281,44 +320,34 @@ onUnmounted(() => {
 				</button>
 
 				<div
-					v-if="isMenuOpen"
+					v-if="isMenuOpen && !isClosed"
 					ref="menuRef"
 					class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow-lg z-50">
-					<ChatCloseConfirm
-						:sessionUlid="props.session?.ulid || ''"
+					<ModalConfirmationDelete
+						:routeDelete="{
+							name: 'grp.org.crm.agents.sessions.close',
+							parameters: [route().params.organisation, props.session?.ulid],
+							method: 'patch',
+						}"
+						:title="trans('Are you sure you want to close this session?')"
+						:noLabel="trans('Close')"
 						@success="
 							() => {
 								$emit('close-session')
 								isMenuOpen = false
 							}
-						"
-						@onNo="
-							() => {
-								isMenuOpen = false
-							}
-						"
-						@onYes="
-							() => {
-								console.log('on-yes kebab-case triggered')
-								isMenuOpen = false
-							}
-						"
-						:title="trans('Close chat session')"
-						:yesLabel="trans('Yes')"
-						:noLabel="trans('Cancel')">
+						">
 						<template #default="{ changeModel }">
 							<div
 								@click="changeModel"
-								class="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-100 group">
+								class="flex items-center justify-start gap-2 px-4 py-3 hover:bg-gray-100 group">
 								<FontAwesomeIcon
 									:icon="faTimesCircle"
 									class="text-base text-gray-400 group-hover:text-red-500" />
-								<span class="w-full text-left">
-									{{ trans("Close chat session") }}
-								</span>
+								{{ trans("Close Chat Session") }}
 							</div>
 						</template>
-					</ChatCloseConfirm>
+					</ModalConfirmationDelete>
 
 					<div
 						class="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-100 group">
@@ -364,7 +393,7 @@ onUnmounted(() => {
 		</div>
 
 		<!-- Messages Area -->
-		<div ref="messagesContainer" class="flex-1 overflow-y-auto px-4 py-3 space-y-4 bg-gray-50">
+		<div ref="messagesContainer" class="flex-1 overflow-y-auto px-4 py-3 space-y-4">
 			<div class="flex justify-center mb-2">
 				<button
 					v-if="canLoadMore && messagesLocal.length && !isLoadingMore"
@@ -410,18 +439,23 @@ onUnmounted(() => {
 		</div>
 
 		<!-- Footer -->
-		<div class="flex-none flex items-center gap-2 px-4 py-2 border-t bg-gray-100">
+
+		<div
+			v-if="!isClosed"
+			class="flex-none flex items-center gap-2 px-4 py-4 border-t bg-gray-10">
 			<button @click="fileInput?.click()" class="p-2 rounded hover:bg-gray-200">
 				<FontAwesomeIcon :icon="faPaperclip" class="text-base" />
 			</button>
 			<input type="file" ref="fileInput" class="hidden" @change="sendFile" />
 
-			<input
-				type="text"
+			<textarea
+				ref="messageInput"
 				v-model="newMessage"
 				placeholder="Type a message..."
-				class="flex-1 px-3 py-2 rounded-full border focus:border-blue-500 focus:ring-0"
-				@keydown.enter.prevent="sendMessage" />
+				class="flex-1 px-3 py-2 rounded-lg border focus:border-blue-500 focus:ring-0 resize-none overflow-hidden min-h-[50px] max-h-[120px]"
+				@keydown="handleKeydown"
+				@input="autoResize"
+				rows="1" />
 
 			<button
 				@click="sendMessage"

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, inject, onMounted, watch } from "vue"
 import Button from "../Elements/Buttons/Button.vue"
-import { faPaperPlane, faSpinner } from "@fas"
+// import { faPaperPlane, faSpinner } from "@fas"
 import { trans } from "laravel-vue-i18n"
+import axios from "axios"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faStar, faPlus, faSpinner, faPaperPlane } from "@fortawesome/free-solid-svg-icons"
 
 const props = defineProps({
 	messages: {
@@ -19,16 +22,19 @@ const props = defineProps({
 	},
 	isInitialLoad: Boolean,
 	isLoadingMore: Boolean,
+	isRating: Boolean,
 })
 
 console.log("🚀 MessageArea props:", props.messages)
 
-const emit = defineEmits(["send-message", "reload", "mounted"])
+const emit = defineEmits(["send-message", "reload", "mounted", "new-session"])
 
 const layout: any = inject("layout", {})
+const baseUrl = layout?.appUrl ?? ""
 const input = ref("")
 const isSending = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
+const selectedRating = ref<number | null>(null)
 
 const formatTime = (timestamp: string) => {
 	if (!timestamp) return ""
@@ -54,6 +60,14 @@ const formatDate = (timestamp: string) => {
 	}
 }
 
+const updateRating = async (r: number) => {
+	selectedRating.value = r
+	if (!props.session?.ulid) return
+	await axios.put(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/update`, {
+		rating: r,
+	})
+}
+
 const groupedMessages = () => {
 	const groups: Record<string, any[]> = {}
 
@@ -72,6 +86,7 @@ const groupedMessages = () => {
  * Send message handler
  */
 const sendMessage = async () => {
+	if (props.isRating) return
 	const text = input.value.trim()
 	if (!text || !props.session?.ulid) return
 
@@ -256,24 +271,46 @@ onMounted(() => {
 			<h3 class="text-lg font-medium mb-2">{{ trans("No messages yet") }}</h3>
 			<p class="text-sm mb-4">{{ trans("Start the conversation by sending a message") }}</p>
 		</div>
-
-		<!-- Input Area -->
-		<div class="p-3 border-t border-gray-200 bg-white flex items-center gap-2">
-			<textarea
-				v-model="input"
-				@keydown="handleKeyDown"
-				:placeholder="trans('Type your message...')"
-				:disabled="!session || isSending"
-				class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none resize-none"
-				rows="1"
-				@input="autoResize"
-				ref="textArea" />
-			<Button
-				:icon="isSending ? faSpinner : faPaperPlane"
-				:loading="isSending"
-				@click="sendMessage"
-				:disabled="!input.trim() || !session || isSending"
-				class="px-4" />
+		<div v-if="isRating">
+			<div
+				class="p-3 border-t border-gray-200 bg-white flex items-center justify-between gap-2">
+				<div class="flex items-center gap-1">
+					<button v-for="n in 5" :key="n" @click="updateRating(n)" class="p-1">
+						<FontAwesomeIcon
+							:icon="faStar"
+							:class="
+								n <= (selectedRating || 0) ? 'text-yellow-400' : 'text-gray-300'
+							"
+							class="text-lg" />
+					</button>
+				</div>
+				<button
+					class="px-3 py-2 rounded-md border bg-white hover:bg-gray-50 flex items-center gap-2"
+					@click="$emit('new-session')">
+					<FontAwesomeIcon :icon="faPlus" class="text-sm" />
+					<span>New Chat</span>
+				</button>
+			</div>
+		</div>
+		<div v-if="!isRating">
+			<!-- Input Area -->
+			<div class="p-3 border-t border-gray-200 bg-white flex items-center gap-2">
+				<textarea
+					v-model="input"
+					@keydown="handleKeyDown"
+					:placeholder="trans('Type your message...')"
+					:disabled="!session || isSending || isRating"
+					class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none resize-none"
+					rows="1"
+					@input="autoResize"
+					ref="textArea" />
+				<Button
+					:icon="isSending ? faSpinner : faPaperPlane"
+					:loading="isSending"
+					@click="sendMessage"
+					:disabled="!input.trim() || !session || isSending || isRating"
+					class="px-4" />
+			</div>
 		</div>
 
 		<!-- Session Info (debug) -->

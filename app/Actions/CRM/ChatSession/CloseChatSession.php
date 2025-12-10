@@ -6,14 +6,19 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Events\BroadcastRealtimeChat;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use Illuminate\Validation\ValidationException;
+use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 
 class CloseChatSession
 {
@@ -25,6 +30,7 @@ class CloseChatSession
 
             $chatSession->update([
                 'status' => ChatSessionStatusEnum::CLOSED->value,
+                'closed_by' => $agentId ? ChatSessionClosedByTypeEnum::AGENT->value : ChatSessionClosedByTypeEnum::USER->value,
                 'closed_at' => now(),
             ]);
 
@@ -44,6 +50,17 @@ class CloseChatSession
                 }
             }
 
+            $systemMessage = $chatSession->messages()->create([
+                'message_text' => 'Chat session has been closed by agent',
+                'message_type' => ChatMessageTypeEnum::TEXT->value,
+                'sender_type' => ChatSenderTypeEnum::SYSTEM->value,
+                'is_read' => true,
+                'read_at' => now(),
+                'delivered_at' => now(),
+            ]);
+
+            BroadcastRealtimeChat::dispatch($systemMessage);
+
             $this->logCloseEvent($chatSession, $agentId, $activeAssignments, $additionalData);
 
             return $chatSession->fresh();
@@ -51,24 +68,24 @@ class CloseChatSession
     }
 
 
-    public function asController(ActionRequest $request, ChatSession $chatSession, ?String $organisation): ChatSession
+    public function asController(ActionRequest $request, ?string $organisation, ChatSession $chatSession): RedirectResponse
     {
         $agent = $this->getCurrentAgent();
         if (!$agent) {
-            throw new HttpResponseException(response()->json([
-                'success' => false,
-                'message' => 'User not found'
-            ], 404));
+            throw ValidationException::withMessages([
+                'message' => 'User not found',
+            ]);
         }
 
         try {
-            return  $this->handle($chatSession, $agent->id);
+            $this->handle($chatSession, $agent->id);
         } catch (Exception $e) {
-            throw new HttpResponseException(response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 422));
+            throw ValidationException::withMessages([
+                'message' => $e->getMessage(),
+            ]);
         }
+
+        return back()->setStatusCode(303);
     }
 
     public function getCurrentAgent(): ?ChatAgent
