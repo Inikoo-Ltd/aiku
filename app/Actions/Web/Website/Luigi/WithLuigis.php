@@ -96,19 +96,6 @@ trait WithLuigis
                 'https://live.luigisbox.com/'.$endPoint
             );
 
-        // TODO: Below is correct code for ReindexWebpageLuigiData to work
-        // if ($compressed) {
-        //     $header['Content-Encoding'] = 'gzip';
-        //     $body                       = gzencode(json_encode($body), 9);
-        // }
-
-        // $response = Http::withHeaders($header)
-        //     ->retry(3, 100)
-        //     ->{strtolower($method)}(
-        //         'https://live.luigisbox.com/'.$endPoint,
-        //         $body
-        //     );
-
         
         if ((isset($response['errors_count']) && $response['errors_count'] > 0)) {
             print ('Found some errors: ');
@@ -400,7 +387,7 @@ trait WithLuigis
                 "slug"            => $this->getIdentity($webpage),
                 "title"           => $webpage->title,
                 "web_url"         => $webpage->getCanonicalUrl(),
-                "availability"    => intval($product->state == ProductStateEnum::ACTIVE) && $product->available_quantity > 0,
+                "availability"    => intval($product->state == ProductStateEnum::ACTIVE && $product->available_quantity > 0),
                 "stock_qty"       => $product->available_quantity ?? 0,
                 "price"           => (float)$product->price ?? 0,
                 "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,
