@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref} from "vue"
+import {inject, ref} from "vue"
 import {routeType} from "@/types/route"
 import Select from "primevue/select"
 import {router} from "@inertiajs/vue3"
@@ -7,6 +7,11 @@ import {trans} from "laravel-vue-i18n"
 import Button from "../Elements/Buttons/Button.vue"
 import {InputNumber} from "primevue"
 import {notify} from "@kyvg/vue3-notification"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faAsterisk } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faAsterisk)
 
 
 const model = defineModel()
@@ -15,9 +20,11 @@ const props = defineProps<{
     routeSubmit: routeType
     currency: {}
     options: {}[]
-    types: {}[]
+    types?: {}[]
+    balance: number
 }>()
 
+const locale = inject('locale', aikuLocaleStructure)
 
 const amount = ref<number>(0)
 const privateNote = ref<string>("")
@@ -82,6 +89,21 @@ const onSubmitDecrease = () => {
             }}</p>
 
         <div class="space-y-6">
+            <!-- Type -->
+            <div v-if="types?.length > 0">
+                <label for="amount" class="block text-gray-700 font-medium mb-2">
+                    {{ trans("Type of payment") }}
+                </label>
+                <Select
+                    v-model="decreaseType"
+                    :options="types ?? []"
+                    optionLabel="label"
+                    optionValue="value"
+                    :placeholder="trans('Select your type of payment')"
+                    class="w-full"
+                />
+            </div>
+
             <!-- Reason -->
             <div>
                 <label for="amount" class="block text-gray-700 font-medium mb-2">
@@ -105,6 +127,7 @@ const onSubmitDecrease = () => {
 
                 <InputNumber
                     v-model="amount"
+                    @input="(e) => amount = e?.value ?? 0"
                     inputId="currency-us"
                     mode="currency"
                     :currency="currency.code"
@@ -119,6 +142,7 @@ const onSubmitDecrease = () => {
             <!-- Note -->
             <div>
                 <label for="privateNote" class="block text-gray-700 font-medium mb-2">
+                    <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs align-top mt-1" fixed-width aria-hidden="true" />
                     {{ trans("Private Note") }}
                 </label>
                 <textarea
@@ -129,6 +153,14 @@ const onSubmitDecrease = () => {
                     :placeholder="trans('Add any private notes here...')"
                     class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
+        </div>
+
+        <!-- Section: Preview balance -->
+        <div v-if="balance" class="bg-indigo-50 py-1 px-3 mt-6 rounded text-gray-700 tabular-nums border border-indigo-300">
+            {{ trans("Preview balance") }}:
+            <span v-tooltip="trans('Current balance')">{{ locale.currencyFormat(currency.code, Number(balance)) }}</span>
+            - <span v-tooltip="trans('Change')" class="text-red-500">{{ locale.currencyFormat(currency.code, amount) }}</span>
+            ➞ <span v-tooltip="trans('Will be final balance')" class="font-bold">{{ locale.currencyFormat(currency.code, Number(balance) - (amount || 0)) }}</span>
         </div>
 
         <div class="mt-8 flex justify-end space-x-4">
@@ -145,8 +177,8 @@ const onSubmitDecrease = () => {
                 @click="() => onSubmitDecrease()"
                 full
                 :loading="isLoading"
-                :disabled="amount <= 0 || !reasonToDecrease"
-                v-tooltip="amount <= 0 ? trans('Add amount to submit') : ''"
+                :disabled="amount <= 0 || !reasonToDecrease || !privateNote"
+                v-tooltip="amount <= 0 ? trans('Submit amount to decrease') : ''"
             >
             </Button>
         </div>

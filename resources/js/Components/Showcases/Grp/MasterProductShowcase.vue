@@ -11,6 +11,7 @@ import {
 	faShieldAlt,
 	faInfoCircle,
 	faChevronDown,
+	faLock,
 	faChevronUp,
 	faBox,
 	faVideo,
@@ -31,6 +32,9 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { Link, router } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/layout"
 import { provide } from "vue"
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
+import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
+import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 
 
 library.add(
@@ -46,6 +50,7 @@ library.add(
 	faShieldAlt,
 	faInfoCircle,
 	faChevronDown,
+	faLock,
 	faChevronUp,
 	faBox,
 	faVideo
@@ -58,6 +63,7 @@ console.log(layout.app.theme);
 const props = defineProps<{
 	currency: string,
 	handleTabUpdate: Function
+	salesData?: any
 	data: {
 		availability_status: {
 			is_for_sale: boolean
@@ -189,27 +195,41 @@ const editRoute = () => {
 	router.visit(url);
 }
 
-const isModalProductForSale = ref(false);
+const tradeUnitRoute = (tradeUnit: TradeUnit) => {
+    return route(
+        "grp.trade_units.units.show",
+        [tradeUnit.slug])
+}
+
+const isModalProductForSale = ref(false)
 
 </script>
 
 
 <template>
-	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
-		<span class="text-xl font-semibold whitespace-pre-wrap">
+	<div class="w-full  px-4 py-3 mb-3 shadow-sm grid grid-cols-2">
+		<div class="text-xl font-semibold text-gray-800 whitespace-pre-wrap justify-self-start">
 			<ProductUnitLabel v-if="data.masterProduct?.units" :units="data.masterProduct?.units"
 				:unit="data.masterProduct?.unit" class="mr-2" />
 			<span class="align-middle">
 				{{ data.masterProduct.name }}
 			</span>
-		</span>
-		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center">
-			<span 
-			v-on:click="isModalProductForSale = true"
-			v-tooltip="getTooltips()"
-			class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
-			:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'">
-				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
+		</div>
+		
+		<div v-if="data.availability_status || data.trade_units.length > 0" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center items-center flex">
+			<LabelSKU
+				:product="data.masterProduct"
+				:trade_units="data.trade_units"
+				:routeFunction="tradeUnitRoute"
+			/>
+			
+			<span v-if="data.availability_status"
+				v-on:click="isModalProductForSale = true"
+				v-tooltip="getTooltips()"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+				:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'"
+			>
+				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
 				(<span class="font-semibold" :class='data.availability_status.total_product_for_sale != data.availability_status.product.length ? "opacity-80" : ""'>
 					{{ `${data.availability_status.total_product_for_sale}/${data.availability_status.product.length}` }}
 				</span>)
@@ -224,7 +244,7 @@ const isModalProductForSale = ref(false);
 		</div>
 	</div>
 
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
+	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Master Product Tags -->
@@ -238,10 +258,10 @@ const isModalProductForSale = ref(false);
 			<div class="bg-white   p-4 lg:p-5">
 				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
 					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
-					<div class="text-sm italic text-gray-500">
+					<!-- <div class="text-sm italic text-gray-500">
 						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
 							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">images</span>
-					</div>
+					</div> -->
 				</div>
 				<div v-else>
 					<div
@@ -249,24 +269,34 @@ const isModalProductForSale = ref(false);
 						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
 						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 					</div>
-					<div class="mt-2 text-sm italic text-gray-500">
+					<!-- <div class="mt-2 text-sm italic text-gray-500">
 						Manage images in tab <span @click="() => handleTabUpdate('images')"
 							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div>
+					</div> -->
 				</div>
 			</div>
 		</div>
 
-		<TradeUnitMasterProductSummary
-			:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}" 
-			:gpsr="data.gpsr" 
-			:properties="data.properties"
-			:public-attachment="[]" 
-		/>
-
-		<div>
-			<AttachmentCard :private="data.attachment_box?.private" />
+		<!-- Product Summary - spans 2 columns -->
+		<div class="lg:col-span-2">
+			<TradeUnitMasterProductSummary
+				:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
+				:gpsr="data.gpsr"
+				:properties="data.properties"
+				xpublic-attachment="[]"
+				:attachments="data.attachment_box"
+			/>
 		</div>
+
+        <!-- Sales Analytics - right sidebar -->
+        <div v-if="salesData">
+            <SalesAnalyticsCompact :salesData="salesData" class="mr-2" />
+        </div>
+
+		<!-- <div>
+			<pre>{{ data.attachment_box }}</pre>
+			<AttachmentCard :private="data.attachment_box?.private" />
+		</div> -->
 	</div>
 
 	<Modal :isOpen="isModalProductForSale" @onClose="isModalProductForSale = false" width="w-full max-w-lg">
@@ -290,53 +320,47 @@ const isModalProductForSale = ref(false);
 				/>
 			</div>
         </div>
-			<div class="grid grid-cols-3 mt-3 text-sm font-bold">
-				<div class="text-left">
-					Shop
-				</div>
-				<div class="text-left">
-					Code
-				</div>
-				<div class="text-right">
-				</div>	
-            </div>
-            <div v-for="item in data.availability_status.product" :key="item.id" class="grid grid-cols-3 mt-3 text-sm min-h-8">
-				<div class="text-left">
-					{{ item.shop.code }}
-				</div>
-				<div class="text-left">
-					<Link :href="productRoute(item)" class="primaryLinkxx">
-						{{ item.code }}
-					</Link>
-				</div>
-				<div class="text-right min-h-max" :class="item.is_for_sale ? 'text-green-600' : 'text-red-600'">
-					<span
-					v-on:click="router.visit(productRoute(item, true))"
-					v-tooltip="item.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
-					class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
-					:class="item.is_for_sale ? 'border-green-500' : 'border-red-500'">
-						{{ item.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
-						<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
-					</span>
-				</div>	
-            </div>
+		<div class="grid grid-cols-3 mt-3 text-sm font-bold">
+			<div class="text-left">
+				Shop
+			</div>
+			<div class="text-left">
+				Code
+			</div>
+			<div class="text-right">
+			</div>	
+		</div>
+		<div v-for="item in data.availability_status.product" :key="item.id" class="grid grid-cols-3 mt-3 text-sm min-h-8">
+			<div class="text-left">
+				{{ item.shop.code }}
+			</div>
+			<div class="text-left">
+				<Link :href="productRoute(item)" class="primaryLinkxx">
+					{{ item.code }}
+				</Link>
+			</div>
+			<div class="text-right min-h-max" :class="item.is_for_sale ? 'text-green-600' : 'text-red-600'">
+				<span
+				v-on:click="router.visit(productRoute(item, true))"
+				v-tooltip="item.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+				:class="item.is_for_sale ? 'border-green-500' : 'border-red-500'">
+					{{ item.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
+					<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+				</span>
+			</div>	
+		</div>
 	</Modal>
-	
 </template>
+
 <style lang="scss">
     .primaryLinkxx {
         background: linear-gradient(to top, var(--theme-color-3), var(--theme-color-3));
 
-        &:hover, &:focus {
+        &:hover {
             color: v-bind('`${layout.app.theme[7]}`');
         }
 
-        @apply focus:ring-0 focus:outline-none focus:border-none
-        bg-no-repeat [background-position:0%_100%]
-        transition-all
-        [background-size:100%_0.2em]
-        motion-safe:transition-all motion-safe:duration-200
-        hover:[background-size:100%_100%]
-        focus:[background-size:100%_100%] px-1 py-1 lg:py-0.5
+        @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] transition-all [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-1 lg:py-0.5
     }
 </style>

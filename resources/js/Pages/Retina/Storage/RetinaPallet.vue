@@ -15,7 +15,7 @@
   import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
   import { useTabChange } from "@/Composables/tab-change"
     import RetinaPalletShowcase from './RetinaPalletShowcase.vue'
-  import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+  import { PageHeadingTypes } from '@/types/PageHeading'
   import { Tabs as TSTabs } from '@/types/Tabs'
 import StockItemsMovements from '@/Components/Showcases/Grp/StockItemsMovements.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'

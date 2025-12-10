@@ -16,7 +16,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from '@/types/route'
-import { PageHeading as PageHeadingTypes } from  '@/types/PageHeading'
+import { PageHeadingTypes } from  '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { Action } from '@/types/Action'
 import { BoxStats, PDRNotes, UploadPallet } from '@/types/Pallet'

@@ -19,7 +19,7 @@ import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube
 import { faClock, faFileExcel, faFileInvoice, faFilePdf } from "@fas";
 import { faCheck } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue";
 import { InvoiceResource } from "@/types/invoice";
 import NeedToPay from "@/Components/Utils/NeedToPay.vue";

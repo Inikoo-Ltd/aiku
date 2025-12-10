@@ -153,6 +153,10 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
             'payment_policy_id' => ['sometimes', 'string'],
             'fulfillment_policy_id' => ['sometimes', 'string'],
 
+            'stock_update' => ['sometimes', 'boolean'],
+            'stock_threshold' => ['sometimes', 'numeric'],
+            'max_quantity_advertise' => ['sometimes', 'numeric'],
+
             'return_accepted' => ['sometimes', 'boolean'],
             'return_payer' => ['required_if:return_accepted,true', 'string'],
             'return_within' => ['required_if:return_accepted,true', 'integer'],

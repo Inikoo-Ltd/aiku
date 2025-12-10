@@ -24,7 +24,6 @@ use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
@@ -49,6 +48,7 @@ use App\Models\Web\Website;
 use Illuminate\Foundation\Testing\TestCase;
 
 uses(TestCase::class)->in('Feature');
+uses(TestCase::class)->in('Unit');
 uses(TestCase::class)->group('integration')->in('Integration');
 
 function loadDB(): void
@@ -237,8 +237,8 @@ function createTradeUnits(Group $group): array
         $tradeUnit2 = $tradeUnits->skip(1)->first();
         $tradeUnit3 = $tradeUnits->skip(2)->first();
     }
-    return [$tradeUnit1, $tradeUnit2, $tradeUnit3];
 
+    return [$tradeUnit1, $tradeUnit2, $tradeUnit3];
 }
 
 /**
@@ -304,8 +304,8 @@ function createOrgStocks(Organisation $organisation, array $stocks): array
 function createProduct(Shop $shop): array
 {
     $tradeUnits = createTradeUnits($shop->group);
-    $stocks    = createStocks($shop->group);
-    $orgStocks = createOrgStocks($shop->organisation, $stocks);
+    $stocks     = createStocks($shop->group);
+    $orgStocks  = createOrgStocks($shop->organisation, $stocks);
 
     $department = $shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
     if (!$department) {
@@ -334,20 +334,23 @@ function createProduct(Shop $shop): array
             Product::factory()->definition(),
             [
                 'trade_units' => [
-                    $tradeUnits[0]->id => ['quantity' => 1]
+                    [
+                        'id'       => $tradeUnits[0]->id,
+                        'quantity' => 1
+                    ]
                 ],
-                'price'      => 100,
+                'price'       => 100,
             ]
         );
         $product     = StoreProduct::make()->action(
             $family,
             $productData
         );
+
         $product     = UpdateProduct::make()->action(
             $product,
             [
                 'state'  => ProductStateEnum::ACTIVE,
-                'status' => ProductStatusEnum::FOR_SALE,
             ]
         );
     }

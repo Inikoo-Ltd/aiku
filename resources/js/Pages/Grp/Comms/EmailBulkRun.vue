@@ -9,7 +9,7 @@ import { computed, ref } from 'vue'
 import type { Component } from 'vue'
 
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 
 import { library } from "@fortawesome/fontawesome-svg-core";

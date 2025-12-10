@@ -4,12 +4,26 @@ export default {
 	blueprint: [
 		{
 			name: "Bestseller 1",
-			key: ['bestseller',"bestseller1"],
+			key: ["bestseller", "bestseller1"],
 			replaceForm: [
 				{
 					name: "Icon",
-					key: ["icon",'text'],
-					type: "textProperty",
+					key: ["icon", "text"],
+					replaceForm: [
+						{
+							key: ["color"],
+							label: "Color",
+							type: "color",
+						},
+						/* {
+							key: ["fontSize"],
+							label: "fontSize",
+							type: "number",
+							props_data: {
+								suffix: "px",
+							},
+						}, */
+					],
 				},
 				{
 					name: "Text",
@@ -21,7 +35,7 @@ export default {
 							type: "text",
 						},
 						{
-							key: ["properties",'text'],
+							key: ["properties", "text"],
 							label: "Text style",
 							type: "textProperty",
 						},
@@ -47,13 +61,13 @@ export default {
 				},
 			],
 		},
-        {
+		{
 			name: "Bestseller 2",
-			key: ['bestseller',"bestseller2"],
+			key: ["bestseller", "bestseller2"],
 			replaceForm: [
 				{
 					name: "Icon",
-					key: ["icon",'text'],
+					key: ["icon", "text"],
 					type: "textProperty",
 				},
 				{
@@ -66,7 +80,7 @@ export default {
 							type: "text",
 						},
 						{
-							key: ["properties",'text'],
+							key: ["properties", "text"],
 							label: "Text style",
 							type: "textProperty",
 						},
@@ -92,13 +106,13 @@ export default {
 				},
 			],
 		},
-        {
+		{
 			name: "Bestseller 3",
-			key: ['bestseller',"bestseller3"],
+			key: ["bestseller", "bestseller3"],
 			replaceForm: [
 				{
 					name: "Icon",
-					key: ["icon",'text'],
+					key: ["icon", "text"],
 					type: "textProperty",
 				},
 				{
@@ -111,7 +125,7 @@ export default {
 							type: "text",
 						},
 						{
-							key: ["properties",'text'],
+							key: ["properties", "text"],
 							label: "Text style",
 							type: "textProperty",
 						},

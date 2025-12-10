@@ -6,6 +6,7 @@
 	"category": "column",
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
 	"icon": ["fal", "rectangle-wide"],
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
 			"container": {

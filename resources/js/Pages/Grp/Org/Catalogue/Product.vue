@@ -6,8 +6,7 @@ import {
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
     faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
-    faFolderDownload,faQuoteLeft,
-    faExternalLink
+    faFolderDownload,faQuoteLeft
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -17,7 +16,7 @@ import Tabs from '@/Components/Navigation/Tabs.vue'
 import Breadcrumb from 'primevue/breadcrumb'
 import Message from 'primevue/message'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import type { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import type { PageHeadingTypes } from '@/types/PageHeading'
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
 import TableMailshots from "@/Components/Tables/TableMailshots.vue"
@@ -177,7 +176,7 @@ const showMissingTaxonomyMessage = computed(() => {
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
-                    <component :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
+                    <component :is="item.to ? Link : 'span'" v-bind="item.to ? { href: route(item.to.name, item.to.parameters) } : {}" v-tooltip="item.tooltip"
                         :title="item.label" class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to
                             ? 'text-gray-500'

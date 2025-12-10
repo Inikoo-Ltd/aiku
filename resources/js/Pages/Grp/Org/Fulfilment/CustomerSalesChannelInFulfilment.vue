@@ -3,7 +3,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import CustomerShowcase from "@/Components/Showcases/Grp/CustomerShowcase.vue";
 import { useTabChange } from "@/Composables/tab-change";
-import { PageHeading as PageHeadingTS } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { trans } from "laravel-vue-i18n";
 import { computed, ref } from "vue";
 import type { Component } from "vue";
@@ -12,7 +12,7 @@ import { faShopify, faTiktok } from "@fortawesome/free-brands-svg-icons";
 
 const props = defineProps<{
   title: string
-  pageHead: PageHeadingTS
+  pageHead: PageHeadingTypes
   tabs: {
     current: string
     navigation: {}

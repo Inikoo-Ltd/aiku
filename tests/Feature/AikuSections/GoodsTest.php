@@ -222,6 +222,7 @@ test("UI Show Stock Family", function () {
 });
 
 test("UI Index Stocks", function () {
+    $this->withoutExceptionHandling();
     $response = get(
         route("grp.goods.stocks.index")
     );
@@ -247,7 +248,7 @@ test("UI Show Stocks", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $stock->slug)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $stock->name)->etc()
             )
             ->has("tabs");
     });

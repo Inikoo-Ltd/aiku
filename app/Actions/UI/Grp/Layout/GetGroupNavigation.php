@@ -143,7 +143,7 @@ class GetGroupNavigation
                 'subSections' => [
                     [
                         'label' => __('Master SKUs families'),
-                        'icon'  => ['fal', 'fa-boxes-alt'],
+                        'icon'  => ['fal', 'fa-rainbow'],
                         'root'  => 'grp.goods.stock-families.',
                         'route' => [
                             'name'       => 'grp.goods.stock-families.index',
@@ -152,7 +152,7 @@ class GetGroupNavigation
                     ],
                     [
                         'label' => __('Master SKUs'),
-                        'icon'  => ['fal', 'fa-box'],
+                        'icon'  => ['fal', 'fa-cloud-rainbow'],
                         'root'  => 'grp.goods.stocks.',
                         'route' => [
                             'name'       => 'grp.goods.stocks.active_stocks.index',

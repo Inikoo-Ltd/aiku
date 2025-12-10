@@ -70,10 +70,10 @@ class IndexInvoiceTransactions extends OrgAction
                 ->withModelOperations()
                 ->withGlobalSearch();
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'description', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'description', label: __('Description'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->defaultSort('code');
         };
     }

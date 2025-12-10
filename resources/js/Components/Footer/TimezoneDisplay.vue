@@ -37,7 +37,7 @@ watch(() => layout?.user?.settings?.timezones, (newVal) => {
 </script>
 
 <template>
-    <div class="flex gap-x-6 text-white/70">
+    <div v-if="layout?.user?.settings?.timezones?.length" class="flex gap-x-6 text-white/70">
         <p v-for="(time, country) in times" :key="country" class="tabular-nums">
             <strong>{{ country }}:</strong> {{ time }}
         </p>

@@ -91,7 +91,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
- *
  * @method static \Database\Factories\Inventory\OrgStockFactory factory($count = null, $state = [])
  * @method static Builder<static>|OrgStock newModelQuery()
  * @method static Builder<static>|OrgStock newQuery()
@@ -99,7 +98,6 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|OrgStock query()
  * @method static Builder<static>|OrgStock withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|OrgStock withoutTrashed()
- *
  * @mixin \Eloquent
  */
 class OrgStock extends Model implements Auditable

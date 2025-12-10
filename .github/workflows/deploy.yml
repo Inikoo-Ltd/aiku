@@ -16,19 +16,19 @@ jobs:
     environment: production
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
       - name: Get Composer Cache Directory
         id: composer-cache
         run: |
           echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
       - name: Composer install
-        run: php8.3 /usr/local/bin/composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+        run: php8.4 /usr/local/bin/composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
       - name: Get Next Version
         id: semver
         uses: ietf-tools/semver-action@v1
@@ -62,20 +62,20 @@ jobs:
           commit: 'production'
           tag: ${{ steps.semver.outputs.next }}
           token: ${{ github.token }}
-      - name: New Relic Application Deployment Marker
-        uses: newrelic/deployment-marker-action@v2.3.0
-        with:
-          apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
-          guid: ${{ secrets.NEW_RELIC_DEPLOYMENT_ENTITY_GUID }}
-          version: ${{ steps.semver.outputs.next }}
-          user: "${{ github.actor }}"
-      - name: Create Sentry release
-        uses: getsentry/action-release@v3
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
-        with:
-          ignore_missing: true
-          environment: production
-          release: ${{ steps.semver.outputs.next }}
+#      - name: New Relic Application Deployment Marker
+#        uses: newrelic/deployment-marker-action@v2.3.0
+#        with:
+#          apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
+#          guid: ${{ secrets.NEW_RELIC_DEPLOYMENT_ENTITY_GUID }}
+#          version: ${{ steps.semver.outputs.next }}
+#          user: "${{ github.actor }}"
+#      - name: Create Sentry release
+#        uses: getsentry/action-release@v3
+#        env:
+#          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+#          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+#          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
+#        with:
+#          ignore_missing: true
+#          environment: production
+#          release: ${{ steps.semver.outputs.next }}

@@ -423,8 +423,7 @@ onMounted(() => {
         </ul>
     </Message>
 
-
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="disabled" @onChecked="(item) => onChangeCheked(true, item)"
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true" @onChecked="(item) => onChangeCheked(true, item)"
            @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'
            :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table">
 
@@ -761,7 +760,7 @@ onMounted(() => {
             						preserveScroll: true,
             					}"
             />
-            <ButtonWithLink 
+            <ButtonWithLink
                 v-if="item.platform_status"
                 v-tooltip="trans('unlink product')"
                 type="negative"

@@ -116,7 +116,7 @@ class IndexPolls extends OrgAction
             $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'label', label: __('Label'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'in_registration', label: __('In registration'), canBeHidden: false, sortable: true)
+                ->column(key: 'in_registration', label: __('In Registration'), canBeHidden: false, sortable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'percentage', label: __('Response %'), canBeHidden: false);
@@ -145,7 +145,7 @@ class IndexPolls extends OrgAction
 
         if ($this->parent instanceof Shop) {
             $title      = $this->parent->name;
-            $model      = __('poll');
+            $model      = __('Poll');
             $icon       = [
                 'icon'  => ['fal', 'fa-cube'],
                 'title' => __('Poll')

@@ -16,7 +16,6 @@ use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\CRM\Customer;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class DecreaseCreditTransactionCustomer extends OrgAction
@@ -24,6 +23,7 @@ class DecreaseCreditTransactionCustomer extends OrgAction
     use WithCRMEditAuthorisation;
     use WithModelAddressActions;
     use WithNoStrictRules;
+    use WithCreditTransactionRules;
 
 
     /**
@@ -34,42 +34,13 @@ class DecreaseCreditTransactionCustomer extends OrgAction
         return StoreCreditTransaction::make()->action($customer, $modelData);
     }
 
-    public function rules(): array
-    {
-        $rules = [
-            'amount'     => ['required', 'numeric'],
-            'date'       => ['sometimes', 'date'],
-            'type'       => ['required', Rule::enum(CreditTransactionTypeEnum::class)],
-            'reason'     => ['required', Rule::enum(CreditTransactionReasonEnum::class)],
-            'notes'      => ['sometimes'],
-            'payment_id' => [
-                'sometimes',
-                'nullable',
-                Rule::exists('payments', 'id')
-                    ->where('shop_id', $this->shop->id)
-            ],
-            'top_up_id'  => [
-                'sometimes',
-                'nullable',
-                Rule::exists('top_ups', 'id')
-                    ->where('shop_id', $this->shop->id)
-            ],
-        ];
-        if (!$this->strict) {
-            $rules['grp_exchange'] = ['sometimes', 'numeric'];
-            $rules['org_exchange'] = ['sometimes', 'numeric'];
-            $rules                 = $this->noStrictStoreRules($rules);
-        }
-
-        return $rules;
-    }
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (blank($request->input('type'))) {
+        if (blank($this->get('type'))) {
 
 
-            $type = match ($request->input('reason')) {
+            $type = match ($this->get('reason')) {
                 CreditTransactionReasonEnum::MONEY_BACK->value => CreditTransactionTypeEnum::MONEY_BACK,
                 CreditTransactionReasonEnum::OTHER->value => CreditTransactionTypeEnum::REMOVE_FUNDS_OTHER,
                 CreditTransactionReasonEnum::TRANSFER->value => CreditTransactionTypeEnum::TRANSFER_OUT,

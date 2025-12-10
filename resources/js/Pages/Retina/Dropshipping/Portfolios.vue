@@ -3,7 +3,7 @@ import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
 import {computed, reactive, ref,watch, onMounted, onBeforeUnmount} from "vue";
-import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import {PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -699,18 +699,6 @@ onBeforeUnmount(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <!-- Section: Alert if platform not connected yet -->
-    <Message v-if="customer_sales_channel.ban_stock_update_until" severity="error" class="m-4 flex items-center gap-2">
-            <div :class="'flex justify-between gap-3'">
-                <div :class="'flex gap-3 items-center'">
-                    <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
-                    <div>
-                        {{ trans("We're having trouble connecting to your site. Could you please confirm whether the site URL is correct? The URL we tried to access is ")}} <span class="underline">{{ customer_sales_channel?.store_url }}</span> {{ trans(". If correct, please feel free to ignore this message and we will try again shortly.") }}
-                    </div>
-                </div>
-                    <ButtonWithLink type="tertiary" @click="isOpenModalSuspended = true" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
-            </div>
-    </Message>
 
 
     <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
@@ -824,18 +812,18 @@ onBeforeUnmount(() => {
         </div>
         <div v-else class="overflow-x-auto">
             <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
-                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="customer_sales_channel.ban_stock_update_until"
+                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
                 :isPlatformManual
                 :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
             <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
                 :tab="'products'" :selectedData :platform_data :platform_user_id
-                :is_platform_connected :disabled="customer_sales_channel.ban_stock_update_until"
+                :is_platform_connected
                 :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
                 :customerSalesChannel="customer_sales_channel"
                 v-model:selectedProducts="selectedProducts" :key="key"
                 :count_product_not_synced="count_product_not_synced"/>
             <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-                :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="customer_sales_channel.ban_stock_update_until"
+                :platform_user_id :is_platform_connected :progressToUploadToShopify
                 :customerSalesChannel="customer_sales_channel" :progressToUploadToEcom="progessbar"
                 v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
                 :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>
@@ -927,32 +915,6 @@ onBeforeUnmount(() => {
             </div>
         </div>
     </Modal>
-
-    <Modal :isOpen="isOpenModalSuspended" @onClose="isOpenModalSuspended = false"
-           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
-        <div class="mb-8">
-            <h3 class="text-center">{{ trans('If you experience an issue when clicking Unsuspend, your store might be down. You can check it by clicking Test Connection.')}}</h3>
-            <div class="mt-8 flex justify-center items-center gap-2 font-light text-sm" v-if="isTestConnectionSuccess">
-                <Icon class="text-green-500" :data="{
-                icon: 'fas fa-check'
-            }" /> {{ trans('Great! your store can connect, now click unsuspend') }}
-            </div>
-        </div>
-
-        <div class="flex justify-center gap-2">
-            <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.test_connection',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch',
-                        }" @success="data => isTestConnectionSuccess = true" @error="data => isTestConnectionSuccess = data.status" icon="fas fa-check" :label="trans('Test Connection')" />
-            <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.unsuspend',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch'
-                        }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
-        </div>
-    </Modal>
-
     <!-- Modal: Clone Progress -->
     <Modal :isOpen="isOpenModalCloneProgress" @onClose="cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0 ? isOpenModalCloneProgress = false : null"
            width="w-full max-w-md">

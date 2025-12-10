@@ -18,7 +18,7 @@ import {debounce} from 'lodash-es'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import {trans} from "laravel-vue-i18n"
 import {routeType} from '@/types/route'
-import {PageHeading as PageHeadingTypes} from '@/types/PageHeading'
+import {PageHeadingTypes} from '@/types/PageHeading'
 import {UploadPallet} from '@/types/Pallet'
 import {Tabs as TSTabs} from '@/types/Tabs'
 import '@vuepic/vue-datepicker/dist/main.css'

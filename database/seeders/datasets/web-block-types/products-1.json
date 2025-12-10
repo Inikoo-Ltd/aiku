@@ -6,8 +6,16 @@
 	"category" : "list_products",
 	"icon": ["fal", "cube"],
 	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : false,
 	"fixed" : true,
 	"data": {
-		"fieldValue": {}
+		"fieldValue": {
+			"container": {
+				"properties": null
+			},
+			"card_product": {
+				"properties": null
+			}
+		}
 	}
 }

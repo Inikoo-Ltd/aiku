@@ -3,7 +3,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { useCopyText } from "@/Composables/useCopyText"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { Head, Link, router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"

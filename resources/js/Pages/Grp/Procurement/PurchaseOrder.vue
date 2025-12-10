@@ -13,7 +13,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import { capitalize } from "@/Composables/capitalize"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { BoxNote as BoxNoteTS } from "@/types/Components/BoxNotes"
 import { routeType } from "@/types/route"
 import { trans } from "laravel-vue-i18n"
@@ -81,7 +81,7 @@ library.add(
 
 const props = defineProps<{
 	title: string
-	pageHead: PageHeadingTS
+	pageHead: PageHeadingTypes
 	tabs: {
 		current: string
 		navigation: {}

@@ -38,13 +38,26 @@ class UpdateProductFamily extends OrgAction
         $oldDepartment    = $product->department;
         $oldSubDepartment = $product->subDepartment;
 
-        $family = ProductCategory::find(Arr::get($modelData, 'family_id'));
 
-        data_set($modelData, 'family_id', Arr::get($modelData, 'family_id'));
-        data_set($modelData, 'department_id', $family->department_id);
-        data_set($modelData, 'sub_department_id', $family->sub_department_id);
+        $dataToUpdate = [
+            'family_id' => null,
+            'department_id' => null,
+            'sub_department_id' => null
+        ];
 
-        $product = $this->update($product, $modelData);
+
+        if (Arr::get($modelData, 'family_id')) {
+            $family = ProductCategory::find(Arr::get($modelData, 'family_id'));
+
+            if ($family) {
+                data_set($dataToUpdate, 'family_id', $family->id);
+                data_set($dataToUpdate, 'department_id', $family->department_id);
+                data_set($dataToUpdate, 'sub_department_id', $family->sub_department_id);
+            }
+        }
+
+
+        $product = $this->update($product, $dataToUpdate);
         $changes = $product->getChanges();
 
         $product->refresh();
@@ -112,6 +125,7 @@ class UpdateProductFamily extends OrgAction
         return [
             'family_id' => [
                 'required',
+                'nullable',
                 Rule::exists('product_categories', 'id')
                     ->where('type', ProductCategoryTypeEnum::FAMILY)
                     ->where('shop_id', $this->shop->id)

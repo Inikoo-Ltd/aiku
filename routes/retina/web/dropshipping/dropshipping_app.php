@@ -32,8 +32,8 @@ use App\Actions\Retina\Billing\UI\IndexRetinaDropshippingInvoices;
 use App\Actions\Retina\Billing\UI\ShowRetinaDropshippingInvoice;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
-use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaDropshippingProductsForBasket;
-use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaDropshippingProductsForEmptyBasket;
+use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaProductsForBasket;
+use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaProductsForEmptyBasket;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -47,7 +47,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
-use App\Actions\Retina\Dropshipping\Orders\UpdateCustomerOrderVatStatus;
+use App\Actions\Retina\Dropshipping\Orders\UpdateCustomerOrderTaxCategory;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
@@ -59,8 +59,8 @@ use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
 
-Route::get('select-products-for-empty-basket', IndexRetinaDropshippingProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
-Route::get('select-products-for-basket/{order:id}', IndexRetinaDropshippingProductsForBasket::class)->name('select_products_for_basket');
+Route::get('select-products-for-empty-basket', IndexRetinaProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
+Route::get('select-products-for-basket/{order:id}', IndexRetinaProductsForBasket::class)->name('select_products_for_basket');
 
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
@@ -87,6 +87,7 @@ Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('ebay-user/authorize', AuthorizeRetinaEbayUser::class)->name('ebay.authorize');
     Route::get('ebay-user-callback', CallbackRetinaEbayUser::class)->name('ebay.callback');
     Route::get('ebay-user-callback/success', ShowCallbackSuccessRetinaEbayUser::class)->name('ebay_callback.success');
+    Route::get('woo-user-callback/success', ShowCallbackSuccessRetinaEbayUser::class)->name('woo_callback.success');
 
     Route::post('amazon-user/authorize', AuthorizeRetinaAmazonUser::class)->name('amazon.authorize');
     Route::get('amazon-user-callback', CallbackRetinaAmazonUser::class)->name('amazon.callback');
@@ -105,7 +106,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');
         Route::get('{order}', ShowRetinaDropshippingBasket::class)->name('show');
-        Route::patch('{order}/vatCheck', UpdateCustomerOrderVatStatus::class)->name('vatCheck');
+        Route::patch('{order}/vatCheck', UpdateCustomerOrderTaxCategory::class)->name('vatCheck');
     });
 
     Route::prefix('client')->as('client.')->group(function () {
