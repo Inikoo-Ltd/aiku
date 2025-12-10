@@ -23,6 +23,7 @@ import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/
 import { Icon } from "@/types/Utils/Icon"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { StocksManagementTS } from "@/types/Inventory/StocksManagement"
+import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{
@@ -98,9 +99,9 @@ const displayedStats = computed(() => {
 
 
 
-const selectedTradeUnit = ref(props.data.trade_units.length > 0 ? props.data.trade_units[0].tradeUnit.code : null)
+const selectedTradeUnit = ref(props.data.trade_units?.length > 0 ? props.data.trade_units[0].tradeUnit.code : null)
 const compSelectedTradeUnit = computed(() => {
-    return props.data.trade_units.find((unit) => unit.tradeUnit.code === selectedTradeUnit.value)
+    return props.data.trade_units?.find((unit) => unit.tradeUnit.code === selectedTradeUnit.value)
 })
 
 </script>
@@ -179,7 +180,7 @@ const compSelectedTradeUnit = computed(() => {
                 <template #default>
                     <div class="px-4">
                         <div class="flex items-center gap-x-2 mb-4">
-                            <template v-if="props.data.trade_units.length">
+                            <template v-if="props.data.trade_units?.length">
                                 <Select v-model="selectedTradeUnit" :options="props.data.trade_units"
                                     optionLabel="tradeUnit.name" optionValue="tradeUnit.code"
                                     placeholder="Select a City" class="w-full md:w-80" />
@@ -207,7 +208,15 @@ const compSelectedTradeUnit = computed(() => {
 
         <!-- Section: Stocks Management -->
         <div class="md:col-span-2">
+            <!-- <pre>{{ data }}</pre> -->
+            <!-- <LabelSKU
+                xproduct="data.product"
+                :trade_units="data.trade_units"
+            /> -->
+
+            <!-- <pre>{{ data.trade_units }}</pre> -->
             <StocksManagement
+                v-if="data.stocks_management"
                 :stocks_management="data.stocks_management"
             />
 
