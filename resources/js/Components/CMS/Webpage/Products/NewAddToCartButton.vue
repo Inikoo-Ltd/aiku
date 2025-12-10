@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, computed } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPlus, faMinus, faCartPlus } from "@fas"
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
@@ -12,7 +11,39 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
-import { faShoppingCart } from '@far'
+import { faGalaxy, faTimesCircle, faPlus, faMinus, faCartPlus } from "@fas";
+import { faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faBars, faHeart } from "@fal";
+import {
+  faBackpack,
+  faTruckLoading,
+  faTruckMoving,
+  faTruckContainer,
+  faUser as faUserRegular,
+  faWarehouse,
+  faWarehouseAlt,
+  faShippingFast,
+  faInventory,
+  faDollyFlatbedAlt,
+  faBoxes,
+  faShoppingCart,
+  faBadgePercent,
+  faChevronRight,
+  faCaretRight,
+  faPhoneAlt,
+  faGlobe,
+  faPercent,
+  faPoundSign,
+  faClock,
+  faMedal,
+} from "@far";
+import { faLambda } from "@fad";
+
+// Add icons to the library
+library.add(
+  faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone, faPlus, faMinus, faCartPlus,
+  faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faBars,
+  faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock, faHeart
+);
 
 
 library.add(faPlus, faMinus, faCartPlus)
@@ -25,6 +56,7 @@ const props = withDefaults(
         hasInBasket?: any
         buttonStyle?: any
         buttonStyleHover?: any
+        icon?: string | [string, string]
     }>(),
     {
         hasInBasket: {
@@ -277,7 +309,7 @@ const isHovered = ref(false)
             class="rounded-full button-cart hover:bg-green-700 bg-gray-800 text-gray-300  h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             v-tooltip="trans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />
-            <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width />
+            <FontAwesomeIcon v-else :icon="icon ? icon : faShoppingCart" fixed-width />
         </button>
 
         <!-- State: qty > 0, tampilkan quantity dan expand saat hover -->

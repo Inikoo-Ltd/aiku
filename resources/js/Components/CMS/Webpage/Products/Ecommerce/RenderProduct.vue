@@ -35,6 +35,7 @@ const props = withDefaults(defineProps<{
     buttonStyle?: object | undefined
     buttonStyleLogin?: object | undefined
     code : string
+    button?: any
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -229,6 +230,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
         basketButton
         :isLoadingFavourite
         :isLoadingRemindBackInStock
+        :button
     />
 </template>
 

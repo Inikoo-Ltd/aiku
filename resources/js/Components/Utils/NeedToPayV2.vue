@@ -43,7 +43,6 @@ const props = defineProps<{
     }[]
 }>()
 
-console.log('[apayments', props.payments)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -95,7 +94,7 @@ const onPayWithBalance = () => {
 
         <!-- Section: background green/red -->
         <div class="px-2.5 pt-1 pb-2" :class="[
-            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 rounded-md' : 'bg-red-100',
+            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 rounded-md' : 'text-red-600',
         ]">
     
             <!-- Section: Progress bar -->
