@@ -37,16 +37,17 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
         $queryOutbox->whereIn('code', [OutboxCodeEnum::REORDER_REMINDER,OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->whereNotNull('shop_id');
-        $queryOutbox->leftJoin('outbox_settings', 'outboxes.id', '=', 'outbox_settings.outbox_id');
-        // $queryOutbox->where('outbox_settings.outbox_id', 843);// for testing bulgaria outbox
-        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outbox_settings.days_after', 'outbox_settings.send_time');
+        $queryOutbox->whereNotNull('days_after');
+        $queryOutbox->whereNotNull('send_time');
+        // $queryOutbox->whereIn('id', [863,862,843]); test for bulgaria
+        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.days_after', 'outboxes.send_time');
         $outboxes = $queryOutbox->get();
 
         $currentDateTime = Carbon::now()->utc();
 
         foreach ($outboxes as $outbox) {
             // convert to utc
-            $outboxSendTimeUTC = Carbon::parse($outbox->setting?->send_time)->utc()->format('H:i');
+            $outboxSendTimeUTC = Carbon::parse($outbox->send_time)->utc()->format('H:i');
 
             $currentTime = $currentDateTime->copy()->format('H:i');
 

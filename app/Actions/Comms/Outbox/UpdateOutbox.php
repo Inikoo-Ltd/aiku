@@ -31,14 +31,6 @@ class UpdateOutbox extends OrgAction
             ]);
         }
 
-        if ($days_after = Arr::pull($modelData, 'days_after')) {
-            $this->update($outbox->setting, [
-                 'days_after' => $days_after
-             ]);
-
-            unset($modelData['days_after']);
-        }
-
         if ($send_time = Arr::pull($modelData, 'send_time')) {
 
             $timezone = $outbox->shop->timezone;
@@ -48,12 +40,8 @@ class UpdateOutbox extends OrgAction
                 $timezoneOffset = '+00:00';
             }
             $sendTimeWithTimezone = $send_time . $timezoneOffset;
+            $modelData['send_time'] = $sendTimeWithTimezone;
 
-            $this->update($outbox->setting, [
-                'send_time' => $sendTimeWithTimezone
-            ]);
-
-            unset($modelData['send_time']);
         }
 
         return $this->update($outbox, $modelData, ['data']);
@@ -64,7 +52,7 @@ class UpdateOutbox extends OrgAction
         return [
             'name'    => ['sometimes', 'required', 'string'],
             'subject' => ['sometimes', 'required', 'string'],
-            'days_after' => ['sometimes', 'required', 'integer'],
+            'days_after' => ['sometimes', 'required', 'integer','gt:0'],
             'send_time' => ['sometimes', 'required', 'date_format:H:i:s']
         ];
     }

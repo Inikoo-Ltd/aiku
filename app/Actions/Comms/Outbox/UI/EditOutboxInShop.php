@@ -39,7 +39,7 @@ class EditOutboxInShop extends OrgAction
                         'label' => __('Days after last order dispatched'),
                         'placeholder' => __('Days after last order dispatched'),
                         'required' => false,
-                        'value' => $outbox->setting?->days_after,
+                        'value' => $outbox->days_after,
                     ],
                     'send_time' => [
                         'type' => 'select',
@@ -71,7 +71,7 @@ class EditOutboxInShop extends OrgAction
                             ['label' => '22:00', 'value' => '22:00:00'],
                             ['label' => '23:00', 'value' => '23:00:00'],
                         ],
-                        'value'    => substr($outbox->setting?->send_time ?? '', 0, 8),
+                        'value'    => substr($outbox->send_time ?? '', 0, 8),
                         'required' => false,
                     ],
                 ]
