@@ -20,7 +20,6 @@ use App\Models\Masters\MasterAsset;
 
 class CreateVariant extends OrgAction
 {
-
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
         return $masterAsset;

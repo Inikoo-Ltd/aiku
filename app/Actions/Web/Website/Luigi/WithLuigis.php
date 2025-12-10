@@ -96,9 +96,9 @@ trait WithLuigis
                 'https://live.luigisbox.com/'.$endPoint
             );
 
-        
+
         if ((isset($response['errors_count']) && $response['errors_count'] > 0)) {
-            print ('Found some errors: ');
+            print('Found some errors: ');
             print_r($response->body());
         }
 
