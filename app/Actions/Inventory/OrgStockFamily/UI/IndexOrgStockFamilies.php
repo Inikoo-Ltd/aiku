@@ -167,11 +167,10 @@ class IndexOrgStockFamilies extends OrgAction
                 );
             }
 
-
             $table
                 ->withGlobalSearch()
-                ->column(key: 'code', label: 'code', canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: 'Code', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
                 ->defaultSort('code');
         };
