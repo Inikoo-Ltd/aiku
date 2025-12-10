@@ -8,12 +8,9 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTrashAlt } from "@far"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
+import { trans } from "laravel-vue-i18n"
 
-const props = defineProps<{
-    pageHead: PageHeadingTypes
-    title: string
-    master_asset: {}
-}>()
 
 type Variant = { label: string; options: string[]; active?: boolean }
 type Node = {
@@ -23,6 +20,14 @@ type Node = {
     product: string | null
     children?: Node[]
 }
+
+const props = defineProps<{
+    pageHead: PageHeadingTypes
+    title: string
+    master_asset: {}
+    master_assets_route: any
+}>()
+
 
 const state = ref({
     variants: [
@@ -54,15 +59,22 @@ const getCombinations = (list: { label: string; options: string[] }[]) => {
     return recur(0, {})
 }
 
+// Keyed by node key string -> product ID or value
+const productMap = ref<Record<string, string | null>>({})
+
 const buildNodes = computed<Node[]>(() => {
     const variants = validVariants.value
     if (!variants.length) return []
+
+    const getProduct = (keyObj: Record<string, string>) =>
+        productMap.value[JSON.stringify(keyObj)] || null
 
     if (variants.length === 1) {
         const v = variants[0]
         return v.options.map((opt) => ({
             key: { [v.label]: opt },
             label: opt,
+            product: getProduct({ [v.label]: opt }),
         }))
     }
 
@@ -72,10 +84,10 @@ const buildNodes = computed<Node[]>(() => {
                 acc[v.label] = row[v.label]
                 return acc
             }, {} as Record<string, string>)
-            const label = Object.values(keyObj).join(" — ")
             return {
                 key: keyObj,
-                label,
+                label: Object.values(keyObj).join(" — "),
+                product: getProduct(keyObj),
             }
         })
     }
@@ -85,9 +97,11 @@ const buildNodes = computed<Node[]>(() => {
     if (!base) return []
 
     return base.options.map((opt) => {
+        const parentKey = { [base.label]: opt }
         const parent: Node = {
-            key: { [base.label]: opt },
+            key: parentKey,
             label: opt,
+            product: getProduct(parentKey),
             children: getCombinations([{ label: base.label, options: [opt] }, ...others]).map(
                 (c: any) => {
                     const keyObj = variants.reduce((acc, v) => {
@@ -97,6 +111,7 @@ const buildNodes = computed<Node[]>(() => {
                     return {
                         key: keyObj,
                         label: Object.values(keyObj).join(" — "),
+                        product: getProduct(keyObj),
                     }
                 }
             ),
@@ -105,6 +120,10 @@ const buildNodes = computed<Node[]>(() => {
     })
 })
 
+
+const setProduct = (node: Node, val: string | null) => {
+    productMap.value[JSON.stringify(node.key)] = val
+}
 
 // Variant controls
 const toggleActive = (i: number) =>
@@ -126,7 +145,6 @@ const deleteVariant = (index: number) => {
     }
 }
 
-const setProduct = (node: Node, val: string) => (node.product = val || null)
 const keyToString = (k: string[] | string) => (Array.isArray(k) ? k.join("::") : String(k))
 
 
@@ -136,7 +154,6 @@ const keyToString = (k: string[] | string) => (Array.isArray(k) ? k.join("::") :
 
     <Head :title="capitalize(props.title)" />
     <PageHeading :data="props.pageHead" />
-    <pre>{{ buildNodes }}</pre>
 
     <div class="flex justify-center mt-6">
         <div class="w-full max-w-2xl p-4 rounded-lg shadow bg-white space-y-2">
@@ -178,73 +195,74 @@ const keyToString = (k: string[] | string) => (Array.isArray(k) ? k.join("::") :
             <Button full class="text-white bg-green-600" @click="addVariant">+ Add Variant</Button>
 
             <div class="border-t mt-6">
-                 <div v-if="validVariants.length" class="flex items-center gap-2 mt-3">
-                <span class="text-sm">Group by</span>
-                <select v-model="state.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
-                    <option v-for="v in validVariants" :key="v.label" :value="v.label">
-                        {{ v.label }}
-                    </option>
-                </select>
-            </div>
-            
-             <div class="overflow-x-auto border rounded mt-4">
-                <table class="min-w-full divide-y">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-2 text-left text-sm">Variant</th>
-                            <th class="px-4 py-2 text-left text-sm">Product</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y">
-                        <!-- Grouped -->
-                        <template v-if="state.groupBy">
-                            <template v-for="node in buildNodes" :key="keyToString(node.key)">
-                                <tr class="hover:bg-gray-50">
+                <div v-if="validVariants.length" class="flex items-center gap-2 mt-3">
+                    <span class="text-sm">Group by</span>
+                    <select v-model="state.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
+                        <option v-for="v in validVariants" :key="v.label" :value="v.label">
+                            {{ v.label }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="overflow-x-auto border rounded mt-4">
+                    <table class="min-w-full divide-y">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-sm">Variant</th>
+                                <th class="px-4 py-2 text-left text-sm">Product</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y">
+                            <!-- Grouped -->
+                            <template v-if="state.groupBy">
+                                <template v-for="node in buildNodes" :key="keyToString(node.key)">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-2">
+                                            <button class="mr-2 text-sm" @click="toggleExpand(keyToString(node.key))">
+                                                <span v-if="node.children && node.children.length">
+                                                    <span v-if="expanded[keyToString(node.key)]">−</span>
+                                                    <span v-else>+</span>
+                                                </span>
+                                            </button>
+                                            {{ node.label }}
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <div v-if="state.variants.length == 1">
+                                                <input class="border rounded px-2 py-1 text-sm w-full"
+                                                    :value="child?.product ?? ''"
+                                                    @input="(e) => setProduct(child, e.target.value)" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]"
+                                        :key="keyToString(child.key)" class="bg-white hover:bg-gray-50">
+                                        <td class="px-8 py-2 text-sm text-gray-700">
+                                            ↳ {{ child.label }}
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <PureMultiselectInfiniteScroll :model-value="child.product"
+                                                @update:model-value="(val) => setProduct(child, val)"
+                                                :fetchRoute="master_assets_route" :placeholder="trans('Select Product')"
+                                                valueProp="id" label-prop="name" />
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+                            <!-- Flat -->
+                            <template v-else>
+                                <tr v-for="node in buildNodes" :key="keyToString(node.key)" class="hover:bg-gray-50">
+                                    <td class="px-4 py-2">{{ node.label }}</td>
                                     <td class="px-4 py-2">
-                                        <button class="mr-2 text-sm" @click="toggleExpand(keyToString(node.key))">
-                                            <span v-if="node.children && node.children.length">
-                                                <span v-if="expanded[keyToString(node.key)]">−</span>
-                                                <span v-else>+</span>
-                                            </span>
-                                        </button>
-                                        {{ node.label }}
-                                    </td>
-                                    <td class="px-4 py-2">
-                                        <div v-if="state.variants.length == 1">
-                                            <input class="border rounded px-2 py-1 text-sm w-full"
-                                                :value="child?.product ?? ''"
-                                                @input="(e) => setProduct(child, e.target.value)" />
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]"
-                                    :key="keyToString(child.key)" class="bg-white hover:bg-gray-50">
-                                    <td class="px-8 py-2 text-sm text-gray-700">
-                                        ↳ {{ child.label }}
-                                    </td>
-                                    <td class="px-4 py-2">
-                                        <input class="border rounded px-2 py-1 text-sm w-full"
-                                            :value="child.product ?? ''"
-                                            @input="(e) => setProduct(child, e.target.value)" />
+                                        <PureMultiselectInfiniteScroll :model-value="node.product"
+                                            @update:model-value="(val) => setProduct(node, val)"
+                                            :fetchRoute="master_assets_route" :placeholder="trans('Select Product')"
+                                            valueProp="id" label-prop="name" />
                                     </td>
                                 </tr>
                             </template>
-                        </template>
-                        <!-- Flat -->
-                        <template v-else>
-                            <tr v-for="node in buildNodes" :key="keyToString(node.key)" class="hover:bg-gray-50">
-                                <td class="px-4 py-2">{{ node.label }}</td>
-                                <td class="px-4 py-2">
-                                    <input class="border rounded px-2 py-1 text-sm w-full" :value="node.product ?? ''"
-                                        @input="(e) => setProduct(node, e.target.value)" />
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
-
-
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

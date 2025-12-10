@@ -18,7 +18,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Masters\MasterAsset; 
+use App\Models\Masters\MasterAssets; 
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
+use App\Http\Resources\Masters\MasterProductsResource;
 
 class CreateVariant extends OrgAction
 {
@@ -46,7 +48,10 @@ class CreateVariant extends OrgAction
                 'pageHead'    => [
                     'title'   => __('Create Variant'),
                 ],
-                'master_asset' => $masterAsset
+                'master_asset' => $masterAsset,
+                'master_assets_route' => [
+                    'name' => 'grp.masters.master_products.index'
+                ]  
             ]
         );
     }
