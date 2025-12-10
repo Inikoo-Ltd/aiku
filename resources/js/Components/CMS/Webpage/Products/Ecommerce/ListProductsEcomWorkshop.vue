@@ -23,7 +23,6 @@ const props = defineProps<{
 }>();
 
 const layout: any = inject("layout", {});
-console.log(layout)
 
 /* layout.app.theme = layout.iris.theme */
 
@@ -160,6 +159,7 @@ watch(
               :bestSeller="modelValue.bestseller" 
               :buttonStyleHover="getStyles(modelValue?.buttonHover?.properties, screenType)"
               :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
+              :button="modelValue?.button"
              />
           </div>
         </div>

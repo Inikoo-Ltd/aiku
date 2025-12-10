@@ -56,7 +56,8 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
         ];
         try {
             $this->request($webpage, '/v1/content', $body);
-        } catch (Exception) {
+        } catch (Exception $e) {
+            print "Failed to reindex webpage $webpage->id: ".$e->getMessage()."\n";
         }
     }
 

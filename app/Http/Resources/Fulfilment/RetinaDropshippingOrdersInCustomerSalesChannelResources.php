@@ -67,6 +67,7 @@ class RetinaDropshippingOrdersInCustomerSalesChannelResources extends JsonResour
             'is_fully_paid'            => $this->total_amount == $this->payment_amount,
             'number_item_transactions' => $this->number_item_transactions,
             'client_ulid'              => $this->client_ulid,
+            'has_modified'             => $this->has_modified,
             ...$stateIcons
         ];
     }
