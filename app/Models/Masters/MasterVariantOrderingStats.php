@@ -2,8 +2,8 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 30 Dec 2024 12:47:22 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Wed, 10 Dec 2025 21:29:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Models\Masters;
@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property int $master_asset_id
+ * @property int $master_variant_id
  * @property string|null $last_order_created_at
  * @property string|null $last_order_submitted_at
  * @property string|null $last_order_dispatched_at
@@ -32,21 +32,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_orders_status_settled
  * @property int $number_orders_handing_type_collection
  * @property int $number_orders_handing_type_shipping
- * @property int $number_item_transactions_out_of_stock_in_basket transactions at the time up submission from basket
+ * @property int $number_transactions_out_of_stock_in_basket transactions at the time up submission from basket
  * @property string|null $out_of_stock_in_basket_grp_net_amount
- * @property int $number_item_transactions transactions including cancelled
- * @property int $number_current_item_transactions transactions excluding cancelled
- * @property int $number_item_transactions_state_creating
- * @property int $number_item_transactions_state_submitted
- * @property int $number_item_transactions_state_in_warehouse
- * @property int $number_item_transactions_state_handling
- * @property int $number_item_transactions_state_packed
- * @property int $number_item_transactions_state_finalised
- * @property int $number_item_transactions_state_dispatched
- * @property int $number_item_transactions_state_cancelled
- * @property int $number_item_transactions_status_creating
- * @property int $number_item_transactions_status_processing
- * @property int $number_item_transactions_status_settled
+ * @property int $number_transactions transactions including cancelled
+ * @property int $number_current_transactions transactions excluding cancelled
+ * @property int $number_transactions_state_creating
+ * @property int $number_transactions_state_submitted
+ * @property int $number_transactions_state_in_warehouse
+ * @property int $number_transactions_state_handling
+ * @property int $number_transactions_state_packed
+ * @property int $number_transactions_state_finalised
+ * @property int $number_transactions_state_dispatched
+ * @property int $number_transactions_state_cancelled
+ * @property int $number_transactions_status_creating
+ * @property int $number_transactions_status_processing
+ * @property int $number_transactions_status_settled
  * @property int $number_invoices
  * @property int $number_invoices_type_invoice
  * @property int $number_invoices_type_refund
@@ -95,22 +95,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivery_note_items_state_finalised
  * @property int $number_delivery_note_items_state_dispatched
  * @property int $number_delivery_note_items_state_cancelled
+ * @property int $number_delivery_note_items_state_out_of_stock
+ * @property int $number_delivery_note_items_state_no_dispatched
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Masters\MasterAsset|null $masterAsset
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats query()
+ * @property-read \App\Models\Masters\MasterVariant $masterVariant
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantOrderingStats newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantOrderingStats newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantOrderingStats query()
  * @mixin \Eloquent
  */
-class MasterAssetOrderingStats extends Model
+class MasterVariantOrderingStats extends Model
 {
-    protected $table = 'master_asset_ordering_stats';
-
     protected $guarded = [];
 
-    public function masterAsset(): BelongsTo
+    public function masterVariant(): BelongsTo
     {
-        return $this->belongsTo(MasterAsset::class);
+        return $this->belongsTo(MasterVariant::class);
     }
 }
