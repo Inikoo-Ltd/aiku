@@ -63,6 +63,7 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
 
             'stock_update' => ['sometimes', 'boolean'],
             'stock_threshold' => ['sometimes', 'numeric'],
+            'max_quantity_advertise' => ['sometimes', 'numeric'],
 
             'return_accepted' => ['sometimes', 'required', 'boolean'],
             'return_payer' => ['sometimes', 'required_if:return_accepted,true'],
