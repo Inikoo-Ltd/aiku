@@ -26,7 +26,6 @@ class EditOrgStock extends OrgAction
 {
     use WithInventoryAuthorisation;
 
-
     private Organisation|StockFamily $parent;
 
     public function handle(OrgStock $orgStock): OrgStock
