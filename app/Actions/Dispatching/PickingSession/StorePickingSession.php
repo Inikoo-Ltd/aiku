@@ -14,6 +14,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -39,12 +40,16 @@ class StorePickingSession extends OrgAction
      */
     public function handle(Warehouse $warehouse, array $modelData, bool $queued = false): PickingSession
     {
-        $pickingSession = DB::transaction(function () use ($warehouse, $modelData, $queued) {
-            $deliveryNoteIds = Arr::pull($modelData, 'delivery_notes');
+        return DB::transaction(function () use ($warehouse, $modelData, $queued) {
+            $deliveryNoteIds      = Arr::pull($modelData, 'delivery_notes');
             $validDeliveryNoteIds = DeliveryNote::whereIn('id', $deliveryNoteIds)
                 ->get()
                 ->filter(function ($deliveryNote) {
-                    return $deliveryNote->pickingSessions->isEmpty();
+                    return $deliveryNote->pickingSessions->isEmpty()
+                        && in_array($deliveryNote->state, [
+                            DeliveryNoteStateEnum::UNASSIGNED,
+                            DeliveryNoteStateEnum::QUEUED->value
+                        ]);
                 })
                 ->pluck('id')
                 ->toArray();
@@ -86,9 +91,14 @@ class StorePickingSession extends OrgAction
 
             $deliveryNotes = $pickingSession->deliveryNotes;
 
-            $numberItems = 0;
+            $numberItems         = 0;
             $numberDeliveryNotes = 0;
             foreach ($deliveryNotes as $deliveryNote) {
+
+                if($deliveryNote->state == DeliveryNoteStateEnum::CANCELLED){
+                    continue;
+                }
+
                 $numberDeliveryNotes++;
                 if ($queued) {
                     StartHandlingDeliveryNote::make()->action($deliveryNote, request()->user());
@@ -105,15 +115,13 @@ class StorePickingSession extends OrgAction
             }
 
             $pickingSession->updateQuietly([
-                'number_items' => $numberItems,
+                'number_items'          => $numberItems,
                 'number_delivery_notes' => $numberDeliveryNotes,
             ]);
 
 
             return $pickingSession;
         });
-
-        return $pickingSession;
     }
 
     public function rules(): array
