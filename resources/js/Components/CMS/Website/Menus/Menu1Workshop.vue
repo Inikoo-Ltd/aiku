@@ -328,7 +328,7 @@ watch(loadingItem, (newVal) => {
             </nav>
 
             <!-- Drawer: Sub Navigation -->
-            <Collapse v-if="hoveredNavigation?.subnavs" :when="isCollapsedOpen" as="div"
+            <Collapse v-if="hoveredNavigation?.subnavs && hoveredNavigation.type === 'multiple'" :when="isCollapsedOpen" as="div"
                 class="z-[49] absolute left-0 top-full bg-white border-t w-full shadow-lg"
                 :style="getStyles(fieldValue?.container?.properties, screenType)"
             >
