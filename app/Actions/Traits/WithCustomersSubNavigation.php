@@ -10,8 +10,10 @@
 namespace App\Actions\Traits;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
+use App\Models\Helpers\Tag;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithCustomersSubNavigation
@@ -25,14 +27,9 @@ trait WithCustomersSubNavigation
                 'name'       => 'grp.org.shops.show.crm.customers.index',
                 'parameters' => array_merge(
                     $request->route()->originalParameters(),
-                    [
-                        '_query' => [
-                            'tab' => 'customers'
-                        ]
-                    ]
                 )
             ],
-            'number'   => $this->parent->crmStats->number_customers,
+            'number'   => $this->parent->crmStats->number_customers ?? 0,
             'label'    => __('Customers'),
             'leftIcon' => [
                 'icon'    => 'fal fa-transporter',
@@ -58,7 +55,7 @@ trait WithCustomersSubNavigation
                 'name'       => 'grp.org.shops.show.crm.polls.index',
                 'parameters' => $request->route()->originalParameters()
             ],
-            'number'   => $this->parent->crmStats->number_polls,
+            'number'   => $this->parent->crmStats->number_polls ?? 0,
             'label'    => __('Polls'),
             'leftIcon' => [
                 'icon'    => 'fal fa-poll',
@@ -85,7 +82,7 @@ trait WithCustomersSubNavigation
                     'name'       => 'grp.org.shops.show.crm.platforms.index',
                     'parameters' => $request->route()->originalParameters()
                 ],
-                'number'   => Platform::all()->count(), // Fix Later with hydrators
+                'number'   => Platform::all()->count() ?? 0, // Fix Later with hydrators
                 'label'    => __('Platforms'),
                 'leftIcon' => [
                     'icon'    => 'fal fa-route',
@@ -100,11 +97,24 @@ trait WithCustomersSubNavigation
                 'parameters' => $request->route()->originalParameters()
             ],
             'align'    => 'right',
-            'number'   => $this->parent->crmStats->number_web_users,
-            'label'    => __('Web users'),
+            'number'   => $this->parent->crmStats->number_web_users ?? 0,
+            'label'    => __('Web Users'),
             'leftIcon' => [
                 'icon'    => 'fal fa-user-circle',
                 'tooltip' => __('Website users')
+            ]
+        ];
+
+        $meta[] = [
+            'route'     => [
+                'name'       => 'grp.org.shops.show.crm.tags.index',
+                'parameters' => $request->route()->originalParameters()
+            ],
+            'number'   => Tag::where('shop_id', $this->parent->id)->where('scope', TagScopeEnum::USER_CUSTOMER)->count() ?? 0,
+            'label'    => __('Self-Filled Tags'),
+            'leftIcon' => [
+                'icon'    => 'fal fa-tags',
+                'tooltip' => __('Self-filled tags')
             ]
         ];
 
