@@ -129,7 +129,7 @@ class ShowOutbox extends OrgAction
 
         if (in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD]) && $outbox->days_after) {
             $pageHeadAfterTitle = [
-                'label' => 'send after '.$outbox->days_after.' days from last invoice'
+                'label' => __('send after '.$outbox->days_after.' days from last invoice')
             ];
         }
 

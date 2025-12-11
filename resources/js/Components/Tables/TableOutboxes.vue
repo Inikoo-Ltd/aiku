@@ -22,6 +22,7 @@ import {
   faProjectDiagram,
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { trans } from 'laravel-vue-i18n'
 
 library.add(
   faBell,
@@ -73,7 +74,16 @@ function outboxRoute(outbox: Outbox) {
     }
 }
 
+function getOutboxNameDisplay(outbox: Outbox) {
+    const isReorderReminder = outbox.sub_type === 'reorder_reminder' && outbox.days_after !== null;
 
+    return {
+        name: outbox.name,
+        showSchedule: isReorderReminder,
+        scheduleText: isReorderReminder ? `${outbox.days_after} days` : '',
+        scheduleTooltip: trans(`Sent after ${outbox.days_after} days from last invoice`)
+    };
+}
 
 </script>
 
@@ -81,7 +91,15 @@ function outboxRoute(outbox: Outbox) {
     <Table :resource="data" :name="tab">
         <template #cell(name)="{ item: outbox }">
             <Link v-if="outboxRoute(outbox)" :href="outboxRoute(outbox)" class="primaryLink">
-                {{ outbox["name"] }}
+                 {{ getOutboxNameDisplay(outbox).name }}
+                <span
+                    v-if="getOutboxNameDisplay(outbox).showSchedule"
+                    class="text-gray-500 text-sm font-normal"
+                    v-tooltip="getOutboxNameDisplay(outbox).scheduleTooltip"
+                >
+                    {{ getOutboxNameDisplay(outbox).scheduleText }}
+                </span>
+                <!-- {{ outbox["name"] }} <span v-if="outbox['sub_type'] === 'reorder_reminder' && outbox['days_after'] !== null" class="text-gray-500 text-sm font-normal" v-tooltip="trans('Sent after ')"> run every {{ outbox['days_after'] }} days</span> -->
             </Link>
         </template>
         <template #cell(type)="{ item: outbox }">
