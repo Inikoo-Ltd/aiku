@@ -87,10 +87,10 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 </script>
 
 <template>
-    <div class="pb-3 relative flex flex-col justify-between h-full" comp="product-render-ecom">
+    <div  class="text-gray-800 isolate h-full flex flex-col"  comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
-        <div class="text-gray-800 isolate">
+        <div class="text-gray-800 isolate h-full">
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
 
             <!-- Product Image -->
@@ -189,24 +189,23 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 </div>
             </div>
 
-            <div class="px-3 mt-auto">
-                <Prices :product="product" :currency="currency" />
-            </div>
-
-
-            <!-- Login Button for Non-Logged In Users -->
-            <div v-if="!layout?.iris?.is_logged_in" class="px-3">
-                <a :href="urlLoginWithRedirect()" class="w-full">
-                    <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />
-                </a>
-            </div>
-
             <div 
                 v-if="idxSlideLoading"
                 class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
                 <LoadingIcon />
             </div>
         </div>
+
+        
+             <div class="px-3 mt-auto">
+        <Prices :product="product" :currency="currency" />
+
+        <div v-if="!layout?.iris?.is_logged_in" class="mt-2">
+            <a :href="urlLoginWithRedirect()" class="w-full">
+                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />
+            </a>
+        </div>
+    </div>
     </div>
 </template>
 
