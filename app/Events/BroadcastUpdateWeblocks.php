@@ -8,13 +8,9 @@
 
 namespace App\Events;
 
-use App\Actions\Web\Website\GetWebsiteWorkshopFooter;
-use App\Actions\Web\Website\GetWebsiteWorkshopHeader;
-use App\Actions\Web\Website\GetWebsiteWorkshopMenuPreview;
 use App\Models\Web\Website;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -27,7 +23,7 @@ class BroadcastUpdateWeblocks implements ShouldBroadcastNow
     public int|float $percent;
     public Website $website;
 
-    public function __construct(int|float $percent, Website $website) 
+    public function __construct(int|float $percent, Website $website)
     {
         $this->percent = $percent;
         $this->website = $website;

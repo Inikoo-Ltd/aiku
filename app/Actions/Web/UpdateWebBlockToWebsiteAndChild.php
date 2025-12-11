@@ -9,7 +9,6 @@
 
 namespace App\Actions\Web;
 
-use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Events\BroadcastUpdateWeblocks;
 use App\Models\Web\Website;
@@ -76,11 +75,11 @@ class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
                 $percent = intval(($progress / $total) * 100);
                 if ($percent >= $lastPercent + 10) {
                     $lastPercent = $percent;
-                    BroadcastUpdateWeblocks::dispatch($percent,$website);
+                    BroadcastUpdateWeblocks::dispatch($percent, $website);
                 }
             }
         });
-        
+
         return $newWebBlock;
     }
 

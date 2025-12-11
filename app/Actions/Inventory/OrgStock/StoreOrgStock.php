@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
 use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\OrgAction;
@@ -91,16 +92,16 @@ class StoreOrgStock extends OrgAction
     {
         $tradeUnits = [];
         foreach ($orgStock->stock->tradeUnits as $tradeUnit) {
-
             $tradeUnits[$tradeUnit->id] = [
                 'quantity' => $tradeUnit->pivot->quantity
             ];
-
         }
 
         $orgStock->tradeUnits()->sync($tradeUnits);
 
-
+        foreach ($orgStock->tradeUnits as $tradeUnit) {
+            TradeUnitHydrateStatusFromOrgStocks::dispatch($tradeUnit);
+        }
 
         return $orgStock;
     }

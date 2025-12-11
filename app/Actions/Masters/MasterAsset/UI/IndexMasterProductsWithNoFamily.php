@@ -241,7 +241,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
                 ]
             ];
 
-            $shopsData=OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
+            $shopsData = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
 
         }
 

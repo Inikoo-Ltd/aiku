@@ -9,6 +9,8 @@
 namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
@@ -36,9 +38,12 @@ class UpdateOrgStock extends OrgAction
         $changes = $orgStock->getChanges();
 
         if (Arr::has($changes, 'state')) {
+
+            StockHydrateStateFromOrgStocks::dispatch($orgStock->id);
             OrganisationHydrateOrgStocks::dispatch($orgStock->organisation);
 
             foreach ($orgStock->tradeUnits as $tradeUnit) {
+                TradeUnitHydrateStatusFromOrgStocks::dispatch($tradeUnit);
                 TradeUnitsHydrateOrgStocks::dispatch($tradeUnit);
             }
 

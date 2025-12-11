@@ -206,9 +206,9 @@ class IndexCustomerClients extends OrgAction
 
         $actions = [];
 
-        $manualPlatform=Platform::where('code','manual')->first();
+        $manualPlatform = Platform::where('code', 'manual')->first();
 
-        if ($this->parent instanceof CustomerSalesChannel && $this->parent->platform_id==$manualPlatform->id) {
+        if ($this->parent instanceof CustomerSalesChannel && $this->parent->platform_id == $manualPlatform->id) {
             $actions = [
                 [
                     'type'    => 'button',
