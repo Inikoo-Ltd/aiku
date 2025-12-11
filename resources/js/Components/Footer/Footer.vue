@@ -30,8 +30,8 @@ library.add(faHeart, faComputerClassic, faDiscord)
         <!-- Helper: Product background (close popup purpose) -->
         <div class="flex justify-between">
             <!-- Left: Logo Section -->
-            <div class="pl-4 flex gap-x-4">
-                <div class="flex items-center gap-x-1.5 text-slate-400">
+            <div class="pl-4 flex gap-x-4 text-slate-400">
+                <div class="flex items-center gap-x-1.5">
                     <div class="font-normal leading-none" :class="layout.app.environment === 'local' ? 'bg-yellow-500 text-gray-700 h-full flex items-center px-3 ' : ' py-1' ">
                         {{layout?.user?.username}}@{{ layout?.app?.environment }}
                     </div>
