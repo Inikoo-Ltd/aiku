@@ -23,6 +23,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
@@ -205,9 +206,9 @@ class IndexCustomerClients extends OrgAction
 
         $actions = [];
 
+        $manualPlatform=Platform::where('code','manual')->first();
 
-        // Added This, because the task is for making client for dropshippers only at Customer Clients() 👇👇
-        if ($this->parent instanceof CustomerSalesChannel && $this->shop->type == ShopTypeEnum::DROPSHIPPING) {
+        if ($this->parent instanceof CustomerSalesChannel && $this->parent->platform_id==$manualPlatform->id) {
             $actions = [
                 [
                     'type'    => 'button',
@@ -221,7 +222,6 @@ class IndexCustomerClients extends OrgAction
                 ]
             ];
         }
-        // Added This, because the task is for making client for dropshippers only at Customer Clients() 👆👆
 
         return Inertia::render(
             'Org/Shop/CRM/CustomerClients',
