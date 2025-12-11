@@ -97,13 +97,15 @@ trait WithLuigis
             );
 
 
+        if ($response->failed()) {
+            throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
+        }
+
         if ((isset($response['errors_count']) && $response['errors_count'] > 0)) {
             print('Found some errors: ');
             print_r($response->body());
-        }
-
-        if ($response->failed()) {
-            throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
+        } else {
+            print('Request to Luigi finish. No errors found.'."\n");
         }
     }
 
@@ -256,6 +258,23 @@ trait WithLuigis
                 ]
             ];
         }
+        $this->request($website, '/v1/content/delete', $body, 'delete');
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function deleteContentFromLuigi(Website $website, string $identity, string $type): void
+    {
+        $body = [
+            'objects' => [
+                [
+                    "type"     => $type,
+                    "identity" => $identity,
+                ]
+            ]
+        ];
+
         $this->request($website, '/v1/content/delete', $body, 'delete');
     }
 
