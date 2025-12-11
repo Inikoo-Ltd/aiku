@@ -42,6 +42,15 @@ class IndexTags extends OrgAction
         return $this->handle($shop);
     }
 
+    public function inInternalTags(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->forcedScope = TagScopeEnum::ADMIN_CUSTOMER;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop);
+    }
+
     public function handle(Shop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -111,7 +120,7 @@ class IndexTags extends OrgAction
                             'tooltip' => __('Create Tag'),
                             'label'   => __('Create Tag'),
                             'route'   => [
-                                'name'       => 'grp.org.shops.show.crm.self_filled_tags.create',
+                                'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
                                 'parameters' => [
                                     'organisation' => $this->organisation->slug,
                                     'shop' => $this->shop->slug

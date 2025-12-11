@@ -67,6 +67,33 @@ class UpdateTag extends OrgAction
         }
     }
 
+    public function inInternalTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
+    {
+        try {
+            $this->initialisationFromShop($shop, $request);
+
+            $this->handle($tag, $this->validatedData);
+
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tag updated.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function handle(Tag $tag, array $modelData): Tag
     {
         $image = Arr::pull($modelData, 'image');

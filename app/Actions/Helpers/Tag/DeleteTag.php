@@ -63,6 +63,33 @@ class DeleteTag extends OrgAction
         }
     }
 
+    public function inInternalTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
+    {
+        try {
+            $this->initialisationFromShop($shop, $request);
+
+            $this->handle($tag);
+
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tag deleted.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function handle(Tag $tag): Tag
     {
         if (!empty($tag->tradeUnits())) {

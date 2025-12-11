@@ -72,6 +72,34 @@ class StoreTag extends OrgAction
         }
     }
 
+    public function inInternalTags(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
+    {
+        try {
+            $this->forcedScope = TagScopeEnum::ADMIN_CUSTOMER;
+            $this->initialisationFromShop($shop, $request);
+
+            $this->handle($shop, $this->validatedData);
+
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tag created.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function handle(Shop|Customer|TradeUnit $parent, array $modelData): Tag
     {
         if (isset($this->group)) {
