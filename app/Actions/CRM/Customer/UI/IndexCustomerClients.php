@@ -205,6 +205,24 @@ class IndexCustomerClients extends OrgAction
 
         $actions = [];
 
+
+        // Added This, because the task is for making client for dropshippers only at Customer Clients() 👇👇
+        if ($this->parent instanceof CustomerSalesChannel && $this->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $actions = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => $newClientLabel,
+                    'label'   => $newClientLabel,
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create',
+                        'parameters' => $request->route()->originalParameters()
+                    ]
+                ]
+            ];
+        }
+        // Added This, because the task is for making client for dropshippers only at Customer Clients() 👆👆
+
         return Inertia::render(
             'Org/Shop/CRM/CustomerClients',
             [
