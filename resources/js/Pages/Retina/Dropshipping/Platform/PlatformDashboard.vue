@@ -37,6 +37,10 @@ const props = defineProps<{
         code: string
         icon: string
     }
+    ebay_warehouse_policy_msg: {
+        show_msg: boolean
+        cust_country: string
+    }
     customer_sales_channel: CustomerSalesChannel
     error_captcha: any
     timeline: {
@@ -210,6 +214,41 @@ const layout = inject('layout', layoutStructure)
             </template>
 
             <div v-else>
+                <!-- Warning: Ebay seller registered under Countries that got affected by eBay OWBP -->
+                <div v-if="ebay_warehouse_policy_msg.show_msg" class="flex justify-between mt-5">
+                    <div class="w-full border-2 border-red-500 rounded-lg p-4 bg-red-50">
+                        <div class="flex flex-col sm:flex-row sm:items-start">
+                            <div class="flex items-center mb-2 sm:mb-0 sm:flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-500 mr-2 sm:mr-0 sm:mt-0.5" fill="currentColor"
+                                     viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                          clip-rule="evenodd"></path>
+                                </svg>
+                                <strong class="text-sm text-red-700 sm:hidden">{{ trans('Important Notice:') }}</strong>
+                            </div>
+                            <div class="sm:ml-3">
+                                <p class="text-sm text-red-700">
+                                    <strong class="hidden sm:inline">{{ trans('Important Notice:') }}</strong>
+                                    {{ trans('We noticed your account is registered in') }} <strong> {{ ebay_warehouse_policy_msg.cust_country + '.' }} </strong>
+                                    {{  trans('In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas.') }}
+                                    <a href="https://export.ebay.com/en/fees-regulations-policies/ebay-policies/overseas-warehouse-block-policy-authorization-requirements-for-forward-deployed-inventory/"
+                                       target="_blank"
+                                       class="underline text-red-800 hover:text-red-900">
+                                        [eBay Overseas Warehouse Block Policy]
+                                    </a>
+                                    <br> <br>
+                                    {{ trans('If this happens, please contact eBay Support to request approval or further assistance:') }}
+                                    <a href="https://www.ebay.com/help/contact_us?id=4105&st=10"
+                                       target="_blank"
+                                       class="underline text-red-800 hover:text-red-900">
+                                        eBay Customer Support
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- Warning: Ebay seller -->
                 <div v-if="platform.type == 'ebay'" class="flex justify-between mt-5">
                     <div class="w-full border-2 border-yellow-500 rounded-lg p-4 bg-yellow-50">
@@ -221,13 +260,12 @@ const layout = inject('layout', layoutStructure)
                                           d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
                                           clip-rule="evenodd"></path>
                                 </svg>
-                                <strong class="text-sm text-yellow-700 sm:hidden">Important Notice:</strong>
+                                <strong class="text-sm text-yellow-700 sm:hidden">{{ trans('Important Notice:') }}</strong>
                             </div>
                             <div class="sm:ml-3">
                                 <p class="text-sm text-yellow-700">
-                                    <strong class="hidden sm:inline">Important Notice:</strong> To prevent any issues or
-                                    misunderstandings with the eBay platform, please ensure your eBay account is registered
-                                    as a seller account. For more information, visit:
+                                    <strong class="hidden sm:inline">{{ trans('Important Notice:') }}</strong>
+                                    {{ trans('To prevent any issues or misunderstandings with the eBay platform, please ensure your eBay account is registered as a seller account. For more information, visit:') }}
                                     <a href="https://www.ebay.com/help/selling/getting-paid/registering-seller?id=4792"
                                        target="_blank"
                                        class="underline text-yellow-800 hover:text-yellow-900">
