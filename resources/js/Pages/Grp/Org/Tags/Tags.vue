@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-    import { Head } from "@inertiajs/vue3";
+    import { Head, Link } from "@inertiajs/vue3";
     import PageHeading from "@/Components/Headings/PageHeading.vue";
     import Table from "@/Components/Table/Table.vue";
     import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
@@ -21,28 +21,24 @@
         pageHeading: [];
         data: any;
     }>();
-
-    function editRoute(tag: any) {
-        return route('grp.org.tags.edit', [route().params.organisation, tag.slug]);
-    }
 </script>
 
 <template>
     <Head :title="title" />
     <PageHeading :data="pageHeading" />
-    <Table :resource="data" :name="title">
+    <Table :resource="data">
         <template #cell(action)="{ item }">
             <div class="flex items-center gap-2">
-                <a :href="editRoute(item)">
+                 <Link :href="route('grp.org.shops.show.crm.self_filled_tags.edit', { ...route().params, tag: item.slug })">
                     <Button
                         v-tooltip="trans('Edit Tag')"
                         type="secondary"
                         icon="fal fa-pencil"
                         size="s"
                     />
-                </a>
+                </Link>
                 <ModalConfirmationDelete
-                    :routeDelete="{ name: 'grp.org.tags.delete', parameters: [route().params.organisation, item.id] }"
+                    :routeDelete="{ name: 'grp.org.shops.show.crm.self_filled_tags.delete', parameters: { ...route().params, tag: item.id } }"
                     :title="trans('Are you sure you want to delete this tag?')"
                     :noLabel="trans('Delete')"
                     noIcon="fal fa-trash"

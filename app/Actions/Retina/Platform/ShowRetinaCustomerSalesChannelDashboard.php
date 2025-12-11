@@ -14,13 +14,14 @@ use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
+use App\Http\Resources\Dropshipping\EbayOverseasWarehousePolicy;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 
 class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 {
@@ -107,6 +108,10 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
             'platform_status'         => $platformStatus,
+            'ebay_warehouse_policy_msg'    => [
+                'show_msg' => $this->customerSalesChannel->platform->type == PlatformTypeEnum::EBAY ? EbayOverseasWarehousePolicy::isAffected($this->customer->deliveryAddress->country_code) : false,
+                'cust_country' => $this->customer->deliveryAddress->country->name
+            ],
 
             'error_captcha' => Arr::get($customerSalesChannel->user?->data ?? [], 'error_data'),
 

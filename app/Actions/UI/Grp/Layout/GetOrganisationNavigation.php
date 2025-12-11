@@ -22,7 +22,7 @@ class GetOrganisationNavigation
         $navigation = [];
 
 
-        if ($user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id])) {
+        if ($user->authTo(['accounting.' . $organisation->id . '.view', 'org-supervisor.' . $organisation->id, 'shops-view.' . $organisation->id])) {
             $navigation['shops_index'] = [
                 'label'   => __('Shops'),
                 'scope'   => 'shops',
@@ -54,7 +54,7 @@ class GetOrganisationNavigation
         }
 
 
-        if ($user->authTo(['org-supervisor.'.$organisation->id, 'fulfilments-view.'.$organisation->id])) {
+        if ($user->authTo(['org-supervisor.' . $organisation->id, 'fulfilments-view.' . $organisation->id])) {
             $navigation['fulfilments_index'] = [
                 'label'   => __('Fulfilment shops'),
                 'root'    => 'grp.org.fulfilments.index',
@@ -97,8 +97,7 @@ class GetOrganisationNavigation
 
         $navigation['productions_navigation'] = [];
         foreach ($user->authorisedProductions->where('organisation_id', $organisation->id) as $production) {
-            $navigation['productions_navigation']
-            [$production->slug] = GetProductionNavigation::run($production, $user);
+            $navigation['productions_navigation'][$production->slug] = GetProductionNavigation::run($production, $user);
         }
 
 
@@ -212,8 +211,6 @@ class GetOrganisationNavigation
             ],
             'topMenu' => [],
         ];
-
-
 
         return $this->getSettingsNavs($user, $organisation, $navigation);
     }

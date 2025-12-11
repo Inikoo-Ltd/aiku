@@ -10,9 +10,8 @@
 namespace App\Actions\Helpers\Tag\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Enums\Helpers\Tag\TagScopeEnum;
-use App\Models\Goods\TradeUnit;
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -21,42 +20,34 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditTag extends OrgAction
 {
-    use WithGoodsEditAuthorisation;
+    private ?TagScopeEnum $forcedScope = null;
 
-    public function handle(Tag $tag): Tag
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): Response
     {
-        return $tag;
+        $this->forcedScope = TagScopeEnum::USER_CUSTOMER;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($tag, $request);
     }
 
-    public function asController(Organisation $organisation, Tag $tag, ActionRequest $request): Tag
+    public function handle(Tag $tag, ActionRequest $request): Response
     {
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($tag);
-    }
-
-    public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): Tag
-    {
-        $this->initialisationFromGroup($tradeUnit->group, $request);
-
-        return $this->handle($tag);
-    }
-
-    public function htmlResponse(Tag $tag, ActionRequest $request): Response
-    {
-        $scopes = collect(TagScopeEnum::cases())
-            ->map(fn ($case) => [
-                'label' => $case->pretty(),
-                'value' => $case->value,
-            ])
-            ->values()
-            ->toArray();
+        // Todo: conditional inSelfFilledTags and inInternalTag
+        $updateRoute = [
+            'name'       => 'grp.org.shops.show.crm.self_filled_tags.update',
+            'parameters' => [
+                $this->organisation->slug,
+                $this->shop->slug,
+                $tag->id
+            ],
+        ];
 
         return Inertia::render(
             'EditModel',
             [
-                'title'    => __('Edit Tag'),
-                'pageHead' => [
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'title'       => __('Edit Tag'),
+                'pageHead'    => [
                     'title'   => $tag->name,
                     'icon'    => [
                         'title' => __('Tags'),
@@ -67,13 +58,16 @@ class EditTag extends OrgAction
                             'type'  => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name'       => preg_replace('/edit$/', 'index', $request->route()->getName()),
+                                'parameters' => [
+                                    $this->organisation->slug,
+                                    $this->shop->slug
+                                ]
                             ]
                         ]
                     ]
                 ],
-                'formData' => [
+                'formData'    => [
                     'blueprint' => [
                         [
                             'label'  => __('Name'),
@@ -86,27 +80,31 @@ class EditTag extends OrgAction
                                 ],
                             ],
                         ],
-                        [
-                            'label'  => __('Scope'),
-                            'title'  => __('Edit Scope'),
-                            'fields' => [
-                                'scope' => [
-                                    'type'     => 'select',
-                                    'label'    => __('Scope'),
-                                    'options'  => $scopes,
-                                    'value'    => $tag->scope
-                                ],
-                            ]
-                        ]
                     ],
                     'args' => [
-                        'updateRoute' => [
-                            'name'       => 'grp.org.tags.update',
-                            'parameters' => [$this->organisation->slug, $tag->id],
-                        ],
+                        'updateRoute' => $updateRoute
                     ]
                 ]
             ]
+        );
+    }
+
+    public function getBreadcrumbs(array $routeParameters): array
+    {
+        return array_merge(
+            IndexTags::make()->getBreadcrumbs($routeParameters),
+            [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.crm.self_filled_tags.edit',
+                            'parameters' => $routeParameters,
+                        ],
+                        'label' => __('Edit'),
+                    ],
+                ],
+            ],
         );
     }
 }

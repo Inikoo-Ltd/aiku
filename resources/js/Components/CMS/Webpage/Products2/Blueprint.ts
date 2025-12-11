@@ -1,3 +1,6 @@
+import { faShoppingCart } from "@far"
+import { faPlus } from "@fas"
+import { faBasketShopping } from "@fortawesome/free-solid-svg-icons"
 import { trans } from "laravel-vue-i18n"
 
 export default {
@@ -137,6 +140,10 @@ export default {
                         key: ["icon"],
                         label : "Icon",
                         type: "icon-picker",
+                        props_data: {
+                            iconList : [faPlus, faShoppingCart, faBasketShopping],
+                            listType: "custom"
+                        }
                     },
                     {
                         key: ["properties","text"],

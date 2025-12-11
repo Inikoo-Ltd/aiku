@@ -125,7 +125,6 @@ Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $
     return false;
 });
 
-
 Broadcast::channel('chat-list', function ($user) {
     return $user->chatAgent
         ? ['id' => $user->id, 'name' => $user->contact_name]

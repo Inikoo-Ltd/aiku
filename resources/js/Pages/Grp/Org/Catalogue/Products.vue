@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm, router } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -10,7 +10,7 @@ import { computed, inject, ref } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
-import { faMinus, faPencil, faPlus } from '@fal'
+import { faMinus, faPlus } from '@fal'
 import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureInput from '@/Components/Pure/PureInput.vue'
@@ -18,7 +18,13 @@ import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
 import { ulid } from 'ulid'
 import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
+import { faSave as fadSave } from '@fad'
+import { faSave as falSave, faInfoCircle } from '@fal'
+import { faAsterisk, faQuestion } from '@fas'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faPencil } from '@far'
 
+library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -41,20 +47,24 @@ const props = defineProps<{
     shop_id?: number
 }>()
 
-
 const layout = inject<string>('layout')
-console.log('layout', layout)
-// Current tab state
 const currentTab = ref(props.tabs.current)
 const isOpenModalEditProducts = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
-const form = useForm({
-    rrp: 0,
-    price: 0,
+const key = ref(ulid())
+
+/* Bulk form fields */
+const form = ref({
+    price: null,
+    rrp: null,
     unit: ''
 })
 
-// Component mapping per tab
+/* Track field state */
+const formDirty = ref({ price: false, rrp: false, unit: false })
+const formProcessing = ref({ price: false, rrp: false, unit: false })
+
+/* Component mapping */
 const component = computed(() => {
     const mapping: Record<string, any> = {
         index: TableProducts,
@@ -64,101 +74,58 @@ const component = computed(() => {
     return mapping[currentTab.value]
 })
 
-// Selected products logic
 const selectedProductsId = ref<Record<string, boolean>>({})
 const compSelectedProductsId = computed(() =>
-    Object.keys(selectedProductsId.value).filter(key => selectedProductsId.value[key])
+    Object.keys(selectedProductsId.value).filter(id => selectedProductsId.value[id])
 )
 
-
-const loadingSave = ref(false)
-const rowErrors = ref<Record<string, any>>({}) // store errors keyed by productId
-const key = ref(ulid())
-
-//loop save
-/* const onSaveEditBulkProduct = async () => {
-    loadingSave.value = true
-    rowErrors.value = {} // reset
-
-    try {
-        // Run all axios requests in parallel
-        await Promise.all(
-            compSelectedProductsId.value.map(async (productId) => {
-                try {
-                    await axios.patch(
-                        route("grp.models.product.update", { product: productId }),
-                        {
-                            price: form.price,
-                            rrp: form.rrp,
-                            unit: form.unit
-                        }
-                    )
-                } catch (err: any) {
-                    // Save error for this productId
-                    rowErrors.value[productId] =
-                        err.response?.data?.errors ?? err.message
-                }
-            })
-        )
-
-        // Close modal only if no errors
-        if (Object.keys(rowErrors.value).length === 0) {
-            isOpenModalEditProducts.value = false
-            router.reload({ preserveScroll: true })
-            key.value = ulid()
-        } else {
-            console.warn("Some products failed to update", rowErrors.value)
-        }
-    } catch (error) {
-        console.error("Unexpected bulk save failure", error)
-    } finally {
-        loadingSave.value = false
-    }
-} */
+const loadingField = ref<string | null>(null)
+const rowErrors = ref<Record<string, any>>({})
 
 
-const onSaveEditBulkProduct = async () => {
-    loadingSave.value = true
-    rowErrors.value = {} // reset
+const onSaveEditBulkProduct = async (field: string, value: any) => {
+    formProcessing.value[field] = true
+    loadingField.value = field
+    rowErrors.value = {}
 
     try {
-        // Payload sekali request
-         const payload = []
-        compSelectedProductsId.value.forEach((productId) => {
-            payload.push({
-                price: form.price,
-                rrp: form.rrp,
-                unit: form.unit,
-                id: productId
-            }) 
-        })
+        const payload = compSelectedProductsId.value.map(productId => ({
+            id: productId,
+            [field]: value,
+        }))
 
         await router.patch(
-            route("grp.models.product.bulk_update", { shop : props.shop_id }),
-            {products : payload},
+            route("grp.models.product.bulk_update", { shop: props.shop_id }),
+            { products: payload },
             {
                 preserveScroll: true,
-                onError: (errors) => {
-                    rowErrors.value = errors
-                },
+                onError: (errors) => (rowErrors.value = errors),
                 onSuccess: () => {
                     isOpenModalEditProducts.value = false
                     key.value = ulid()
-                },
+                    selectedProductsId.value = {}
+                }
             }
         )
-    } catch (error) {
-        console.error("Unexpected bulk save failure", error)
+    } catch (err) {
+        console.error("Bulk edit failed:", err)
     } finally {
-        loadingSave.value = false
+        loadingField.value = null
+        formProcessing.value[field] = false
+        formDirty.value[field] = false
+        key.value = ulid()
     }
 }
+
+
+const savePrice = () => onSaveEditBulkProduct("price", form.value.price)
+const saveRrp = () => onSaveEditBulkProduct("rrp", form.value.rrp)
+const saveUnit = () => onSaveEditBulkProduct("unit", form.value.unit)
 
 const onCancelEditBulkProduct = () => {
     isOpenModalEditProducts.value = false
     rowErrors.value = {}
-    selectedProductsId.value = {}
-    router.reload({ preserveScroll: true })
+    key.value = ulid()
 }
 </script>
 
@@ -167,64 +134,189 @@ const onCancelEditBulkProduct = () => {
 
     <PageHeading :data="pageHead">
         <template #other>
-            <Button v-if="compSelectedProductsId.length > 0" @click="() => isOpenModalEditProducts = true"
-                type="tertiary" :icon="faPencil" label="Edit Products" />
+            <Button
+                v-if="compSelectedProductsId.length > 0 && editable_table"
+                @click="() => isOpenModalEditProducts = true"
+                type="tertiary"
+                :icon="faPencil"
+                label="Edit Products"
+            />
         </template>
     </PageHeading>
 
-    <Tabs :current="currentTab" :navigation="props.tabs.navigation" @update:tab="handleTabUpdate" />
+    <Tabs
+        :current="currentTab"
+        :navigation="props.tabs.navigation"
+        @update:tab="handleTabUpdate"
+    />
 
-    <component :is="component" :key="currentTab + key" :tab="currentTab" :data="props[currentTab]" 
-        :isCheckboxProducts="props.editable_table" :editable_table="props.editable_table"
-        @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId" />
+    <component
+        :is="component"
+        :key="currentTab + key"
+        :tab="currentTab"
+        :data="props[currentTab]"
+        :isCheckboxProducts="props.editable_table"
+        :editable_table="props.editable_table"
+        :selectedProductsId="selectedProductsId"
+        @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
+    />
 
-    <!-- PrimeVue Dialog Modal -->
-    <Dialog :header="trans('Edit Selected Products')" v-model:visible="isOpenModalEditProducts" :modal="true"
-        :closable="true" :style="{ width: '500px' }">
-        <div class="px-2 space-y-4">
-            <!-- Form fields -->
-            <form class="space-y-3">
-                <!-- Grid for Price & RRP -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="flex flex-col gap-1">
-                        <label class="text-sm" for="price">Price/outer</label>
-                        <InputNumber v-model="form.price" mode="currency" :currency="currencies?.code" :step="0.25" showButtons
-                            button-layout="horizontal" inputClass="w-full text-xs">
-                            <template #incrementbuttonicon>
-                                <FontAwesomeIcon :icon="faPlus" />
-                            </template>
-                            <template #decrementbuttonicon>
-                                <FontAwesomeIcon :icon="faMinus" />
-                            </template>
-                        </InputNumber>
-                    </div>
+    <!-- MODAL -->
+    <Dialog
+        :header="trans('Edit Selected Products')"
+        v-model:visible="isOpenModalEditProducts"
+        modal
+        closable
+        :style="{ width: '500px' }"
+    >
+        <div class="px-2 space-y-6">
 
-                    <div class="flex flex-col gap-1">
-                        <label class="text-sm" for="rrp">RRP/unit</label>
-                        <InputNumber v-model="form.rrp" mode="currency" :currency="currencies?.code" :step="0.25" showButtons
-                            button-layout="horizontal" inputClass="w-full text-xs">
-                            <template #incrementbuttonicon>
-                                <FontAwesomeIcon :icon="faPlus" />
-                            </template>
-                            <template #decrementbuttonicon>
-                                <FontAwesomeIcon :icon="faMinus" />
-                            </template>
-                        </InputNumber>
-                    </div>
+            <!-- PRICE -->
+            <div>
+                <label class="text-sm">Price/outer</label>
+                <div class="flex gap-2 items-center mt-1">
+                    <InputNumber
+                        v-model="form.price"
+                        @input="formDirty.price = true"
+                        mode="currency"
+                        :currency="currencies?.code ?? layout?.group?.currency?.code"
+                        :step="0.25"
+                        showButtons
+                        button-layout="horizontal"
+                        inputClass="text-xs"
+                    >
+                        <template #incrementbuttonicon>
+                            <FontAwesomeIcon :icon="faPlus" />
+                        </template>
+                        <template #decrementbuttonicon>
+                            <FontAwesomeIcon :icon="faMinus" />
+                        </template>
+                    </InputNumber>
+
+                    <!-- SAVE BUTTON -->
+                    <button
+                        class="h-9 align-bottom text-center"
+                        :disabled="formProcessing.price || !formDirty.price"
+                        @click="savePrice"
+                    >
+                        <template v-if="formDirty.price">
+                            <FontAwesomeIcon
+                                v-if="formProcessing.price"
+                                icon="fad fa-spinner-third"
+                                class="text-2xl animate-spin"
+                                fixed-width
+                            />
+                            <FontAwesomeIcon
+                                v-else
+                                icon="fad fa-save"
+                                class="h-8"
+                                :style="{ '--fa-secondary-color': 'rgb(0,255,4)' }"
+                            />
+                        </template>
+
+                        <FontAwesomeIcon
+                            v-else
+                            icon="fal fa-save"
+                            class="h-8 text-gray-300"
+                        />
+                    </button>
                 </div>
+            </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-sm" for="unit">Unit label</label>
-                    <PureInput v-model="form.unit" />
-                </div>
+            <!-- RRP -->
+            <div>
+                <label class="text-sm">RRP/unit</label>
+                <div class="flex gap-2 items-center mt-1">
+                    <InputNumber
+                        v-model="form.rrp"
+                        @input="formDirty.rrp = true"
+                        mode="currency"
+                        :currency="currencies?.code ?? layout?.group?.currency?.code"
+                        :step="0.25"
+                        showButtons
+                        button-layout="horizontal"
+                        inputClass="text-xs"
+                    >
+                        <template #incrementbuttonicon>
+                            <FontAwesomeIcon :icon="faPlus" />
+                        </template>
+                        <template #decrementbuttonicon>
+                            <FontAwesomeIcon :icon="faMinus" />
+                        </template>
+                    </InputNumber>
 
-                <div class="flex justify-end gap-2 mt-4">
-                    <Button type="tertiary" label="Cancel" @click="onCancelEditBulkProduct" />
-                    <Button type="save" @click="onSaveEditBulkProduct" :loading="loadingSave"/>
+                    <!-- SAVE BUTTON -->
+                    <button
+                        class="h-9 align-bottom text-center"
+                        :disabled="formProcessing.rrp || !formDirty.rrp"
+                        @click="saveRrp"
+                    >
+                        <template v-if="formDirty.rrp">
+                            <FontAwesomeIcon
+                                v-if="formProcessing.rrp"
+                                icon="fad fa-spinner-third"
+                                class="text-2xl animate-spin"
+                                fixed-width
+                            />
+                            <FontAwesomeIcon
+                                v-else
+                                icon="fad fa-save"
+                                class="h-8"
+                                :style="{ '--fa-secondary-color': 'rgb(0,255,4)' }"
+                            />
+                        </template>
+
+                        <FontAwesomeIcon
+                            v-else
+                            icon="fal fa-save"
+                            class="h-8 text-gray-300"
+                        />
+                    </button>
                 </div>
-            </form>
+            </div>
+
+            <!-- UNIT -->
+            <div>
+                <label class="text-sm">Unit label</label>
+                <div class="flex gap-2 items-center mt-1">
+                    <PureInput
+                        v-model="form.unit"
+                        @input="formDirty.unit = true"
+                    />
+
+                    <!-- SAVE BUTTON -->
+                    <button
+                        class="h-9 align-bottom text-center"
+                        :disabled="formProcessing.unit || !formDirty.unit"
+                        @click="saveUnit"
+                    >
+                        <template v-if="formDirty.unit">
+                            <FontAwesomeIcon
+                                v-if="formProcessing.unit"
+                                icon="fad fa-spinner-third"
+                                class="text-2xl animate-spin"
+                                fixed-width
+                            />
+                            <FontAwesomeIcon
+                                v-else
+                                icon="fad fa-save"
+                                class="h-8"
+                                :style="{ '--fa-secondary-color': 'rgb(0,255,4)' }"
+                            />
+                        </template>
+
+                        <FontAwesomeIcon
+                            v-else
+                            icon="fal fa-save"
+                            class="h-8 text-gray-300"
+                        />
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-4">
+                <Button type="tertiary" label="Close" @click="onCancelEditBulkProduct" />
+            </div>
         </div>
     </Dialog>
-
-
 </template>

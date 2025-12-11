@@ -505,7 +505,7 @@ watch(
                 </div>
 
                 <!-- Product Grid -->
-                <div :class="responsiveGridClass" class="grid gap-6 p-4"
+               <div :class="responsiveGridClass" class="grid gap-6 p-4 items-stretch auto-rows-fr"
                     :style="getStyles(fieldValue?.container?.properties, screenType)">
                     <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
@@ -519,9 +519,12 @@ watch(
                     
 
                     <template v-else-if="products.length">
-                        <div v-for="(product, index) in products" :key="index"
+                      <div
+                            v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border relative rounded" :class="product.stock ? '' : 'bg-red-100'">
+                            class="border relative rounded flex flex-1"
+                            :class="product.stock ? '' : 'bg-red-100'"
+                        >
                             <RenderProduct 
                                 :code="code" 
                                 :product="product" 
@@ -532,6 +535,7 @@ watch(
                                 :bestSeller="fieldValue.bestseller" 
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
                                 :button="fieldValue?.button"
+                                class="flex-1"
                             />
                         </div>
                     </template>
@@ -581,6 +585,10 @@ watch(
 
 aside {
     transition: all 0.3s ease;
+}
+
+.auto-rows-fr {
+    grid-auto-rows: 1fr;
 }
 
 

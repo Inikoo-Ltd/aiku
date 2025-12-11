@@ -73,7 +73,6 @@ export const initialiseApp = () => {
                if(layout.currentParams.shop){
                   let organisation = layout?.organisations?.data.find((item)=> item.slug == layout.currentParams?.organisation)
                   if(organisation) {
-                      console.log('sdsdsd',organisation)
                       let shop = organisation?.authorised_shops.find((item) => item.slug == layout.currentParams.shop)
                       layout.shopState = shop
                   }

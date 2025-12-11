@@ -2,7 +2,7 @@
 import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {computed, reactive, ref,watch, onMounted, onBeforeUnmount} from "vue";
+import {computed, reactive, ref,watch, onMounted, onBeforeUnmount, inject} from "vue";
 import {PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
@@ -22,6 +22,7 @@ import { useFormatTime, useTimeCountdown} from "@/Composables/useFormatTime";
 import Icon from '@/Components/Icon.vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { differenceInHours, differenceInMinutes, differenceInSeconds, addDays } from 'date-fns';
+import { layoutStructure } from "@/Composables/useLayoutStructure";
 
 
 import {
@@ -49,6 +50,8 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import TableRetinaPlatformPortfolioLogs from "@/Components/Tables/Retina/TableRetinaPlatformPortfolioLogs.vue";
+import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal";
+import PureProgressBar from "@/Components/PureProgressBar.vue";
 
 
 library.add(faFileExcel, faCheck, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
@@ -106,6 +109,10 @@ const props = defineProps<{
     product_count: number
     download_portfolio_customer_sales_channel_url: string | null
     last_created_at_download_portfolio_customer_sales_channel: string | null
+    ebay_warehouse_policy_msg: {
+        show_msg: boolean
+        cust_country: string
+    }
 }>();
 
 const step = ref(props.step);
@@ -114,13 +121,22 @@ const isOpenModalPortfolios = ref(false);
 const isOpenModalDownloadImages = ref(false);
 const isOpenModalSuspended = ref(false);
 const isTestConnectionSuccess = ref(false);
-
-
+const isOpenModalCloneProgress = ref(false);
+const cloneProgressData = ref({
+    data: {
+        number_success: 0,
+        number_fails: 0
+    },
+    done: 0,
+    total: 0,
+});
+const cloneSourceChannelName = ref('');
 const isLoadingUpload = ref(false);
 const isLoadingClone = ref(false);
 const selectedData = reactive({
     products: [] as number[]
 });
+
 const onUploadToShopify = () => {
     if (!props.routes.bulk_upload?.name) {
         notify({
@@ -170,7 +186,6 @@ const downloadUrl = (type: string, addParams: string = '') => {
 const _popover = ref()
 const _clone_popover = ref()
 
-
 // Method: Platform reconnect
 const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
     console.log('customerSalesChannel', customerSalesChannel)
@@ -197,7 +212,21 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
 }
 
 // Method: Clone manual portfolios
-const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | number) => {
+const cloneSimulationInterval = ref<number | null>(null);
+
+const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | number, sourceChannelName?: string, totalPortfolios?: number) => {
+    cloneSourceChannelName.value = sourceChannelName || '';
+
+    const total = totalPortfolios || 0;
+    cloneProgressData.value = {
+        data: {
+            number_success: 0,
+            number_fails: 0
+        },
+        done: 0,
+        total: total,
+    };
+
     router.post(route(
             props.routes.clonePortfolioRoute.name,
             {
@@ -205,24 +234,37 @@ const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | num
                 customerSalesChannel: sourceCustomerSalesChannelId
             }
         ), {}, {
-            onBefore: () => isLoadingClone.value = true,
+            onBefore: () => {
+                isLoadingClone.value = true;
+                isOpenModalCloneProgress.value = true;
+                _clone_popover.value?.hide();
+            },
             onError: (error) => {
                 notify({
                     title: trans("Something went wrong"),
                     text: "",
                     type: "error"
                 });
+                isOpenModalCloneProgress.value = false;
+                if (cloneSimulationInterval.value) {
+                    clearInterval(cloneSimulationInterval.value);
+                    cloneSimulationInterval.value = null;
+                }
             },
             onSuccess: () => {
                 selectedData.products = [];
-                router.reload({only: ["pageHead", "products"]});
                 notify({
                     title: trans("Success!"),
-                    text: trans(`Portfolios been cloned in the background.`),
+                    text: trans(`Portfolios cloning started in background.`),
                     type: "success"
                 });
                 props.step.current = 1;
-                isLoadingClone.value = false;
+
+                setTimeout(() => {
+                    if (cloneProgressData.value.done === 0 && cloneProgressData.value.total > 0) {
+                        startProgressSimulation();
+                    }
+                }, 2000);
             },
             onFinish: () => {
                 isLoadingClone.value = false;
@@ -230,6 +272,80 @@ const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | num
         }
     )
 }
+
+const startProgressSimulation = () => {
+    if (cloneSimulationInterval.value) return;
+
+    const total = cloneProgressData.value.total;
+    if (total === 0) return;
+
+    const intervalMs = Math.max(100, Math.min(500, 10000 / total));
+
+    cloneSimulationInterval.value = window.setInterval(() => {
+        if (cloneProgressData.value.done >= cloneProgressData.value.total) {
+            if (cloneSimulationInterval.value) {
+                clearInterval(cloneSimulationInterval.value);
+                cloneSimulationInterval.value = null;
+            }
+
+            setTimeout(() => {
+                isOpenModalCloneProgress.value = false;
+                router.reload({ only: ["pageHead", "products"] });
+                notify({
+                    title: trans("Cloning Complete!"),
+                    text: trans(":total products cloned.", { total: cloneProgressData.value.total }),
+                    type: "success"
+                });
+            }, 1000);
+            return;
+        }
+
+        cloneProgressData.value = {
+            ...cloneProgressData.value,
+            done: cloneProgressData.value.done + 1,
+            data: {
+                ...cloneProgressData.value.data,
+                number_success: cloneProgressData.value.data.number_success + 1
+            }
+        };
+    }, intervalMs);
+}
+
+onBeforeUnmount(() => {
+    if (cloneSimulationInterval.value) {
+        clearInterval(cloneSimulationInterval.value);
+    }
+});
+
+const echoRetinaPersonal = useEchoRetinaPersonal();
+
+watch(() => echoRetinaPersonal.progressBars?.ClonePortfolio, (newProgress) => {
+    if (!newProgress) return;
+
+    const progressForChannel = newProgress[props.customer_sales_channel.id];
+    if (progressForChannel) {
+        cloneProgressData.value = {
+            data: progressForChannel.data,
+            done: progressForChannel.done,
+            total: progressForChannel.total,
+        };
+
+        if (progressForChannel.done >= progressForChannel.total && progressForChannel.total > 0) {
+            setTimeout(() => {
+                isOpenModalCloneProgress.value = false;
+                router.reload({ only: ["pageHead", "products"] });
+                notify({
+                    title: trans("Cloning Complete!"),
+                    text: trans(":success products cloned successfully, :fails failed.", {
+                        success: progressForChannel.data.number_success,
+                        fails: progressForChannel.data.number_fails
+                    }),
+                    type: progressForChannel.data.number_fails > 0 ? "warn" : "success"
+                });
+            }, 1500);
+        }
+    }
+}, { deep: true })
 
 // Section: Bulk upload to Shopify/Ebay/etc
 const isLoadingBulkDeleteUpload = ref(false)
@@ -500,7 +616,7 @@ onBeforeUnmount(() => {
     }
 });
 
-
+const layout = inject('layout', layoutStructure)
 
 </script>
 
@@ -559,7 +675,7 @@ onBeforeUnmount(() => {
                         </div>
 
                         <div v-for="(manual_channel, index) in channels?.data" :key="index" class="flex flex-col gap-y-2 mb-1.5">
-                            <Button :loading="isLoadingClone" @click="() => onCloneManualPortfolio(manual_channel.id)"
+                            <Button :loading="isLoadingClone" @click="() => onCloneManualPortfolio(manual_channel.id, manual_channel.name || manual_channel.slug, manual_channel.number_portfolios)"
                                 :label="(manual_channel.name || manual_channel.slug) + ' ('+manual_channel.number_portfolios+')'" full
                                 :style="'tertiary'"
                             >
@@ -601,10 +717,42 @@ onBeforeUnmount(() => {
             :customer_sales_channel="customer_sales_channel"
         />
     </div>
-
+    <div v-if="ebay_warehouse_policy_msg.show_msg" class="flex justify-between mt-5 m-4">
+        <div class="w-full border-2 border-red-500 rounded-lg p-4 bg-red-50">
+            <div class="flex flex-col sm:flex-row sm:items-start">
+                <div class="flex items-center mb-2 sm:mb-0 sm:flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-500 mr-2 sm:mr-0 sm:mt-0.5" fill="currentColor"
+                            viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                clip-rule="evenodd"></path>
+                    </svg>
+                    <strong class="text-sm text-red-700 sm:hidden">{{ trans('Important Notice:') }}</strong>
+                </div>
+                <div class="sm:ml-3">
+                    <p class="text-sm text-red-700">
+                        <strong class="hidden sm:inline">{{ trans('Important Notice:') }}</strong>
+                                    {{ trans('We noticed your account is registered in') }} <strong> {{ ebay_warehouse_policy_msg.cust_country + '.' }} </strong>
+                        {{  trans('In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas.') }}
+                        <a href="https://export.ebay.com/en/fees-regulations-policies/ebay-policies/overseas-warehouse-block-policy-authorization-requirements-for-forward-deployed-inventory/"
+                            target="_blank"
+                            class="underline text-red-800 hover:text-red-900">
+                            [eBay Overseas Warehouse Block Policy]
+                        </a>
+                        <br> <br>
+                        {{ trans('If this happens, please contact eBay Support to request approval or further assistance:') }}
+                        <a href="https://www.ebay.com/help/contact_us?id=4105&st=10"
+                            target="_blank"
+                            class="underline text-red-800 hover:text-red-900">
+                            eBay Customer Support
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Section: Alert if there is product not synced -->
-    <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual && currentTab === 'products'" severity="warn"
-             class="m-4 ">
+    <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual && currentTab === 'products'" severity="warn" class="m-4">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
@@ -800,6 +948,76 @@ onBeforeUnmount(() => {
                         full
                     />
                 </a>
+            </div>
+        </div>
+    </Modal>
+    <!-- Modal: Clone Progress -->
+    <Modal :isOpen="isOpenModalCloneProgress" @onClose="cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0 ? isOpenModalCloneProgress = false : null"
+           width="w-full max-w-md">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+                <div>
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full"
+                         :class="cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0
+                            ? (cloneProgressData.data.number_fails > 0 ? 'bg-yellow-100' : 'bg-green-100')
+                            : 'bg-gray-100'">
+                        <FontAwesomeIcon
+                            v-if="cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0"
+                            :icon="cloneProgressData.data.number_fails > 0 ? 'fas fa-exclamation-triangle' : 'fas fa-check'"
+                            :class="cloneProgressData.data.number_fails > 0 ? 'text-yellow-500' : 'text-green-500'"
+                            class="text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon
+                            v-else
+                            icon='fas fa-spinner'
+                            class="text-gray-500 text-2xl animate-spin" fixed-width aria-hidden='true' />
+                    </div>
+
+                    <div class="mt-3 text-center sm:mt-5">
+                        <div as="h3" class="font-semibold text-xl">
+                            <template v-if="cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0">
+                                {{ trans('Cloning Complete!') }}
+                            </template>
+                            <template v-else>
+                                {{ trans('Cloning Portfolios...') }}
+                            </template>
+                        </div>
+
+                        <div class="mt-2 text-sm text-gray-500">
+                            <template v-if="cloneSourceChannelName">
+                                {{ trans('From channel: :channel', { channel: cloneSourceChannelName }) }}
+                            </template>
+                        </div>
+
+                        <!-- Percentage Display -->
+                        <div v-if="cloneProgressData.total > 0" class="mt-4">
+                            <div class="text-4xl font-bold tabular-nums transition-all duration-300"
+                                 :class="cloneProgressData.done >= cloneProgressData.total
+                                    ? (cloneProgressData.data.number_fails > 0 ? 'text-yellow-500' : 'text-green-500')
+                                    : 'text-gray-700'">
+                                {{ Math.round((cloneProgressData.done / cloneProgressData.total) * 100) }}%
+                            </div>
+                            <div class="text-sm text-gray-500 mt-1">
+                                {{ cloneProgressData.done }} / {{ cloneProgressData.total }} {{ trans('products') }}
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="mt-4 px-4">
+                            <PureProgressBar
+                                v-if="cloneProgressData.total > 0"
+                                :progressBars="cloneProgressData"
+                            />
+                            <div v-else class="flex items-center justify-center gap-2 text-gray-500">
+                                <FontAwesomeIcon icon='fas fa-spinner' class='animate-spin' aria-hidden='true' />
+                                <span>{{ trans('Preparing...') }}</span>
+                            </div>
+                        </div>
+
+                        <div v-if="cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0" class="mt-4 text-sm text-gray-600">
+                            {{ trans('Page will reload automatically...') }}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </Modal>

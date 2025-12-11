@@ -17,14 +17,14 @@ use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\Masters\MasterAsset; 
+use App\Models\Masters\MasterAsset;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 
 class ShowCreateVariant extends OrgAction
 {
     private MasterShop|MasterProductCategory|Group $parent;
 
-      public function handle(MasterAsset $masterAsset): MasterAsset
+    public function handle(MasterAsset $masterAsset): MasterAsset
     {
         return $masterAsset;
     }

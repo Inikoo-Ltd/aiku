@@ -69,6 +69,7 @@ const props = defineProps<{
     }
     type_ebay: {
         connectRoute: routeType
+        is_active: boolean
     }
     type_amazon: {
         connectRoute: routeType
@@ -496,7 +497,7 @@ provide("goNext", goNext);
 
                     <Button
                         :loading="isPlatformCreateLoading"
-                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        v-if="type_ebay.is_active"
                         :label="trans('Connect')"
                         xtype="primary"
                         type="primary"
@@ -504,7 +505,7 @@ provide("goNext", goNext);
                         @click="openCreateEbayModal"
                     />
 
-<!--                    <Button xv-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
+                    <Button v-else :label="trans('Maintenance')" type="tertiary" disabled full/>
                 </div>
             </div>
 

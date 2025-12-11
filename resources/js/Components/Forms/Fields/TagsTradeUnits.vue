@@ -64,6 +64,7 @@ const onCreateNewTag = () => {
             },
             onFinish: () => {
                 isLoadingCreateTag.value = false
+                fetchProductList()
             },
             onError: (error) => {
                 notify({
@@ -149,6 +150,7 @@ const onEditTag = () => {
             },
             onFinish: () => {
                 isLoadingUpdateTag.value = false
+                fetchProductList()
             },
             onError: (error) => {
                 console.error('Error editing tag:', error)

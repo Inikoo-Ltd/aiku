@@ -52,6 +52,9 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryTranslations;
 use App\Actions\Catalogue\ProductCategory\UploadImagesToProductCategory;
+use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
+use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
+use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Email\PublishEmail;
@@ -1065,6 +1068,12 @@ Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->gro
 
 Route::prefix('prospect/{prospect:id}')->name('prospect.')->group(function () {
     Route::patch('update', UpdateProspect::class)->name('update');
+});
+
+Route::post('/shop/{shop:id}/shipping-country/', StoreShippingCountry::class)->name('shipping_country.store');
+Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.')->group(function () {
+    Route::patch('update', UpdateShippingCountry::class)->name('update');
+    Route::delete('delete', DeleteShippingCountry::class)->name('delete');
 });
 
 require __DIR__.'/models/inventory/warehouse.php';

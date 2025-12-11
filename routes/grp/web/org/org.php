@@ -12,61 +12,61 @@ use Inertia\Inertia;
 
 Route::prefix("")
     ->name("dashboard.")
-    ->group(__DIR__."/dashboard.php");
+    ->group(__DIR__ . "/dashboard.php");
 
 Route::prefix("hr")
     ->name("hr.")
-    ->group(__DIR__."/hr.php");
+    ->group(__DIR__ . "/hr.php");
 
 Route::prefix("shops")
     ->name("shops.")
-    ->group(__DIR__."/shops/shop_root.php");
+    ->group(__DIR__ . "/shops/shop_root.php");
 
 Route::prefix("websites")
     ->name("websites.")
-    ->group(__DIR__."/websites/website.php");
+    ->group(__DIR__ . "/websites/website.php");
 
 
 Route::prefix("fulfilments")
     ->name("fulfilments.")
-    ->group(__DIR__."/fulfilments/root.php");
+    ->group(__DIR__ . "/fulfilments/root.php");
 
 
 Route::prefix("warehouses")
     ->name("warehouses.")
-    ->group(__DIR__."/warehouses/warehouses.php");
+    ->group(__DIR__ . "/warehouses/warehouses.php");
 
 Route::prefix("factory")
     ->name("productions.")
-    ->group(__DIR__."/production/productions.php");
+    ->group(__DIR__ . "/production/productions.php");
 
 Route::prefix("procurement")
     ->name("procurement.")
-    ->group(__DIR__."/procurement.php");
+    ->group(__DIR__ . "/procurement.php");
 
 Route::prefix("accounting")
     ->name("accounting.")
-    ->group(__DIR__."/accounting.php");
+    ->group(__DIR__ . "/accounting.php");
 
 Route::prefix("overview")
     ->name("overview.")
-    ->group(__DIR__."/overview.php");
+    ->group(__DIR__ . "/overview.php");
 
 Route::prefix("reports")
     ->name("reports.")
-    ->group(__DIR__."/reports.php");
+    ->group(__DIR__ . "/reports.php");
 
 Route::prefix("settings")
     ->name("settings.")
-    ->group(__DIR__."/settings.php");
+    ->group(__DIR__ . "/settings.php");
 
 Route::prefix("tags")
     ->name("tags.")
-    ->group(__DIR__."/tags.php");
+    ->group(__DIR__ . "/tags.php");
 
 Route::prefix("crm")
     ->name("crm.")
-    ->group(__DIR__."/agents.php");
+    ->group(__DIR__ . "/agents.php");
 
 Route::get('/show', ShowOrganisation::class)->name('show');
 

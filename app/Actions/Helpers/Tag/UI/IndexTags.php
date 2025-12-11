@@ -9,37 +9,40 @@
 
 namespace App\Actions\Helpers\Tag\UI;
 
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Goods\TradeUnit;
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Inertia\Inertia;
+use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTags extends OrgAction
 {
-    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisationFromGroup($tradeUnit->group, $request);
+    use WithCustomersSubNavigation;
 
-        return $this->handle($tradeUnit);
+    private Shop $parent;
+    private ?TagScopeEnum $forcedScope = null;
+
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->forcedScope = TagScopeEnum::USER_CUSTOMER;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop);
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($organisation);
-    }
-
-    public function handle(Organisation|TradeUnit $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Shop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -55,11 +58,12 @@ class IndexTags extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Tag::class);
 
-        if ($parent instanceof TradeUnit) {
-            $queryBuilder->where('scope', TagScopeEnum::PRODUCT_PROPERTY);
+        if ($this->forcedScope) {
+            $queryBuilder->where('scope', $this->forcedScope);
         }
 
         return $queryBuilder
+            ->where('shop_id', $parent->id)
             ->defaultSort('name')
             ->select(['id', 'name', 'slug', 'scope'])
             ->allowedSorts(['name', 'scope'])
@@ -87,8 +91,58 @@ class IndexTags extends OrgAction
         };
     }
 
-    public function jsonResponse(LengthAwarePaginator $tags): AnonymousResourceCollection
+    public function htmlResponse(LengthAwarePaginator $tags, ActionRequest $request): Response
     {
-        return TagsResource::collection($tags);
+        return Inertia::render(
+            'Org/Tags/Tags',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'title'       => __('Tags'),
+                'pageHeading' => [
+                    'title'  => __('Tags'),
+                    'icon'   => [
+                        'title' => __('Tags'),
+                        'icon'  => ['fal', 'fa-tags'],
+                    ],
+                    'actions' => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Create Tag'),
+                            'label'   => __('Create Tag'),
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.crm.self_filled_tags.create',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop' => $this->shop->slug
+                                ],
+                            ],
+                        ],
+                    ],
+                    'subNavigation' => $this->getSubNavigation($request)
+                ],
+                'data' => TagsResource::collection($tags),
+            ],
+        )->table($this->tableStructure());
+    }
+
+    public function getBreadcrumbs(array $routeParameters): array
+    {
+        return array_merge(
+            ShowShop::make()->getBreadcrumbs($routeParameters),
+            [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.crm.self_filled_tags.index',
+                            'parameters' => $routeParameters,
+                        ],
+                        'label' => __('Tags'),
+                        'icon'  => 'fal fa-tags'
+                    ],
+                ],
+            ],
+        );
     }
 }

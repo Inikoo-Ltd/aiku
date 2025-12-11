@@ -13,7 +13,7 @@ const updateTimes = () => {
     const updated: Record<string, string> = {}
     for (const tz of layout?.user?.settings?.timezones || []) {
         //  { "Asia/Makassar": "15:04" }
-        updated[tz] = formatInTimeZone(now, tz.timezone, 'HH:mm')
+        updated[tz] = formatInTimeZone(now, tz, 'HH:mm')
     }
     times.value = updated
 }
@@ -37,9 +37,9 @@ watch(() => layout?.user?.settings?.timezones, (newVal) => {
 </script>
 
 <template>
-    <div v-if="layout?.user?.settings?.timezones?.length" class="flex gap-x-6 text-white/70">
-        <p v-for="(time, country) in times" :key="country" class="tabular-nums">
-            <strong>{{ country }}:</strong> {{ time }}
+    <div v-if="layout?.user?.settings?.timezones?.length" class="flex gap-x-6 text-xs h-full items-center">
+        <p v-for="(time, zone) in times" :key="zone" class="tabular-nums">
+            {{ zone.split('/')[1] }}: {{ time }}
         </p>
     </div>
 </template>

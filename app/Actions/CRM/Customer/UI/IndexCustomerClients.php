@@ -23,6 +23,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
@@ -204,6 +205,23 @@ class IndexCustomerClients extends OrgAction
         $newClientLabel = __('New Client');
 
         $actions = [];
+
+        $manualPlatform=Platform::where('code','manual')->first();
+
+        if ($this->parent instanceof CustomerSalesChannel && $this->parent->platform_id==$manualPlatform->id) {
+            $actions = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => $newClientLabel,
+                    'label'   => $newClientLabel,
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create',
+                        'parameters' => $request->route()->originalParameters()
+                    ]
+                ]
+            ];
+        }
 
         return Inertia::render(
             'Org/Shop/CRM/CustomerClients',

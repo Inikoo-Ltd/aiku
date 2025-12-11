@@ -56,6 +56,9 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("platforms")
                     ->name("platforms.")
                     ->group(__DIR__ . "/platforms.php");
+                Route::prefix("self-filled-tags")
+                    ->name("self_filled_tags.")
+                    ->group(__DIR__."/self_filled_tags.php");
             }
         );
 
