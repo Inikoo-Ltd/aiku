@@ -808,10 +808,8 @@ const calculateVat = (price: number) => {
                         icon="fal fa-pencil"
                 @click="openEditModal(item)"/>
 
-            <ButtonWithLink v-tooltip="trans('Unselect product. This will not remove the product from :platform', {platform: props.platform_data.name})" type="negative" icon="fal fa-skull"
-                            :routeTarget="item.update_portfolio" :body="{
-						'status': false,
-					}" size="xs" :bindToLink="{
+            <ButtonWithLink v-tooltip="trans('Unselect product. This will remove the product from :platform', {platform: props.platform_data.name})" type="negative" icon="fal fa-skull"
+                            :routeTarget="item.delete_portfolio" :method="'delete'" size="xs" :bindToLink="{
 						preserveScroll: true,
 					}"/>
             </div>

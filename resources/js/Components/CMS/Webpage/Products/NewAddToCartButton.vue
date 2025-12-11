@@ -13,6 +13,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
 import { faGalaxy, faTimesCircle, faPlus, faMinus, faCartPlus } from "@fas";
 import { faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faBars, faHeart } from "@fal";
+import { faBasketShopping } from "@fortawesome/free-solid-svg-icons"
 import {
   faBackpack,
   faTruckLoading,
@@ -41,7 +42,7 @@ import { faLambda } from "@fad";
 // Add icons to the library
 library.add(
   faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone, faPlus, faMinus, faCartPlus,
-  faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faBars,
+  faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faBars, faBasketShopping, 
   faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock, faHeart
 );
 

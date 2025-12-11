@@ -239,21 +239,15 @@ const idxProductLoading = ref<number | null>(null)
     <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">
         <!-- Toggle: collapse-expand rightbasket -->
         <div @click="handleToggleLeftBar"
-            class="absolute z-10  top-2/4 -translate-y-full w-8 lg:w-8 aspect-square xborder xborder-gray-300 rounded-full flex justify-center items-center cursor-pointer"
+            class="absolute z-10 top-2/4 -translate-y-full hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)] bg-[var(--theme-color-0)] w-8 lg:w-8 aspect-square xborder xborder-gray-300 rounded-full flex justify-center items-center cursor-pointer"
             :class="layout.rightbasket?.show ? 'left-0 -translate-x-1/2' : '-left-12'"
             v-tooltip="layout.rightbasket?.show ? trans('Collapse the bar') : trans('Expand the bar')"
             :style="{
-                'background-color':  `color-mix(in srgb, ${layout.app.theme[0]} 85%, black)`,
                 'color': layout.app.theme[1]
             }"
         >
             <div class="flex items-center justify-center transition-all duration-300 ease-in-out">
-                <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" class="h-[14px] leading-none" aria-hidden="true"
-                    :class="[
-                        layout.rightbasket?.show ? '-translate-x-[1px]' : '',
-                    ]"
-                    fixed-width
-                />
+                <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" aria-hidden="true" fixed-width />
                 <FontAwesomeIcon v-else icon="fal fa-shopping-cart" class="" fixed-width aria-hidden="true" />
             </div>
         </div>
