@@ -40,7 +40,7 @@ class DeleteLuigiContent
         $identity  = $command->option('identity');
 
         $website = Website::find($websiteId);
-        
+
         $this->handle($website, $identity, $type);
 
         return 0;
