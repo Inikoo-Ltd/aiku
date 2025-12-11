@@ -32,6 +32,8 @@ class StoreAsset extends OrgAction
             if (in_array($parent->state, [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])) {
                 $status = true;
             }
+            data_set($modelData, 'master_asset_id', $parent->master_product_id);
+
         } else {
             $status = $parent->status;
         }
