@@ -22,14 +22,14 @@ class MasterAssetHydrateAssets implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(int $masterAssetID): string
+    public function getJobUniqueId(int|null $masterAssetID): string
     {
-        return $masterAssetID;
+        return $masterAssetID ?? 'empty';
     }
 
     public function handle(int $masterAssetID): void
     {
-        $masterAsset= MasterAsset::find($masterAssetID);
+        $masterAsset = MasterAsset::find($masterAssetID);
         if (!$masterAsset) {
             return;
         }
@@ -70,8 +70,6 @@ class MasterAssetHydrateAssets implements ShouldBeUnique
 
         $masterAsset->stats()->update($stats);
     }
-
-
 
 
 }
