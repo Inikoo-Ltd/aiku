@@ -309,6 +309,8 @@ class IndexProductsInCatalogue extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'data'                         => ProductsResource::collection($products),
+                'editable_table'               => true,   
+                'shop_id'                      => $shop->id,
                 'tabs'                         => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,

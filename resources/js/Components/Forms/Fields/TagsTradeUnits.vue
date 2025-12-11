@@ -64,6 +64,7 @@ const onCreateNewTag = () => {
             },
             onFinish: () => {
                 isLoadingCreateTag.value = false
+                fetchProductList()
             },
             onError: (error) => {
                 notify({
