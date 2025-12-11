@@ -112,8 +112,8 @@ test('outbox seeded when website created', function (Shop $shop) {
     );
 
     expect($website->group->commsStats->number_outboxes)->toBe(36)
-        ->and($website->organisation->commsStats->number_outboxes)->toBe(34)
-        ->and($website->shop->commsStats->number_outboxes)->toBe(21);
+        ->and($website->organisation->commsStats->number_outboxes)->toBe(36)
+        ->and($website->shop->commsStats->number_outboxes)->toBe(22);
 
     /** @var Outbox $outbox */
     $forgotPasswordOutbox = $website->shop->outboxes()->where('code', 'password_reminder')->first();
@@ -139,7 +139,7 @@ test('outbox seeded when website created', function (Shop $shop) {
 test('seed websites outboxes by command', function (Website $website) {
     $this->artisan('website:seed_outboxes '.$website->slug)->assertExitCode(0);
     $this->artisan('website:seed_outboxes')->assertExitCode(0);
-    expect($website->group->commsStats->number_outboxes)->toBe(34);
+    expect($website->group->commsStats->number_outboxes)->toBe(36);
 })->depends('outbox seeded when website created');
 
 
