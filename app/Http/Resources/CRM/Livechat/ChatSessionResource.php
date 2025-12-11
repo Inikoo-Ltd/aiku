@@ -7,7 +7,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ChatSessionResource extends JsonResource
 {
-     use HasSelfCall;
+    use HasSelfCall;
     /**
      * Transform the resource into an array.
      *
@@ -25,7 +25,8 @@ class ChatSessionResource extends JsonResource
             'guest_identifier' => $chatSession->guest_identifier,
             'created_at' => $this->formatDate($chatSession->created_at),
             'closed_at' => $chatSession->closed_at ? $this->formatDate($chatSession->closed_at) : null,
-            'priority' => $chatSession->priority->value
+            'priority' => $chatSession->priority->value,
+            'contact_name' => $chatSession->webUser ? $chatSession->webUser->contact_name : null,
         ];
     }
 

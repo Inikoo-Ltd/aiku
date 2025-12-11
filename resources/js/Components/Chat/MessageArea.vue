@@ -6,6 +6,7 @@ import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStar, faPlus, faSpinner, faPaperPlane } from "@fortawesome/free-solid-svg-icons"
+import MessageHistory from "@/Components/Chat/MessageHistory.vue"
 
 const props = defineProps({
 	messages: {
@@ -23,11 +24,13 @@ const props = defineProps({
 	isInitialLoad: Boolean,
 	isLoadingMore: Boolean,
 	isRating: Boolean,
+	rating: Number,
+	isLoggedIn: Boolean,
 })
 
 console.log("🚀 MessageArea props:", props.messages)
 
-const emit = defineEmits(["send-message", "reload", "mounted", "new-session"])
+const emit = defineEmits(["send-message", "reload", "mounted", "new-session", "open-session"])
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
@@ -35,6 +38,17 @@ const input = ref("")
 const isSending = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
 const selectedRating = ref<number | null>(null)
+const hoverRating = ref<number | null>(null)
+const starPop = ref<number | null>(null)
+const activeMenu = ref<"chat" | "history">("chat")
+const isLoadingHistory = ref(false)
+const historyError = ref<string | null>(null)
+const userSessions = ref<any[]>([])
+const selectedHistory = ref<{
+	ulid: string
+	contact_name?: string
+	guest_identifier?: string
+} | null>(null)
 
 const formatTime = (timestamp: string) => {
 	if (!timestamp) return ""
@@ -60,12 +74,34 @@ const formatDate = (timestamp: string) => {
 	}
 }
 
+const loadUserSessions = async () => {
+	if (!layout?.user?.id) return
+	try {
+		isLoadingHistory.value = true
+		historyError.value = null
+		const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, {
+			params: { web_user_id: layout.user.id, limit: 50 },
+		})
+		userSessions.value = res.data?.data?.sessions ?? []
+	} finally {
+		isLoadingHistory.value = false
+	}
+}
+
 const updateRating = async (r: number) => {
+	starPop.value = r
+
 	selectedRating.value = r
-	if (!props.session?.ulid) return
-	await axios.put(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/update`, {
-		rating: r,
-	})
+
+	if (props.session?.ulid) {
+		await axios.put(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/update`, {
+			rating: r,
+		})
+	}
+
+	setTimeout(() => {
+		starPop.value = null
+	}, 300)
 }
 
 const groupedMessages = () => {
@@ -125,7 +161,7 @@ const scrollToBottom = () => {
 }
 
 const isUserMessage = (message: any) => {
-	return message.sender_type === "guest"
+	return message.sender_type === "guest" || message.sender_type === "user"
 }
 
 const getBubbleClass = (message: any) => {
@@ -142,6 +178,8 @@ const getSenderName = (message: any) => {
 	switch (message.sender_type) {
 		case "guest":
 			return trans("You")
+		case "user":
+			return props.session?.contact_name || trans("User")
 		case "agent":
 			return message.sender?.name || trans("Support Agent")
 		case "system":
@@ -173,6 +211,10 @@ watch(
 	{ deep: true }
 )
 
+watch(activeMenu, (val) => {
+	if (val === "history") loadUserSessions()
+})
+
 onMounted(() => {
 	emit("mounted")
 	scrollToBottom()
@@ -184,6 +226,69 @@ onMounted(() => {
 		<div
 			class="px-4 py-3 border-b border-gray-200 font-semibold text-gray-700 bg-white shadow-sm flex justify-between items-center">
 			<span>{{ trans("Chat Support") }}</span>
+
+			<div v-if="isLoggedIn" class="flex items-center gap-2">
+				<button
+					:class="[
+						'px-3 py-1 rounded-md text-sm',
+						activeMenu === 'chat'
+							? 'buttonPrimary text-white'
+							: 'bg-gray-100 text-gray-700',
+					]"
+					@click="activeMenu = 'chat'">
+					Chat
+				</button>
+
+				<button
+					:class="[
+						'px-3 py-1 rounded-md text-sm',
+						activeMenu === 'history'
+							? 'buttonPrimary text-white'
+							: 'bg-gray-100 text-gray-700',
+					]"
+					@click="activeMenu = 'history'">
+					History
+				</button>
+			</div>
+		</div>
+
+		<div v-if="activeMenu === 'history'" class="flex-1 overflow-y-auto">
+			<template v-if="!selectedHistory">
+				<div v-if="isLoadingHistory" class="text-sm text-gray-500">Loading...</div>
+				<div v-else>
+					<div
+						v-for="s in userSessions"
+						:key="s.ulid"
+						class="flex items-start gap-3 px-3 py-3 hover:bg-gray-50 cursor-pointer"
+						@click="
+							selectedHistory = {
+								ulid: s.ulid,
+								contact_name: s.contact_name,
+								guest_identifier: s.guest_identifier,
+							}
+						">
+						<div class="flex-1">
+							<div class="flex items-center justify-between">
+								<div class="text-sm">
+									{{ s.contact_name || s.guest_identifier }}
+								</div>
+								<div class="text-xs text-gray-400">
+									{{ s.last_message?.created_at }}
+								</div>
+							</div>
+							<div class="text-xs text-gray-600 truncate">
+								{{ s.last_message?.message }}
+							</div>
+						</div>
+					</div>
+				</div>
+			</template>
+
+			<MessageHistory
+				v-else
+				:sessionUlid="selectedHistory.ulid"
+				:session="selectedHistory"
+				@back="selectedHistory = null" />
 		</div>
 
 		<!-- Messages Area -->
@@ -191,7 +296,7 @@ onMounted(() => {
 			ref="messagesContainer"
 			@scroll="onScroll"
 			class="messages-container flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
-			v-if="messages.length > 0">
+			v-if="activeMenu === 'chat' && messages.length > 0">
 			<template v-for="(groupMessages, date) in groupedMessages()" :key="date">
 				<!-- Date Separator -->
 				<div class="flex justify-center">
@@ -246,14 +351,14 @@ onMounted(() => {
 			</template>
 
 			<!-- Loading indicator saat messages loading -->
-			<div v-if="loading" class="flex justify-center py-4">
+			<div v-if="activeMenu === 'chat' && loading" class="flex justify-center py-4">
 				<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
 			</div>
 		</div>
 
 		<!-- Empty State -->
 		<div
-			v-else
+			v-else-if="activeMenu === 'chat'"
 			class="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500 bg-gray-50">
 			<div class="mb-4">
 				<svg
@@ -269,19 +374,30 @@ onMounted(() => {
 				</svg>
 			</div>
 			<h3 class="text-lg font-medium mb-2">{{ trans("No messages yet") }}</h3>
-			<p class="text-sm mb-4">{{ trans("Start the conversation by sending a message") }}</p>
+			<p class="text-sm mb-4">
+				{{ trans("Start the conversation by sending a message") }}
+			</p>
 		</div>
-		<div v-if="isRating">
+		<div v-if="activeMenu === 'chat' && isRating">
 			<div
 				class="p-3 border-t border-gray-200 bg-white flex items-center justify-between gap-2">
 				<div class="flex items-center gap-1">
-					<button v-for="n in 5" :key="n" @click="updateRating(n)" class="p-1">
+					<button
+						v-for="n in 5"
+						:key="n"
+						class="p-1"
+						@click="updateRating(n)"
+						@mouseover="hoverRating = n"
+						@mouseleave="hoverRating = null">
 						<FontAwesomeIcon
 							:icon="faStar"
-							:class="
-								n <= (selectedRating || 0) ? 'text-yellow-400' : 'text-gray-300'
-							"
-							class="text-lg" />
+							class="text-lg"
+							:class="[
+								n <= (hoverRating ?? selectedRating ?? props.rating ?? 0)
+									? 'text-yellow-400'
+									: 'text-gray-300',
+								starPop === n ? 'star-pop' : '',
+							]" />
 					</button>
 				</div>
 				<button
@@ -292,7 +408,7 @@ onMounted(() => {
 				</button>
 			</div>
 		</div>
-		<div v-if="!isRating">
+		<div v-if="activeMenu === 'chat' && !isRating">
 			<!-- Input Area -->
 			<div class="p-3 border-t border-gray-200 bg-white flex items-center gap-2">
 				<textarea
@@ -322,6 +438,21 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.buttonPrimary {
+	background-color: v-bind("layout?.app?.theme[4]") !important;
+	color: v-bind("layout?.app?.theme[5]") !important;
+	border: v-bind("`1px solid color-mix(in srgb, ${layout?.app?.theme[4]} 80%, black)`");
+
+	&:hover {
+		background-color: v-bind(
+			"`color-mix(in srgb, ${layout?.app?.theme[4]} 85%, black)`"
+		) !important;
+	}
+
+	&:focus {
+		box-shadow: 0 0 0 2px v-bind("layout?.app?.theme[4]") !important;
+	}
+}
 /* User message bubble */
 .user-bubble {
 	background-color: v-bind("layout?.app?.theme[4]") !important;
@@ -363,5 +494,21 @@ textarea {
 
 .animate-spin {
 	animation: spin 1s linear infinite;
+}
+
+.star-pop {
+	animation: pop 0.3s ease-out;
+}
+
+@keyframes pop {
+	0% {
+		transform: scale(1);
+	}
+	40% {
+		transform: scale(1.6);
+	}
+	100% {
+		transform: scale(1);
+	}
 }
 </style>

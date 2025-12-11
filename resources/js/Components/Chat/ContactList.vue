@@ -30,12 +30,12 @@ const reloadContacts = async () => {
 		}
 
 		const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params })
-
+		console.log("✅ Contacts:", res)
 		contacts.value = res.data.data.sessions.map(
 			(s: SessionAPI): Contact => ({
 				id: s.id,
 				ulid: s.ulid,
-				name: s.guest_identifier,
+				name: s.contact_name || s.guest_identifier || "",
 				avatar: `https://i.pravatar.cc/100?u=${s.ulid}`,
 				lastMessage: s.last_message?.message ?? "",
 				lastMessageTime: s.last_message?.created_at

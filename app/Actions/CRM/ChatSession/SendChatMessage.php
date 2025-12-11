@@ -2,6 +2,7 @@
 
 namespace App\Actions\CRM\ChatSession;
 
+use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
@@ -113,10 +114,11 @@ class SendChatMessage
             ],
             'sender_id' => [
                 'nullable',
-                'integer'
+                'integer',
+                Rule::exists('web_users', 'id'),
             ],
             'media_id' => [
-                'nullable',
+                'sometimes',
                 'exists:media,id'
             ],
         ];
@@ -129,7 +131,8 @@ class SendChatMessage
         $validated = $request->validate($this->rules());
 
         $chatSession = ChatSession::where('ulid', $ulid)->first();
-        $senderData = $this->determineSenderData();
+
+        $senderData = $this->determineSenderData($validated, $chatSession);
 
         $validated = array_merge($validated, $senderData);
 
@@ -159,15 +162,29 @@ class SendChatMessage
 
 
 
-    protected function determineSenderData(): array
+    protected function determineSenderData(array $validated, ChatSession $chatSession): array
     {
         $user = Auth::user();
-
         if ($user && ($agent = ChatAgent::where('user_id', $user->id)->first())) {
             return [
                 'sender_type' => ChatSenderTypeEnum::AGENT->value,
                 'sender_id' => $agent->id,
             ];
+        }
+
+        if (!empty($validated['sender_id'])) {
+
+            $webUser = WebUser::find($validated['sender_id']);
+
+            if ($webUser) {
+                $chatSession->update([
+                    'web_user_id' => $webUser->id,
+                ]);
+                return [
+                    'sender_type' => ChatSenderTypeEnum::USER->value,
+                    'sender_id'   => $webUser->id,
+                ];
+            }
         }
 
         return [

@@ -10,9 +10,6 @@ use Illuminate\Validation\ValidationException;
 
 class DeleteAgent extends OrgAction
 {
-    /**
-     * Controller endpoint
-     */
     public function asController(Organisation $organisation, ChatAgent $agent, ActionRequest $request)
     {
         $this->initialisation($organisation, $request);
@@ -20,9 +17,7 @@ class DeleteAgent extends OrgAction
         return $this->handle($agent);
     }
 
-    /**
-     * Delete logic with validation + session flash
-     */
+
     public function handle(ChatAgent $agent): ?ChatAgent
     {
         try {
@@ -41,7 +36,6 @@ class DeleteAgent extends OrgAction
             $agent->delete();
 
             return $agent;
-
         } catch (ValidationException $e) {
             request()->session()->flash('notification', [
                 'status'      => 'error',
@@ -53,15 +47,9 @@ class DeleteAgent extends OrgAction
         }
     }
 
-    /**
-     * Frontend HTML response
-     */
-    public function htmlResponse(?ChatAgent $agent): void
-    {
-        if (is_null($agent)) {
-            return;
-        }
 
+    public function htmlResponse(): void
+    {
         request()->session()->flash('notification', [
             'status'      => 'success',
             'title'       => __('Success!'),

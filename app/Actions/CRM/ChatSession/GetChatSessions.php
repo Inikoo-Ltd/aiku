@@ -29,6 +29,7 @@ class GetChatSessions
             ],
             'assigned_to_me' => ['sometimes', 'integer'],
             'limit' => ['sometimes', 'integer', 'min:1', 'max:50'],
+            'web_user_id' => ['sometimes', 'integer', 'exists:web_users,id'],
         ];
     }
 
@@ -72,6 +73,10 @@ class GetChatSessions
                     $q->where('chat_agent_id', $currentAgent->id);
                 });
             }
+        }
+
+        if (isset($filters['web_user_id'])) {
+            $query->where('web_user_id', $filters['web_user_id']);
         }
 
         return $query->paginate($filters['limit'] ?? 20);

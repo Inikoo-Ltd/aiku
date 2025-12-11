@@ -3,17 +3,15 @@
 namespace App\Actions\CRM\ChatSession;
 
 use Exception;
-use App\Actions\OrgAction;
-use App\Models\CRM\WebUser;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
-use App\Actions\CRM\ChatSession\StoreChatEvent;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 
@@ -38,10 +36,6 @@ class StoreChatSession
     {
         $validated = $request->validated();
 
-        if ($webUserId = $this->getAuthenticatedWebUserId()) {
-            $validated['web_user_id'] = $webUserId;
-        }
-
         return $this->handle($validated);
     }
 
@@ -61,10 +55,10 @@ class StoreChatSession
                 'ulid'            => $modelData['ulid'] ?? Str::ulid(),
                 'web_user_id'     => $modelData['web_user_id'] ?? null,
                 'status'          => ChatSessionStatusEnum::WAITING->value,
-                'guest_identifier'=> $guestIdentifier,
+                'guest_identifier' => $guestIdentifier,
                 'language_id'     => $modelData['language_id'],
                 'priority'        => $modelData['priority'],
-                'ai_model_version'=> $modelData['ai_model_version'] ?? 'default',
+                'ai_model_version' => $modelData['ai_model_version'] ?? 'default',
             ];
 
             $chatSession = ChatSession::create($chatSessionData);
@@ -73,7 +67,6 @@ class StoreChatSession
 
             DB::commit();
             return $chatSession;
-
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -97,20 +90,6 @@ class StoreChatSession
     }
 
 
-    protected function getAuthenticatedWebUserId(): ?int
-    {
-        foreach (['retina', 'web'] as $guard) {
-            if (auth()->guard($guard)->check()) {
-                $user = auth()->guard($guard)->user();
-                if ($user instanceof WebUser) {
-                    return $user->id;
-                }
-            }
-        }
-        return null;
-    }
-
-
     protected function logSessionOpen(ChatSession $chatSession, array $data, bool $isGuest, ?string $guestIdentifier): void
     {
         try {
@@ -124,11 +103,9 @@ class StoreChatSession
                 'language_id'         => $data['language_id'],
                 'priority'            => $data['priority'],
                 'is_guest'            => $isGuest,
-                'authenticated_guard' => $this->getCurrentWebUserGuard(),
             ];
 
             StoreChatEvent::make()->openSession($chatSession, $actorType, $actorId, $eventPayload);
-
         } catch (Exception $e) {
             Log::warning('Failed to log chat session open event', [
                 'session_id' => $chatSession->id,
@@ -136,15 +113,4 @@ class StoreChatSession
             ]);
         }
     }
-
-    protected function getCurrentWebUserGuard(): ?string
-    {
-        foreach (['retina', 'web'] as $guard) {
-            if (auth()->guard($guard)->check()) {
-                return $guard;
-            }
-        }
-        return null;
-    }
-
 }

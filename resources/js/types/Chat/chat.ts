@@ -15,8 +15,9 @@ export interface LastMessage {
 export interface SessionAPI {
 	id: string
 	ulid: string
-	status: "waiting" | "active" | "closed" | string
-	guest_identifier: string
+	status: "waiting" | "active" | "closed"
+	guest_identifier: string | null
+	contact_name: string | null
 	created_at: string
 	created_at_timestamp: number
 	customer: boolean

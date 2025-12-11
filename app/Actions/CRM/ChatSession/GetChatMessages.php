@@ -2,7 +2,6 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -93,6 +92,7 @@ class GetChatMessages
             'data' => [
                 'session_ulid'   => $result['chatSession']->ulid,
                 'session_status' => $result['chatSession']->status->value,
+                'rating'         => $result['chatSession']->rating,
                 'messages'       => ChatMessageResource::collection($result['messages']),
                 'pagination'     => $result['pagination'],
             ]

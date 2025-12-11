@@ -310,7 +310,9 @@ onUnmounted(() => {
 				<img
 					:src="'https://i.pravatar.cc/100?u=' + props.session?.ulid"
 					class="w-10 h-10 rounded-full object-cover" />
-				<span class="font-semibold">{{ capitalize(props.session?.guest_identifier) }}</span>
+				<span class="font-semibold">{{
+					capitalize(props.session?.guest_identifier || props.session?.contact_name)
+				}}</span>
 			</div>
 			<div class="relative">
 				<button ref="ellipsisBtn" class="p-1" @click="toggleMenu">

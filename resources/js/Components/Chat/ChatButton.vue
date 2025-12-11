@@ -9,7 +9,7 @@ interface ChatMessage {
 	id: number
 	chat_session_id: number
 	message_type: string
-	sender_type: "guest" | "agent" | "system"
+	sender_type: "guest" | "agent" | "system" | "user"
 	sender_id?: number
 	message_text: string
 	media_id?: number
@@ -22,15 +22,16 @@ interface ChatMessage {
 
 interface ChatSessionData {
 	ulid: string
-	guest_identifier: string
+	guest_identifier?: string
 	session_id?: number
 	language?: number
+	rating?: number
 	priority?: string
+	contact_name?: string
 	saved_at?: string
 }
 
 const layout: any = inject("layout", {})
-
 const open = ref(false)
 const buttonRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
@@ -44,12 +45,21 @@ const baseUrl = layout?.appUrl ?? ""
 
 const chatSession = ref<{
 	ulid: string
-	guest_identifier: string
+	guest_identifier?: string
 	session_id?: number
+	contact_name?: string
 } | null>(null)
 
 const messages = ref<ChatMessage[]>([])
 const isRating = ref(false)
+const rating = ref(0)
+const isLoggedIn = ref(false)
+
+const syncLoginState = () => {
+	const iris = JSON.parse(localStorage.getItem("iris") || "{}")
+	isLoggedIn.value = iris?.is_logged_in === true
+}
+
 let chatChannel: any = null
 let currentChannelName: string | null = null
 let websocketInitialized = false
@@ -59,8 +69,9 @@ let websocketInitialized = false
  */
 const saveChatSession = (sessionData: {
 	ulid: string
-	guest_identifier: string
+	guest_identifier?: string
 	session_id?: number
+	contact_name?: string
 }) => {
 	const data = {
 		ulid: sessionData.ulid,
@@ -69,6 +80,7 @@ const saveChatSession = (sessionData: {
 		language: 64,
 		priority: "normal",
 		saved_at: new Date().toISOString(),
+		contact_name: sessionData.contact_name,
 	}
 
 	localStorage.setItem("chat", JSON.stringify(data))
@@ -84,7 +96,7 @@ const loadChatSession = () => {
 
 	try {
 		const data = JSON.parse(raw)
-		if (!data?.ulid || !data?.guest_identifier) {
+		if (!data?.ulid) {
 			console.warn("❌ Invalid session data in localStorage")
 			return null
 		}
@@ -99,6 +111,8 @@ const loadChatSession = () => {
  * Create a new chat session
  */
 const createSession = async (): Promise<ChatSessionData | null> => {
+	console.log("layout user", layout.user?.id)
+
 	const existingSession = loadChatSession()
 	if (existingSession) {
 		console.log("🔄 Using existing session:", existingSession.ulid)
@@ -110,13 +124,23 @@ const createSession = async (): Promise<ChatSessionData | null> => {
 	console.log("🆕 Creating new session...")
 
 	try {
+		console.log("createSession", layout.user?.id)
+
+		const payload: any = {
+			language_id: 64,
+			priority: "normal",
+		}
+
+		if (isLoggedIn) {
+			payload.web_user_id = layout.user?.id
+		}
+
 		const response = await axios.post<{ data: ChatSessionData }>(
 			`${baseUrl}/app/api/chats/sessions`,
-			{
-				language_id: 64,
-				priority: "normal",
-			}
+			payload
 		)
+
+		console.log(response)
 
 		if (response.data?.data) {
 			const sessionData = response.data.data
@@ -126,6 +150,7 @@ const createSession = async (): Promise<ChatSessionData | null> => {
 			chatSession.value = {
 				ulid: sessionData.ulid,
 				guest_identifier: sessionData.guest_identifier,
+				contact_name: sessionData.contact_name,
 				session_id: sessionData.session_id,
 			}
 
@@ -160,7 +185,11 @@ const getMessages = async (loadMore = false) => {
 		const fetched = response.data?.data?.messages.map((msg: ChatMessage) => ({
 			...msg,
 		}))
-		console.log(fetched)
+
+		if (response.data?.data?.session_status === "closed") {
+			isRating.value = true
+			rating.value = response.data?.data?.rating ?? 0
+		}
 
 		if (!loadMore) {
 			messages.value = fetched
@@ -201,6 +230,8 @@ const handleClickOutside = (e: MouseEvent) => {
 
 onMounted(() => {
 	document.addEventListener("mousedown", handleClickOutside)
+	syncLoginState()
+	window.addEventListener("storage", syncLoginState)
 })
 
 onBeforeUnmount(() => {
@@ -220,9 +251,16 @@ const sendMessage = async (messageText: string): Promise<any> => {
 	isSending.value = true
 
 	try {
-		const payload = {
+		console.log("layout user", layout.user?.id)
+		console.log("layout", layout)
+		console.log("isLoggedIn", isLoggedIn)
+		const payload: any = {
 			message_text: messageText,
 			message_type: "text",
+		}
+
+		if (isLoggedIn) {
+			payload.sender_id = layout.user?.id
 		}
 
 		const response = await axios.post(
@@ -301,6 +339,7 @@ const initChat = async () => {
 	console.log("✅ Session ready:", {
 		ulid: session.ulid,
 		guest_identifier: session.guest_identifier,
+		contact_name: session.contact_name,
 	})
 
 	await getMessages()
@@ -335,6 +374,17 @@ const startNewSession = async () => {
 	if (!session) return
 
 	await getMessages()
+	initWebSocket()
+	forceScrollBottom()
+}
+
+const openSessionFromHistory = async (ulid: string) => {
+	stopChatWebSocket()
+	messages.value = []
+	isRating.value = false
+	chatSession.value = { ulid }
+	localStorage.setItem("chat", JSON.stringify({ ulid, saved_at: new Date().toISOString() }))
+	await getMessages(false)
 	initWebSocket()
 	forceScrollBottom()
 }
@@ -374,6 +424,9 @@ defineExpose({
 					:session="chatSession"
 					:loading="loading"
 					:isRating="isRating"
+					:rating="rating"
+					:isLoggedIn="isLoggedIn"
+					@open-session="openSessionFromHistory"
 					@send-message="sendMessage"
 					@reload="(loadMore: any) => getMessages(loadMore)"
 					@mounted="forceScrollBottom"

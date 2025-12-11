@@ -2,6 +2,7 @@
 
 namespace App\Actions\CRM\Agent;
 
+use Exception;
 use App\Actions\OrgAction;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
@@ -10,9 +11,6 @@ use Illuminate\Validation\ValidationException;
 
 class StoreAgent extends OrgAction
 {
-    /**
-     * Controller endpoint
-     */
     public function asController(Organisation $organisation, ActionRequest $request): ?ChatAgent
     {
         $this->initialisation($organisation, $request);
@@ -27,7 +25,7 @@ class StoreAgent extends OrgAction
             ]);
 
             return null;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             request()->session()->flash('notification', [
                 'status'      => 'error',
                 'title'       => __('Error!'),
@@ -38,15 +36,9 @@ class StoreAgent extends OrgAction
         }
     }
 
-    /**
-     * Success response
-     */
-    public function htmlResponse(ChatAgent $agent = null): void
-    {
-        if (is_null($agent)) {
-            return;
-        }
 
+    public function htmlResponse(): void
+    {
         request()->session()->flash('notification', [
             'status'      => 'success',
             'title'       => __('Success!'),
@@ -54,9 +46,7 @@ class StoreAgent extends OrgAction
         ]);
     }
 
-    /**
-     * Store logic
-     */
+
     public function handle(array $modelData): ChatAgent
     {
         $exists = ChatAgent::where('user_id', $modelData['user_id'])
@@ -69,7 +59,7 @@ class StoreAgent extends OrgAction
             ]);
         }
 
-        // Defaults
+
         $modelData['is_online']          ??= false;
         $modelData['is_available']       ??= false;
         $modelData['auto_accept']        ??= true;
@@ -79,9 +69,6 @@ class StoreAgent extends OrgAction
     }
 
 
-    /**
-     * Validation rules
-     */
     public function rules(): array
     {
         return [

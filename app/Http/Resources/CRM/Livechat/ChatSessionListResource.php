@@ -25,24 +25,13 @@ class ChatSessionListResource extends JsonResource
             $activeAssignment = $this->assignments->first();
         }
 
-        $userData = false;
-
-        if ($this->relationLoaded('webUser') && $this->webUser) {
-            $userData = [
-                'name' => $this->webUser->customer->contact_name,
-                'email' => $this->webUser->email,
-            ];
-        }
-
         return [
             'ulid' => $this->ulid,
             'status' => $this->status,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
             'created_at_timestamp' => $this->created_at->copy()->setTimezone('UTC')->timestamp,
-
-            'customer' => $userData,
-
+            'contact_name' => $lastMessage?->chatSession?->webUser?->contact_name,
             'last_message' => $lastMessage ? [
                 'message' => $this->truncateMessage($lastMessage->message_text),
                 'sender_type' => $lastMessage->sender_type,
@@ -59,7 +48,7 @@ class ChatSessionListResource extends JsonResource
 
             'assigned_agent' => $activeAssignment ? [
                 'id' => $activeAssignment->chatAgent->id,
-                'name' => $activeAssignment->chatAgent->user->contact_name ,
+                'name' => $activeAssignment->chatAgent->user->contact_name,
             ] : null,
 
             'unread_count' => ChatMessage::where('chat_session_id', $this->id)
@@ -81,5 +70,4 @@ class ChatSessionListResource extends JsonResource
 
         return substr($message, 0, $length) . '...';
     }
-
 }
