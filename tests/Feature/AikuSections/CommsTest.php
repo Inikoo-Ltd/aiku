@@ -113,7 +113,7 @@ test('outbox seeded when website created', function (Shop $shop) {
 
     expect($website->group->commsStats->number_outboxes)->toBe(36)
         ->and($website->organisation->commsStats->number_outboxes)->toBe(36)
-        ->and($website->shop->commsStats->number_outboxes)->toBe(22);
+        ->and($website->shop->commsStats->number_outboxes)->toBe(23);
 
     /** @var Outbox $outbox */
     $forgotPasswordOutbox = $website->shop->outboxes()->where('code', 'password_reminder')->first();
