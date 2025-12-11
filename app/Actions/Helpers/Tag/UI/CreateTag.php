@@ -21,7 +21,7 @@ class CreateTag extends OrgAction
 {
     private ?TagScopeEnum $forcedScope = null;
 
-    public function inSelfFilledTag(Organisation $organisation, Shop $shop, ActionRequest $request): Response
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, ActionRequest $request): Response
     {
         $this->forcedScope = TagScopeEnum::USER_CUSTOMER;
         $this->initialisationFromShop($shop, $request);
@@ -31,7 +31,7 @@ class CreateTag extends OrgAction
 
     public function handle(ActionRequest $request): Response
     {
-        // Todo: conditional inSelfFilledTag and inInternalTag
+        // Todo: conditional inSelfFilledTags and inInternalTag
         $route = [
             'name'       => 'grp.org.shops.show.crm.self_filled_tags.store',
             'parameters' => [

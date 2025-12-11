@@ -14,9 +14,9 @@ use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Helpers\Tag\UpdateTag;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [IndexTags::class, 'inSelfFilledTag'])->name('index');
-Route::get('/create', [CreateTag::class, 'inSelfFilledTag'])->name('create');
-Route::get('/{tag}/edit', [EditTag::class, 'inSelfFilledTag'])->name('edit');
-Route::post('/store', [StoreTag::class, 'inSelfFilledTag'])->name('store');
-Route::patch('/update/{tag:id}', [UpdateTag::class, 'inSelfFilledTag'])->name('update')->withoutScopedBindings();
-Route::delete('/delete/{tag:id}', [DeleteTag::class, 'inSelfFilledTag'])->name('delete')->withoutScopedBindings();
+Route::get('/', [IndexTags::class, 'inSelfFilledTags'])->name('index');
+Route::get('/create', [CreateTag::class, 'inSelfFilledTags'])->name('create');
+Route::get('/{tag}/edit', [EditTag::class, 'inSelfFilledTags'])->name('edit');
+Route::post('/store', [StoreTag::class, 'inSelfFilledTags'])->name('store');
+Route::patch('/update/{tag:id}', [UpdateTag::class, 'inSelfFilledTags'])->name('update')->withoutScopedBindings();
+Route::delete('/delete/{tag:id}', [DeleteTag::class, 'inSelfFilledTags'])->name('delete')->withoutScopedBindings();

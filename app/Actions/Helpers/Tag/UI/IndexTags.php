@@ -33,7 +33,7 @@ class IndexTags extends OrgAction
     private Shop $parent;
     private ?TagScopeEnum $forcedScope = null;
 
-    public function inSelfFilledTag(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->forcedScope = TagScopeEnum::USER_CUSTOMER;

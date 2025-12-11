@@ -44,7 +44,7 @@ class StoreTag extends OrgAction
         $this->handle($customer, $this->validatedData);
     }
 
-    public function inSelfFilledTag(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
     {
         try {
             $this->forcedScope = TagScopeEnum::USER_CUSTOMER;

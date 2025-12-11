@@ -40,7 +40,7 @@ class UpdateTag extends OrgAction
         $this->handle($tag, $this->validatedData);
     }
 
-    public function inSelfFilledTag(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
     {
         try {
             $this->initialisationFromShop($shop, $request);
