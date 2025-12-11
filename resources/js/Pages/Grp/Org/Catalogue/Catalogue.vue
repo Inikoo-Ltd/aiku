@@ -13,7 +13,7 @@ import { faCheckCircle, faTimesCircle, faExclamationTriangle } from "@fas"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -27,7 +27,7 @@ import StatsBox from "@/Components/Stats/StatsBox.vue"
 library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt, faExclamationTriangle, faFolderDownload)
 
 const props = defineProps<{
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
         navigation: {}

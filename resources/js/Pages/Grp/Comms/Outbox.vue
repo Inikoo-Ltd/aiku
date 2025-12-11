@@ -7,13 +7,15 @@ import { capitalize } from "@/Composables/capitalize"
 import { computed, ref } from "vue"
 import type { Component } from "vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBars, faInboxOut, faMailBulk, faRabbitFast, faSeedling, faSquare, faExclamationCircle } from "@fal"
 import TableMailshots from "@/Components/Tables/TableMailshots.vue"
 import OutboxShowcase from "@/Components/Showcases/Grp/OutboxShowcase.vue"
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue"
+import TableReorderRemainderEmailBulkRuns from "@/Components/Tables/TableReorderRemainderEmailBulkRuns.vue"
+import Mailshots from "./Mailshots.vue"
 import { faPaperPlane } from "@far"
 import { faSave } from "@fas"
 
@@ -28,8 +30,10 @@ const props = defineProps<{
     email_bulk_runs?: {}
     dispatched_emails?: {}
     showcase: any
+    email_runs?: {}
 }>()
 
+console.log(props.email_runs)
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -39,7 +43,8 @@ const component = computed(() => {
         history: TableHistories,
         mailshots: TableMailshots,
         showcase: OutboxShowcase,
-        dispatched_emails: TableDispatchedEmails
+        dispatched_emails: TableDispatchedEmails,
+        email_runs: TableReorderRemainderEmailBulkRuns
     }
 
     return components[currentTab.value]

@@ -17,7 +17,7 @@ import { useTabChange } from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import TopupShowcase from '@/Components/Accounting/TopupShowcase.vue'
 
 library.add(faCoins);
@@ -26,7 +26,7 @@ const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChan
 
 const props = defineProps<{
     title: string,
-    pageHead: PageHeadingTS,
+    pageHead: PageHeadingTypes,
     tabs: {
         current: string;
         navigation: {};

@@ -62,6 +62,7 @@ use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
+use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -218,6 +219,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences
  * @property-read LaravelCollection<int, Service> $services
+ * @property-read LaravelCollection<int, ShippingCountry> $shippingCountries
  * @property-read LaravelCollection<int, ShippingZoneSchema> $shippingZoneSchemas
  * @property-read LaravelCollection<int, ShippingZone> $shippingZones
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $shopCollections
@@ -739,5 +741,10 @@ class Shop extends Model implements HasMedia, Auditable
     public function productsInStock(): HasMany
     {
         return $this->products()->where('available_quantity', '>', 0);
+    }
+
+    public function shippingCountries(): HasMany
+    {
+        return $this->hasMany(ShippingCountry::class);
     }
 }

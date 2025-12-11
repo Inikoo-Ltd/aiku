@@ -9,7 +9,7 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TablePaymentAccounts from '@/Components/Tables/Grp/Org/Accounting/TablePaymentAccounts.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Shop } from "@/types/shop"
 
 const props = defineProps<{

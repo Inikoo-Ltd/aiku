@@ -99,7 +99,7 @@ class EditProfileSettings
                             ],
                         ],
                     ],
-                    app()->environment('local') ? [
+                    [
                         "label"  => __("Timezone"),
                         "icon"   => "fal fa-clock",
                         "fields" => [
@@ -121,7 +121,7 @@ class EditProfileSettings
                                 "value"   => Arr::get($user->settings, 'timezones')
                             ]
                         ],
-                    ] : [],
+                    ],
                 ],
                 "args"      => [
                     "updateRoute" => [

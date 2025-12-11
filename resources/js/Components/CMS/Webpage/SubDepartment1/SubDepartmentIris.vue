@@ -106,6 +106,7 @@ const idxSlideLoading = ref<number | null>(null)
           type="internal"
           @start="() => idxSlideLoading = index"
           @finish="() => idxSlideLoading = null"
+          :style="getStyles(fieldValue?.card?.container?.properties, screenType)"
         >
         <template #default>
           <div v-if="item?.icon || item?.web_images?.main?.gallery" class="flex items-center justify-center min-w-5 min-h-5 w-5 h-5 shrink-0">

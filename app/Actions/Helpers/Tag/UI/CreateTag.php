@@ -11,7 +11,7 @@ namespace App\Actions\Helpers\Tag\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
-use App\Models\Goods\TradeUnit;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,56 +19,38 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateTag extends OrgAction
 {
-    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): Response
-    {
-        $this->initialisationFromGroup($tradeUnit->group, $request);
+    private ?TagScopeEnum $forcedScope = null;
 
-        return $this->handle($tradeUnit, $request);
+    public function inSelfFilledTag(Organisation $organisation, Shop $shop, ActionRequest $request): Response
+    {
+        $this->forcedScope = TagScopeEnum::USER_CUSTOMER;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($request);
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): Response
+    public function handle(ActionRequest $request): Response
     {
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($organisation, $request);
-    }
-
-    public function handle(Organisation|TradeUnit $parent, ActionRequest $request): Response
-    {
+        // Todo: conditional inSelfFilledTag and inInternalTag
         $route = [
-            'name'       => 'grp.org.tags.store',
+            'name'       => 'grp.org.shops.show.crm.tags.store',
             'parameters' => [
-                'organisation' => $parent->slug
+                'organisation' => $this->organisation->slug,
+                'shop'         => $this->shop->slug
             ]
         ];
-
-        if ($parent instanceof TradeUnit) {
-            $route = [
-                'name'       => 'grp.models.trade-units.tags.store',
-                'parameters' => [
-                    $parent->slug,
-                ],
-            ];
-        }
-
-        $scopes = collect(TagScopeEnum::cases())
-            ->map(fn ($case) => [
-                'label' => $case->pretty(),
-                'value' => $case->value,
-            ])
-            ->values()
-            ->toArray();
 
         return Inertia::render(
             'CreateModel',
             [
-                'title'    => __('Create Tag'),
-                'icon'     =>
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'title'       => __('Create Tag'),
+                'icon'        =>
                     [
                         'icon'  => ['fal', 'fa-tags'],
                         'title' => __('Tag'),
                     ],
-                'pageHead' => [
+                'pageHead'    => [
                     'title'        => __('Create Tag'),
                     'actions'      => [
                         [
@@ -76,13 +58,13 @@ class CreateTag extends OrgAction
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => str_replace('create', 'show', $request->route()->getName()),
+                                'name'       => str_replace('create', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
                     ],
                 ],
-                'formData' => [
+                'formData'    => [
                     'blueprint' => [
                         [
                             'title'  => __('Create Tag'),
@@ -92,16 +74,29 @@ class CreateTag extends OrgAction
                                     'label'    => __('Name'),
                                     'required' => true,
                                 ],
-                                'scope' => [
-                                    'type'     => 'select',
-                                    'label'    => __('Scope'),
-                                    'required' => true,
-                                    'options'  => $scopes,
-                                ],
                             ],
                         ],
                     ],
                     'route' => $route,
+                ],
+            ],
+        );
+    }
+
+    public function getBreadcrumbs(array $routeParameters): array
+    {
+        return array_merge(
+            IndexTags::make()->getBreadcrumbs($routeParameters),
+            [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.crm.tags.create',
+                            'parameters' => $routeParameters,
+                        ],
+                        'label' => __('Create'),
+                    ],
                 ],
             ],
         );

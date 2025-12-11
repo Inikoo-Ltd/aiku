@@ -139,26 +139,26 @@ const computedSelectedSidebarData = computed(() => {
     return productCategoriesAuto
 })
 
-const selectedMenu = ref(get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item)=>!item.hidden))
+const selectedMenu = ref(get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item)=> !item.hidden))
+watch(
+    () => props.fieldValue.navigation,
+    () => {
+        selectedMenu.value = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item)=> !item.hidden)
+    },
+    { deep: true }
+)
 
+// Section: Hover style
 const navHoverClass = ref(getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false))
-
 watch(
-  () => props.fieldValue?.hover,
-  () => {
-    navHoverClass.value = getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false)
-  },
-  { deep: true }
+    () => props.fieldValue?.hover,
+    () => {
+        navHoverClass.value = getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false)
+    },
+    { deep: true }
 )
 
 
-watch(
-  () => props.fieldValue.navigation,
-  () => {
-    selectedMenu.value = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item)=>!item.hidden)
-  },
-  { deep: true }
-)
 
 const internalHref = (url: string) => {
     // "https://www.aw-dropship.com/new",   -> /new
@@ -267,7 +267,7 @@ watch(loadingItem, (newVal) => {
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                             ? 'navigation'
                             : navigation?.link?.href
-                                ? 'cursor-pointer  navigation'
+                                ? 'cursor-pointer navigation'
                                 : ''">
                         <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
                         <div>
@@ -292,7 +292,7 @@ watch(loadingItem, (newVal) => {
                         :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                             ? 'navigation underline'
                             : navigation?.link?.href
-                                ? 'cursor-pointer  navigation'
+                                ? 'cursor-pointer navigation'
                                 : ''">
                         <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
                         <div class="ml-2">
@@ -316,7 +316,7 @@ watch(loadingItem, (newVal) => {
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                             ? 'navigation'
                             : navigation?.link?.href
-                                ? 'cursor-pointer  navigation'
+                                ? 'cursor-pointer navigation'
                                 : ''">
                         <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
                         <div>
@@ -328,7 +328,7 @@ watch(loadingItem, (newVal) => {
             </nav>
 
             <!-- Drawer: Sub Navigation -->
-            <Collapse v-if="hoveredNavigation?.subnavs" :when="isCollapsedOpen" as="div"
+            <Collapse v-if="hoveredNavigation?.subnavs && hoveredNavigation.type === 'multiple'" :when="isCollapsedOpen" as="div"
                 class="z-[49] absolute left-0 top-full bg-white border-t w-full shadow-lg"
                 :style="getStyles(fieldValue?.container?.properties, screenType)"
             >
@@ -509,6 +509,10 @@ watch(loadingItem, (newVal) => {
 
 
 .navigation {
+    transition-duration: v-bind('`${props.fieldValue?.hover?.container?.properties?.transition?.duration || 0}ms`') !important;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
     &:hover {
         background: v-bind('navHoverClass?.background || null') !important;
         color: v-bind('navHoverClass?.color || null') !important;

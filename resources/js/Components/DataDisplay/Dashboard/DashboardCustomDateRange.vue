@@ -31,46 +31,75 @@ const formattedDateRange = (date: string[] | Date[]) => {
 const isLoadingReload = ref(false);
 const dateFilterValue = ref([new Date(), new Date()]);
 
+// Function to get current quarter
+const getCurrentQuarter = () => {
+    const now = new Date();
+    const month = now.getMonth();
+    return Math.floor(month / 3) + 1;
+};
+
+// Function to get the last 4 quarters from now
+const getLastFourQuarters = computed(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentQuarter = getCurrentQuarter();
+    const quarters = [];
+
+    for (let i = 3; i >= 0; i--) {
+        let quarter = currentQuarter - i;
+        let year = currentYear;
+
+        // Adjust year if quarter goes negative
+        while (quarter <= 0) {
+            quarter += 4;
+            year -= 1;
+        }
+
+        quarters.push({ quarter, year });
+    }
+
+    return quarters;
+});
+
 // Computed property to check which quarter is currently selected
 const selectedQuarter = computed(() => {
     if (!dateFilterValue.value || dateFilterValue.value.length !== 2) return null;
 
     const currentRange = formattedDateRange(dateFilterValue.value);
 
-    // Check each quarter
-    for (let q = 1; q <= 4; q++) {
-        const quarterDates = getQuarterDates(q);
+    // Check each of the last 4 quarters
+    for (const { quarter, year } of getLastFourQuarters.value) {
+        const quarterDates = getQuarterDates(quarter, year);
         const quarterRange = formattedDateRange(quarterDates);
 
         if (currentRange === quarterRange) {
-            return q;
+            return `${quarter}-${year}`;
         }
     }
 
     return null;
 });
 
-// Function to get quarter date ranges
-const getQuarterDates = (quarter: number) => {
-    const currentYear = new Date().getFullYear();
+// Function to get quarter date ranges with year parameter
+const getQuarterDates = (quarter: number, year: number) => {
     let startDate, endDate;
 
     switch (quarter) {
         case 1: // Q1: Jan 1 - Mar 31
-            startDate = new Date(currentYear, 0, 1);
-            endDate = new Date(currentYear, 2, 31);
+            startDate = new Date(year, 0, 1);
+            endDate = new Date(year, 2, 31);
             break;
         case 2: // Q2: Apr 1 - Jun 30
-            startDate = new Date(currentYear, 3, 1);
-            endDate = new Date(currentYear, 5, 30);
+            startDate = new Date(year, 3, 1);
+            endDate = new Date(year, 5, 30);
             break;
         case 3: // Q3: Jul 1 - Sep 30
-            startDate = new Date(currentYear, 6, 1);
-            endDate = new Date(currentYear, 8, 30);
+            startDate = new Date(year, 6, 1);
+            endDate = new Date(year, 8, 30);
             break;
         case 4: // Q4: Oct 1 - Dec 31
-            startDate = new Date(currentYear, 9, 1);
-            endDate = new Date(currentYear, 11, 31);
+            startDate = new Date(year, 9, 1);
+            endDate = new Date(year, 11, 31);
             break;
         default:
             return [new Date(), new Date()];
@@ -80,8 +109,8 @@ const getQuarterDates = (quarter: number) => {
 };
 
 // Function to set quarter filter
-const setQuarterFilter = (quarter: number) => {
-    const quarterDates = getQuarterDates(quarter);
+const setQuarterFilter = (quarter: number, year: number) => {
+    const quarterDates = getQuarterDates(quarter, year);
     dateFilterValue.value = quarterDates;
 
     router.patch(
@@ -217,8 +246,8 @@ const _popover = ref(null);
 </script>
 
 <template>
-    <div class="flex rounded-md">
-        <div @click="(e) => _popover?.toggle(e)" v-tooltip="trans('Filter by dates')" class="group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75">
+    <div class="flex items-center gap-2 rounded-md">
+        <div @click="(e) => _popover?.toggle(e)"  class="group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75">
             <div
                 class="h-7 w-9 rounded flex justify-center items-center border border-gray-300 hover:bg-gray-300 text-gray-700"
                 :class="[
@@ -232,11 +261,21 @@ const _popover = ref(null);
             </div>
         </div>
 
+        <!-- Display selected date range when custom interval is active -->
+        <transition name="slide-fade">
+            <div v-if="intervals.value === 'ctm' && dateFilterValue[0] && dateFilterValue[1]"
+                 class="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded text-xs text-indigo-700 whitespace-nowrap">
+                <span class="font-medium">{{ useFormatTime(dateFilterValue[0], { formatTime: 'mdy' }) }}</span>
+                <span class="text-indigo-400">-</span>
+                <span class="font-medium">{{ useFormatTime(dateFilterValue[1], { formatTime: 'mdy' }) }}</span>
+            </div>
+        </transition>
+
         <Popover ref="_popover">
             <div class="border-gray-300 rounded-md right-0 z-10 xmt-3 w-fit transform px-4 pt-4 pb-6">
                 <div class="mb-4">
                     <div class="flex justify-between items-center">
-                        <div class="text-sm text-gray-500 mb-2">{{ trans("Quarter This Year") }}</div>
+                        <div class="text-sm text-gray-500 mb-2">{{ trans("Last 4 Quarters") }}</div>
                         <div class="flex items-center gap-x-3 mb-4">
                             <div @click="resetDatePicker" class="text-sm text-red-400 hover:text-red-600 cursor-pointer">
                                 {{ trans("Reset filter by dates") }}
@@ -245,17 +284,18 @@ const _popover = ref(null);
                     </div>
                     <div class="grid grid-cols-4 gap-2">
                         <button
-                            v-for="q in 4"
-                            :key="q"
-                            @click="setQuarterFilter(q)"
-                            class="px-3 py-2 text-xs rounded-md transition-colors font-medium"
+                            v-for="({ quarter, year }, index) in getLastFourQuarters"
+                            :key="`${quarter}-${year}`"
+                            @click="setQuarterFilter(quarter, year)"
+                            class="px-3 py-2 text-xs rounded-md transition-colors font-medium flex flex-col items-center"
                             :class="[
-                                selectedQuarter === q
+                                selectedQuarter === `${quarter}-${year}`
                                     ? 'bg-indigo-500 text-white shadow-sm'
                                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                             ]"
                         >
-                            Q{{ q }}
+                            <span class="font-semibold">Q{{ quarter }}</span>
+                            <span class="text-[10px] opacity-75">{{ year }}</span>
                         </button>
                     </div>
                 </div>
@@ -289,3 +329,24 @@ const _popover = ref(null);
         </Popover>
     </div>
 </template>
+
+<style scoped>
+/* Slide fade transition for date range display */
+.slide-fade-enter-active {
+    transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+    transition: all 0.2s ease-in;
+}
+
+.slide-fade-enter-from {
+    transform: translateX(-10px);
+    opacity: 0;
+}
+
+.slide-fade-leave-to {
+    transform: translateX(-10px);
+    opacity: 0;
+}
+</style>

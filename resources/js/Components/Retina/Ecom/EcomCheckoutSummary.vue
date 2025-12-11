@@ -9,6 +9,7 @@ import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import NeedToPayV2Retina from "@/Components/Utils/NeedToPayV2Retina.vue"
 
 const props = defineProps<{
     summary: {
@@ -26,12 +27,29 @@ const props = defineProps<{
             customer_order_ordinal: string
             customer_order_ordinal_tooltip: string
         }
+        products: {
+
+        }
+        delivery_notes: {
+
+        }
+        payments: {
+
+        }
+        invoices: {
+
+        }
+        customer: {
+
+        }
+    }
+    order?: {
+        id: number
     }
     balance?: string
     address_management?: AddressManagement
     is_unable_dispatch?: boolean
     contact_address?: Address | null
-    currency_code?: string
 }>()
 
 const locale = inject('locale', {})
@@ -146,12 +164,48 @@ const convertToFloat2 = (val: any) => {
 
         <!-- Section: amount of balance, charges, shipping, tax -->
         <div class="col-span-2 md:col-span-1">
-            <div class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
+            <div v-if="!order" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
                 <div class="">{{ trans("Current balance") }}:</div>
                 <div>
                     {{ locale.currencyFormat(layout?.iris?.currency?.code, balance ?? 0) }}
                 </div>
             </div>
+
+            <div v-else-if="order?.state === 'cancelled'" class="mb-2.5">
+                <div class="text-yellow-600 border-yellow-500 bg-yellow-200 border rounded-md px-3 py-2">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                    {{ trans("Order cancelled, any payments made have been returned to your balance") }}
+                </div>
+            </div>
+
+            <template v-else-if="summary?.products?.payment?.pay_status != 'no_need'">
+                <div class="w-full mb-2.5">
+                    <!-- Section: pay with balance (if order Submit without paid) -->
+                    <div class="w-full rounded-md shadow pxb-2 isolate border overflow-hidden"
+                        :class="[
+                            Number(summary.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
+                        ]"
+                    >
+                        <NeedToPayV2Retina
+                            :totalAmount="summary.products.payment.total_amount"
+                            :paidAmount="summary.products.payment.paid_amount"
+                            :payAmount="summary.products.payment.pay_amount"
+                            :balance="balance || 0"
+                            :payments="summary?.payments"
+                            :currencyCode="layout.iris?.currency?.code"
+                            :toBePaidBy="order?.to_be_paid_by"
+                            :order="order"
+                        >
+                            <template #default>
+                
+                
+                
+                            </template>
+                        </NeedToPayV2Retina>
+                    </div>
+                </div>
+            </template>
+
             
             <div class="border border-gray-200 p-2 rounded">
                 <OrderSummary

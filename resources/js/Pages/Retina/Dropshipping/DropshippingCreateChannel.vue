@@ -4,7 +4,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
 import { inject, ref, watch, onMounted, provide } from "vue";
 
-import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import {PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import {routeType} from "@/types/route";
@@ -23,12 +23,15 @@ import PurePassword from "@/Components/Pure/PurePassword.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core"
-import EbayProgressBar from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayProgressBar.vue";
+import ProgressBar from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/ProgressBar.vue";
 import EbayAccountNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAccountNameForm.vue";
 import EbaySiteForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbaySiteForm.vue";
 import EbayAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAuthKeyForm.vue";
 import EbayListingProfileNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileNameForm.vue";
 import EbayListingProfileConfirmationForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileConfirmationForm.vue";
+import WooAccountNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelWoo/WooAccountNameForm.vue"
+import WooAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelWoo/WooAuthKeyForm.vue"
+import WooConnectedFinish from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelWoo/WooConnectedFinish.vue"
 library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers);
@@ -66,6 +69,7 @@ const props = defineProps<{
     }
     type_ebay: {
         connectRoute: routeType
+        is_active: boolean
     }
     type_amazon: {
         connectRoute: routeType
@@ -126,25 +130,6 @@ const wooCommerceInput = ref({
     name: null as null | string,
     url: null as null | string
 });
-const onSubmitWoocommerce = async () => {
-    try {
-        const response = await axios.post(
-            route(props.type_woocommerce?.connectRoute?.name, props.type_woocommerce.connectRoute.parameters),
-            wooCommerceInput.value);
-        isModalWooCommerce.value = false;
-        wooCommerceInput.value.name = null;
-        wooCommerceInput.value.url = null;
-
-        window.location.href = response.data;
-    } catch (error) {
-        console.log("error", error);
-        notify({
-            title: trans("Something went wrong"),
-            text: error.response?.data?.message,
-            type: "error"
-        });
-    }
-}
 
 // Section: Manual
 const isModalManual = ref(false)
@@ -285,6 +270,10 @@ const closeCreateEbayModal = () => {
     ebayName.value = null;
 }
 
+const closeCreateWooModal = () => {
+    isModalWooCommerce.value = false;
+}
+
 const openCreateEbayModal = async () => {
     isPlatformCreateLoading.value = true;
     const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.creating_check'));
@@ -325,16 +314,17 @@ const openCreateEbayModal = async () => {
 }
 
 provide("closeCreateEbayModal", closeCreateEbayModal);
+provide("closeCreateWooModal", closeCreateWooModal);
 provide("ebayId", ebayId);
 provide("ebayName", ebayName);
 provide("customerSalesChannelId", customerSalesChannelId);
 
 const steps = ref([
-    { name: "Ebay Account Name", status: "current" },
+    { name: "Account Name", status: "current" },
     // { name: "Ebay Site", status: "upcoming" },
-    { name: "Ebay Auth Key", status: "upcoming" },
+    { name: "Auth Key", status: "upcoming" },
     // { name: "Ebay Listing Profile Name", status: "upcoming" },
-    { name: "Ebay Listing Profile Confirmation", status: "upcoming" }
+    { name: "Listing Profile Confirmation", status: "upcoming" }
 ]);
 
 provide("steps", steps);
@@ -345,6 +335,12 @@ const stepComponents = [
     EbayAuthKeyForm,
     // EbayListingProfileNameForm,
     EbayListingProfileConfirmationForm
+];
+
+const stepWooComponents = [
+    WooAccountNameForm,
+	WooAuthKeyForm,
+	WooConnectedFinish
 ];
 
 const currentStep = ref(0);
@@ -501,7 +497,7 @@ provide("goNext", goNext);
 
                     <Button
                         :loading="isPlatformCreateLoading"
-                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        v-if="type_ebay.is_active"
                         :label="trans('Connect')"
                         xtype="primary"
                         type="primary"
@@ -509,7 +505,7 @@ provide("goNext", goNext);
                         @click="openCreateEbayModal"
                     />
 
-<!--                    <Button xv-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
+                    <Button v-else :label="trans('Maintenance')" type="tertiary" disabled full/>
                 </div>
             </div>
 
@@ -651,27 +647,10 @@ provide("goNext", goNext);
 
     <!-- Modal: Woocommerce -->
     <Modal :isOpen="isModalWooCommerce" @onClose="isModalWooCommerce = false" width="w-full max-w-lg">
-        <div class="">
-            <div class="mb-4">
-                <div class="text-center font-semibold text-xl">
-                    {{ trans("WooCommerce store Url") }}
-                </div>
-
-                <div class="text-center text-xs text-gray-500">
-                    {{ trans("Enter your Woocommerce store url") }}
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-y-2">
-                <PureInput v-model="wooCommerceInput.name" :placeholder="trans('Your store name')"></PureInput>
-                <PureInputWithAddOn v-model="wooCommerceInput.url" :leftAddOn="{
-                    icon: 'fal fa-globe'
-                }" :placeholder="'e.g https://storeurlexample.com'"
-                                    @keydown.enter="() => onSubmitWoocommerce()"/>
-            </div>
-
-            <Button @click="() => onSubmitWoocommerce()" full label="Create" :loading="!!isLoading" class="mt-6"/>
-        </div>
+		<div class="flex flex-col gap-6">
+			<ProgressBar />
+			<component :is="stepWooComponents[currentStep]" :props="props" />
+		</div>
     </Modal>
 
     <!-- Modal: Ebay -->
@@ -700,7 +679,7 @@ provide("goNext", goNext);
 
     <Dialog v-model:visible="isModalCreateEbay" modal header="eBay" class="max-w-[90%] w-full">
         <div class="flex flex-col gap-6">
-            <EbayProgressBar />
+            <ProgressBar />
             <component :is="stepComponents[currentStep]" :props="props" />
         </div>
     </Dialog>

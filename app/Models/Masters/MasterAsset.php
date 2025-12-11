@@ -21,6 +21,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
+use App\Models\Traits\InMasterShop;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -188,6 +189,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasImage;
     use HasTranslations;
+    use InMasterShop;
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
@@ -252,16 +254,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
-    }
-
-    public function group(): BelongsTo
-    {
-        return $this->belongsTo(Group::class);
-    }
-
-    public function masterShop(): BelongsTo
-    {
-        return $this->belongsTo(MasterShop::class);
     }
 
     public function products(): HasMany

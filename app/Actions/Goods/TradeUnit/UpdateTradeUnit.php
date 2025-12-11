@@ -119,6 +119,16 @@ class UpdateTradeUnit extends GrpAction
         $tradeUnit->refresh();
 
 
+        if ($tradeUnit->wasChanged('type')) {
+            foreach ($tradeUnit->masterAssets as $masterAsset) {
+                if ($masterAsset->is_single_trade_unit) {
+                    UpdateMasterAsset::run($masterAsset, [
+                        'unit' => $tradeUnit->type,
+                    ]);
+                }
+            }
+        }
+
         if ($tradeUnit->wasChanged('is_for_sale')) {
             foreach ($tradeUnit->masterAssets()->where('type', MasterAssetTypeEnum::PRODUCT)->get() as $masterProduct) {
                 UpdateMasterAsset::run($masterProduct, [

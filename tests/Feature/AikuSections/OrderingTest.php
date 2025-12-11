@@ -46,6 +46,7 @@ use App\Actions\Ordering\Transaction\StoreTransactionFromAdjustment;
 use App\Actions\Ordering\Transaction\StoreTransactionFromCharge;
 use App\Actions\Ordering\Transaction\StoreTransactionFromShipping;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
@@ -71,8 +72,11 @@ use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
+use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
+use App\Models\Helpers\Country;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Date;
 use Inertia\Testing\AssertableInertia;
 
@@ -108,6 +112,15 @@ beforeEach(function () {
     actingAs($this->user);
 });
 
+test('store shipping country action', function () {
+    // Ensure migration exists (in case snapshot DB was loaded)
+    $shippingCountry = StoreShippingCountry::make()->action($this->shop, [
+        'country_id' => Country::first()->id,
+    ]);
+    $this->shop->refresh();
+    expect($shippingCountry)->toBeInstanceOf(ShippingCountry::class)
+        ->and($this->shop->stats->number_shipping_countries)->toBe(1);
+});
 
 
 test('create order', function () {
@@ -153,10 +166,12 @@ test('get order products', function (Order $order) {
 
     $order->refresh();
 
+
     // Test the GetOrderProducts action
     $result = GetOrderProducts::make()->handle($order);
 
-    expect($result)->toBeInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class)
+
+    expect($result)->toBeInstanceOf(LengthAwarePaginator::class)
         ->and($result->count())->toBeGreaterThanOrEqual(1);
 
     // Test that the product data is correctly retrieved

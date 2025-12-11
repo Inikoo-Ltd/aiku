@@ -69,9 +69,12 @@ function tagColorClass(scope?: string) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(reference)="{ item: customer }">
-            <Link :href="customerRoute(customer) as string" class="primaryLink">
+            <Link v-if="customerRoute(customer)" :href="customerRoute(customer) as string" class="primaryLink">
                 {{ customer["reference"] }}
             </Link>
+            <span v-else>
+                {{ customer["reference"] }}
+            </span>
         </template>
         <template #cell(shop)="{ item: customer }" class="primaryLink">
             <Link :href="shopRoute(customer)">

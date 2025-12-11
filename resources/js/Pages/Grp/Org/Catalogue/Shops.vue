@@ -18,7 +18,7 @@ import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.v
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { faCube, faFolder, faFolderTree } from '@fal'
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
 library.add( faCube, faFolder, faFolderTree )
 

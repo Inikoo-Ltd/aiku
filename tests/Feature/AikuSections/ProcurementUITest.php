@@ -271,7 +271,7 @@ test('UI index org supplier products', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'Supplier products')
+                        ->where('title', 'Supplier Products')
                         ->etc()
             );
 

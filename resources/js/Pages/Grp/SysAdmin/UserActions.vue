@@ -16,7 +16,7 @@ import TableUserRequestLogs from "@/Components/Tables/Grp/SysAdmin/TableUserRequ
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { capitalize } from "@/Composables/capitalize";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 
 library.add(faRoad, faTerminal, faUserSlash, faBlender);

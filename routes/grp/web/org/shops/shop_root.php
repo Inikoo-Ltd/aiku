@@ -56,6 +56,9 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("platforms")
                     ->name("platforms.")
                     ->group(__DIR__ . "/platforms.php");
+                Route::prefix("tags")
+                    ->name("tags.")
+                    ->group(__DIR__."/tags.php");
             }
         );
 

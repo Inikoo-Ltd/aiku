@@ -96,7 +96,7 @@ class IndexProducts extends OrgAction
                 'customers_invoiced_all',
             ]);
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
+        return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug', 'customers_invoiced_all', 'invoices_all', 'sales_all'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

@@ -109,7 +109,7 @@ class IndexPlatforms extends OrgAction
 
         if ($this->parent instanceof Shop) {
             $title      = $this->parent->name;
-            $model      = __('platforms');
+            $model      = __('Platform');
             $icon       = [
                 'icon'  => ['fal', 'fa-route'],
                 'title' => __('Platforms')
@@ -118,7 +118,7 @@ class IndexPlatforms extends OrgAction
                 'icon' => 'fal fa-route',
             ];
             $afterTitle = [
-                'label' => __('platforms')
+                'label' => __('Platforms')
             ];
         }
 
@@ -132,7 +132,7 @@ class IndexPlatforms extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('platforms'),
+                'title'       => __('Platforms'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -163,7 +163,7 @@ class IndexPlatforms extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('platforms'),
+                        'label' => __('Platforms'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],

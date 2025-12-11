@@ -17,7 +17,7 @@ import {
 	faMapMarkerAlt,
 	faAddressCard,
 } from "@fal"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
 import { faCheck } from "@fas"
 import { trans } from "laravel-vue-i18n"
