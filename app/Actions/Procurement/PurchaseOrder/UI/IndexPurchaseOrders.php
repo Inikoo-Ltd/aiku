@@ -81,11 +81,17 @@ class IndexPurchaseOrders extends OrgAction
                 ->where('purchase_order_transactions.org_stock_id', $parent->id)
                 ->with('purchaseOrderTransactions');
             $query->distinct('purchase_orders.id');
+            // added orderBy prefix to show the purchase orders to the table at specific SKU's 👇
+            $query->orderBy('purchase_orders.id');
+            // added orderBy prefix to show the purchase orders to the table at specific SKU's 👆
         } elseif ($parent instanceof OrgSupplierProduct) {
             $query->leftJoin('purchase_order_transactions', 'purchase_orders.id', '=', 'purchase_order_transactions.purchase_order_id')
                 ->where('purchase_order_transactions.org_supplier_product_id', $parent->id)
                 ->with('purchaseOrderTransactions');
             $query->distinct('purchase_orders.id');
+            // added orderBy prefix to show the purchase orders to the table at specific SKU's 👇
+            $query->orderBy('purchase_orders.id');
+            // added orderBy prefix to show the purchase orders to the table at specific SKU's 👆
         } else {
             $query->where('purchase_orders.organisation_id', $parent->id);
         }
@@ -96,7 +102,10 @@ class IndexPurchaseOrders extends OrgAction
             ->select([
                 'purchase_orders.*',
             ])
-            ->selectRaw('cost_total*org_exchange  as org_total_cost')
+            // ->selectRaw('cost_total*org_exchange  as org_total_cost')
+            // changed this section 👇
+            ->selectRaw('purchase_orders.org_exchange * purchase_orders.cost_total as org_total_cost')
+            // changed this section 👆
             ->selectRaw('\''.$organisation->currency->code.'\' as org_currency_code')
             ->allowedSorts(['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
             ->allowedFilters([$globalSearch])

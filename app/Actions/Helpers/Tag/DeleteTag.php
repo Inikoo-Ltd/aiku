@@ -36,14 +36,14 @@ class DeleteTag extends OrgAction
         $this->handle($tag);
     }
 
-    public function inSelfFilledTag(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
     {
         try {
             $this->initialisationFromShop($shop, $request);
 
             $this->handle($tag);
 
-            return Redirect::route('grp.org.shops.show.crm.tags.index', [
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
                 $this->organisation->slug,
                 $this->shop->slug
             ])->with('notification', [
@@ -52,7 +52,7 @@ class DeleteTag extends OrgAction
                 'description' => __('Tag deleted.'),
             ]);
         } catch (Exception $e) {
-            return Redirect::route('grp.org.shops.show.crm.tags.index', [
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
                 $this->organisation->slug,
                 $this->shop->slug
             ])->with('notification', [

@@ -19,11 +19,11 @@ class GetCountriesOptions
     {
         $selectOptions = [];
         /** @var Country $country */
-        foreach (Country::all() as $country) {
+        foreach (Country::where('status', true)->where('show_in_address', true)->get() as $country) {
             $selectOptions[$country->id] =
                 [
                     'label' => $country->name.' ('.$country->code.')',
-                    'id' => $country->id
+                    'id'    => $country->id
                 ];
         }
 

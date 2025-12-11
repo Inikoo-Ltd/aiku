@@ -33,7 +33,7 @@ class IndexTags extends OrgAction
     private Shop $parent;
     private ?TagScopeEnum $forcedScope = null;
 
-    public function inSelfFilledTag(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->forcedScope = TagScopeEnum::USER_CUSTOMER;
@@ -111,7 +111,7 @@ class IndexTags extends OrgAction
                             'tooltip' => __('Create Tag'),
                             'label'   => __('Create Tag'),
                             'route'   => [
-                                'name'       => 'grp.org.shops.show.crm.tags.create',
+                                'name'       => 'grp.org.shops.show.crm.self_filled_tags.create',
                                 'parameters' => [
                                     'organisation' => $this->organisation->slug,
                                     'shop' => $this->shop->slug
@@ -135,7 +135,7 @@ class IndexTags extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.shops.show.crm.tags.index',
+                            'name'       => 'grp.org.shops.show.crm.self_filled_tags.index',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Tags'),

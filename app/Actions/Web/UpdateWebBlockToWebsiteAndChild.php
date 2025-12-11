@@ -11,17 +11,23 @@ namespace App\Actions\Web;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
-use App\Actions\Traits\WithActionUpdate;
 use App\Events\BroadcastUpdateWeblocks;
 use App\Models\Web\Website;
 use App\Models\Web\WebBlockType;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateWebBlockToWebsiteAndChild extends OrgAction
+class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
 {
+    use AsAction;
     use WithWebEditAuthorisation;
-    use WithActionUpdate;
 
-    public function handle(WebBlockType $newWebBlock, Website $website, string $marginal, array $fieldValue): WebBlockType
+    public function getJobUniqueId(Website $website): string
+    {
+        return $website->id;
+    }
+
+    public function handle(Website $website, WebBlockType $newWebBlock, string $marginal, array $fieldValue): WebBlockType
     {
         $progress = 0;
         $type  = $marginal === 'products' ? 'list_products' : $marginal;

@@ -22,6 +22,8 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
+import { faSpinnerThird } from '@far'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -46,6 +48,7 @@ const props = defineProps<{
 const layout = inject('layout')
 const currentTab = ref(props.tabs.current)
 const loadingPublish = ref(false)
+const modalPublish = ref(false)
 const progress = ref(0)
 
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -75,7 +78,11 @@ const onPublish = () => {
     { layout: payload },
     {
       preserveScroll: true,
-      onStart: () => loadingPublish.value = true,
+      onStart: () =>{
+        modalPublish.value = true
+        loadingPublish.value = true
+        progress.value = 0
+      },
       onSuccess: () => {
         notify({ type: 'success', title: 'Success', text: 'Website section published successfully.' })
         initSocketListener()
@@ -105,11 +112,12 @@ const initSocketListener = () => {
   const socketAction = ".progress";
 
   channel.value = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
-    console.log("Progress Event:", eventData);
     if (typeof eventData.percent === "number") {
       progress.value = eventData.percent
+      loadingPublish.value = true
       if (eventData.percent == 100) {
         loadingPublish.value = false
+        modalPublish.value = false
       }
     }
     if (eventData.percent >= 100) stopSocketListener();
@@ -119,11 +127,11 @@ const initSocketListener = () => {
 
 
 const stopSocketListener = () => {
-  progress.value = 0 // Moved it here.
-  /*   if (channel.value) {
-      channel.value.stopListening()
+  progress.value = 0
+    if (channel.value) {
       channel.value = null
-    } */
+      channel.value = null
+    }
 }
 
 onMounted(() => {
@@ -139,12 +147,15 @@ onUnmounted(() => {
 <template>
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
-      <Button v-if="currentTab !== 'website_layout'" v-bind="action" @click="onPublish" :loading="loadingPublish" />
+      <Button v-if="currentTab !== 'website_layout'" v-bind="action" @click="onPublish" :disabled="loadingPublish" :loading="loadingPublish">
+        <template #loading v-if="loadingPublish" >
+            <FontAwesomeIcon  :icon="faSpinnerThird" class="animate-spin" fixed-width aria-hidden="true" /> {{ progress }}%
+        </template>
+      </Button>
       <div v-else></div>
     </template>
   </PageHeading>
 
-  {{ props.website_slug }}
 
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
@@ -152,15 +163,16 @@ onUnmounted(() => {
     <component :is="component" :data="props[currentTab]" :currency="props.currency" />
   </KeepAlive>
 
-  <Dialog v-model:visible="loadingPublish" modal :closable="false" :draggable="false" class="w-[90%] md:w-[400px]"
+  <Dialog v-model:visible="modalPublish" modal :closable="true" :draggable="false" class="w-[90%] md:w-[400px]"
     header="Please Wait...">
-    <div class="flex flex-col items-center text-center py-4">
-      <ProgressSpinner style="width:50px;height:50px" />
+    <div class="flex flex-col items-center text-center py-4 relative">
+      <ProgressSpinner style="width:60px;height:60px" />
+      <p class="absolute top-6 mt-2 text-gray-800 font-semibold">{{ progress }}%</p>
       <p class="mt-4 text-gray-700">
         {{ trans('We are updating all webpages in your website.') }}<br />
         {{ trans('Do not close this page.') }}
       </p>
-      <p class="mt-2 text-gray-800 font-semibold">{{ progress }}%</p>
+      
       <div class="w-full bg-gray-200 h-2 rounded mt-2">
         <div class="bg-blue-600 h-2 rounded" :style="{ width: progress + '%' }"></div>
       </div>
