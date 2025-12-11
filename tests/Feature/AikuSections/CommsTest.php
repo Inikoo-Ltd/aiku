@@ -149,7 +149,7 @@ test(
         $fulfilment = createFulfilment($this->organisation);
         expect($fulfilment->group->commsStats->number_outboxes)->toBe(50)
             ->and($fulfilment->organisation->commsStats->number_outboxes)->toBe(50)
-            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe(16);
+            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe(14);
 
         return $fulfilment;
     }
