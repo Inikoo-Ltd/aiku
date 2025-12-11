@@ -111,7 +111,7 @@ test('outbox seeded when website created', function (Shop $shop) {
         Website::factory()->definition()
     );
 
-    expect($website->group->commsStats->number_outboxes)->toBe(34)
+    expect($website->group->commsStats->number_outboxes)->toBe(36)
         ->and($website->organisation->commsStats->number_outboxes)->toBe(34)
         ->and($website->shop->commsStats->number_outboxes)->toBe(21);
 
