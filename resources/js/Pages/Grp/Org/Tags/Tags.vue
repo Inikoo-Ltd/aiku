@@ -18,9 +18,43 @@
 
     defineProps<{
         title: string;
-        pageHeading: [];
+        pageHeading: any;
         data: any;
     }>();
+
+    const getEditRoute = ({ slug }: { slug: string }) => {
+        switch (route().current()) {
+            case ('grp.org.shops.show.crm.self_filled_tags.index'):
+                return route('grp.org.shops.show.crm.self_filled_tags.edit', { ...route().params, tag: slug });
+            case ('grp.org.shops.show.crm.internal_tags.index'):
+                return route('grp.org.shops.show.crm.internal_tags.edit', { ...route().params, tag: slug });
+            default:
+                return '';
+        }
+    }
+
+    const getDeleteRoute = ({ id }: { id: number }) => {
+        switch (route().current()) {
+            case ('grp.org.shops.show.crm.self_filled_tags.index'):
+                return {
+                    name: 'grp.org.shops.show.crm.self_filled_tags.delete',
+                    parameters: {
+                        ...route().params,
+                        tag: id
+                    }
+                }
+            case ('grp.org.shops.show.crm.internal_tags.index'):
+            return {
+                name: 'grp.org.shops.show.crm.internal_tags.delete',
+                parameters: {
+                    ...route().params,
+                    tag: id
+                }
+            }
+            default:
+                return undefined;
+        }
+    }
 </script>
 
 <template>
@@ -29,7 +63,7 @@
     <Table :resource="data">
         <template #cell(action)="{ item }">
             <div class="flex items-center gap-2">
-                 <Link :href="route('grp.org.shops.show.crm.self_filled_tags.edit', { ...route().params, tag: item.slug })">
+                 <Link :href="getEditRoute(item)">
                     <Button
                         v-tooltip="trans('Edit Tag')"
                         type="secondary"
@@ -38,7 +72,7 @@
                     />
                 </Link>
                 <ModalConfirmationDelete
-                    :routeDelete="{ name: 'grp.org.shops.show.crm.self_filled_tags.delete', parameters: { ...route().params, tag: item.id } }"
+                    :routeDelete="getDeleteRoute(item)"
                     :title="trans('Are you sure you want to delete this tag?')"
                     :noLabel="trans('Delete')"
                     noIcon="fal fa-trash"

@@ -118,6 +118,19 @@ trait WithCustomersSubNavigation
             ]
         ];
 
+        $meta[] = [
+            'route'     => [
+                'name'       => 'grp.org.shops.show.crm.internal_tags.index',
+                'parameters' => $request->route()->originalParameters()
+            ],
+            'number'   => Tag::where('shop_id', $this->parent->id)->where('scope', TagScopeEnum::ADMIN_CUSTOMER)->count() ?? 0,
+            'label'    => __('Internal Tags'),
+            'leftIcon' => [
+                'icon'    => 'fal fa-tags',
+                'tooltip' => __('Internal tags')
+            ]
+        ];
+
         return $meta;
     }
 }

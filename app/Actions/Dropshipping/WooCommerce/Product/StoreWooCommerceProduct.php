@@ -43,6 +43,7 @@ class StoreWooCommerceProduct extends RetinaAction
         try {
             /** @var Product $product */
             $product = $portfolio->item;
+            $customerSalesChannel = $wooCommerceUser->customerSalesChannel;
 
             $images = [];
             if (app()->isProduction()) {
@@ -76,6 +77,12 @@ class StoreWooCommerceProduct extends RetinaAction
 
             $description = $portfolio->customer_description . '<br><br>' . $attachmentLinks;
 
+            $availableQuantity = $product->available_quantity;
+
+            if ($customerSalesChannel->max_quantity_advertise > 0) {
+                $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
+            }
+
             $wooCommerceProduct = [
                 'name'              => $portfolio->customer_product_name,
                 'type'              => 'simple',
@@ -85,8 +92,8 @@ class StoreWooCommerceProduct extends RetinaAction
                 'global_unique_id'  => $product->barcode,
                 'categories'        => [],
                 'images'            => $images,
-                'stock_quantity'    => $product->available_quantity,
-                'manage_stock'      => !is_null($product->available_quantity),
+                'stock_quantity'    => $availableQuantity,
+                'manage_stock'      => !is_null($availableQuantity),
                 'stock_status'      => Arr::get($product, 'stock_status', 'instock'),
                 'sku'               => $portfolio->sku,
                 'weight'            => (string)($product->gross_weight / 100),
