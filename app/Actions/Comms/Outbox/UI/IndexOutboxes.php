@@ -92,6 +92,8 @@ class IndexOutboxes extends OrgAction
                 'outboxes.type',
                 'outboxes.data',
                 'outboxes.state',
+                'outboxes.days_after',
+                'outboxes.sub_type',
                 'outbox_intervals.dispatched_emails_lw',
                 'outbox_intervals.opened_emails_lw',
                 'outbox_intervals.unsubscribed_lw',

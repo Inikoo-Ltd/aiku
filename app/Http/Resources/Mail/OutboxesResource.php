@@ -51,6 +51,8 @@ class OutboxesResource extends JsonResource
             'organisation_slug'    => $this->organisation_slug,
             'shop_name'            => $this->shop_name,
             'shop_slug'            => $this->shop_slug,
+            'days_after'           => $this->days_after,
+            'sub_type'             => $this->sub_type
         ];
     }
 }
