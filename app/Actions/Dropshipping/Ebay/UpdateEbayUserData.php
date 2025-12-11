@@ -54,7 +54,7 @@ class UpdateEbayUserData extends OrgAction
         $returnPolicies = $ebayUser->getReturnPolicies();
         $returnPolicyId = Arr::get($returnPolicies, 'returnPolicies.0.returnPolicyId');
 
-        $country = Country::find(Arr::get($shop?->settings, 'ebay.marketplace_id'));
+        $country = Country::find(Arr::get($shop?->settings, 'ebay.warehouse_country'));
 
         $defaultLocationData = [
             'locationKey' => $shop->slug . '-warehouse-' . $country->code,
