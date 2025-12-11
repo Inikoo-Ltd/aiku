@@ -417,16 +417,16 @@ const generateRouteDeliveryNote = (slug: string) => {
 const cancelLoading = ref(false)
 const confirm2 = (action) => {
     confirm.require({
-        message: 'Do you want to cancel this order ?',
-        header: 'Cancel Order',
-        rejectLabel: 'Cancel',
+        message: trans('Do you want to cancel this order?'),
+        header: trans('Cancel Order'),
+        rejectLabel: trans('Cancel'),
         rejectProps: {
-            label: 'No',
+            label: trans('No'),
             severity: 'secondary',
             outlined: true
         },
         acceptProps: {
-            label: 'Yes',
+            label: trans('Yes'),
             severity: 'danger'
         },
         accept: () => {
