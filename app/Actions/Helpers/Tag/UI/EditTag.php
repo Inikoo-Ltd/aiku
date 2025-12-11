@@ -30,11 +30,24 @@ class EditTag extends OrgAction
         return $this->handle($tag, $request);
     }
 
+    public function inInternalTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): Response
+    {
+        $this->forcedScope = TagScopeEnum::ADMIN_CUSTOMER;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($tag, $request);
+    }
+
     public function handle(Tag $tag, ActionRequest $request): Response
     {
-        // Todo: conditional inSelfFilledTags and inInternalTag
+        $routeName = match ($this->forcedScope) {
+            TagScopeEnum::USER_CUSTOMER  => 'grp.org.shops.show.crm.self_filled_tags.update',
+            TagScopeEnum::ADMIN_CUSTOMER => 'grp.org.shops.show.crm.internal_tags.update',
+            default                      => 'grp.org.shops.show.crm.self_filled_tags.update',
+        };
+
         $updateRoute = [
-            'name'       => 'grp.org.shops.show.crm.self_filled_tags.update',
+            'name'       => $routeName,
             'parameters' => [
                 $this->organisation->slug,
                 $this->shop->slug,

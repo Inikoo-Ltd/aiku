@@ -93,6 +93,10 @@ class StoreShopifyProductVariant extends RetinaAction
                 ];
             }
 
+            $availableQuantity = $product->available_quantity;
+            if ($customerSalesChannel->max_quantity_advertise > 0) {
+                $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
+            }
 
             // Prepare variables for the mutation
             $variants = [
@@ -100,7 +104,7 @@ class StoreShopifyProductVariant extends RetinaAction
                     'barcode'             => $portfolio->barcode,
                     'inventoryItem'       => $inventoryItem,
                     'inventoryQuantities' => [
-                        'availableQuantity' => $product->available_quantity ?? 0,
+                        'availableQuantity' => $availableQuantity ?? 0,
                         'locationId'        => $shopifyUser->shopify_location_id
                     ]
                 ]
