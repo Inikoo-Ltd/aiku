@@ -30,7 +30,7 @@ const props = defineProps<{
   }
   luigisbox_tracker_id?: string
 }>()
-const layout: any = inject("layout", {});
+let layout: any = inject("layout", {});
 const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
 const isPreviewMode = ref(false)
