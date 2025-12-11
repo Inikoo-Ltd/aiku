@@ -71,6 +71,7 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
             $queryCustomer->orderBy('customers.id');
 
             $LastBulkRun = null;
+            $updateLastOutBoxSent = null;
             foreach ($queryCustomer->cursor() as $customer) {
 
                 $bulkRun = $this->generateEmailBulkRuns(
@@ -83,6 +84,8 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
 
                 // Dispatch SendReOrderRemainderToCustomerEmail immediately
                 SendReOrderRemainderToCustomerEmail::dispatch($customer, $outbox->code, $bulkRun);
+
+                $updateLastOutBoxSent = $currentDateTime;
             }
 
             if ($LastBulkRun) {
@@ -90,9 +93,10 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
                 EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun);
             }
 
-
-            // update last_sent_at for this outbox
-            $this->update($outbox, ['last_sent_at' => $currentDateTime]);
+            if ($updateLastOutBoxSent) {
+                // update last_sent_at for this outbox
+                $this->update($outbox, ['last_sent_at' => $updateLastOutBoxSent]);
+            }
         }
     }
 
