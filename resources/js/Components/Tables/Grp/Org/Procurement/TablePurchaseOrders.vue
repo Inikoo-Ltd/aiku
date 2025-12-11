@@ -39,6 +39,12 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
       return route(
         "grp.org.procurement.org_partners.show.purchase-orders.show",
         [route().params["organisation"], route().params["orgPartner"], purchaseOrder.slug]);
+    // Handle OrgStock inventory pages
+    case "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show":
+    case "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show":
+      return route(
+        "grp.org.procurement.purchase_orders.show",
+        [route().params["organisation"], purchaseOrder.slug]);
     default:
       return "";
   }

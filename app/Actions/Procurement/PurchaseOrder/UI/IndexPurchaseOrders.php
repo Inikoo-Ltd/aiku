@@ -89,9 +89,7 @@ class IndexPurchaseOrders extends OrgAction
                 ->where('purchase_order_transactions.org_supplier_product_id', $parent->id)
                 ->with('purchaseOrderTransactions');
             $query->distinct('purchase_orders.id');
-            // added orderBy prefix to show the purchase orders to the table at specific SKU's 👇
             $query->orderBy('purchase_orders.id');
-            // added orderBy prefix to show the purchase orders to the table at specific SKU's 👆
         } else {
             $query->where('purchase_orders.organisation_id', $parent->id);
         }

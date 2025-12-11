@@ -751,7 +751,7 @@ const isLoading = ref<string | boolean>(false)
             :class="{ 'opacity-75': isVisiting || isParentLoading }">
             <div class="py-2 sm:py-0 my-0">
                 <!-- Wrapper -->
-                 
+
                 <!-- Filter: Checkbox element -->
                 <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-b border-gray-300">
                     <TableElements :elements="queryBuilderProps.elementGroups"
@@ -1001,7 +1001,7 @@ const isLoading = ref<string | boolean>(false)
                                                         class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
                                                         fixed-width aria-hidden='true' />
                                                       </slot>
-                                                   
+
                                                 </template>
                                             </td>
 
