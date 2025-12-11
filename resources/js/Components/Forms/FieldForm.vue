@@ -36,7 +36,7 @@ const props = defineProps<{
         noTitle?: boolean
         noSaveButton?: boolean  // Button: save
         updateRoute?: routeType
-        isWithRefreshFieldform?: boolean
+        isWithRefreshFieldForm?: boolean
     }
     args: {
         updateRoute: routeType
@@ -111,7 +111,7 @@ const checkVerification = async () => {
 
 // Section: refresh value when successfully saved (case: add Tags)
 watch(() => props?.fieldData?.value, (newValue) => {
-    if (props.fieldData?.isWithRefreshFieldform) {
+    if (props.fieldData?.isWithRefreshFieldForm) {
         form.defaults({
             [props.field]: newValue
         })

@@ -15,9 +15,11 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUn
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Country;
@@ -159,11 +161,17 @@ class UpdateTradeUnit extends GrpAction
             foreach ($tradeUnit->products as $product) {
                 ProductHydrateGrossWeightFromTradeUnits::dispatch($product);
             }
+            foreach ($tradeUnit->masterAssets as $masterAsset) {
+                MasterAssetHydrateGrossWeightFromTradeUnits::dispatch($masterAsset->id);
+            }
         }
 
         if ($tradeUnit->wasChanged('marketing_weight')) {
             foreach ($tradeUnit->products as $product) {
                 ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
+            }
+            foreach ($tradeUnit->masterAssets as $masterAsset) {
+                MasterAssetHydrateMarketingWeightFromTradeUnits::dispatch($masterAsset->id);
             }
         }
 

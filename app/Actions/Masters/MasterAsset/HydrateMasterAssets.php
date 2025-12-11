@@ -9,6 +9,8 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Masters\MasterAsset;
@@ -27,6 +29,8 @@ class HydrateMasterAssets
     {
         ModelHydrateSingleTradeUnits::run($masterAsset);
         MasterAssetHydrateAssets::run($masterAsset->id);
+        MasterAssetHydrateGrossWeightFromTradeUnits::run($masterAsset->id);
+        MasterAssetHydrateMarketingWeightFromTradeUnits::run($masterAsset->id);
     }
 
 }

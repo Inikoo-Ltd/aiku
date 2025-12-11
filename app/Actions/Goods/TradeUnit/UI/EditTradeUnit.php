@@ -209,25 +209,31 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Unit label'),
                                     'value' => $tradeUnit->type
                                 ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('Weight/Dimensions'),
+                            'icon'   => 'fa-light fa-weight',
+                            'fields' => [
                                 'gross_weight' => [
                                     'type'  => 'input_number',
-                                    'label' => __('Gross weight'),
+                                    'label' => __('Weight').' ('.__('Shipping').')',
                                     'value' => $tradeUnit->gross_weight,
                                     'bind'  => [
                                         'suffix' => 'g'
                                     ]
                                 ],
-                                 'net_weight' => [
-                                    'type'  => 'input_number',
-                                    'label' => __('Net weight'),
-                                    'value' => $tradeUnit->net_weight,
-                                    'bind'  => [
-                                        'suffix' => 'g'
-                                    ]
-                                ],
+//                                'net_weight' => [
+//                                    'type'  => 'input_number',
+//                                    'label' => __('Weight').' ('.__('Marketing').')',
+//                                    'value' => $tradeUnit->marketing_weight,
+//                                    'bind'  => [
+//                                        'suffix' => 'g'
+//                                    ]
+//                                ],
                                 'marketing_weight' => [
                                     'type'  => 'input_number',
-                                    'label' => __('Marketing weight'),
+                                    'label' => __('Weight').' ('.__('Marketing').')',
                                     'value' => $tradeUnit->marketing_weight,
                                     'bind'  => [
                                         'suffix' => 'g'
@@ -235,13 +241,13 @@ class EditTradeUnit extends OrgAction
                                 ],
                                 'marketing_dimensions' => [
                                     'type'  => 'input-dimension',
-                                    'label' => __('Marketing dimension'),
+                                    'label' => __('Dimensions').' ('.__('Marketing').')',
                                     'value' => $tradeUnit->marketing_dimensions,
                                 ],
                             ],
                         ],
                         [
-                            'label'  => __('translate'),
+                            'label'  => __('Translations'),
                             'icon'   => 'fa-light fa-language',
                             'fields' => [
                                 'name_i8n' => [
@@ -287,7 +293,7 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Tags'),
                                     'value' => $tradeUnit->tags->pluck('id')->toArray(),
                                     'tag_routes' => $tagRoute,
-                                    'isWithRefreshFieldform'    => true
+                                    'isWithRefreshFieldForm'    => true
                                 ],
                                  'brands' => [
                                     'type'  => 'brands-trade-unit',
