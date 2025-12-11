@@ -8,12 +8,14 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
+use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -276,9 +278,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInLuigi
-            )
+                    $changed,
+                    $fieldsUsedInLuigi
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
@@ -293,9 +295,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInWebpages
-            )
+                    $changed,
+                    $fieldsUsedInWebpages
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
@@ -308,9 +310,13 @@ class UpdateProduct extends OrgAction
         }
 
         if (Arr::has($changed, 'master_product_id')) {
-            $product->asset->updateQuietly([
-                'master_asset_id' => $product->master_product_id
-            ]);
+            UpdateAsset::run(
+                $product->asset,
+                [
+                    'master_asset_id' => $product->master_product_id
+                ]
+
+            );
         }
 
         if (Arr::has($changed, 'price')) {

@@ -26,7 +26,7 @@ class HydrateMasterAssets
     public function handle(MasterAsset $masterAsset): void
     {
         ModelHydrateSingleTradeUnits::run($masterAsset);
-        MasterAssetHydrateAssets::run($masterAsset);
+        MasterAssetHydrateAssets::run($masterAsset->id);
     }
 
 }
