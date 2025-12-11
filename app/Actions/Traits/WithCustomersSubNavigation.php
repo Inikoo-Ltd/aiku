@@ -107,7 +107,7 @@ trait WithCustomersSubNavigation
 
         $meta[] = [
             'route'     => [
-                'name'       => 'grp.org.shops.show.crm.tags.index',
+                'name'       => 'grp.org.shops.show.crm.self_filled_tags.index',
                 'parameters' => $request->route()->originalParameters()
             ],
             'number'   => Tag::where('shop_id', $this->parent->id)->where('scope', TagScopeEnum::USER_CUSTOMER)->count() ?? 0,

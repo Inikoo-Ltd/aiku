@@ -43,7 +43,7 @@ class DeleteTag extends OrgAction
 
             $this->handle($tag);
 
-            return Redirect::route('grp.org.shops.show.crm.tags.index', [
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
                 $this->organisation->slug,
                 $this->shop->slug
             ])->with('notification', [
@@ -52,7 +52,7 @@ class DeleteTag extends OrgAction
                 'description' => __('Tag deleted.'),
             ]);
         } catch (Exception $e) {
-            return Redirect::route('grp.org.shops.show.crm.tags.index', [
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
                 $this->organisation->slug,
                 $this->shop->slug
             ])->with('notification', [

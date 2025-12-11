@@ -47,7 +47,7 @@ class UpdateTag extends OrgAction
 
             $this->handle($tag, $this->validatedData);
 
-            return Redirect::route('grp.org.shops.show.crm.tags.index', [
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
                 $this->organisation->slug,
                 $this->shop->slug
             ])->with('notification', [
@@ -56,7 +56,7 @@ class UpdateTag extends OrgAction
                 'description' => __('Tag updated.'),
             ]);
         } catch (Exception $e) {
-            return Redirect::route('grp.org.shops.show.crm.tags.index', [
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
                 $this->organisation->slug,
                 $this->shop->slug
             ])->with('notification', [

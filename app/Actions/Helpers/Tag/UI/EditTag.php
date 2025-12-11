@@ -34,7 +34,7 @@ class EditTag extends OrgAction
     {
         // Todo: conditional inSelfFilledTag and inInternalTag
         $updateRoute = [
-            'name'       => 'grp.org.shops.show.crm.tags.update',
+            'name'       => 'grp.org.shops.show.crm.self_filled_tags.update',
             'parameters' => [
                 $this->organisation->slug,
                 $this->shop->slug,
@@ -98,7 +98,7 @@ class EditTag extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.shops.show.crm.tags.edit',
+                            'name'       => 'grp.org.shops.show.crm.self_filled_tags.edit',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Edit'),
