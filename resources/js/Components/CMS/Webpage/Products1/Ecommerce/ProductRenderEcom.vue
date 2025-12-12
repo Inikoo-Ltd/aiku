@@ -197,15 +197,14 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
         </div>
 
         
-             <div class="px-3 mt-auto">
-        <Prices :product="product" :currency="currency" />
-
-        <div v-if="!layout?.iris?.is_logged_in" class="mt-2">
-            <a :href="urlLoginWithRedirect()" class="w-full">
-                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />
-            </a>
+        <div class="px-3 mt-auto">
+            <Prices :product="product" :currency="currency" />
+            <div v-if="!layout?.iris?.is_logged_in" class="mt-2">
+                <a :href="urlLoginWithRedirect()" class="w-full">
+                    <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />
+                </a>
+            </div>
         </div>
-    </div>
     </div>
 </template>
 
