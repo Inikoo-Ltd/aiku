@@ -8,8 +8,8 @@
 
 namespace App\Actions\CRM\Appointment\UI;
 
-use App\Actions\CRM\Customer\UI\GetCustomerOptions;
 use App\Actions\InertiaAction;
+use App\Actions\OrgAction;
 use App\Enums\CRM\Appointment\AppointmentEventEnum;
 use App\Enums\CRM\Appointment\AppointmentTypeEnum;
 use App\Models\CRM\Customer;
@@ -20,7 +20,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 
-class CreateAppointment extends InertiaAction
+class CreateAppointment extends OrgAction
 {
     public function handle(Organisation|Shop $parent, ActionRequest $request): Response
     {
@@ -69,7 +69,7 @@ class CreateAppointment extends InertiaAction
                                         'mode'     => 'single',
                                         'label'    => __('customer'),
                                         'required' => true,
-                                        'options'  => GetCustomerOptions::run(Customer::all())
+
                                     ],
                                     'type' => [
                                         'type'     => 'select',
@@ -133,7 +133,7 @@ class CreateAppointment extends InertiaAction
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
-        return $this->handle(organisation(), $request);
+        return $this->handle($this->organisation, $request);
     }
 
     public function inShop(Shop $shop, ActionRequest $request): Response
