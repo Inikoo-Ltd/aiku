@@ -8,8 +8,10 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\Hydrators;
 
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PurchaseOrderHydrateTransactions implements ShouldBeUnique
@@ -19,12 +21,34 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
 
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        $stats = [
-            'number_of_items' => $purchaseOrder->purchaseOrderTransactions()->count(),
-            'cost_items'      => $this->getTotalCostItem($purchaseOrder),
-            'gross_weight'    => $this->getGrossWeight($purchaseOrder),
-            'net_weight'      => $this->getNetWeight($purchaseOrder)
-        ];
+        $transactionsQuery = $purchaseOrder->purchaseOrderTransactions();
+
+        $stateCounts = $transactionsQuery->get()
+            ->groupBy(fn($transaction) => $transaction->state->value)
+            ->map->count();
+
+        $stats = [];
+
+        $stats['number_purchase_order_transactions'] = $transactionsQuery->count();
+
+        $stats['number_current_purchase_order_transactions'] = $transactionsQuery->count() -
+            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::CANCELLED->value, 0) -
+            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value, 0);
+
+        $stats['number_open_purchase_order_transactions'] = $transactionsQuery->count() -
+            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::IN_PROCESS->value, 0) -
+            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::SETTLED->value, 0) -
+            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::CANCELLED->value, 0) -
+            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value, 0);
+
+        foreach (PurchaseOrderTransactionStateEnum::cases() as $state) {
+            $stats['number_purchase_order_transactions_state_' . $state->snake()] =
+                Arr::get($stateCounts, $state->value, 0);
+        }
+
+        $stats['cost_items'] = $this->getTotalCostItem($purchaseOrder);
+        $stats['gross_weight'] = $this->getGrossWeight($purchaseOrder);
+        $stats['net_weight'] = $this->getNetWeight($purchaseOrder);
 
         $purchaseOrder->update($stats);
     }
