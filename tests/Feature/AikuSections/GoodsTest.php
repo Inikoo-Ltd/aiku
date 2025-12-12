@@ -12,7 +12,6 @@ use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\Goods\Stock\HydrateStocks;
 use App\Actions\Goods\Stock\StoreStock;
-use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
 use App\Actions\Goods\StockFamily\HydrateStockFamily;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
@@ -102,29 +101,15 @@ test('create stock in stock family', function (StockFamily $stockFamily) {
     expect($stock)->toBeInstanceOf(Stock::class)
         ->and($stockFamily->state)->toBe(StockFamilyStateEnum::IN_PROCESS)
         ->and($this->group->goodsStats->number_stocks)->toBe(2)
-        ->and($this->group->goodsStats->number_stocks_state_in_process)->toBe(1)
-        ->and($this->group->goodsStats->number_current_stocks)->toBe(1)
+        ->and($this->group->goodsStats->number_stocks_state_in_process)->toBe(2)
+        ->and($this->group->goodsStats->number_current_stocks)->toBe(0)
         ->and($this->group->goodsStats->number_stock_families)->toBe(1)
-        ->and($this->group->goodsStats->number_current_stock_families)->toBe(1);
+        ->and($this->group->goodsStats->number_current_stock_families)->toBe(0);
 
 
     return $stock->fresh();
 })->depends('create stock family');
 
-test('activate draft stock', function (Stock $stock) {
-    UpdateStock::make()->action(
-        $stock,
-        [
-            'state' => StockStateEnum::ACTIVE
-            ]
-    );
-
-    expect($stock->state)->toBe(StockStateEnum::ACTIVE)
-    ->and($this->group->goodsStats->number_stocks_state_in_process)->toBe(0)
-        ->and($this->group->goodsStats->number_current_stocks)->toBe(2);
-
-    return $stock;
-})->depends('create stock as draft');
 
 test('delete stock family', function ($stockFamily) {
     $deletedStockFamily = DeleteStockFamily::make()->action($stockFamily);

@@ -31,6 +31,10 @@ class UpdateProductCustomerSalesChannelThresholdQuantity implements ShouldBeUniq
     public function handle(int $productId): void
     {
         $product = Product::find($productId);
+        if (!$product) {
+            return;
+        }
+
         $portfolios = $product->portfolios()
             ->whereHas('customerSalesChannel', function ($query) use ($product) {
                 return $query->whereNull('closed_at')
