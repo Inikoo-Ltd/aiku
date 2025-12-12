@@ -43,6 +43,7 @@ class SaveWebsiteSitemap extends OrgAction
             "contents"        => Sitemap::create(),
             "blogs"           => Sitemap::create(),
             "pages"           => Sitemap::create(),
+            "collections"      => Sitemap::create(),
         ];
 
         $map = [
@@ -70,7 +71,8 @@ class SaveWebsiteSitemap extends OrgAction
             WebpageSubTypeEnum::ARTICLE->value => "blogs",
             WebpageSubTypeEnum::BLOG->value    => "blogs",
 
-            WebpageSubTypeEnum::COLLECTION->value       => "pages",
+            WebpageSubTypeEnum::COLLECTION->value       => "collections",
+
             WebpageSubTypeEnum::STOREFRONT->value      => "pages",
             WebpageSubTypeEnum::BASKET->value          => "pages",
             WebpageSubTypeEnum::CHECKOUT->value        => "pages",
