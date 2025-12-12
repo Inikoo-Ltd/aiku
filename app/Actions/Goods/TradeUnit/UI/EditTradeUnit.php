@@ -287,6 +287,7 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Tags'),
                                     'value' => $tradeUnit->tags->pluck('id')->toArray(),
                                     'tag_routes' => $tagRoute,
+                                    'noSaveButton'  => true,
                                     'isWithRefreshFieldform'    => true
                                 ],
                                  'brands' => [

@@ -98,7 +98,7 @@ class UpdateTradeUnit extends GrpAction
         if (Arr::has($modelData, 'tags')) {
             AttachTagsToModel::make()->action($tradeUnit, [
                 'tags_id' => Arr::pull($modelData, 'tags')
-            ]);
+            ], true);
         }
 
         if (Arr::has($modelData, 'brands')) {

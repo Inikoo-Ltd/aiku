@@ -33,6 +33,15 @@
         }
     }
 
+    const getCustomersRouteByTag = ({ slug }: { slug: string }) => {
+        return route('grp.org.shops.show.crm.customers.index', {
+            ...route().params,
+            filter: {
+                tag: slug
+            }
+        });
+    }
+
     const getDeleteRoute = ({ id }: { id: number }) => {
         switch (route().current()) {
             case ('grp.org.shops.show.crm.self_filled_tags.index'):
@@ -61,6 +70,12 @@
     <Head :title="title" />
     <PageHeading :data="pageHeading" />
     <Table :resource="data">
+        <template #cell(name)="{ item }">
+            <Link :href="getCustomersRouteByTag(item)" class="primaryLink">
+                {{ item.name }}
+            </Link>
+        </template>
+
         <template #cell(action)="{ item }">
             <div class="flex items-center gap-2">
                  <Link :href="getEditRoute(item)">
