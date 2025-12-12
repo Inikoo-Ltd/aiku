@@ -29,7 +29,11 @@ class CloseCustomerSalesChannel extends OrgAction
             [
                 'status' => CustomerSalesChannelStatusEnum::CLOSED,
                 'name' => $customerSalesChannel->name.' - deleted - '.rand(00, 99), // This for user can make another channel with the same name
-                'closed_at' => now()
+                'closed_at' => now(),
+                'is_down' => null,
+                'checked_as_down_at' => null,
+                'checked_as_down_days' => null,
+                'number_downside' => null,
             ]
         );
 
