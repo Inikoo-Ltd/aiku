@@ -41,7 +41,7 @@ class PickingSessionDeliveryNoteItemsGroupedResource extends JsonResource
             'delivery_note_is_premium_dispatch'          => $this->delivery_note_is_premium_dispatch,
             'delivery_note_has_extra_packing'            => $this->delivery_note_has_extra_packing,
 
-            'items' => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))->resolve()
+            'items' => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, $ignoreParentPagination = true))->resolve()
         ];
     }
 }
