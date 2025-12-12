@@ -758,7 +758,6 @@ class ShowDeliveryNote extends OrgAction
             $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
         }
 
-
         return $inertiaResponse;
     }
 

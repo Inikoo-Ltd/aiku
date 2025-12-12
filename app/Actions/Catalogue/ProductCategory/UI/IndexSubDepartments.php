@@ -44,7 +44,7 @@ class IndexSubDepartments extends OrgAction
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
 
-        return $this->handle(parent: $shop);
+        return $this->handle(parent: $shop, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): LengthAwarePaginator
@@ -52,7 +52,7 @@ class IndexSubDepartments extends OrgAction
         $this->parent = $department;
         $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
 
-        return $this->handle(parent: $department);
+        return $this->handle(parent: $department, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
 
