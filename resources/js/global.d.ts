@@ -13,6 +13,11 @@ import { route as ziggyRoute } from 'ziggy-js';
 declare global {
     const route: typeof ziggyRouteFunction;
     const route: typeof ziggyRoute;
+    interface Window {
+        browserSupportsWebAuthn?: () => boolean;
+        startAuthentication: (options: any) => Promise<AuthenticationResponseJSON>;
+        startRegistration: (options: any) => Promise<RegistrationResponseJSON>;
+    }
 }
 
 declare module "@vue/runtime-core" {
