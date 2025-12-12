@@ -84,34 +84,57 @@ console.log('see also', props)
     </div>
 
     <!-- Carousel with custom navigation -->
-    <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {
-      `sendMessageToParent('activeBlock', indexBlock)`
-      sendMessageToParent('activeChildBlock', bKeys[0])
-    }">
+    <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="
+      sendMessageToParent('activeBlock', indexBlock);
+    sendMessageToParent('activeChildBlock', bKeys[0]);
+    ">
       <!-- Tombol Navigasi Custom -->
-      <button ref="prevEl" class="swiper-nav-button left-0">
-        <FontAwesomeIcon :icon="['fas', 'chevron-left']" />
+      <button ref="prevEl" class="swiper-nav-button  left-0 top-1/2">
+        <FontAwesomeIcon :icon="faChevronLeft" />
       </button>
-      <button ref="nextEl" class="swiper-nav-button right-0">
-        <FontAwesomeIcon :icon="['fas', 'chevron-right']" />
+
+      <button ref="nextEl" class="swiper-nav-button  right-0 top-1/2">
+        <FontAwesomeIcon :icon="faChevronRight" />
       </button>
 
       <!-- Swiper -->
-      <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
-        :navigation="{ prevEl, nextEl }" pagination class="w-full">
-        <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20" class="h-full">
-          <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug"
-            class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded flex flex-col justify-between" style="height: auto;">
-            <div class="flex flex-col h-full">
-              <div class="flex flex-col flex-1">
-                <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
-                <ProductRender v-else :product="product" :productHasPortfolio="[]" />
-              </div>
+      <!-- <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
+        :navigation="{ prevEl, nextEl }" class="w-full" :loop="true">
+        <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug"
+          class="cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded flex flex-col justify-between"
+          style="height: auto;">
+          <div class="flex flex-col h-full">
+            <div class="flex flex-col flex-1">
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
+              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
-          </SwiperSlide>
-        </Swiper>
+          </div>
+        </SwiperSlide>
+      </Swiper> -->
+      <Swiper   
+        :modules="[Navigation]"
+        :slides-per-view="slidesPerView"
+        :space-between="20"
+        :navigation="{ prevEl, nextEl }"
+        :autoHeight="false"
+        pagination
+        :loop="true"
+      >
+        <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
+          <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
+            <div v-if="product" class="flex-1 flex flex-col">
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
+              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+            </div>
+
+            <div v-else class="flex-1 flex items-center justify-center text-gray-400">
+              No Product
+            </div>
+          </div>
+        </SwiperSlide>
       </Swiper>
     </div>
+
   </div>
 </template>
 

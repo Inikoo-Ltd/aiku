@@ -234,7 +234,7 @@ function roundDown2(num: number) {
                         <td class="px-2 py-2  border-b border-gray-100 w-32">
                             <InputNumber v-model="item.product.price" mode="currency"
                                 :disabled="!item.product.create_in_shop"
-                                :currency="item?.product?.shop_currency ?? item.currency ?? currency" :step="0.25"
+                                :currency="item?.product?.shop_currency ?? currency" :step="0.25"
                                 :showButtons="true" inputClass="w-full text-xs" :min="0"
                                 @input="emits('change', modelValue)" />
                             <span v-if="form?.errors[`shop_products.${item.id}.price`]" class="text-xs text-red-500">{{ form?.errors[`shop_products.${item.id}.price`] }}</span>

@@ -40,46 +40,8 @@ class IndexMasterProductsWithNoFamily extends GrpAction
     use WithMasterFamilySubNavigation;
     use WithMastersAuthorisation;
 
-    private Group|MasterShop|MasterProductCategory $parent;
+    private Group|MasterShop $parent;
 
-
-    protected function getElementGroups(Group|MasterShop|MasterProductCategory $parent): array
-    {
-        $activeMasterProducts       = 0;
-        $discontinuedMasterProducts = 0;
-
-        if ($parent instanceof MasterShop || $parent instanceof MasterProductCategory) {
-            $activeMasterProducts       = $parent->stats->number_current_master_assets;
-            $discontinuedMasterProducts = $parent->stats->number_master_assets - $parent->stats->number_current_master_assets;
-        }
-
-
-        return [
-            'status' => [
-                'label'    => __('Status'),
-                'elements' => [
-                    'active'       => [
-                        __('Active'),
-                        $activeMasterProducts
-                    ],
-                    'discontinued' => [
-                        __('Discontinued'),
-                        $discontinuedMasterProducts
-                    ],
-                ],
-
-                'engine' => function ($query, $elements) {
-                    if (in_array('discontinued', $elements)) {
-                        $query->where('master_assets.status', false);
-                    } else {
-                        $query->where('master_assets.status', true);
-                    }
-                }
-
-            ],
-
-        ];
-    }
 
     public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
@@ -102,7 +64,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
         $queryBuilder->leftJoin('groups', 'master_assets.group_id', 'groups.id');
         $queryBuilder->leftJoin('currencies', 'groups.currency_id', 'currencies.id');
 
-        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+        foreach (IndexMasterProducts::make()->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
@@ -197,7 +159,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
                     ->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            foreach (IndexMasterProducts::make()->getElementGroups($parent) as $key => $elementGroup) {
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
@@ -221,12 +183,10 @@ class IndexMasterProductsWithNoFamily extends GrpAction
             }
 
             $table
-                ->column(key: 'status_icon', label: '', canBeHidden: false, sortable: false, searchable: true, type: 'icon')
+                ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'unit', label: __('Unit'), canBeHidden: false, sortable: true, searchable: true)
-              //  ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)
-              //  ->column(key: 'rrp', label: __('rrp'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
@@ -248,7 +208,10 @@ class IndexMasterProductsWithNoFamily extends GrpAction
         $subNavigation = null;
         $familyId      = null;
 
+        $routes = [];
+        $shopsData = null;
         if ($this->parent instanceof MasterShop) {
+            $masterShop    = $this->parent;
             $subNavigation = $this->getMasterShopNavigation($this->parent);
             $title         = $this->parent->name;
             $model         = '';
@@ -262,20 +225,39 @@ class IndexMasterProductsWithNoFamily extends GrpAction
             $iconRight     = [
                 'icon' => 'fal fa-cube',
             ];
+
+            $routes = [
+                'master_families_route' => [
+                    'name'       => 'grp.json.master-family.all-master-family',
+                    'parameters' => [
+                        'masterShop'                    => $masterShop->slug,
+                        'withMasterProductCategoryStat' => true,
+                    ]
+                ],
+                'submit_orphan_route'   => [
+                    'name'       => 'grp.models.master_family.bulk_add_family',
+                    'parameters' => [
+                    ]
+                ]
+            ];
+
+            $shopsData = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
+
         }
+
 
         return Inertia::render(
             'Masters/MasterProducts',
             [
-                'breadcrumbs'           => $this->getBreadcrumbs(
+                'breadcrumbs'        => $this->getBreadcrumbs(
                     $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                 => $title,
-                'familyId'              => $familyId,
-                'currency'              => $this->parent->group->currency->code,
-                'pageHead'              => [
+                'title'              => $title,
+                'familyId'           => $familyId,
+                'currency'           => $this->parent->group->currency->code,
+                'pageHead'           => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
@@ -283,24 +265,11 @@ class IndexMasterProductsWithNoFamily extends GrpAction
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
                 ],
-                'data'                  => MasterProductsResource::collection($masterAssets),
-                'editable_table'        => true,
-                'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($this->masterShop, 'shops')),
-                'is_orphan_products'    => true,
-                'routes' => [
-                    'master_families_route' => [
-                        'name' => 'grp.json.master-family.all-master-family',
-                        'parameters' => [
-                            'masterShop' => $this->masterShop->slug,
-                            'withMasterProductCategoryStat' => true,
-                        ]
-                    ],
-                    'submit_orphan_route' => [
-                        'name' => 'grp.models.master_family.bulk_add_family',
-                        'parameters' => [
-                        ]
-                    ]
-                ],
+                'data'               => MasterProductsResource::collection($masterAssets),
+                'editable_table'     => true,
+                'shopsData'          => $shopsData,
+                'is_orphan_products' => true,
+                'routes'             => $routes,
 
             ]
         )->table($this->tableStructure($this->parent));
