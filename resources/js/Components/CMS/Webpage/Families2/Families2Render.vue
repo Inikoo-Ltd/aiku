@@ -21,11 +21,11 @@ const props = defineProps<{
 <template>
   <div
     class="inline-flex items-center bg-black rounded-3xl border border-white/10
-           px-4 py-2 sm:px-5 sm:py-3 justify-center h-auto 
+          justify-center h-auto px-3  sm:py-3
            text-white text-base font-semibold leading-tight text-center
            overflow-hidden sm:overflow-visible"
     :class="{
-      '!w-[230px]': screenType === 'mobile'
+      '!w-full py-2': screenType === 'mobile'
     }"
     :style="style"
   >
@@ -33,7 +33,7 @@ const props = defineProps<{
       class="whitespace-normal break-words w-full text-center
              sm:whitespace-normal sm:max-w-full"
              :class="{
-      '!w-[230px]': screenType === 'mobile'
+      '!w-full !text-xs': screenType === 'mobile'
     }"
     >
       {{ data?.name }}
