@@ -372,6 +372,18 @@ class EditShop extends OrgAction
                                     'required'    => true,
                                     'full'          => true,
                                     'country_list'=> GetCountriesOptions::run(),
+                                    'routes' => [
+                                            'store'  => [
+                                                'name' => 'grp.models.shop.shipping_country.store', 'parameters' => ['shop' => $shop->id
+                                                ]
+                                            ],
+                                            'update' => [
+                                                'name' => 'grp.models.shipping_country.update', 'parameters' => []
+                                            ],
+                                            'delete' => [
+                                                'name' => 'grp.models.shipping_country.delete', 'parameters' => []
+                                            ],
+                                    ],
                                     'searchable'  => true,
                                     'mode'        => 'tags',
                                     'labelProp'   => 'label',
