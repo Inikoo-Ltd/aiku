@@ -362,20 +362,42 @@ class EditShop extends OrgAction
                             'icon'   => 'fa-light fa-truck',
                             'fields' => [
                                 'forbidden_dispatch_countries' => [
-                                    'type'        => 'multiselect-tags',
+                                    'noSaveButton'  => true,
+                                    'isWithRefreshFieldform'  => true,
+                                    'label'       => __('Allowed Shipping Countries'),
+                                    'type'        => 'shipping_countries',
                                     'placeholder' => __('Select countries'),
-                                    'information' => __('Customer cannot submit order that delivered to these countries'),
-                                    'label'       => __('Forbidden Countries'),
+                                    'information' => __('Customer only able to submit to this countries'),
                                     'required'    => true,
-                                    'value'       => $result,
+                                    'full'          => true,
                                     'options'     => GetCountriesOptions::run(),
                                     'searchable'  => true,
                                     'mode'        => 'tags',
                                     'labelProp'   => 'label',
-                                    'valueProp'   => 'id'
+                                    'valueProp'   => 'id',
+                                    'value'       => $result,
                                 ]
                             ],
                         ],
+                        // [
+                        //     'label'  => __('Shipping'),
+                        //     'icon'   => 'fa-light fa-truck',
+                        //     'fields' => [
+                        //         'forbidden_dispatch_countries' => [
+                        //             'type'        => 'multiselect-tags',
+                        //             'placeholder' => __('Select countries'),
+                        //             'information' => __('Customer cannot submit order that delivered to these countries'),
+                        //             'label'       => __('Forbidden Countries'),
+                        //             'required'    => true,
+                        //             'value'       => $result,
+                        //             'options'     => GetCountriesOptions::run(),
+                        //             'searchable'  => true,
+                        //             'mode'        => 'tags',
+                        //             'labelProp'   => 'label',
+                        //             'valueProp'   => 'id'
+                        //         ]
+                        //     ],
+                        // ],
                         $shop->type === ShopTypeEnum::DROPSHIPPING ? [
                             'label'  => __('Ebay Redirect Key'),
                             'icon'   => 'fa-light fa-key',

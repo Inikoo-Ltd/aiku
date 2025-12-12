@@ -83,18 +83,18 @@ class EditShippingZone extends OrgAction
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $shippingZone->name
                                 ],
                                 'territories' => [
                                     'type'  => 'territory_zone',
-                                    'label' => __('territory'),
+                                    'label' => __('Territory'),
                                     'value' => $shippingZone->territories,
                                     'country_list' => GetCountriesOptions::run(),
                                 ],
                                 'price' => [
                                     'type'  => 'pricing_zone',
-                                    'label' => __('price'),
+                                    'label' => __('Price'),
                                     'value' => $shippingZone->price
                                 ],
                             ],
