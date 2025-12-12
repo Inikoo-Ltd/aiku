@@ -260,6 +260,8 @@ use App\Actions\Masters\MasterProductCategory\UpdateMasterSubDepartmentsMasterDe
 use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UploadImagesToMasterProductCategory;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
+use App\Actions\Masters\MasterVariant\StoreMasterVariant;
+use App\Actions\Masters\MasterVariant\UpdateMasterVariant;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Ordering\Purge\StorePurge;
@@ -1075,6 +1077,10 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
     Route::patch('update', UpdateShippingCountry::class)->name('update');
     Route::delete('delete', DeleteShippingCountry::class)->name('delete');
 });
+
+Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
+Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
+
 
 require __DIR__.'/models/inventory/warehouse.php';
 require __DIR__.'/models/inventory/location_org_stock.php';
