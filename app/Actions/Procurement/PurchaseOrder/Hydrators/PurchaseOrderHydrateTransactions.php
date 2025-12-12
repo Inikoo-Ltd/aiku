@@ -21,25 +21,28 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
 
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        $transactionsQuery = $purchaseOrder->purchaseOrderTransactions();
+        // Get All Transactions Once 👇
+        $transactions = $purchaseOrder->purchaseOrderTransactions;
 
-        $stateCounts = $transactionsQuery->get()
-            ->groupBy(fn($transaction) => $transaction->state->value)
+        $stateCounts = $transactions
+            ->groupBy(fn ($transaction) => $transaction->state->value)
             ->map->count();
 
         $stats = [];
 
-        $stats['number_purchase_order_transactions'] = $transactionsQuery->count();
+        $totalCount = $transactions->count();
+        $cancelledCount = Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::CANCELLED->value, 0);
+        $notReceivedCount = Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value, 0);
+        $inProcessCount = Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::IN_PROCESS->value, 0);
+        $settledCount = Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::SETTLED->value, 0);
 
-        $stats['number_current_purchase_order_transactions'] = $transactionsQuery->count() -
-            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::CANCELLED->value, 0) -
-            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value, 0);
+        $stats['number_purchase_order_transactions'] = $totalCount;
 
-        $stats['number_open_purchase_order_transactions'] = $transactionsQuery->count() -
-            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::IN_PROCESS->value, 0) -
-            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::SETTLED->value, 0) -
-            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::CANCELLED->value, 0) -
-            Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value, 0);
+        $stats['number_current_purchase_order_transactions'] =
+            $totalCount - $cancelledCount - $notReceivedCount;
+
+        $stats['number_open_purchase_order_transactions'] =
+            $totalCount - $inProcessCount - $settledCount - $cancelledCount - $notReceivedCount;
 
         foreach (PurchaseOrderTransactionStateEnum::cases() as $state) {
             $stats['number_purchase_order_transactions_state_' . $state->snake()] =
@@ -50,7 +53,7 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
         $stats['gross_weight'] = $this->getGrossWeight($purchaseOrder);
         $stats['net_weight'] = $this->getNetWeight($purchaseOrder);
 
-        $purchaseOrder->update($stats);
+        $purchaseOrder->stats()->update($stats);
     }
 
     public function getGrossWeight(PurchaseOrder $purchaseOrder): float
