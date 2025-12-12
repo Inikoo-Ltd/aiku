@@ -225,9 +225,9 @@ const onViewHistory = () => {
 	isMenuOpen.value = false
 	emit("view-history")
 }
-const onViewUserProfile = () => {
+const onViewUserProfile = (slug: { slug: string }) => {
 	isMenuOpen.value = false
-	emit("view-user-profile")
+	emit("view-user-profile", slug)
 }
 const onTransferChat = () => {
 	isMenuOpen.value = false

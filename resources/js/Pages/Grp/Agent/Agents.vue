@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onMounted } from "vue"
+import { router } from "@inertiajs/vue3"
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -19,6 +21,30 @@ const props = defineProps<{
 function editRoute(id: number) {
 	return route("grp.org.crm.agents.edit", [route().params.organisation, id])
 }
+
+const waitEchoReady = (callback: Function) => {
+	if (window.Echo?.connector?.pusher) {
+		callback()
+		return
+	}
+	const interval = setInterval(() => {
+		if (window.Echo?.connector?.pusher) {
+			clearInterval(interval)
+			callback()
+		}
+	}, 300)
+}
+
+onMounted(() => {
+	waitEchoReady(() => {
+		window.Echo.join("chat-list").listen(".chatlist", () => {
+			console.log("🔥 chat-list update — Reloading table")
+			router.reload({
+				only: ["data"],
+			})
+		})
+	})
+})
 </script>
 
 <template>

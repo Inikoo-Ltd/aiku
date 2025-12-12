@@ -25,13 +25,15 @@ class ChatSessionListResource extends JsonResource
             $activeAssignment = $this->assignments->first();
         }
 
+        $webUser = $this->web_user_id ? $this->webUser : null;
+
         return [
             'ulid' => $this->ulid,
             'status' => $this->status,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
             'created_at_timestamp' => $this->created_at->copy()->setTimezone('UTC')->timestamp,
-            'contact_name' => $lastMessage?->chatSession?->webUser?->contact_name,
+            'contact_name' => $webUser?->customer?->contact_name,
             'last_message' => $lastMessage ? [
                 'message' => $this->truncateMessage($lastMessage->message_text),
                 'sender_type' => $lastMessage->sender_type,
@@ -45,6 +47,12 @@ class ChatSessionListResource extends JsonResource
                 'created_at_timestamp' => null,
                 'is_read' => true,
             ],
+
+            'web_user' => $webUser ? [
+                'id' => $webUser->id,
+                'name' => $webUser->contact_name,
+                'slug' => $webUser->customer->slug,
+            ] : null,
 
             'assigned_agent' => $activeAssignment ? [
                 'id' => $activeAssignment->chatAgent->id,

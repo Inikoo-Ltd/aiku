@@ -4,7 +4,7 @@
 export interface LastMessage {
 	message?: string
 	sender_type: "guest" | "user" | "agent" | "system"
-	created_at?: string // string dari backend
+	created_at?: string
 	created_at_timestamp?: number
 	is_read: boolean
 }
@@ -26,6 +26,10 @@ export interface SessionAPI {
 	unread_count: number
 	message_count: number
 	duration: string
+	web_user?: {
+		name: string
+		slug: string
+	} | null
 }
 
 // --------------------------
@@ -65,6 +69,10 @@ export interface Contact {
 	unread: number
 	status: "waiting" | "active" | "closed" | string
 	messages?: ChatMessage[]
+	webUser?: {
+		name: string
+		slug: string
+	} | null
 }
 
 export interface ChatMessage {

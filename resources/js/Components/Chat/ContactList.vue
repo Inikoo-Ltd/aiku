@@ -44,17 +44,32 @@ const reloadContacts = async () => {
 				lastMessageTimestamp: s.last_message?.created_at_timestamp,
 				unread: s.unread_count,
 				status: s.status,
+				webUser: s.web_user,
 			})
 		)
 	} catch (e) {
 		console.error("Failed to reload contacts:", e)
 	}
 }
+const waitEchoReady = (callback: Function) => {
+	if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
+		callback()
+		return
+	}
 
+	const interval = setInterval(() => {
+		if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
+			clearInterval(interval)
+			callback()
+		}
+	}, 300)
+}
 onMounted(() => {
-	window.Echo.join("chat-list").listen(".chatlist", (e: any) => {
-		console.log("🔥 chat-list update:", e)
-		reloadContacts()
+	waitEchoReady(() => {
+		window.Echo.join("chat-list").listen(".chatlist", (e: any) => {
+			console.log("🔥 chat-list update:", e)
+			reloadContacts()
+		})
 	})
 	reloadContacts()
 })
@@ -79,6 +94,7 @@ const openChat = (c: Contact) => {
 		ulid: String(c.ulid),
 		guest_identifier: c.name,
 		status: c.status,
+		web_user: c.webUser,
 	} as SessionAPI
 	messages.value = c.messages ?? []
 }
@@ -220,30 +236,34 @@ const formatLastMessage = (msg: string) => {
 
 		<div class="flex-1">
 			<div v-if="!selectedSession">
-				<div v-for="c in filteredContacts" :key="c.id">
-					<div
-						class="flex items-center gap-4 px-4 py-3 border-b hover:bg-gray-50 cursor-pointer"
-						@click="handleClickContact(c)">
-						<img :src="c.avatar" class="w-12 h-12 rounded-full object-cover" />
-						<div class="flex-1">
-							<div class="font-semibold text-gray-800">{{ capitalize(c.name) }}</div>
-							<div class="text-sm text-gray-500 truncate">
-								{{ formatLastMessage(c.lastMessage) }}
+				<div class="overflow-y-auto h-[calc(100vh-160px)]">
+					<div v-for="c in filteredContacts" :key="c.id">
+						<div
+							class="flex items-center gap-4 px-4 py-3 border-b hover:bg-gray-50 cursor-pointer"
+							@click="handleClickContact(c)">
+							<img :src="c.avatar" class="w-12 h-12 rounded-full object-cover" />
+							<div class="flex-1">
+								<div class="font-semibold text-gray-800">
+									{{ capitalize(c.name) }}
+								</div>
+								<div class="text-sm text-gray-500 truncate">
+									{{ formatLastMessage(c.lastMessage) }}
+								</div>
+							</div>
+							<span class="text-xs text-gray-400">{{ c.lastMessageTime }}</span>
+
+							<div
+								v-if="c.unread && activeTab !== 'closed'"
+								class="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+								{{ c.unread }}
 							</div>
 						</div>
-						<span class="text-xs text-gray-400">{{ c.lastMessageTime }}</span>
 
 						<div
-							v-if="c.unread && activeTab !== 'closed'"
-							class="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
-							{{ c.unread }}
+							v-if="errorPerContact[c.ulid]"
+							class="px-4 py-2 text-xs text-red-600 border-b bg-red-50">
+							{{ errorPerContact[c.ulid] }}
 						</div>
-					</div>
-
-					<div
-						v-if="errorPerContact[c.ulid]"
-						class="px-4 py-2 text-xs text-red-600 border-b bg-red-50">
-						{{ errorPerContact[c.ulid] }}
 					</div>
 				</div>
 			</div>

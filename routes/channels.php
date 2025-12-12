@@ -9,6 +9,7 @@
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use App\Models\CRM\Livechat\ChatAgent;
+use App\Models\CRM\Livechat\ChatSession;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Facades\Broadcast;
 use App\Models\CRM\Livechat\ChatAssignment;
