@@ -16,16 +16,31 @@ use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 
-class ShowIrisSitemap
+class ShowIrisSubSitemap
 {
     use AsController;
 
-    public function asController(ActionRequest $request): Response
+    public function asController(ActionRequest $request, string $sitemapType): Response
     {
+
         /** @var Website $website */
         $website = $request->get('website');
-        // dd($website->id);
-        $filePath = "sitemaps/sitemap_{$website->id}.xml";
+        // dd($website);
+
+        $validSitemapTypes = [
+            'products',
+            'departments',
+            'sub_departments',
+            'families',
+            'contents',
+            'blogs'
+        ];
+
+        if (!in_array($sitemapType, $validSitemapTypes)) {
+            abort(404, "Sitemap type not found");
+        }
+
+        $filePath = "sitemaps/{$sitemapType}_{$website->id}.xml";
 
         if (!Storage::disk('local')->exists($filePath)) {
             abort(404, "Sitemap not found for this website");
