@@ -8,11 +8,9 @@
 
 namespace App\Actions\CRM\Appointment\UI;
 
-use App\Actions\InertiaAction;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Appointment\AppointmentEventEnum;
 use App\Enums\CRM\Appointment\AppointmentTypeEnum;
-use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;

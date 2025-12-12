@@ -132,6 +132,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
  * @property bool $not_for_sale_from_trade_unit
+ * @property string|null $web_images
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
