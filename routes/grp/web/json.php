@@ -31,6 +31,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
+use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
 use App\Actions\Masters\MasterCollection\UI\GetMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCategory;
@@ -65,7 +66,6 @@ use App\Actions\Goods\TradeUnit\UI\GetTradeUnitsForTradeUnitFamily;
 use App\Actions\Helpers\Brand\Json\GetBrands;
 use App\Actions\Helpers\Brand\Json\GetGrpBrands;
 use App\Actions\Helpers\Tag\Json\GetGrpTags;
-use App\Actions\Helpers\Tag\Json\GetTags;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Masters\MasterAsset\Json\GetAllTradeUnits;
@@ -156,7 +156,7 @@ Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModificati
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
 
-Route::get('trade-units/{tradeUnit}/tags', [GetTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
+Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('brands', GetBrands::class)->name('brands.index');
 
 Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
@@ -191,7 +191,7 @@ Route::get('products-for-portfolio-select/{customerSalesChannel:id}', GetProduct
 Route::get('mini-delivery-note/{deliveryNote:id}', GetMiniDeliveryNote::class)->name('mini_delivery_note');
 Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNoteShipments::class)->name('mini_delivery_note_shipments');
 
-Route::get('customer/{customer}/tags', [GetTags::class, 'inCustomer'])->name('customer.tags.index');
+Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');

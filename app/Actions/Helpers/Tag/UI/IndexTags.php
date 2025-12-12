@@ -15,12 +15,15 @@ use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,6 +35,32 @@ class IndexTags extends OrgAction
 
     private Shop $parent;
     private ?TagScopeEnum $forcedScope = null;
+
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->forcedScope = TagScopeEnum::PRODUCT_PROPERTY;
+        $this->initialisationFromGroup($tradeUnit->group, $request);
+
+        return $this->handle($tradeUnit);
+    }
+
+    public function inCustomer(Customer $customer, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $customer->shop;
+        $this->forcedScope = TagScopeEnum::ADMIN_CUSTOMER;
+        $this->initialisationFromShop($customer->shop, $request);
+
+        return $this->handle($this->parent);
+    }
+
+    public function inRetina(Customer $customer, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $customer->shop;
+        $this->forcedScope = TagScopeEnum::USER_CUSTOMER;
+        $this->initialisationFromShop($customer->shop, $request);
+
+        return $this->handle($this->parent);
+    }
 
     public function inSelfFilledTags(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
@@ -51,7 +80,7 @@ class IndexTags extends OrgAction
         return $this->handle($shop);
     }
 
-    public function handle(Shop $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Shop|TradeUnit $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -71,8 +100,11 @@ class IndexTags extends OrgAction
             $queryBuilder->where('scope', $this->forcedScope);
         }
 
+        if ($parent instanceOf Shop) {
+            $queryBuilder->where('shop_id', $parent->id);
+        }
+
         return $queryBuilder
-            ->where('shop_id', $parent->id)
             ->defaultSort('name')
             ->select(['id', 'name', 'slug', 'scope'])
             ->allowedSorts(['name', 'scope'])
@@ -98,6 +130,11 @@ class IndexTags extends OrgAction
                 ->column(key: 'action', label: __('Action'))
                 ->defaultSort('name');
         };
+    }
+
+    public function jsonResponse(LengthAwarePaginator $tags): AnonymousResourceCollection
+    {
+        return TagsResource::collection($tags);
     }
 
     public function htmlResponse(LengthAwarePaginator $tags, ActionRequest $request): Response
