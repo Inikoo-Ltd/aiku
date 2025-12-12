@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
+use App\Actions\Catalogue\Shop\UI\GetShopShippingCountries;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
@@ -370,12 +371,12 @@ class EditShop extends OrgAction
                                     'information' => __('Customer only able to submit to this countries'),
                                     'required'    => true,
                                     'full'          => true,
-                                    'options'     => GetCountriesOptions::run(),
+                                    'country_list'=> GetCountriesOptions::run(),
                                     'searchable'  => true,
                                     'mode'        => 'tags',
                                     'labelProp'   => 'label',
                                     'valueProp'   => 'id',
-                                    'value'       => $result,
+                                    'value'       => GetShopShippingCountries::run($shop),
                                 ]
                             ],
                         ],
