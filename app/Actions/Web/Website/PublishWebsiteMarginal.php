@@ -104,7 +104,7 @@ class PublishWebsiteMarginal extends OrgAction
         $website->update($updateData);
         if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])) {
             // Update webpage, web_blocks & their snapshots (unpublished/published)
-            UpdateWebBlockToWebsiteAndChild::run(WebBlockType::find(data_get($layout, "id")), $website, $marginal, data_get($layout, 'data.fieldValue'));
+            UpdateWebBlockToWebsiteAndChild::dispatch($website, WebBlockType::find(data_get($layout, "id")), $marginal, data_get($layout, 'data.fieldValue'));
         }
 
         BreakWebsiteCache::run($website);

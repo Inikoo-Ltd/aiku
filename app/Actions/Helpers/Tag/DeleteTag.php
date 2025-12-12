@@ -10,64 +10,84 @@
 namespace App\Actions\Helpers\Tag;
 
 use App\Actions\OrgAction;
-use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\CRM\Customer;
+use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Validation\ValidationException;
+use Exception;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteTag extends OrgAction
 {
-    public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): Tag
+    public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): void
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
-        return $this->handle($tag);
+        $this->handle($tag);
     }
 
-    public function inCustomer(Customer $customer, Tag $tag, ActionRequest $request): Tag
+    public function inCustomer(Customer $customer, Tag $tag, ActionRequest $request): void
     {
-        $this->initialisation($customer->organisation, $request);
+        $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($tag);
+        $this->handle($tag);
     }
 
-    public function asController(Organisation $organisation, Tag $tag, ActionRequest $request): ?Tag
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
     {
-        $this->initialisation($organisation, $request);
-
         try {
-            if ($tag->scope === TagScopeEnum::SYSTEM_CUSTOMER) {
-                throw ValidationException::withMessages([
-                    'scope' => __("You can't delete a system tag."),
-                ]);
-            }
+            $this->initialisationFromShop($shop, $request);
 
-            return $this->handle($tag);
-        } catch (ValidationException $e) {
-            request()->session()->flash('notification', [
+            $this->handle($tag);
+
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tag deleted.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
                 'status'  => 'error',
                 'title'   => __('Error!'),
                 'description' => $e->getMessage(),
             ]);
-
-            return null;
         }
     }
 
-    public function htmlResponse(Tag $tag = null): void
+    public function inInternalTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
     {
-        if (is_null($tag)) {
-            return;
-        }
+        try {
+            $this->initialisationFromShop($shop, $request);
 
-        request()->session()->flash('notification', [
-            'status'  => 'success',
-            'title'   => __('Success!'),
-            'description' => __('Tag successfully deleted.'),
-        ]);
+            $this->handle($tag);
+
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tag deleted.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function handle(Tag $tag): Tag

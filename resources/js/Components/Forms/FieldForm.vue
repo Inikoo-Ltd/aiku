@@ -8,7 +8,7 @@
 
 import { useForm } from '@inertiajs/vue3'
 import { routeType } from '@/types/route'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import axios from 'axios'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Field form list
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -36,6 +36,7 @@ const props = defineProps<{
         noTitle?: boolean
         noSaveButton?: boolean  // Button: save
         updateRoute?: routeType
+        isWithRefreshFieldForm?: boolean
     }
     args: {
         updateRoute: routeType
@@ -107,6 +108,16 @@ const checkVerification = async () => {
 
     stampDirtyValue.value = form[props.field]
 }
+
+// Section: refresh value when successfully saved (case: add Tags)
+watch(() => props?.fieldData?.value, (newValue) => {
+    if (props.fieldData?.isWithRefreshFieldForm) {
+        form.defaults({
+            [props.field]: newValue
+        })
+        form.reset()
+    }
+})
 
 defineExpose({
     form

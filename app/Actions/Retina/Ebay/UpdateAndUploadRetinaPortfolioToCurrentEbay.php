@@ -40,7 +40,7 @@ class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $this->set('customer_product_name', $request->input('title'));
-        $this->set('customer_price', $request->input('price'));
+        $this->set('customer_price', (string) $request->input('price'));
         $this->set('customer_description', $request->input('description'));
     }
 

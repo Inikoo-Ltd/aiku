@@ -9,63 +9,79 @@
 
 namespace App\Actions\Web;
 
-use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
-use App\Actions\Traits\WithActionUpdate;
+use App\Events\BroadcastUpdateWeblocks;
 use App\Models\Web\Website;
-use App\Models\Web\WebBlockType ;
+use App\Models\Web\WebBlockType;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateWebBlockToWebsiteAndChild extends OrgAction
+class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
 {
+    use AsAction;
     use WithWebEditAuthorisation;
-    use WithActionUpdate;
 
-    public function handle(WebBlockType $newWebBlock, Website $website, string $marginal, array $fieldValue): WebBlockType
+    public function getJobUniqueId(Website $website): string
     {
+        return $website->id;
+    }
+
+    public function handle(Website $website, WebBlockType $newWebBlock, string $marginal, array $fieldValue): WebBlockType
+    {
+        $progress = 0;
         $type  = $marginal === 'products' ? 'list_products' : $marginal;
         $names = WebBlockType::where('category', $type)->pluck('name')->toArray();
-
         $webpages = $website->webpages()
             ->where(function ($q) use ($names) {
                 foreach ($names as $name) {
                     $q->orWhereRaw("published_layout->'web_blocks' @> '[{\"name\": \"$name\"}]'");
                 }
-            })->chunkById(500, function ($webpages) use ($names, $newWebBlock, $fieldValue) {
-                foreach ($webpages as $webpage) {
-                    $modified = $this->modifyLayout($webpage->published_layout, $names, $newWebBlock->slug, $fieldValue);
-                    if (empty($modified)) {
-                        continue;
-                    }
+            })->orderBy('id');
 
-                    $webpage->updateQuietly(['published_layout' => $modified['layout']]);
+        $lastPercent = 0;
+        $total = (clone $webpages)->count();
 
-                    $blockId = data_get($modified['layout'], "web_blocks.{$modified['index']}.web_block.id");
-
-                    $targetWebBlock = $webpage->webBlocks()->find($blockId);
-                    if ($targetWebBlock) {
-                        $layout = $targetWebBlock->layout;
-                        data_set($layout, 'data.fieldValue', $fieldValue);
-                        $targetWebBlock->updateQuietly([
-                            'web_block_type_id' => $newWebBlock->id,
-                            'layout'            => $layout
-                        ]);
-                    }
-
-                    if (($live = $webpage->liveSnapshot) && $targetWebBlock?->layout) {
-                        $liveLayout = $this->applyIndexChange($live->layout, $modified['index'], $newWebBlock->slug, $targetWebBlock->layout);
-                        $live->updateQuietly(['layout' => $liveLayout]);
-                    }
-
-                    if (($unpublished = $webpage->unpublishedSnapshot) && $targetWebBlock?->layout) {
-                        $unLayout = $this->applyIndexChange($unpublished->layout, $modified['index'], $newWebBlock->slug, $targetWebBlock->layout);
-                        $unpublished->updateQuietly(['layout' => $unLayout]);
-                    }
+        $webpages->chunk(500, function ($webpages) use ($names, $newWebBlock, $fieldValue, $website, &$progress, &$total, &$lastPercent) {
+            foreach ($webpages as $webpage) {
+                $modified = $this->modifyLayout($webpage->published_layout, $names, $newWebBlock->slug, $fieldValue);
+                if (empty($modified)) {
+                    continue;
                 }
-            });
+
+                $webpage->updateQuietly(['published_layout' => $modified['layout']]);
+
+                $blockId = data_get($modified['layout'], "web_blocks.{$modified['index']}.web_block.id");
+
+                $targetWebBlock = $webpage->webBlocks()->find($blockId);
+                if ($layout = $targetWebBlock?->layout) {
+                    data_set($layout, 'data.fieldValue', $fieldValue);
+                    $targetWebBlock->updateQuietly([
+                        'web_block_type_id' => $newWebBlock->id,
+                        'layout'            => $layout
+                    ]);
+                }
+
+                if (($live = $webpage->liveSnapshot) && $targetWebBlock?->layout) {
+                    $liveLayout = $this->applyIndexChange($live->layout, $modified['index'], $newWebBlock->slug, $targetWebBlock->layout);
+                    $live->updateQuietly(['layout' => $liveLayout]);
+                }
+
+                if (($unpublished = $webpage->unpublishedSnapshot) && $targetWebBlock?->layout) {
+                    $unLayout = $this->applyIndexChange($unpublished->layout, $modified['index'], $newWebBlock->slug, $targetWebBlock->layout);
+                    $unpublished->updateQuietly(['layout' => $unLayout]);
+                }
+
+                $progress++;
+                $percent = intval(($progress / $total) * 100);
+                if ($percent >= $lastPercent + 10) {
+                    $lastPercent = $percent;
+                    BroadcastUpdateWeblocks::dispatch($percent, $website);
+                }
+            }
+        });
 
         return $newWebBlock;
     }
-
 
     public function modifyLayout(array $layout, array $names, string $slug, array $fieldValue): array
     {

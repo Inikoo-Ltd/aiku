@@ -14,7 +14,6 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
-use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,38 +21,35 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterFamily extends OrgAction
 {
-    private MasterShop|MasterProductCategory|Group $parent;
-
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
-        $this->parent = $masterShop;
         $group        = group();
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterFamily, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
-        $this->parent = $masterDepartment;
         $group        = group();
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterFamily, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
-        $this->parent = $masterSubDepartment;
         $group        = group();
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterFamily, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
-        $this->parent = $masterSubDepartment;
         $group        = group();
         $this->initialisationFromGroup($group, $request);
 
@@ -73,7 +69,7 @@ class EditMasterFamily extends OrgAction
                     ->where('type', MasterProductCategoryTypeEnum::DEPARTMENT)
                     ->get(['id as value', 'name as label'])
                     ->toArray(),
-                'value'   =>  $masterProductCategory->parent_id,
+                'value'   =>  $masterProductCategory->master_department_id,
             ];
 
         }
@@ -88,7 +84,6 @@ class EditMasterFamily extends OrgAction
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
                  'breadcrumbs' => $this->getBreadcrumbs(
-                     $this->parent,
                      $masterProductCategory,
                      $request->route()->getName(),
                      $request->route()->originalParameters()
@@ -312,7 +307,7 @@ class EditMasterFamily extends OrgAction
     }
 
 
-    public function getBreadcrumbs(MasterShop|Group|MasterProductCategory $parent, MasterProductCategory $masterFamily, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterProductCategory $masterFamily, string $routeName, array $routeParameters): array
     {
         return ShowMasterFamily::make()->getBreadcrumbs(
             masterFamily: $masterFamily,

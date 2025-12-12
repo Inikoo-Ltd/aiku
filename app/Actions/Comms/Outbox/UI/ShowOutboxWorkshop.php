@@ -154,6 +154,14 @@ class ShowOutboxWorkshop extends OrgAction
                     ],
                     'method' => 'post'
                 ],
+                'storeTemplateRoute' => [
+                    'name' => 'grp.models.shop.outboxes.workshop.store.template',
+                    'parameters' => [
+                        'shop' => $email->shop_id,
+                        'outbox' => $email->outbox_id
+                    ],
+                    'method' => 'post'
+                ],
                 'mergeTags' => GetMailshotMergeTags::run(),
                 'status' => $email->outbox->state,
                 'apiKey' => [

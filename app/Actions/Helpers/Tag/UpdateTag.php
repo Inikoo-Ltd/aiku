@@ -13,49 +13,85 @@ use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\CRM\Customer;
+use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
+use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTag extends OrgAction
 {
-    public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): Tag
+    public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): void
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
-        return $this->handle($tag, $this->validatedData);
+        $this->handle($tag, $this->validatedData);
     }
 
-    public function inCustomer(Customer $customer, Tag $tag, ActionRequest $request): Tag
+    public function inCustomer(Customer $customer, Tag $tag, ActionRequest $request): void
     {
-        $this->initialisation($customer->organisation, $request);
+        $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($tag, $this->validatedData);
+        $this->handle($tag, $this->validatedData);
     }
 
-    /**
-     * @throws ValidationException
-     */
-    public function asController(Organisation $organisation, Tag $tag, ActionRequest $request): Tag
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
     {
-        $this->initialisation($organisation, $request);
+        try {
+            $this->initialisationFromShop($shop, $request);
 
-        $this->validateTagScopeUpdate($tag, $this->validatedData);
+            $this->handle($tag, $this->validatedData);
 
-        return $this->handle($tag, $this->validatedData);
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tag updated.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
-    public function htmlResponse(): void
+    public function inInternalTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
     {
-        request()->session()->flash('notification', [
-            'status'  => 'success',
-            'title'   => __('Success!'),
-            'description' => __('Tag successfully updated.'),
-        ]);
+        try {
+            $this->initialisationFromShop($shop, $request);
+
+            $this->handle($tag, $this->validatedData);
+
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tag updated.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function handle(Tag $tag, array $modelData): Tag
@@ -100,7 +136,7 @@ class UpdateTag extends OrgAction
                 'in:' . implode(',', array_column(TagScopeEnum::cases(), 'value')),
                 function ($attribute, $value, $fail) {
                     if ($value === TagScopeEnum::SYSTEM_CUSTOMER->value) {
-                        $fail(__("You can't create tag with system scope."));
+                        $fail(__("You can't update tag with system scope."));
                     }
                 },
             ],
@@ -110,27 +146,5 @@ class UpdateTag extends OrgAction
                 File::image()->max(12 * 1024),
             ],
         ];
-    }
-
-    /**
-     * @throws ValidationException
-     */
-    protected function validateTagScopeUpdate(Tag $tag, array $modelData): void
-    {
-        if (! isset($modelData['scope'])) {
-            return;
-        }
-
-        $newScope = $modelData['scope'];
-
-        if ($newScope !== $tag->scope) {
-            $hasRelations = $tag->customers()->exists() || $tag->tradeUnits()->exists();
-
-            if ($hasRelations) {
-                throw ValidationException::withMessages([
-                    'scope' => __("You can't change the scope of a tag that is already linked to customers or trade units."),
-                ]);
-            }
-        }
     }
 }

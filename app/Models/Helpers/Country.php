@@ -8,8 +8,10 @@
 
 namespace App\Models\Helpers;
 
+use App\Models\Ordering\ShippingCountry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -29,6 +31,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property bool $status
  * @property bool $show_in_address
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ShippingCountry> $shippingCountries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Timezone> $timezones
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country newQuery()
@@ -66,5 +69,10 @@ class Country extends Model
     public static function isInEU(string $code): bool
     {
         return in_array($code, Country::getCountryCodesInEU(), true);
+    }
+
+    public function shippingCountries(): HasMany
+    {
+        return $this->hasMany(ShippingCountry::class);
     }
 }

@@ -129,8 +129,6 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     }
 })
 
-console.log('handle', usePage().props)
-
 </script>
 
 <template>
@@ -282,7 +280,13 @@ console.log('handle', usePage().props)
     width: 300px !important;
 
     @media (min-width: 640px) {
-        width: 500px !important;;
+        width: 500px !important;
     }
+}
+
+
+// INI-562: live chat
+iframe#launcher {
+    bottom: 30px !important;
 }
 </style>

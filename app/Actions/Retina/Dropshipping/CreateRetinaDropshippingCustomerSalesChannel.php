@@ -15,6 +15,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\RetinaAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -122,6 +123,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                         'parameters' => [],
                         'method'     => 'post'
                     ],
+                    'is_active' => Arr::hasAll($customer->shop->settings, ['ebay.warehouse_country', 'ebay.warehouse_state', 'ebay.warehouse_city'])
                 ],
                 'type_amazon'        => [
                     'connectRoute' => [

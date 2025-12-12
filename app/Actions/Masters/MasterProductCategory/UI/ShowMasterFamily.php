@@ -193,12 +193,22 @@ class ShowMasterFamily extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        [
+                        $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('Add a master product to this family'),
                             'label'   => __('Master Product'),
-                        ],
+                        ]: false,
+                        $this->canEdit ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Create a variants group for this family'),
+                            'label'   => __('Variants'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'create.variant', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ]: false,
                     ],
                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
 

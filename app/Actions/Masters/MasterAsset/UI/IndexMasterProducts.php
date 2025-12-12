@@ -45,7 +45,7 @@ class IndexMasterProducts extends GrpAction
     private Group|MasterShop|MasterProductCategory $parent;
 
 
-    protected function getElementGroups(Group|MasterShop|MasterProductCategory $parent): array
+    public function getElementGroups(Group|MasterShop|MasterProductCategory $parent): array
     {
         $activeMasterProducts       = 0;
         $discontinuedMasterProducts = 0;
@@ -222,12 +222,10 @@ class IndexMasterProducts extends GrpAction
             }
 
             $table
-                ->column(key: 'status_icon', label: '', canBeHidden: false, sortable: false, searchable: true, type: 'icon')
+                ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'unit', label: __('Unit'), canBeHidden: false, sortable: true, searchable: true)
-              //  ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)
-              //  ->column(key: 'rrp', label: __('rrp'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
@@ -249,7 +247,7 @@ class IndexMasterProducts extends GrpAction
         $iconRight     = null;
         $subNavigation = null;
         $familyId      = null;
-
+        $shopsData     = null;
         if ($this->parent instanceof Group) {
             $model      = '';
             $icon       = [
@@ -263,6 +261,7 @@ class IndexMasterProducts extends GrpAction
                 'icon' => 'fal fa-city',
             ];
         } elseif ($this->parent instanceof MasterShop) {
+            $masterShop    = $this->parent;
             $subNavigation = $this->getMasterShopNavigation($this->parent);
             $title         = $this->parent->name;
             $model         = '';
@@ -276,7 +275,9 @@ class IndexMasterProducts extends GrpAction
             $iconRight     = [
                 'icon' => 'fal fa-cube',
             ];
+            $shopsData     = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         } elseif ($this->parent instanceof MasterProductCategory) {
+            $masterShop = $this->parent->masterShop;
             if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
             }
@@ -296,6 +297,7 @@ class IndexMasterProducts extends GrpAction
                     'icon' => 'fal fa-cube',
                 ];
             }
+            $shopsData = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         }
 
         $isFamily = $this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::FAMILY;
@@ -335,8 +337,8 @@ class IndexMasterProducts extends GrpAction
                 ],
                 'data'                  => MasterProductsResource::collection($masterAssets),
                 'masterProductCategory' => $this->parent->id,
-                'editable_table'        => true,
-                'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($this->masterShop, 'shops')),
+                'editable_table'        => false,
+                'shopsData'             => $shopsData,
 
             ]
         )->table($this->tableStructure($this->parent));
@@ -466,6 +468,7 @@ class IndexMasterProducts extends GrpAction
         return $this->handle($masterFamily, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
     {
         $group = group();

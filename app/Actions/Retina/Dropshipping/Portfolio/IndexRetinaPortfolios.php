@@ -17,6 +17,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
+use App\Http\Resources\Dropshipping\EbayOverseasWarehousePolicy;
 use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
@@ -414,7 +415,11 @@ class IndexRetinaPortfolios extends RetinaAction
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels), //  Do now use the resource. Use an array of necessary data
                 'download_portfolio_customer_sales_channel_url' => $last_active_download_portfolio_customer_sales_channel_url,
-                'last_created_at_download_portfolio_customer_sales_channel' => $last_created_at_download_portfolio_customer_sales_channel
+                'last_created_at_download_portfolio_customer_sales_channel' => $last_created_at_download_portfolio_customer_sales_channel,
+                'ebay_warehouse_policy_msg'    => [
+                    'show_msg' => $this->customerSalesChannel->platform->type == PlatformTypeEnum::EBAY ? EbayOverseasWarehousePolicy::isAffected($this->customer->deliveryAddress->country_code) : false,
+                    'cust_country' => $this->customer->deliveryAddress->country->name
+                ],
             ]
         )->table($this->tableStructure(prefix: 'products'))
             ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));

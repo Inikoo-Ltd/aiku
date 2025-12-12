@@ -8,6 +8,7 @@
 import MultiSelect from 'primevue/multiselect'
 import { onMounted, ref, computed, watch } from 'vue'
 import { trans } from 'laravel-vue-i18n'
+import { router } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -18,6 +19,7 @@ import { routeType } from '@/types/route'
 import { faPlus } from '@fas'
 import { faTrashAlt } from '@fal'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
+import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 
 library.add(faPlus, faTrashAlt)
 
@@ -27,8 +29,8 @@ const props = defineProps<{
     fieldData?: {
         tag_routes?: {
             index_tag: routeType
-            store_tag: routeType
-            update_tag: routeType
+            attach_tag: routeType
+            detach_tag: routeType
         }
         tags: {}[]
     }
@@ -64,7 +66,21 @@ const fetchTags = async (url?: string) => {
 // Attach/Detach tags directly on parent form
 const formSelectedTags = computed({
     get: () => props.form[props.fieldName] || [],
-    set: (val) => { props.form[props.fieldName] = val }
+    set: (newVal) => {
+        const oldVal = props.form[props.fieldName] || []
+
+        // Find newly added tag (user checked a tag)
+        const addedTags = newVal.filter((id: number) => !oldVal.includes(id))
+
+        // Prevent removal via multiselect - only allow adding
+        if (addedTags.length > 0) {
+            // Attach the new tag (single tag)
+            onAttachTag(addedTags[0])
+        } else {
+            // If user tried to uncheck, revert to old value
+            props.form[props.fieldName] = oldVal
+        }
+    }
 })
 
 watch(() => props.fieldData?.tags, (newTags) => { optionsList.value = newTags || [] })
@@ -72,6 +88,19 @@ watch(() => props.fieldData?.tags, (newTags) => { optionsList.value = newTags ||
 // Utility: find tag by ID safely
 const findTagById = (id: number) => {
     return optionsList.value.find((t) => t.id === id)
+}
+
+// Attach single tag function
+const onAttachTag = (tagId: number) => {
+    if (!props.fieldData?.tag_routes?.attach_tag?.name) {
+        // Fallback: just update form value if no attach route
+        props.form[props.fieldName] = [...(props.form[props.fieldName] || []), tagId]
+        return
+    }
+
+    router[props.fieldData.tag_routes.attach_tag.method || 'post'](
+        route(props.fieldData.tag_routes.attach_tag.name, props.fieldData.tag_routes.attach_tag.parameters), { tags_id: [tagId] }
+    )
 }
 
 onMounted(() => {
@@ -92,9 +121,19 @@ onMounted(() => {
                 style="cursor: pointer"
             >
                 <template #closeButton>
-                    <div @click="formSelectedTags = formSelectedTags.filter((id) => id !== tagId)" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
-                        <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" aria-hidden="true" />
-                    </div>
+                    <ModalConfirmationDelete
+                        :routeDelete="{ name: fieldData?.tag_routes?.detach_tag.name ?? '', parameters: { ...fieldData?.tag_routes?.detach_tag.parameters, tag: tagId } }"
+                        :title="trans('Are you sure you want to detach this tag?')"
+                        :description="trans('This tag will be removed from this item.')"
+                        :noLabel="trans('Detach')"
+                        noIcon="fal fa-trash-alt"
+                    >
+                        <template #default="{ changeModel }">
+                            <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
+                                <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" aria-hidden="true" />
+                            </div>
+                        </template>
+                    </ModalConfirmationDelete>
                 </template>
             </Tag>
         </div>
@@ -107,11 +146,12 @@ onMounted(() => {
                 :options="optionsList.length ? optionsList : props.fieldData?.tags"
                 optionLabel="name"
                 optionValue="id"
+                :optionDisabled="(option) => formSelectedTags.includes(option.id)"
                 :placeholder="trans('Select tags')"
                 :maxSelectedLabels="3"
                 filter
                 class="w-full md:w-80"
-                :emptyMessage="trans('No available options')"
+                :showClear="false"
             >
                 <template #footer="{ value, options }">
                     <div v-if="isLoadingMultiselect" class="absolute inset-0 bg-black/30 rounded flex justify-center items-center text-white text-4xl">

@@ -159,7 +159,6 @@ class FetchAuroraStocks extends FetchAuroraAction
             }
         }
 
-
         if ($stock) {
             if ($isPrincipal) {
                 $tradeUnit = $stockData['trade_unit'];
@@ -186,6 +185,7 @@ class FetchAuroraStocks extends FetchAuroraAction
 
 
             if ($stock->state != StockStateEnum::IN_PROCESS) {
+
                 $orgStock = $this->processOrgStock($organisationSource, $stock, $stockData);
 
                 if ($orgStock) {
