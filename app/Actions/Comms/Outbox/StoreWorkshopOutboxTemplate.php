@@ -2,8 +2,8 @@
 
 /*
  * Author: eka yudinata <ekayudinatha@gmail.com>
- * Created: Tue, 19 Nov 2024 11:09:35 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2024, eka yudinata
+ * Created: Tue, 12 December 2025 11:09:35 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, eka yudinata
  */
 
 namespace App\Actions\Comms\Outbox;
@@ -17,14 +17,14 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
+use App\Models\Comms\EmailTemplate;
 
 class StoreWorkshopOutboxTemplate extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(Outbox $outbox, array $modelData): Outbox
+    public function handle(Outbox $outbox, array $modelData): EmailTemplate
     {
-        \Log::info("Log modelData: ".json_encode($modelData, JSON_PRETTY_PRINT));
 
         $data = [
               'outboxes' => [$outbox->code->value]
@@ -43,9 +43,8 @@ class StoreWorkshopOutboxTemplate extends OrgAction
                       ],
             strict: false
         );
-        \Log::info($emailTemplate);
 
-        return $outbox;
+        return $emailTemplate;
     }
 
     public function rules(): array
@@ -57,7 +56,7 @@ class StoreWorkshopOutboxTemplate extends OrgAction
         ];
     }
 
-    public function asController(Shop $shop, Outbox $outbox, ActionRequest $request): Outbox
+    public function asController(Shop $shop, Outbox $outbox, ActionRequest $request): EmailTemplate
     {
         $this->initialisation($outbox->organisation, $request);
 

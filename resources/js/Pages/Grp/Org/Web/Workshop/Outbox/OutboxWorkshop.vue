@@ -96,8 +96,7 @@ const openSendTest = (data) => {
 const onSaveTemplate = (data: any) => {
     visibleSAveEmailTemplateModal.value = true
     temporaryData.value = {
-        layout: data?.jsonFile,
-        compiled_layout: data?.htmlFile
+        layout: data?.jsonFile
     }
 }
 
@@ -136,58 +135,19 @@ const saveTemplate = async () => {
         )
         .then((response) => {
             visibleSAveEmailTemplateModal.value = false
-            console.log("Template saved successfully:", response.data);
-            // Handle success (equivalent to onFinish)
         })
         .catch((error) => {
-            console.error("Template saved successfully:", error);
             notify({
-                title: "Failed to save",
+                title: "Failed to save template",
                 type: "error",
             })
         })
         .finally(() => {
-            console.log("save  finished.");
             visibleSAveEmailTemplateModal.value = false;
             templateName.value = '';
             temporaryData.value = null;
             isLoading.value = false;
         });
-
-
-    // try {
-    //     console.log(temporaryData.value)
-    //     const response = await axios.post(
-    //          route(props.storeTemplateRoute.name, props.storeTemplateRoute.parameters),
-    //         {
-    //             name:templateName.value,
-    //             layout: JSON.parse(temporaryData.value?.layout)
-    //         },
-    //     // 'your-template-save-route', {
-    //     //     name: templateName.value,
-    //     //     layout: JSON.parse(temporaryData.value?.layout),
-    //     // }
-
-    // );
-    //     console.log("Template saved successfully:", response.data);
-    //     visibleSAveEmailTemplateModal.value = false
-    //     templateName.value = ''
-    //     temporaryData.value = null
-    //     notify({
-    //         title: "Template saved!",
-    //         type: "success",
-    //     })
-    // } catch (error) {
-    //     console.error("Error saving template:", error);
-    //     const errorMessage = error.response?.data?.message || error.message || "An unknown error occurred.";
-    //     notify({
-    //         title: "Something went wrong",
-    //         text: errorMessage,
-    //         type: "error",
-    //     });
-    // } finally {
-    //     isLoading.value = false;
-    // }
 }
 
 const updateActiveValue = async (action) => {
