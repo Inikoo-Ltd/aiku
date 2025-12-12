@@ -22,7 +22,7 @@ class EditTag extends OrgAction
 {
     private ?TagScopeEnum $forcedScope = null;
 
-    public function inSelfFilledTag(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): Response
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): Response
     {
         $this->forcedScope = TagScopeEnum::USER_CUSTOMER;
         $this->initialisationFromShop($shop, $request);
@@ -30,11 +30,24 @@ class EditTag extends OrgAction
         return $this->handle($tag, $request);
     }
 
+    public function inInternalTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): Response
+    {
+        $this->forcedScope = TagScopeEnum::ADMIN_CUSTOMER;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($tag, $request);
+    }
+
     public function handle(Tag $tag, ActionRequest $request): Response
     {
-        // Todo: conditional inSelfFilledTag and inInternalTag
+        $routeName = match ($this->forcedScope) {
+            TagScopeEnum::USER_CUSTOMER  => 'grp.org.shops.show.crm.self_filled_tags.update',
+            TagScopeEnum::ADMIN_CUSTOMER => 'grp.org.shops.show.crm.internal_tags.update',
+            default                      => 'grp.org.shops.show.crm.self_filled_tags.update',
+        };
+
         $updateRoute = [
-            'name'       => 'grp.org.shops.show.crm.tags.update',
+            'name'       => $routeName,
             'parameters' => [
                 $this->organisation->slug,
                 $this->shop->slug,
@@ -98,7 +111,7 @@ class EditTag extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.shops.show.crm.tags.edit',
+                            'name'       => 'grp.org.shops.show.crm.self_filled_tags.edit',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Edit'),

@@ -8,7 +8,9 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
@@ -36,6 +38,8 @@ trait WithMasterAssetTradeUnits
         $masterAsset->stocks()->sync($stocks);
 
         MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
+        MasterAssetHydrateMarketingWeightFromTradeUnits::run($masterAsset->id);
+        MasterAssetHydrateGrossWeightFromTradeUnits::run($masterAsset->id);
 
         $masterAsset->refresh();
     }

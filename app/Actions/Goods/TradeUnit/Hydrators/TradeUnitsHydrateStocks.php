@@ -49,10 +49,7 @@ class TradeUnitsHydrateStocks implements ShouldBeUnique
         $tradeUnitStats = $tradeUnit->stats;
 
         $tradeUnitStats->update($stats);
-        $changed = Arr::except($tradeUnitStats->getChanges(), ['updated_at', 'last_fetched_at']);
-        if (count($changed) > 0) {
-            TradeUnitHydrateStatus::run($tradeUnit);
-        }
+
     }
 
     public function getCommandSignature(): string

@@ -45,6 +45,8 @@ class StoreEbayProduct extends RetinaAction
             $includeVat = Arr::get($ebayUser->customerSalesChannel->settings, 'tax_category.checked', false);
             $customerPrice = $includeVat ? $portfolio->customer_price : $portfolio->customer_price * 0.8;
 
+            $customerSalesChannel = $ebayUser->customerSalesChannel;
+
             $handleError = function ($result) use ($portfolio, $ebayUser, $logs) {
                 if (isset($result['error']) || isset($result['errors'])) {
                     $params = '';
@@ -162,8 +164,8 @@ class StoreEbayProduct extends RetinaAction
 
             $availableQuantity = $product->available_quantity;
 
-            if ($availableQuantity >= 50) {
-                $availableQuantity = 50; // Based on discuss with tomas we agree to limit 50 only
+            if ($customerSalesChannel->max_quantity_advertise > 0) {
+                $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
             $inventoryItem = [

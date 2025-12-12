@@ -193,7 +193,7 @@ onMounted(() => {
             if (isCompleted) {
                 if (!pf.has_valid_platform_product_id || !pf.platform_status || !pf.exist_in_platform) {
                     if (!errorBluk.value.includes(pf.item_code)) {
-                        errorBluk.value.push(pf.item_code)
+                        errorBluk.value.push(pf)
                     }
                 }
                 return
@@ -210,7 +210,7 @@ onMounted(() => {
             } else {
                 progress.number_fails += 1
                 if (!errorBluk.value.includes(pf.item_code)) {
-                    errorBluk.value.push(pf.item_code)
+                    errorBluk.value.push(pf)
                 }
             }
 
@@ -458,7 +458,7 @@ const calculateVat = (price: number) => {
         <h3 class="font-semibold mb-2 text-red-700">Upload Error(s):</h3>
         <ul class="list-disc list-inside text-sm text-red-800">
             <li v-for="(item, index) in errorBluk" :key="index">
-                {{ `Error when uploading item with code: ${item}` }}
+                {{ `Error when uploading item with code: ${item.item_code} - ${item.upload_warning}` }}
             </li>
         </ul>
     </Message>

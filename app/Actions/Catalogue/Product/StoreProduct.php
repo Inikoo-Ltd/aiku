@@ -28,7 +28,6 @@ use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
-use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -199,17 +198,6 @@ class StoreProduct extends OrgAction
         return $product;
     }
 
-    // todo: delete this asap is not used
-    public function getUnitRelationshipType(array $orgStocks): ?ProductUnitRelationshipType
-    {
-        if (count($orgStocks) == 1) {
-            return ProductUnitRelationshipType::SINGLE;
-        } elseif (count($orgStocks) > 1) {
-            return ProductUnitRelationshipType::MULTIPLE;
-        }
-
-        return null;
-    }
 
     public function rules(): array
     {
