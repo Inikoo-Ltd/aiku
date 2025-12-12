@@ -36,7 +36,7 @@ class StoreWorkshopOutboxTemplate extends OrgAction
                           'layout'      => Arr::get($modelData, 'layout'),
                           'is_seeded'   => false,
                           'builder'     => EmailTemplateBuilderEnum::BEEFREE,
-                          'state'       => EmailTemplateStateEnum::IN_PROCESS,
+                          'state'       => EmailTemplateStateEnum::ACTIVE,
                           'active_at'   => now(),
                           'language_id' => $this->organisation->language_id,
                           'data'        => $data
