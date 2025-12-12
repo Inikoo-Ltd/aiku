@@ -19,14 +19,14 @@ const props = withDefaults(defineProps<{
         included_postal_codes?: string
         excluded_postal_codes?: string
     }>
-    country_list?: any
+    // country_list?: any
 }>(), {
-    country_list: () => [],
+    // country_list: () => [],
 })
 
 const emit = defineEmits(['update:modelValue'])
 
-const items = computed(() => props.modelValue || [])
+// const items = computed(() => props.modelValue || [])
 
 const showModal = ref(false)
 const selectedIndex = ref(-1)
@@ -35,19 +35,19 @@ const editIncludedPostalCodes = ref('')
 const editExcludedPostalCodes = ref('')
 
 const countryOptions = computed(() => {
-    const list = props.country_list
-    if (list && typeof list === 'object' && !Array.isArray(list)) {
-        return Object.values(list).map((c: any) => ({
-            label: c.label,
-            code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
-        }))
-    }
-    if (Array.isArray(list)) {
-        return list.map((c: any) => ({
-            label: c.label,
-            code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
-        }))
-    }
+    // const list = props.country_list
+    // if (list && typeof list === 'object' && !Array.isArray(list)) {
+    //     return Object.values(list).map((c: any) => ({
+    //         label: c.label,
+    //         code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
+    //     }))
+    // }
+    // if (Array.isArray(list)) {
+    //     return list.map((c: any) => ({
+    //         label: c.label,
+    //         code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
+    //     }))
+    // }
     return []
 })
 
@@ -86,11 +86,11 @@ function saveEdit() {
     showModal.value = false
 }
 
-function deleteItem(index: number) {
-    const updated = [...props.modelValue]
-    updated.splice(index, 1)
-    emit('update:modelValue', updated)
-}
+// function deleteItem(index: number) {
+//     const updated = [...props.modelValue]
+//     updated.splice(index, 1)
+//     emit('update:modelValue', updated)
+// }
 
 function getCountryLabel(code: string): string {
     const found = countryOptions.value.find(c => c.code === code)

@@ -29,49 +29,51 @@ const props = defineProps<{
     }
 }>()
 
-const emits = defineEmits()
+// const emits = defineEmits()
 
-const setFormValue = (data: Object, fieldName: String) => {
-    if (Array.isArray(fieldName)) {
-        return getNestedValue(data, fieldName)
-    } else {
-        return data[fieldName]
-    }
-}
+// const setFormValue = (data: Object, fieldName: String) => {
+//     if (Array.isArray(fieldName)) {
+//         return getNestedValue(data, fieldName)
+//     } else {
+//         return data[fieldName]
+//     }
+// }
 
-const getNestedValue = (obj: Object, keys: Array) => {
-    return keys.reduce((acc, key) => {
-        if (acc && typeof acc === "object" && key in acc) return acc[key]
-        return null
-    }, obj)
-}
+// const getNestedValue = (obj: Object, keys: Array) => {
+//     return keys.reduce((acc, key) => {
+//         if (acc && typeof acc === "object" && key in acc) return acc[key]
+//         return null
+//     }, obj)
+// }
 
-const value = ref(setFormValue(props.form, props.fieldName))
+// const value = ref(setFormValue(props.form, props.fieldName))
 
-watch(value, (newValue) => {
-    // Update the form field value when the value ref changes
-    updateFormValue(newValue)
-    props.form.errors[props.fieldName] = ''
-})
+// watch(value, (newValue) => {
+//     // Update the form field value when the value ref changes
+//     updateFormValue(newValue)
+//     props.form.errors[props.fieldName] = ''
+// })
 
-const updateFormValue = (newValue) => {
-    let target = props.form
-    if (Array.isArray(props.fieldName)) {
-        set(target, props.fieldName, newValue)
-    } else {
-        target[props.fieldName] = newValue
-    }
-    emits("update:form", target)
-}
+// const updateFormValue = (newValue) => {
+//     let target = props.form
+//     if (Array.isArray(props.fieldName)) {
+//         set(target, props.fieldName, newValue)
+//     } else {
+//         target[props.fieldName] = newValue
+//     }
+//     emits("update:form", target)
+// }
 
-console.log(props)
+// console.log(props)
 </script>
 <template>
     <div class="relative">
-        <PureShippingCountries v-model="value" :country_list="fieldData.country_list" />
+        <PureShippingCountries
+            :modelValue="form[fieldName]"
+        />
     </div>
 
-    <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
+    <!-- <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
         {{ form.errors[fieldName] }}
-    </p>
+    </p> -->
 </template>
