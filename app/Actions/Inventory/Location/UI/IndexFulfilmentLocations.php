@@ -104,7 +104,7 @@ class IndexFulfilmentLocations extends OrgAction
                         default => null
                     }
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_pallets', label: __('Pallets'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };

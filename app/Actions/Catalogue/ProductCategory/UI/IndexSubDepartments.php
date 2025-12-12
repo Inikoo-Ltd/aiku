@@ -185,8 +185,8 @@ class IndexSubDepartments extends OrgAction
             if (class_basename($parent) == 'MasterProductCategory') {
                 $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'code', label: __('code'), sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), sortable: true, searchable: true)
+            $table->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'number_families', label: __('families'), sortable: true)
                 ->column(key: 'number_products', label: __('products'), sortable: true);
         };

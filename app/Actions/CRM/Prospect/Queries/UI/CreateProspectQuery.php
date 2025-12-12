@@ -60,7 +60,7 @@ class CreateProspectQuery extends InertiaAction
                                 'fields' => [
                                     'name'          => [
                                         'type'  => 'input',
-                                        'label' => __('name')
+                                        'label' => __('Name')
                                     ],
                                     'query_builder' => [
                                         'type'      => 'prospectQueryBuilder',

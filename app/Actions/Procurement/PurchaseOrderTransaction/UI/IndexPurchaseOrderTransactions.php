@@ -60,8 +60,8 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'supplier', label: __('supplier'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'unit_cost', label: __('unit price'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity_ordered', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true)

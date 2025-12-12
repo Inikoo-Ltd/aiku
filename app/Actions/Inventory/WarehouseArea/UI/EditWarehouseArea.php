@@ -72,12 +72,12 @@ class EditWarehouseArea extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
-                                    'label' => __('code'),
+                                    'label' => __('Code'),
                                     'value' => $warehouseArea->code
                                 ],
                                 'name' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $warehouseArea->name
                                 ],
                                 'picking_position' => [

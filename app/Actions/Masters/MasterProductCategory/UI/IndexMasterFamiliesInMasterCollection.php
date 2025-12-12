@@ -89,10 +89,10 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($action) {
-                $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             }
 
 

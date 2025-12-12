@@ -53,11 +53,11 @@ class CreateShipper extends OrgAction
                                 'fields' => [
                                     'code'     => [
                                         'type'  => 'input',
-                                        'label' => __('code')
+                                        'label' => __('Code')
                                     ],
                                     'name'     => [
                                         'type'  => 'input',
-                                        'label' => __('name')
+                                        'label' => __('Name')
                                     ],
                                     'trade_as' => [
                                         'type'  => 'input',

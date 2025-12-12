@@ -56,7 +56,7 @@ class CreateEmployee extends OrgAction
                             'fields' => [
                                 'contact_name'  => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'required' => true,
                                 ],
                                 'date_of_birth' => [

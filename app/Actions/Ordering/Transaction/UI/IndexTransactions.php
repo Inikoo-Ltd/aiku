@@ -127,7 +127,7 @@ class IndexTransactions extends OrgAction
                 )
 
             ) {
-                $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
     }

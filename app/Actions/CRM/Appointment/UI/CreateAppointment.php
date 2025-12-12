@@ -74,32 +74,32 @@ class CreateAppointment extends InertiaAction
                                     'type' => [
                                         'type'     => 'select',
                                         'mode'     => 'single',
-                                        'label'    => __('type'),
+                                        'label'    => __('Type'),
                                         'required' => true,
                                         'options'  => Options::forEnum(AppointmentTypeEnum::class)
                                     ],
                                     'event' => [
                                         'type'     => 'select',
                                         'mode'     => 'single',
-                                        'label'    => __('event'),
+                                        'label'    => __('Event'),
                                         'required' => true,
                                         'options'  => Options::forEnum(AppointmentEventEnum::class)
                                     ],
                                     'event_address' => [
                                         'type'     => 'input',
-                                        'label'    => __('event address'),
+                                        'label'    => __('Event address'),
                                         'value'    => '',
                                         'required' => true,
                                     ],
                                     'schedule_at' => [
                                         'type'     => 'date',
-                                        'label'    => __('schedule'),
+                                        'label'    => __('Schedule'),
                                         'value'    => '',
                                         'required' => true,
                                     ],
                                     'description' => [
                                         'type'     => 'textarea',
-                                        'label'    => __('description'),
+                                        'label'    => __('Description'),
                                         'value'    => ''
                                     ]
                                 ]

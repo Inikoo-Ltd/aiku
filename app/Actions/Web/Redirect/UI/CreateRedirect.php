@@ -79,7 +79,7 @@ class CreateRedirect extends OrgAction
                             'fields' => [
                                 'type' => [
                                     'type'     => 'select',
-                                    'label'    => __('type'),
+                                    'label'    => __('Type'),
                                     'required' => true,
                                     'options'  => Options::forEnum(RedirectTypeEnum::class),
                                 ],

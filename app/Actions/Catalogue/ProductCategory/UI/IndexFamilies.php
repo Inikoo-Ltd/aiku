@@ -289,36 +289,36 @@ class IndexFamilies extends OrgAction
                 ->withModelOperations($modelOperations);
 
             if ($sales) {
-                $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales_ytd', label: __('sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales_ytd', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_ytd_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_ytd', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_ytd', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'invoices_ytd_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             } else {
                 if ($parent instanceof Organisation) {
-                    $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
-                    $table->column(key: 'department_code', label: __('department'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'department_code', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
                 }
                 if (class_basename($parent) == 'MasterProductCategory') {
-                    $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
-                $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                $table->column(key: 'code', label: __(']Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'sub_department_name', label: __('Sub department'), canBeHidden: false, sortable: true, searchable: true);
 
                 if ($parent instanceof Group) {
-                    $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)
+                        ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
                 if (class_basename($parent) != 'Collection') {
-                    $table->column(key: 'collections', label: __('collections'), canBeHidden: false, sortable: true, searchable: true);
-                    $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'collections', label: __('Collections'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'number_current_products', label: __('Current products'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
                 if (class_basename($parent) == 'Collection') {
-                    $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
                 if ($parent instanceof ProductCategory && $parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {

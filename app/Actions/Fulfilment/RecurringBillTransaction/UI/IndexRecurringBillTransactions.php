@@ -106,8 +106,8 @@ class IndexRecurringBillTransactions extends OrgAction
                 );
 
             $table
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'description', label: __('description'))
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'description', label: __('Description'))
                 ->column(key: 'asset_code', label: __('billable'), canBeHidden: false, sortable: true, searchable: true)
              //   ->column(key: 'asset_name', label: __('rental name'))
                 ->column(key: 'asset_price', label: __('base price'), canBeHidden: false, sortable: true, searchable: true)
@@ -115,7 +115,7 @@ class IndexRecurringBillTransactions extends OrgAction
                 ->column(key: 'total', label: __('net'), canBeHidden: false, sortable: true, searchable: true, className: 'text-right font-mono')
                 ->defaultSort('id');
             if ($recurringBill->status == RecurringBillStatusEnum::CURRENT) {
-                $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             }
 
         };

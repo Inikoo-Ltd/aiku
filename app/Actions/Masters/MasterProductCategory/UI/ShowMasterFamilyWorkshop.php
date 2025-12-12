@@ -55,7 +55,7 @@ class ShowMasterFamilyWorkshop extends GrpAction
         return Inertia::render(
             'Goods/FamilyMasterBlueprint',
             [
-                'title'       => __('family'),
+                'title'       => __('Family'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterFamily,
                     $request->route()->getName(),

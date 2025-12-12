@@ -124,14 +124,14 @@ class CreateWebsite extends OrgAction
 
                                 'code' => [
                                     'type'        => 'input',
-                                    'label'       => __('code'),
+                                    'label'       => __('Code'),
                                     'required'    => true,
                                     'placeholder' => 'Enter code',
                                     'value'       => ''
                                 ],
                                 'name' => [
                                     'type'        => 'input',
-                                    'label'       => __('name'),
+                                    'label'       => __('Name'),
                                     'placeholder' => 'Enter name',
                                     'required'    => true,
                                     'value'       => '',

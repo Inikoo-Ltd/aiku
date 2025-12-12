@@ -174,27 +174,27 @@ class IndexDepartments extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
             if ($sales) {
-                $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 if (class_basename($parent) == 'MasterProductCategory') {
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
-                $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
 
                 if (class_basename($parent) != 'Collection') {
-                    $table->column(key: 'number_current_sub_departments', label: __('sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
-                    $table->column(key: 'number_current_collections', label: __('collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'number_current_sub_departments', label: __('Sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'number_current_collections', label: __('Collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true);
 
-                    $table->column(key: 'number_current_families', label: __('families'), tooltip: __('current families'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'number_current_products', label: __('products'), tooltip: __('current products'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'number_current_families', label: __('Families'), tooltip: __('current families'), canBeHidden: false, sortable: true, searchable: true)
+                        ->column(key: 'number_current_products', label: __('Products'), tooltip: __('current products'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
                 if (class_basename($parent) == 'Collection') {
-                    $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
                 }
             }
         };

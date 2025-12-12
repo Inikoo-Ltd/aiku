@@ -136,8 +136,8 @@ class IndexProductsInGroup extends OrgAction
             $table
                 ->column(key: 'organisation_code', label: __('Org'), tooltip: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customers_invoiced_all', label: __('customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'sales_all', label: __('amount'), canBeHidden: false, sortable: true, searchable: true);

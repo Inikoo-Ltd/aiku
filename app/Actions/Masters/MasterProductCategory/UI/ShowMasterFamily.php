@@ -108,7 +108,7 @@ class ShowMasterFamily extends GrpAction
         return Inertia::render(
             'Masters/MasterFamily',
             [
-                'title'                 => __('family'),
+                'title'                 => __('Family'),
                 'breadcrumbs'           => $this->getBreadcrumbs(
                     $masterFamily,
                     $request->route()->getName(),
