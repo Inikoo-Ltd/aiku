@@ -199,7 +199,7 @@ class ShowMasterFamily extends GrpAction
                             'tooltip' => __('Add a master product to this family'),
                             'label'   => __('Master Product'),
                         ]: false,
-                        $this->canEdit ? [
+                        $this->canEdit && app()->environment('local') ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('Create a variants group for this family'),
