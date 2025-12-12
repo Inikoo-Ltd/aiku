@@ -129,7 +129,7 @@ class ShowFulfilmentInvoice extends OrgAction
         }
 
         $payBoxData           = $this->getPayBoxData($invoice);
-        $actions              = $this->getInvoiceActions($invoice, $request, $payBoxData);
+        $actions              = $this->getInvoiceActions($invoice, $request, $payBoxData, true);
         $exportInvoiceOptions = ShowInvoice::make()->getExportOptions($invoice);
 
         $boxStats = $this->getBoxStats($invoice);
@@ -165,7 +165,7 @@ class ShowFulfilmentInvoice extends OrgAction
                         'icon'  => ['fal', 'fa-file-invoice-dollar'],
                         'title' => $invoice->reference
                     ],
-                    'actions'       => $actions
+                    'wrapped_actions'       => $actions
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
