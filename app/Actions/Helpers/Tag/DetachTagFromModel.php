@@ -16,29 +16,69 @@ use App\Actions\OrgAction;
 use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use Exception;
 use Lorisleiva\Actions\ActionRequest;
 
 class DetachTagFromModel extends OrgAction
 {
     public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): void
     {
-        $this->initialisationFromGroup($tradeUnit->group, $request);
+        try {
+            $this->initialisationFromGroup($tradeUnit->group, $request);
+            $this->handle($tradeUnit, $tag);
 
-        $this->handle($tradeUnit, $tag);
+            request()->session()->flash('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tags successfully detached.'),
+            ]);
+        } catch (Exception $e) {
+            request()->session()->flash('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function inCustomer(Customer $customer, Tag $tag, ActionRequest $request): void
     {
-        $this->initialisation($customer->organisation, $request);
+        try {
+            $this->initialisationFromShop($customer->shop, $request);
+            $this->handle($customer, $tag);
 
-        $this->handle($customer, $tag);
+            request()->session()->flash('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tags successfully detached.'),
+            ]);
+        } catch (Exception $e) {
+            request()->session()->flash('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function inRetina(Customer $customer, Tag $tag, ActionRequest $request): void
     {
-        $this->initialisation($customer->organisation, $request);
+        try {
+            $this->initialisationFromShop($customer->shop, $request);
+            $this->handle($customer, $tag);
 
-        $this->handle($customer, $tag);
+            request()->session()->flash('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tags successfully detached.'),
+            ]);
+        } catch (Exception $e) {
+            request()->session()->flash('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function handle(Customer|TradeUnit $model, Tag $tag): void
@@ -49,6 +89,7 @@ class DetachTagFromModel extends OrgAction
             foreach ($model->products as $product) {
                 ProductHydrateTagsFromTradeUnits::run($product);
             }
+
             foreach ($model->masterAssets as $masterAsset) {
                 MasterAssetHydrateTagsFromTradeUnits::run($masterAsset);
             }

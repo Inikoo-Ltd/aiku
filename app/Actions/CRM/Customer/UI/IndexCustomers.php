@@ -108,6 +108,12 @@ class IndexCustomers extends OrgAction
             });
         });
 
+        $tagFilter = AllowedFilter::callback('tag', function ($query, $value) {
+            $query->whereHas('tags', function ($tagQuery) use ($value) {
+                $tagQuery->where('tags.slug', $value);
+            });
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -200,7 +206,7 @@ class IndexCustomers extends OrgAction
             ->leftJoin('shops', 'customers.shop_id', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
             ->allowedSorts($allowedSort)
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $tagFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

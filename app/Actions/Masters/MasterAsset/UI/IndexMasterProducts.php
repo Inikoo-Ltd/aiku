@@ -337,7 +337,7 @@ class IndexMasterProducts extends GrpAction
                 ],
                 'data'                  => MasterProductsResource::collection($masterAssets),
                 'masterProductCategory' => $this->parent->id,
-                'editable_table'        => true,
+                'editable_table'        => false,
                 'shopsData'             => $shopsData,
 
             ]
