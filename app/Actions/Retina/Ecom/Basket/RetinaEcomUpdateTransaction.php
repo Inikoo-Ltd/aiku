@@ -52,14 +52,13 @@ class RetinaEcomUpdateTransaction extends RetinaAction
         }
     }
 
-    // TODO VIKA
-    // public function action(Transaction $transaction, Customer $customer, array $modelData): Transaction
-    // {
-    //     $this->order = $transaction->order;
-    //     $this->initialisationActions($customer, $modelData);
+    public function action(Transaction $transaction, Customer $customer, array $modelData): Transaction
+    {
+        $this->order = $transaction->order;
+        $this->initialisationActions($customer, $modelData);
 
-    //     return $this->handle($transaction, $this->validatedData);
-    // }
+        return $this->handle($transaction, $this->validatedData);
+    }
 
     public function asController(Transaction $transaction, ActionRequest $request)
     {

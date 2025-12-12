@@ -23,13 +23,12 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
             $order = StoreEcomOrder::make()->action($customer);
         }
 
-        // TODO VIKA
-        // $itemInBasket = $order->transactions->where('model_type', 'Product')->where('model_id', $product->id)->first();
-        // if($itemInBasket){
-        //     return RetinaEcomUpdateTransaction::make()->action($itemInBasket, $customer, [
-        //         'quantity_ordered' => data_get($modelData, 'quantity')
-        //     ]);
-        // }
+        $itemInBasket = $order->transactions->where('model_type', 'Product')->where('model_id', $product->id)->first();
+        if($itemInBasket){
+            return RetinaEcomUpdateTransaction::make()->action($itemInBasket, $customer, [
+                'quantity_ordered' => data_get($modelData, 'quantity')
+            ]);
+        }
 
         $historicAsset = $product->currentHistoricProduct;
 
