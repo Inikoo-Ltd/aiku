@@ -22,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreTag extends OrgAction
@@ -152,8 +153,23 @@ class StoreTag extends OrgAction
 
     public function rules(): array
     {
+        $nameRules = ['required', 'string', 'max:255'];
+
+        // Add unique validation based on context (group level or shop level)
+        if (isset($this->shop)) {
+            // Shop level: unique per scope + shop_id + name
+            $nameRules[] = Rule::unique('tags', 'name')
+                ->where('scope', $this->forcedScope?->value)
+                ->where('shop_id', $this->shop->id);
+        } else {
+            // Group level: unique per scope + name (shop_id is NULL)
+            $nameRules[] = Rule::unique('tags', 'name')
+                ->where('scope', $this->forcedScope?->value)
+                ->whereNull('shop_id');
+        }
+
         return [
-            'name'  => ['required', 'string', 'max:255', 'unique:tags,name'],
+            'name'  => $nameRules,
             'scope' => [
                 'sometimes',
                 'nullable',
