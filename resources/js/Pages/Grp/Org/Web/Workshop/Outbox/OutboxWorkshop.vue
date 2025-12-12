@@ -135,6 +135,11 @@ const saveTemplate = async () => {
         )
         .then((response) => {
             visibleSAveEmailTemplateModal.value = false
+             notify({
+                    title: trans('Success!'),
+                    text: trans('Success to save template'),
+                    type: 'success',
+                })
         })
         .catch((error) => {
             notify({
