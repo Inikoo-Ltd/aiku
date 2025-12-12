@@ -37,17 +37,23 @@ defineProps<{
 
 const inMasterCollection = route().current() === 'grp.masters.master_shops.show.master_collections.index';
 
-function collectionRoute(collection: {}) {
-    const currentRoute = route().current();
+function collectionRoute(collection: { slug: string }) {
+  const currentRoute = route().current();
 
-    if (currentRoute === "grp.masters.master_shops.show.master_collections.index") {
-        return route(
-            "grp.masters.master_shops.show.master_collections.show",
-            [
-                (route().params as RouteParams).masterShop,
-                collection.slug
-            ]);
-    }
+  switch (currentRoute) {
+    case "grp.masters.master_shops.show.master_collections.index":
+    case 'grp.masters.master_shops.show.master_departments.show.master_collections.index':
+      return route(
+        "grp.masters.master_shops.show.master_collections.show",
+        [
+          (route().params as RouteParams).masterShop,
+          collection.slug
+        ]
+      );
+
+    default:
+      return null;
+  }
 }
 
 function parentRoute(slug: string, type: string) {
