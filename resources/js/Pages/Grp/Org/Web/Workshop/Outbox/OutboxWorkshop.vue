@@ -37,6 +37,7 @@ const props = defineProps<{
     status: string
     publishRoute: routeType
     sendTestRoute : routeType
+    storeTemplateRoute: routeType
     apiKey: {
         client_id: string,
         client_secret: string,
@@ -92,6 +93,13 @@ const openSendTest = (data) => {
     }
 }
 
+const onSaveTemplate = (data: any) => {
+    visibleSAveEmailTemplateModal.value = true
+    temporaryData.value = {
+        layout: data?.jsonFile
+    }
+}
+
 const sendTestToServer = async () => {
     isLoading.value = true;
     try {
@@ -116,22 +124,35 @@ const sendTestToServer = async () => {
 
 const saveTemplate = async () => {
     isLoading.value = true;
-    try {
-        const response = await axios.post('xxx', {
-            email: comment.value,
+
+    axios
+        .post(
+            route(props.storeTemplateRoute.name, props.storeTemplateRoute.parameters),
+            {
+                name:templateName.value,
+                layout: JSON.parse(temporaryData.value?.layout)
+            },
+        )
+        .then((response) => {
+            visibleSAveEmailTemplateModal.value = false
+             notify({
+                    title: trans('Success!'),
+                    text: trans('Success to save template'),
+                    type: 'success',
+                })
+        })
+        .catch((error) => {
+            notify({
+                title: "Failed to save template",
+                type: "error",
+            })
+        })
+        .finally(() => {
+            visibleSAveEmailTemplateModal.value = false;
+            templateName.value = '';
+            temporaryData.value = null;
+            isLoading.value = false;
         });
-        console.log("sendTest response:", response.data);
-    } catch (error) {
-        console.error("Error in sendTest:", error);
-        const errorMessage = error.response?.data?.message || error.message || "An unknown error occurred.";
-        notify({
-            title: "Something went wrong",
-            text: errorMessage,
-            type: "error",
-        });
-    } finally {
-        isLoading.value = false;
-    }
 }
 
 const updateActiveValue = async (action) => {
@@ -228,7 +249,7 @@ const schedulePublish = async () =>{
         @onSave="onSendPublish"
         @sendTest="openSendTest"
         @auto-save="autoSave"
-        @saveTemplate="visibleSAveEmailTemplateModal = true"
+        @saveTemplate="onSaveTemplate"
         ref="_beefree"
     />
 
@@ -285,7 +306,7 @@ const schedulePublish = async () =>{
             <PureInput v-model="templateName" placeholder="Template Name" />
             <div class="flex justify-end mt-3 gap-3">
                 <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false"></Button>
-                <Button type="save"></Button>
+                <Button type="save" @click="saveTemplate"></Button>
             </div>
         </div>
     </Dialog>

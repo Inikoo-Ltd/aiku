@@ -189,7 +189,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 
 
         return Inertia::render(
-            'Org/Catalogue/Collections',
+            'Masters/MasterCollections',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->parent,

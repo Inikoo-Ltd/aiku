@@ -16,20 +16,20 @@ use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Tag;
 use Exception;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachTagsToModel extends OrgAction
 {
-    private TradeUnit|Customer $parent;
-    private bool $inRetina = false;
+    private ?TagScopeEnum $forcedScope = null;
 
     public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): void
     {
         try {
-            $this->parent = $tradeUnit;
+            $this->forcedScope = TagScopeEnum::PRODUCT_PROPERTY;
             $this->initialisationFromGroup($tradeUnit->group, $request);
-            $this->handle($tradeUnit, $this->validatedData, true);
+            $this->handle($tradeUnit, $this->validatedData);
 
             request()->session()->flash('notification', [
                 'status'  => 'success',
@@ -48,9 +48,9 @@ class AttachTagsToModel extends OrgAction
     public function inCustomer(Customer $customer, ActionRequest $request): void
     {
         try {
-            $this->parent = $customer;
-            $this->initialisation($customer->organisation, $request);
-            $this->handle($customer, $this->validatedData, true);
+            $this->forcedScope = TagScopeEnum::ADMIN_CUSTOMER;
+            $this->initialisationFromShop($customer->shop, $request);
+            $this->handle($customer, $this->validatedData);
 
             request()->session()->flash('notification', [
                 'status'  => 'success',
@@ -69,10 +69,9 @@ class AttachTagsToModel extends OrgAction
     public function inRetina(Customer $customer, ActionRequest $request): void
     {
         try {
-            $this->inRetina = true;
-            $this->parent = $customer;
-            $this->initialisation($customer->organisation, $request);
-            $this->handle($customer, $this->validatedData, true);
+            $this->forcedScope = TagScopeEnum::USER_CUSTOMER;
+            $this->initialisationFromShop($customer->shop, $request);
+            $this->handle($customer, $this->validatedData);
 
             request()->session()->flash('notification', [
                 'status'  => 'success',
@@ -88,18 +87,17 @@ class AttachTagsToModel extends OrgAction
         }
     }
 
-    public function action(TradeUnit|Customer $parent, array $modelData): void
+    public function action(TradeUnit|Customer $parent, array $modelData, $replace = false): void
     {
         try {
-            $this->parent = $parent;
-
             if ($parent instanceof TradeUnit) {
+                $this->forcedScope = TagScopeEnum::PRODUCT_PROPERTY;
                 $this->initialisationFromGroup($parent->group, $modelData);
             } else {
-                $this->initialisation($parent->organisation, $modelData);
+                $this->initialisationFromShop($parent->shop, $modelData);
             }
 
-            $this->handle($parent, $this->validatedData, true);
+            $this->handle($parent, $this->validatedData, $replace);
 
             request()->session()->flash('notification', [
                 'status'  => 'success',
@@ -119,16 +117,16 @@ class AttachTagsToModel extends OrgAction
     {
         if ($replace) {
             $model->tags()->sync($modelData['tags_id']);
+
             if ($model instanceof TradeUnit) {
                 foreach ($model->products as $product) {
                     ProductHydrateTagsFromTradeUnits::run($product);
                 }
+
                 foreach ($model->masterAssets as $masterAsset) {
                     MasterAssetHydrateTagsFromTradeUnits::run($masterAsset);
                 }
             }
-
-
         } else {
             $model->tags()->syncWithoutDetaching($modelData['tags_id']);
         }
@@ -150,18 +148,18 @@ class AttachTagsToModel extends OrgAction
                 'exists:tags,id',
                 function ($attribute, $value, $fail) {
                     if (!empty($value)) {
-                        $exist = \DB::table('tags')->where('group_id', $this->group->id);
+                        $exist = Tag::query();
 
-                        if ($this->parent instanceof TradeUnit) {
-                            $exist->where('scope', TagScopeEnum::PRODUCT_PROPERTY);
+                        if (isset($this->group)) {
+                            $exist->where('group_id', $this->group->id);
                         }
 
-                        if ($this->parent instanceof Customer) {
-                            $exist->whereIn('scope', [TagScopeEnum::ADMIN_CUSTOMER->value, TagScopeEnum::USER_CUSTOMER->value]);
+                        if (isset($this->shop)) {
+                            $exist->where('shop_id', $this->shop->id);
                         }
 
-                        if ($this->inRetina) {
-                            $exist->where('scope', TagScopeEnum::USER_CUSTOMER);
+                        if ($this->forcedScope) {
+                            $exist->where('scope', $this->forcedScope);
                         }
 
                         $exist = $exist->where('id', $value)->pluck('id')->toArray();

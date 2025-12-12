@@ -12,6 +12,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
@@ -144,7 +145,9 @@ class EditCustomer extends OrgAction
                                 'tags' => [
                                     'type'       => 'tags-customer',
                                     'label'      => __('Tags'),
-                                    'value'      => $customer->tags->pluck('id')->toArray(),
+                                    'value'      => $customer->tags->where('scope', TagScopeEnum::ADMIN_CUSTOMER)->pluck('id')->toArray(),
+                                    'noSaveButton' => true,
+                                    'isWithRefreshFieldForm' => true,
                                     'tag_routes' => [
                                         'index_tag' => [
                                             'name'       => 'grp.json.customer.tags.index',
