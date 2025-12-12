@@ -248,7 +248,6 @@ const schedulePublish = async () =>{
         :mergeTags="mergeTags"
         @onSave="onSendPublish"
         @sendTest="openSendTest"
-        @auto-save="autoSave"
         @saveTemplate="onSaveTemplate"
         ref="_beefree"
     />
