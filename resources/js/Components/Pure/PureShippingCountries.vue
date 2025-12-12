@@ -3,13 +3,15 @@ import { ref, computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from '../Elements/Buttons/Button.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInfinity, faPlus, faTrash, faPen, faPencil } from '@far'
-import { faEdit } from '@fal'
+import { faInfinity, faPlus, faPen, faPencil } from '@far'
+import { faTrashAlt, faEdit } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureMultiselect from './PureMultiselect.vue'
 import PureTextarea from './PureTextarea.vue'
+import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
+import { trans } from 'laravel-vue-i18n'
 
-library.add(faInfinity, faPlus, faTrash, faPen)
+library.add(faInfinity, faPlus, faTrashAlt, faPen)
 
 const props = withDefaults(defineProps<{
     modelValue: Array<{
@@ -94,13 +96,28 @@ function getCountryLabel(code: string): string {
     const found = countryOptions.value.find(c => c.code === code)
     return found ? found.label : code
 }
+
+const aaa = [
+    {
+        country_code: 'US',
+        included_postal_codes: ['10001', '10002', '10003'],
+        excluded_postal_codes: ['10004', '10005'],
+    },
+    {
+        country_code: 'CA',
+        included_postal_codes: ['M5H', 'M5J', 'M5K'],
+    },
+]
+
+const _modal_delete = ref<InstanceType<typeof ModalConfirmationDelete> | null>(null)
+console.log('qqqq', _modal_delete?.value)
 </script>
 
 <template>
     <div class="space-y-4 text-sm max-w-[450px] mx-auto">
 
         <!-- List of Regions -->
-        <div v-if="true" v-for="(item, index) in items" :key="index"
+        <div v-if="true" v-for="(item, index) in aaa" :key="index"
             class="p-3 rounded border border-gray-300 bg-white shadow-sm space-y-2">
             <!-- Country Code -->
             <div class="flex justify-between items-center">
@@ -114,34 +131,39 @@ function getCountryLabel(code: string): string {
                     </span>
                 </div>
 
-                <!-- Edit/Delete Buttons -->
+                <!-- Section: Button (edit/delete) -->
                 <div class="flex items-center ">
-                    <Button :icon="faEdit" type="edit" size="xs" @click="openEditModal(index)">
+                    <Button :icon="faPencil" type="edit" size="xs" @click="openEditModal(index)">
                         <template #icon>
-                            <FontAwesomeIcon :icon="faPencil" class="w-4 h-4" />
+                            <FontAwesomeIcon :icon="faPencil" class="" />
                         </template>
                     </Button>
-                    <Button :icon="faTrash" type="edit" class="text-red-500" size="xs" @click="deleteItem(index)">
+
+                    <Button :icon="faTrashAlt" type="edit" class="text-red-500" size="xs"
+                        aclick="deleteItem(index)"
+                        @click="() => _modal_delete?.changeModel()"
+                    >
                         <template #icon>
-                            <FontAwesomeIcon :icon="faTrash" class="text-red-500 w-4 h-4" />
+                            <FontAwesomeIcon :icon="faTrashAlt" class="text-red-500" />
                         </template>
                     </Button>
+
                 </div>
             </div>
 
-            <!-- Included Postal Codes -->
+            <!-- Section: Included Postal Codes -->
             <div v-if="item.included_postal_codes">
-                <div class="text-gray-500 mb-1">Included Postal Codes</div>
-                <div class="bg-gray-50 text-xs p-2 rounded whitespace-pre-wrap break-words">
-                    {{ item.included_postal_codes }}
+                <div class="text-green-500 mb-1">Included Postal Codes</div>
+                <div class="bg-green-50 text-xs p-2 rounded whitespace-pre-wrap break-words">
+                    {{ item.included_postal_codes.join(', ') }}
                 </div>
             </div>
 
-            <!-- Excluded Postal Codes -->
+            <!-- Section: Excluded Postal Codes -->
             <div v-if="item.excluded_postal_codes">
-                <div class="text-gray-500 mb-1">Excluded Postal Codes</div>
-                <div class="bg-gray-50 text-xs p-2 rounded whitespace-pre-wrap break-words">
-                    {{ item.excluded_postal_codes }}
+                <div class="text-red-500 mb-1">Excluded Postal Codes</div>
+                <div class="bg-red-50 text-xs p-2 rounded whitespace-pre-wrap break-words">
+                    {{ item.excluded_postal_codes.join(', ') }}
                 </div>
             </div>
         </div>
@@ -157,15 +179,35 @@ function getCountryLabel(code: string): string {
         </div>
     </div>
 
+    
+    <!-- Section: Remove country -->
+    <ModalConfirmationDelete
+        ref="_modal_delete"
+        xrouteDelete="props.brand_routes.detach_brand"
+        :title="trans('Are you sure you want to remove :code?', { code: 'getCountryLabel(item.country_code)' })"
+        :description="trans('This will remove the country from allowed shipping countries list.')"
+        isFullLoading
+        :noLabel="trans('Yes, remove')"
+        noIcon="fal fa-times"
+    >
+    </ModalConfirmationDelete>
+
     <!-- Modal for Add/Edit -->
-    <Dialog v-model:visible="showModal" modal header="Region Editor" :style="{ width: '450px' }">
+    <Dialog v-model:visible="showModal" modal header="Add Allowed Shipping Country" :style="{ width: '450px' }">
         <div class="space-y-4 text-sm">
             <!-- Add mode -->
             <div v-if="selectedIndex === -1">
-                <label class="block mb-1 text-gray-600">Country</label>
-                <PureMultiselect :modelValue="editCountryCode" @update:modelValue="val => editCountryCode = val"
-                    :options="countryOptions" :searchable="true" label="label" valueProp="code" mode="single"
-                    required />
+                <label class="block mb-1 text-gray-600">Select country</label>
+                <PureMultiselect
+                    :modelValue="editCountryCode"
+                    @update:modelValue="val => editCountryCode = val"
+                    :options="countryOptions"
+                    :searchable="true"
+                    label="label"
+                    valueProp="code"
+                    mode="single"
+                    required
+                />
             </div>
 
             <!-- Edit mode -->

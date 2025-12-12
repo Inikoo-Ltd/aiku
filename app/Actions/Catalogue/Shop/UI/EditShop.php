@@ -364,7 +364,9 @@ class EditShop extends OrgAction
                             'icon'   => 'fa-light fa-truck',
                             'fields' => [
                                 'forbidden_dispatch_countries' => [
-                                    'label'       => __('Shipping countries'),
+                                    'noSaveButton'  => true,
+                                    'isWithRefreshFieldform'  => true,
+                                    'label'       => __('Allowed Shipping Countries'),
                                     'type'        => 'shipping_countries',
                                     'placeholder' => __('Select countries'),
                                     'information' => __('Customer only able to submit to this countries'),
