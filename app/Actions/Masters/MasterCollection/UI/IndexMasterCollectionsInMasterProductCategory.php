@@ -252,7 +252,6 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
     }
 
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterDepartment;
@@ -261,7 +260,6 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
         return $this->handle($masterDepartment);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterSubDepartment;
