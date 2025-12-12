@@ -71,7 +71,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::group([], __DIR__ . '/system.php');
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/sitemaps/{sitemapType}.xml', ShowIrisSubSitemap::class)
-            ->where('sitemapType', 'products|departments|sub_departments|families|contents|blogs|pages')
+            ->where('sitemapType', 'products|departments|sub_departments|families|contents|blogs|pages|collections')
             ->name('iris_sitemap_sub');
         Route::get('/warming_base.txt', [ShowIrisWebpagesList::class, 'base'])->name('warming.base');
         Route::get('/warming_families.txt', [ShowIrisWebpagesList::class, 'families'])->name('warming.families');

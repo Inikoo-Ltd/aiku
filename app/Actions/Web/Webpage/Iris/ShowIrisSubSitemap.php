@@ -25,7 +25,6 @@ class ShowIrisSubSitemap
 
         /** @var Website $website */
         $website = $request->get('website');
-        // dd($website);
 
         $validSitemapTypes = [
             'products',
@@ -33,7 +32,9 @@ class ShowIrisSubSitemap
             'sub_departments',
             'families',
             'contents',
-            'blogs'
+            'blogs',
+            'pages',
+            'collections'
         ];
 
         if (!in_array($sitemapType, $validSitemapTypes)) {
