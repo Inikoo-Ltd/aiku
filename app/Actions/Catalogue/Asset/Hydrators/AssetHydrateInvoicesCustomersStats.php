@@ -26,13 +26,18 @@ class AssetHydrateInvoicesCustomersStats implements ShouldBeUnique
 
     public string $jobQueue = 'sales';
 
-    public function getJobUniqueId(Asset $asset): string
+    public function getJobUniqueId(int $assetID): string
     {
-        return $asset->id;
+        return $assetID;
     }
 
-    public function handle(Asset $asset): void
+    public function handle(int $assetID): void
     {
+        $asset = Asset::find($assetID);
+        if (!$asset) {
+            return;
+        }
+
         $distinctCustomers = DB::table('invoice_transactions')
             ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
             ->where('invoice_transactions.asset_id', $asset->id)
