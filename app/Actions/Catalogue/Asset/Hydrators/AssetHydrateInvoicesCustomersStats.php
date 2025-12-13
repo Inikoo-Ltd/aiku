@@ -13,7 +13,9 @@ namespace App\Actions\Catalogue\Asset\Hydrators;
 use App\Actions\Traits\Hydrators\WithHydrateDeliveryNotes;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Catalogue\Asset;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AssetHydrateInvoicesCustomersStats implements ShouldBeUnique
@@ -31,15 +33,17 @@ class AssetHydrateInvoicesCustomersStats implements ShouldBeUnique
 
     public function handle(Asset $asset): void
     {
-        $invoices = $asset->invoiceTransactions()
-                    ->with('invoice')
-                    ->get()
-                    ->pluck('invoice')
-                    ->filter()
-                    ->unique('customer_id');
+        $distinctCustomers = DB::table('invoice_transactions')
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->where('invoice_transactions.asset_id', $asset->id)
+            ->where('invoices.in_process', false)
+            ->where('invoices.type', InvoiceTypeEnum::INVOICE)
+            ->whereNotNull('invoices.customer_id')
+            ->distinct()
+            ->count('invoices.customer_id');
 
-        $stats          = [
-            'number_invoiced_customers'              => $invoices->count(),
+        $stats = [
+            'number_invoiced_customers' => $distinctCustomers,
         ];
 
 
