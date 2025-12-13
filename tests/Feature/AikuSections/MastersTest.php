@@ -56,6 +56,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 
 beforeAll(function () {
     loadDB();
@@ -72,6 +73,112 @@ beforeEach(function () {
     ) = createShop();
     Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
     actingAs($this->adminGuest->getUser());
+});
+
+function ensureMasterProductCategory(): \App\Models\Masters\MasterProductCategory
+{
+    $group = group();
+
+    $masterShop = \App\Models\Masters\MasterShop::query()->first();
+    if (!$masterShop) {
+        $masterShop = StoreMasterShop::make()->action($group, [
+            'type' => ShopTypeEnum::B2B,
+            'code' => 'MSH-'.uniqid(),
+            'name' => 'Test Master Shop',
+        ]);
+    }
+
+    return StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'DEPT-'.uniqid(),
+        'name' => 'Test Department',
+    ]);
+}
+
+
+test('create master shop', function () {
+    $masterShop = StoreMasterShop::make()->action(
+        $this->group,
+        [
+            'code' => "SHOP1",
+            'name' => "shop1",
+            'type' => ShopTypeEnum::DROPSHIPPING
+        ]
+    );
+
+    $masterShop->refresh();
+    $group = $masterShop->group;
+
+    expect($masterShop)->toBeInstanceOf(MasterShop::class)
+        ->and($masterShop->stats)->toBeInstanceOf(MasterShopStats::class)
+        ->and($masterShop->orderingStats)->toBeInstanceOf(MasterShopOrderingStats::class)
+        ->and($masterShop->orderingIntervals)->toBeInstanceOf(MasterShopOrderingIntervals::class)
+        ->and($masterShop->salesIntervals)->toBeInstanceOf(MasterShopSalesIntervals::class)
+        ->and($masterShop->timeSeries()->count())->toBe(5)
+        ->and($masterShop)->not->toBeNull()
+        ->and($masterShop->code)->toBe('SHOP1')
+        ->and($masterShop->name)->toBe('shop1')
+        ->and($masterShop->group_id)->toBe($this->group->id)
+        ->and($masterShop->type)->toBe(ShopTypeEnum::DROPSHIPPING)
+        ->and($masterShop->status)->toBeTrue()
+        ->and($group->goodsStats->number_master_shops)->toBe(1)
+        ->and($group->goodsStats->number_current_master_shops)->toBe(1);
+
+    return $masterShop;
+});
+
+test('JSON Get All Trade Units in Master Product Category', function () {
+    $masterProductCategory = ensureMasterProductCategory();
+
+    $response = getJson(route('grp.json.master-product-category.all-trade-units', [
+        'masterProductCategory' => $masterProductCategory->slug,
+    ]));
+
+    $response->assertSuccessful();
+    $response->assertJsonStructure([
+        'data',
+        'links',
+        'meta',
+    ]);
+});
+
+test('JSON Get Recommended Trade Units in Master Product Category', function () {
+    $masterProductCategory = ensureMasterProductCategory();
+
+    $response = getJson(route('grp.json.master-product-category.recommended-trade-units', [
+        'masterProductCategory' => $masterProductCategory->slug,
+    ]));
+
+    $response->assertSuccessful();
+    $response->assertJsonStructure([
+        'data',
+        'links',
+        'meta',
+    ]);
+});
+
+test('JSON Get Taken Trade Units in Master Product Category', function () {
+    $masterProductCategory = ensureMasterProductCategory();
+
+    $response = getJson(route('grp.json.master-product-category.taken-trade-units', [
+        'masterProductCategory' => $masterProductCategory->slug,
+    ]));
+
+    $response->assertSuccessful();
+    $response->assertJsonStructure([
+        'data',
+        'links',
+        'meta',
+    ]);
+});
+
+test('JSON Get Pick Fractional', function () {
+    $response = getJson(route('grp.json.product.get-pick-fractional', [
+        'numerator' => 6,
+        'denominator' => 4,
+    ]));
+
+    $response->assertSuccessful();
+    $response->assertJson(fn ($json) => $json->etc());
 });
 
 test("UI Index Master Shops", function () {
@@ -296,36 +403,6 @@ test('UI Show Master Family in Department', function (MasterProductCategory $mas
     });
 })->depends('create master family');
 
-test('create master shop', function () {
-    $masterShop = StoreMasterShop::make()->action(
-        $this->group,
-        [
-            'code' => "SHOP1",
-            'name' => "shop1",
-            'type' => ShopTypeEnum::DROPSHIPPING
-        ]
-    );
-
-    $masterShop->refresh();
-    $group = $masterShop->group;
-
-    expect($masterShop)->toBeInstanceOf(MasterShop::class)
-        ->and($masterShop->stats)->toBeInstanceOf(MasterShopStats::class)
-        ->and($masterShop->orderingStats)->toBeInstanceOf(MasterShopOrderingStats::class)
-        ->and($masterShop->orderingIntervals)->toBeInstanceOf(MasterShopOrderingIntervals::class)
-        ->and($masterShop->salesIntervals)->toBeInstanceOf(MasterShopSalesIntervals::class)
-        ->and($masterShop->timeSeries()->count())->toBe(5)
-        ->and($masterShop)->not->toBeNull()
-        ->and($masterShop->code)->toBe('SHOP1')
-        ->and($masterShop->name)->toBe('shop1')
-        ->and($masterShop->group_id)->toBe($this->group->id)
-        ->and($masterShop->type)->toBe(ShopTypeEnum::DROPSHIPPING)
-        ->and($masterShop->status)->toBeTrue()
-        ->and($group->goodsStats->number_master_shops)->toBe(1)
-        ->and($group->goodsStats->number_current_master_shops)->toBe(1);
-
-    return $masterShop;
-});
 
 test("UI Show master shop", function (MasterShop $masterShop) {
     $this->withoutExceptionHandling();
@@ -545,8 +622,8 @@ test('create master department', function (MasterShop $masterShop) {
         ->and($masterProductCategory->master_shop_id)->toBe($masterShop->id)
         ->and($masterProductCategory->group_id)->toBe($this->group->id)
         ->and($masterProductCategory->type)->toBe(MasterProductCategoryTypeEnum::DEPARTMENT)
-        ->and($masterShop->stats->number_master_product_categories_type_department)->toBe(1)
-        ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(1);
+        ->and($masterShop->stats->number_master_product_categories_type_department)->toBe(4)
+        ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(4);
 
     return $masterProductCategory;
 })->depends("create master shop");
@@ -567,8 +644,8 @@ test('update master department', function (MasterProductCategory $masterProductC
         ->and($updatedMasterProductCategory)->not->toBeNull()
         ->and($updatedMasterProductCategory->code)->toBe('PRODUCT_CATEGORY2')
         ->and($updatedMasterProductCategory->name)->toBe('product category 2')
-        ->and($masterShop->stats->number_master_product_categories_type_department)->toBe(1)
-        ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(0);
+        ->and($masterShop->stats->number_master_product_categories_type_department)->toBe(4)
+        ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(3);
 
     return $updatedMasterProductCategory;
 })->depends("create master department");
@@ -719,8 +796,8 @@ test('Hydrate master departments', function (MasterShop $masterShop) {
 
     $masterShop->refresh();
 
-    expect($masterShop->stats->number_master_product_categories_type_department)->toBe(1)
-        ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(0);
+    expect($masterShop->stats->number_master_product_categories_type_department)->toBe(4)
+        ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(3);
 })->depends('create master shop');
 
 test('master hydrator', function () {
@@ -1055,6 +1132,77 @@ test('attach master collection to department', function (MasterProductCategory $
     expect($attached)->toBeTrue();
 })->depends('create master department', 'create master collection');
 
+
+test('create master product page loads for family in master shop', function () {
+    $group = $this->group;
+
+    $masterShop = StoreMasterShop::make()->action($group, [
+        'code' => 'MSH-'.uniqid(),
+        'name' => 'Master Shop',
+        'type' => ShopTypeEnum::B2B,
+    ]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'DEPT-'.uniqid(),
+        'name' => 'Dept',
+    ]);
+
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'FAM-'.uniqid(),
+        'name' => 'Family',
+    ]);
+
+    $response = get(route(
+        'grp.masters.master_shops.show.master_families.master_products.create',
+        [
+            $masterShop,
+            'masterFamily' => $masterFamily,
+        ]
+    ));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterFamily) {
+        $page->component('CreateModel')
+            ->where('title', __('New master product'))
+            ->where('pageHead.title', __('New master product'))
+            ->has('breadcrumbs')
+            ->has('formData', function (AssertableInertia $form) use ($masterFamily) {
+                $form->where('route.name', 'grp.models.master_family.store-assets')
+                    ->where('route.parameters.masterFamily', $masterFamily->id)
+                    ->has('blueprint', function (AssertableInertia $bp) use ($masterFamily) {
+                        $bp->has(0, function (AssertableInertia $section) use ($masterFamily) {
+                            $section->where('title', __('Create Master Product'))
+                                ->has('fields.trade_units', function (AssertableInertia $field) use ($masterFamily) {
+                                    $field->where('type', 'list-selector')
+                                        ->where('label', __(key: 'Trade units'))
+                                        ->where('routeFetch.name', 'grp.json.master-product-category.recommended-trade-units')
+                                        ->where('routeFetch.parameters.masterProductCategory', $masterFamily->slug)
+                                        ->etc();
+                                })
+                                ->has('fields.code', function (AssertableInertia $field) {
+                                    $field->where('type', 'input')
+                                        ->where('label', __('Code'))
+                                        ->where('required', true)
+                                        ->etc();
+                                })
+                                ->has('fields.name', function (AssertableInertia $field) {
+                                    $field->where('type', 'input')
+                                        ->where('label', __('Name'))
+                                        ->where('required', true)
+                                        ->etc();
+                                })
+                                ->has('fields.price', function (AssertableInertia $field) {
+                                    $field->where('type', 'input')
+                                        ->where('label', __('Price'))
+                                        ->where('required', true)
+                                        ->etc();
+                                });
+                        });
+                    })
+                    ->etc();
+            });
+    });
+});
+
 test('attach master collection to sub department', function (MasterProductCategory $masterSubDepartment, MasterCollection $masterCollection) {
     Bus::fake();
     expect($masterSubDepartment->type)->toBe(MasterProductCategoryTypeEnum::SUB_DEPARTMENT);
@@ -1104,3 +1252,50 @@ test('attach master collection without children', function (MasterProductCategor
 
     expect($exists)->toBeTrue();
 })->depends('create master department', 'create master collection');
+
+test('UI Edit Master Product', function (MasterAsset $masterAsset) {
+    $masterShop = $masterAsset->masterShop;
+    $masterFamily = $masterAsset->masterFamily;
+
+    $response = get(
+        route('grp.masters.master_shops.show.master_families.master_products.edit', [
+            'masterShop' => $masterShop->slug,
+            'masterFamily' => $masterFamily->slug,
+            'masterProduct' => $masterAsset->slug,
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterAsset) {
+        $page
+            ->component('EditModel')
+            ->has('breadcrumbs')
+            ->where('title', __('Master product'))
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) =>
+                $head
+                    ->where('model', __('Editing master product'))
+                    ->where('title', $masterAsset->code)
+                    ->has('actions', 1)
+                    ->where('actions.0.type', 'button')
+                    ->where('actions.0.style', 'exitEdit')
+                    ->etc()
+            )
+            ->has(
+                'formData',
+                fn (AssertableInertia $form) =>
+                $form
+                    ->has('blueprint')
+                    ->has('blueprint.0.fields.code')
+                    ->where('blueprint.0.fields.code.type', 'input')
+                    ->where('blueprint.0.fields.code.value', $masterAsset->code)
+                    ->has('blueprint.1.fields.name')
+                    ->where('blueprint.1.fields.name.type', 'input')
+                    ->where('blueprint.1.fields.name.value', $masterAsset->name)
+                    ->has('args.updateRoute')
+                    ->where('args.updateRoute.name', 'grp.models.master_asset.update')
+                    ->where('args.updateRoute.parameters.masterAsset', $masterAsset->id)
+                    ->etc()
+            );
+    });
+})->depends('create master asset');
