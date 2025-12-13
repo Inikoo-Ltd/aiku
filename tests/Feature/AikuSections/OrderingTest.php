@@ -47,6 +47,8 @@ use App\Actions\Ordering\Transaction\StoreTransactionFromCharge;
 use App\Actions\Ordering\Transaction\StoreTransactionFromShipping;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
+use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
+use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
@@ -120,6 +122,30 @@ test('store shipping country action', function () {
     $this->shop->refresh();
     expect($shippingCountry)->toBeInstanceOf(ShippingCountry::class)
         ->and($this->shop->stats->number_shipping_countries)->toBe(1);
+});
+
+test('update shipping country action', function () {
+    $shippingCountry = StoreShippingCountry::make()->action($this->shop, [
+        'country_id' => 4,
+    ]);
+    expect($shippingCountry)->toBeInstanceOf(ShippingCountry::class);
+
+    $updated = UpdateShippingCountry::make()->action($shippingCountry, [
+        'territories' => ['A','B']
+    ]);
+
+    expect($updated->fresh()->territories)->toBe(['A','B']);
+});
+
+test('delete shipping country action dispatches hydrator and removes model', function () {
+    $shippingCountry = StoreShippingCountry::make()->action($this->shop, [
+        'country_id' => 6,
+    ]);
+    expect(ShippingCountry::query()->count())->toBeGreaterThanOrEqual(1);
+
+    DeleteShippingCountry::make()->action($shippingCountry);
+
+    expect(ShippingCountry::query()->whereKey($shippingCountry->id)->exists())->toBeFalse();
 });
 
 
