@@ -90,8 +90,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
- * @property mixed $number_families
- * @property mixed $number_products
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory onlyTrashed()

@@ -13,9 +13,9 @@ namespace App\Actions\Catalogue\Asset\Hydrators;
 use App\Actions\Traits\Hydrators\WithHydrateDeliveryNotes;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
-use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Asset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AssetHydrateInvoicesStats implements ShouldBeUnique
@@ -26,41 +26,49 @@ class AssetHydrateInvoicesStats implements ShouldBeUnique
 
     public string $jobQueue = 'sales';
 
-    public function getJobUniqueId(Asset $asset): string
+    public function getJobUniqueId(int $assetID): string
     {
-        return $asset->id;
+        return $assetID;
     }
 
-    public function handle(Asset $asset): void
+    public function handle(int $assetID): void
     {
-        $invoices = $asset->invoiceTransactions()
-                ->with('invoice')
-                ->get()
-                ->pluck('invoice')
-                ->filter()
-                ->unique('id');
+        $asset = Asset::find($assetID);
+        if (!$asset) {
+            return;
+        }
 
-        $stats          = [
-            'number_invoices'              => $invoices->count(),
-            'number_invoices_type_invoice' => $invoices->where('type', InvoiceTypeEnum::INVOICE)->count(),
-            'last_invoiced_at'             => $invoices->max('date'),
+        $distinctInvoices = DB::table('invoice_transactions')
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->where('invoice_transactions.asset_id', $asset->id)
+            ->where('invoices.in_process', false)
+            ->where('invoices.type', InvoiceTypeEnum::INVOICE)
+            ->distinct()
+            ->count('invoice_transactions.invoice_id');
+
+        $distinctRefunds = DB::table('invoice_transactions')
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->where('invoice_transactions.asset_id', $asset->id)
+            ->where('invoices.in_process', false)
+            ->where('invoices.type', InvoiceTypeEnum::REFUND)
+            ->distinct()
+            ->count('invoice_transactions.invoice_id');
+
+        $lastInvoicedAt = DB::table('invoice_transactions')
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->where('invoice_transactions.asset_id', $asset->id)
+            ->where('invoices.in_process', false)
+            ->where('invoices.type', InvoiceTypeEnum::INVOICE)
+            ->distinct()
+            ->max('invoice_transactions.date');
+
+        $stats = [
+            'number_invoices'              => $distinctInvoices + $distinctRefunds,
+            'number_invoices_type_invoice' => $distinctInvoices,
+            'last_invoiced_at'             => $lastInvoicedAt,
         ];
 
-        $stats['number_invoices_type_refund'] = $stats['number_invoices'] - $stats['number_invoices_type_invoice'];
-
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'invoices',
-                field: 'type',
-                enum: InvoiceTypeEnum::class,
-                models: Invoice::class,
-                where: function ($q) use ($invoices) {
-                    $q->whereIn('id', $invoices->pluck('id'));
-                }
-            )
-        );
-
+        $stats['number_invoices_type_refund'] = $distinctRefunds;
 
         $asset->orderingStats()->update($stats);
     }
