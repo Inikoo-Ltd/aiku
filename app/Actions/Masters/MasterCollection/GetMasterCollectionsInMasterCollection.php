@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Masters\MasterCollection\UI;
+namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
@@ -17,7 +17,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterCollectionsInMasterCollection extends OrgAction
+class GetMasterCollectionsInMasterCollection extends OrgAction
 {
     public function handle(MasterCollection $masterCollection, $prefix = null): LengthAwarePaginator
     {

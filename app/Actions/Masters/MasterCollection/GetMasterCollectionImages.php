@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterCollection\UI;
+namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterProductCategoryImages;
 use App\Actions\OrgAction;
@@ -18,7 +18,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-class IndexMasterCollectionImages extends OrgAction
+class GetMasterCollectionImages extends OrgAction
 {
     public function handle(MasterCollection $masterCollection, $prefix = null): LengthAwarePaginator
     {

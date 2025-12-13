@@ -13,6 +13,8 @@ namespace App\Actions\Masters\MasterCollection\UI;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterCollection;
+use App\Actions\Masters\MasterCollection\GetMasterCollectionsImages;
+use App\Actions\Masters\MasterCollection\GetMasterCollectionsInMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesInMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
@@ -215,10 +217,10 @@ class ShowMasterCollection extends GrpAction
                     : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::PRODUCTS->value))),
 
                 MasterCollectionTabsEnum::COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::COLLECTIONS->value ?
-                    fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))
-                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))),
+                    fn () => MasterCollectionsResource::collection(GetMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))
+                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(GetMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))),
 
-               MasterCollectionTabsEnum::IMAGES->value => $this->tab == MasterCollectionTabsEnum::IMAGES->value ?
+                MasterCollectionTabsEnum::IMAGES->value => $this->tab == MasterCollectionTabsEnum::IMAGES->value ?
                     fn () =>  GetMasterCollectionsImages::run($masterCollection)
                     : Inertia::lazy(fn () => GetMasterCollectionsImages::run($masterCollection)),
 
@@ -237,7 +239,7 @@ class ShowMasterCollection extends GrpAction
                 prefix: MasterCollectionTabsEnum::PRODUCTS->value,
             )
         )->table(
-            IndexMasterCollectionsInMasterCollection::make()->tableStructure(
+            GetMasterCollectionsInMasterCollection::make()->tableStructure(
                 masterCollection: $masterCollection,
                 prefix: MasterCollectionTabsEnum::COLLECTIONS->value,
             )
