@@ -16,8 +16,6 @@ use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigati
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterCollectionsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -70,9 +68,6 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
                 'master_collections.created_at',
                 'master_collections.updated_at',
                 'master_collections.slug',
-                // 'master_collection_stats.number_families',
-                // 'master_collection_stats.number_products',
-                // 'master_collection_stats.number_parents',
             ]);
 
 
@@ -132,9 +127,6 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 
 
         $title      = $masterProductCategory->name;
-        // $iconRight  = [
-        //     'icon' => 'fal fa-album-collection',
-        // ];
         $iconRight  = [];
 
         $afterTitle = [
@@ -157,7 +149,6 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 
 
 
-        // $actions = [];
         $actions = array_values(array_filter([
             ... (function () use ($request) {
                 $routes = [
@@ -209,44 +200,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
                 ],
                 'routes'      => null,
                 'data'        => MasterCollectionsResource::collection($masterCollections),
-                // 'formData'    => [
-                //     'fullLayout' => true,
-                //     'blueprint'  => [
-                //         [
-                //             'title'  => __('New Collection'),
-                //             'fields' => [
-                //                 'code'        => [
-                //                     'type'     => 'input',
-                //                     'label'    => __('Code'),
-                //                     'required' => true
-                //                 ],
-                //                 'name'        => [
-                //                     'type'     => 'input',
-                //                     'label'    => __('Name'),
-                //                     'required' => true,
-                //                 ],
-                //                 'description' => [
-                //                     'type'     => 'textarea',
-                //                     'label'    => __('Description'),
-                //                     'required' => false,
-                //                 ],
-                //                 "image"       => [
-                //                     "type"     => "image_crop_square",
-                //                     "label"    => __("Image"),
-                //                     "required" => false,
-                //                 ],
 
-                //             ]
-                //         ]
-                //     ],
-                //     'route'      => [
-                //         'name'       => 'grp.models.product_category.collection.store',
-                //         'parameters' => [
-                //             'productCategory' => $productCategory->id,
-                //         ]
-                //     ]
-
-                // ],
             ]
         )->table($this->tableStructure($this->parent));
     }

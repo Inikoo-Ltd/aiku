@@ -2,35 +2,29 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 27 Apr 2023 16:37:19 Malaysia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Created: Sat, 13 Dec 2025 19:11:38 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterCollection\UI;
+namespace App\Actions\Traits;
 
-use App\Actions\GrpAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetMasterFamilies extends GrpAction
+trait WithMasterProductCategoryListing
 {
-    public function asController(MasterShop $masterShop, MasterCollection $scope, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($masterShop->group, $request);
-
-        return $this->handle(parent: $masterShop, scope: $scope);
-    }
-
-    public function handle(MasterShop $parent, MasterCollection|null $scope = null, $prefix = null): LengthAwarePaginator
-    {
+    protected function buildMasterCategoryPaginator(
+        MasterShop $masterShop,
+        MasterCollection $masterCollection,
+        MasterProductCategoryTypeEnum $type,
+        string $excludeRelationMethod,
+        ?string $prefix = null
+    ): LengthAwarePaginator {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('master_product_categories.name', $value)
@@ -39,10 +33,8 @@ class GetMasterFamilies extends GrpAction
         });
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
-        $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
-        if ($scope) {
-            $queryBuilder->whereNotIn('master_product_categories.id', $scope->masterFamilies()->pluck('model_id'));
-        }
+        $queryBuilder->where('master_product_categories.master_shop_id', $masterShop->id);
+        $queryBuilder->whereNotIn('master_product_categories.id', $masterCollection->{$excludeRelationMethod}()->pluck('model_id'));
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
@@ -54,18 +46,14 @@ class GetMasterFamilies extends GrpAction
                 'master_product_categories.description',
                 'master_product_categories.created_at',
                 'master_product_categories.updated_at',
+                'master_product_category_stats.number_current_families',
+                'master_product_category_stats.number_current_products',
             ])
-            ->selectRaw('COALESCE(number_current_master_assets, 0) AS current_master_assets')
             ->leftJoin('master_product_category_stats', 'master_product_categories.id', 'master_product_category_stats.master_product_category_id')
-            ->where('master_product_categories.type', MasterProductCategoryTypeEnum::FAMILY)
-            ->allowedSorts(['code', 'name','shop_code'])
+            ->where('master_product_categories.type', $type)
+            ->allowedSorts(['code', 'name', 'shop_code', 'number_current_families', 'number_current_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
             ->withQueryString();
-    }
-
-    public function jsonResponse(LengthAwarePaginator $families): AnonymousResourceCollection
-    {
-        return MasterFamiliesResource::collection($families);
     }
 }

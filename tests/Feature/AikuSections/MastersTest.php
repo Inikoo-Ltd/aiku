@@ -11,6 +11,8 @@
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
@@ -125,6 +127,174 @@ test('UI Edit Master Shop', function (MasterShop $masterShop) {
             );
     });
 })->depends('create master shop');
+
+test('UI Create Master Department', function (MasterShop $masterShop) {
+    $response = get(
+        route('grp.masters.master_shops.show.master_departments.create', [$masterShop->slug])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterShop) {
+        $page
+            ->component('CreateModel')
+            ->has('breadcrumbs')
+            ->where('title', fn ($title) => is_string($title) && $title !== '')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) => $head
+                    ->where('title', fn ($t) => is_string($t) && $t !== '')
+                    ->has('actions', 1)
+                    ->where('actions.0.type', 'button')
+                    ->where('actions.0.style', 'cancel')
+                    ->where('actions.0.route.name', 'grp.masters.master_shops.show.master_departments.index')
+            )
+            ->has(
+                'formData',
+                fn (AssertableInertia $form) => $form
+                    ->has('blueprint')
+                    ->has('route')
+                    ->where('route.name', 'grp.models.master_shops.master_department.store')
+                    ->where('route.parameters.masterShop', $masterShop->id)
+            );
+    });
+})->depends('create master shop');
+
+test('UI Create Master SubDepartment in Department', function (MasterProductCategory $masterDepartment) {
+    $response = get(
+        route('grp.masters.master_departments.show.master_sub_departments.create', [$masterDepartment->slug])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterDepartment) {
+        $page
+            ->component('CreateModel')
+            ->has('breadcrumbs')
+            ->where('title', fn ($title) => is_string($title) && $title !== '')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) => $head
+                    ->where('title', fn ($t) => is_string($t) && $t !== '')
+                    ->has('actions', 1)
+                    ->where('actions.0.type', 'button')
+                    ->where('actions.0.style', 'cancel')
+                    ->where('actions.0.route.name', 'grp.masters.master_departments.show.master_sub_departments.index')
+            )
+            ->has(
+                'formData',
+                fn (AssertableInertia $form) => $form
+                    ->has('blueprint')
+                    ->has('route')
+                    ->where('route.name', 'grp.models.master_sub_department.store')
+                    ->where('route.parameters.masterDepartment', $masterDepartment->id)
+            );
+    });
+})->depends('create master department');
+
+test('UI Edit Master Department', function (MasterProductCategory $masterDepartment) {
+    $masterShop = $masterDepartment->masterShop;
+
+    $response = get(
+        route('grp.masters.master_shops.show.master_departments.edit', [$masterShop->slug, $masterDepartment->slug])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterDepartment) {
+        $page
+            ->component('EditModel')
+            ->has('breadcrumbs')
+            ->where('title', fn ($title) => is_string($title) && $title !== '')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) => $head
+                    ->where('title', fn ($t) => is_string($t) && $t !== '')
+                    ->has('actions', 1)
+                    ->where('actions.0.type', 'button')
+                    ->where('actions.0.style', 'cancel')
+                    ->where('actions.0.route.name', 'grp.masters.master_shops.show.master_departments.show')
+            )
+            ->has(
+                'formData',
+                fn (AssertableInertia $form) => $form
+                    ->has('blueprint')
+                    ->has('blueprint.0.fields.code')
+                    ->where('blueprint.0.fields.code.type', 'input')
+                    ->where('blueprint.0.fields.code.value', $masterDepartment->code)
+                    ->where('blueprint.1.fields.name.type', 'input')
+                    ->etc()
+            );
+    });
+})->depends('create master department');
+
+test('UI Edit Master SubDepartment', function (MasterProductCategory $masterSubDepartment) {
+    $masterDepartment = $masterSubDepartment->parent;
+    $masterShop = $masterSubDepartment->masterShop;
+
+    $response = get(
+        route('grp.masters.master_departments.show.master_sub_departments.edit', [
+            'masterDepartment' => $masterDepartment->slug,
+            'masterSubDepartment' => $masterSubDepartment->slug,
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterSubDepartment) {
+        $page
+            ->component('EditModel')
+            ->has('breadcrumbs')
+            ->where('title', fn ($title) => is_string($title) && $title !== '')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) => $head
+                    ->where('title', fn ($t) => is_string($t) && $t !== '')
+                    ->has('actions', 1)
+                    ->where('actions.0.type', 'button')
+                    ->where('actions.0.style', 'cancel')
+                    ->where('actions.0.route.name', 'grp.masters.master_departments.show.master_sub_departments.show')
+            )
+            ->has(
+                'formData',
+                fn (AssertableInertia $form) => $form
+                    ->has('blueprint')
+                    ->has('blueprint.0.fields.code')
+                    ->where('blueprint.0.fields.code.type', 'input')
+                    ->where('blueprint.0.fields.code.value', $masterSubDepartment->code)
+                    ->where('blueprint.1.fields.name.type', 'input')
+                    ->etc()
+            );
+    });
+})->depends('create master sub department');
+
+test('UI Show Master Department', function (MasterProductCategory $masterDepartment) {
+    $response = get(
+        route('grp.masters.master_departments.show', [$masterDepartment->slug])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterDepartment')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('pageHead', fn (AssertableInertia $head) => $head->has('subNavigation')->etc())
+            ->has('tabs')
+            ->has('delete_route')
+            ->where('delete_route.name', 'grp.masters.master_departments.delete');
+    });
+})->depends('create master department');
+
+test('UI Show Master Family in Department', function (MasterProductCategory $masterFamily) {
+    // masterFamily created earlier is of type FAMILY and belongs to a department
+    $response = get(
+        route('grp.masters.master_departments.show.master_families.show', [
+            'masterDepartment' => $masterFamily->masterDepartment->slug,
+            'masterFamily' => $masterFamily->slug,
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterFamily')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('pageHead', fn (AssertableInertia $head) => $head->has('subNavigation')->etc())
+            ->has('tabs');
+    });
+})->depends('create master family');
 
 test('create master shop', function () {
     $masterShop = StoreMasterShop::make()->action(
@@ -305,6 +475,50 @@ test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
             );
     });
 })->depends('create master shop')->todo();
+
+test('store master department', function () {
+    $masterShop = MasterShop::first();
+    $masterDepartment = StoreMasterDepartment::make()->action(
+        $masterShop,
+        [
+            'code' => 'SMF_DEPT1',
+            'name' => 'smf department 1',
+        ]
+    );
+
+    $masterDepartment->refresh();
+
+    expect($masterDepartment)->toBeInstanceOf(MasterProductCategory::class)
+        ->and($masterDepartment)->not->toBeNull()
+        ->and($masterDepartment->code)->toBe('SMF_DEPT1')
+        ->and($masterDepartment->name)->toBe('smf department 1')
+        ->and($masterDepartment->master_shop_id)->toBe($masterShop->id)
+        ->and($masterDepartment->group_id)->toBe($this->group->id)
+        ->and($masterDepartment->type)->toBe(MasterProductCategoryTypeEnum::DEPARTMENT);
+
+    return $masterDepartment;
+})->depends('Hydrate master departments');
+
+test('store master family', function (MasterProductCategory $masterDepartment) {
+    $masterFamily = StoreMasterFamily::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'SMF_FAM1',
+            'name' => 'smf family 1',
+        ]
+    );
+
+    $masterFamily->refresh();
+
+    expect($masterFamily)->toBeInstanceOf(MasterProductCategory::class)
+        ->and($masterFamily)->not->toBeNull()
+        ->and($masterFamily->code)->toBe('SMF_FAM1')
+        ->and($masterFamily->name)->toBe('smf family 1')
+        ->and($masterFamily->master_shop_id)->toBe($masterDepartment->master_shop_id)
+        ->and($masterFamily->group_id)->toBe($this->group->id)
+        ->and($masterFamily->type)->toBe(MasterProductCategoryTypeEnum::FAMILY)
+        ->and($masterFamily->stats)->toBeInstanceOf(MasterProductCategoryStats::class);
+})->depends('store master department');
 
 test('create master department', function (MasterShop $masterShop) {
     $masterProductCategory = StoreMasterProductCategory::make()->action(

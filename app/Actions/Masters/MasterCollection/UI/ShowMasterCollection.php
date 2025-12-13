@@ -51,6 +51,7 @@ class ShowMasterCollection extends GrpAction
         return $this->handle($masterCollection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterCollection $masterCollection, ActionRequest $request): MasterCollection
     {
         $this->parent = $masterDepartment;
@@ -61,6 +62,7 @@ class ShowMasterCollection extends GrpAction
         return $this->handle($masterCollection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterCollection $masterCollection, ActionRequest $request): MasterCollection
     {
         $this->parent = $masterSubDepartment;
@@ -71,15 +73,6 @@ class ShowMasterCollection extends GrpAction
         return $this->handle($masterCollection);
     }
 
-    public function inMasterSubDepartmentInMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterCollection $masterCollection, ActionRequest $request): MasterCollection
-    {
-        $this->parent = $masterSubDepartment;
-        $group = group();
-
-        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
-
-        return $this->handle($masterCollection);
-    }
 
     public function inGroup(MasterCollection $masterCollection, ActionRequest $request): MasterCollection
     {
