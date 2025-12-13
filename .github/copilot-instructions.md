@@ -2,6 +2,7 @@
 === .ai/aiku-ai.guidelines rules ===
 
 - DO not write code comments you must write clear, self-explanatory code instead
+- DO not run vendor/bin/pint --dirty
 
 
 === foundation rules ===
