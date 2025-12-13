@@ -1,4 +1,9 @@
 <laravel-boost-guidelines>
+=== .ai/aiku-ai.guidelines rules ===
+
+- DO not write code comments you must write clear, self-explanatory code instead
+
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -29,7 +34,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - phpunit/phpunit (PHPUNIT) - v12
 - @inertiajs/vue3 (INERTIA) - v2
 - laravel-echo (ECHO) - v1
-- prettier (PRETTIER) - v2
+- prettier (PRETTIER) - v3
 - tailwindcss (TAILWINDCSS) - v3
 - vue (VUE) - v3
 
