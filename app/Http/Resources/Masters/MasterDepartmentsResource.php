@@ -9,8 +9,8 @@
 
 namespace App\Http\Resources\Masters;
 
-use App\Models\Masters\MasterProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property int $id
@@ -29,20 +29,18 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $show_in_website
  * @property mixed $sub_departments
  * @property mixed $collections
+ * @property mixed $web_images
  */
 class MasterDepartmentsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        /** @var MasterProductCategory $masterDepartment */
-        $masterDepartment = $this;
-
         return [
             'id'               => $this->id,
             'slug'             => $this->slug,
             'code'             => $this->code,
             'name'             => $this->name,
-            'image'            => $masterDepartment->imageSources(720, 480),
+            'image_thumbnail'  => Arr::get($this->web_images, 'main.thumbnail'),
             'description'      => $this->description,
             'master_shop_slug' => $this->master_shop_slug,
             'master_shop_code' => $this->master_shop_code,

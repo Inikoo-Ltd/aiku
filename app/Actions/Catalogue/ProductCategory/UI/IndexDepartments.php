@@ -42,7 +42,6 @@ class IndexDepartments extends OrgAction
     private bool $sales = true;
 
 
-
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
@@ -105,6 +104,7 @@ class IndexDepartments extends OrgAction
                 'product_categories.description',
                 'product_categories.created_at',
                 'product_categories.updated_at',
+                'product_categories.web_images',
                 'product_categories.master_product_category_id',
                 'product_category_stats.number_current_families',
                 'product_category_stats.number_current_products',
@@ -133,7 +133,7 @@ class IndexDepartments extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
 
             if (class_basename($parent) != 'MasterProductCategory') {
@@ -144,7 +144,6 @@ class IndexDepartments extends OrgAction
                         elements: $elementGroup['elements']
                     );
                 }
-
             }
 
             $table
@@ -181,7 +180,9 @@ class IndexDepartments extends OrgAction
                 if (class_basename($parent) == 'MasterProductCategory') {
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
-                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                $table
+                    ->column(key: 'image_thumbnail', label: '', type: 'avatar')
+                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
 
@@ -364,7 +365,6 @@ class IndexDepartments extends OrgAction
                     $suffix
                 )
             ),
-
 
 
             default => []

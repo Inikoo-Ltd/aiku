@@ -59,6 +59,7 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
                 'master_product_categories.created_at',
                 'master_product_categories.image_id',
                 'master_product_categories.updated_at',
+                'master_product_categories.web_images',
 
             ])
             ->allowedSorts(['code', 'name'])

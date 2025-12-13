@@ -52,6 +52,7 @@ class IndexMasterProductsInMasterCollection extends OrgAction
                 'master_assets.created_at',
                 'master_assets.updated_at',
                 'master_assets.slug',
+                'master_assets.web_images',
             ])
             ->leftJoin('master_asset_stats', 'master_assets.id', 'master_asset_stats.master_asset_id');
 

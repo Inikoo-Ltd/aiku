@@ -77,6 +77,7 @@ class IndexMasterDepartments extends OrgAction
             'master_product_categories.description',
             'master_product_categories.created_at',
             'master_product_categories.updated_at',
+            'master_product_categories.web_images',
             'master_product_category_stats.number_current_departments as used_in',
             'master_product_category_stats.number_current_master_product_categories_type_family as families',
             'master_product_category_stats.number_current_master_assets_type_product as products',
@@ -126,7 +127,9 @@ class IndexMasterDepartments extends OrgAction
                 $table->column('master_shop_code', __('M. Shop'), sortable: true);
             }
 
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+            $table
+                ->column(key: 'image_thumbnail', label: '', type: 'avatar')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current shops with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'sub_departments', label: __('M. Sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true)

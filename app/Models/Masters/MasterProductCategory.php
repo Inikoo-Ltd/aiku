@@ -68,7 +68,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $offers_data
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
- * @property string|null $web_images
+ * @property array<array-key, mixed>|null $web_images
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group
@@ -90,6 +90,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property mixed $number_families
+ * @property mixed $number_products
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory onlyTrashed()
@@ -118,6 +120,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'            => 'array',
+        'web_images'      => 'array',
         'type'            => MasterProductCategoryTypeEnum::class,
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
@@ -125,8 +128,9 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'offers_data'   => '{}',
+        'data'        => '{}',
+        'offers_data' => '{}',
+        'web_images'  => '{}',
     ];
 
     public function generateTags(): array
@@ -238,7 +242,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
-
 
 
 }

@@ -19,6 +19,11 @@ use App\Actions\Masters\MasterShop\HydrateMasterShop;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
 use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
+use App\Actions\Masters\MasterCollection\HydrateMasterCollection as HydrateMasterCollectionAction;
+use App\Actions\Masters\MasterCollection\UpdateMasterCollection;
+use App\Actions\Masters\MasterCollection\DeleteMasterCollection;
+use App\Actions\Masters\MasterCollection\StoreMasterCollection;
+use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -33,11 +38,16 @@ use App\Models\Masters\MasterProductCategoryOrderingStats;
 use App\Models\Masters\MasterProductCategorySalesIntervals;
 use App\Models\Masters\MasterProductCategoryStats;
 use App\Models\Masters\MasterShop;
+use App\Models\Masters\MasterCollection;
+use App\Models\Masters\MasterCollectionStats;
+use App\Models\Masters\MasterCollectionOrderingStats;
+use App\Models\Masters\MasterCollectionSalesIntervals;
 use App\Models\Masters\MasterShopOrderingIntervals;
 use App\Models\Masters\MasterShopOrderingStats;
 use App\Models\Masters\MasterShopSalesIntervals;
 use App\Models\Masters\MasterShopStats;
 use Inertia\Testing\AssertableInertia;
+use Illuminate\Support\Facades\Bus;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -459,8 +469,200 @@ test('master hydrator', function () {
     $this->artisan('hydrate -s masters')->assertExitCode(0);
 });
 
+test('create master collection', function (MasterProductCategory $masterFamily) {
+    // Create a master collection under the previously created master family
+    $masterCollection = StoreMasterCollection::make()->action(
+        $masterFamily,
+        [
+            'code' => 'MC1',
+            'name' => 'master collection 1',
+        ],
+        hydratorsDelay: 0,
+        strict: true,
+        audit: true,
+        createChildren: false
+    );
+
+    $masterCollection->refresh();
+
+    expect($masterCollection)->toBeInstanceOf(MasterCollection::class)
+        ->and($masterCollection->stats)->toBeInstanceOf(MasterCollectionStats::class)
+        ->and($masterCollection->orderingStats)->toBeInstanceOf(MasterCollectionOrderingStats::class)
+        ->and($masterCollection->salesIntervals)->toBeInstanceOf(MasterCollectionSalesIntervals::class)
+        ->and($masterCollection)->not->toBeNull()
+        ->and($masterCollection->code)->toBe('MC1')
+        ->and($masterCollection->name)->toBe('master collection 1')
+        ->and($masterCollection->group_id)->toBe($this->group->id);
+
+    return $masterCollection;
+})->depends('create master family');
+
+test('Hydrate master collections', function (MasterCollection $masterCollection) {
+    // Run the action directly
+    HydrateMasterCollectionAction::run($masterCollection);
+
+    // And ensure the artisan command runs successfully
+    $this->artisan('hydrate:master_collections')->assertSuccessful();
+})->depends('create master collection');
+
+test('update master collection', function (MasterCollection $masterCollection) {
+    // Pre-assert existing values
+    expect($masterCollection->code)->toBe('MC1')
+        ->and($masterCollection->name)->toBe('master collection 1');
+
+    // Perform update via action
+    UpdateMasterCollection::make()->action(
+        $masterCollection,
+        [
+            'code' => 'MC1-UPDATED',
+            'name' => 'Master Collection Updated',
+            'description' => 'Updated description',
+        ],
+        hydratorsDelay: 0,
+        strict: true,
+        audit: true
+    );
+
+    // Refresh model and assert changes persisted
+    $masterCollection->refresh();
+
+    expect($masterCollection->code)->toBe('MC1-UPDATED')
+        ->and($masterCollection->name)->toBe('Master Collection Updated')
+        ->and($masterCollection->description)->toBe('Updated description');
+})->depends('create master collection');
+
+test('soft delete master collection', function (MasterProductCategory $masterFamily) {
+    // Create a throwaway master collection to delete
+    $mc = StoreMasterCollection::make()->action(
+        $masterFamily,
+        [
+            'code' => 'MC-DEL-SOFT',
+            'name' => 'to be soft deleted',
+        ],
+        hydratorsDelay: 0,
+        strict: true,
+        audit: true,
+        createChildren: false
+    );
+
+    $mc->refresh();
+
+    // Perform soft delete
+    DeleteMasterCollection::make()->action($mc, false);
+
+    // Assert model is soft deleted
+    $mc->refresh();
+    expect($mc->trashed())->toBeTrue();
+
+    // Note: Hydrator dispatch is implementation detail and may run synchronously; we only assert deletion here.
+})->depends('create master family');
+
+test('force delete master collection', function (MasterProductCategory $masterFamily) {
+    // Create a throwaway master collection to force delete
+    $mc = StoreMasterCollection::make()->action(
+        $masterFamily,
+        [
+            'code' => 'MC-DEL-FORCE',
+            'name' => 'to be force deleted',
+        ],
+        hydratorsDelay: 0,
+        strict: true,
+        audit: true,
+        createChildren: false
+    );
+
+    $mc->refresh();
+
+    $id = $mc->id;
+
+    // Perform force delete
+    DeleteMasterCollection::make()->action($mc, true);
+
+    // Assert the record is fully removed (even with trashed)
+    $found = MasterCollection::withTrashed()->find($id);
+    expect($found)->toBeNull();
+
+    // Note: Hydrator dispatch is implementation detail and may run synchronously; we only assert deletion here.
+})->depends('create master family');
+
 test('Hydrate master assets', function (MasterAsset $masterAsset) {
     HydrateMasterAssets::run($masterAsset);
     $masterAsset->refresh();
     expect($masterAsset)->toBeInstanceOf(MasterAsset::class);
 })->depends('update master asset');
+
+test('attach master collection to department', function (MasterProductCategory $masterDepartment, MasterCollection $masterCollection) {
+    Bus::fake();
+    // Pre-assert: not attached yet
+    expect(
+        $masterDepartment->masterCollections()
+            ->where('master_collections.id', $masterCollection->id)
+            ->exists()
+    )->toBeFalse();
+
+    // Attach
+    AttachMasterCollectionToModel::make()->action($masterDepartment, $masterCollection);
+
+    // Refresh and assert pivot with correct type
+    $masterDepartment->refresh();
+    $attached = $masterDepartment->masterCollections()
+        ->where('master_collections.id', $masterCollection->id)
+        ->wherePivot('type', 'master_department')
+        ->exists();
+
+    expect($attached)->toBeTrue();
+})->depends('create master department', 'create master collection');
+
+test('attach master collection to sub department', function (MasterProductCategory $masterSubDepartment, MasterCollection $masterCollection) {
+    Bus::fake();
+    // Ensure the provided category is a sub-department
+    expect($masterSubDepartment->type)->toBe(MasterProductCategoryTypeEnum::SUB_DEPARTMENT);
+
+    AttachMasterCollectionToModel::make()->action($masterSubDepartment, $masterCollection);
+
+    $masterSubDepartment->refresh();
+    $attached = $masterSubDepartment->masterCollections()
+        ->where('master_collections.id', $masterCollection->id)
+        ->wherePivot('type', 'master_sub_department')
+        ->exists();
+
+    expect($attached)->toBeTrue();
+})->depends('create master sub department', 'create master collection');
+
+test('attach master collection to shop', function (MasterShop $masterShop, MasterCollection $masterCollection) {
+    AttachMasterCollectionToModel::make()->action($masterShop, $masterCollection);
+
+    $masterShop->refresh();
+    $attached = $masterShop->masterCollections()
+        ->where('master_collections.id', $masterCollection->id)
+        ->wherePivot('type', 'master_shop')
+        ->exists();
+
+    expect($attached)->toBeTrue();
+})->depends('create master shop', 'create master collection');
+
+test('attach master collection is idempotent', function (MasterProductCategory $masterDepartment, MasterCollection $masterCollection) {
+    Bus::fake();
+    // First attach
+    AttachMasterCollectionToModel::make()->action($masterDepartment, $masterCollection);
+    // Second attach should not duplicate
+    AttachMasterCollectionToModel::make()->action($masterDepartment, $masterCollection);
+
+    $count = $masterDepartment->masterCollections()
+        ->where('master_collections.id', $masterCollection->id)
+        ->count();
+
+    expect($count)->toBe(1);
+})->depends('create master department', 'create master collection');
+
+test('attach master collection without children', function (MasterProductCategory $masterDepartment, MasterCollection $masterCollection) {
+    Bus::fake();
+    // Explicitly call handle with attachChildren = false
+    AttachMasterCollectionToModel::make()->handle($masterDepartment, $masterCollection, false);
+
+    $exists = $masterDepartment->masterCollections()
+        ->where('master_collections.id', $masterCollection->id)
+        ->exists();
+
+    expect($exists)->toBeTrue();
+})->depends('create master department', 'create master collection');

@@ -10,6 +10,7 @@
 namespace App\Http\Resources\Masters;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $id
@@ -25,6 +26,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $used_in
  * @property mixed $products
  * @property mixed $show_in_website
+ * @property mixed $status
+ * @property mixed $current_master_assets
+ * @property mixed $web_images
  */
 class MasterFamiliesResource extends JsonResource
 {
@@ -54,6 +58,7 @@ class MasterFamiliesResource extends JsonResource
                 'class'   => 'text-red-400'
             ],
             'number_current_products' => $this->current_master_assets,
+            'image_thumbnail'  => Arr::get($this->web_images, 'main.thumbnail'),
         ];
     }
 }

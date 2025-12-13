@@ -160,6 +160,7 @@ class IndexFamilies extends OrgAction
                 'product_categories.created_at',
                 'product_categories.image_id',
                 'product_categories.updated_at',
+                'product_categories.web_images',
                 'departments.slug as department_slug',
                 'departments.code as department_code',
                 'departments.name as department_name',
@@ -302,7 +303,8 @@ class IndexFamilies extends OrgAction
                 if (class_basename($parent) == 'MasterProductCategory') {
                     $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
-                $table->column(key: 'code', label: __(']Code'), canBeHidden: false, sortable: true, searchable: true)
+                $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'sub_department_name', label: __('Sub department'), canBeHidden: false, sortable: true, searchable: true);
@@ -442,7 +444,6 @@ class IndexFamilies extends OrgAction
             ];
         }
 
-        // dd(FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))->resolve());
         return Inertia::render(
             'Org/Catalogue/Families',
             [

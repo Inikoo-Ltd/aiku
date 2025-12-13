@@ -10,6 +10,7 @@ namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -45,6 +46,8 @@ use App\Http\Resources\Helpers\ImageResource;
  * @property mixed $gross_weight
  * @property mixed $images
  * @property mixed $unit
+ * @property mixed $master_product_id
+ * @property mixed $web_images
  *
  * @method imageSources(int $int, int $int1)
  */
@@ -86,7 +89,7 @@ class ProductsResource extends JsonResource
             'currency_code'             => $this->currency_code,
             'stock'                     => $this->available_quantity,
             'images'                    => ImageResource::collection($this->images),
-            'image_thumbnail'           => $this->imageSources(720, 480),
+            'image_thumbnail'           => Arr::get($this->web_images, 'main.thumbnail'),
             'master_product_id'         => $this->master_product_id
         ];
     }

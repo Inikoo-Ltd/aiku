@@ -106,6 +106,7 @@ class IndexSubDepartments extends OrgAction
                 'product_categories.master_product_category_id',
                 'product_categories.created_at',
                 'product_categories.updated_at',
+                'product_categories.web_images',
                 'departments.slug as department_slug',
                 'departments.code as department_code',
                 'departments.name as department_name',
@@ -147,14 +148,14 @@ class IndexSubDepartments extends OrgAction
                 }
             }
 
-            $buttonLabel = __('New Sub-department');
+            $buttonLabel = __('New sub-department');
 
             $table
                 ->defaultSort('code')
                 ->withEmptyState(
                     $canEdit ?
                         [
-                            'title'  => __("This department has no Sub-departments"),
+                            'title'  => __("This department has no sub-departments"),
                             'count'  => $parent->stats->number_sub_departments,
                             'action' => [
                                 'type'    => 'button',
@@ -185,6 +186,7 @@ class IndexSubDepartments extends OrgAction
             if (class_basename($parent) == 'MasterProductCategory') {
                 $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
+            $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
             $table->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'number_families', label: __('families'), sortable: true)

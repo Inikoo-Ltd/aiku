@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Traits\ParsesCollectionParentsData;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property int $id
@@ -40,6 +41,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $parents_data
  * @property mixed $organisation_code
  * @property mixed $master_collection_id
+ * @property mixed $web_images
  */
 class CollectionsResource extends JsonResource
 {
@@ -109,6 +111,8 @@ class CollectionsResource extends JsonResource
                 'method'     => 'patch'
             ],
             'parents_data'            => $this->parseCollectionParentsData($this->parents_data),
+            'image_thumbnail'           => Arr::get($this->web_images, 'main.thumbnail'),
+
 
         ];
     }

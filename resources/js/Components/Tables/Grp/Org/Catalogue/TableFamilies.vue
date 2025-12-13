@@ -19,6 +19,7 @@ import { faTriangle, faEquals, faMinus } from "@fas"
 import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Image from "@/Components/Image.vue"
 
 library.add(faCheck)
 
@@ -204,6 +205,12 @@ const getIntervalStateColor = (isPositive: boolean) => {
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckBox"
         @onSelectRow="(item) => (console.log('qqqq', item), emits('selectedRow', item))">
+
+        <template #cell(image_thumbnail)="{ item: product }">
+            <div class="flex justify-center">
+                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
         <template #cell(state)="{ item: family }">
             <Icon :data="family.state" />
         </template>

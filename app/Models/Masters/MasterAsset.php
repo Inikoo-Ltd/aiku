@@ -132,7 +132,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
  * @property bool $not_for_sale_from_trade_unit
- * @property string|null $web_images
+ * @property array<array-key, mixed>|null $web_images
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -210,11 +210,13 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'stocks_status'        => MasterAssetStocksStatusEnum::class,
         'products_status'      => MasterAssetProductsStatusEnum::class,
         'offers_data'          => 'array',
+        'web_images'      => 'array',
     ];
 
     protected $attributes = [
         'data'          => '{}',
         'offers_data'   => '{}',
+        'web_images'  => '{}',
     ];
 
     public function generateTags(): array

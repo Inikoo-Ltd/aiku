@@ -85,6 +85,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
                 'master_assets.unit',
                 'master_assets.units',
                 'master_assets.rrp',
+                'master_assets.web_images',
                 'master_asset_stats.number_current_assets as used_in',
                 'currencies.code as currency_code',
             ]
