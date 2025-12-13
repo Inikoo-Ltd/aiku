@@ -24,6 +24,8 @@ use App\Actions\Masters\MasterCollection\UpdateMasterCollection;
 use App\Actions\Masters\MasterCollection\DeleteMasterCollection;
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
+use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
+use App\Actions\Masters\MasterCollection\AttachModelToMasterCollection;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -81,6 +83,48 @@ test("UI Index Master Shops", function () {
             ->has("data");
     });
 });
+
+test('UI Edit Master Shop', function (MasterShop $masterShop) {
+    $response = get(
+        route('grp.masters.master_shops.edit', [$masterShop->slug])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterShop) {
+        $page
+            ->component('EditModel')
+            ->has('breadcrumbs')
+            ->where('title', fn ($title) => is_string($title) && $title !== '')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) =>
+                $head
+                    ->where('title', fn ($title) => is_string($title) && $title !== '')
+                    ->has('actions', 1)
+                    ->where('actions.0.type', 'button')
+                    ->where('actions.0.style', 'cancel')
+                    ->where('actions.0.route.name', 'grp.masters.master_shops.show')
+            )
+            ->has(
+                'formData',
+                fn (AssertableInertia $form) =>
+                $form
+                    ->has('blueprint', 2)
+                    ->has('blueprint.0.fields.code')
+                    ->where('blueprint.0.fields.code.type', 'input')
+                    ->where('blueprint.0.fields.code.value', $masterShop->code)
+                    ->has('blueprint.0.fields.name')
+                    ->where('blueprint.0.fields.name.type', 'input')
+                    ->where('blueprint.0.fields.name.value', $masterShop->name)
+                    ->has('blueprint.1.fields.cost_price_ratio')
+                    ->where('blueprint.1.fields.cost_price_ratio.type', 'input_number')
+                    ->has('blueprint.1.fields.price_rrp_ratio')
+                    ->where('blueprint.1.fields.price_rrp_ratio.type', 'input_number')
+                    ->has('args.updateRoute')
+                    ->where('args.updateRoute.name', 'grp.models.master_shops.update')
+                    ->where('args.updateRoute.parameters.masterShop', $masterShop->id)
+            );
+    });
+})->depends('create master shop');
 
 test('create master shop', function () {
     $masterShop = StoreMasterShop::make()->action(
@@ -539,23 +583,75 @@ test('soft delete master collection', function (MasterProductCategory $masterFam
             'code' => 'MC-DEL-SOFT',
             'name' => 'to be soft deleted',
         ],
-        hydratorsDelay: 0,
-        strict: true,
-        audit: true,
         createChildren: false
     );
 
     $mc->refresh();
 
-    // Perform soft delete
     DeleteMasterCollection::make()->action($mc, false);
 
-    // Assert model is soft deleted
     $mc->refresh();
     expect($mc->trashed())->toBeTrue();
 
-    // Note: Hydrator dispatch is implementation detail and may run synchronously; we only assert deletion here.
 })->depends('create master family');
+
+test('attach family to master collection', function (MasterProductCategory $masterFamily, MasterCollection $masterCollection) {
+    expect($masterCollection->masterFamilies->pluck('id'))
+        ->not->toContain($masterFamily->id);
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamily);
+    $masterCollection->refresh();
+
+    expect($masterCollection->masterFamilies->pluck('id'))
+        ->toContain($masterFamily->id);
+
+    $count = $masterCollection->masterFamilies()
+        ->where('master_product_categories.id', $masterFamily->id)
+        ->count();
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamily);
+    $masterCollection->refresh();
+
+    expect($masterCollection->masterFamilies()
+        ->where('master_product_categories.id', $masterFamily->id)
+        ->count())->toBe($count);
+})->depends('create master family', 'create master collection');
+
+test('attach collection to master collection', function (MasterProductCategory $masterFamily, MasterCollection $masterCollection) {
+
+    $extra = StoreMasterCollection::make()->action(
+        $masterFamily,
+        [
+            'code' => 'MC-EXTRA-ATTACH',
+            'name' => 'extra to attach',
+        ],
+        createChildren: false
+    );
+
+    $extra->refresh();
+
+
+    expect($masterCollection->masterCollections->pluck('id'))
+        ->not->toContain($extra->id);
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $extra);
+    $masterCollection->refresh();
+
+    expect($masterCollection->masterCollections->pluck('id'))
+        ->toContain($extra->id);
+
+    // Verify idempotency
+    $count = $masterCollection->masterCollections()
+        ->where('master_collections.id', $extra->id)
+        ->count();
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $extra);
+    $masterCollection->refresh();
+
+    expect($masterCollection->masterCollections()
+        ->where('master_collections.id', $extra->id)
+        ->count())->toBe($count);
+})->depends('create master family', 'create master collection');
 
 test('force delete master collection', function (MasterProductCategory $masterFamily) {
     // Create a throwaway master collection to force delete
@@ -584,6 +680,56 @@ test('force delete master collection', function (MasterProductCategory $masterFa
 
     // Note: Hydrator dispatch is implementation detail and may run synchronously; we only assert deletion here.
 })->depends('create master family');
+
+test('attach models to master collection', function (MasterProductCategory $masterFamily, MasterCollection $masterCollection) {
+    // Create an additional master collection to be attached as a child collection
+    $anotherCollection = StoreMasterCollection::make()->action(
+        $masterFamily,
+        [
+            'code' => 'MC-ATTACH-CHILD',
+            'name' => 'child collection to attach',
+        ],
+        hydratorsDelay: 0,
+        strict: true,
+        audit: true,
+        createChildren: false
+    );
+
+    $anotherCollection->refresh();
+
+    // Perform attachment: family and collection
+    AttachModelsToMasterCollection::make()->action(
+        $masterCollection,
+        [
+            'families' => [$masterFamily->id],
+            'collections' => [$anotherCollection->id],
+        ]
+    );
+
+    // Refresh and assert relations now include the attachments
+    $masterCollection->refresh();
+
+    expect($masterCollection->masterFamilies->pluck('id')->all())
+        ->toContain($masterFamily->id)
+        ->and($masterCollection->masterCollections->pluck('id')->all())
+        ->toContain($anotherCollection->id);
+
+    // Idempotency: re-run with duplicate IDs should not create duplicates
+    AttachModelsToMasterCollection::make()->action(
+        $masterCollection,
+        [
+            'families' => [$masterFamily->id, $masterFamily->id],
+            'collections' => [$anotherCollection->id, $anotherCollection->id],
+        ]
+    );
+
+    $masterCollection->refresh();
+
+    expect($masterCollection->masterFamilies->where('id', $masterFamily->id)->count())
+        ->toBe(1)
+        ->and($masterCollection->masterCollections->where('id', $anotherCollection->id)->count())
+        ->toBe(1);
+})->depends('create master family', 'create master collection');
 
 test('Hydrate master assets', function (MasterAsset $masterAsset) {
     HydrateMasterAssets::run($masterAsset);
