@@ -29,23 +29,6 @@ jobs:
           mkdir private
           cd private
           ln -s ../../../../../artifacts/fa .
-
-      - name: Get db changed files
-        id: changed-db-files
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            app/Enums/**
-            app/Stubs/**
-            database/migrations/**
-      - name: Get coverage changed files
-        id: changed-coverage-files
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            app/**
-            tests/**
-            database/migrations/**
       - name: Generate database dumps 📚
         run: ./generate_testing_db_dumps.sh php8.4 aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
       - name: Retrieve db dumps
