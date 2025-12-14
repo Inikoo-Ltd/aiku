@@ -1,11 +1,10 @@
-name: Backend Tests With Coverage
+name: Backend Tests
 on:
   push:
     branches: [ "main" ]
 
 env:
   HOME: /home/aiku_test
-  XDEBUG_MODE: coverage
 
 jobs:
   laravel-tests:
