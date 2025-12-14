@@ -1,14 +1,17 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 14 Dec 2025 09:26:55 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Goods\TradeUnitFamily\UI;
+namespace App\Actions\Goods\TradeUnitFamily;
 
 use App\Actions\Traits\HasBucketAttachment;
-use Lorisleiva\Actions\Concerns\AsObject;
-use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
-use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Models\Goods\TradeUnitFamily;
+use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetTradeUnitFamilyAttachment
+class GetTradeUnitFamilyAttachments
 {
     use AsObject;
     use HasBucketAttachment;
@@ -32,7 +35,6 @@ class GetTradeUnitFamilyAttachment
                 ],
                 'method'     => 'delete'
             ],
-            /* 'attachments'   => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))->resolve() */
         ];
     }
 }

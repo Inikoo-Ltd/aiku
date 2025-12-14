@@ -24,6 +24,12 @@ use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
 use Inertia\Testing\AssertableInertia;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Validation\ValidationException;
+use App\Models\Goods\TradeUnitFamily as TradeUnitFamilyModel;
+use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnitFamilies;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -406,6 +412,73 @@ test('Hydrate trade units', function () {
     $this->artisan('hydrate:trade_units')->assertSuccessful();
 });
 
+
+
 test('goods hydrator', function () {
     $this->artisan('hydrate -s goods')->assertExitCode(0);
 });
+
+
+test('store trade unit family action creates model and stats', function () {
+    $group = createGroup();
+
+    $family = StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'TUF-'.uniqid(),
+        'name' => 'Test Trade Unit Family',
+    ]);
+
+    expect($family)->toBeInstanceOf(TradeUnitFamilyModel::class)
+        ->and($family->stats()->exists())->toBeTrue();
+});
+
+test('store trade unit family validation rejects reserved codes', function () {
+    $group = createGroup();
+
+    StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'ok-'.uniqid(),
+        'name' => 'OK',
+    ]);
+
+    StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'upload-'.uniqid(),
+        'name' => 'OK2',
+    ]);
+
+    StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'export-'.uniqid(),
+        'name' => 'OK3',
+    ]);
+
+    StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'CREATE-'.uniqid(),
+        'name' => 'OK4',
+    ]);
+
+    StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'create',
+        'name' => 'Should fail',
+    ]);
+})->throws(ValidationException::class);
+
+test('store trade unit family enforces unique code per group', function () {
+    $groupA = createGroup();
+    $groupB = createGroup();
+
+    $code = 'TUF-'.uniqid();
+
+    StoreTradeUnitFamily::make()->action($groupA, [
+        'code' => $code,
+        'name' => 'Fam A1',
+    ]);
+
+    StoreTradeUnitFamily::make()->action($groupB, [
+        'code' => $code,
+        'name' => 'Fam B1',
+    ]);
+
+    StoreTradeUnitFamily::make()->action($groupA, [
+        'code' => $code,
+        'name' => 'Fam A2 should fail',
+    ]);
+})->throws(ValidationException::class);
+
