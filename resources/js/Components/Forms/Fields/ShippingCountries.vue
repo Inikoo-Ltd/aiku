@@ -1,8 +1,10 @@
+
 <!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Tue, 14 Mar 2023 23:44:10 Malaysia Time, Kuala Lumpur, Malaysia
-  - Copyright (c) 2023, Raul A Perusquia Flores
-  -->
+* Author: Vika Aqordi
+* Created on: 2025-12-11 16:34
+* Github: https://github.com/aqordeon
+* Copyright: 2025
+-->
 
 <script setup lang="ts">
 import { faExclamationCircle, faCheckCircle } from '@fas'
@@ -12,7 +14,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref, watch } from "vue"
-import PureTeritoryZone from '@/Components/Pure/PureTeritoryZone.vue'
+import PureShippingCountries from '@/Components/Pure/PureShippingCountries.vue'
 
 const props = defineProps<{
     form: any
@@ -42,32 +44,33 @@ const getNestedValue = (obj: Object, keys: Array) => {
         if (acc && typeof acc === "object" && key in acc) return acc[key]
         return null
     }, obj)
-};
+}
 
-const value = ref(setFormValue(props.form, props.fieldName));
+const value = ref(setFormValue(props.form, props.fieldName))
 
 watch(value, (newValue) => {
     // Update the form field value when the value ref changes
-    updateFormValue(newValue);
+    updateFormValue(newValue)
     props.form.errors[props.fieldName] = ''
-});
+})
 
 const updateFormValue = (newValue) => {
-    let target = props.form;
+    let target = props.form
     if (Array.isArray(props.fieldName)) {
-        set(target, props.fieldName, newValue);
+        set(target, props.fieldName, newValue)
     } else {
-        target[props.fieldName] = newValue;
+        target[props.fieldName] = newValue
     }
-    emits("update:form", target);
-};
+    emits("update:form", target)
+}
 
 console.log(props)
 </script>
 <template>
     <div class="relative">
-        <PureTeritoryZone v-model="value" :country_list="fieldData.country_list"/>
+        <PureShippingCountries v-model="value" :country_list="fieldData.country_list" />
     </div>
+
     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
         {{ form.errors[fieldName] }}
     </p>

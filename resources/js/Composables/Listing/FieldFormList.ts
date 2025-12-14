@@ -67,6 +67,7 @@ import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
 import TagsCustomer from "@/Components/Forms/Fields/TagsCustomer.vue";
 import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue";
 import InputTwin from '@/Components/Forms/Fields/InputTwin.vue'
+import ShippingCountries from '@/Components/Forms/Fields/ShippingCountries.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -123,6 +124,7 @@ export const componentsList: {[key: string]: Component} = {
     'textEditor_translation' : TextEditorTranslation,
     'pricing_zone': Pricing_zone,
     'territory_zone': TerritoryZone,
+    'shipping_countries': ShippingCountries,
     'crop-image-full' : cropImageFull,
     'list-selector' : ListSelectorFrom,
     'edit-trade-unit-shop' : FormEditTradeUnit,

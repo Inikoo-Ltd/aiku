@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
+use App\Actions\Catalogue\Shop\UI\GetShopShippingCountries;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
@@ -362,20 +363,54 @@ class EditShop extends OrgAction
                             'icon'   => 'fa-light fa-truck',
                             'fields' => [
                                 'forbidden_dispatch_countries' => [
-                                    'type'        => 'multiselect-tags',
+                                    'noSaveButton'  => true,
+                                    'isWithRefreshFieldform'  => true,
+                                    'label'       => __('Allowed Shipping Countries'),
+                                    'type'        => 'shipping_countries',
                                     'placeholder' => __('Select countries'),
-                                    'information' => __('Customer cannot submit order that delivered to these countries'),
-                                    'label'       => __('Forbidden Countries'),
+                                    'information' => __('Customer only able to submit to this countries'),
                                     'required'    => true,
-                                    'value'       => $result,
-                                    'options'     => GetCountriesOptions::run(),
+                                    'full'          => true,
+                                    'country_list'=> GetCountriesOptions::run(),
+                                    'routes' => [
+                                            'store'  => [
+                                                'name' => 'grp.models.shop.shipping_country.store', 'parameters' => ['shop' => $shop->id
+                                                ]
+                                            ],
+                                            'update' => [
+                                                'name' => 'grp.models.shipping_country.update', 'parameters' => []
+                                            ],
+                                            'delete' => [
+                                                'name' => 'grp.models.shipping_country.delete', 'parameters' => []
+                                            ],
+                                    ],
                                     'searchable'  => true,
                                     'mode'        => 'tags',
                                     'labelProp'   => 'label',
-                                    'valueProp'   => 'id'
+                                    'valueProp'   => 'id',
+                                    'value'       => GetShopShippingCountries::run($shop),
                                 ]
                             ],
                         ],
+                        // [
+                        //     'label'  => __('Shipping'),
+                        //     'icon'   => 'fa-light fa-truck',
+                        //     'fields' => [
+                        //         'forbidden_dispatch_countries' => [
+                        //             'type'        => 'multiselect-tags',
+                        //             'placeholder' => __('Select countries'),
+                        //             'information' => __('Customer cannot submit order that delivered to these countries'),
+                        //             'label'       => __('Forbidden Countries'),
+                        //             'required'    => true,
+                        //             'value'       => $result,
+                        //             'options'     => GetCountriesOptions::run(),
+                        //             'searchable'  => true,
+                        //             'mode'        => 'tags',
+                        //             'labelProp'   => 'label',
+                        //             'valueProp'   => 'id'
+                        //         ]
+                        //     ],
+                        // ],
                         $shop->type === ShopTypeEnum::DROPSHIPPING ? [
                             'label'  => __('Ebay Redirect Key'),
                             'icon'   => 'fa-light fa-key',

@@ -98,6 +98,12 @@ const onClickDelete = () => {
 }
 
 const messageDelete = ref('')
+
+defineExpose({
+    changeModel: () => isOpenModal.value = !isOpenModal.value,
+    isLoadingdelete,
+    onClickDelete,
+})
 </script>
 
 <template>
