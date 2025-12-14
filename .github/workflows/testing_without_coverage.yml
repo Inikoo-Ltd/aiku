@@ -2,7 +2,7 @@ name: Backend Tests
 
 on:
   push:
-    branches: [ "main_no_coverage" ]
+    branches: [ "main" ]
 
 env:
   HOME: /home/aiku_test
@@ -32,8 +32,8 @@ jobs:
           cd private
           ln -s ../../../../../artifacts/fa .
       - name: Generate database dumps 📚
-        run: ./generate_testing_db_dumps.sh php8.4 aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
+        run: ./generate_testing_db_dumps.sh php8.4 -dxdebug.mode=off aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test without coverage
-        run: /usr/bin/php8.4 vendor/bin/pest --exclude-group=integration --stop-on-defect
+        run: /usr/bin/php8.4 -dxdebug.mode=off vendor/bin/pest --exclude-group=integration --stop-on-defect
