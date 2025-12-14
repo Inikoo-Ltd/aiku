@@ -17,6 +17,8 @@ use App\Actions\Goods\StockFamily\HydrateStockFamily;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Actions\Goods\TradeUnit\HydrateTradeUnits;
+use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
 use App\Models\Goods\Ingredient;
@@ -24,17 +26,12 @@ use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
 use Inertia\Testing\AssertableInertia;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Validation\ValidationException;
 use App\Models\Goods\TradeUnitFamily as TradeUnitFamilyModel;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\IndexTradeUnitFamilies;
-use App\Actions\Goods\TradeUnitFamily\UI\CreateTradeUnitFamily as CreateTradeUnitFamilyUI;
-use App\Actions\Goods\TradeUnitFamily\UI\EditTradeUnitFamily as EditTradeUnitFamilyUI;
-use App\Actions\Goods\TradeUnitFamily\UI\ShowTradeUnitFamily as ShowTradeUnitFamilyUI;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnitFamilies;
+
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -616,3 +613,52 @@ test('update trade unit family allows null description', function () {
     expect($updated->fresh()->description)->toBeNull();
 });
 
+test('hydrate trade unit family trade units stats', function () {
+    $family = StoreTradeUnitFamily::make()->action($this->group, [
+        'code' => 'TUF001',
+        'name' => 'Test Family',
+    ]);
+
+    TradeUnit::factory()->create([
+        'group_id'              => $this->group->id,
+        'trade_unit_family_id'  => $family->id,
+        'status'                => TradeUnitStatusEnum::IN_PROCESS,
+    ]);
+
+    TradeUnit::factory()->create([
+        'group_id'              => $this->group->id,
+        'trade_unit_family_id'  => $family->id,
+        'status'                => TradeUnitStatusEnum::IN_PROCESS,
+    ]);
+
+    TradeUnit::factory()->create([
+        'group_id'              => $this->group->id,
+        'trade_unit_family_id'  => $family->id,
+        'status'                => TradeUnitStatusEnum::ACTIVE,
+    ]);
+
+    TradeUnit::factory()->create([
+        'group_id'              => $this->group->id,
+        'trade_unit_family_id'  => $family->id,
+        'status'                => TradeUnitStatusEnum::DISCONTINUED,
+    ]);
+
+    TradeUnit::factory()->create([
+        'group_id'              => $this->group->id,
+        'trade_unit_family_id'  => $family->id,
+        'status'                => TradeUnitStatusEnum::ANOMALITY,
+    ]);
+
+    TradeUnitFamilyHydrateTradeUnits::run($family);
+
+    $family->refresh();
+    $stats = $family->stats()->first();
+
+    expect($stats)->not->toBeNull()
+        ->and($stats->number_trade_units)->toBe(5)
+        ->and($stats->number_trade_units_status_in_process)->toBe(2)
+        ->and($stats->number_trade_units_status_active)->toBe(1)
+        ->and($stats->number_trade_units_status_discontinued)->toBe(1)
+        ->and($stats->number_trade_units_status_discontinuing)->toBe(0)
+        ->and($stats->number_trade_units_status_anomality)->toBe(1);
+});
