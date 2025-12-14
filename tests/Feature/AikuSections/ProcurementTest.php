@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Analytics\GetSectionRoute;
+use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Procurement\OrgAgent\Search\ReindexOrgAgentSearch;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgPartner\Search\ReindexOrgPartnerSearch;
@@ -47,8 +49,11 @@ use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\Search\ReindexSupplierProductsSearch;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
+use App\Models\Analytics\AikuScopedSection;
+use App\Models\Goods\Stock;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
@@ -61,6 +66,10 @@ use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Validation\ValidationException;
+use Inertia\Testing\AssertableInertia;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 
 beforeAll(function () {
     loadDB();
@@ -71,6 +80,8 @@ beforeEach(function () {
     $this->organisation = createOrganisation();
     $this->otherOrganisation = createOrganisation();
     $this->group        = group();
+    $this->adminGuest   = createAdminGuest($this->organisation->group);
+
 
     $this->stocks             = createStocks($this->group);
     $this->orgStocks          = createOrgStocks($this->organisation, $this->stocks);
@@ -85,6 +96,111 @@ beforeEach(function () {
     }
     $this->agent = $agent;
 
+    $orgAgent = OrgAgent::first();
+    if (!$orgAgent) {
+        $orgAgent     = StoreOrgAgent::make()->action(
+            $this->organisation,
+            $this->agent,
+            []
+        );
+    }
+
+    $this->orgAgent = $orgAgent;
+
+
+    $supplier = Supplier::first();
+    if (!$supplier) {
+        $storeData = Supplier::factory()->definition();
+        $supplier  = StoreSupplier::make()->action(
+            $this->agent,
+            $storeData
+        );
+    }
+
+    $this->supplier = $supplier;
+
+    $stock = Stock::first();
+    if (!$stock) {
+        $storeData = Stock::factory()->definition();
+        $stock  = StoreStock::make()->action(
+            $this->organisation->group,
+            $storeData
+        );
+    }
+
+    $this->stock = $stock;
+
+    $supplierProduct = SupplierProduct::first();
+    if (!$supplierProduct) {
+        $storeData = SupplierProduct::factory()->definition();
+        data_set($storeData, 'stock_id', $this->stock->id);
+        $supplierProduct  = StoreSupplierProduct::make()->action(
+            $this->supplier,
+            $storeData
+        );
+    }
+
+    $this->supplierProduct = $supplierProduct;
+
+    $orgSupplier = OrgSupplier::first();
+    if (!$orgSupplier) {
+        $orgSupplier = StoreOrgSupplier::make()->action(
+            $this->organisation,
+            $this->supplier,
+        );
+    }
+
+    $this->orgSupplier = $orgSupplier;
+
+    $orgSupplierProduct = OrgSupplierProduct::first();
+    if (!$orgSupplierProduct) {
+        $orgSupplierProduct = StoreOrgSupplierProduct::make()->action(
+            $this->orgSupplier,
+            $this->supplierProduct
+        );
+    }
+
+    $this->orgSupplierProduct = $orgSupplierProduct;
+
+    $orgPartner = OrgPartner::first();
+    if (!$orgPartner) {
+        $orgPartner = StoreOrgPartner::make()->action(
+            $this->organisation,
+            $this->otherOrganisation,
+        );
+    }
+
+    $this->orgPartner = $orgPartner;
+
+    $stockDelivery = StockDelivery::first();
+    if (!$stockDelivery) {
+        $stockDelivery  = StoreStockDelivery::make()->action(
+            $this->orgSupplier,
+            [
+                'reference' => 12345,
+                'date'      => date('Y-m-d')
+            ]
+        );
+    }
+
+    $this->stockDelivery = $stockDelivery;
+
+    $purchaseOrder = PurchaseOrder::first();
+    if (!$purchaseOrder) {
+        $purchaseOrder  = StorePurchaseOrder::make()->action(
+            $this->orgSupplier,
+            PurchaseOrder::factory()->definition()
+        );
+    }
+
+    $this->purchaseOrder = $purchaseOrder;
+
+    Config::set(
+        'inertia.testing.page_paths',
+        [resource_path('js/Pages/Grp')]
+    );
+    actingAs($this->adminGuest->getUser());
+
 });
 
 
@@ -96,8 +212,8 @@ test('create independent supplier', function () {
     );
 
     expect($supplier)->toBeInstanceOf(Supplier::class)
-        ->and($this->group->supplyChainStats->number_suppliers)->toBe(1)
-        ->and($this->organisation->procurementStats->number_org_suppliers)->toBe(0);
+        ->and($this->group->supplyChainStats->number_suppliers)->toBe(2)
+        ->and($this->organisation->procurementStats->number_org_suppliers)->toBe(1);
 
     return $supplier;
 });
@@ -107,7 +223,7 @@ test('attach supplier to organisation', function ($supplier) {
 
 
     expect($orgSupplier)->toBeInstanceOf(OrgSupplier::class)
-        ->and($this->organisation->procurementStats->number_org_suppliers)->toBe(1);
+        ->and($this->organisation->procurementStats->number_org_suppliers)->toBe(2);
 
     return $orgSupplier;
 })->depends('create independent supplier');
@@ -374,7 +490,7 @@ test('change purchase order state to cancelled', function ($purchaseOrder) {
 
 test('create supplier delivery', function (OrgSupplier $orgSupplier) {
     $arrayData = [
-        'reference' => 12345,
+        'reference' => 123457,
         'date'      => date('Y-m-d')
     ];
 
@@ -597,4 +713,258 @@ test('suppliers record search', function () {
     $supplier = Supplier::first();
     ReindexSupplierSearch::run($supplier);
     $this->artisan('search:suppliers')->assertExitCode(0);
+});
+
+test('UI show procurement dashboard', function () {
+    // dd($this->orgSupplier);
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.procurement.dashboard', [$this->organisation->slug,]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/ProcurementDashboard')
+            ->has('title')
+            ->has('breadcrumbs', 2)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Procurement')
+                    ->etc()
+            )
+            ->has('flatTreeMaps');
+
+    });
+});
+
+test('UI Index org suppliers', function () {
+
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.org_suppliers.index', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/OrgSuppliers')
+            ->has('title')
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI show org supplier', function () {
+    // dd($this->orgSupplier);
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $this->orgSupplier->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/OrgSupplier')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->orgSupplier->supplier->name)
+                    ->etc()
+            )
+            ->has('tabs');
+
+    });
+});
+
+test('UI Index org agents', function () {
+    $response = $this->get(route('grp.org.procurement.org_agents.index', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/OrgAgents')
+            ->has('title')
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI show org agents', function () {
+    $response = $this->get(route('grp.org.procurement.org_agents.show', [$this->organisation->slug, $this->orgAgent->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/OrgAgent')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->orgAgent->agent->organisation->name)
+                    ->etc()
+            )
+            ->has('tabs');
+
+    });
+});
+
+test('UI index org supplier products', function () {
+    $response = $this->get(route('grp.org.procurement.org_supplier_products.index', [$this->organisation->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/OrgSupplierProducts')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Supplier Products')
+                    ->etc()
+            );
+
+    });
+});
+
+test('UI show org supplier product', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.org_supplier_products.show', [$this->organisation->slug, $this->orgSupplierProduct->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/OrgSupplierProduct')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->orgSupplierProduct->supplierProduct->name)
+                    ->etc()
+            )
+            ->has('tabs');
+
+    });
+});
+
+test('UI Index purchase orders', function () {
+    $response = $this->get(route('grp.org.procurement.purchase_orders.index', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/PurchaseOrders')
+            ->has('title')
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI show purchase order', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $this->purchaseOrder->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/PurchaseOrder')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->purchaseOrder->reference)
+                    ->etc()
+            )
+            ->has('tabs')
+            ->has('currency')
+            ->has('box_stats')
+            ->has('timelines')
+            ->has('data');
+    });
+});
+
+test('UI Index org partners', function () {
+    $response = $this->get(route('grp.org.procurement.org_partners.index', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Procurement/Partners')
+            ->has('title')
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI show org partners', function () {
+    $response = $this->get(route('grp.org.procurement.org_partners.show', [$this->organisation->slug, $this->orgPartner->id]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Procurement/Partner')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->orgPartner->partner->name)
+                    ->etc()
+            )
+            ->has('tabs');
+
+    });
+});
+
+test('UI get section route index', function () {
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.procurement.dashboard', [
+        'organisation' => $this->organisation->slug
+    ]);
+    expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
+        ->and($sectionScope->organisation_id)->toBe($this->organisation->id)
+        ->and($sectionScope->code)->toBe(AikuSectionEnum::ORG_PROCUREMENT->value)
+        ->and($sectionScope->model_slug)->toBe($this->organisation->slug);
+});
+
+test('UI Index stock deliveries', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.index', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDeliveries')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Stock Deliveries')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI create stock delivery', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.procurement.stock_deliveries.create', [$this->organisation->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->has('title')
+            ->has('formData')
+            ->has('pageHead')
+            ->has('breadcrumbs', 4);
+    });
+});
+
+test('UI show stock delivery', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $this->stockDelivery->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDelivery')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->stockDelivery->reference)
+                    ->etc()
+            )
+            ->has('tabs');
+
+    });
+});
+
+test('UI edit stock delivery', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.procurement.stock_deliveries.edit', [$this->organisation->slug, $this->stockDelivery->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('formData')
+            ->has('pageHead')
+            ->has('breadcrumbs', 3);
+    });
 });
