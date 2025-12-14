@@ -62,7 +62,7 @@ class UpdateCustomerClient extends OrgAction
         }
 
         if (Arr::has($addressChange, 'status')) {
-            CustomerHydrateClients::dispatch($customerClient);
+            CustomerHydrateClients::dispatch($customerClient->customer_id);
         }
 
 

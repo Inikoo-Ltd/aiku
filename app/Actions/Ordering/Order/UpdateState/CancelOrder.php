@@ -108,7 +108,7 @@ class CancelOrder extends OrgAction
         }
 
         if ($oldState == OrderStateEnum::CREATING) {
-            CustomerHydrateBasket::run($order->customer);
+            CustomerHydrateBasket::run($order->customer_id);
         }
 
         if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {

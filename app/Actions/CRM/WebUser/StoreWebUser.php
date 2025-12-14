@@ -69,7 +69,7 @@ class StoreWebUser extends OrgAction
         GroupHydrateWebUsers::dispatch($webUser->group)->delay($this->hydratorsDelay);
         OrganisationHydrateWebUsers::dispatch($webUser->organisation)->delay($this->hydratorsDelay);
         ShopHydrateWebUsers::dispatch($webUser->shop)->delay($this->hydratorsDelay);
-        CustomerHydrateWebUsers::dispatch($webUser->customer)->delay($this->hydratorsDelay);
+        CustomerHydrateWebUsers::dispatch($webUser->customer_id)->delay($this->hydratorsDelay);
 
         return $webUser;
     }

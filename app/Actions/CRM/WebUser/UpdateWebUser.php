@@ -61,7 +61,7 @@ class UpdateWebUser extends OrgAction
         $webUser = $this->update($webUser, $modelData, ['data', 'settings']);
 
         if (Arr::hasAny($webUser->getChanges(), ['status'])) {
-            CustomerHydrateWebUsers::dispatch($webUser->customer)->delay($this->hydratorsDelay);
+            CustomerHydrateWebUsers::dispatch($webUser->customer_id)->delay($this->hydratorsDelay);
         }
 
         return $webUser;

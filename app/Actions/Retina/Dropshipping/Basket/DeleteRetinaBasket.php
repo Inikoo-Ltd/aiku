@@ -31,8 +31,8 @@ class DeleteRetinaBasket extends RetinaAction
         $order->delete();
 
         CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
-        CustomerHydrateBasket::run($customerSalesChannel->customer);
-        CustomerHydrateOrders::dispatch($customerSalesChannel->customer);
+        CustomerHydrateBasket::run($customerSalesChannel->customer_id);
+        CustomerHydrateOrders::dispatch($customerSalesChannel->customer_id);
 
         return Redirect::route(
             'retina.dropshipping.customer_sales_channels.basket.index',

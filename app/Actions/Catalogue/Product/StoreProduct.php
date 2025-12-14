@@ -144,7 +144,7 @@ class StoreProduct extends OrgAction
         ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
 
         if ($product->exclusive_for_customer_id) {
-            CustomerHydrateExclusiveProducts::dispatch($product->exclusiveForCustomer)->delay($this->hydratorsDelay);
+            CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
         }
 
         $this->productHydrators($product);

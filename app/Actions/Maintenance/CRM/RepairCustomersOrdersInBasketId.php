@@ -36,7 +36,7 @@ class RepairCustomersOrdersInBasketId
             ]);
         }
         if ($order && $oldOrder != $order->id) {
-            CustomerHydrateBasket::run($customer);
+            CustomerHydrateBasket::run($customer->id);
             $command->info("Customer {$customer->slug}: $oldOrder  ->   {$order->id}");
         }
     }

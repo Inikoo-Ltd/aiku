@@ -34,8 +34,12 @@ class CustomerHydrateRevenue implements ShouldBeUnique
         $this->handle($customer->id);
     }
 
-    public function handle(int $customerId): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
         $customer = Customer::find($customerId);
 
         if (!$customer) {

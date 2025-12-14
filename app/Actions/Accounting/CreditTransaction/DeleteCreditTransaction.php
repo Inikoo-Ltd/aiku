@@ -19,10 +19,10 @@ class DeleteCreditTransaction extends OrgAction
 {
     public function handle(CreditTransaction $creditTransaction): CreditTransaction
     {
-        $customer = $creditTransaction->customer;
+        $customerId = $creditTransaction->customer_id;
         $creditTransaction->delete();
 
-        CustomerHydrateCreditTransactions::run($customer);
+        CustomerHydrateCreditTransactions::run($customerId);
         ShopHydrateCreditTransactions::dispatch($creditTransaction->shop);
         OrganisationHydrateCreditTransactions::dispatch($creditTransaction->organisation);
         GroupHydrateCreditTransactions::dispatch($creditTransaction->group);
