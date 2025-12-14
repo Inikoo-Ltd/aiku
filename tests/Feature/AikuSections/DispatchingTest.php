@@ -10,6 +10,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
@@ -33,11 +34,14 @@ use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
+use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -49,7 +53,12 @@ use App\Models\Helpers\Address;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Location;
 use App\Models\Ordering\Transaction;
+use Config;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 
 beforeAll(function () {
     loadDB();
@@ -63,6 +72,7 @@ beforeEach(function () {
     ) = createShop();
 
     $this->group = $this->organisation->group;
+    $this->adminGuest = createAdminGuest($this->group);
 
     $this->warehouse = createWarehouse();
 
@@ -85,6 +95,8 @@ beforeEach(function () {
         $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
     }
 
+    Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
+    actingAs($this->adminGuest->getUser());
 
 });
 
@@ -429,3 +441,105 @@ test('update shipment', function ($lastShipment) {
 
     expect($shipment->reference)->toBe($arrayData['reference']);
 })->depends('create shipment');
+
+test("UI Index dispatching delivery-notes", function () {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route("grp.org.warehouses.show.dispatching.delivery-notes", [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Org/Dispatching/DeliveryNotes")
+            ->where("title", 'Delivery notes')
+            ->has("breadcrumbs", 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page
+                    ->where("title", "Delivery notes")
+                    ->etc()
+            )
+            ->has("data");
+    });
+});
+
+test("UI Index dispatching show delivery-notes", function () {
+
+    $deliveryNote=DeliveryNote::first();
+
+    $this->withoutExceptionHandling();
+    $response = get(
+        route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
+            $deliveryNote->organisation->slug,
+            $deliveryNote->warehouse->slug,
+            $deliveryNote->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) use ($deliveryNote) {
+        $page
+            ->component("Org/Dispatching/DeliveryNote")
+            ->where("title", 'delivery note')
+            ->has("breadcrumbs", 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page
+                    ->where("title", $deliveryNote->reference)
+                    ->where("model", 'Delivery Note')
+                    ->etc()
+            )
+            ->has('delivery_note')
+            ->has("timelines")
+            ->has("box_stats")
+            ->has("routes")
+            ->has(DeliveryNoteTabsEnum::ITEMS->value)
+            ->has("tabs");
+    });
+});
+
+test("UI Index dispatching show delivery-notes (tab picking)", function () {
+    $response = get(
+        route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+            $this->deliveryNote->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Org/Dispatching/DeliveryNote")
+            ->where("title", 'delivery note')
+            ->has("breadcrumbs", 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page
+                    ->where("title", $this->deliveryNote->reference)
+                    ->where("model", 'Delivery Note')
+                    ->etc()
+            )
+            ->has('delivery_note')
+            ->has("alert")
+            ->has("notes")
+            ->has("timelines")
+            ->has("box_stats")
+            ->has("routes")
+            ->has("tabs");
+    });
+})->todo();
+
+test('UI get section route dispatching show', function () {
+
+    $deliveryNote=DeliveryNote::first();
+
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.warehouses.show.dispatching.delivery_notes.show', [
+        'organisation' => $deliveryNote->organisation->slug,
+        'warehouse' =>  $deliveryNote->warehouse->slug,
+        'deliveryNote' => $deliveryNote->slug
+    ]);
+
+    expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
+        ->and($sectionScope->code)->toBe(AikuSectionEnum::INVENTORY_DISPATCHING->value)
+        ->and($sectionScope->model_slug)->toBe($deliveryNote->warehouse->slug);
+});
