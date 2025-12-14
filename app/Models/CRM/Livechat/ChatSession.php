@@ -69,6 +69,11 @@ class ChatSession extends Model
         return $this->hasMany(ChatMessage::class, 'chat_session_id');
     }
 
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(ChatAssignment::class, 'chat_session_id');
+    }
+
 
     public function getRatingAttribute($value): float|null
     {
@@ -83,4 +88,13 @@ class ChatSession extends Model
         $this->attributes['rating'] = $value;
     }
 
+    public function scopeWithLastMessageTime($query)
+    {
+        return $query->addSelect([
+            'last_message_at' => ChatMessage::select('created_at')
+                ->whereColumn('chat_session_id', 'chat_sessions.id')
+                ->latest()
+                ->limit(1)
+        ]);
+    }
 }

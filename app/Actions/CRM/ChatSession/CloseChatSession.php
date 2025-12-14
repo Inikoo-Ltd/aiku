@@ -4,118 +4,134 @@ namespace App\Actions\CRM\ChatSession;
 
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Events\BroadcastRealtimeChat;
+use Illuminate\Http\RedirectResponse;
+use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
-use App\Models\CRM\Livechat\ChatEvent;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Models\CRM\Livechat\ChatAssignment;
+use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use Illuminate\Validation\ValidationException;
+use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 
 class CloseChatSession
 {
     use AsAction;
 
-    public function handle(ChatSession $chatSession, int $closedByAgentId): ChatSession
+    public function handle(ChatSession $chatSession, int $agentId, array $additionalData = []): ChatSession
     {
-        $chatSession->update([
-            'status' => ChatSessionStatusEnum::CLOSED->value,
-            'closed_at' => now(),
-        ]);
+        return DB::transaction(function () use ($chatSession, $agentId, $additionalData) {
 
-        $activeAssignment = ChatAssignment::where('chat_session_id', $chatSession->id)
-            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
-            ->first();
-
-        if ($activeAssignment) {
-            $activeAssignment->update([
-                'status' => ChatAssignmentStatusEnum::RESOLVED->value,
-                'resolved_at' => now(),
+            $chatSession->update([
+                'status' => ChatSessionStatusEnum::CLOSED->value,
+                'closed_by' => $agentId ? ChatSessionClosedByTypeEnum::AGENT->value : ChatSessionClosedByTypeEnum::USER->value,
+                'closed_at' => now(),
             ]);
 
-            $agent = ChatAgent::find($activeAssignment->chat_agent_id);
-            if ($agent) {
-                $agent->decrementChatCount();
+            $activeAssignments = $chatSession->assignments()
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+                ->get();
+
+            foreach ($activeAssignments as $assignment) {
+                $assignment->update([
+                    'status' => ChatAssignmentStatusEnum::RESOLVED->value,
+                    'resolved_at' => now(),
+                ]);
+
+                $agent = ChatAgent::find($assignment->chat_agent_id);
+                if ($agent) {
+                    $agent->decrementChatCount();
+                }
             }
-        }
 
-        $this->logCloseEvent($chatSession, $closedByAgentId, $activeAssignment);
+            $systemMessage = $chatSession->messages()->create([
+                'message_text' => 'Chat session has been closed by agent',
+                'message_type' => ChatMessageTypeEnum::TEXT->value,
+                'sender_type' => ChatSenderTypeEnum::SYSTEM->value,
+                'is_read' => true,
+                'read_at' => now(),
+                'delivered_at' => now(),
+            ]);
 
-        return $chatSession->fresh();
+            BroadcastRealtimeChat::dispatch($systemMessage);
+
+            $this->logCloseEvent($chatSession, $agentId, $activeAssignments, $additionalData);
+
+            return $chatSession->fresh();
+        });
     }
 
-    public function asController(ChatSession $chatSession): JsonResponse
-    {
-        $closedByAgent = $this->getCurrentAgent();
 
-        if (!$closedByAgent) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only agents can close chat sessions'
-            ], 403);
+    public function asController(ActionRequest $request, ?string $organisation, ChatSession $chatSession): RedirectResponse
+    {
+        $agent = $this->getCurrentAgent();
+        if (!$agent) {
+            throw ValidationException::withMessages([
+                'message' => 'User not found',
+            ]);
         }
 
         try {
-            $closedSession = $this->handle($chatSession, $closedByAgent->id);
-
-            return $this->jsonResponse($closedSession);
-
+            $this->handle($chatSession, $agent->id);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 422);
+            throw ValidationException::withMessages([
+                'message' => $e->getMessage(),
+            ]);
         }
+
+        return back()->setStatusCode(303);
     }
 
-    protected function getCurrentAgent(): ?ChatAgent
+    public function getCurrentAgent(): ?ChatAgent
     {
-        if (auth()->check()) {
-            $user = auth()->user();
-            return ChatAgent::where('user_id', $user->id)->first();
-        }
+        $user = Auth::user();
 
-        return null;
+        if ($user) {
+            if (!$user->chatAgent) {
+                return null;
+            }
+        }
+        return $user->chatAgent;
     }
 
-    protected function logCloseEvent(ChatSession $chatSession, int $agentId, ?ChatAssignment $assignment): void
+    protected function logCloseEvent(ChatSession $chatSession, int $agentId, $assignments, array $additionalData = []): void
     {
-        $payload = [
-            'closed_by_agent_id' => $agentId,
-            'closed_at' => now()->toISOString(),
-            'session_duration' => $chatSession->created_at->diffInMinutes(now()),
-            'session_ulid' => $chatSession->ulid,
-        ];
 
-        if ($assignment) {
-            $payload['assignment'] = [
-                'assignment_id' => $assignment->id,
-                'assigned_agent_id' => $assignment->chat_agent_id,
-                'assigned_at' => $assignment->assigned_at->toISOString(),
-                'assignment_duration' => $assignment->assigned_at->diffInMinutes(now()),
-            ];
+        $payload = [];
+        if ($assignments->isNotEmpty()) {
+            $payload['assignments'] = $assignments->map(function ($assignment) {
+                return [
+                    'assignment_id' => $assignment->id,
+                    'assigned_agent_id' => $assignment->chat_agent_id,
+                    'assigned_at' => $assignment->assigned_at->toISOString(),
+                    'assignment_duration' => $assignment->assigned_at->diffInMinutes(now()),
+                ];
+            })->toArray();
         }
 
-        if ($chatSession->web_user_id) {
-            $payload['user_type'] = 'authenticated';
-            $payload['web_user_id'] = $chatSession->web_user_id;
-        } else {
-            $payload['user_type'] = 'guest';
-            $payload['guest_identifier'] = $chatSession->guest_identifier;
-        }
+        $payload = array_merge($payload, $additionalData);
 
-        ChatEvent::create([
-            'chat_session_id' => $chatSession->id,
-            'event_type' => ChatEventTypeEnum::CLOSE->value,
-            'actor_type' => ChatActorTypeEnum::AGENT->value,
-            'actor_id' => $agentId,
-            'payload' => $payload,
-        ]);
+        StoreChatEvent::make()->closeSession(
+            $chatSession,
+            ChatActorTypeEnum::AGENT,
+            $agentId,
+            $payload,
+        );
     }
 
     public function jsonResponse(ChatSession $chatSession): JsonResponse
     {
         $sessionDuration = $chatSession->created_at->diffInMinutes($chatSession->closed_at);
+
+        $resolvedAssignments = $chatSession->assignments()
+            ->where('status', ChatAssignmentStatusEnum::RESOLVED->value)
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -130,17 +146,14 @@ class CloseChatSession
                     'guest_identifier' => $chatSession->guest_identifier,
                     'web_user_id' => $chatSession->web_user_id,
                 ],
-                'assignment' => [
-                    'resolved' => true,
-                    'resolved_at' => $chatSession->closed_at->toISOString(),
-                ]
-            ]
+                'assignments' => $resolvedAssignments->map(function ($assignment) {
+                    return [
+                        'resolved' => true,
+                        'assignment_id' => $assignment->id,
+                        'resolved_at' => $assignment->resolved_at->toISOString(),
+                    ];
+                }),
+            ],
         ]);
-    }
-
-
-    public function htmlResponse(ChatSession $chatSession): JsonResponse
-    {
-        return $this->jsonResponse($chatSession);
     }
 }

@@ -10,15 +10,21 @@ enum ChatEventTypeEnum: string
 
     case OPEN = 'open';
     case AI_REPLY = 'ai_reply';
-    case TRANSFER_REQUEST = 'transfer_request';
+    case TRANSFER = 'transfer_request';
     case TRANSFER_ACCEPT = 'transfer_accept';
     case TRANSFER_REJECT = 'transfer_reject';
     case TRANSLATE_MESSAGE = 'translate_message';
+
+    case TRANSFER_TO_AGENT = 'transfer_to_agent';
+
+    case ASSIGNMENT_TO_SELF = 'assignment_to_self';
+
     case CLOSE = 'close';
     case RATING = 'rating';
+    case PRIORITY = 'priority';
     case NOTE = 'note';
-
     case REPLY = 'reply';
+    case SEND = 'send';
 
     public static function labels(): array
     {
@@ -32,7 +38,11 @@ enum ChatEventTypeEnum: string
             'close' => __('Chat Closed'),
             'rating' => __('Rating Submitted'),
             'note' => __('Note Added'),
-            'reply' => __('reply'),
+            'reply'=> __('Reply'),
+            'send'=> __('Send'),
+            'transfer_to_agent'=> __('Transfer to Agent'),
+            'Assignment_to_self'=> __('Assignment to Self'),
+            'priority'=> __('Priority Updated'),
         ];
     }
 
@@ -84,11 +94,17 @@ enum ChatEventTypeEnum: string
                 'icon' => 'fas fa-sticky-note',
                 'class' => 'text-indigo-500',
             ],
-            'reply' => [
-                'tooltip' => __('Message Reply'),
-                'icon' => 'fas fa-reply',
-                'class' => 'text-gray-500',
-            ]
+            'reply'=> [
+                'tooltip'=> __('Message Reply'),
+                'icon'=> 'fas fa-reply',
+                'class'=> 'text-gray-500',
+            ],
+            'send'=> [
+                'tooltip'=> __('Message Sent'),
+                'icon'=> 'fas fa-paper-plane',
+                'class'=> 'text-blue-500',
+            ],
+
         ];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models\CRM\Livechat;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\CRM\Livechat\ChatSession;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,6 +48,8 @@ class ChatAssignment extends Model
        'updated_at' => 'datetime',
        'deleted_at' => 'datetime',
     ];
+
+    protected $guarded = [];
 
 
     public function chatSession(): BelongsTo

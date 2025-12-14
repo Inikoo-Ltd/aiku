@@ -107,12 +107,16 @@ class ChatAgent extends Model
     }
 
 
-
     public function isAvailableForChat(): bool
     {
         return $this->is_online
             && $this->is_available
             && $this->current_chat_count < $this->max_concurrent_chats;
+    }
+
+    public function isAvailable()
+    {
+        return $this->current_chat_count < $this->max_concurrent_chats;
     }
 
 
