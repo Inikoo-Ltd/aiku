@@ -10,7 +10,6 @@ namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
-use App\Actions\Goods\TradeUnitFamily\GetTradeUnitFamilyAttachments;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Actions\Traits\HasBucketAttachment;
@@ -107,12 +106,33 @@ class ShowTradeUnitFamily extends GrpAction
                 : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))),
 
                 TradeUnitFamilyTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitFamilyTabsEnum::ATTACHMENTS->value ?
-                fn () => GetTradeUnitFamilyAttachments::run($tradeUnitFamily)
-                : Inertia::lazy(fn () => GetTradeUnitFamilyAttachments::run($tradeUnitFamily)),
+                fn () => $this->getAttachments($tradeUnitFamily)
+                : Inertia::lazy(fn () => $this->getAttachments($tradeUnitFamily)),
             ]
         )->table(IndexTradeUnitsInTradeUnitFamily::make()->tableStructure(prefix: TradeUnitFamilyTabsEnum::TRADE_UNITS->value));
     }
 
+    public function getAttachments(TradeUnitFamily $tradeUnitFamily): array
+    {
+        return [
+            'id'                        => $tradeUnitFamily->id,
+            'editable'                  => true,
+            'attachment_category_box'   => $this->getAttachmentData($tradeUnitFamily),
+            'attachRoute' => [
+                'name'       => 'grp.models.trade_unit_family.attachment.attach',
+                'parameters' => [
+                    'tradeUnitFamily' => $tradeUnitFamily->id,
+                ]
+            ],
+            'detachRoute' => [
+                'name'       => 'grp.models.trade_unit_family.attachment.detach',
+                'parameters' => [
+                    'tradeUnitFamily' => $tradeUnitFamily->id,
+                ],
+                'method'     => 'delete'
+            ],
+        ];
+    }
 
     public function getShowcase(TradeUnitFamily $tradeUnitFamily): array
     {
